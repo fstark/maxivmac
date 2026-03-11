@@ -27,7 +27,7 @@
 LOCALVAR struct fpustruct
 {
 	myfpr fp[8];
-	CPTR FPIAR; /* Floating point instruction address register */
+	uint32_t FPIAR; /* Floating point instruction address register */
 } fpu_dat;
 
 LOCALPROC myfp_SetFPIAR(uint32_t v)

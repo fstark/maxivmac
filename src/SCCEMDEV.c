@@ -2937,7 +2937,7 @@ LOCALPROC SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 #endif
 }
 
-GLOBALFUNC uint32_t SCC_Access(uint32_t Data, blnr WriteMem, CPTR addr)
+GLOBALFUNC uint32_t SCC_Access(uint32_t Data, blnr WriteMem, uint32_t addr)
 {
 #if EmLocalTalk
 	/*

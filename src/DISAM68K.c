@@ -40,7 +40,7 @@ LOCALVAR uint8_t Disasm_pcp_dummy[2] = {
 	0, 0
 };
 
-IMPORTFUNC ATTep FindATTel(CPTR addr);
+IMPORTFUNC ATTep FindATTel(uint32_t addr);
 
 LOCALPROC Disasm_Find_pcp(void)
 {
@@ -85,7 +85,7 @@ LOCALFUNC uint32_t Disasm_nextilong(void)
 	return r;
 }
 
-LOCALPROC Disasm_setpc(CPTR newpc)
+LOCALPROC Disasm_setpc(uint32_t newpc)
 {
 	if (newpc != Disasm_pc) {
 		Disasm_pc = newpc;

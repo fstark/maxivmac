@@ -96,7 +96,7 @@ LOCALPROC ASC_ClearFIFO(void)
 	ASC_RecalcStatus();
 }
 
-GLOBALFUNC uint32_t ASC_Access(uint32_t Data, blnr WriteMem, CPTR addr)
+GLOBALFUNC uint32_t ASC_Access(uint32_t Data, blnr WriteMem, uint32_t addr)
 {
 	if (addr < 0x800) {
 		if (WriteMem) {

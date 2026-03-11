@@ -22,7 +22,7 @@
 
 EXPORTPROC SCC_Reset(void);
 
-EXPORTFUNC uint32_t SCC_Access(uint32_t Data, blnr WriteMem, CPTR addr);
+EXPORTFUNC uint32_t SCC_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
 
 EXPORTFUNC blnr SCC_InterruptsEnabled(void);
 

@@ -114,7 +114,7 @@ GLOBALPROC MacSound_SubTick(int SubTick)
 #ifndef ln2mtb
 	uint8_t * addr = addy + (2 * StartOffset) + RAM;
 #else
-	CPTR addr = addy + (2 * StartOffset);
+	uint32_t addr = addy + (2 * StartOffset);
 #endif
 	uint16_t SoundInvertTime = GetSoundInvertTime();
 	uint8_t SoundVolume = SoundVolb0

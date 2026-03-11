@@ -22,8 +22,8 @@
 
 #include <string.h>
 
-EXPORTPROC ExtnDisk_Access(CPTR p);
-EXPORTPROC ExtnSony_Access(CPTR p);
+EXPORTPROC ExtnDisk_Access(uint32_t p);
+EXPORTPROC ExtnSony_Access(uint32_t p);
 
 EXPORTPROC Sony_SetQuitOnEject(void);
 
