@@ -74,7 +74,7 @@
 /*                                                               */
 /* ************************************************************* */
 
-LOCALFUNC uint32_t jdate(int day, int month, int year)
+static uint32_t jdate(int day, int month, int year)
 {
 	uint32_t days;                      /* value returned */
 	int mtable[] = {
@@ -104,7 +104,7 @@ LOCALFUNC uint32_t jdate(int day, int month, int year)
 	return (days + 5);
 }
 
-LOCALFUNC uint32_t Date2MacSeconds(int second, int minute, int hour,
+static uint32_t Date2MacSeconds(int second, int minute, int hour,
 	int day, int month, int year)
 {
 	uint32_t curjdate;

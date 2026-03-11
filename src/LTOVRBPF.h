@@ -64,7 +64,7 @@ static unsigned char tx_buffer[20 + LT_TxBfMxSz] =
 	Utility function needed for walking the addresses of the
 	kernel route lookup
 */
-LOCALPROC get_sockaddrs(int addrs, struct sockaddr* sa,
+static void get_sockaddrs(int addrs, struct sockaddr* sa,
 	struct sockaddr** rti_info)
 {
 	int loop;
@@ -95,7 +95,7 @@ LOCALPROC get_sockaddrs(int addrs, struct sockaddr* sa,
 	packets.
 */
 
-LOCALFUNC int get_ethernet(void)
+static int get_ethernet(void)
 {
 	int result;
 	int size;
@@ -258,7 +258,7 @@ static unsigned char *MyRxBuffer = NULL;
 	External function needed at startup to initialize the LocalTalk
 	functionality.
 */
-LOCALFUNC int InitLocalTalk(void)
+static int InitLocalTalk(void)
 {
 	/* Perform a lot of stuff to get access to the Ethernet */
 	get_ethernet();
@@ -283,14 +283,14 @@ LOCALFUNC int InitLocalTalk(void)
 	return true;
 }
 
-LOCALPROC UnInitLocalTalk(void)
+static void UnInitLocalTalk(void)
 {
 	if (NULL != MyRxBuffer) {
 		free(MyRxBuffer);
 	}
 }
 
-GLOBALOSGLUPROC LT_TransmitPacket(void)
+void LT_TransmitPacket(void)
 {
 	int count;
 
@@ -311,7 +311,7 @@ GLOBALOSGLUPROC LT_TransmitPacket(void)
 static unsigned char* NextPacket = NULL;
 static unsigned char* EndPackets = NULL;
 
-LOCALPROC LocalTalkTick0(void)
+static void LocalTalkTick0(void)
 {
 	/* Get a single buffer worth of packets from BPF */
 	unsigned char* device_buffer = MyRxBuffer;
@@ -326,7 +326,7 @@ LOCALPROC LocalTalkTick0(void)
 	}
 }
 
-GLOBALOSGLUPROC LT_ReceivePacket(void)
+void LT_ReceivePacket(void)
 {
 label_retry:
 	if (NextPacket == NULL) {

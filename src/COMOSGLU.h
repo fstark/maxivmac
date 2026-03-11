@@ -144,7 +144,7 @@ static uint32_t PbufSize[NumPbufs];
 #endif
 
 #if IncludePbufs
-LOCALFUNC bool FirstFreePbuf(tPbuf *r)
+static bool FirstFreePbuf(tPbuf *r)
 {
 	tPbuf i;
 
@@ -159,7 +159,7 @@ LOCALFUNC bool FirstFreePbuf(tPbuf *r)
 #endif
 
 #if IncludePbufs
-LOCALPROC PbufNewNotify(tPbuf Pbuf_No, uint32_t count)
+static void PbufNewNotify(tPbuf Pbuf_No, uint32_t count)
 {
 	PbufSize[Pbuf_No] = count;
 	PbufAllocatedMask |= ((uint32_t)1 << Pbuf_No);
@@ -167,14 +167,14 @@ LOCALPROC PbufNewNotify(tPbuf Pbuf_No, uint32_t count)
 #endif
 
 #if IncludePbufs
-LOCALPROC PbufDisposeNotify(tPbuf Pbuf_No)
+static void PbufDisposeNotify(tPbuf Pbuf_No)
 {
 	PbufAllocatedMask &= ~ ((uint32_t)1 << Pbuf_No);
 }
 #endif
 
 #if IncludePbufs
-GLOBALOSGLUFUNC tMacErr CheckPbuf(tPbuf Pbuf_No)
+ tMacErr CheckPbuf(tPbuf Pbuf_No)
 {
 	tMacErr result;
 
@@ -191,7 +191,7 @@ GLOBALOSGLUFUNC tMacErr CheckPbuf(tPbuf Pbuf_No)
 #endif
 
 #if IncludePbufs
-GLOBALOSGLUFUNC tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
+ tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
 {
 	tMacErr result = CheckPbuf(Pbuf_No);
 
@@ -203,7 +203,7 @@ GLOBALOSGLUFUNC tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
 }
 #endif
 
-LOCALFUNC bool FirstFreeDisk(tDrive *Drive_No)
+static bool FirstFreeDisk(tDrive *Drive_No)
 {
 	tDrive i;
 
@@ -218,7 +218,7 @@ LOCALFUNC bool FirstFreeDisk(tDrive *Drive_No)
 	return false;
 }
 
-GLOBALOSGLUFUNC bool AnyDiskInserted(void)
+ bool AnyDiskInserted(void)
 {
 #if 0
 	tDrive i;
@@ -233,12 +233,12 @@ GLOBALOSGLUFUNC bool AnyDiskInserted(void)
 	return 0 != vSonyInsertedMask;
 }
 
-GLOBALOSGLUPROC DiskRevokeWritable(tDrive Drive_No)
+void DiskRevokeWritable(tDrive Drive_No)
 {
 	vSonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
 }
 
-LOCALPROC DiskInsertNotify(tDrive Drive_No, bool locked)
+static void DiskInsertNotify(tDrive Drive_No, bool locked)
 {
 	vSonyInsertedMask |= ((uint32_t)1 << Drive_No);
 	if (! locked) {
@@ -248,7 +248,7 @@ LOCALPROC DiskInsertNotify(tDrive Drive_No, bool locked)
 	QuietEnds();
 }
 
-LOCALPROC DiskEjectedNotify(tDrive Drive_No)
+static void DiskEjectedNotify(tDrive Drive_No)
 {
 	vSonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
 	vSonyInsertedMask &= ~ ((uint32_t)1 << Drive_No);
@@ -283,7 +283,7 @@ LOCALPROC DiskEjectedNotify(tDrive Drive_No)
 #define ln2uiblockbitsn (3 + ln2uiblockn)
 #define uiblockbitsn (8 * uiblockn)
 
-LOCALFUNC bool FindFirstChangeInLVecs(uibb *ptr1, uibb *ptr2,
+static bool FindFirstChangeInLVecs(uibb *ptr1, uibb *ptr2,
 					uint32_t L, uint32_t *j)
 {
 /*
@@ -303,7 +303,7 @@ LOCALFUNC bool FindFirstChangeInLVecs(uibb *ptr1, uibb *ptr2,
 	return false;
 }
 
-LOCALPROC FindLastChangeInLVecs(uibb *ptr1, uibb *ptr2,
+static void FindLastChangeInLVecs(uibb *ptr1, uibb *ptr2,
 					uint32_t L, uint32_t *j)
 {
 /*
@@ -317,7 +317,7 @@ LOCALPROC FindLastChangeInLVecs(uibb *ptr1, uibb *ptr2,
 	*j = p1 - ptr1;
 }
 
-LOCALPROC FindLeftRightChangeInLMat(uibb *ptr1, uibb *ptr2,
+static void FindLeftRightChangeInLMat(uibb *ptr1, uibb *ptr2,
 	uint32_t width, uint32_t top, uint32_t bottom,
 	uint32_t *LeftMin0, uibr *LeftMask0,
 	uint32_t *RightMax0, uibr *RightMask0)
@@ -392,7 +392,7 @@ static uint32_t NextDrawRow = 0;
 static bool ColorTransValid = false;
 #endif
 
-LOCALFUNC bool ScreenFindChanges(uint8_t * screencurrentbuff,
+static bool ScreenFindChanges(uint8_t * screencurrentbuff,
 	int8_t TimeAdjust, int16_t *top, int16_t *left, int16_t *bottom, int16_t *right)
 {
 	uint32_t j0;
@@ -629,7 +629,7 @@ static int16_t ScreenChangedLeft;
 static int16_t ScreenChangedBottom;
 static int16_t ScreenChangedRight;
 
-LOCALPROC ScreenClearChanges(void)
+static void ScreenClearChanges(void)
 {
 	ScreenChangedTop = 0;
 	ScreenChangedBottom = vMacScreenHeight;
@@ -637,7 +637,7 @@ LOCALPROC ScreenClearChanges(void)
 	ScreenChangedRight = vMacScreenWidth;
 }
 
-LOCALPROC ScreenChangedAll(void)
+static void ScreenChangedAll(void)
 {
 	ScreenChangedTop = 0;
 	ScreenChangedBottom = vMacScreenHeight;
@@ -652,7 +652,7 @@ static int16_t ScreenChangedQuietBottom = 0;
 static int16_t ScreenChangedQuietRight = 0;
 #endif
 
-GLOBALOSGLUPROC Screen_OutputFrame(uint8_t * screencurrentbuff)
+void Screen_OutputFrame(uint8_t * screencurrentbuff)
 {
 	int16_t top;
 	int16_t left;
@@ -722,7 +722,7 @@ static int16_t SavedMouseV;
 #endif
 
 #if EnableFSMouseMotion
-LOCALPROC AutoScrollScreen(void)
+static void AutoScrollScreen(void)
 {
 	int16_t Shift;
 	int16_t Limit;
@@ -814,7 +814,7 @@ LOCALPROC AutoScrollScreen(void)
 }
 #endif
 
-LOCALPROC SetLongs(uint32_t *p, long n)
+static void SetLongs(uint32_t *p, long n)
 {
 	long i;
 
@@ -834,7 +834,7 @@ static uint8_t * ReserveAllocBigBlock = nullptr;
 #define CeilPow2Mult(i, p) FloorPow2Mult((i) + Pow2Mask(p), (p))
 	/* warning - CeilPow2Mult evaluates p twice */
 
-GLOBALOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
+void ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
 	uint8_t align, bool FillOnes)
 {
 	ReserveAllocOffset = CeilPow2Mult(ReserveAllocOffset, align);
@@ -867,7 +867,7 @@ static uint32_t dbglog_bufpos = 0;
 
 static char *dbglog_bufp = nullptr;
 
-LOCALPROC dbglog_ReserveAlloc(void)
+static void dbglog_ReserveAlloc(void)
 {
 	ReserveAllocOneBlock((uint8_t * *)&dbglog_bufp, dbglog_bufsz,
 		5, false);
@@ -875,7 +875,7 @@ LOCALPROC dbglog_ReserveAlloc(void)
 
 #define dbglog_open dbglog_open0
 
-LOCALPROC dbglog_close(void)
+static void dbglog_close(void)
 {
 	uint32_t n = ModPow2(dbglog_bufpos, dbglog_buflnsz);
 	if (n != 0) {
@@ -885,7 +885,7 @@ LOCALPROC dbglog_close(void)
 	dbglog_close0();
 }
 
-LOCALPROC dbglog_write(char *p, uint32_t L)
+static void dbglog_write(char *p, uint32_t L)
 {
 	uint32_t r;
 	uint32_t bufposmod;
@@ -911,7 +911,7 @@ label_retry:
 
 #endif /* dbglog_buflnsz defined */
 
-LOCALFUNC uint32_t CStrLength(char *s)
+static uint32_t CStrLength(char *s)
 {
 	char *p = s;
 
@@ -920,19 +920,19 @@ LOCALFUNC uint32_t CStrLength(char *s)
 	return p - s - 1;
 }
 
-GLOBALOSGLUPROC dbglog_writeCStr(char *s)
+void dbglog_writeCStr(char *s)
 {
 	/* fprintf(DumpFile, "%s", s); */
 	dbglog_write(s, CStrLength(s));
 }
 
-GLOBALOSGLUPROC dbglog_writeReturn(void)
+void dbglog_writeReturn(void)
 {
 	dbglog_writeCStr("\n");
 	/* fprintf(DumpFile, "\n"); */
 }
 
-GLOBALOSGLUPROC dbglog_writeHex(uint32_t x)
+void dbglog_writeHex(uint32_t x)
 {
 	uint8_t v;
 	char s[16];
@@ -954,7 +954,7 @@ GLOBALOSGLUPROC dbglog_writeHex(uint32_t x)
 	/* fprintf(DumpFile, "%d", (int)x); */
 }
 
-GLOBALOSGLUPROC dbglog_writeNum(uint32_t x)
+void dbglog_writeNum(uint32_t x)
 {
 	uint32_t newx;
 	char s[16];
@@ -972,7 +972,7 @@ GLOBALOSGLUPROC dbglog_writeNum(uint32_t x)
 	/* fprintf(DumpFile, "%d", (int)x); */
 }
 
-GLOBALOSGLUPROC dbglog_writeMacChar(uint8_t x)
+void dbglog_writeMacChar(uint8_t x)
 {
 	char s;
 
@@ -985,18 +985,18 @@ GLOBALOSGLUPROC dbglog_writeMacChar(uint8_t x)
 	dbglog_write(&s, 1);
 }
 
-LOCALPROC dbglog_writeSpace(void)
+static void dbglog_writeSpace(void)
 {
 	dbglog_writeCStr(" ");
 }
 
-GLOBALOSGLUPROC dbglog_writeln(char *s)
+void dbglog_writeln(char *s)
 {
 	dbglog_writeCStr(s);
 	dbglog_writeReturn();
 }
 
-GLOBALOSGLUPROC dbglog_writelnHex(char *s, uint32_t x)
+void dbglog_writelnHex(char *s, uint32_t x)
 {
 	dbglog_writeCStr(s);
 	dbglog_writeSpace();
@@ -1004,7 +1004,7 @@ GLOBALOSGLUPROC dbglog_writelnHex(char *s, uint32_t x)
 	dbglog_writeReturn();
 }
 
-GLOBALOSGLUPROC dbglog_writelnNum(char *s, int32_t v)
+void dbglog_writelnNum(char *s, int32_t v)
 {
 	dbglog_writeCStr(s);
 	dbglog_writeSpace();
@@ -1025,7 +1025,7 @@ static MyEvtQEl MyEvtQA[MyEvtQSz];
 static uint16_t MyEvtQIn = 0;
 static uint16_t MyEvtQOut = 0;
 
-GLOBALOSGLUFUNC MyEvtQEl * MyEvtQOutP(void)
+ MyEvtQEl * MyEvtQOutP(void)
 {
 	MyEvtQEl *p = nullptr;
 	if (MyEvtQIn != MyEvtQOut) {
@@ -1034,7 +1034,7 @@ GLOBALOSGLUFUNC MyEvtQEl * MyEvtQOutP(void)
 	return p;
 }
 
-GLOBALOSGLUPROC MyEvtQOutDone(void)
+void MyEvtQOutDone(void)
 {
 	++MyEvtQOut;
 }
@@ -1042,7 +1042,7 @@ GLOBALOSGLUPROC MyEvtQOutDone(void)
 static bool MyEvtQNeedRecover = false;
 	/* events lost because of full queue */
 
-LOCALFUNC MyEvtQEl * MyEvtQElPreviousIn(void)
+static MyEvtQEl * MyEvtQElPreviousIn(void)
 {
 	MyEvtQEl *p = NULL;
 	if (MyEvtQIn - MyEvtQOut != 0) {
@@ -1052,7 +1052,7 @@ LOCALFUNC MyEvtQEl * MyEvtQElPreviousIn(void)
 	return p;
 }
 
-LOCALFUNC MyEvtQEl * MyEvtQElAlloc(void)
+static MyEvtQEl * MyEvtQElAlloc(void)
 {
 	MyEvtQEl *p = NULL;
 	if (MyEvtQIn - MyEvtQOut >= MyEvtQSz) {
@@ -1068,7 +1068,7 @@ LOCALFUNC MyEvtQEl * MyEvtQElAlloc(void)
 
 static uint32_t theKeys[4];
 
-LOCALPROC Keyboard_UpdateKeyMap(uint8_t key, bool down)
+static void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 {
 	uint8_t k = key & 127; /* just for safety */
 	uint8_t bit = 1 << (k & 7);
@@ -1095,7 +1095,7 @@ LOCALPROC Keyboard_UpdateKeyMap(uint8_t key, bool down)
 
 static bool MyMouseButtonState = false;
 
-LOCALPROC MyMouseButtonSet(bool down)
+static void MyMouseButtonSet(bool down)
 {
 	if (MyMouseButtonState != down) {
 		MyEvtQEl *p = MyEvtQElAlloc();
@@ -1111,7 +1111,7 @@ LOCALPROC MyMouseButtonSet(bool down)
 }
 
 #if EnableFSMouseMotion
-LOCALPROC MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
+static void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
 	if ((dh != 0) || (dv != 0)) {
 		MyEvtQEl *p = MyEvtQElPreviousIn();
@@ -1135,7 +1135,7 @@ LOCALPROC MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 static uint16_t MyMousePosCurV = 0;
 static uint16_t MyMousePosCurH = 0;
 
-LOCALPROC MyMousePositionSet(uint16_t h, uint16_t v)
+static void MyMousePositionSet(uint16_t h, uint16_t v)
 {
 	if ((h != MyMousePosCurH) || (v != MyMousePosCurV)) {
 		MyEvtQEl *p = MyEvtQElPreviousIn();
@@ -1160,7 +1160,7 @@ LOCALPROC MyMousePositionSet(uint16_t h, uint16_t v)
 	((((uint8_t *)theKeys)[(key) / 8] & (1 << ((key) & 7))) != 0)
 #endif
 
-LOCALPROC InitKeyCodes(void)
+static void InitKeyCodes(void)
 {
 	theKeys[0] = 0;
 	theKeys[1] = 0;
@@ -1174,7 +1174,7 @@ LOCALPROC InitKeyCodes(void)
 #define kKeepMaskOption   (1 << 3)
 #define kKeepMaskShift    (1 << 4)
 
-LOCALPROC DisconnectKeyCodes(uint32_t KeepMask)
+static void DisconnectKeyCodes(uint32_t KeepMask)
 {
 	/*
 		Called when may miss key ups,
@@ -1213,7 +1213,7 @@ LOCALPROC DisconnectKeyCodes(uint32_t KeepMask)
 	}
 }
 
-LOCALPROC MyEvtQTryRecoverFromFull(void)
+static void MyEvtQTryRecoverFromFull(void)
 {
 	MyMouseButtonSet(false);
 	DisconnectKeyCodes(0);
@@ -1228,7 +1228,7 @@ static uint16_t SavedIDMsg = 0;
 #endif
 static bool SavedFatalMsg;
 
-LOCALPROC MacMsg(char *briefMsg, char *longMsg, bool fatal)
+static void MacMsg(char *briefMsg, char *longMsg, bool fatal)
 {
 	if (nullptr != SavedBriefMsg) {
 		/*
@@ -1243,7 +1243,7 @@ LOCALPROC MacMsg(char *briefMsg, char *longMsg, bool fatal)
 }
 
 #if WantAbnormalReports
-GLOBALOSGLUPROC WarnMsgAbnormalID(uint16_t id)
+void WarnMsgAbnormalID(uint16_t id)
 {
 	MacMsg(kStrReportAbnormalTitle,
 		kStrReportAbnormalMessage, false);
@@ -1277,7 +1277,7 @@ static uint32_t e_p[2] = {
 	0, 0
 	};
 
-LOCALPROC EntropyPoolStir(void)
+static void EntropyPoolStir(void)
 {
 	/*
 		mix up the bits in a way that doesn't lose information.
@@ -1308,7 +1308,7 @@ LOCALPROC EntropyPoolStir(void)
 	e_p[1] = t1c;
 }
 
-LOCALPROC EntropyPoolAddByte(uint8_t v)
+static void EntropyPoolAddByte(uint8_t v)
 {
 	e_p[0] += v;
 	e_p[1] += v;
@@ -1316,7 +1316,7 @@ LOCALPROC EntropyPoolAddByte(uint8_t v)
 	EntropyPoolStir();
 }
 
-LOCALPROC EntropyPoolAddPtr(uint8_t * p, uint32_t n)
+static void EntropyPoolAddPtr(uint8_t * p, uint32_t n)
 {
 	uint32_t i;
 
@@ -1343,7 +1343,7 @@ static uint32_t LT_MyStamp = 0;
 			know for sure it isn't from somebody else.)
 	*/
 
-LOCALPROC LT_PickStampNodeHint(void)
+static void LT_PickStampNodeHint(void)
 {
 	LT_MyStamp = e_p[0];
 

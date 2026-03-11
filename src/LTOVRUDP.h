@@ -42,7 +42,7 @@ include <ifaddrs.h>
 #endif
 
 #if UDP_dolog
-LOCALPROC dbglog_writeSockErr(char *s)
+static void dbglog_writeSockErr(char *s)
 {
 	dbglog_writeCStr(s);
 	dbglog_writeCStr(": err ");
@@ -77,7 +77,7 @@ static bool udp_ok = false;
 static bool have_winsock = false;
 #endif
 
-LOCALPROC start_udp(void)
+static void start_udp(void)
 {
 #if use_winsock
 	WSADATA wsaData;
@@ -187,7 +187,7 @@ static struct sockaddr_in MyRxAddress;
 	External function needed at startup to initialize the LocalTalk
 	functionality.
 */
-LOCALFUNC bool InitLocalTalk(void)
+static bool InitLocalTalk(void)
 {
 	LT_PickStampNodeHint();
 
@@ -205,7 +205,7 @@ LOCALFUNC bool InitLocalTalk(void)
 	return true;
 }
 
-LOCALPROC UnInitLocalTalk(void)
+static void UnInitLocalTalk(void)
 {
 	if (my_INVALID_SOCKET != sock_fd) {
 		if (0 != my_closesocket(sock_fd)) {
@@ -230,7 +230,7 @@ LOCALPROC UnInitLocalTalk(void)
 	}
 }
 
-LOCALPROC embedMyPID(void)
+static void embedMyPID(void)
 {
 	/*
 		embeds my process ID in network byte order in the start of the
@@ -251,7 +251,7 @@ LOCALPROC embedMyPID(void)
 	}
 }
 
-GLOBALOSGLUPROC LT_TransmitPacket(void)
+void LT_TransmitPacket(void)
 {
 	size_t bytes;
 	/* Write the packet to UDP */
@@ -283,7 +283,7 @@ GLOBALOSGLUPROC LT_TransmitPacket(void)
 	pidInPacketIsMine returns 1 if the process ID embedded in the packet
 	is the same as the process ID of the current process
 */
-LOCALFUNC int pidInPacketIsMine(void)
+static int pidInPacketIsMine(void)
 {
 	/* is the PID in the packet my own PID? */
 	int i;
@@ -310,7 +310,7 @@ LOCALFUNC int pidInPacketIsMine(void)
 	machine.
 */
 #if ! LT_MayHaveEcho
-LOCALFUNC int ipInPacketIsMine(void)
+static int ipInPacketIsMine(void)
 {
 	if (MyRxAddress.sin_family != AF_INET) {
 #if UDP_dolog
@@ -369,7 +369,7 @@ LOCALFUNC int ipInPacketIsMine(void)
 	node to send a packet from what we think is our own node ID.
 */
 #if ! LT_MayHaveEcho
-LOCALFUNC int packetIsOneISent(void)
+static int packetIsOneISent(void)
 {
 	/*
 		do the PID comparison first because it's faster and most of the
@@ -382,7 +382,7 @@ LOCALFUNC int packetIsOneISent(void)
 }
 #endif
 
-LOCALFUNC int GetNextPacket(void)
+static int GetNextPacket(void)
 {
 	unsigned char* device_buffer = MyRxBuffer;
 	socklen_t addrlen = sizeof(MyRxAddress);
@@ -424,7 +424,7 @@ LOCALFUNC int GetNextPacket(void)
 	return bytes;
 }
 
-GLOBALOSGLUPROC LT_ReceivePacket(void)
+void LT_ReceivePacket(void)
 {
 	int bytes;
 

@@ -80,7 +80,7 @@ static const uint8_t VidDrvr_contents[] = {
 0x08, 0xFC, 0x4E, 0xD0
 };
 
-LOCALPROC ChecksumSlotROM(void)
+static void ChecksumSlotROM(void)
 {
 	/* Calculate CRC */
 	/* assuming check sum field initialized to zero */
@@ -96,43 +96,43 @@ LOCALPROC ChecksumSlotROM(void)
 
 static uint8_t * pPatch;
 
-LOCALPROC PatchAByte(uint8_t v)
+static void PatchAByte(uint8_t v)
 {
 	*pPatch++ = v;
 }
 
-LOCALPROC PatchAWord(uint16_t v)
+static void PatchAWord(uint16_t v)
 {
 	PatchAByte(v >> 8);
 	PatchAByte(v & 0x00FF);
 }
 
-LOCALPROC PatchALong(uint32_t v)
+static void PatchALong(uint32_t v)
 {
 	PatchAWord(v >> 16);
 	PatchAWord(v & 0x0000FFFF);
 }
 
 #if 0
-LOCALPROC PatchAOSLstEntry0(uint8_t Id, uint32_t Offset)
+static void PatchAOSLstEntry0(uint8_t Id, uint32_t Offset)
 {
 	PatchALong((Id << 24) | (Offset & 0x00FFFFFF));
 }
 #endif
 
-LOCALPROC PatchAOSLstEntry(uint8_t Id, uint8_t * Offset)
+static void PatchAOSLstEntry(uint8_t Id, uint8_t * Offset)
 {
 	PatchALong((Id << 24) | ((Offset - pPatch) & 0x00FFFFFF));
 }
 
-LOCALFUNC uint8_t * ReservePatchOSLstEntry(void)
+static uint8_t * ReservePatchOSLstEntry(void)
 {
 	uint8_t * v = pPatch;
 	pPatch += 4;
 	return v;
 }
 
-LOCALPROC PatchAReservedOSLstEntry(uint8_t * p, uint8_t Id)
+static void PatchAReservedOSLstEntry(uint8_t * p, uint8_t Id)
 {
 	uint8_t * pPatchSave = pPatch;
 	pPatch = p;
@@ -140,17 +140,17 @@ LOCALPROC PatchAReservedOSLstEntry(uint8_t * p, uint8_t Id)
 	pPatch = pPatchSave;
 }
 
-LOCALPROC PatchADatLstEntry(uint8_t Id, uint32_t Data)
+static void PatchADatLstEntry(uint8_t Id, uint32_t Data)
 {
 	PatchALong((Id << 24) | (Data & 0x00FFFFFF));
 }
 
-LOCALPROC PatchAnEndOfLst(void)
+static void PatchAnEndOfLst(void)
 {
 	PatchADatLstEntry(0xFF /* endOfList */, 0x00000000);
 }
 
-GLOBALFUNC bool Vid_Init(void)
+ bool Vid_Init(void)
 {
 	int i;
 	uint32_t UsedSoFar;
@@ -419,9 +419,9 @@ GLOBALFUNC bool Vid_Init(void)
 	return true;
 }
 
-IMPORTPROC Vid_VBLinterrupt_PulseNotify(void);
+extern void Vid_VBLinterrupt_PulseNotify(void);
 
-GLOBALPROC Vid_Update(void)
+void Vid_Update(void)
 {
 	if (! Vid_VBLintunenbl) {
 		Vid_VBLinterrupt = 0;
@@ -429,7 +429,7 @@ GLOBALPROC Vid_Update(void)
 	}
 }
 
-LOCALFUNC uint16_t Vid_GetMode(void)
+static uint16_t Vid_GetMode(void)
 {
 	return
 #if 0 != vMacScreenDepth
@@ -438,7 +438,7 @@ LOCALFUNC uint16_t Vid_GetMode(void)
 		128;
 }
 
-LOCALFUNC tMacErr Vid_SetMode(uint16_t v)
+static tMacErr Vid_SetMode(uint16_t v)
 {
 #if 0 == vMacScreenDepth
 	UnusedParam(v);
@@ -451,7 +451,7 @@ LOCALFUNC tMacErr Vid_SetMode(uint16_t v)
 	return mnvm_noErr;
 }
 
-GLOBALFUNC uint16_t Vid_Reset(void)
+ uint16_t Vid_Reset(void)
 {
 #if 0 != vMacScreenDepth
 	UseColorMode = false;
@@ -485,7 +485,7 @@ GLOBALFUNC uint16_t Vid_Reset(void)
 
 static bool UseGrayTones = false;
 
-LOCALPROC FillScreenWithGrayPattern(void)
+static void FillScreenWithGrayPattern(void)
 {
 	int i;
 	int j;
@@ -533,7 +533,7 @@ LOCALPROC FillScreenWithGrayPattern(void)
 	}
 }
 
-GLOBALPROC ExtnVideo_Access(uint32_t p)
+void ExtnVideo_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 

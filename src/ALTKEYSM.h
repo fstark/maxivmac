@@ -31,7 +31,7 @@ static bool AltKeysTrueShift = false;
 static bool AltKeysModOn = false;
 static bool AltKeysTextOn = false;
 
-LOCALPROC CheckAltKeyUseMode(void)
+static void CheckAltKeyUseMode(void)
 {
 	bool NewAltKeysTextOn;
 
@@ -47,7 +47,7 @@ LOCALPROC CheckAltKeyUseMode(void)
 	}
 }
 
-LOCALPROC Keyboard_UpdateKeyMap1(uint8_t key, bool down)
+static void Keyboard_UpdateKeyMap1(uint8_t key, bool down)
 {
 	if (MKC_Command == key) {
 		AltKeysTrueCmnd = down;
@@ -171,7 +171,7 @@ LOCALPROC Keyboard_UpdateKeyMap1(uint8_t key, bool down)
 	}
 }
 
-LOCALPROC DisconnectKeyCodes1(uint32_t KeepMask)
+static void DisconnectKeyCodes1(uint32_t KeepMask)
 {
 	DisconnectKeyCodes(KeepMask);
 
@@ -189,7 +189,7 @@ LOCALPROC DisconnectKeyCodes1(uint32_t KeepMask)
 	AltKeysTextOn = AltKeysLockText || AltKeysModOn;
 }
 
-LOCALPROC DrawAltKeyMode(void)
+static void DrawAltKeyMode(void)
 {
 	int i;
 

@@ -66,7 +66,7 @@ static bool IsFindingNode = false;
 	handle collision detection and retransmission.  Besides this is
 	what a standard AppleTalk (LocalTalk to EtherTalk) bridge does.
 */
-LOCALPROC LT_TransmitPacket1(void)
+static void LT_TransmitPacket1(void)
 {
 	/* Check for LLAP RTS/CTS packets, which we won't send */
 #if SCC_dolog
@@ -167,7 +167,7 @@ LOCALPROC LT_TransmitPacket1(void)
 
 static uint8_t MyCTSBuffer[4];
 
-LOCALPROC GetCTSpacket(void)
+static void GetCTSpacket(void)
 {
 	/* Get a single buffer worth of packets at a time */
 	uint8_t * device_buffer = MyCTSBuffer;
@@ -192,7 +192,7 @@ static uint8_t my_node_address = 0;
 
 static bool LTAddrSrchMd = false;
 
-LOCALPROC GetNextPacketForMe(void)
+static void GetNextPacketForMe(void)
 {
 	uint8_t dst;
 	uint8_t src;
@@ -291,7 +291,7 @@ label_retry:
 	}
 }
 
-LOCALPROC LT_ReceivePacket1(void)
+static void LT_ReceivePacket1(void)
 {
 	if (CTSpacketPending)  {
 		GetCTSpacket();
@@ -300,7 +300,7 @@ LOCALPROC LT_ReceivePacket1(void)
 	}
 }
 
-LOCALPROC LT_AddrSrchMdSet(bool v)
+static void LT_AddrSrchMdSet(bool v)
 {
 #if SCC_dolog
 	dbglog_StartLine();
@@ -309,7 +309,7 @@ LOCALPROC LT_AddrSrchMdSet(bool v)
 	LTAddrSrchMd = v;
 }
 
-LOCALPROC LT_NodeAddressSet(uint8_t v)
+static void LT_NodeAddressSet(uint8_t v)
 {
 #if SCC_dolog
 	dbglog_StartLine();
@@ -521,7 +521,7 @@ static int rx_data_offset = 0;
 	/* when data pending, this is used */
 #endif
 
-EXPORTFUNC bool SCC_InterruptsEnabled(void)
+extern bool SCC_InterruptsEnabled(void)
 {
 	return SCC.MIE;
 }
@@ -529,7 +529,7 @@ EXPORTFUNC bool SCC_InterruptsEnabled(void)
 /* ---- */
 
 /* Function used to update the interrupt state of the SCC */
-LOCALPROC CheckSCCInterruptFlag(void)
+static void CheckSCCInterruptFlag(void)
 {
 #if 0 /* ReceiveAInterrupt always false */
 	bool ReceiveAInterrupt = false
@@ -665,7 +665,7 @@ LOCALPROC CheckSCCInterruptFlag(void)
 	}
 }
 
-LOCALPROC SCC_InitChannel(int chan)
+static void SCC_InitChannel(int chan)
 {
 	/* anything not done by ResetChannel */
 
@@ -700,7 +700,7 @@ LOCALPROC SCC_InitChannel(int chan)
 #endif
 }
 
-LOCALPROC SCC_ResetChannel(int chan)
+static void SCC_ResetChannel(int chan)
 {
 /* RR 0 */
 #if EmLocalTalk
@@ -838,7 +838,7 @@ LOCALPROC SCC_ResetChannel(int chan)
 #endif
 }
 
-GLOBALPROC SCC_Reset(void)
+void SCC_Reset(void)
 {
 	SCCwaitrq = 1;
 
@@ -862,7 +862,7 @@ GLOBALPROC SCC_Reset(void)
 
 #if EmLocalTalk
 
-LOCALPROC SCC_TxBuffPut(uint8_t Data)
+static void SCC_TxBuffPut(uint8_t Data)
 {
 	/* Buffer the data in the transmit buffer */
 	if (LT_TxBuffSz < LT_TxBfMxSz) {
@@ -875,7 +875,7 @@ LOCALPROC SCC_TxBuffPut(uint8_t Data)
 	This function is called once all the normal packet bytes have been
 	received.
 */
-LOCALPROC rx_complete(void)
+static void rx_complete(void)
 {
 	if (SCC.a[1].EndOfFrame) {
 		ReportAbnormalID(0x0702, "EndOfFrame true in rx_complete");
@@ -896,7 +896,7 @@ LOCALPROC rx_complete(void)
 	SCC.a[1].EndOfFrame = true;
 }
 
-LOCALPROC SCC_RxBuffAdvance(void)
+static void SCC_RxBuffAdvance(void)
 {
 	uint8_t value;
 
@@ -933,7 +933,7 @@ LOCALPROC SCC_RxBuffAdvance(void)
 	External function, called periodically, to poll for any new LTOE
 	packets. Any new packets are queued into the packet receipt queue.
 */
-GLOBALPROC LocalTalkTick(void)
+void LocalTalkTick(void)
 {
 	if (SCC.a[1].RxEnable
 		&& (! SCC.a[1].RxChrAvail))
@@ -963,7 +963,7 @@ GLOBALPROC LocalTalkTick(void)
 
 
 #if 0
-LOCALPROC SCC_Interrupt(int Type)
+static void SCC_Interrupt(int Type)
 {
 	if (SCC.MIE) { /* Master Interrupt Enable */
 
@@ -977,7 +977,7 @@ LOCALPROC SCC_Interrupt(int Type)
 #endif
 
 #if 0
-LOCALPROC SCC_Int(void)
+static void SCC_Int(void)
 {
 	/* This should be called at regular intervals */
 
@@ -1085,7 +1085,7 @@ LOCALPROC SCC_Int(void)
 #endif
 
 #if SCC_dolog
-LOCALPROC SCC_DbgLogChanStartLine(int chan)
+static void SCC_DbgLogChanStartLine(int chan)
 {
 	dbglog_StartLine();
 	dbglog_writeCStr("SCC chan(");
@@ -1099,7 +1099,7 @@ LOCALPROC SCC_DbgLogChanStartLine(int chan)
 }
 #endif
 
-LOCALFUNC uint8_t SCC_GetRR0(int chan)
+static uint8_t SCC_GetRR0(int chan)
 {
 	/* happens on boot always */
 
@@ -1131,7 +1131,7 @@ LOCALFUNC uint8_t SCC_GetRR0(int chan)
 		;
 }
 
-LOCALFUNC uint8_t SCC_GetRR1(int chan)
+static uint8_t SCC_GetRR1(int chan)
 {
 	/* happens in MacCheck */
 
@@ -1164,7 +1164,7 @@ LOCALFUNC uint8_t SCC_GetRR1(int chan)
 	return value;
 }
 
-LOCALFUNC uint8_t SCC_GetRR2(int chan)
+static uint8_t SCC_GetRR2(int chan)
 {
 	/* happens in MacCheck */
 	/* happens in Print to ImageWriter */
@@ -1268,7 +1268,7 @@ LOCALFUNC uint8_t SCC_GetRR2(int chan)
 	return value;
 }
 
-LOCALFUNC uint8_t SCC_GetRR3(int chan)
+static uint8_t SCC_GetRR3(int chan)
 {
 	uint8_t value = 0;
 
@@ -1289,7 +1289,7 @@ LOCALFUNC uint8_t SCC_GetRR3(int chan)
 	return value;
 }
 
-LOCALFUNC uint8_t SCC_GetRR8(int chan)
+static uint8_t SCC_GetRR8(int chan)
 {
 	uint8_t value = 0;
 
@@ -1325,7 +1325,7 @@ LOCALFUNC uint8_t SCC_GetRR8(int chan)
 	return value;
 }
 
-LOCALFUNC uint8_t SCC_GetRR10(int chan)
+static uint8_t SCC_GetRR10(int chan)
 {
 	/* happens on boot with appletalk on */
 
@@ -1339,7 +1339,7 @@ LOCALFUNC uint8_t SCC_GetRR10(int chan)
 	return value;
 }
 
-LOCALFUNC uint8_t SCC_GetRR12(int chan)
+static uint8_t SCC_GetRR12(int chan)
 {
 	uint8_t value = 0;
 
@@ -1355,7 +1355,7 @@ LOCALFUNC uint8_t SCC_GetRR12(int chan)
 	return value;
 }
 
-LOCALFUNC uint8_t SCC_GetRR13(int chan)
+static uint8_t SCC_GetRR13(int chan)
 {
 	uint8_t value = 0;
 
@@ -1371,7 +1371,7 @@ LOCALFUNC uint8_t SCC_GetRR13(int chan)
 	return value;
 }
 
-LOCALFUNC uint8_t SCC_GetRR15(int chan)
+static uint8_t SCC_GetRR15(int chan)
 {
 	uint8_t value = 0;
 
@@ -1401,7 +1401,7 @@ LOCALFUNC uint8_t SCC_GetRR15(int chan)
 }
 
 #if SCC_dolog
-LOCALPROC SCC_DbgLogChanCmnd(int chan, char *s)
+static void SCC_DbgLogChanCmnd(int chan, char *s)
 {
 	SCC_DbgLogChanStartLine(chan);
 	dbglog_writeCStr(" ");
@@ -1411,7 +1411,7 @@ LOCALPROC SCC_DbgLogChanCmnd(int chan, char *s)
 #endif
 
 #if SCC_dolog
-LOCALPROC SCC_DbgLogChanChngBit(int chan, char *s, bool v)
+static void SCC_DbgLogChanChngBit(int chan, char *s, bool v)
 {
 	SCC_DbgLogChanStartLine(chan);
 	dbglog_writeCStr(" ");
@@ -1426,7 +1426,7 @@ LOCALPROC SCC_DbgLogChanChngBit(int chan, char *s, bool v)
 }
 #endif
 
-LOCALPROC SCC_PutWR0(uint8_t Data, int chan)
+static void SCC_PutWR0(uint8_t Data, int chan)
 /*
 	"CRC initialize, initialization commands for the various modes,
 	Register Pointers"
@@ -1563,7 +1563,7 @@ LOCALPROC SCC_PutWR0(uint8_t Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
+static void SCC_PutWR1(uint8_t Data, int chan)
 /*
 	"Transmit/Receive interrupt and data transfer mode definition"
 */
@@ -1700,7 +1700,7 @@ LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR2(uint8_t Data, int chan)
+static void SCC_PutWR2(uint8_t Data, int chan)
 /* "Interrupt Vector (accessed through either channel)" */
 {
 	/*
@@ -1750,7 +1750,7 @@ LOCALPROC SCC_PutWR2(uint8_t Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
+static void SCC_PutWR3(uint8_t Data, int chan)
 /* "Receive parameters and control" */
 {
 #if SCC_TrackMore
@@ -1897,7 +1897,7 @@ LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR4(uint8_t Data, int chan)
+static void SCC_PutWR4(uint8_t Data, int chan)
 /* "Transmit/Receive miscellaneous parameters and modes" */
 {
 #if ! (EmLocalTalk || SCC_TrackMore)
@@ -2031,7 +2031,7 @@ LOCALPROC SCC_PutWR4(uint8_t Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR5(uint8_t Data, int chan)
+static void SCC_PutWR5(uint8_t Data, int chan)
 /* "Transmit parameters and controls" */
 {
 	/* happens on boot with appletalk on */
@@ -2160,7 +2160,7 @@ LOCALPROC SCC_PutWR5(uint8_t Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR6(uint8_t Data, int chan)
+static void SCC_PutWR6(uint8_t Data, int chan)
 /* "Sync characters or SDLC address field" */
 {
 	/* happens on boot with appletalk on */
@@ -2186,7 +2186,7 @@ LOCALPROC SCC_PutWR6(uint8_t Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR7(uint8_t Data, int chan)
+static void SCC_PutWR7(uint8_t Data, int chan)
 /* "Sync character or SDLC flag" */
 {
 	/* happens on boot with appletalk on */
@@ -2208,7 +2208,7 @@ LOCALPROC SCC_PutWR7(uint8_t Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR8(uint8_t Data, int chan)
+static void SCC_PutWR8(uint8_t Data, int chan)
 /* "Transmit Buffer" */
 {
 	/* happens on boot with appletalk on */
@@ -2255,7 +2255,7 @@ LOCALPROC SCC_PutWR8(uint8_t Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR9(uint8_t Data, int chan)
+static void SCC_PutWR9(uint8_t Data, int chan)
 /*
 	"Master interrupt control and reset
 	(accessed through either channel)"
@@ -2346,7 +2346,7 @@ LOCALPROC SCC_PutWR9(uint8_t Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR10(uint8_t Data, int chan)
+static void SCC_PutWR10(uint8_t Data, int chan)
 /* "Miscellaneous transmitter/receiver control bits" */
 {
 	/* happens on boot with appletalk on */
@@ -2421,7 +2421,7 @@ LOCALPROC SCC_PutWR10(uint8_t Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR11(uint8_t Data, int chan)
+static void SCC_PutWR11(uint8_t Data, int chan)
 /* "Clock mode control" */
 {
 	/* happens on boot with appletalk on */
@@ -2548,7 +2548,7 @@ LOCALPROC SCC_PutWR11(uint8_t Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR12(uint8_t Data, int chan)
+static void SCC_PutWR12(uint8_t Data, int chan)
 /* "Lower byte of baud rate generator time constant" */
 {
 	/* happens on boot with appletalk on */
@@ -2586,7 +2586,7 @@ LOCALPROC SCC_PutWR12(uint8_t Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR13(uint8_t Data, int chan)
+static void SCC_PutWR13(uint8_t Data, int chan)
 /* "Upper byte of baud rate generator time constant" */
 {
 	/* happens on boot with appletalk on */
@@ -2616,7 +2616,7 @@ LOCALPROC SCC_PutWR13(uint8_t Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR14(uint8_t Data, int chan)
+static void SCC_PutWR14(uint8_t Data, int chan)
 /* "Miscellaneous control bits" */
 {
 	/* happens on boot with appletalk on */
@@ -2700,7 +2700,7 @@ LOCALPROC SCC_PutWR14(uint8_t Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR15(uint8_t Data, int chan)
+static void SCC_PutWR15(uint8_t Data, int chan)
 /* "External/Status interrupt control" */
 {
 	/* happens on boot always */
@@ -2775,7 +2775,7 @@ LOCALPROC SCC_PutWR15(uint8_t Data, int chan)
 #endif
 }
 
-LOCALFUNC uint8_t SCC_GetReg(int chan, uint8_t SCC_Reg)
+static uint8_t SCC_GetReg(int chan, uint8_t SCC_Reg)
 {
 	uint8_t value;
 
@@ -2862,7 +2862,7 @@ LOCALFUNC uint8_t SCC_GetReg(int chan, uint8_t SCC_Reg)
 	return value;
 }
 
-LOCALPROC SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
+static void SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 {
 #if SCC_dolog && 0
 	SCC_DbgLogChanStartLine(chan);
@@ -2937,7 +2937,7 @@ LOCALPROC SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 #endif
 }
 
-GLOBALFUNC uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+ uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 #if EmLocalTalk
 	/*

@@ -22,12 +22,12 @@
 
 #include <string.h>
 
-EXPORTPROC ExtnDisk_Access(uint32_t p);
-EXPORTPROC ExtnSony_Access(uint32_t p);
+extern void ExtnDisk_Access(uint32_t p);
+extern void ExtnSony_Access(uint32_t p);
 
-EXPORTPROC Sony_SetQuitOnEject(void);
+extern void Sony_SetQuitOnEject(void);
 
-EXPORTPROC Sony_EjectAllDisks(void);
-EXPORTPROC Sony_Reset(void);
+extern void Sony_EjectAllDisks(void);
+extern void Sony_Reset(void);
 
-EXPORTPROC Sony_Update(void);
+extern void Sony_Update(void);

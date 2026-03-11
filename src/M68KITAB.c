@@ -65,7 +65,7 @@ enum {
 
 #define kMyAvgCycPerInstr (10 * kCycleScale + (40 * kCycleScale / 64))
 
-LOCALFUNC uint8_t GetAMdRegSz(WorkR *p)
+static uint8_t GetAMdRegSz(WorkR *p)
 {
 	uint8_t CurAMd;
 
@@ -85,7 +85,7 @@ LOCALFUNC uint8_t GetAMdRegSz(WorkR *p)
 	return CurAMd;
 }
 
-LOCALFUNC uint8_t GetAMdIndirectSz(WorkR *p)
+static uint8_t GetAMdIndirectSz(WorkR *p)
 {
 	uint8_t CurAMd;
 
@@ -106,7 +106,7 @@ LOCALFUNC uint8_t GetAMdIndirectSz(WorkR *p)
 }
 
 #if WantCycByPriOp
-LOCALFUNC uint16_t OpEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
+static uint16_t OpEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
 	uint16_t v;
 
@@ -182,7 +182,7 @@ LOCALFUNC uint16_t OpEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 #endif
 
 #if WantCycByPriOp
-LOCALFUNC uint16_t OpEADestCalcCyc(WorkR *p, uint8_t m, uint8_t r)
+static uint16_t OpEADestCalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
 	uint16_t v;
 
@@ -246,7 +246,7 @@ LOCALFUNC uint16_t OpEADestCalcCyc(WorkR *p, uint8_t m, uint8_t r)
 }
 #endif
 
-LOCALPROC SetDcoArgFields(WorkR *p, bool src,
+static void SetDcoArgFields(WorkR *p, bool src,
 	uint8_t CurAMd, uint8_t CurArgDat)
 {
 	if (src) {
@@ -258,7 +258,7 @@ LOCALPROC SetDcoArgFields(WorkR *p, bool src,
 	}
 }
 
-LOCALFUNC bool CheckValidAddrMode(WorkR *p,
+static bool CheckValidAddrMode(WorkR *p,
 	uint8_t m, uint8_t r, uint8_t v, bool src)
 {
 	uint8_t CurAMd = 0; /* init to keep compiler happy */
@@ -487,7 +487,7 @@ LOCALFUNC bool CheckValidAddrMode(WorkR *p,
 }
 
 #if WantCycByPriOp
-LOCALFUNC bool LeaPeaEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
+static bool LeaPeaEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
 	uint16_t v;
 
@@ -530,43 +530,43 @@ LOCALFUNC bool LeaPeaEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 }
 #endif
 
-LOCALFUNC bool IsValidAddrMode(WorkR *p)
+static bool IsValidAddrMode(WorkR *p)
 {
 	return CheckValidAddrMode(p,
 		mode(p), reg(p), kAddrValidAny, false);
 }
 
-LOCALFUNC bool CheckDataAltAddrMode(WorkR *p)
+static bool CheckDataAltAddrMode(WorkR *p)
 {
 	return CheckValidAddrMode(p,
 		mode(p), reg(p), kAddrValidDataAlt, false);
 }
 
-LOCALFUNC bool CheckDataAddrMode(WorkR *p)
+static bool CheckDataAddrMode(WorkR *p)
 {
 	return CheckValidAddrMode(p,
 		mode(p), reg(p), kAddrValidData, false);
 }
 
-LOCALFUNC bool CheckControlAddrMode(WorkR *p)
+static bool CheckControlAddrMode(WorkR *p)
 {
 	return CheckValidAddrMode(p,
 		mode(p), reg(p), kAddrValidControl, false);
 }
 
-LOCALFUNC bool CheckControlAltAddrMode(WorkR *p)
+static bool CheckControlAltAddrMode(WorkR *p)
 {
 	return CheckValidAddrMode(p,
 		mode(p), reg(p), kAddrValidControlAlt, false);
 }
 
-LOCALFUNC bool CheckAltMemAddrMode(WorkR *p)
+static bool CheckAltMemAddrMode(WorkR *p)
 {
 	return CheckValidAddrMode(p,
 		mode(p), reg(p), kAddrValidAltMem, false);
 }
 
-LOCALPROC FindOpSizeFromb76(WorkR *p)
+static void FindOpSizeFromb76(WorkR *p)
 {
 	p->opsize = 1 << b76(p);
 #if 0
@@ -584,7 +584,7 @@ LOCALPROC FindOpSizeFromb76(WorkR *p)
 #endif
 }
 
-LOCALFUNC uint8_t OpSizeOffset(WorkR *p)
+static uint8_t OpSizeOffset(WorkR *p)
 {
 	uint8_t v;
 
@@ -605,7 +605,7 @@ LOCALFUNC uint8_t OpSizeOffset(WorkR *p)
 }
 
 
-LOCALFUNC uint32_t octdat(uint32_t x)
+static uint32_t octdat(uint32_t x)
 {
 	if (x == 0) {
 		return 8;
@@ -614,7 +614,7 @@ LOCALFUNC uint32_t octdat(uint32_t x)
 	}
 }
 
-LOCALPROCUSEDONCE DeCode0(WorkR *p)
+static inline void DeCode0(WorkR *p)
 {
 	if (b8(p) == 1) {
 		if (mode(p) == 1) {
@@ -1057,7 +1057,7 @@ LOCALPROCUSEDONCE DeCode0(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCode1(WorkR *p)
+static inline void DeCode1(WorkR *p)
 {
 	p->opsize = 1;
 	if (md6(p) == 1) { /* MOVEA */
@@ -1081,7 +1081,7 @@ LOCALPROCUSEDONCE DeCode1(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCode2(WorkR *p)
+static inline void DeCode2(WorkR *p)
 {
 	p->opsize = 4;
 	if (md6(p) == 1) { /* MOVEA */
@@ -1113,7 +1113,7 @@ LOCALPROCUSEDONCE DeCode2(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCode3(WorkR *p)
+static inline void DeCode3(WorkR *p)
 {
 	p->opsize = 2;
 	if (md6(p) == 1) { /* MOVEA */
@@ -1153,7 +1153,7 @@ LOCALPROCUSEDONCE DeCode3(WorkR *p)
 #define MoveAvgN 3
 #endif
 
-LOCALFUNC uint16_t MoveMEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
+static uint16_t MoveMEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
 	uint16_t v;
 
@@ -1193,7 +1193,7 @@ LOCALFUNC uint16_t MoveMEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 
 #endif
 
-LOCALPROCUSEDONCE DeCode4(WorkR *p)
+static inline void DeCode4(WorkR *p)
 {
 	if (b8(p) != 0) {
 		switch (b76(p)) {
@@ -1917,7 +1917,7 @@ LOCALPROCUSEDONCE DeCode4(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCode5(WorkR *p)
+static inline void DeCode5(WorkR *p)
 {
 	if (b76(p) == 3) {
 		p->DecOp.y.v[0].ArgDat = (p->opcode >> 8) & 15;
@@ -2041,7 +2041,7 @@ LOCALPROCUSEDONCE DeCode5(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCode6(WorkR *p)
+static inline void DeCode6(WorkR *p)
 {
 	uint32_t cond = (p->opcode >> 8) & 15;
 
@@ -2115,7 +2115,7 @@ LOCALPROCUSEDONCE DeCode6(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCode7(WorkR *p)
+static inline void DeCode7(WorkR *p)
 {
 	if (b8(p) == 0) {
 		p->opsize = 4;
@@ -2130,7 +2130,7 @@ LOCALPROCUSEDONCE DeCode7(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCode8(WorkR *p)
+static inline void DeCode8(WorkR *p)
 {
 	if (b76(p) == 3) {
 		p->opsize = 2;
@@ -2322,7 +2322,7 @@ LOCALPROCUSEDONCE DeCode8(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCode9(WorkR *p)
+static inline void DeCode9(WorkR *p)
 {
 	if (b76(p) == 3) {
 		/* SUBA 1001dddm11mmmrrr */
@@ -2445,7 +2445,7 @@ LOCALPROCUSEDONCE DeCode9(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCodeA(WorkR *p)
+static inline void DeCodeA(WorkR *p)
 {
 #if WantCycByPriOp
 	p->Cycles = (34 * kCycleScale
@@ -2454,7 +2454,7 @@ LOCALPROCUSEDONCE DeCodeA(WorkR *p)
 	p->MainClass = kIKindA;
 }
 
-LOCALPROCUSEDONCE DeCodeB(WorkR *p)
+static inline void DeCodeB(WorkR *p)
 {
 	if (b76(p) == 3) {
 		/* CMPA 1011ddds11mmmrrr */
@@ -2548,7 +2548,7 @@ LOCALPROCUSEDONCE DeCodeB(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCodeC(WorkR *p)
+static inline void DeCodeC(WorkR *p)
 {
 	if (b76(p) == 3) {
 		p->opsize = 2;
@@ -2709,7 +2709,7 @@ LOCALPROCUSEDONCE DeCodeC(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCodeD(WorkR *p)
+static inline void DeCodeD(WorkR *p)
 {
 	if (b76(p) == 3) {
 		/* ADDA 1101dddm11mmmrrr */
@@ -2816,7 +2816,7 @@ LOCALPROCUSEDONCE DeCodeD(WorkR *p)
 	}
 }
 
-LOCALFUNC uint32_t rolops(WorkR *p, uint32_t x)
+static uint32_t rolops(WorkR *p, uint32_t x)
 {
 	uint32_t binop;
 
@@ -2828,7 +2828,7 @@ LOCALFUNC uint32_t rolops(WorkR *p, uint32_t x)
 	return kIKindAslB + 3 * binop + OpSizeOffset(p);
 }
 
-LOCALPROCUSEDONCE DeCodeE(WorkR *p)
+static inline void DeCodeE(WorkR *p)
 {
 	if (b76(p) == 3) {
 		if ((p->opcode & 0x0800) != 0) {
@@ -2922,7 +2922,7 @@ LOCALPROCUSEDONCE DeCodeE(WorkR *p)
 	}
 }
 
-LOCALPROCUSEDONCE DeCodeF(WorkR *p)
+static inline void DeCodeF(WorkR *p)
 {
 #if WantCycByPriOp
 	p->Cycles =
@@ -2979,7 +2979,7 @@ LOCALPROCUSEDONCE DeCodeF(WorkR *p)
 #endif
 }
 
-LOCALPROC DeCodeOneOp(WorkR *p)
+static void DeCodeOneOp(WorkR *p)
 {
 	switch (p->opcode >> 12) {
 		case 0x0:
@@ -3052,7 +3052,7 @@ LOCALPROC DeCodeOneOp(WorkR *p)
 #endif
 }
 
-GLOBALPROC M68KITAB_setup(DecOpR *p)
+void M68KITAB_setup(DecOpR *p)
 {
 	uint32_t i;
 	WorkR r;

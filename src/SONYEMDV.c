@@ -45,7 +45,7 @@ static uint32_t vSonyMountedMask = 0;
 #define vSonyIsMounted(Drive_No) \
 	((vSonyMountedMask & ((uint32_t)1 << (Drive_No))) != 0)
 
-LOCALFUNC bool vSonyNextPendingInsert0(tDrive *Drive_No)
+static bool vSonyNextPendingInsert0(tDrive *Drive_No)
 {
 	/* find next drive to Mount */
 	uint32_t MountPending = vSonyInsertedMask & (~ vSonyMountedMask);
@@ -62,7 +62,7 @@ LOCALFUNC bool vSonyNextPendingInsert0(tDrive *Drive_No)
 	return false;
 }
 
-LOCALFUNC tMacErr CheckReadableDrive(tDrive Drive_No)
+static tMacErr CheckReadableDrive(tDrive Drive_No)
 {
 	tMacErr result;
 
@@ -77,7 +77,7 @@ LOCALFUNC tMacErr CheckReadableDrive(tDrive Drive_No)
 	return result;
 }
 
-LOCALFUNC tMacErr vSonyTransferVM(bool IsWrite,
+static tMacErr vSonyTransferVM(bool IsWrite,
 	uint32_t Buffera, tDrive Drive_No,
 	uint32_t Sony_Start, uint32_t Sony_Count, uint32_t *Sony_ActCount)
 {
@@ -118,7 +118,7 @@ label_1:
 	return result;
 }
 
-LOCALPROC MyMoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
+static void MyMoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
 {
 	uint8_t * src;
 	uint8_t * dst;
@@ -170,7 +170,7 @@ static uint32_t ImageTagOffset[NumDrives];
 #define ChecksumBlockSize 1024
 
 #if Sony_SupportDC42 && Sony_WantChecksumsUpdated
-LOCALFUNC tMacErr DC42BlockChecksum(tDrive Drive_No,
+static tMacErr DC42BlockChecksum(tDrive Drive_No,
 	uint32_t Sony_Start, uint32_t Sony_Count, uint32_t *r)
 {
 	tMacErr result;
@@ -224,7 +224,7 @@ LOCALFUNC tMacErr DC42BlockChecksum(tDrive Drive_No,
 #endif
 
 #if Sony_WantChecksumsUpdated
-LOCALPROC Drive_UpdateChecksums(tDrive Drive_No)
+static void Drive_UpdateChecksums(tDrive Drive_No)
 {
 	if (! vSonyIsLocked(Drive_No)) {
 		uint32_t DataOffset = ImageDataOffset[Drive_No];
@@ -291,7 +291,7 @@ LOCALPROC Drive_UpdateChecksums(tDrive Drive_No)
 
 #define Sony_SupportOtherFormats Sony_SupportDC42
 
-LOCALFUNC tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
+static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 {
 	tDrive i;
 	tMacErr result;
@@ -496,7 +496,7 @@ static uint16_t DelayUntilNextInsert;
 static uint32_t MountCallBack = 0;
 
 /* This checks to see if a disk (image) has been inserted */
-GLOBALPROC Sony_Update (void)
+void Sony_Update (void)
 {
 	if (DelayUntilNextInsert != 0) {
 		--DelayUntilNextInsert;
@@ -528,7 +528,7 @@ GLOBALPROC Sony_Update (void)
 	}
 }
 
-LOCALFUNC tMacErr Drive_Transfer(bool IsWrite, uint32_t Buffera,
+static tMacErr Drive_Transfer(bool IsWrite, uint32_t Buffera,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount)
 {
@@ -571,12 +571,12 @@ LOCALFUNC tMacErr Drive_Transfer(bool IsWrite, uint32_t Buffera,
 
 static bool QuitOnEject = false;
 
-GLOBALPROC Sony_SetQuitOnEject(void)
+void Sony_SetQuitOnEject(void)
 {
 	QuitOnEject = true;
 }
 
-LOCALFUNC tMacErr Drive_Eject(tDrive Drive_No)
+static tMacErr Drive_Eject(tDrive Drive_No)
 {
 	tMacErr result;
 
@@ -598,7 +598,7 @@ LOCALFUNC tMacErr Drive_Eject(tDrive Drive_No)
 }
 
 #if IncludeSonyNew
-LOCALFUNC tMacErr Drive_EjectDelete(tDrive Drive_No)
+static tMacErr Drive_EjectDelete(tDrive Drive_No)
 {
 	tMacErr result;
 
@@ -616,7 +616,7 @@ LOCALFUNC tMacErr Drive_EjectDelete(tDrive Drive_No)
 }
 #endif
 
-GLOBALPROC Sony_EjectAllDisks(void)
+void Sony_EjectAllDisks(void)
 {
 	tDrive i;
 
@@ -631,7 +631,7 @@ GLOBALPROC Sony_EjectAllDisks(void)
 	}
 }
 
-GLOBALPROC Sony_Reset(void)
+void Sony_Reset(void)
 {
 	DelayUntilNextInsert = 0;
 	QuitOnEject = false;
@@ -676,7 +676,7 @@ GLOBALPROC Sony_Reset(void)
 #define kParamDiskBuffer 16
 #define kParamDiskDrive_No 20
 
-GLOBALPROC ExtnDisk_Access(uint32_t p)
+void ExtnDisk_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -992,7 +992,7 @@ typedef struct MyDriverDat_R MyDriverDat_R;
 static uint32_t TheTagBuffer;
 #endif
 
-LOCALFUNC uint32_t DriveVarsLocation(tDrive Drive_No)
+static uint32_t DriveVarsLocation(tDrive Drive_No)
 {
 	uint32_t SonyVars = get_vm_long(SonyVarsPtr);
 
@@ -1004,7 +1004,7 @@ LOCALFUNC uint32_t DriveVarsLocation(tDrive Drive_No)
 	}
 }
 
-LOCALFUNC tMacErr Sony_Mount(uint32_t p)
+static tMacErr Sony_Mount(uint32_t p)
 {
 	uint32_t data = get_vm_long(p + ExtnDat_params + 0);
 	tMacErr result = mnvm_miscErr;
@@ -1095,7 +1095,7 @@ LOCALFUNC tMacErr Sony_Mount(uint32_t p)
 }
 
 #if Sony_SupportTags
-LOCALFUNC tMacErr Sony_PrimeTags(tDrive Drive_No,
+static tMacErr Sony_PrimeTags(tDrive Drive_No,
 	uint32_t Sony_Start, uint32_t Sony_Count, bool IsWrite)
 {
 	tMacErr result = mnvm_noErr;
@@ -1144,7 +1144,7 @@ label_fail:
 #endif
 
 /* Handles I/O to disks */
-LOCALFUNC tMacErr Sony_Prime(uint32_t p)
+static tMacErr Sony_Prime(uint32_t p)
 {
 	tMacErr result;
 	uint32_t Sony_Count;
@@ -1300,7 +1300,7 @@ label_fail:
 }
 
 /* Implements control csCodes for the Sony driver */
-LOCALFUNC tMacErr Sony_Control(uint32_t p)
+static tMacErr Sony_Control(uint32_t p)
 {
 	tMacErr result;
 	uint32_t ParamBlk = get_vm_long(p + ExtnDat_params + 0);
@@ -1489,7 +1489,7 @@ LOCALFUNC tMacErr Sony_Control(uint32_t p)
 }
 
 /* Handles the DriveStatus call */
-LOCALFUNC tMacErr Sony_Status(uint32_t p)
+static tMacErr Sony_Status(uint32_t p)
 {
 	tMacErr result;
 	uint32_t ParamBlk = get_vm_long(p + ExtnDat_params + 0);
@@ -1533,7 +1533,7 @@ LOCALFUNC tMacErr Sony_Status(uint32_t p)
 	return result;
 }
 
-LOCALFUNC tMacErr Sony_Close(uint32_t p)
+static tMacErr Sony_Close(uint32_t p)
 {
 #if 0
 	uint32_t ParamBlk = get_vm_long(p + ExtnDat_params + 0);
@@ -1543,7 +1543,7 @@ LOCALFUNC tMacErr Sony_Close(uint32_t p)
 	return mnvm_closErr; /* Can't Close Driver */
 }
 
-LOCALFUNC tMacErr Sony_OpenA(uint32_t p)
+static tMacErr Sony_OpenA(uint32_t p)
 {
 #if Sony_dolog
 	dbglog_WriteNote("Sony : OpenA");
@@ -1564,7 +1564,7 @@ LOCALFUNC tMacErr Sony_OpenA(uint32_t p)
 	}
 }
 
-LOCALFUNC tMacErr Sony_OpenB(uint32_t p)
+static tMacErr Sony_OpenB(uint32_t p)
 {
 	int16_t i;
 	uint32_t dvl;
@@ -1639,7 +1639,7 @@ LOCALFUNC tMacErr Sony_OpenB(uint32_t p)
 	return mnvm_noErr;
 }
 
-LOCALFUNC tMacErr Sony_OpenC(uint32_t p)
+static tMacErr Sony_OpenC(uint32_t p)
 {
 #if Sony_dolog
 	dbglog_WriteNote("Sony : OpenC");
@@ -1662,7 +1662,7 @@ LOCALFUNC tMacErr Sony_OpenC(uint32_t p)
 #define kCmndSonyOpenC 7
 #define kCmndSonyMount 8
 
-GLOBALPROC ExtnSony_Access(uint32_t p)
+void ExtnSony_Access(uint32_t p)
 {
 	tMacErr result;
 

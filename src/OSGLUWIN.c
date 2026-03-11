@@ -60,7 +60,7 @@ typedef BOOL (WINAPI *SHGetSpecialFolderPathProcPtr) (
 static SHGetSpecialFolderPathProcPtr MySHGetSpecialFolderPath = NULL;
 static bool DidSHGetSpecialFolderPath = false;
 
-LOCALFUNC bool HaveMySHGetSpecialFolderPath(void)
+static bool HaveMySHGetSpecialFolderPath(void)
 {
 	if (! DidSHGetSpecialFolderPath) {
 		HMODULE hLibModule = LoadLibrary(TEXT("shell32.dll"));
@@ -96,7 +96,7 @@ LOCALFUNC bool HaveMySHGetSpecialFolderPath(void)
 #include "INTLCHAR.h"
 
 
-LOCALPROC NativeStrFromCStr(LPTSTR r, char *s, bool AddEllipsis)
+static void NativeStrFromCStr(LPTSTR r, char *s, bool AddEllipsis)
 {
 	uint8_t ps[ClStrMaxLength];
 	int i;
@@ -130,7 +130,7 @@ LOCALPROC NativeStrFromCStr(LPTSTR r, char *s, bool AddEllipsis)
 	r[L] = 0;
 }
 
-LOCALFUNC LPTSTR FindLastTerm(LPTSTR s, TCHAR delim)
+static LPTSTR FindLastTerm(LPTSTR s, TCHAR delim)
 {
 	TCHAR c;
 	LPTSTR p0 = s;
@@ -147,7 +147,7 @@ LOCALFUNC LPTSTR FindLastTerm(LPTSTR s, TCHAR delim)
 
 static HINSTANCE AppInstance;
 
-LOCALFUNC bool GetAppDir(LPTSTR pathName)
+static bool GetAppDir(LPTSTR pathName)
 /* be sure at least _MAX_PATH long! */
 {
 	if (GetModuleFileName(AppInstance, pathName, _MAX_PATH) == 0) {
@@ -171,7 +171,7 @@ LOCALFUNC bool GetAppDir(LPTSTR pathName)
 
 static HANDLE dbglog_File = INVALID_HANDLE_VALUE;
 
-LOCALFUNC bool dbglog_open0(void)
+static bool dbglog_open0(void)
 {
 	TCHAR pathName[_MAX_PATH];
 	TCHAR Child0[] = TEXT("\\dbglog.txt");
@@ -210,7 +210,7 @@ LOCALFUNC bool dbglog_open0(void)
 	return (INVALID_HANDLE_VALUE != dbglog_File);
 }
 
-LOCALPROC dbglog_write0(char *s, uint32_t L)
+static void dbglog_write0(char *s, uint32_t L)
 {
 	DWORD BytesWritten;
 
@@ -227,7 +227,7 @@ LOCALPROC dbglog_write0(char *s, uint32_t L)
 	}
 }
 
-LOCALPROC dbglog_close0(void)
+static void dbglog_close0(void)
 {
 	if (INVALID_HANDLE_VALUE != dbglog_File) {
 		if (! SetEndOfFile(dbglog_File)) {
@@ -258,7 +258,7 @@ LOCALPROC dbglog_close0(void)
 
 #define TestBit(i, p) (((unsigned long)(i) & PowOf2(p)) != 0)
 
-GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
+void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 /*
 	must work even if blocks overlap in memory
@@ -273,7 +273,7 @@ static HGLOBAL PbufDat[NumPbufs];
 #endif
 
 #if IncludePbufs
-LOCALFUNC tMacErr PbufNewFromHandle(HGLOBAL h, uint32_t count, tPbuf *r)
+static tMacErr PbufNewFromHandle(HGLOBAL h, uint32_t count, tPbuf *r)
 {
 	tPbuf i;
 	tMacErr err;
@@ -293,7 +293,7 @@ LOCALFUNC tMacErr PbufNewFromHandle(HGLOBAL h, uint32_t count, tPbuf *r)
 #endif
 
 #if IncludePbufs
-GLOBALOSGLUFUNC tMacErr PbufNew(uint32_t count, tPbuf *r)
+ tMacErr PbufNew(uint32_t count, tPbuf *r)
 {
 	HGLOBAL h;
 	tMacErr err = mnvm_miscErr;
@@ -309,7 +309,7 @@ GLOBALOSGLUFUNC tMacErr PbufNew(uint32_t count, tPbuf *r)
 #endif
 
 #if IncludePbufs
-GLOBALOSGLUPROC PbufDispose(tPbuf i)
+void PbufDispose(tPbuf i)
 {
 	(void) GlobalFree(PbufDat[i]);
 	PbufDisposeNotify(i);
@@ -317,7 +317,7 @@ GLOBALOSGLUPROC PbufDispose(tPbuf i)
 #endif
 
 #if IncludePbufs
-LOCALPROC UnInitPbufs(void)
+static void UnInitPbufs(void)
 {
 	tPbuf i;
 
@@ -334,7 +334,7 @@ LOCALPROC UnInitPbufs(void)
 #endif
 
 #if IncludePbufs
-LOCALFUNC uint8_t * PbufLock(tPbuf i)
+static uint8_t * PbufLock(tPbuf i)
 {
 	HGLOBAL h = PbufDat[i];
 	return (uint8_t *)GlobalLock(h);
@@ -342,14 +342,14 @@ LOCALFUNC uint8_t * PbufLock(tPbuf i)
 #endif
 
 #if IncludePbufs
-LOCALPROC PbufUnlock(tPbuf i)
+static void PbufUnlock(tPbuf i)
 {
 	(void) GlobalUnlock(PbufDat[i]);
 }
 #endif
 
 #if IncludePbufs
-GLOBALOSGLUPROC PbufTransfer(uint8_t * Buffer,
+void PbufTransfer(uint8_t * Buffer,
 	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
 {
 	HGLOBAL h = PbufDat[i];
@@ -400,7 +400,7 @@ static short vOffset;
 static bool HaveCursorHidden = false;
 static bool WantCursorHidden = false;
 
-LOCALPROC ForceShowCursor(void)
+static void ForceShowCursor(void)
 {
 	if (HaveCursorHidden) {
 		HaveCursorHidden = false;
@@ -411,7 +411,7 @@ LOCALPROC ForceShowCursor(void)
 
 /* cursor moving */
 
-LOCALFUNC bool MyMoveMouse(int16_t h, int16_t v)
+static bool MyMoveMouse(int16_t h, int16_t v)
 {
 	POINT NewMousePos;
 	uint32_t difftime;
@@ -463,7 +463,7 @@ LOCALFUNC bool MyMoveMouse(int16_t h, int16_t v)
 }
 
 #if EnableFSMouseMotion
-LOCALPROC StartSaveMouseMotion(void)
+static void StartSaveMouseMotion(void)
 {
 	if (! HaveMouseMotion) {
 		if (MyMoveMouse(ViewHStart + (ViewHSize / 2),
@@ -478,7 +478,7 @@ LOCALPROC StartSaveMouseMotion(void)
 #endif
 
 #if EnableFSMouseMotion
-LOCALPROC StopSaveMouseMotion(void)
+static void StopSaveMouseMotion(void)
 {
 	if (HaveMouseMotion) {
 		(void) MyMoveMouse(CurMouseH, CurMouseV);
@@ -489,7 +489,7 @@ LOCALPROC StopSaveMouseMotion(void)
 
 static bool MyMouseCaptured = false;
 
-LOCALPROC MyMouseCaptureSet(bool v)
+static void MyMouseCaptureSet(bool v)
 {
 	if (v != MyMouseCaptured) {
 		if (v) {
@@ -501,7 +501,7 @@ LOCALPROC MyMouseCaptureSet(bool v)
 	}
 }
 
-LOCALPROC SetCurMouseButton(bool v)
+static void SetCurMouseButton(bool v)
 {
 	MyMouseButtonSet(v);
 	MyMouseCaptureSet(v);
@@ -547,7 +547,7 @@ static uint8_t MyVkMapA[256];
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkSwapZY(void)
+static void MyVkSwapZY(void)
 {
 	MyVkMapA['Z'] = 'Y';
 	MyVkMapA['Y'] = 'Z';
@@ -555,7 +555,7 @@ LOCALPROC MyVkSwapZY(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkSwapGraveQuote(void)
+static void MyVkSwapGraveQuote(void)
 {
 	MyVkMapA[myVK_Grave] = myVK_SingleQuote;
 	MyVkMapA[myVK_SingleQuote] = myVK_Grave;
@@ -563,7 +563,7 @@ LOCALPROC MyVkSwapGraveQuote(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkSwapSlashSubtract(void)
+static void MyVkSwapSlashSubtract(void)
 {
 	MyVkMapA[myVK_Slash] = myVK_Subtract;
 	MyVkMapA[myVK_Subtract] = myVK_Slash;
@@ -571,7 +571,7 @@ LOCALPROC MyVkSwapSlashSubtract(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkSwapAQZWGraveQuote(void)
+static void MyVkSwapAQZWGraveQuote(void)
 {
 	MyVkSwapGraveQuote();
 	MyVkMapA['A'] = 'Q';
@@ -582,7 +582,7 @@ LOCALPROC MyVkSwapAQZWGraveQuote(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapBelgian(void)
+static void MyVkMapBelgian(void)
 {
 	MyVkSwapAQZWGraveQuote();
 	MyVkMapA['M'] = myVK_SemiColon;
@@ -598,7 +598,7 @@ LOCALPROC MyVkMapBelgian(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapSwiss(void)
+static void MyVkMapSwiss(void)
 {
 	MyVkSwapZY();
 	MyVkMapA[myVK_OEM_8] = myVK_BackSlash;
@@ -614,7 +614,7 @@ LOCALPROC MyVkMapSwiss(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapDanish(void)
+static void MyVkMapDanish(void)
 {
 	MyVkMapA[myVK_Equal] = myVK_Subtract;
 	MyVkMapA[myVK_Subtract] = myVK_Slash;
@@ -628,7 +628,7 @@ LOCALPROC MyVkMapDanish(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapBritish(void)
+static void MyVkMapBritish(void)
 {
 	MyVkMapA[myVK_OEM_8] = myVK_Grave;
 	MyVkMapA[myVK_Grave] = myVK_SingleQuote;
@@ -638,7 +638,7 @@ LOCALPROC MyVkMapBritish(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapSpanish(void)
+static void MyVkMapSpanish(void)
 {
 	MyVkMapA[myVK_SemiColon] = myVK_LeftBracket;
 	MyVkMapA[myVK_LeftBracket] = myVK_Subtract;
@@ -653,7 +653,7 @@ LOCALPROC MyVkMapSpanish(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapDutch(void)
+static void MyVkMapDutch(void)
 {
 	MyVkSwapGraveQuote();
 	MyVkMapA[myVK_SemiColon] = myVK_RightBracket;
@@ -666,7 +666,7 @@ LOCALPROC MyVkMapDutch(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapGreekIBM(void)
+static void MyVkMapGreekIBM(void)
 {
 	MyVkSwapSlashSubtract();
 	MyVkMapA[myVK_LeftBracket] = myVK_Equal;
@@ -675,7 +675,7 @@ LOCALPROC MyVkMapGreekIBM(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapFrench(void)
+static void MyVkMapFrench(void)
 {
 	MyVkSwapAQZWGraveQuote();
 	MyVkMapA['M'] = myVK_SemiColon;
@@ -690,7 +690,7 @@ LOCALPROC MyVkMapFrench(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapGerman(void)
+static void MyVkMapGerman(void)
 {
 	MyVkSwapZY();
 	MyVkMapSpanish();
@@ -698,7 +698,7 @@ LOCALPROC MyVkMapGerman(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapBosnian(void)
+static void MyVkMapBosnian(void)
 {
 	MyVkSwapZY();
 	/* not in Windows 95 */
@@ -707,7 +707,7 @@ LOCALPROC MyVkMapBosnian(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapBulgarian(void)
+static void MyVkMapBulgarian(void)
 {
 	MyVkMapA[myVK_OEM_8] = myVK_Comma;
 	MyVkMapA[myVK_Comma] = 'Q';
@@ -717,7 +717,7 @@ LOCALPROC MyVkMapBulgarian(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyVkMapFromLayout(uint32_t sv)
+static void MyVkMapFromLayout(uint32_t sv)
 {
 	int i;
 
@@ -1591,7 +1591,7 @@ static uint32_t CurKyBdLytNm = 0;
 #endif
 
 #if ItnlKyBdFix
-LOCALFUNC bool tStrIsHex(TCHAR *s, int n, uint32_t *r)
+static bool tStrIsHex(TCHAR *s, int n, uint32_t *r)
 {
 	short i;
 	TCHAR c1;
@@ -1618,7 +1618,7 @@ LOCALFUNC bool tStrIsHex(TCHAR *s, int n, uint32_t *r)
 #endif
 
 #if ItnlKyBdFix
-LOCALFUNC bool MyGetKeyboardLayoutHex(uint32_t *r)
+static bool MyGetKeyboardLayoutHex(uint32_t *r)
 {
 	TCHAR s[KL_NAMELENGTH];
 	bool IsOk = false;
@@ -1640,7 +1640,7 @@ LOCALFUNC bool MyGetKeyboardLayoutHex(uint32_t *r)
 #endif
 
 #if ItnlKyBdFix && ! UseWinCE
-LOCALPROC MyCheckKeyboardLayout(void)
+static void MyCheckKeyboardLayout(void)
 {
 	uint32_t sv;
 
@@ -1656,7 +1656,7 @@ LOCALPROC MyCheckKeyboardLayout(void)
 #endif
 
 #if ItnlKyBdFix
-LOCALPROC MyInitCheckKeyboardLayout(void)
+static void MyInitCheckKeyboardLayout(void)
 {
 	uint32_t sv;
 
@@ -1672,12 +1672,12 @@ LOCALPROC MyInitCheckKeyboardLayout(void)
 
 static uint8_t WinKey2Mac[256];
 
-LOCALPROC AssignOneMacKey(uint8_t WinKey, uint8_t MacKey)
+static void AssignOneMacKey(uint8_t WinKey, uint8_t MacKey)
 {
 	WinKey2Mac[WinKey] = MacKey;
 }
 
-LOCALFUNC bool InitWinKey2Mac(void)
+static bool InitWinKey2Mac(void)
 {
 	int i;
 
@@ -1831,7 +1831,7 @@ LOCALFUNC bool InitWinKey2Mac(void)
 	return true;
 }
 
-LOCALPROC DoKeyCode(int i, bool down)
+static void DoKeyCode(int i, bool down)
 {
 	uint8_t key = WinKey2Mac[
 #if ItnlKyBdFix
@@ -1857,7 +1857,7 @@ LOCALPROC DoKeyCode(int i, bool down)
 static bool HaveSetSysParam = false;
 #endif
 
-LOCALPROC CheckTheCapsLock(void)
+static void CheckTheCapsLock(void)
 {
 	DoKeyCode(VK_CAPITAL, (GetKeyState(VK_CAPITAL) & 1) != 0);
 }
@@ -1868,7 +1868,7 @@ static bool VK_RWIN_pressed = false;
 #endif
 
 #if EnableGrabSpecialKeys
-LOCALPROC CheckForLostKeyUps(void)
+static void CheckForLostKeyUps(void)
 {
 	if (HaveSetSysParam) {
 		/* check for lost key ups */
@@ -1888,7 +1888,7 @@ LOCALPROC CheckForLostKeyUps(void)
 }
 #endif
 
-LOCALPROC DoVKcode0(int i, bool down)
+static void DoVKcode0(int i, bool down)
 {
 #if EnableGrabSpecialKeys
 	if (HaveSetSysParam) {
@@ -1903,7 +1903,7 @@ LOCALPROC DoVKcode0(int i, bool down)
 	DoKeyCode(i, down);
 }
 
-LOCALPROC DoVKcode(int i, uint8_t flags, bool down)
+static void DoVKcode(int i, uint8_t flags, bool down)
 {
 	switch (i) {
 #if MKC_formac_Control != MKC_formac_RControl
@@ -1993,7 +1993,7 @@ LOCALPROC DoVKcode(int i, uint8_t flags, bool down)
 
 static bool WantCmdOptOnReconnect = false;
 
-LOCALPROC ReconnectKeyCodes3(void)
+static void ReconnectKeyCodes3(void)
 {
 	int i;
 
@@ -2014,7 +2014,7 @@ LOCALPROC ReconnectKeyCodes3(void)
 	}
 }
 
-LOCALPROC DisconnectKeyCodes3(void)
+static void DisconnectKeyCodes3(void)
 {
 	DisconnectKeyCodes2();
 	SetCurMouseButton(false);
@@ -2085,7 +2085,7 @@ static UINT nPreviousState;
 #endif
 
 #if EnableGrabSpecialKeys
-LOCALPROC GrabSpecialKeys(void)
+static void GrabSpecialKeys(void)
 {
 	if ((hKeyHook == NULL) && ! HaveSetSysParam) {
 		/* this works on Windows XP */
@@ -2107,7 +2107,7 @@ LOCALPROC GrabSpecialKeys(void)
 #endif
 
 #if EnableGrabSpecialKeys
-LOCALPROC UnGrabSpecialKeys(void)
+static void UnGrabSpecialKeys(void)
 {
 	if (hKeyHook != NULL) {
 		(void) UnhookWindowsHookEx(hKeyHook);
@@ -2136,7 +2136,7 @@ static bool MyPriorityRaised = false;
 #endif
 
 #if EnableChangePriority
-LOCALPROC RaiseMyPriority(void)
+static void RaiseMyPriority(void)
 {
 	if (! MyPriorityRaised) {
 		if (! SetPriorityClass(
@@ -2159,7 +2159,7 @@ LOCALPROC RaiseMyPriority(void)
 #endif
 
 #if EnableChangePriority
-LOCALPROC LowerMyPriority(void)
+static void LowerMyPriority(void)
 {
 	if (MyPriorityRaised) {
 		if (! SetPriorityClass(
@@ -2196,21 +2196,21 @@ static DWORD LastTime;
 static DWORD NextIntTime;
 static uint32_t NextFracTime;
 
-LOCALPROC IncrNextTime(void)
+static void IncrNextTime(void)
 {
 	NextFracTime += MyInvTimeStep;
 	NextIntTime += (NextFracTime >> MyInvTimeDivPow);
 	NextFracTime &= MyInvTimeDivMask;
 }
 
-LOCALPROC InitNextTime(void)
+static void InitNextTime(void)
 {
 	NextIntTime = LastTime;
 	NextFracTime = 0;
 	IncrNextTime();
 }
 
-LOCALFUNC bool UpdateTrueEmulatedTime(void)
+static bool UpdateTrueEmulatedTime(void)
 {
 	DWORD LatestTime;
 	int32_t TimeDiff;
@@ -2255,7 +2255,7 @@ static DWORD TimeMilliBase;
 
 #include "DATE2SEC.h"
 
-LOCALFUNC bool CheckDateTime(void)
+static bool CheckDateTime(void)
 {
 	uint32_t NewMacDateInSecond;
 
@@ -2270,7 +2270,7 @@ LOCALFUNC bool CheckDateTime(void)
 	}
 }
 
-LOCALFUNC bool Init60thCheck(void)
+static bool Init60thCheck(void)
 {
 	SYSTEMTIME s;
 #if AutoTimeZone
@@ -2321,7 +2321,7 @@ static bool HaveSetTimeResolution = false;
 #endif
 
 #if (MyTimeResolution != 0)
-LOCALPROC MyTimer_Suspend(void)
+static void MyTimer_Suspend(void)
 {
 	if (HaveSetTimeResolution) {
 		(void) timeEndPeriod(MyTimeResolution);
@@ -2331,7 +2331,7 @@ LOCALPROC MyTimer_Suspend(void)
 #endif
 
 #if (MyTimeResolution != 0)
-LOCALPROC MyTimer_Resume(void)
+static void MyTimer_Resume(void)
 {
 	TIMECAPS tc;
 
@@ -2392,7 +2392,7 @@ static uint16_t TheWriteOffset;
 	/* = round(7833600 * 2 / 704) */
 
 
-LOCALPROC FillWithSilence(tpSoundSamp p, int n, trSoundSamp v)
+static void FillWithSilence(tpSoundSamp p, int n, trSoundSamp v)
 {
 	int i;
 
@@ -2406,14 +2406,14 @@ static HWAVEOUT hWaveOut = NULL;
 static WAVEHDR whdr[kSoundBuffers];
 
 
-LOCALPROC MySound_BeginPlaying(void)
+static void MySound_BeginPlaying(void)
 {
 #if dbglog_SoundStuff
 	fprintf(stderr, "MySound_BeginPlaying\n");
 #endif
 }
 
-LOCALPROC MySound_Start(void)
+static void MySound_Start(void)
 {
 	if (hWaveOut == NULL) {
 		WAVEFORMATEX wfex;
@@ -2480,7 +2480,7 @@ LOCALPROC MySound_Start(void)
 	}
 }
 
-LOCALPROC MySound_Stop(void)
+static void MySound_Stop(void)
 {
 	MMRESULT mmr;
 	int i;
@@ -2519,7 +2519,7 @@ LOCALPROC MySound_Stop(void)
 	}
 }
 
-LOCALPROC SoundCheckVeryOften(void)
+static void SoundCheckVeryOften(void)
 {
 	if ((hWaveOut != NULL) && (wantplaying)) {
 label_retry:
@@ -2574,7 +2574,7 @@ label_retry:
 }
 
 #if 4 == kLn2SoundSampSz
-LOCALPROC ConvertSoundBlockToNative(tpSoundSamp p)
+static void ConvertSoundBlockToNative(tpSoundSamp p)
 {
 	int i;
 
@@ -2586,7 +2586,7 @@ LOCALPROC ConvertSoundBlockToNative(tpSoundSamp p)
 #define ConvertSoundBlockToNative(p)
 #endif
 
-LOCALPROC MySound_FilledBlocks(void)
+static void MySound_FilledBlocks(void)
 {
 	while (0 != ((TheWriteOffset - TheFillOffset) >> kLnOneBuffLen)) {
 		uint16_t CurFillBuffer =
@@ -2618,7 +2618,7 @@ LOCALPROC MySound_FilledBlocks(void)
 	}
 }
 
-LOCALPROC MySound_WroteABlock(void)
+static void MySound_WroteABlock(void)
 {
 	if (wantplaying) {
 		MySound_FilledBlocks();
@@ -2632,7 +2632,7 @@ LOCALPROC MySound_WroteABlock(void)
 	}
 }
 
-GLOBALOSGLUPROC MySound_EndWrite(uint16_t actL)
+void MySound_EndWrite(uint16_t actL)
 {
 	TheWriteOffset += actL;
 
@@ -2643,7 +2643,7 @@ GLOBALOSGLUPROC MySound_EndWrite(uint16_t actL)
 	}
 }
 
-GLOBALOSGLUFUNC tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL)
+ tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL)
 {
 	uint16_t ToFillLen = kAllBuffLen - (TheWriteOffset - ThePlayOffset);
 	uint16_t WriteBuffContig =
@@ -2661,7 +2661,7 @@ GLOBALOSGLUFUNC tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL)
 	return TheSoundBuffer + (TheWriteOffset & kAllBuffMask);
 }
 
-LOCALPROC MySound_SecondNotify(void)
+static void MySound_SecondNotify(void)
 {
 	if (hWaveOut != NULL) {
 		if (MinFilledSoundBuffs > DesiredMinFilledSoundBuffs) {
@@ -2684,7 +2684,7 @@ LOCALPROC MySound_SecondNotify(void)
 /* --- overall grab --- */
 
 #if MayFullScreen
-LOCALPROC GrabTheMachine(void)
+static void GrabTheMachine(void)
 {
 #if EnableFSMouseMotion
 	StartSaveMouseMotion();
@@ -2701,7 +2701,7 @@ LOCALPROC GrabTheMachine(void)
 #endif
 
 #if MayFullScreen
-LOCALPROC UnGrabTheMachine(void)
+static void UnGrabTheMachine(void)
 {
 #if EnableGrabSpecialKeys
 	UnGrabSpecialKeys();
@@ -2720,7 +2720,7 @@ static bool GrabMachine = false;
 #endif
 
 #if MayFullScreen
-LOCALPROC AdjustMachineGrab(void)
+static void AdjustMachineGrab(void)
 {
 	if (GrabMachine) {
 		if (MainWnd != NULL) {
@@ -2734,7 +2734,7 @@ LOCALPROC AdjustMachineGrab(void)
 
 /* --- basic dialogs --- */
 
-LOCALPROC MyBeginDialog(void)
+static void MyBeginDialog(void)
 {
 	DisconnectKeyCodes3();
 #if MayFullScreen
@@ -2744,12 +2744,12 @@ LOCALPROC MyBeginDialog(void)
 	ForceShowCursor();
 }
 
-LOCALPROC MyEndDialog(void)
+static void MyEndDialog(void)
 {
 	ReconnectKeyCodes3();
 }
 
-LOCALPROC CheckSavedMacMsg(void)
+static void CheckSavedMacMsg(void)
 {
 	if (nullptr != SavedBriefMsg) {
 		TCHAR briefMsg0[ClStrMaxLength + 1];
@@ -2799,7 +2799,7 @@ static bool gBackgroundFlag = false;
 static bool gTrueBackgroundFlag = false;
 static bool CurSpeedStopped = true;
 
-LOCALPROC GetWndTitle(void)
+static void GetWndTitle(void)
 {
 	TCHAR pathName[_MAX_PATH];
 	WIN32_FIND_DATA fd;
@@ -2826,7 +2826,7 @@ LOCALPROC GetWndTitle(void)
 	}
 }
 
-LOCALPROC DisposeMainWindow(void)
+static void DisposeMainWindow(void)
 {
 #if UseWinCE
 	/* Show the taskbar */
@@ -2859,7 +2859,7 @@ static POINT WinPositionWins[kNumMagStates];
 #endif
 
 #if MayNotFullScreen
-LOCALPROC MyAppendConvertMenuItem(HMENU hMenu,
+static void MyAppendConvertMenuItem(HMENU hMenu,
 	UINT uIDNewItem, char *s, bool AddEllipsis)
 {
 	TCHAR ts[ClStrMaxLength + 1];
@@ -2872,7 +2872,7 @@ LOCALPROC MyAppendConvertMenuItem(HMENU hMenu,
 #endif
 
 #if MayNotFullScreen
-LOCALPROC MyAppendSubmenuConvertName(HMENU hMenu,
+static void MyAppendSubmenuConvertName(HMENU hMenu,
 	HMENU hSubMenu, char *s)
 {
 	TCHAR ts[ClStrMaxLength + 1];
@@ -2902,7 +2902,7 @@ LOCALPROC MyAppendSubmenuConvertName(HMENU hMenu,
 #define kStrMenuFile_win kStrMenuFile
 #endif
 
-LOCALFUNC bool ReCreateMainWindow(void)
+static bool ReCreateMainWindow(void)
 {
 #if MayNotFullScreen
 	HMENU m;
@@ -3265,7 +3265,7 @@ LOCALFUNC bool ReCreateMainWindow(void)
 }
 
 #if UseWinCE
-LOCALFUNC bool AlreadyRunningCheck(void)
+static bool AlreadyRunningCheck(void)
 {
 	/*
 		Adapted from example program from Microsoft eMbedded Visual C++
@@ -3301,7 +3301,7 @@ typedef struct BITMAPINFOHEADER256 {
 #define MyScaledWidth (MyWindowScale * vMacScreenWidth)
 #endif
 
-LOCALPROC HaveChangedScreenBuff(int16_t top, int16_t left,
+static void HaveChangedScreenBuff(int16_t top, int16_t left,
 	int16_t bottom, int16_t right)
 {
 	BITMAPINFOHEADER256 bmh;
@@ -3708,12 +3708,12 @@ label_exit:
 #endif
 }
 
-LOCALPROC Screen_DrawAll(void)
+static void Screen_DrawAll(void)
 {
 	HaveChangedScreenBuff(0, 0, vMacScreenHeight, vMacScreenWidth);
 }
 
-LOCALPROC MyDrawChangesAndClear(void)
+static void MyDrawChangesAndClear(void)
 {
 	if (ScreenChangedBottom > ScreenChangedTop) {
 		HaveChangedScreenBuff(ScreenChangedTop, ScreenChangedLeft,
@@ -3722,7 +3722,7 @@ LOCALPROC MyDrawChangesAndClear(void)
 	}
 }
 
-GLOBALOSGLUPROC DoneWithDrawingForTick(void)
+void DoneWithDrawingForTick(void)
 {
 #if EnableFSMouseMotion
 	if (HaveMouseMotion) {
@@ -3732,14 +3732,14 @@ GLOBALOSGLUPROC DoneWithDrawingForTick(void)
 	MyDrawChangesAndClear();
 }
 
-LOCALFUNC bool InitTheCursor(void)
+static bool InitTheCursor(void)
 {
 	SetCursor(LoadCursor(NULL, IDC_ARROW));
 	return true;
 }
 
 #if EnableFSMouseMotion
-LOCALPROC MyMouseConstrain(void)
+static void MyMouseConstrain(void)
 {
 	int16_t shiftdh;
 	int16_t shiftdv;
@@ -3770,7 +3770,7 @@ LOCALPROC MyMouseConstrain(void)
 }
 #endif
 
-LOCALPROC MousePositionNotify(LONG NewMousePosx, LONG NewMousePosy)
+static void MousePositionNotify(LONG NewMousePosx, LONG NewMousePosy)
 {
 	bool ShouldHaveCursorHidden = true;
 
@@ -3848,7 +3848,7 @@ LOCALPROC MousePositionNotify(LONG NewMousePosx, LONG NewMousePosy)
 }
 
 #if ! UseWinCE
-LOCALPROC CheckMouseState(void)
+static void CheckMouseState(void)
 {
 	POINT NewMousePos;
 
@@ -3879,7 +3879,7 @@ static const uint8_t Native2MacRomanTab[] = {
 };
 
 #if IncludePbufs
-LOCALFUNC tMacErr NativeTextToMacRomanPbuf(HGLOBAL x, tPbuf *r)
+static tMacErr NativeTextToMacRomanPbuf(HGLOBAL x, tPbuf *r)
 {
 #if MyUseUni
 #define MyUnsignedChar uint16_t
@@ -3959,7 +3959,7 @@ static const uint8_t MacRoman2NativeTab[] = {
 };
 
 #if IncludePbufs
-LOCALFUNC bool MacRomanTextToNativeHand(tPbuf Pbuf_no,
+static bool MacRomanTextToNativeHand(tPbuf Pbuf_no,
 	bool IsFileName, HGLOBAL *r)
 {
 	HGLOBAL h;
@@ -4039,7 +4039,7 @@ LOCALFUNC bool MacRomanTextToNativeHand(tPbuf Pbuf_no,
 #endif
 
 #if IncludeHostTextClipExchange
-GLOBALOSGLUFUNC tMacErr HTCEexport(tPbuf i)
+ tMacErr HTCEexport(tPbuf i)
 {
 	HGLOBAL h;
 	tMacErr err = mnvm_miscErr;
@@ -4073,7 +4073,7 @@ GLOBALOSGLUFUNC tMacErr HTCEexport(tPbuf i)
 #endif
 
 #if IncludeHostTextClipExchange
-GLOBALOSGLUFUNC tMacErr HTCEimport(tPbuf *r)
+ tMacErr HTCEimport(tPbuf *r)
 {
 	tMacErr err = mnvm_miscErr;
 
@@ -4100,7 +4100,7 @@ GLOBALOSGLUFUNC tMacErr HTCEimport(tPbuf *r)
 
 #if EmLocalTalk
 
-LOCALFUNC bool EntropyGather(void)
+static bool EntropyGather(void)
 {
 	/*
 		gather some entropy from several places, just in case
@@ -4188,7 +4188,7 @@ static HGLOBAL DriveNames[NumDrives];
 	*/
 #endif
 
-LOCALPROC InitDrives(void)
+static void InitDrives(void)
 {
 	/*
 		This isn't really needed, Drives[i] and DriveNames[i]
@@ -4204,7 +4204,7 @@ LOCALPROC InitDrives(void)
 	}
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
+ tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount)
 {
@@ -4269,7 +4269,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	return result;
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
+ tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 {
 	tMacErr result;
 	DWORD L;
@@ -4285,7 +4285,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 	return result;
 }
 
-LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
+static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 {
 	HANDLE refnum = Drives[Drive_No];
 
@@ -4320,19 +4320,19 @@ LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	return mnvm_noErr;
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyEject(tDrive Drive_No)
+ tMacErr vSonyEject(tDrive Drive_No)
 {
 	return vSonyEject0(Drive_No, false);
 }
 
 #if IncludeSonyNew
-GLOBALOSGLUFUNC tMacErr vSonyEjectDelete(tDrive Drive_No)
+ tMacErr vSonyEjectDelete(tDrive Drive_No)
 {
 	return vSonyEject0(Drive_No, true);
 }
 #endif
 
-LOCALPROC UnInitDrives(void)
+static void UnInitDrives(void)
 {
 	tDrive i;
 
@@ -4344,7 +4344,7 @@ LOCALPROC UnInitDrives(void)
 }
 
 #if NeedDriveNames
-LOCALFUNC bool LPTSTRtoHand(LPTSTR s, HGLOBAL *r)
+static bool LPTSTRtoHand(LPTSTR s, HGLOBAL *r)
 {
 	bool IsOk = false;
 
@@ -4370,7 +4370,7 @@ LOCALFUNC bool LPTSTRtoHand(LPTSTR s, HGLOBAL *r)
 #endif
 
 #if IncludeSonyGetName
-GLOBALOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
+ tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 {
 	WIN32_FIND_DATA fd;
 	tMacErr err = mnvm_miscErr;
@@ -4395,7 +4395,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 }
 #endif
 
-LOCALFUNC bool Sony_Insert0(HANDLE refnum, bool locked,
+static bool Sony_Insert0(HANDLE refnum, bool locked,
 	LPTSTR drivepath)
 {
 	tDrive Drive_No;
@@ -4427,7 +4427,7 @@ LOCALFUNC bool Sony_Insert0(HANDLE refnum, bool locked,
 	}
 }
 
-LOCALFUNC bool Sony_Insert1(LPTSTR drivepath, bool SilentOnMissing)
+static bool Sony_Insert1(LPTSTR drivepath, bool SilentOnMissing)
 {
 	bool locked = false;
 	HANDLE refnum = CreateFile(
@@ -4469,7 +4469,7 @@ LOCALFUNC bool Sony_Insert1(LPTSTR drivepath, bool SilentOnMissing)
 	return false;
 }
 
-LOCALFUNC bool LoadMacRomFromPath(LPTSTR drivepath)
+static bool LoadMacRomFromPath(LPTSTR drivepath)
 {
 	HANDLE refnum = INVALID_HANDLE_VALUE;
 	bool IsOk = false;
@@ -4519,7 +4519,7 @@ static bool COMinitedOK;
 #endif
 
 #if EnableShellLinks
-LOCALPROC MyUninitCOM(void)
+static void MyUninitCOM(void)
 {
 	if (COMinited) {
 		CoUninitialize();
@@ -4528,7 +4528,7 @@ LOCALPROC MyUninitCOM(void)
 #endif
 
 #if EnableShellLinks
-LOCALFUNC bool MyNeedCOM(void)
+static bool MyNeedCOM(void)
 {
 	HRESULT hres;
 
@@ -4546,7 +4546,7 @@ LOCALFUNC bool MyNeedCOM(void)
 #endif
 
 #if EnableShellLinks
-LOCALFUNC bool MyResolveShortcut(LPTSTR FilePath, bool *directory)
+static bool MyResolveShortcut(LPTSTR FilePath, bool *directory)
 /* adapted from Microsoft example code */
 {
 	HRESULT hres;
@@ -4620,7 +4620,7 @@ LOCALFUNC bool MyResolveShortcut(LPTSTR FilePath, bool *directory)
 #endif
 
 #if EnableShellLinks
-LOCALFUNC bool FileIsLink(LPTSTR drivepath)
+static bool FileIsLink(LPTSTR drivepath)
 {
 	LPTSTR p = FindLastTerm(drivepath, (TCHAR)('.'));
 
@@ -4633,7 +4633,7 @@ LOCALFUNC bool FileIsLink(LPTSTR drivepath)
 }
 #endif
 
-LOCALFUNC bool InsertDiskOrAlias(LPTSTR drivepath,
+static bool InsertDiskOrAlias(LPTSTR drivepath,
 	bool MaybeROM, bool MaybeAlias)
 {
 #if EnableShellLinks
@@ -4651,7 +4651,7 @@ LOCALFUNC bool InsertDiskOrAlias(LPTSTR drivepath,
 	}
 }
 
-LOCALFUNC bool MyFileExists(LPTSTR pathName, bool *directory)
+static bool MyFileExists(LPTSTR pathName, bool *directory)
 {
 	WIN32_FIND_DATA fd;
 	HANDLE hf = FindFirstFile(pathName, &fd);
@@ -4669,7 +4669,7 @@ LOCALFUNC bool MyFileExists(LPTSTR pathName, bool *directory)
 	return IsOk;
 }
 
-LOCALFUNC tMacErr ResolveNamedChild0(LPTSTR pathName,
+static tMacErr ResolveNamedChild0(LPTSTR pathName,
 	LPTSTR Child, bool *directory)
 {
 	size_t newlen;
@@ -4704,7 +4704,7 @@ LOCALFUNC tMacErr ResolveNamedChild0(LPTSTR pathName,
 	return err;
 }
 
-LOCALFUNC tMacErr ResolveNamedChild(LPTSTR pathName,
+static tMacErr ResolveNamedChild(LPTSTR pathName,
 	char *Child, bool *directory)
 {
 	TCHAR Child0[ClStrMaxLength + 1];
@@ -4714,7 +4714,7 @@ LOCALFUNC tMacErr ResolveNamedChild(LPTSTR pathName,
 	return ResolveNamedChild0(pathName, Child0, directory);
 }
 
-LOCALFUNC bool ResolveNamedChildDir(LPTSTR pathName, char *Child)
+static bool ResolveNamedChildDir(LPTSTR pathName, char *Child)
 {
 	bool directory;
 
@@ -4723,7 +4723,7 @@ LOCALFUNC bool ResolveNamedChildDir(LPTSTR pathName, char *Child)
 		&& directory;
 }
 
-LOCALFUNC bool ResolveNamedChildFile(LPTSTR pathName, char *Child)
+static bool ResolveNamedChildFile(LPTSTR pathName, char *Child)
 {
 	bool directory;
 
@@ -4733,7 +4733,7 @@ LOCALFUNC bool ResolveNamedChildFile(LPTSTR pathName, char *Child)
 }
 
 #if UseActvFile || (IncludeSonyNew && ! SaveDialogEnable)
-LOCALFUNC bool MakeNamedChildDir(LPTSTR pathName, char *Child)
+static bool MakeNamedChildDir(LPTSTR pathName, char *Child)
 {
 	bool directory;
 	bool IsOk = false;
@@ -4751,7 +4751,7 @@ LOCALFUNC bool MakeNamedChildDir(LPTSTR pathName, char *Child)
 }
 #endif
 
-LOCALFUNC bool MyGetAppDataPath(LPTSTR lpszPath,
+static bool MyGetAppDataPath(LPTSTR lpszPath,
 	BOOL fCreate)
 {
 	bool IsOk = false;
@@ -4785,7 +4785,7 @@ LOCALFUNC bool MyGetAppDataPath(LPTSTR lpszPath,
 static bool CtrlMode = false;
 #endif
 
-LOCALPROC InsertADisk0(void)
+static void InsertADisk0(void)
 {
 	OPENFILENAME ofn;
 	TCHAR szDirName[256];
@@ -4855,7 +4855,7 @@ LOCALPROC InsertADisk0(void)
 #endif
 }
 
-LOCALFUNC bool LoadInitialImageFromName(char *ImageName)
+static bool LoadInitialImageFromName(char *ImageName)
 {
 	TCHAR ImageFile[_MAX_PATH];
 
@@ -4868,7 +4868,7 @@ LOCALFUNC bool LoadInitialImageFromName(char *ImageName)
 	return false;
 }
 
-LOCALFUNC bool Sony_InsertIth(int i)
+static bool Sony_InsertIth(int i)
 {
 	bool v;
 
@@ -4886,7 +4886,7 @@ LOCALFUNC bool Sony_InsertIth(int i)
 	return v;
 }
 
-LOCALFUNC bool LoadInitialImages(void)
+static bool LoadInitialImages(void)
 {
 	if (! AnyDiskInserted()) {
 		int i;
@@ -4903,7 +4903,7 @@ LOCALFUNC bool LoadInitialImages(void)
 
 #define ActvCodeFileName "act_1"
 
-LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
+static tMacErr ActvCodeFileLoad(uint8_t * p)
 {
 	TCHAR pathName[_MAX_PATH];
 	DWORD BytesRead;
@@ -4954,7 +4954,7 @@ LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
 	return IsOk ? mnvm_noErr : mnvm_miscErr;
 }
 
-LOCALFUNC bool NewNamedChildFile(LPTSTR pathName, char *Child)
+static bool NewNamedChildFile(LPTSTR pathName, char *Child)
 {
 	bool directory;
 	bool IsOk = false;
@@ -4969,7 +4969,7 @@ LOCALFUNC bool NewNamedChildFile(LPTSTR pathName, char *Child)
 	return IsOk;
 }
 
-LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
+static tMacErr ActvCodeFileSave(uint8_t * p)
 {
 	TCHAR pathName[_MAX_PATH];
 	DWORD BytesWritten;
@@ -5026,7 +5026,7 @@ LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
 #endif /* UseActvFile */
 
 #if IncludeSonyNew
-LOCALFUNC bool WriteZero(HANDLE refnum, uint32_t L)
+static bool WriteZero(HANDLE refnum, uint32_t L)
 {
 	if (SetFilePointer(
 		refnum, /* handle of file */
@@ -5066,7 +5066,7 @@ LOCALFUNC bool WriteZero(HANDLE refnum, uint32_t L)
 #define MaxSavePathSize MAX_PATH
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDisk0(uint32_t L, LPTSTR pathName)
+static void MakeNewDisk0(uint32_t L, LPTSTR pathName)
 {
 	bool IsOk = false;
 	HANDLE newrefNum;
@@ -5113,7 +5113,7 @@ LOCALPROC MakeNewDisk0(uint32_t L, LPTSTR pathName)
 #endif
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDisk(uint32_t L, HGLOBAL NewDiskNameDat)
+static void MakeNewDisk(uint32_t L, HGLOBAL NewDiskNameDat)
 {
 #if SaveDialogEnable
 	OPENFILENAME ofn;
@@ -5191,7 +5191,7 @@ LOCALPROC MakeNewDisk(uint32_t L, HGLOBAL NewDiskNameDat)
 }
 #endif
 
-LOCALFUNC bool LoadMacRom(void)
+static bool LoadMacRom(void)
 {
 	TCHAR ROMFile[_MAX_PATH];
 	bool IsOk = false;
@@ -5221,7 +5221,7 @@ LOCALFUNC bool LoadMacRom(void)
 }
 
 #if InstallFileIcons
-LOCALPROC MySetRegKey(HKEY hKeyRoot,
+static void MySetRegKey(HKEY hKeyRoot,
 	LPTSTR strRegKey, LPTSTR strRegValue)
 {
 	HKEY RegKey;
@@ -5238,7 +5238,7 @@ LOCALPROC MySetRegKey(HKEY hKeyRoot,
 	}
 }
 
-LOCALPROC RegisterShellFileType(LPTSTR AppPath, LPTSTR strFilterExt,
+static void RegisterShellFileType(LPTSTR AppPath, LPTSTR strFilterExt,
 	LPTSTR strFileTypeId, LPTSTR strFileTypeName,
 	LPTSTR strIconId, bool CanOpen)
 {
@@ -5267,7 +5267,7 @@ LOCALPROC RegisterShellFileType(LPTSTR AppPath, LPTSTR strFilterExt,
 	}
 }
 
-LOCALFUNC bool RegisterInRegistry(void)
+static bool RegisterInRegistry(void)
 {
 	TCHAR AppPath[_MAX_PATH];
 
@@ -5287,7 +5287,7 @@ LOCALFUNC bool RegisterInRegistry(void)
 
 static LPTSTR CommandLine;
 
-LOCALFUNC bool ScanCommandLine(void)
+static bool ScanCommandLine(void)
 {
 	TCHAR *p = CommandLine;
 	TCHAR *p1;
@@ -5354,7 +5354,7 @@ LOCALFUNC bool ScanCommandLine(void)
 }
 
 #if EnableRecreateW
-LOCALPROC CheckMagnifyAndFullScreen(void)
+static void CheckMagnifyAndFullScreen(void)
 {
 	if (
 #if EnableMagnify
@@ -5387,7 +5387,7 @@ enum {
 static int WinMagStates[kNumWinStates];
 #endif
 
-LOCALPROC ZapWinStateVars(void)
+static void ZapWinStateVars(void)
 {
 #if MayNotFullScreen
 	{
@@ -5410,7 +5410,7 @@ LOCALPROC ZapWinStateVars(void)
 }
 
 #if VarFullScreen
-LOCALPROC ToggleWantFullScreen(void)
+static void ToggleWantFullScreen(void)
 {
 	WantFullScreen = ! WantFullScreen;
 
@@ -5446,7 +5446,7 @@ LOCALPROC ToggleWantFullScreen(void)
 #endif
 
 #if EnableDragDrop
-LOCALPROC DragFunc(HDROP hDrop)
+static void DragFunc(HDROP hDrop)
 {
 	WORD n;
 	WORD i;
@@ -5472,7 +5472,7 @@ LOCALPROC DragFunc(HDROP hDrop)
 }
 #endif
 
-GLOBALOSGLUFUNC bool ExtraTimeNotOver(void)
+ bool ExtraTimeNotOver(void)
 {
 #if MySoundEnabled
 	SoundCheckVeryOften();
@@ -5483,12 +5483,12 @@ GLOBALOSGLUFUNC bool ExtraTimeNotOver(void)
 
 /* --- platform independent code can be thought of as going here --- */
 
-LOCALPROC LeaveBackground(void)
+static void LeaveBackground(void)
 {
 	ReconnectKeyCodes3();
 }
 
-LOCALPROC EnterBackground(void)
+static void EnterBackground(void)
 {
 	DisconnectKeyCodes3();
 
@@ -5499,7 +5499,7 @@ LOCALPROC EnterBackground(void)
 #endif
 }
 
-LOCALPROC LeaveSpeedStopped(void)
+static void LeaveSpeedStopped(void)
 {
 #if MySoundEnabled
 	MySound_Start();
@@ -5509,7 +5509,7 @@ LOCALPROC LeaveSpeedStopped(void)
 #endif
 }
 
-LOCALPROC EnterSpeedStopped(void)
+static void EnterSpeedStopped(void)
 {
 #if (MyTimeResolution != 0)
 	MyTimer_Suspend();
@@ -5519,7 +5519,7 @@ LOCALPROC EnterSpeedStopped(void)
 #endif
 }
 
-LOCALPROC CheckForSavedTasks(void)
+static void CheckForSavedTasks(void)
 {
 	/*
 		Check for things to do that rather wouldn't
@@ -5906,7 +5906,7 @@ LRESULT CALLBACK Win32WMProc(HWND hwnd,
 	return 0;
 }
 
-LOCALFUNC bool RegisterOurClass(void)
+static bool RegisterOurClass(void)
 {
 	WNDCLASS wc;
 
@@ -5935,7 +5935,7 @@ LOCALFUNC bool RegisterOurClass(void)
 	}
 }
 
-LOCALPROC WaitForTheNextEvent(void)
+static void WaitForTheNextEvent(void)
 {
 	MSG msg;
 
@@ -5944,7 +5944,7 @@ LOCALPROC WaitForTheNextEvent(void)
 	}
 }
 
-LOCALPROC CheckForSystemEvents(void)
+static void CheckForSystemEvents(void)
 {
 	MSG msg;
 	uint8_t i = 0;
@@ -5955,7 +5955,7 @@ LOCALPROC CheckForSystemEvents(void)
 	}
 }
 
-GLOBALOSGLUPROC WaitForNextTick(void)
+void WaitForNextTick(void)
 {
 label_retry:
 	CheckForSystemEvents();
@@ -6003,7 +6003,7 @@ label_retry:
 }
 
 #if UseWinCE
-LOCALFUNC bool Init_ChangeOrientation(void)
+static bool Init_ChangeOrientation(void)
 {
 	DEVMODE dm;
 
@@ -6040,7 +6040,7 @@ LOCALFUNC bool Init_ChangeOrientation(void)
 #endif
 
 #if UseWinCE
-LOCALPROC Uninit_ChangeOrientation(void)
+static void Uninit_ChangeOrientation(void)
 {
 	DEVMODE dm;
 
@@ -6067,7 +6067,7 @@ static HINSTANCE hCoreDLL = NULL;
 #endif
 
 #if UseWinCE
-LOCALFUNC bool InitHotKeys(void)
+static bool InitHotKeys(void)
 {
 	UnregisterFunc1Proc procUndergisterFunc;
 	int i;
@@ -6094,7 +6094,7 @@ LOCALFUNC bool InitHotKeys(void)
 #endif
 
 #if UseWinCE
-LOCALPROC UninitHotKeys(void)
+static void UninitHotKeys(void)
 {
 	if (! hCoreDLL) {
 		FreeLibrary(hCoreDLL);
@@ -6106,13 +6106,13 @@ LOCALPROC UninitHotKeys(void)
 
 /* ************************ */
 
-LOCALPROC ZapOSGLUVars(void)
+static void ZapOSGLUVars(void)
 {
 	InitDrives();
 	ZapWinStateVars();
 }
 
-LOCALPROC ReserveAllocAll(void)
+static void ReserveAllocAll(void)
 {
 #if dbglog_HAVE
 	dbglog_ReserveAlloc();
@@ -6151,7 +6151,7 @@ LOCALPROC ReserveAllocAll(void)
 	EmulationReserveAlloc();
 }
 
-LOCALFUNC bool AllocMyMemory(void)
+static bool AllocMyMemory(void)
 {
 	uint32_t n;
 	bool IsOk = false;
@@ -6177,7 +6177,7 @@ LOCALFUNC bool AllocMyMemory(void)
 	return IsOk;
 }
 
-LOCALPROC UnallocMyMemory(void)
+static void UnallocMyMemory(void)
 {
 	if (nullptr != ReserveAllocBigBlock) {
 		if (GlobalFree(ReserveAllocBigBlock) != NULL) {
@@ -6186,7 +6186,7 @@ LOCALPROC UnallocMyMemory(void)
 	}
 }
 
-LOCALFUNC bool InitOSGLU(void)
+static bool InitOSGLU(void)
 {
 	if (AllocMyMemory())
 #if dbglog_HAVE
@@ -6223,7 +6223,7 @@ LOCALFUNC bool InitOSGLU(void)
 	return false;
 }
 
-LOCALPROC UnInitOSGLU(void)
+static void UnInitOSGLU(void)
 {
 #if (MyTimeResolution != 0)
 	MyTimer_Suspend();

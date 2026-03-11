@@ -197,7 +197,7 @@ static const uint8_t my_disk_icon[] = {
 #define kVidMem_Base 0x00540000
 
 #if UseSonyPatch
-LOCALPROC Sony_Install(void)
+static void Sony_Install(void)
 {
 	uint8_t * pto = Sony_DriverBase + ROM;
 
@@ -250,7 +250,7 @@ LOCALPROC Sony_Install(void)
 #endif
 
 #ifdef ln2mtb
-LOCALPROC ROMscrambleForMTB(void)
+static void ROMscrambleForMTB(void)
 {
 	int32_t j;
 	uint8_t * p = ROM;
@@ -272,7 +272,7 @@ LOCALPROC ROMscrambleForMTB(void)
 }
 #endif
 
-GLOBALFUNC bool ROM_Init(void)
+ bool ROM_Init(void)
 {
 #if DisableRomCheck
 

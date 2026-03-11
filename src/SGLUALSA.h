@@ -239,7 +239,7 @@ static void *alsa_handle = NULL;
 
 static bool DidAlsaLib = false;
 
-LOCALFUNC bool HaveAlsaLib(void)
+static bool HaveAlsaLib(void)
 {
 	if (! DidAlsaLib) {
 		alsa_handle = dlopen("libasound.so.2", RTLD_NOW);
@@ -251,7 +251,7 @@ LOCALFUNC bool HaveAlsaLib(void)
 	return (alsa_handle != NULL);
 }
 
-LOCALPROC MyCloseAlsaLib(void)
+static void MyCloseAlsaLib(void)
 {
 	if (NULL != alsa_handle) {
 		if (0 != dlclose(alsa_handle)) {
@@ -468,7 +468,7 @@ typedef int (*snd_pcm_open_ProcPtr)
 static snd_pcm_open_ProcPtr My_snd_pcm_open = NULL;
 static bool Did_snd_pcm_open = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_open(void)
+static bool HaveMy_snd_pcm_open(void)
 {
 	if (! Did_snd_pcm_open) {
 		if (HaveAlsaLib()) {
@@ -487,7 +487,7 @@ typedef int (*snd_pcm_close_ProcPtr)(My_snd_pcm_t *pcm);
 static snd_pcm_close_ProcPtr My_snd_pcm_close = NULL;
 static bool Did_snd_pcm_close = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_close(void)
+static bool HaveMy_snd_pcm_close(void)
 {
 	if (! Did_snd_pcm_close) {
 		if (HaveAlsaLib()) {
@@ -508,7 +508,7 @@ static snd_pcm_hw_params_malloc_ProcPtr My_snd_pcm_hw_params_malloc
 	= NULL;
 static bool Did_snd_pcm_hw_params_malloc = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params_malloc(void)
+static bool HaveMy_snd_pcm_hw_params_malloc(void)
 {
 	if (! Did_snd_pcm_hw_params_malloc) {
 		if (HaveAlsaLib()) {
@@ -531,7 +531,7 @@ static snd_pcm_hw_params_free_ProcPtr
 	My_snd_pcm_hw_params_free = NULL;
 static bool Did_snd_pcm_hw_params_free = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params_free(void)
+static bool HaveMy_snd_pcm_hw_params_free(void)
 {
 	if (! Did_snd_pcm_hw_params_free) {
 		if (HaveAlsaLib()) {
@@ -552,7 +552,7 @@ typedef int (*snd_pcm_hw_params_any_ProcPtr)
 static snd_pcm_hw_params_any_ProcPtr My_snd_pcm_hw_params_any = NULL;
 static bool Did_snd_pcm_hw_params_any = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params_any(void)
+static bool HaveMy_snd_pcm_hw_params_any(void)
 {
 	if (! Did_snd_pcm_hw_params_any) {
 		if (HaveAlsaLib()) {
@@ -574,7 +574,7 @@ static snd_pcm_hw_params_set_access_ProcPtr
 	My_snd_pcm_hw_params_set_access = NULL;
 static bool Did_snd_pcm_hw_params_set_access = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_access(void)
+static bool HaveMy_snd_pcm_hw_params_set_access(void)
 {
 	if (! Did_snd_pcm_hw_params_set_access) {
 		if (HaveAlsaLib()) {
@@ -598,7 +598,7 @@ static snd_pcm_hw_params_set_format_ProcPtr
 	My_snd_pcm_hw_params_set_format = NULL;
 static bool Did_snd_pcm_hw_params_set_format = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_format(void)
+static bool HaveMy_snd_pcm_hw_params_set_format(void)
 {
 	if (! Did_snd_pcm_hw_params_set_format) {
 		if (HaveAlsaLib()) {
@@ -622,7 +622,7 @@ static snd_pcm_hw_params_set_rate_near_ProcPtr
 	My_snd_pcm_hw_params_set_rate_near = NULL;
 static bool Did_snd_pcm_hw_params_set_rate_near = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_rate_near(void)
+static bool HaveMy_snd_pcm_hw_params_set_rate_near(void)
 {
 	if (! Did_snd_pcm_hw_params_set_rate_near) {
 		if (HaveAlsaLib()) {
@@ -646,7 +646,7 @@ static snd_pcm_hw_params_set_channels_ProcPtr
 	My_snd_pcm_hw_params_set_channels = NULL;
 static bool Did_snd_pcm_hw_params_set_channels = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_channels(void)
+static bool HaveMy_snd_pcm_hw_params_set_channels(void)
 {
 	if (! Did_snd_pcm_hw_params_set_channels) {
 		if (HaveAlsaLib()) {
@@ -670,7 +670,7 @@ static snd_pcm_hw_params_set_buffer_size_near_ProcPtr
 	My_snd_pcm_hw_params_set_buffer_size_near = NULL;
 static bool Did_snd_pcm_hw_params_set_buffer_size_near = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_buffer_size_near(void)
+static bool HaveMy_snd_pcm_hw_params_set_buffer_size_near(void)
 {
 	if (! Did_snd_pcm_hw_params_set_buffer_size_near) {
 		if (HaveAlsaLib()) {
@@ -696,7 +696,7 @@ static snd_pcm_hw_params_set_period_size_near_ProcPtr
 	My_snd_pcm_hw_params_set_period_size_near = NULL;
 static bool Did_snd_pcm_hw_params_set_period_size_near = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_period_size_near(void)
+static bool HaveMy_snd_pcm_hw_params_set_period_size_near(void)
 {
 	if (! Did_snd_pcm_hw_params_set_period_size_near) {
 		if (HaveAlsaLib()) {
@@ -720,7 +720,7 @@ typedef int (*snd_pcm_hw_params_ProcPtr)
 static snd_pcm_hw_params_ProcPtr My_snd_pcm_hw_params = NULL;
 static bool Did_snd_pcm_hw_params = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_hw_params(void)
+static bool HaveMy_snd_pcm_hw_params(void)
 {
 	if (! Did_snd_pcm_hw_params) {
 		if (HaveAlsaLib()) {
@@ -741,7 +741,7 @@ static snd_pcm_sw_params_malloc_ProcPtr
 	My_snd_pcm_sw_params_malloc = NULL;
 static bool Did_snd_pcm_sw_params_malloc = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_sw_params_malloc(void)
+static bool HaveMy_snd_pcm_sw_params_malloc(void)
 {
 	if (! Did_snd_pcm_sw_params_malloc) {
 		if (HaveAlsaLib()) {
@@ -764,7 +764,7 @@ static snd_pcm_sw_params_free_ProcPtr
 	My_snd_pcm_sw_params_free = NULL;
 static bool Did_snd_pcm_sw_params_free = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_sw_params_free(void)
+static bool HaveMy_snd_pcm_sw_params_free(void)
 {
 	if (! Did_snd_pcm_sw_params_free) {
 		if (HaveAlsaLib()) {
@@ -786,7 +786,7 @@ static snd_pcm_sw_params_current_ProcPtr
 	My_snd_pcm_sw_params_current = NULL;
 static bool Did_snd_pcm_sw_params_current = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_sw_params_current(void)
+static bool HaveMy_snd_pcm_sw_params_current(void)
 {
 	if (! Did_snd_pcm_sw_params_current) {
 		if (HaveAlsaLib()) {
@@ -810,7 +810,7 @@ static snd_pcm_sw_params_set_start_threshold_ProcPtr
 	My_snd_pcm_sw_params_set_start_threshold = NULL;
 static bool Did_snd_pcm_sw_params_set_start_threshold = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_sw_params_set_start_threshold(void)
+static bool HaveMy_snd_pcm_sw_params_set_start_threshold(void)
 {
 	if (! Did_snd_pcm_sw_params_set_start_threshold) {
 		if (HaveAlsaLib()) {
@@ -836,7 +836,7 @@ static snd_pcm_sw_params_set_avail_min_ProcPtr
 	My_snd_pcm_sw_params_set_avail_min = NULL;
 static bool Did_snd_pcm_sw_params_set_avail_min = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_sw_params_set_avail_min(void)
+static bool HaveMy_snd_pcm_sw_params_set_avail_min(void)
 {
 	if (! Did_snd_pcm_sw_params_set_avail_min) {
 		if (HaveAlsaLib()) {
@@ -860,7 +860,7 @@ static snd_pcm_sw_params_set_xfer_align_ProcPtr
 	My_snd_pcm_sw_params_set_xfer_align = NULL;
 static bool Did_snd_pcm_sw_params_set_xfer_align = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_sw_params_set_xfer_align(void)
+static bool HaveMy_snd_pcm_sw_params_set_xfer_align(void)
 {
 	if (! Did_snd_pcm_sw_params_set_xfer_align) {
 		if (HaveAlsaLib()) {
@@ -882,7 +882,7 @@ typedef int (*snd_pcm_sw_params_ProcPtr)
 static snd_pcm_sw_params_ProcPtr My_snd_pcm_sw_params = NULL;
 static bool Did_snd_pcm_sw_params = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_sw_params(void)
+static bool HaveMy_snd_pcm_sw_params(void)
 {
 	if (! Did_snd_pcm_sw_params) {
 		if (HaveAlsaLib()) {
@@ -902,7 +902,7 @@ typedef int (*snd_pcm_nonblock_ProcPtr)
 static snd_pcm_nonblock_ProcPtr My_snd_pcm_nonblock = NULL;
 static bool Did_snd_pcm_nonblock = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_nonblock(void)
+static bool HaveMy_snd_pcm_nonblock(void)
 {
 	if (! Did_snd_pcm_nonblock) {
 		if (HaveAlsaLib()) {
@@ -921,7 +921,7 @@ typedef My_snd_pcm_state_t (*snd_pcm_state_ProcPtr)(My_snd_pcm_t *pcm);
 static snd_pcm_state_ProcPtr My_snd_pcm_state = NULL;
 static bool Did_snd_pcm_state = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_state(void)
+static bool HaveMy_snd_pcm_state(void)
 {
 	if (! Did_snd_pcm_state) {
 		if (HaveAlsaLib()) {
@@ -940,7 +940,7 @@ typedef int (*snd_pcm_prepare_ProcPtr)(My_snd_pcm_t *pcm);
 static snd_pcm_prepare_ProcPtr My_snd_pcm_prepare = NULL;
 static bool Did_snd_pcm_prepare = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_prepare(void)
+static bool HaveMy_snd_pcm_prepare(void)
 {
 	if (! Did_snd_pcm_prepare) {
 		if (HaveAlsaLib()) {
@@ -959,7 +959,7 @@ typedef int (*snd_pcm_start_ProcPtr)(My_snd_pcm_t *pcm);
 static snd_pcm_start_ProcPtr My_snd_pcm_start = NULL;
 static bool Did_snd_pcm_start = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_start(void)
+static bool HaveMy_snd_pcm_start(void)
 {
 	if (! Did_snd_pcm_start) {
 		if (HaveAlsaLib()) {
@@ -978,7 +978,7 @@ typedef int (*snd_pcm_resume_ProcPtr)(My_snd_pcm_t *pcm);
 static snd_pcm_resume_ProcPtr My_snd_pcm_resume = NULL;
 static bool Did_snd_pcm_resume = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_resume(void)
+static bool HaveMy_snd_pcm_resume(void)
 {
 	if (! Did_snd_pcm_resume) {
 		if (HaveAlsaLib()) {
@@ -998,7 +998,7 @@ typedef My_snd_pcm_sframes_t (*snd_pcm_avail_update_ProcPtr)
 static snd_pcm_avail_update_ProcPtr My_snd_pcm_avail_update = NULL;
 static bool Did_snd_pcm_avail_update = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_avail_update(void)
+static bool HaveMy_snd_pcm_avail_update(void)
 {
 	if (! Did_snd_pcm_avail_update) {
 		if (HaveAlsaLib()) {
@@ -1018,7 +1018,7 @@ typedef My_snd_pcm_sframes_t (*snd_pcm_writei_ProcPtr)
 static snd_pcm_writei_ProcPtr My_snd_pcm_writei = NULL;
 static bool Did_snd_pcm_writei = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_writei(void)
+static bool HaveMy_snd_pcm_writei(void)
 {
 	if (! Did_snd_pcm_writei) {
 		if (HaveAlsaLib()) {
@@ -1037,7 +1037,7 @@ typedef int (*snd_pcm_drop_ProcPtr)(My_snd_pcm_t *pcm);
 static snd_pcm_drop_ProcPtr My_snd_pcm_drop = NULL;
 static bool Did_snd_pcm_drop = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_drop(void)
+static bool HaveMy_snd_pcm_drop(void)
 {
 	if (! Did_snd_pcm_drop) {
 		if (HaveAlsaLib()) {
@@ -1058,7 +1058,7 @@ typedef int (*snd_pcm_status_malloc_ProcPtr)
 static snd_pcm_status_malloc_ProcPtr My_snd_pcm_status_malloc = NULL;
 static bool Did_snd_pcm_status_malloc = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_status_malloc(void)
+static bool HaveMy_snd_pcm_status_malloc(void)
 {
 	if (! Did_snd_pcm_status_malloc) {
 		if (HaveAlsaLib()) {
@@ -1080,7 +1080,7 @@ typedef int (*snd_pcm_status_ProcPtr)(My_snd_pcm_t *pcm,
 static snd_pcm_status_ProcPtr My_snd_pcm_status = NULL;
 static bool Did_snd_pcm_status = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_status(void)
+static bool HaveMy_snd_pcm_status(void)
 {
 	if (! Did_snd_pcm_status) {
 		if (HaveAlsaLib()) {
@@ -1103,7 +1103,7 @@ static snd_pcm_status_get_avail_ProcPtr
 	My_snd_pcm_status_get_avail = NULL;
 static bool Did_snd_pcm_status_get_avail = false;
 
-LOCALFUNC bool HaveMy_snd_pcm_status_get_avail(void)
+static bool HaveMy_snd_pcm_status_get_avail(void)
 {
 	if (! Did_snd_pcm_status_get_avail) {
 		if (HaveAlsaLib()) {
@@ -1125,7 +1125,7 @@ typedef const char * (*snd_strerror_ProcPtr)(int errnum);
 static snd_strerror_ProcPtr My_snd_strerror = NULL;
 static bool Did_snd_strerror = false;
 
-LOCALFUNC bool HaveMy_snd_strerror(void)
+static bool HaveMy_snd_strerror(void)
 {
 	if (! Did_snd_strerror) {
 		if (HaveAlsaLib()) {
@@ -1154,7 +1154,7 @@ LOCALFUNC bool HaveMy_snd_strerror(void)
 
 
 #if 4 == kLn2SoundSampSz
-LOCALPROC ConvertSoundBlockToNative(tpSoundSamp p)
+static void ConvertSoundBlockToNative(tpSoundSamp p)
 {
 	int i;
 
@@ -1181,7 +1181,7 @@ static bool MySound_StartPend = false;
 #if RaspbianWorkAround
 static My_snd_pcm_status_t *my_status = NULL;
 
-LOCALFUNC bool HaveMyStatusAlloc(void)
+static bool HaveMyStatusAlloc(void)
 {
 	if (NULL == my_status) {
 		if (HaveMy_snd_pcm_status_malloc())
@@ -1200,7 +1200,7 @@ LOCALFUNC bool HaveMyStatusAlloc(void)
 }
 #endif
 
-LOCALPROC MySound_WriteOut(void)
+static void MySound_WriteOut(void)
 {
 	int retry_count = 32;
 
@@ -1341,21 +1341,21 @@ label_retry:
 	}
 }
 
-LOCALPROC MySound_Start(void)
+static void MySound_Start(void)
 {
 	if (pcm_handle != NULL) {
 		MySound_Start0();
 	}
 }
 
-LOCALPROC MySound_Stop(void)
+static void MySound_Stop(void)
 {
 	if (pcm_handle != NULL) {
 		My_snd_pcm_drop(pcm_handle);
 	}
 }
 
-LOCALFUNC bool HaveAlsaRoutines(void)
+static bool HaveAlsaRoutines(void)
 {
 	bool IsOk = false;
 
@@ -1399,7 +1399,7 @@ LOCALFUNC bool HaveAlsaRoutines(void)
 #define MyDesiredFormat My_SND_PCM_FORMAT_U8
 #endif
 
-LOCALPROC MySound_Init0(void)
+static void MySound_Init0(void)
 {
 	My_snd_pcm_hw_params_t *hw_params = NULL;
 	My_snd_pcm_sw_params_t *sw_params = NULL;
@@ -1577,7 +1577,7 @@ label_done:
 	;
 }
 
-LOCALFUNC bool MySound_Init(void)
+static bool MySound_Init(void)
 {
 	if (HaveAlsaRoutines()) {
 		MySound_Init0();
@@ -1586,7 +1586,7 @@ LOCALFUNC bool MySound_Init(void)
 	return true; /* keep going, even if no sound */
 }
 
-LOCALPROC MySound_UnInit(void)
+static void MySound_UnInit(void)
 {
 	if (NULL != pcm_handle) {
 		if (HaveMy_snd_pcm_close()) {
@@ -1597,7 +1597,7 @@ LOCALPROC MySound_UnInit(void)
 	MyCloseAlsaLib();
 }
 
-GLOBALOSGLUPROC MySound_EndWrite(uint16_t actL)
+void MySound_EndWrite(uint16_t actL)
 {
 	if (MySound_EndWrite0(actL)) {
 		ConvertSoundBlockToNative(TheSoundBuffer
@@ -1608,7 +1608,7 @@ GLOBALOSGLUPROC MySound_EndWrite(uint16_t actL)
 	}
 }
 
-LOCALPROC MySound_SecondNotify(void)
+static void MySound_SecondNotify(void)
 {
 	if (NULL != pcm_handle) {
 		MySound_SecondNotify0();

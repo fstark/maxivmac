@@ -35,7 +35,7 @@
 #define kAlternate_Buffer (kRAM_Size - kAlternate_Offset)
 #endif
 
-GLOBALPROC Screen_EndTickNotify(void)
+void Screen_EndTickNotify(void)
 {
 	uint8_t * screencurrentbuff;
 

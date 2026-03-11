@@ -34,60 +34,60 @@
 	ReportAbnormalID ranges unused 0x12xx - 0xFFxx
 */
 
-IMPORTPROC m68k_reset(void);
-IMPORTPROC IWM_Reset(void);
-IMPORTPROC SCC_Reset(void);
-IMPORTPROC SCSI_Reset(void);
+extern void m68k_reset(void);
+extern void IWM_Reset(void);
+extern void SCC_Reset(void);
+extern void SCSI_Reset(void);
 #if EmVIA1
-IMPORTPROC VIA1_Reset(void);
+extern void VIA1_Reset(void);
 #endif
 #if EmVIA2
-IMPORTPROC VIA2_Reset(void);
+extern void VIA2_Reset(void);
 #endif
-IMPORTPROC Sony_Reset(void);
+extern void Sony_Reset(void);
 
-IMPORTPROC ExtnDisk_Access(uint32_t p);
-IMPORTPROC ExtnSony_Access(uint32_t p);
+extern void ExtnDisk_Access(uint32_t p);
+extern void ExtnSony_Access(uint32_t p);
 #if EmVidCard
-IMPORTPROC ExtnVideo_Access(uint32_t p);
+extern void ExtnVideo_Access(uint32_t p);
 #endif
 
-IMPORTPROC Sony_SetQuitOnEject(void);
+extern void Sony_SetQuitOnEject(void);
 
-IMPORTPROC m68k_IPLchangeNtfy(void);
-IMPORTPROC MINEM68K_Init(
+extern void m68k_IPLchangeNtfy(void);
+extern void MINEM68K_Init(
 	uint8_t *fIPL);
 
-IMPORTFUNC uint32_t GetCyclesRemaining(void);
-IMPORTPROC SetCyclesRemaining(int32_t n);
+extern uint32_t GetCyclesRemaining(void);
+extern void SetCyclesRemaining(int32_t n);
 
-IMPORTPROC SetHeadATTel(ATTep p);
-IMPORTFUNC ATTep FindATTel(uint32_t addr);
+extern void SetHeadATTel(ATTep p);
+extern ATTep FindATTel(uint32_t addr);
 
-IMPORTFUNC uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-IMPORTFUNC uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-IMPORTFUNC uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+extern uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+extern uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+extern uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 #if EmVIA1
-IMPORTFUNC uint32_t VIA1_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+extern uint32_t VIA1_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 #endif
 #if EmVIA2
-IMPORTFUNC uint32_t VIA2_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+extern uint32_t VIA2_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 #endif
 #if EmASC
-IMPORTFUNC uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+extern uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 #endif
 
-IMPORTFUNC uint8_t get_vm_byte(uint32_t addr);
-IMPORTFUNC uint16_t get_vm_word(uint32_t addr);
-IMPORTFUNC uint32_t get_vm_long(uint32_t addr);
+extern uint8_t get_vm_byte(uint32_t addr);
+extern uint16_t get_vm_word(uint32_t addr);
+extern uint32_t get_vm_long(uint32_t addr);
 
-IMPORTPROC put_vm_byte(uint32_t addr, uint8_t b);
-IMPORTPROC put_vm_word(uint32_t addr, uint16_t w);
-IMPORTPROC put_vm_long(uint32_t addr, uint32_t l);
+extern void put_vm_byte(uint32_t addr, uint8_t b);
+extern void put_vm_word(uint32_t addr, uint16_t w);
+extern void put_vm_long(uint32_t addr, uint32_t l);
 
 uint32_t my_disk_icon_addr;
 
-GLOBALPROC customreset(void)
+void customreset(void)
 {
 	IWM_Reset();
 	SCC_Reset();
@@ -127,11 +127,11 @@ uint8_t Wires[kNumWires];
 
 
 #if WantDisasm
-IMPORTPROC m68k_WantDisasmContext(void);
+extern void m68k_WantDisasmContext(void);
 #endif
 
 #if WantDisasm
-GLOBALPROC dbglog_StartLine(void)
+void dbglog_StartLine(void)
 {
 	m68k_WantDisasmContext();
 	dbglog_writeCStr(" ");
@@ -139,7 +139,7 @@ GLOBALPROC dbglog_StartLine(void)
 #endif
 
 #if dbglog_HAVE
-GLOBALPROC dbglog_WriteMemArrow(bool WriteMem)
+void dbglog_WriteMemArrow(bool WriteMem)
 {
 	if (WriteMem) {
 		dbglog_writeCStr(" <- ");
@@ -150,7 +150,7 @@ GLOBALPROC dbglog_WriteMemArrow(bool WriteMem)
 #endif
 
 #if dbglog_HAVE
-GLOBALPROC dbglog_AddrAccess(char *s, uint32_t Data,
+void dbglog_AddrAccess(char *s, uint32_t Data,
 	bool WriteMem, uint32_t addr)
 {
 	dbglog_StartLine();
@@ -165,7 +165,7 @@ GLOBALPROC dbglog_AddrAccess(char *s, uint32_t Data,
 #endif
 
 #if dbglog_HAVE
-GLOBALPROC dbglog_Access(char *s, uint32_t Data, bool WriteMem)
+void dbglog_Access(char *s, uint32_t Data, bool WriteMem)
 {
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
@@ -176,7 +176,7 @@ GLOBALPROC dbglog_Access(char *s, uint32_t Data, bool WriteMem)
 #endif
 
 #if dbglog_HAVE
-GLOBALPROC dbglog_WriteNote(char *s)
+void dbglog_WriteNote(char *s)
 {
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
@@ -185,7 +185,7 @@ GLOBALPROC dbglog_WriteNote(char *s)
 #endif
 
 #if dbglog_HAVE
-GLOBALPROC dbglog_WriteSetBool(char *s, bool v)
+void dbglog_WriteSetBool(char *s, bool v)
 {
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
@@ -208,7 +208,7 @@ static bool GotOneAbnormal = false;
 #endif
 
 #if WantAbnormalReports
-GLOBALPROC DoReportAbnormalID(uint16_t id
+void DoReportAbnormalID(uint16_t id
 #if dbglog_HAVE
 	, char *s
 #endif
@@ -300,7 +300,7 @@ GLOBALPROC DoReportAbnormalID(uint16_t id
 
 
 #if IncludeExtnPbufs
-LOCALFUNC tMacErr PbufTransferVM(uint32_t Buffera,
+static tMacErr PbufTransferVM(uint32_t Buffera,
 	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
 {
 	tMacErr result;
@@ -338,7 +338,7 @@ label_1:
 #endif
 
 #if IncludeExtnPbufs
-LOCALPROC ExtnParamBuffers_Access(uint32_t p)
+static void ExtnParamBuffers_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -419,7 +419,7 @@ LOCALPROC ExtnParamBuffers_Access(uint32_t p)
 #endif
 
 #if IncludeExtnHostTextClipExchange
-LOCALPROC ExtnHostTextClipExchange_Access(uint32_t p)
+static void ExtnHostTextClipExchange_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -471,7 +471,7 @@ LOCALPROC ExtnHostTextClipExchange_Access(uint32_t p)
 #define kParamFindExtnTheExtn 8
 #define kParamFindExtnTheId 12
 
-LOCALPROC ExtnFind_Access(uint32_t p)
+static void ExtnFind_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -560,7 +560,7 @@ LOCALPROC ExtnFind_Access(uint32_t p)
 
 static uint16_t ParamAddrHi;
 
-LOCALPROC Extn_Access(uint32_t Data, uint32_t addr)
+static void Extn_Access(uint32_t Data, uint32_t addr)
 {
 	switch (addr) {
 		case kDSK_Params_Hi:
@@ -615,7 +615,7 @@ LOCALPROC Extn_Access(uint32_t Data, uint32_t addr)
 	}
 }
 
-GLOBALPROC Extn_Reset(void)
+void Extn_Reset(void)
 {
 	ParamAddrHi = (uint16_t) - 1;
 }
@@ -696,7 +696,7 @@ static ATTer ATTListA[MaxATTListN];
 static uint16_t LastATTel;
 
 
-LOCALPROC AddToATTList(ATTep p)
+static void AddToATTList(ATTep p)
 {
 	uint16_t NewLast = LastATTel + 1;
 	if (NewLast >= MaxATTListN) {
@@ -707,12 +707,12 @@ LOCALPROC AddToATTList(ATTep p)
 	}
 }
 
-LOCALPROC InitATTList(void)
+static void InitATTList(void)
 {
 	LastATTel = 0;
 }
 
-LOCALPROC FinishATTList(void)
+static void FinishATTList(void)
 {
 	{
 		/* add guard */
@@ -763,7 +763,7 @@ LOCALPROC FinishATTList(void)
 }
 
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-LOCALPROC SetUp_RAM24(void)
+static void SetUp_RAM24(void)
 {
 	ATTer r;
 	uint32_t bankbit = 0x00100000 << (((VIA2_iA7 << 1) | VIA2_iA6) << 1);
@@ -808,7 +808,7 @@ LOCALPROC SetUp_RAM24(void)
 #endif
 
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-LOCALPROC SetUp_io(void)
+static void SetUp_io(void)
 {
 	ATTer r;
 
@@ -916,7 +916,7 @@ LOCALPROC SetUp_io(void)
 #endif
 
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-LOCALPROC SetUp_address24(void)
+static void SetUp_address24(void)
 {
 	ATTer r;
 
@@ -979,7 +979,7 @@ LOCALPROC SetUp_address24(void)
 #endif
 
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-LOCALPROC SetUp_address32(void)
+static void SetUp_address32(void)
 {
 	ATTer r;
 
@@ -1098,7 +1098,7 @@ LOCALPROC SetUp_address32(void)
 #endif
 
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-LOCALPROC SetUp_address(void)
+static void SetUp_address(void)
 {
 	if (Addr32) {
 		SetUp_address32();
@@ -1119,7 +1119,7 @@ LOCALPROC SetUp_address(void)
 #ifndef ln2mtb
 #define AddToATTListWithMTB AddToATTList
 #else
-LOCALPROC AddToATTListWithMTB(ATTep p)
+static void AddToATTListWithMTB(ATTep p)
 {
 	/*
 		Test of memory mapping system.
@@ -1141,7 +1141,7 @@ LOCALPROC AddToATTListWithMTB(ATTep p)
 #endif
 
 #if (CurEmMd != kEmMd_II) && (CurEmMd != kEmMd_IIx)
-LOCALPROC SetUp_RAM24(void)
+static void SetUp_RAM24(void)
 {
 	ATTer r;
 
@@ -1176,7 +1176,7 @@ LOCALPROC SetUp_RAM24(void)
 #endif
 
 #if (CurEmMd != kEmMd_II) && (CurEmMd != kEmMd_IIx)
-LOCALPROC SetUp_address(void)
+static void SetUp_address(void)
 {
 	ATTer r;
 
@@ -1281,7 +1281,7 @@ LOCALPROC SetUp_address(void)
 }
 #endif
 
-LOCALPROC SetUpMemBanks(void)
+static void SetUpMemBanks(void)
 {
 	InitATTList();
 
@@ -1291,7 +1291,7 @@ LOCALPROC SetUpMemBanks(void)
 }
 
 #if 0
-LOCALPROC get_fail_realblock(ATTep p)
+static void get_fail_realblock(ATTep p)
 {
 	p->cmpmask = 0;
 	p->cmpvalu = 0xFFFFFFFF;
@@ -1301,7 +1301,7 @@ LOCALPROC get_fail_realblock(ATTep p)
 }
 #endif
 
-GLOBALFUNC uint32_t MMDV_Access(ATTep p, uint32_t Data,
+ uint32_t MMDV_Access(ATTep p, uint32_t Data,
 	bool WriteMem, bool ByteSize, uint32_t addr)
 {
 	switch (p->MMDV) {
@@ -1533,7 +1533,7 @@ GLOBALFUNC uint32_t MMDV_Access(ATTep p, uint32_t Data,
 	return Data;
 }
 
-GLOBALFUNC bool MemAccessNtfy(ATTep pT)
+ bool MemAccessNtfy(ATTep pT)
 {
 	bool v = false;
 
@@ -1554,7 +1554,7 @@ GLOBALFUNC bool MemAccessNtfy(ATTep pT)
 	return v;
 }
 
-GLOBALPROC MemOverlay_ChangeNtfy(void)
+void MemOverlay_ChangeNtfy(void)
 {
 #if CurEmMd <= kEmMd_Plus
 	SetUpMemBanks();
@@ -1564,13 +1564,13 @@ GLOBALPROC MemOverlay_ChangeNtfy(void)
 }
 
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-GLOBALPROC Addr32_ChangeNtfy(void)
+void Addr32_ChangeNtfy(void)
 {
 	SetUpMemBanks();
 }
 #endif
 
-LOCALFUNC ATTep get_address_realblock1(bool WriteMem, uint32_t addr)
+static ATTep get_address_realblock1(bool WriteMem, uint32_t addr)
 {
 	ATTep p;
 
@@ -1592,7 +1592,7 @@ Label_Retry:
 	return p;
 }
 
-GLOBALFUNC uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
+ uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
 	uint32_t *actL)
 {
 	uint32_t bankleft;
@@ -1621,7 +1621,7 @@ GLOBALFUNC uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t ad
 
 bool InterruptButton = false;
 
-GLOBALPROC SetInterruptButton(bool v)
+void SetInterruptButton(bool v)
 {
 	if (InterruptButton != v) {
 		InterruptButton = v;
@@ -1631,7 +1631,7 @@ GLOBALPROC SetInterruptButton(bool v)
 
 static uint8_t CurIPL = 0;
 
-GLOBALPROC VIAorSCCinterruptChngNtfy(void)
+void VIAorSCCinterruptChngNtfy(void)
 {
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 	uint8_t NewIPL;
@@ -1660,7 +1660,7 @@ GLOBALPROC VIAorSCCinterruptChngNtfy(void)
 	}
 }
 
-GLOBALFUNC bool AddrSpac_Init(void)
+ bool AddrSpac_Init(void)
 {
 	int i;
 
@@ -1673,15 +1673,15 @@ GLOBALFUNC bool AddrSpac_Init(void)
 	return true;
 }
 
-GLOBALPROC Memory_Reset(void)
+void Memory_Reset(void)
 {
 	MemOverlay = 1;
 	SetUpMemBanks();
 }
 
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-EXPORTPROC PowerOff_ChangeNtfy(void);
-GLOBALPROC PowerOff_ChangeNtfy(void)
+extern void PowerOff_ChangeNtfy(void);
+void PowerOff_ChangeNtfy(void)
 {
 	if (! VIA2_iB2) {
 		ForceMacOff = true;
@@ -1700,7 +1700,7 @@ uint16_t MasterMyEvtQLock = 0;
 	*/
 #endif
 
-GLOBALFUNC bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
+ bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
 {
 	MyEvtQEl *p;
 
@@ -1730,12 +1730,12 @@ GLOBALFUNC bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
 uint32_t ICTactive;
 iCountt ICTwhen[kNumICTs];
 
-GLOBALPROC ICT_Zap(void)
+void ICT_Zap(void)
 {
 	ICTactive = 0;
 }
 
-LOCALPROC InsertICT(int taskid, iCountt when)
+static void InsertICT(int taskid, iCountt when)
 {
 	ICTwhen[taskid] = when;
 	ICTactive |= (1 << taskid);
@@ -1743,12 +1743,12 @@ LOCALPROC InsertICT(int taskid, iCountt when)
 
 iCountt NextiCount = 0;
 
-GLOBALFUNC iCountt GetCuriCount(void)
+ iCountt GetCuriCount(void)
 {
 	return NextiCount - GetCyclesRemaining();
 }
 
-GLOBALPROC ICT_add(int taskid, uint32_t n)
+void ICT_add(int taskid, uint32_t n)
 {
 	/* n must be > 0 */
 	int32_t x = GetCyclesRemaining();

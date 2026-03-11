@@ -1739,7 +1739,7 @@ static bool ControlKeyPressed = false;
 #define kUnMappedKey kStrCntrlKyName
 #endif
 
-LOCALFUNC char * GetSubstitutionStr(char x)
+static char * GetSubstitutionStr(char x)
 {
 	char *s;
 
@@ -1847,7 +1847,7 @@ LOCALFUNC char * GetSubstitutionStr(char x)
 	return s;
 }
 
-LOCALFUNC int ClStrSizeSubstCStr(char *s)
+static int ClStrSizeSubstCStr(char *s)
 {
 	/* must match ClStrAppendSubstCStr ! */
 
@@ -1901,7 +1901,7 @@ l_exit:
 	return L;
 }
 
-LOCALPROC ClStrAppendChar(int *L0, uint8_t *r, uint8_t c)
+static void ClStrAppendChar(int *L0, uint8_t *r, uint8_t c)
 {
 	int L = *L0;
 
@@ -1910,7 +1910,7 @@ LOCALPROC ClStrAppendChar(int *L0, uint8_t *r, uint8_t c)
 	*L0 = L;
 }
 
-LOCALPROC ClStrAppendSubstCStr(int *L, uint8_t *r, char *s)
+static void ClStrAppendSubstCStr(int *L, uint8_t *r, char *s)
 {
 	/* must match ClStrSizeSubstCStr ! */
 
@@ -2228,7 +2228,7 @@ LOCALPROC ClStrAppendSubstCStr(int *L, uint8_t *r, char *s)
 
 #define ClStrMaxLength 512
 
-LOCALPROC ClStrFromSubstCStr(int *L, uint8_t *r, char *s)
+static void ClStrFromSubstCStr(int *L, uint8_t *r, char *s)
 {
 	int n = ClStrSizeSubstCStr(s);
 

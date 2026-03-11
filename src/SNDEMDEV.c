@@ -97,9 +97,9 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 static uint32_t SoundInvertPhase = 0;
 static uint16_t SoundInvertState = 0;
 
-IMPORTFUNC uint16_t GetSoundInvertTime(void);
+extern uint16_t GetSoundInvertTime(void);
 
-GLOBALPROC MacSound_SubTick(int SubTick)
+void MacSound_SubTick(int SubTick)
 {
 	uint16_t actL;
 	tpSoundSamp p;

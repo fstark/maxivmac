@@ -55,7 +55,7 @@ static bool NeedWholeScreenDraw = false;
 
 static uint8_t * CntrlDisplayBuff = nullptr;
 
-LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
+static void DrawCell(unsigned int h, unsigned int v, int x)
 {
 #if 1
 	/* safety check */
@@ -159,13 +159,13 @@ LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
 static int CurCellh0;
 static int CurCellv0;
 
-LOCALPROC DrawCellsBeginLine(void)
+static void DrawCellsBeginLine(void)
 {
 	DrawCell(ControlBoxh0, CurCellv0, kCellMiddleLeft);
 	CurCellh0 = hStart;
 }
 
-LOCALPROC DrawCellsEndLine(void)
+static void DrawCellsEndLine(void)
 {
 	int i;
 
@@ -176,7 +176,7 @@ LOCALPROC DrawCellsEndLine(void)
 	CurCellv0++;
 }
 
-LOCALPROC DrawCellsBottomLine(void)
+static void DrawCellsBottomLine(void)
 {
 	int i;
 
@@ -187,19 +187,19 @@ LOCALPROC DrawCellsBottomLine(void)
 	DrawCell(hLimit, CurCellv0, kCellLowerRight);
 }
 
-LOCALPROC DrawCellAdvance(int x)
+static void DrawCellAdvance(int x)
 {
 	DrawCell(CurCellh0, CurCellv0, x);
 	CurCellh0++;
 }
 
-LOCALPROC DrawCellsBlankLine(void)
+static void DrawCellsBlankLine(void)
 {
 	DrawCellsBeginLine();
 	DrawCellsEndLine();
 }
 
-LOCALPROC DrawCellsFromStr(char *s)
+static void DrawCellsFromStr(char *s)
 {
 	uint8_t ps[ClStrMaxLength];
 	uint8_t cs;
@@ -255,14 +255,14 @@ LOCALPROC DrawCellsFromStr(char *s)
 	}
 }
 
-LOCALPROC DrawCellsOneLineStr(char *s)
+static void DrawCellsOneLineStr(char *s)
 {
 	DrawCellsBeginLine();
 	DrawCellsFromStr(s);
 	DrawCellsEndLine();
 }
 
-LOCALPROC DrawCellsKeyCommand(char *k, char *s)
+static void DrawCellsKeyCommand(char *k, char *s)
 {
 	DrawCellsBeginLine();
 	DrawCellsFromStr(" ");
@@ -274,7 +274,7 @@ LOCALPROC DrawCellsKeyCommand(char *k, char *s)
 
 typedef void (*SpclModeBody) (void);
 
-LOCALPROC DrawSpclMode0(char *Title, SpclModeBody Body)
+static void DrawSpclMode0(char *Title, SpclModeBody Body)
 {
 	int i;
 	int k;
@@ -326,7 +326,7 @@ LOCALPROC DrawSpclMode0(char *Title, SpclModeBody Body)
 #endif
 
 #if WantAbnormalReports || UseActvFile
-LOCALPROC ClStrAppendHexNib(int *L0, uint8_t *r, uint8_t v)
+static void ClStrAppendHexNib(int *L0, uint8_t *r, uint8_t v)
 {
 	if (v < 10) {
 		ClStrAppendChar(L0, r, kCellDigit0 + v);
@@ -337,7 +337,7 @@ LOCALPROC ClStrAppendHexNib(int *L0, uint8_t *r, uint8_t v)
 #endif
 
 #if WantAbnormalReports || UseActvFile
-LOCALPROC ClStrAppendHexByte(int *L0, uint8_t *r, uint8_t v)
+static void ClStrAppendHexByte(int *L0, uint8_t *r, uint8_t v)
 {
 	ClStrAppendHexNib(L0, r, (v >> 4) & 0x0F);
 	ClStrAppendHexNib(L0, r, v & 0x0F);
@@ -345,7 +345,7 @@ LOCALPROC ClStrAppendHexByte(int *L0, uint8_t *r, uint8_t v)
 #endif
 
 #if WantAbnormalReports || UseActvFile
-LOCALPROC ClStrAppendHexWord(int *L0, uint8_t *r, uint16_t v)
+static void ClStrAppendHexWord(int *L0, uint8_t *r, uint16_t v)
 {
 	ClStrAppendHexByte(L0, r, (v >> 8) & 0xFF);
 	ClStrAppendHexByte(L0, r, v & 0xFF);
@@ -353,7 +353,7 @@ LOCALPROC ClStrAppendHexWord(int *L0, uint8_t *r, uint16_t v)
 #endif
 
 #if WantAbnormalReports
-LOCALPROC DrawCellsOneLineHexWord(uint16_t v)
+static void DrawCellsOneLineHexWord(uint16_t v)
 {
 	uint8_t ps[ClStrMaxLength];
 	int L = 0;
@@ -369,7 +369,7 @@ LOCALPROC DrawCellsOneLineHexWord(uint16_t v)
 }
 #endif
 
-LOCALPROC DrawCellsMessageModeBody(void)
+static void DrawCellsMessageModeBody(void)
 {
 	DrawCellsOneLineStr(SavedBriefMsg);
 	DrawCellsBlankLine();
@@ -382,12 +382,12 @@ LOCALPROC DrawCellsMessageModeBody(void)
 #endif
 }
 
-LOCALPROC DrawMessageMode(void)
+static void DrawMessageMode(void)
 {
 	DrawSpclMode0(kStrModeMessage, DrawCellsMessageModeBody);
 }
 
-LOCALPROC MacMsgDisplayOff(void)
+static void MacMsgDisplayOff(void)
 {
 	SpecialModeClr(SpclModeMessage);
 	SavedBriefMsg = nullptr;
@@ -397,7 +397,7 @@ LOCALPROC MacMsgDisplayOff(void)
 	NeedWholeScreenDraw = true;
 }
 
-LOCALPROC MacMsgDisplayOn(void)
+static void MacMsgDisplayOn(void)
 {
 	NeedWholeScreenDraw = true;
 	DisconnectKeyCodes1(kKeepMaskControl | kKeepMaskCapsLock);
@@ -405,14 +405,14 @@ LOCALPROC MacMsgDisplayOn(void)
 	SpecialModeSet(SpclModeMessage);
 }
 
-LOCALPROC DoMessageModeKey(uint8_t key)
+static void DoMessageModeKey(uint8_t key)
 {
 	if (MKC_C == key) {
 		MacMsgDisplayOff();
 	}
 }
 
-LOCALPROC MacMsgOverride(char *briefMsg, char *longMsg)
+static void MacMsgOverride(char *briefMsg, char *longMsg)
 {
 	if (MacMsgDisplayed) {
 		MacMsgDisplayOff();
@@ -422,14 +422,14 @@ LOCALPROC MacMsgOverride(char *briefMsg, char *longMsg)
 }
 
 #if dbglog_HAVE
-GLOBALOSGLUPROC MacMsgDebugAlert(char *s)
+void MacMsgDebugAlert(char *s)
 {
 	MacMsgOverride("Debug", s);
 }
 #endif
 
 #if NeedDoMoreCommandsMsg
-LOCALPROC DoMoreCommandsMsg(void)
+static void DoMoreCommandsMsg(void)
 {
 	MacMsgOverride(kStrMoreCommandsTitle,
 		kStrMoreCommandsMessage);
@@ -437,31 +437,31 @@ LOCALPROC DoMoreCommandsMsg(void)
 #endif
 
 #if NeedDoAboutMsg
-LOCALPROC DoAboutMsg(void)
+static void DoAboutMsg(void)
 {
 	MacMsgOverride(kStrAboutTitle,
 		kStrAboutMessage);
 }
 #endif
 
-LOCALPROC NoRomMsgDisplayOff(void)
+static void NoRomMsgDisplayOff(void)
 {
 	SpecialModeClr(SpclModeNoRom);
 	NeedWholeScreenDraw = true;
 }
 
-LOCALPROC NoRomMsgDisplayOn(void)
+static void NoRomMsgDisplayOn(void)
 {
 	NeedWholeScreenDraw = true;
 	SpecialModeSet(SpclModeNoRom);
 }
 
-LOCALPROC DrawCellsNoRomModeBody(void)
+static void DrawCellsNoRomModeBody(void)
 {
 	DrawCellsOneLineStr(kStrNoROMMessage);
 }
 
-LOCALPROC DrawNoRomMode(void)
+static void DrawNoRomMode(void)
 {
 	DrawSpclMode0(kStrNoROMTitle, DrawCellsNoRomModeBody);
 }
@@ -529,7 +529,7 @@ enum {
 	kNumCntrlMsgs
 };
 
-LOCALPROC DoEnterControlMode(void)
+static void DoEnterControlMode(void)
 {
 	CurControlMode = kCntrlModeBase;
 	ControlMessage = kCntrlMsgBaseStart;
@@ -538,14 +538,14 @@ LOCALPROC DoEnterControlMode(void)
 	SpecialModeSet(SpclModeControl);
 }
 
-LOCALPROC DoLeaveControlMode(void)
+static void DoLeaveControlMode(void)
 {
 	SpecialModeClr(SpclModeControl);
 	CurControlMode = kCntrlModeOff;
 	NeedWholeScreenDraw = true;
 }
 
-LOCALPROC Keyboard_UpdateControlKey(bool down)
+static void Keyboard_UpdateControlKey(bool down)
 {
 	if (down != LastControlKey) {
 		LastControlKey = down;
@@ -557,7 +557,7 @@ LOCALPROC Keyboard_UpdateControlKey(bool down)
 	}
 }
 
-LOCALPROC SetSpeedValue(uint8_t i)
+static void SetSpeedValue(uint8_t i)
 {
 	SpeedValue = i;
 	CurControlMode = kCntrlModeBase;
@@ -565,11 +565,11 @@ LOCALPROC SetSpeedValue(uint8_t i)
 }
 
 #if VarFullScreen
-FORWARDPROC ToggleWantFullScreen(void);
+static void ToggleWantFullScreen(void);
 #endif
 
 #if IncludeHostTextClipExchange
-LOCALPROC HTCEexportSubstCStr(char *s)
+static void HTCEexportSubstCStr(char *s)
 {
 	int i;
 	int L;
@@ -619,7 +619,7 @@ LOCALPROC HTCEexportSubstCStr(char *s)
 #endif
 
 #if IncludeHostTextClipExchange
-LOCALPROC CopyOptionsStr(void)
+static void CopyOptionsStr(void)
 {
 	HTCEexportSubstCStr(kBldOpts);
 }
@@ -627,9 +627,9 @@ LOCALPROC CopyOptionsStr(void)
 
 #if 0
 #if UseActvCode
-FORWARDPROC CopyRegistrationStr(void);
+static void CopyRegistrationStr(void);
 #elif EnableDemoMsg
-LOCALPROC CopyRegistrationStr(void)
+static void CopyRegistrationStr(void)
 {
 	HTCEexportSubstCStr("^v");
 }
@@ -637,7 +637,7 @@ LOCALPROC CopyRegistrationStr(void)
 #endif
 
 
-LOCALPROC DoControlModeKey(uint8_t key)
+static void DoControlModeKey(uint8_t key)
 {
 	switch (CurControlMode) {
 		case kCntrlModeBase:
@@ -853,7 +853,7 @@ LOCALPROC DoControlModeKey(uint8_t key)
 	NeedWholeScreenDraw = true;
 }
 
-LOCALFUNC char * ControlMode2TitleStr(void)
+static char * ControlMode2TitleStr(void)
 {
 	char *s;
 
@@ -887,7 +887,7 @@ LOCALFUNC char * ControlMode2TitleStr(void)
 	return s;
 }
 
-LOCALPROC DrawCellsControlModeBody(void)
+static void DrawCellsControlModeBody(void)
 {
 	switch (ControlMessage) {
 		case kCntrlMsgAbout:
@@ -1044,7 +1044,7 @@ LOCALPROC DrawCellsControlModeBody(void)
 	}
 }
 
-LOCALPROC DrawControlMode(void)
+static void DrawControlMode(void)
 {
 	DrawSpclMode0(ControlMode2TitleStr(), DrawCellsControlModeBody);
 }
@@ -1053,7 +1053,7 @@ LOCALPROC DrawControlMode(void)
 
 #if EnableDemoMsg
 
-LOCALPROC DrawDemoMode(void)
+static void DrawDemoMode(void)
 {
 	CurCellv0 = ControlBoxv0 + ((9 * CurMacDateInSeconds) & 0x0F);
 	CurCellh0 = ControlBoxh0 + ((15 * CurMacDateInSeconds) & 0x1F);
@@ -1072,7 +1072,7 @@ LOCALPROC DrawDemoMode(void)
 	DrawCellAdvance(kCellDemo5);
 }
 
-LOCALPROC DemoModeSecondNotify(void)
+static void DemoModeSecondNotify(void)
 {
 	NeedWholeScreenDraw = true;
 	SpecialModeSet(SpclModeDemo);
@@ -1084,7 +1084,7 @@ LOCALPROC DemoModeSecondNotify(void)
 #include "ACTVCODE.h"
 #endif
 
-LOCALPROC DrawSpclMode(void)
+static void DrawSpclMode(void)
 {
 #if UseControlKeys
 	if (SpecialModeTst(SpclModeControl)) {
@@ -1117,7 +1117,7 @@ LOCALPROC DrawSpclMode(void)
 	}
 }
 
-LOCALFUNC uint8_t * GetCurDrawBuff(void)
+static uint8_t * GetCurDrawBuff(void)
 {
 	uint8_t * p = screencomparebuff;
 
@@ -1137,7 +1137,7 @@ LOCALFUNC uint8_t * GetCurDrawBuff(void)
 }
 
 #ifdef WantKeyboard_RemapMac
-LOCALFUNC uint8_t Keyboard_RemapMac(uint8_t key)
+static uint8_t Keyboard_RemapMac(uint8_t key)
 {
 	switch (key) {
 #if MKC_formac_Control != MKC_Control
@@ -1253,7 +1253,7 @@ LOCALFUNC uint8_t Keyboard_RemapMac(uint8_t key)
 }
 #endif /* WantKeyboard_RemapMac */
 
-LOCALPROC Keyboard_UpdateKeyMap2(uint8_t key, bool down)
+static void Keyboard_UpdateKeyMap2(uint8_t key, bool down)
 {
 #if UseControlKeys
 	if (MKC_CM == key) {
@@ -1298,7 +1298,7 @@ LOCALPROC Keyboard_UpdateKeyMap2(uint8_t key, bool down)
 	}
 }
 
-LOCALPROC DisconnectKeyCodes2(void)
+static void DisconnectKeyCodes2(void)
 {
 	DisconnectKeyCodes1(kKeepMaskControl | kKeepMaskCapsLock);
 #if UseControlKeys
@@ -1311,7 +1311,7 @@ LOCALPROC DisconnectKeyCodes2(void)
 #endif
 
 #if CheckRomCheckSum
-LOCALFUNC uint32_t Calc_Checksum(void)
+static uint32_t Calc_Checksum(void)
 {
 	long int i;
 	uint32_t CheckSum = 0;
@@ -1327,21 +1327,21 @@ LOCALFUNC uint32_t Calc_Checksum(void)
 #endif
 
 #if CheckRomCheckSum && RomStartCheckSum
-LOCALPROC WarnMsgCorruptedROM(void)
+static void WarnMsgCorruptedROM(void)
 {
 	MacMsgOverride(kStrCorruptedROMTitle, kStrCorruptedROMMessage);
 }
 #endif
 
 #if CheckRomCheckSum
-LOCALPROC WarnMsgUnsupportedROM(void)
+static void WarnMsgUnsupportedROM(void)
 {
 	MacMsgOverride(kStrUnsupportedROMTitle,
 		kStrUnsupportedROMMessage);
 }
 #endif
 
-LOCALFUNC tMacErr ROM_IsValid(void)
+static tMacErr ROM_IsValid(void)
 {
 #if CheckRomCheckSum
 	uint32_t CheckSum =
@@ -1394,7 +1394,7 @@ LOCALFUNC tMacErr ROM_IsValid(void)
 }
 
 #if NonDiskProtect
-GLOBALOSGLUPROC WarnMsgUnsupportedDisk(void)
+void WarnMsgUnsupportedDisk(void)
 {
 	MacMsgOverride("Unsupported Disk Image",
 		"I do not recognize the format of the Disk Image,"
@@ -1402,7 +1402,7 @@ GLOBALOSGLUPROC WarnMsgUnsupportedDisk(void)
 }
 #endif
 
-LOCALFUNC bool WaitForRom(void)
+static bool WaitForRom(void)
 {
 	if (! ROM_loaded) {
 		NoRomMsgDisplayOn();

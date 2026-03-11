@@ -21,5 +21,5 @@
 #define PROGMAIN_H
 #endif
 
-EXPORTPROC EmulationReserveAlloc(void);
-EXPORTPROC ProgramMain(void);
+extern void EmulationReserveAlloc(void);
+extern void ProgramMain(void);

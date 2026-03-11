@@ -20,12 +20,12 @@
 #define SCCEMDEV_H
 #endif
 
-EXPORTPROC SCC_Reset(void);
+extern void SCC_Reset(void);
 
-EXPORTFUNC uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+extern uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 
-EXPORTFUNC bool SCC_InterruptsEnabled(void);
+extern bool SCC_InterruptsEnabled(void);
 
 #if EmLocalTalk
-EXPORTPROC LocalTalkTick(void);
+extern void LocalTalkTick(void);
 #endif
