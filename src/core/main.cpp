@@ -19,7 +19,7 @@
 */
 
 #include "core/common.h"
-#include "MINEM68K.h"
+#include "cpu/m68k.h"
 #if EmVIA1
 #include "VIAEMDEV.h"
 #endif

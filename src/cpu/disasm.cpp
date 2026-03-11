@@ -22,9 +22,9 @@
 
 #if WantDisasm
 
-#include "M68KITAB.h"
+#include "cpu/m68k_tables.h"
 
-#include "DISAM68K.h"
+#include "cpu/disasm.h"
 
 static uint32_t Disasm_pc;
 

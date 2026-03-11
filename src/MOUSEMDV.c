@@ -25,7 +25,7 @@
 
 #include "core/common.h"
 #include "SCCEMDEV.h"
-#include "MINEM68K.h"
+#include "cpu/m68k.h"
 
 #include "MOUSEMDV.h"
 
