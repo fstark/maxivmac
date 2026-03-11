@@ -42,7 +42,7 @@ typedef si5r simr;
 #define trueblnr 1
 #define falseblnr 0
 
-#define nullpr ((void *) 0)
+#define nullpr nullptr
 
 #define anyp ui3p
 

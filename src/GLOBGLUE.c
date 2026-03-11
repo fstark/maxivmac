@@ -59,7 +59,7 @@ IMPORTPROC MINEM68K_Init(
 	ui3b *fIPL);
 
 IMPORTFUNC ui5b GetCyclesRemaining(void);
-IMPORTPROC SetCyclesRemaining(ui5b n);
+IMPORTPROC SetCyclesRemaining(si5r n);
 
 IMPORTPROC SetHeadATTel(ATTep p);
 IMPORTFUNC ATTep FindATTel(CPTR addr);
