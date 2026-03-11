@@ -1140,7 +1140,7 @@ LOCALPROC WriteAPBXCDBuildSettings(void)
 			WriteDestFileLn("MACOSX_DEPLOYMENT_TARGET = 10.1;");
 		} else
 		if (gbk_cpufam_a64 == gbo_cpufam || gbk_cpufam_x64 == gbo_cpufam) {
-			WriteDestFileLn("MACOSX_DEPLOYMENT_TARGET = \"$(MACOSX_RECOMMENDED_DEPLOYMENT_TARGET)\";");
+			WriteDestFileLn("MACOSX_DEPLOYMENT_TARGET = 10.15;");
 		} else
 		{
 			if (ide_vers >= 12100) {
