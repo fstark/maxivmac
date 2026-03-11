@@ -48,13 +48,7 @@
 #define MayNotInline
 #endif
 
-#ifndef my_reg_call
-#define my_reg_call
-#endif
-
-#ifndef my_osglu_call
-#define my_osglu_call
-#endif
+/* my_reg_call/my_osglu_call removed — empty on all modern platforms */
 
 #define UNUSED(exp) (void)(exp)
 
