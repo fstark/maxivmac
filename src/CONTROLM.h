@@ -53,7 +53,7 @@ LOCALVAR bool NeedWholeScreenDraw = false;
 
 #define MacMsgDisplayed SpecialModeTst(SpclModeMessage)
 
-LOCALVAR uint8_t * CntrlDisplayBuff = nullpr;
+LOCALVAR uint8_t * CntrlDisplayBuff = nullptr;
 
 LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
 {
@@ -311,7 +311,7 @@ LOCALPROC DrawSpclMode0(char *Title, SpclModeBody Body)
 	}
 	DrawCellsEndLine();
 
-	if (nullpr != Body) {
+	if (nullptr != Body) {
 		Body();
 	}
 
@@ -390,7 +390,7 @@ LOCALPROC DrawMessageMode(void)
 LOCALPROC MacMsgDisplayOff(void)
 {
 	SpecialModeClr(SpclModeMessage);
-	SavedBriefMsg = nullpr;
+	SavedBriefMsg = nullptr;
 #if WantAbnormalReports
 	SavedIDMsg = 0;
 #endif
@@ -581,7 +581,7 @@ LOCALPROC HTCEexportSubstCStr(char *s)
 		bool IsOk = false;
 		uint8_t * p = PbufLock(j);
 
-		if (nullpr != p) {
+		if (nullptr != p) {
 			L = 0;
 			ClStrAppendSubstCStr(&L, p, s);
 
@@ -1122,7 +1122,7 @@ LOCALFUNC uint8_t * GetCurDrawBuff(void)
 	uint8_t * p = screencomparebuff;
 
 	if (0 != SpecialModes) {
-		MyMoveBytes((anyp)p, (anyp)CntrlDisplayBuff,
+		MyMoveBytes((uint8_t *)p, (uint8_t *)CntrlDisplayBuff,
 #if 0 != vMacScreenDepth
 			UseColorMode ? vMacScreenNumBytes :
 #endif

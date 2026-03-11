@@ -630,12 +630,12 @@ LOCALFUNC bool HaveMyCGCursorIsVisible(void)
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount)
+GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
 }
 
-LOCALPROC PStrFromChar(ps3p r, char x)
+LOCALPROC PStrFromChar(uint8_t * r, char x)
 {
 	r[0] = 1;
 	r[1] = (char)x;
@@ -1005,7 +1005,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 			&actualCount));
 	}
 
-	if (nullpr != Sony_ActCount) {
+	if (nullptr != Sony_ActCount) {
 		*Sony_ActCount = actualCount;
 	}
 
@@ -1346,7 +1346,7 @@ LOCALPROC SetScrnRectFromCoords(Rect *r,
 #endif
 }
 
-LOCALVAR uint8_t * ScalingBuff = nullpr;
+LOCALVAR uint8_t * ScalingBuff = nullptr;
 
 LOCALVAR uint8_t * CLUT_final;
 
@@ -2124,7 +2124,7 @@ LOCALPROC StartUpTimeAdjust(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullpr;
+LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
 volatile static uint16_t ThePlayOffset;
 volatile static uint16_t TheFillOffset;
 volatile static uint16_t MinFilledSoundBuffs;
@@ -2921,7 +2921,7 @@ LOCALFUNC CFStringRef CFStringCreateFromSubstCStr(char *s)
 
 LOCALPROC CheckSavedMacMsg(void)
 {
-	if (nullpr != SavedBriefMsg) {
+	if (nullptr != SavedBriefMsg) {
 		if (HaveMyCreateStandardAlert() && HaveMyRunStandardAlert()) {
 			CFStringRef briefMsgu = CFStringCreateFromSubstCStr(
 				SavedBriefMsg);
@@ -2944,7 +2944,7 @@ LOCALPROC CheckSavedMacMsg(void)
 			}
 		}
 
-		SavedBriefMsg = nullpr;
+		SavedBriefMsg = nullptr;
 	}
 }
 
@@ -3522,7 +3522,7 @@ LOCALFUNC bool Sony_InsertIth(int i)
 {
 	tMacErr err = mnvm_noErr;
 
-	if ((i > 9) || ! FirstFreeDisk(nullpr)) {
+	if ((i > 9) || ! FirstFreeDisk(nullptr)) {
 		return false;
 	} else {
 		char s[16] = "disk?.dsk";
@@ -4877,7 +4877,7 @@ LOCALPROC CheckForSavedTasks(void)
 	}
 #endif
 
-	if ((nullpr != SavedBriefMsg) & ! MacMsgDisplayed) {
+	if ((nullptr != SavedBriefMsg) & ! MacMsgDisplayed) {
 		MacMsgDisplayOn();
 	}
 
@@ -5430,7 +5430,7 @@ LOCALFUNC bool AllocMyMemory(void)
 	bool IsOk = false;
 
 	ReserveAllocOffset = 0;
-	ReserveAllocBigBlock = nullpr;
+	ReserveAllocBigBlock = nullptr;
 	ReserveAllocAll();
 	n = ReserveAllocOffset;
 	ReserveAllocBigBlock = (uint8_t *)calloc(1, n);

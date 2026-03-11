@@ -177,7 +177,7 @@ GLOBALFUNC bool Vid_Init(void)
 	uint8_t * pTo_OneBitMode;
 	uint8_t * pTo_OneVidParams;
 #if 0 != vMacScreenDepth
-	uint8_t * pTo_ColorBitMode = nullpr;
+	uint8_t * pTo_ColorBitMode = nullptr;
 	uint8_t * pTo_ColorVidParams;
 #endif
 

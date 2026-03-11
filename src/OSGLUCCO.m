@@ -381,7 +381,7 @@ LOCALFUNC bool HaveMyCGCursorIsVisible(void)
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount)
+GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
 }
@@ -833,7 +833,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 		}
 	}
 
-	if (nullpr != Sony_ActCount) {
+	if (nullptr != Sony_ActCount) {
 		*Sony_ActCount = NewSony_Count;
 	}
 
@@ -1134,7 +1134,7 @@ LOCALFUNC bool Sony_InsertIth(int i)
 {
 	bool v;
 
-	if ((i > 9) || ! FirstFreeDisk(nullpr)) {
+	if ((i > 9) || ! FirstFreeDisk(nullptr)) {
 		v = false;
 	} else {
 		char s[] = "disk?.dsk";
@@ -1871,7 +1871,7 @@ LOCALPROC CheckMouseState(void)
 LOCALVAR bool gTrueBackgroundFlag = false;
 
 
-LOCALVAR uint8_t * ScalingBuff = nullpr;
+LOCALVAR uint8_t * ScalingBuff = nullptr;
 
 LOCALVAR uint8_t * CLUT_final;
 
@@ -2229,7 +2229,7 @@ LOCALFUNC bool InitLocationDat(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullpr;
+LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
 static volatile uint16_t ThePlayOffset;
 static volatile uint16_t TheFillOffset;
 static volatile uint16_t MinFilledSoundBuffs;
@@ -3212,7 +3212,7 @@ LOCALPROC DisconnectKeyCodes3(void)
 
 LOCALPROC CheckSavedMacMsg(void)
 {
-	if (nullpr != SavedBriefMsg) {
+	if (nullptr != SavedBriefMsg) {
 		NSString *briefMsg0 =
 			NSStringCreateFromSubstCStr(SavedBriefMsg);
 		NSString *longMsg0 =
@@ -3223,7 +3223,7 @@ LOCALPROC CheckSavedMacMsg(void)
 		(void) NSRunAlertPanel(briefMsg0, @"%@", quitMsg0, nil, nil,
 			longMsg0);
 
-		SavedBriefMsg = nullpr;
+		SavedBriefMsg = nullptr;
 	}
 }
 
@@ -4556,7 +4556,7 @@ LOCALPROC CheckForSavedTasks(void)
 		}
 	}
 
-	if ((nullpr != SavedBriefMsg) & ! MacMsgDisplayed) {
+	if ((nullptr != SavedBriefMsg) & ! MacMsgDisplayed) {
 		MacMsgDisplayOn();
 	}
 
@@ -5173,7 +5173,7 @@ LOCALFUNC bool AllocMyMemory(void)
 	bool IsOk = false;
 
 	ReserveAllocOffset = 0;
-	ReserveAllocBigBlock = nullpr;
+	ReserveAllocBigBlock = nullptr;
 	ReserveAllocAll();
 	n = ReserveAllocOffset;
 	ReserveAllocBigBlock = (uint8_t *)calloc(1, n);
@@ -5195,7 +5195,7 @@ LOCALFUNC bool AllocMyMemory(void)
 
 LOCALPROC UnallocMyMemory(void)
 {
-	if (nullpr != ReserveAllocBigBlock) {
+	if (nullptr != ReserveAllocBigBlock) {
 		free((char *) ReserveAllocBigBlock);
 	}
 }

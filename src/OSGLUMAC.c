@@ -386,7 +386,7 @@ struct MyDir_R {
 typedef struct MyDir_R MyDir_R;
 
 LOCALFUNC tMacErr OpenNamedFileInFolder(MyDir_R *d,
-	ps3p fileName, short *refnum)
+	uint8_t * fileName, short *refnum)
 {
 	tMacErr err;
 
@@ -739,7 +739,7 @@ LOCALPROC dbglog_close0(void)
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount)
+GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 	BlockMove((Ptr)srcPtr, (Ptr)destPtr, byteCount);
 }
@@ -755,7 +755,7 @@ LOCALFUNC int32_t CStrLen(char *src)
 
 #define PStrMaxLength 255
 
-LOCALPROC PStrFromCStr(ps3p r, /* CONST */ char *s)
+LOCALPROC PStrFromCStr(uint8_t * r, /* CONST */ char *s)
 {
 	unsigned short L;
 
@@ -764,16 +764,16 @@ LOCALPROC PStrFromCStr(ps3p r, /* CONST */ char *s)
 		L = PStrMaxLength;
 	}
 	*r++ = L;
-	MyMoveBytes((anyp)s, (anyp)r, L);
+	MyMoveBytes((uint8_t *)s, (uint8_t *)r, L);
 }
 
-LOCALPROC PStrFromChar(ps3p r, char x)
+LOCALPROC PStrFromChar(uint8_t * r, char x)
 {
 	r[0] = 1;
 	r[1] = (char)x;
 }
 
-LOCALPROC PStrFromHandle(ps3p r, Handle h, uint32_t MaxL)
+LOCALPROC PStrFromHandle(uint8_t * r, Handle h, uint32_t MaxL)
 {
 	uint32_t L = GetHandleSize(h);
 
@@ -785,7 +785,7 @@ LOCALPROC PStrFromHandle(ps3p r, Handle h, uint32_t MaxL)
 	BlockMove(*h, (Ptr)r, L);
 }
 
-LOCALFUNC tMacErr PStrToHand(ps3p s, Handle *r)
+LOCALFUNC tMacErr PStrToHand(uint8_t * s, Handle *r)
 {
 	return To_tMacErr(PtrToHand((Ptr)(s + 1), r, s[0]));
 }
@@ -1010,12 +1010,12 @@ LOCALPROC SetScrnRectFromCoords(Rect *r,
 #endif
 
 #if EnableMagnify
-LOCALVAR uint8_t * ScalingBuff = nullpr;
+LOCALVAR uint8_t * ScalingBuff = nullptr;
 #endif
 
 #if EnableMagnify
 
-LOCALVAR uint8_t * ScalingTabl = nullpr;
+LOCALVAR uint8_t * ScalingTabl = nullptr;
 #define ScalingTablsz (256 * MyWindowScale)
 
 #define ScrnMapr_DoMap UpdateScaledBWCopy
@@ -1781,7 +1781,7 @@ LOCALFUNC bool InitLocationDat(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullpr;
+LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
 volatile static uint16_t ThePlayOffset;
 volatile static uint16_t TheFillOffset;
 volatile static uint16_t MinFilledSoundBuffs;
@@ -2308,7 +2308,7 @@ LOCALPROC UngrabMachine(void)
 
 /* --- basic dialogs --- */
 
-LOCALPROC NativeStrFromCStr(ps3p r, char *s, bool AddEllipsis)
+LOCALPROC NativeStrFromCStr(uint8_t * r, char *s, bool AddEllipsis)
 {
 	int i;
 	int L;
@@ -2370,7 +2370,7 @@ LOCALPROC CheckSavedMacMsg(void)
 	Str255 briefMsgp;
 	Str255 longMsgp;
 
-	if (nullpr != SavedBriefMsg) {
+	if (nullptr != SavedBriefMsg) {
 		NativeStrFromCStr(briefMsgp, SavedBriefMsg, false);
 		NativeStrFromCStr(longMsgp, SavedLongMsg, false);
 #if AppearanceAvail
@@ -2405,7 +2405,7 @@ LOCALPROC CheckSavedMacMsg(void)
 			/* Alert (kMyStandardAlert, 0L); */
 		}
 
-		SavedBriefMsg = nullpr;
+		SavedBriefMsg = nullptr;
 	}
 }
 
@@ -2577,7 +2577,7 @@ LOCALFUNC uint8_t * PbufLock(tPbuf i)
 	Handle h = PbufDat[i];
 
 	if (NULL == h) {
-		p = nullpr;
+		p = nullptr;
 	} else {
 		HLock(h);
 		p = (uint8_t *)*h;
@@ -2713,7 +2713,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 		}
 	}
 
-	if (nullpr != Sony_ActCount) {
+	if (nullptr != Sony_ActCount) {
 		*Sony_ActCount = NewSony_Count;
 	}
 
@@ -2866,7 +2866,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 }
 #endif
 
-LOCALFUNC tMacErr Sony_Insert0(short refnum, bool locked, ps3p s)
+LOCALFUNC tMacErr Sony_Insert0(short refnum, bool locked, uint8_t * s)
 {
 	tDrive Drive_No;
 
@@ -2960,7 +2960,7 @@ LOCALFUNC tMacErr InsertADiskFromNamevRef(ConstStr255Param fileName,
 			break;
 	}
 	if (mnvm_noErr == err) {
-		err = Sony_Insert0(R.ioParam.ioRefNum, locked, (ps3p)fileName);
+		err = Sony_Insert0(R.ioParam.ioRefNum, locked, (uint8_t *)fileName);
 	}
 
 	return err;
@@ -3178,7 +3178,7 @@ pascal void NavigationEventProc(
 }
 #endif
 
-#define PStrConstBlank ((ps3p)"\000")
+#define PStrConstBlank ((uint8_t *)"\000")
 
 LOCALPROC InsertADisk0(void)
 {
@@ -3410,9 +3410,9 @@ LOCALFUNC tMacErr FindPrefFolder(MyDir_R *d)
 #define PStrToTotSize(s) (SizeOfListMyChar(PStrLength(s) + 1))
 	/* + 1 for length byte */
 
-LOCALPROC PStrCopy(ps3p r, ps3p s)
+LOCALPROC PStrCopy(uint8_t * r, uint8_t * s)
 {
-	MyMoveBytes((anyp)s, (anyp)r, PStrToTotSize(s));
+	MyMoveBytes((uint8_t *)s, (uint8_t *)r, PStrToTotSize(s));
 }
 
 LOCALFUNC tMacErr MyFindNamedChildDir_v2(MyDir_R *src_d, StringPtr s,
@@ -3556,7 +3556,7 @@ LOCALFUNC bool LoadMacRom(void)
 
 LOCALFUNC bool Sony_InsertIth(int i)
 {
-	if ((i > 9) || ! FirstFreeDisk(nullpr)) {
+	if ((i > 9) || ! FirstFreeDisk(nullptr)) {
 		return false;
 	} else {
 		Str255 s;
@@ -3616,7 +3616,7 @@ label_fail:
 #endif
 
 #if HaveCPUfamM68K && IncludeSonyNew
-LOCALPROC MakeNewDiskFromNamevRef(ps3p Name, short vRefNum,
+LOCALPROC MakeNewDiskFromNamevRef(uint8_t * Name, short vRefNum,
 	uint32_t L)
 {
 	short refNum;
@@ -4897,7 +4897,7 @@ LOCALPROC CheckForSavedTasks(void)
 	}
 #endif
 
-	if ((nullpr != SavedBriefMsg) & ! MacMsgDisplayed) {
+	if ((nullptr != SavedBriefMsg) & ! MacMsgDisplayed) {
 		MacMsgDisplayOn();
 	}
 
@@ -5483,7 +5483,7 @@ LOCALFUNC bool AllocMyMemory(void)
 	bool IsOk = false;
 
 	ReserveAllocOffset = 0;
-	ReserveAllocBigBlock = nullpr;
+	ReserveAllocBigBlock = nullptr;
 	ReserveAllocAll();
 	n = ReserveAllocOffset;
 	ReserveAllocBigBlock = (uint8_t *)NewPtr(n);

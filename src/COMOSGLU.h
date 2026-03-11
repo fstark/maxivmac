@@ -36,7 +36,7 @@
 #define EnableMoveMouse 0
 #endif
 
-GLOBALVAR uint8_t * ROM = nullpr;
+GLOBALVAR uint8_t * ROM = nullptr;
 LOCALVAR bool ROM_loaded = false;
 
 GLOBALVAR uint32_t vSonyWritableMask = 0;
@@ -209,7 +209,7 @@ LOCALFUNC bool FirstFreeDisk(tDrive *Drive_No)
 
 	for (i = 0; i < NumDrives; ++i) {
 		if (! vSonyIsInserted(i)) {
-			if (nullpr != Drive_No) {
+			if (nullptr != Drive_No) {
 				*Drive_No = i;
 			}
 			return true;
@@ -367,7 +367,7 @@ Label_3:
 	*RightMask0 = RightMask;
 }
 
-LOCALVAR uint8_t * screencomparebuff = nullpr;
+LOCALVAR uint8_t * screencomparebuff = nullptr;
 
 LOCALVAR uint32_t NextDrawRow = 0;
 
@@ -603,8 +603,8 @@ Label_2:
 		copysize = copyrows * vMacScreenMonoByteWidth;
 	}
 
-	MyMoveBytes((anyp)screencurrentbuff + copyoffset,
-		(anyp)screencomparebuff + copyoffset,
+	MyMoveBytes((uint8_t *)screencurrentbuff + copyoffset,
+		(uint8_t *)screencomparebuff + copyoffset,
 		copysize);
 
 	*top = j0v;
@@ -824,7 +824,7 @@ LOCALPROC SetLongs(uint32_t *p, long n)
 }
 
 LOCALVAR uint32_t ReserveAllocOffset;
-LOCALVAR uint8_t * ReserveAllocBigBlock = nullpr;
+LOCALVAR uint8_t * ReserveAllocBigBlock = nullptr;
 
 #define PowOf2(p) ((uint32_t)1 << (p))
 #define Pow2Mask(p) (PowOf2(p) - 1)
@@ -838,8 +838,8 @@ GLOBALOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
 	uint8_t align, bool FillOnes)
 {
 	ReserveAllocOffset = CeilPow2Mult(ReserveAllocOffset, align);
-	if (nullpr == ReserveAllocBigBlock) {
-		*p = nullpr;
+	if (nullptr == ReserveAllocBigBlock) {
+		*p = nullptr;
 	} else {
 		*p = ReserveAllocBigBlock + ReserveAllocOffset;
 		if (FillOnes) {
@@ -865,7 +865,7 @@ GLOBALOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
 #define dbglog_bufsz PowOf2(dbglog_buflnsz)
 LOCALVAR uint32_t dbglog_bufpos = 0;
 
-LOCALVAR char *dbglog_bufp = nullpr;
+LOCALVAR char *dbglog_bufp = nullptr;
 
 LOCALPROC dbglog_ReserveAlloc(void)
 {
@@ -898,14 +898,14 @@ label_retry:
 	bufposmod = ModPow2(dbglog_bufpos, dbglog_buflnsz);
 	if (newbufdiv != curbufdiv) {
 		r = dbglog_bufsz - bufposmod;
-		MyMoveBytes((anyp)p, (anyp)(dbglog_bufp + bufposmod), r);
+		MyMoveBytes((uint8_t *)p, (uint8_t *)(dbglog_bufp + bufposmod), r);
 		dbglog_write0(dbglog_bufp, dbglog_bufsz);
 		L -= r;
 		p += r;
 		dbglog_bufpos += r;
 		goto label_retry;
 	}
-	MyMoveBytes((anyp)p, (anyp)dbglog_bufp + bufposmod, L);
+	MyMoveBytes((uint8_t *)p, (uint8_t *)dbglog_bufp + bufposmod, L);
 	dbglog_bufpos = newbufpos;
 }
 
@@ -1027,7 +1027,7 @@ LOCALVAR uint16_t MyEvtQOut = 0;
 
 GLOBALOSGLUFUNC MyEvtQEl * MyEvtQOutP(void)
 {
-	MyEvtQEl *p = nullpr;
+	MyEvtQEl *p = nullptr;
 	if (MyEvtQIn != MyEvtQOut) {
 		p = &MyEvtQA[MyEvtQOut & MyEvtQIMask];
 	}
@@ -1221,7 +1221,7 @@ LOCALPROC MyEvtQTryRecoverFromFull(void)
 
 /* MacMsg */
 
-LOCALVAR char *SavedBriefMsg = nullpr;
+LOCALVAR char *SavedBriefMsg = nullptr;
 LOCALVAR char *SavedLongMsg;
 #if WantAbnormalReports
 LOCALVAR uint16_t SavedIDMsg = 0;
@@ -1230,7 +1230,7 @@ LOCALVAR bool SavedFatalMsg;
 
 LOCALPROC MacMsg(char *briefMsg, char *longMsg, bool fatal)
 {
-	if (nullpr != SavedBriefMsg) {
+	if (nullptr != SavedBriefMsg) {
 		/*
 			ignore the new message, only display the
 			first error.

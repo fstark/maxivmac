@@ -113,14 +113,14 @@ GLOBALPROC customreset(void)
 #endif
 }
 
-GLOBALVAR uint8_t * RAM = nullpr;
+GLOBALVAR uint8_t * RAM = nullptr;
 
 #if EmVidCard
-GLOBALVAR uint8_t * VidROM = nullpr;
+GLOBALVAR uint8_t * VidROM = nullptr;
 #endif
 
 #if IncludeVidMem
-GLOBALVAR uint8_t * VidMem = nullpr;
+GLOBALVAR uint8_t * VidMem = nullptr;
 #endif
 
 GLOBALVAR uint8_t Wires[kNumWires];
@@ -721,7 +721,7 @@ LOCALPROC FinishATTList(void)
 		r.cmpmask = 0;
 		r.cmpvalu = 0;
 		r.usemask = 0;
-		r.usebase = nullpr;
+		r.usebase = nullptr;
 		r.Access = 0;
 		AddToATTList(&r);
 	}
@@ -729,7 +729,7 @@ LOCALPROC FinishATTList(void)
 	{
 		uint16_t i = LastATTel;
 		ATTep p = &ATTListA[LastATTel];
-		ATTep h = nullpr;
+		ATTep h = nullptr;
 
 		while (0 != i) {
 			--i;
@@ -742,11 +742,11 @@ LOCALPROC FinishATTList(void)
 		{
 			ATTep q1;
 			ATTep q2;
-			for (q1 = h; nullpr != q1->Next; q1 = q1->Next) {
+			for (q1 = h; nullptr != q1->Next; q1 = q1->Next) {
 				if ((q1->cmpvalu & ~ q1->cmpmask) != 0) {
 					ReportAbnormalID(0x1102, "ATTListA bad entry");
 				}
-				for (q2 = q1->Next; nullpr != q2->Next; q2 = q2->Next) {
+				for (q2 = q1->Next; nullptr != q2->Next; q2 = q2->Next) {
 					uint32_t common_mask = (q1->cmpmask) & (q2->cmpmask);
 					if ((q1->cmpvalu & common_mask) ==
 						(q2->cmpvalu & common_mask))
@@ -819,7 +819,7 @@ LOCALPROC SetUp_io(void)
 		r.cmpmask = 0x00F1E000;
 		r.cmpvalu = 0x00F00000;
 	}
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA1;
 	AddToATTList(&r);
@@ -831,7 +831,7 @@ LOCALPROC SetUp_io(void)
 		r.cmpmask = 0x00F1E000;
 		r.cmpvalu = 0x00F00000 | 0x2000;
 	}
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA2;
 	AddToATTList(&r);
@@ -843,7 +843,7 @@ LOCALPROC SetUp_io(void)
 		r.cmpmask = 0x00F1E000;
 		r.cmpvalu = 0x00F00000 | 0x4000;
 	}
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCC;
 	AddToATTList(&r);
@@ -855,7 +855,7 @@ LOCALPROC SetUp_io(void)
 		r.cmpmask = 0x00F1E000;
 		r.cmpvalu = 0x00F00000 | 0x0C000;
 	}
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_Extn;
 	AddToATTList(&r);
@@ -867,7 +867,7 @@ LOCALPROC SetUp_io(void)
 		r.cmpmask = 0x00F1E000;
 		r.cmpvalu = 0x00F00000 | 0x10000;
 	}
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCSI;
 	AddToATTList(&r);
@@ -879,7 +879,7 @@ LOCALPROC SetUp_io(void)
 		r.cmpmask = 0x00F1E000;
 		r.cmpvalu = 0x00F00000 | 0x14000;
 	}
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_ASC;
 	AddToATTList(&r);
@@ -891,7 +891,7 @@ LOCALPROC SetUp_io(void)
 		r.cmpmask = 0x00F1E000;
 		r.cmpvalu = 0x00F00000 | 0x16000;
 	}
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_IWM;
 	AddToATTList(&r);
@@ -1196,7 +1196,7 @@ LOCALPROC SetUp_address(void)
 	r.cmpvalu = kROM_Base;
 #if (CurEmMd >= kEmMd_SE)
 	if (MemOverlay) {
-		r.usebase = nullpr;
+		r.usebase = nullptr;
 		r.Access = kATTA_ntfymask;
 		r.Ntfy = kMAN_OverlayOff;
 		AddToATTList(&r);
@@ -1237,21 +1237,21 @@ LOCALPROC SetUp_address(void)
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kVIA1_ln2Spc) - 1);
 	r.cmpvalu = kVIA1_Block_Base;
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA1;
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kSCC_ln2Spc) - 1);
 	r.cmpvalu = kSCCRd_Block_Base;
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCC;
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kExtn_ln2Spc) - 1);
 	r.cmpvalu = kExtn_Block_Base;
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_Extn;
 	AddToATTList(&r);
@@ -1259,7 +1259,7 @@ LOCALPROC SetUp_address(void)
 #if CurEmMd == kEmMd_PB100
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kASC_ln2Spc) - 1);
 	r.cmpvalu = kASC_Block_Base;
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_ASC;
 	AddToATTList(&r);
@@ -1267,14 +1267,14 @@ LOCALPROC SetUp_address(void)
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kSCSI_ln2Spc) - 1);
 	r.cmpvalu = kSCSI_Block_Base;
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCSI;
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kIWM_ln2Spc) - 1);
 	r.cmpvalu = kIWM_Block_Base;
-	r.usebase = nullpr;
+	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_IWM;
 	AddToATTList(&r);
@@ -1296,7 +1296,7 @@ LOCALPROC get_fail_realblock(ATTep p)
 	p->cmpmask = 0;
 	p->cmpvalu = 0xFFFFFFFF;
 	p->usemask = 0;
-	p->usebase = nullpr;
+	p->usebase = nullptr;
 	p->Access = 0;
 }
 #endif
@@ -1586,7 +1586,7 @@ Label_Retry:
 				goto Label_Retry;
 			}
 		}
-		p = nullpr; /* fail */
+		p = nullptr; /* fail */
 	}
 
 	return p;
@@ -1600,9 +1600,9 @@ GLOBALFUNC uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t ad
 	ATTep q;
 
 	q = get_address_realblock1(WritableMem, addr);
-	if (nullpr == q) {
+	if (nullptr == q) {
 		*actL = 0;
-		p = nullpr;
+		p = nullptr;
 	} else {
 		uint32_t m2 = q->usemask & ~ q->cmpmask;
 		uint32_t m3 = m2 & ~ (m2 + 1);
@@ -1708,7 +1708,7 @@ GLOBALFUNC bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
 #if HaveMasterMyEvtQLock
 		(0 == MasterMyEvtQLock) &&
 #endif
-		(nullpr != (p = MyEvtQOutP())))
+		(nullptr != (p = MyEvtQOutP())))
 	{
 		if (MyEvtQElKindKey == p->kind) {
 			*VirtualKey = p->u.press.key;
