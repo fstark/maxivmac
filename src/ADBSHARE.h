@@ -54,7 +54,7 @@ LOCALPROC ADB_DoMouseTalk(void)
 				bool overflow = false;
 				bool MouseButtonChange = false;
 
-				if (nullpr != (p = MyEvtQOutP())) {
+				if (nullptr != (p = MyEvtQOutP())) {
 					if (MyEvtQElKindMouseDelta == p->kind) {
 						MouseADBDeltaH += p->u.pos.h;
 						MouseADBDeltaV += p->u.pos.v;
@@ -87,7 +87,7 @@ LOCALPROC ADB_DoMouseTalk(void)
 				MouseADBDeltaH -= partH;
 				MouseADBDeltaV -= partV;
 				if (! overflow) {
-					if (nullpr != (p = MyEvtQOutP())) {
+					if (nullptr != (p = MyEvtQOutP())) {
 						if (MyEvtQElKindMouseButton == p->kind) {
 							SavedCurMouseButton = p->u.press.down;
 							MouseButtonChange = true;
@@ -232,7 +232,7 @@ LOCALPROC ADB_DoKeyboardListen(void)
 LOCALFUNC bool CheckForADBanyEvt(void)
 {
 	MyEvtQEl *p = MyEvtQOutP();
-	if (nullpr != p) {
+	if (nullptr != p) {
 		switch (p->kind) {
 			case MyEvtQElKindMouseButton:
 			case MyEvtQElKindMouseDelta:

@@ -27,7 +27,7 @@
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount) {
+GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount) {
 	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
 }
 
@@ -293,7 +293,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 		}
 	}
 
-	if (nullpr != Sony_ActCount) {
+	if (nullptr != Sony_ActCount) {
 		*Sony_ActCount = NewSony_Count;
 	}
 
@@ -438,7 +438,7 @@ LOCALFUNC bool Sony_Insert1(char *drivepath, bool silentfail) {
 LOCALFUNC bool Sony_InsertIth(int i) {
 	bool v;
 
-	if ((i > 9) || ! FirstFreeDisk(nullpr)) {
+	if ((i > 9) || ! FirstFreeDisk(nullptr)) {
 		v = false;
 	} else {
 		char s[] = "disk?.dsk";
@@ -1215,7 +1215,7 @@ LOCALFUNC bool CheckDateTime(void) {
 /* --- basic dialogs --- */
 
 LOCALPROC CheckSavedMacMsg(void) {
-	if (nullpr != SavedBriefMsg) {
+	if (nullptr != SavedBriefMsg) {
 		char briefMsg0[ClStrMaxLength + 1];
 		char longMsg0[ClStrMaxLength + 1];
 
@@ -1225,7 +1225,7 @@ LOCALPROC CheckSavedMacMsg(void) {
 		fprintf(stderr, "%s\n", briefMsg0);
 		fprintf(stderr, "%s\n", longMsg0);
 
-		SavedBriefMsg = nullpr;
+		SavedBriefMsg = nullptr;
 	}
 }
 
@@ -1304,7 +1304,7 @@ LOCALPROC CheckForSavedTasks(void) {
 	}
 #endif
 
-	if ((nullpr != SavedBriefMsg) & ! MacMsgDisplayed) {
+	if ((nullptr != SavedBriefMsg) & ! MacMsgDisplayed) {
 		MacMsgDisplayOn();
 	}
 
@@ -1420,7 +1420,7 @@ LOCALFUNC bool AllocMyMemory(void) {
 	bool IsOk = false;
 
 	ReserveAllocOffset = 0;
-	ReserveAllocBigBlock = nullpr;
+	ReserveAllocBigBlock = nullptr;
 	ReserveAllocAll();
 	n = ReserveAllocOffset;
 	ReserveAllocBigBlock = (uint8_t *)calloc(1, n);
@@ -1440,7 +1440,7 @@ LOCALFUNC bool AllocMyMemory(void) {
 }
 
 LOCALPROC UnallocMyMemory(void) {
-	if (nullpr != ReserveAllocBigBlock) {
+	if (nullptr != ReserveAllocBigBlock) {
 		free((char *)ReserveAllocBigBlock);
 	}
 }

@@ -42,7 +42,7 @@
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount)
+GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
 }
@@ -510,7 +510,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 		}
 	}
 
-	if (nullpr != Sony_ActCount) {
+	if (nullptr != Sony_ActCount) {
 		*Sony_ActCount = NewSony_Count;
 	}
 
@@ -802,7 +802,7 @@ LOCALFUNC bool Sony_InsertIth(int i)
 {
 	bool v;
 
-	if ((i > 9) || ! FirstFreeDisk(nullpr)) {
+	if ((i > 9) || ! FirstFreeDisk(nullptr)) {
 		v = false;
 	} else {
 		char s[] = "disk?.dsk";
@@ -1153,7 +1153,7 @@ LOCALVAR XImage *my_Scaled_image = NULL;
 
 #if WantScalingTabl
 
-LOCALVAR uint8_t * ScalingTabl = nullpr;
+LOCALVAR uint8_t * ScalingTabl = nullptr;
 
 #define ScalingTablsz1 (256 * MaxScale)
 
@@ -1170,7 +1170,7 @@ LOCALVAR uint8_t * ScalingTabl = nullpr;
 
 #if WantScalingBuff
 
-LOCALVAR uint8_t * ScalingBuff = nullpr;
+LOCALVAR uint8_t * ScalingBuff = nullptr;
 
 
 #if UseColorImage
@@ -3207,7 +3207,7 @@ LOCALFUNC bool InitLocationDat(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullpr;
+LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
 LOCALVAR uint16_t ThePlayOffset;
 LOCALVAR uint16_t TheFillOffset;
 LOCALVAR uint16_t TheWriteOffset;
@@ -3288,7 +3288,7 @@ LOCALPROC MySound_SecondNotify0(void)
 
 LOCALPROC CheckSavedMacMsg(void)
 {
-	if (nullpr != SavedBriefMsg) {
+	if (nullptr != SavedBriefMsg) {
 		char briefMsg0[ClStrMaxLength + 1];
 		char longMsg0[ClStrMaxLength + 1];
 
@@ -3298,7 +3298,7 @@ LOCALPROC CheckSavedMacMsg(void)
 		fprintf(stderr, "%s\n", briefMsg0);
 		fprintf(stderr, "%s\n", longMsg0);
 
-		SavedBriefMsg = nullpr;
+		SavedBriefMsg = nullptr;
 	}
 }
 
@@ -3418,7 +3418,7 @@ LOCALPROC HTCEimport_do(void)
 								MacMsg(kStrOutOfMemTitle,
 									kStrOutOfMemMessage, false);
 							} else {
-								MyMoveBytes((anyp)s, (anyp)MyClipBuffer,
+								MyMoveBytes((uint8_t *)s, (uint8_t *)MyClipBuffer,
 									ret_item);
 								MyClipBuffer[ret_item] = 0;
 							}
@@ -5201,7 +5201,7 @@ LOCALPROC CheckForSavedTasks(void)
 	}
 #endif
 
-	if ((nullpr != SavedBriefMsg) & ! MacMsgDisplayed) {
+	if ((nullptr != SavedBriefMsg) & ! MacMsgDisplayed) {
 		MacMsgDisplayOn();
 	}
 
@@ -5439,7 +5439,7 @@ LOCALFUNC bool AllocMyMemory(void)
 	bool IsOk = false;
 
 	ReserveAllocOffset = 0;
-	ReserveAllocBigBlock = nullpr;
+	ReserveAllocBigBlock = nullptr;
 	ReserveAllocAll();
 	n = ReserveAllocOffset;
 	ReserveAllocBigBlock = (uint8_t *)calloc(1, n);
@@ -5460,7 +5460,7 @@ LOCALFUNC bool AllocMyMemory(void)
 
 LOCALPROC UnallocMyMemory(void)
 {
-	if (nullpr != ReserveAllocBigBlock) {
+	if (nullptr != ReserveAllocBigBlock) {
 		free((char *)ReserveAllocBigBlock);
 	}
 }

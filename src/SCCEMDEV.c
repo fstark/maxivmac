@@ -201,7 +201,7 @@ LOCALPROC GetNextPacketForMe(void)
 label_retry:
 	LT_ReceivePacket();
 
-	if (nullpr != LT_RxBuffer) {
+	if (nullptr != LT_RxBuffer) {
 		/* Is this packet destined for me? */
 		dst = LT_RxBuffer[0];
 		src = LT_RxBuffer[1];
@@ -223,7 +223,7 @@ label_retry:
 #if SCC_dolog
 			dbglog_WriteNote("SCC ignore packet not for me");
 #endif
-			LT_RxBuffer = nullpr;
+			LT_RxBuffer = nullptr;
 			goto label_retry;
 		} else
 #if LT_MayHaveEcho
@@ -251,7 +251,7 @@ label_retry:
 #if SCC_dolog
 				dbglog_WriteNote("received lapENQ probably from us");
 #endif
-				LT_RxBuffer = nullpr;
+				LT_RxBuffer = nullptr;
 				goto label_retry;
 			}
 		} else
@@ -260,7 +260,7 @@ label_retry:
 #if SCC_dolog
 				dbglog_WriteNote("received lapACK probably from us");
 #endif
-				LT_RxBuffer = nullpr;
+				LT_RxBuffer = nullptr;
 				goto label_retry;
 			} else {
 				/* lapACK, pass it on handle collision */
@@ -273,7 +273,7 @@ label_retry:
 #if SCC_dolog
 			dbglog_WriteNote("SCC ignore packet from myself");
 #endif
-			LT_RxBuffer = nullpr;
+			LT_RxBuffer = nullptr;
 			goto label_retry;
 		}
 #else
@@ -891,7 +891,7 @@ LOCALPROC rx_complete(void)
 		Need to wait for rx_eof_pending (end of frame) to clear before
 		preparing the next packet for receive.
 	*/
-	LT_RxBuffer = nullpr;
+	LT_RxBuffer = nullptr;
 
 	SCC.a[1].EndOfFrame = true;
 }
@@ -907,7 +907,7 @@ LOCALPROC SCC_RxBuffAdvance(void)
 		error FIFOs."
 	*/
 
-	if (nullpr == LT_RxBuffer) {
+	if (nullptr == LT_RxBuffer) {
 		value = 0x7E;
 		SCC.a[1].RxChrAvail = false;
 	} else {
@@ -938,7 +938,7 @@ GLOBALPROC LocalTalkTick(void)
 	if (SCC.a[1].RxEnable
 		&& (! SCC.a[1].RxChrAvail))
 	{
-		if (nullpr != LT_RxBuffer) {
+		if (nullptr != LT_RxBuffer) {
 #if SCC_dolog
 			dbglog_WriteNote("SCC recover abandoned packet");
 #endif
@@ -946,7 +946,7 @@ GLOBALPROC LocalTalkTick(void)
 			LT_ReceivePacket1();
 		}
 
-		if (nullpr != LT_RxBuffer) {
+		if (nullptr != LT_RxBuffer) {
 			rx_data_offset  = 0;
 			SCC.a[1].EndOfFrame = false;
 			SCC.a[1].RxChrAvail = true;
@@ -1874,7 +1874,7 @@ LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
 #if EmLocalTalk
 			if (! NewRxEnable) {
 #if SCC_dolog
-				if ((0 != chan) && (nullpr != LT_RxBuffer)) {
+				if ((0 != chan) && (nullptr != LT_RxBuffer)) {
 					dbglog_WriteNote("SCC abandon packet");
 				}
 #endif

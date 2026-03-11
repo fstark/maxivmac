@@ -38,12 +38,7 @@
 
 /* blnr/trueblnr/falseblnr removed — use bool/true/false directly */
 
-#define nullpr nullptr
-
-#define anyp uint8_t *
-
-/* pascal string, single byte characters */
-#define ps3p uint8_t *
+/* nullpr/anyp/ps3p removed — use nullptr, uint8_t* directly */
 
 #ifndef MayInline
 #define MayInline

@@ -60,7 +60,7 @@ EXPORTOSGLUPROC MacMsgDebugAlert(char *s);
 EXPORTOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n, uint8_t align,
 	bool FillOnes);
 
-EXPORTOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount);
+EXPORTOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
 
 
 EXPORTVAR(uint8_t *, ROM)

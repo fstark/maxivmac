@@ -54,7 +54,7 @@ GLOBALPROC Mouse_Update(void)
 #if HaveMasterMyEvtQLock
 			(0 == MasterMyEvtQLock) &&
 #endif
-			(nullpr != (p = MyEvtQOutP())))
+			(nullptr != (p = MyEvtQOutP())))
 		{
 #if EmClassicKbrd
 #if EnableMouseMotion
@@ -101,7 +101,7 @@ GLOBALPROC Mouse_Update(void)
 #if HaveMasterMyEvtQLock
 			(0 == MasterMyEvtQLock) &&
 #endif
-			(nullpr != (p = MyEvtQOutP())))
+			(nullptr != (p = MyEvtQOutP())))
 		{
 			if (MyEvtQElKindMouseButton == p->kind) {
 				MouseBtnUp = p->u.press.down ? 0 : 1;

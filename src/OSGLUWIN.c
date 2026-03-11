@@ -134,7 +134,7 @@ LOCALFUNC LPTSTR FindLastTerm(LPTSTR s, TCHAR delim)
 {
 	TCHAR c;
 	LPTSTR p0 = s;
-	LPTSTR p = (LPTSTR)nullpr;
+	LPTSTR p = (LPTSTR)nullptr;
 
 	while ((c = *p0++) != (TCHAR)('\0')) {
 		if (c == delim) {
@@ -155,7 +155,7 @@ LOCALFUNC bool GetAppDir(LPTSTR pathName)
 	} else {
 		LPTSTR p = FindLastTerm(pathName,
 			(TCHAR)('\\'));
-		if (p == nullpr) {
+		if (p == nullptr) {
 			/* MacMsg("error", "strrchr failed", false); */
 		} else {
 			*--p = (TCHAR)('\0');
@@ -197,7 +197,7 @@ LOCALFUNC bool dbglog_open0(void)
 			} else if (SetFilePointer(
 				dbglog_File, /* handle of file */
 				0, /* number of bytes to move file pointer */
-				nullpr,
+				nullptr,
 					/* address of high-order word of distance to move */
 				FILE_BEGIN /* how to move */
 				) != 0)
@@ -219,7 +219,7 @@ LOCALPROC dbglog_write0(char *s, uint32_t L)
 			(LPVOID)s, /* address of buffer that receives data */
 			(DWORD)L, /* number of bytes to read */
 			&BytesWritten, /* address of number of bytes read */
-			nullpr) /* address of structure for data */
+			nullptr) /* address of structure for data */
 			|| ((uint32_t)BytesWritten != L))
 		{
 			/* report error (how?) */
@@ -258,7 +258,7 @@ LOCALPROC dbglog_close0(void)
 
 #define TestBit(i, p) (((unsigned long)(i) & PowOf2(p)) != 0)
 
-GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount)
+GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 /*
 	must work even if blocks overlap in memory
@@ -2381,7 +2381,7 @@ LOCALPROC MyTimer_Resume(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullpr;
+LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
 LOCALVAR uint16_t ThePlayOffset;
 LOCALVAR uint16_t TheFillOffset;
 LOCALVAR bool wantplaying;
@@ -2751,7 +2751,7 @@ LOCALPROC MyEndDialog(void)
 
 LOCALPROC CheckSavedMacMsg(void)
 {
-	if (nullpr != SavedBriefMsg) {
+	if (nullptr != SavedBriefMsg) {
 		TCHAR briefMsg0[ClStrMaxLength + 1];
 		TCHAR longMsg0[ClStrMaxLength + 1];
 
@@ -2761,7 +2761,7 @@ LOCALPROC CheckSavedMacMsg(void)
 		MessageBox(MainWnd, longMsg0, briefMsg0,
 			MB_APPLMODAL | MB_OK | (SavedFatalMsg ? MB_ICONSTOP : 0));
 
-		SavedBriefMsg = nullpr;
+		SavedBriefMsg = nullptr;
 	}
 }
 
@@ -2812,7 +2812,7 @@ LOCALPROC GetWndTitle(void)
 			/* get rid of extension, presumably '.exe' */
 			LPTSTR p = FindLastTerm(fd.cFileName,
 				(TCHAR)('.'));
-			if (p != nullpr) {
+			if (p != nullptr) {
 				*--p = (TCHAR)('\0');
 			}
 
@@ -4217,7 +4217,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	newL = SetFilePointer(
 		refnum, /* handle of file */
 		Sony_Start, /* number of bytes to move file pointer */
-		nullpr, /* address of high-order word of distance to move */
+		nullptr, /* address of high-order word of distance to move */
 		FILE_BEGIN /* how to move */
 	);
 	if (newL == 0xFFFFFFFF) {
@@ -4232,7 +4232,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 					, /* address of buffer that receives data */
 				(DWORD)Sony_Count, /* number of bytes to read */
 				&BytesTransferred, /* address of number of bytes read */
-				nullpr)) /* address of structure for data */
+				nullptr)) /* address of structure for data */
 			{
 				result = mnvm_miscErr;
 					/*& figure out what really to return &*/
@@ -4249,7 +4249,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 				(DWORD)Sony_Count, /* number of bytes to read */
 				&BytesTransferred,
 					/* address of number of bytes read */
-				nullpr)) /* address of structure for data */
+				nullptr)) /* address of structure for data */
 			{
 				result = mnvm_miscErr;
 					/*& figure out what really to return &*/
@@ -4262,7 +4262,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 		}
 	}
 
-	if (nullpr != Sony_ActCount) {
+	if (nullptr != Sony_ActCount) {
 		*Sony_ActCount = BytesTransferred;
 	}
 
@@ -4274,7 +4274,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 	tMacErr result;
 	DWORD L;
 
-	L = GetFileSize(Drives[Drive_No], nullpr);
+	L = GetFileSize(Drives[Drive_No], nullptr);
 	if (L == 0xFFFFFFFF) {
 		result = mnvm_miscErr; /*& figure out what really to return &*/
 	} else {
@@ -4434,10 +4434,10 @@ LOCALFUNC bool Sony_Insert1(LPTSTR drivepath, bool SilentOnMissing)
 		drivepath, /* pointer to name of the file */
 		GENERIC_READ + GENERIC_WRITE, /* access (read-write) mode */
 		0, /* share mode */
-		nullpr, /* pointer to security descriptor */
+		nullptr, /* pointer to security descriptor */
 		OPEN_EXISTING, /* how to create */
 		FILE_ATTRIBUTE_NORMAL, /* file attributes */
-		nullpr /* handle to file with attributes to copy */
+		nullptr /* handle to file with attributes to copy */
 	);
 	if (refnum == INVALID_HANDLE_VALUE) {
 		if (ERROR_ACCESS_DENIED == GetLastError()) {
@@ -4446,10 +4446,10 @@ LOCALFUNC bool Sony_Insert1(LPTSTR drivepath, bool SilentOnMissing)
 				drivepath, /* pointer to name of the file */
 				GENERIC_READ, /* access (read-write) mode */
 				FILE_SHARE_READ, /* share mode */
-				nullpr, /* pointer to security descriptor */
+				nullptr, /* pointer to security descriptor */
 				OPEN_EXISTING, /* how to create */
 				FILE_ATTRIBUTE_NORMAL, /* file attributes */
-				nullpr /* handle to file with attributes to copy */
+				nullptr /* handle to file with attributes to copy */
 			);
 		}
 	}
@@ -4478,10 +4478,10 @@ LOCALFUNC bool LoadMacRomFromPath(LPTSTR drivepath)
 		drivepath, /* pointer to name of the file */
 		GENERIC_READ, /* access (read-write) mode */
 		FILE_SHARE_READ, /* share mode */
-		nullpr, /* pointer to security descriptor */
+		nullptr, /* pointer to security descriptor */
 		OPEN_EXISTING, /* how to create */
 		FILE_ATTRIBUTE_NORMAL, /* file attributes */
-		nullpr /* handle to file with attributes to copy */
+		nullptr /* handle to file with attributes to copy */
 	);
 
 	if (refnum == INVALID_HANDLE_VALUE) {
@@ -4493,7 +4493,7 @@ LOCALFUNC bool LoadMacRomFromPath(LPTSTR drivepath)
 			(LPVOID)ROM, /* address of buffer that receives data */
 			(DWORD)kROM_Size, /* number of bytes to read */
 			&BytesRead, /* address of number of bytes read */
-			nullpr)) /* address of structure for data */
+			nullptr)) /* address of structure for data */
 		{
 			MacMsgOverride(kStrNoReadROMTitle, kStrNoReadROMMessage);
 		} else
@@ -4624,7 +4624,7 @@ LOCALFUNC bool FileIsLink(LPTSTR drivepath)
 {
 	LPTSTR p = FindLastTerm(drivepath, (TCHAR)('.'));
 
-	if (p != nullpr) {
+	if (p != nullptr) {
 		if (_tcscmp(p, TEXT("lnk")) == 0) {
 			return true;
 		}
@@ -4872,7 +4872,7 @@ LOCALFUNC bool Sony_InsertIth(int i)
 {
 	bool v;
 
-	if ((i > 9) || ! FirstFreeDisk(nullpr)) {
+	if ((i > 9) || ! FirstFreeDisk(nullptr)) {
 		v = false;
 	} else {
 		char s[] = "disk?.dsk";
@@ -4930,7 +4930,7 @@ LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
 			if (SetFilePointer(
 				refnum, /* handle of file */
 				0, /* number of bytes to move file pointer */
-				nullpr,
+				nullptr,
 					/* address of high-order word of distance to move */
 				FILE_BEGIN /* how to move */
 				) != 0)
@@ -4940,7 +4940,7 @@ LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
 				(LPVOID)p, /* address of buffer that receives data */
 				(DWORD)ActvCodeFileLen, /* number of bytes to read */
 				&BytesRead, /* address of number of bytes read */
-				nullpr) /* address of structure for data */
+				nullptr) /* address of structure for data */
 				|| ((uint32_t)BytesRead != ActvCodeFileLen))
 			{
 				/* report error */
@@ -4996,7 +4996,7 @@ LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
 			if (SetFilePointer(
 				refnum, /* handle of file */
 				0, /* number of bytes to move file pointer */
-				nullpr,
+				nullptr,
 					/* address of high-order word of distance to move */
 				FILE_BEGIN /* how to move */
 				) != 0)
@@ -5006,7 +5006,7 @@ LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
 				(LPVOID)p, /* address of buffer that receives data */
 				(DWORD)ActvCodeFileLen, /* number of bytes to read */
 				&BytesWritten, /* address of number of bytes read */
-				nullpr) /* address of structure for data */
+				nullptr) /* address of structure for data */
 				|| ((uint32_t)BytesWritten != ActvCodeFileLen))
 			{
 				/* report error */
@@ -5031,7 +5031,7 @@ LOCALFUNC bool WriteZero(HANDLE refnum, uint32_t L)
 	if (SetFilePointer(
 		refnum, /* handle of file */
 		0, /* number of bytes to move file pointer */
-		nullpr, /* address of high-order word of distance to move */
+		nullptr, /* address of high-order word of distance to move */
 		FILE_BEGIN /* how to move */
 		) != 0)
 	{
@@ -5051,7 +5051,7 @@ LOCALFUNC bool WriteZero(HANDLE refnum, uint32_t L)
 					/* address of buffer that receives data */
 				(DWORD)i, /* number of bytes to read */
 				&BytesWritten, /* address of number of bytes read */
-				nullpr) /* address of structure for data */
+				nullptr) /* address of structure for data */
 				|| ((uint32_t)BytesWritten != i))
 			{
 				return false;
@@ -5087,7 +5087,7 @@ LOCALPROC MakeNewDisk0(uint32_t L, LPTSTR pathName)
 		if (SetFilePointer(
 			newrefNum, /* handle of file */
 			L, /* number of bytes to move file pointer */
-			nullpr,
+			nullptr,
 				/* address of high-order word of distance to move */
 			FILE_BEGIN /* how to move */
 			) != L)
@@ -5647,7 +5647,7 @@ LOCALPROC CheckForSavedTasks(void)
 		}
 	}
 
-	if ((nullpr != SavedBriefMsg) & ! MacMsgDisplayed) {
+	if ((nullptr != SavedBriefMsg) & ! MacMsgDisplayed) {
 		MacMsgDisplayOn();
 	}
 
@@ -6157,7 +6157,7 @@ LOCALFUNC bool AllocMyMemory(void)
 	bool IsOk = false;
 
 	ReserveAllocOffset = 0;
-	ReserveAllocBigBlock = nullpr;
+	ReserveAllocBigBlock = nullptr;
 	ReserveAllocAll();
 	n = ReserveAllocOffset;
 	ReserveAllocBigBlock =
@@ -6179,7 +6179,7 @@ LOCALFUNC bool AllocMyMemory(void)
 
 LOCALPROC UnallocMyMemory(void)
 {
-	if (nullpr != ReserveAllocBigBlock) {
+	if (nullptr != ReserveAllocBigBlock) {
 		if (GlobalFree(ReserveAllocBigBlock) != NULL) {
 			MacMsg("error", "GlobalFree failed", false);
 		}
