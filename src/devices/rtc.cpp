@@ -31,7 +31,7 @@
 #include <stdio.h>
 #endif
 
-#include "RTCEMDEV.h"
+#include "devices/rtc.h"
 
 #define HaveXPRAM (CurEmMd >= kEmMd_Plus)
 

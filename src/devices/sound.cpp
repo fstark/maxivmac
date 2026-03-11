@@ -28,7 +28,7 @@
 
 #include "cpu/m68k.h"
 
-#include "SNDEMDEV.h"
+#include "devices/sound.h"
 
 
 #define kSnd_Main_Offset   0x0300

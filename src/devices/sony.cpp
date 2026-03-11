@@ -31,7 +31,7 @@
 #include "core/common.h"
 #include "cpu/m68k.h"
 
-#include "SONYEMDV.h"
+#include "devices/sony.h"
 
 /*
 	ReportAbnormalID unused 0x090B - 0x09FF

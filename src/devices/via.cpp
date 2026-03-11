@@ -26,7 +26,7 @@
 
 #if EmVIA1
 
-#include "VIAEMDEV.h"
+#include "devices/via.h"
 
 /*
 	ReportAbnormalID unused 0x0410 - 0x04FF

@@ -40,7 +40,7 @@
 
 #include "core/common.h"
 
-#include "SCCEMDEV.h"
+#include "devices/scc.h"
 
 /*
 	ReportAbnormalID unused 0x074D - 0x07FF
