@@ -79,7 +79,7 @@ typedef struct
 
 IWM_Ty IWM;
 
-GLOBALPROC IWM_Reset(void)
+void IWM_Reset(void)
 {
 	IWM.DataIn = IWM.Handshake = IWM.Status = IWM.Mode =
 		IWM.DataOut = IWM.Lines = 0;
@@ -87,7 +87,7 @@ GLOBALPROC IWM_Reset(void)
 
 typedef enum {On, Off} Mode_Ty;
 
-LOCALPROC IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
+static void IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
 {
 	if (the_mode == Off) {
 		IWM.Lines &= (0xFF - line);
@@ -96,7 +96,7 @@ LOCALPROC IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
 	}
 }
 
-LOCALFUNC uint8_t IWM_Read_Reg(void)
+static uint8_t IWM_Read_Reg(void)
 {
 	switch ((IWM.Lines & (kq6 + kq7)) >> 6) {
 		case 0 :
@@ -134,7 +134,7 @@ LOCALFUNC uint8_t IWM_Read_Reg(void)
 	}
 }
 
-LOCALPROC IWM_Write_Reg(uint8_t in)
+static void IWM_Write_Reg(uint8_t in)
 {
 	if (((IWM.Lines & kmtr) >> 4) == 0) {
 #if IWM_dolog
@@ -145,7 +145,7 @@ LOCALPROC IWM_Write_Reg(uint8_t in)
 	}
 }
 
-GLOBALFUNC uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+ uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 #if IWM_dolog
 	dbglog_AddrAccess("IWM", Data, WriteMem, addr);

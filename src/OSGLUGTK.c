@@ -30,7 +30,7 @@
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
+void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
 }
@@ -56,7 +56,7 @@ GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCou
 static FILE *dbglog_File = NULL;
 #endif
 
-LOCALFUNC bool dbglog_open0(void)
+static bool dbglog_open0(void)
 {
 #if dbglog_ToStdErr
 	return true;
@@ -66,7 +66,7 @@ LOCALFUNC bool dbglog_open0(void)
 #endif
 }
 
-LOCALPROC dbglog_write0(char *s, uint32_t L)
+static void dbglog_write0(char *s, uint32_t L)
 {
 #if dbglog_ToStdErr
 	(void) fwrite(s, 1, L, stderr);
@@ -77,7 +77,7 @@ LOCALPROC dbglog_write0(char *s, uint32_t L)
 #endif
 }
 
-LOCALPROC dbglog_close0(void)
+static void dbglog_close0(void)
 {
 #if ! dbglog_ToStdErr
 	if (dbglog_File != NULL) {
@@ -96,7 +96,7 @@ LOCALPROC dbglog_close0(void)
 #if ! dbglog_HAVE
 #define WriteExtraErr(s)
 #else
-LOCALPROC WriteExtraErr(char *s)
+static void WriteExtraErr(char *s)
 {
 	dbglog_writeCStr("*** error: ");
 	dbglog_writeCStr(s);
@@ -106,7 +106,7 @@ LOCALPROC WriteExtraErr(char *s)
 
 /* --- text translation --- */
 
-LOCALPROC NativeStrFromCStr(char *r, char *s, bool AddEllipsis)
+static void NativeStrFromCStr(char *r, char *s, bool AddEllipsis)
 {
 	uint8_t ps[ClStrMaxLength];
 	int i;
@@ -136,7 +136,7 @@ LOCALPROC NativeStrFromCStr(char *r, char *s, bool AddEllipsis)
 
 static FILE *Drives[NumDrives]; /* open disk image files */
 
-LOCALPROC InitDrives(void)
+static void InitDrives(void)
 {
 	/*
 		This isn't really needed, Drives[i] and DriveNames[i]
@@ -149,7 +149,7 @@ LOCALPROC InitDrives(void)
 	}
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
+ tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount)
 {
@@ -170,14 +170,14 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	return mnvm_noErr; /*& figure out what really to return &*/
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
+ tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 {
 	fseek(Drives[Drive_No], 0, SEEK_END);
 	*Sony_Count = ftell(Drives[Drive_No]);
 	return mnvm_noErr; /*& figure out what really to return &*/
 }
 
-LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
+static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 {
 	DiskEjectedNotify(Drive_No);
 
@@ -188,12 +188,12 @@ LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	return mnvm_noErr;
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyEject(tDrive Drive_No)
+ tMacErr vSonyEject(tDrive Drive_No)
 {
 	return vSonyEject0(Drive_No, false);
 }
 
-LOCALPROC UnInitDrives(void)
+static void UnInitDrives(void)
 {
 	tDrive i;
 
@@ -204,7 +204,7 @@ LOCALPROC UnInitDrives(void)
 	}
 }
 
-LOCALFUNC bool Sony_Insert0(FILE *refnum, bool locked,
+static bool Sony_Insert0(FILE *refnum, bool locked,
 	char *drivepath)
 {
 	tDrive Drive_No;
@@ -223,7 +223,7 @@ LOCALFUNC bool Sony_Insert0(FILE *refnum, bool locked,
 	}
 }
 
-LOCALFUNC bool Sony_Insert1(char *drivepath, bool silentfail)
+static bool Sony_Insert1(char *drivepath, bool silentfail)
 {
 	bool locked = false;
 	/* printf("Sony_Insert1 %s\n", drivepath); */
@@ -242,7 +242,7 @@ LOCALFUNC bool Sony_Insert1(char *drivepath, bool silentfail)
 	return false;
 }
 
-LOCALFUNC tMacErr LoadMacRomFrom(char *path)
+static tMacErr LoadMacRomFrom(char *path)
 {
 	tMacErr err;
 	FILE *ROM_File;
@@ -272,7 +272,7 @@ LOCALFUNC tMacErr LoadMacRomFrom(char *path)
 	return err;
 }
 
-LOCALFUNC bool Sony_Insert1a(char *drivepath, bool silentfail)
+static bool Sony_Insert1a(char *drivepath, bool silentfail)
 {
 	bool v;
 
@@ -285,7 +285,7 @@ LOCALFUNC bool Sony_Insert1a(char *drivepath, bool silentfail)
 	return v;
 }
 
-LOCALFUNC bool Sony_InsertIth(int i)
+static bool Sony_InsertIth(int i)
 {
 	bool v;
 
@@ -302,7 +302,7 @@ LOCALFUNC bool Sony_InsertIth(int i)
 	return v;
 }
 
-LOCALFUNC bool LoadInitialImages(void)
+static bool LoadInitialImages(void)
 {
 	int i;
 
@@ -317,7 +317,7 @@ LOCALFUNC bool LoadInitialImages(void)
 
 static char *rom_path = NULL;
 
-LOCALFUNC bool LoadMacRom(void)
+static bool LoadMacRom(void)
 {
 	tMacErr err;
 
@@ -338,7 +338,7 @@ static bool gBackgroundFlag = false;
 static bool gTrueBackgroundFlag = false;
 static bool CurSpeedStopped = true;
 
-LOCALPROC HaveChangedScreenBuff(int16_t top, int16_t left,
+static void HaveChangedScreenBuff(int16_t top, int16_t left,
 	int16_t bottom, int16_t right)
 {
 	guchar graybuf[vMacScreenWidth * vMacScreenHeight];
@@ -375,7 +375,7 @@ LOCALPROC HaveChangedScreenBuff(int16_t top, int16_t left,
 		vMacScreenWidth);
 }
 
-LOCALPROC MyDrawChangesAndClear(void)
+static void MyDrawChangesAndClear(void)
 {
 	if (ScreenChangedBottom > ScreenChangedTop) {
 		HaveChangedScreenBuff(ScreenChangedTop, ScreenChangedLeft,
@@ -384,7 +384,7 @@ LOCALPROC MyDrawChangesAndClear(void)
 	}
 }
 
-GLOBALOSGLUPROC DoneWithDrawingForTick(void)
+void DoneWithDrawingForTick(void)
 {
 	MyDrawChangesAndClear();
 }
@@ -397,7 +397,7 @@ static bool WantCursorHidden = false;
 static GdkCursor *blank_cursor;
 static GtkWidget *window = NULL;
 
-LOCALPROC ForceShowCursor(void)
+static void ForceShowCursor(void)
 {
 	if (HaveCursorHidden) {
 		HaveCursorHidden = false;
@@ -410,7 +410,7 @@ LOCALPROC ForceShowCursor(void)
 
 /* cursor state */
 
-LOCALPROC MousePositionNotify(int NewMousePosh, int NewMousePosv)
+static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 {
 	bool ShouldHaveCursorHidden = true;
 
@@ -442,7 +442,7 @@ LOCALPROC MousePositionNotify(int NewMousePosh, int NewMousePosv)
 	WantCursorHidden = ShouldHaveCursorHidden;
 }
 
-LOCALPROC CheckMouseState(void)
+static void CheckMouseState(void)
 {
 #if 0
 	gint x;
@@ -475,7 +475,7 @@ LOCALPROC CheckMouseState(void)
 
 static uint8_t KC2MKC[MaxNumKeycode];
 
-LOCALPROC KC2MKCAssignOne(guint keyval, uint8_t key)
+static void KC2MKCAssignOne(guint keyval, uint8_t key)
 {
 	GdkKeymapKey *keys;
 	gint n_keys;
@@ -494,7 +494,7 @@ LOCALPROC KC2MKCAssignOne(guint keyval, uint8_t key)
 #endif
 }
 
-LOCALFUNC bool KC2MKCInit(void)
+static bool KC2MKCInit(void)
 {
 	int i;
 
@@ -751,7 +751,7 @@ LOCALFUNC bool KC2MKCInit(void)
 	return true;
 }
 
-LOCALPROC CheckTheCapsLock(void)
+static void CheckTheCapsLock(void)
 {
 	GdkModifierType mask;
 
@@ -761,7 +761,7 @@ LOCALPROC CheckTheCapsLock(void)
 		(mask & GDK_LOCK_MASK) != 0);
 }
 
-LOCALPROC DoKeyCode(guint keycode, bool down)
+static void DoKeyCode(guint keycode, bool down)
 {
 	if (GDK_Caps_Lock == keycode) {
 		CheckTheCapsLock();
@@ -790,7 +790,7 @@ static uint32_t NewMacDateInSeconds;
 static uint32_t LastTimeSec;
 static uint32_t LastTimeUsec;
 
-LOCALPROC GetCurrentTicks(void)
+static void GetCurrentTicks(void)
 {
 	GTimeVal t;
 
@@ -826,7 +826,7 @@ LOCALPROC GetCurrentTicks(void)
 static uint32_t NextTimeSec;
 static uint32_t NextTimeUsec;
 
-LOCALPROC IncrNextTime(void)
+static void IncrNextTime(void)
 {
 	NextTimeUsec += MyInvTimeStep;
 	if (NextTimeUsec >= TicksPerSecond) {
@@ -835,26 +835,26 @@ LOCALPROC IncrNextTime(void)
 	}
 }
 
-LOCALPROC InitNextTime(void)
+static void InitNextTime(void)
 {
 	NextTimeSec = LastTimeSec;
 	NextTimeUsec = LastTimeUsec;
 	IncrNextTime();
 }
 
-LOCALPROC StartUpTimeAdjust(void)
+static void StartUpTimeAdjust(void)
 {
 	GetCurrentTicks();
 	InitNextTime();
 }
 
-LOCALFUNC int32_t GetTimeDiff(void)
+static int32_t GetTimeDiff(void)
 {
 	return ((int32_t)(LastTimeSec - NextTimeSec)) * TicksPerSecond
 		+ ((int32_t)(LastTimeUsec - NextTimeUsec));
 }
 
-LOCALPROC UpdateTrueEmulatedTime(void)
+static void UpdateTrueEmulatedTime(void)
 {
 	int32_t TimeDiff;
 
@@ -879,7 +879,7 @@ LOCALPROC UpdateTrueEmulatedTime(void)
 	}
 }
 
-LOCALFUNC bool CheckDateTime(void)
+static bool CheckDateTime(void)
 {
 	if (CurMacDateInSeconds != NewMacDateInSeconds) {
 		CurMacDateInSeconds = NewMacDateInSeconds;
@@ -889,7 +889,7 @@ LOCALFUNC bool CheckDateTime(void)
 	}
 }
 
-LOCALFUNC bool InitLocationDat(void)
+static bool InitLocationDat(void)
 {
 	GetCurrentTicks();
 	CurMacDateInSeconds = NewMacDateInSeconds;
@@ -899,7 +899,7 @@ LOCALFUNC bool InitLocationDat(void)
 
 /* --- basic dialogs --- */
 
-LOCALPROC CheckSavedMacMsg(void)
+static void CheckSavedMacMsg(void)
 {
 	if (nullptr != SavedBriefMsg) {
 		char briefMsg0[ClStrMaxLength + 1];
@@ -1036,7 +1036,7 @@ static gboolean delete_event(GtkWidget *widget,
 	return TRUE;
 }
 
-LOCALPROC ReconnectKeyCodes3(void)
+static void ReconnectKeyCodes3(void)
 {
 	CheckTheCapsLock();
 
@@ -1049,7 +1049,7 @@ LOCALPROC ReconnectKeyCodes3(void)
 #endif
 }
 
-LOCALPROC DisconnectKeyCodes3(void)
+static void DisconnectKeyCodes3(void)
 {
 	DisconnectKeyCodes2();
 	MyMouseButtonSet(false);
@@ -1057,14 +1057,14 @@ LOCALPROC DisconnectKeyCodes3(void)
 
 static bool ADialogIsUp = false;
 
-LOCALPROC MyBeginDialog(void)
+static void MyBeginDialog(void)
 {
 	DisconnectKeyCodes3();
 	ADialogIsUp = true;
 	ForceShowCursor();
 }
 
-LOCALPROC MyEndDialog(void)
+static void MyEndDialog(void)
 {
 	ADialogIsUp = false;
 	ReconnectKeyCodes3();
@@ -1072,7 +1072,7 @@ LOCALPROC MyEndDialog(void)
 
 /* --- SavedTasks --- */
 
-LOCALPROC LeaveBackground(void)
+static void LeaveBackground(void)
 {
 	ReconnectKeyCodes3();
 #if 0
@@ -1080,7 +1080,7 @@ LOCALPROC LeaveBackground(void)
 #endif
 }
 
-LOCALPROC EnterBackground(void)
+static void EnterBackground(void)
 {
 #if 0
 	RestoreKeyRepeat();
@@ -1090,12 +1090,12 @@ LOCALPROC EnterBackground(void)
 	ForceShowCursor();
 }
 
-LOCALPROC LeaveSpeedStopped(void)
+static void LeaveSpeedStopped(void)
 {
 	StartUpTimeAdjust();
 }
 
-LOCALPROC EnterSpeedStopped(void)
+static void EnterSpeedStopped(void)
 {
 }
 
@@ -1127,7 +1127,7 @@ static void InsertADisk0(void)
 	gtk_widget_destroy(dialog);
 }
 
-LOCALPROC CheckForSavedTasks(void)
+static void CheckForSavedTasks(void)
 {
 	if (MyEvtQNeedRecover) {
 		MyEvtQNeedRecover = false;
@@ -1213,7 +1213,7 @@ LOCALPROC CheckForSavedTasks(void)
 
 /* --- command line parsing --- */
 
-LOCALFUNC bool ScanCommandLine(void)
+static bool ScanCommandLine(void)
 {
 	int i;
 
@@ -1254,18 +1254,18 @@ LOCALFUNC bool ScanCommandLine(void)
 
 /* --- main program flow --- */
 
-GLOBALOSGLUFUNC bool ExtraTimeNotOver(void)
+ bool ExtraTimeNotOver(void)
 {
 	UpdateTrueEmulatedTime();
 	return TrueEmulatedTime == OnTrueTime;
 }
 
-LOCALPROC WaitForTheNextEvent(void)
+static void WaitForTheNextEvent(void)
 {
 	(void) gtk_main_iteration_do(TRUE);
 }
 
-LOCALPROC CheckForSystemEvents(void)
+static void CheckForSystemEvents(void)
 {
 	int i = 10;
 
@@ -1277,7 +1277,7 @@ LOCALPROC CheckForSystemEvents(void)
 #endif
 }
 
-GLOBALOSGLUPROC WaitForNextTick(void)
+void WaitForNextTick(void)
 {
 label_retry:
 	CheckForSystemEvents();
@@ -1459,7 +1459,7 @@ static void do_open_item(GtkAction *action, gpointer user_data)
 	RequestInsertDisk = true;
 }
 
-LOCALPROC MyAppendConvertMenuItem(GtkWidget *the_menu,
+static void MyAppendConvertMenuItem(GtkWidget *the_menu,
 	GCallback c_handler, gpointer gobject, char *s, bool AddEllipsis)
 {
 	char ts[ClStrMaxLength + 1];
@@ -1472,7 +1472,7 @@ LOCALPROC MyAppendConvertMenuItem(GtkWidget *the_menu,
 	gtk_menu_shell_append(GTK_MENU_SHELL(the_menu), the_item);
 }
 
-LOCALPROC MyAppendSubmenuConvertName(GtkWidget *menubar,
+static void MyAppendSubmenuConvertName(GtkWidget *menubar,
 	GtkWidget *the_menu, char *s)
 {
 	char ts[ClStrMaxLength + 1];
@@ -1501,7 +1501,7 @@ static GtkTargetEntry dnd_target =
 	"text/uri-list", 0, 0
 };
 
-LOCALPROC ZapOSGLUVars(void)
+static void ZapOSGLUVars(void)
 {
 	InitDrives();
 #if 0
@@ -1515,7 +1515,7 @@ LOCALPROC ZapOSGLUVars(void)
 #endif
 }
 
-LOCALPROC ReserveAllocAll(void)
+static void ReserveAllocAll(void)
 {
 #if dbglog_HAVE
 	dbglog_ReserveAlloc();
@@ -1531,7 +1531,7 @@ LOCALPROC ReserveAllocAll(void)
 	EmulationReserveAlloc();
 }
 
-LOCALFUNC bool AllocMyMemory(void)
+static bool AllocMyMemory(void)
 {
 	uint32_t n;
 	bool IsOk = false;
@@ -1556,14 +1556,14 @@ LOCALFUNC bool AllocMyMemory(void)
 	return IsOk;
 }
 
-LOCALPROC UnallocMyMemory(void)
+static void UnallocMyMemory(void)
 {
 	if (nullptr != ReserveAllocBigBlock) {
 		free((char *)ReserveAllocBigBlock);
 	}
 }
 
-LOCALFUNC bool InitOSGLU(void)
+static bool InitOSGLU(void)
 {
 	if (AllocMyMemory())
 #if dbglog_HAVE
@@ -1582,7 +1582,7 @@ LOCALFUNC bool InitOSGLU(void)
 	return false;
 }
 
-LOCALPROC UnInitOSGLU(void)
+static void UnInitOSGLU(void)
 {
 	if (MacMsgDisplayed) {
 		MacMsgDisplayOff();

@@ -58,36 +58,8 @@
 
 #define UNUSED(exp) (void)(exp)
 
-/* LOCALVAR/GLOBALVAR/EXPORTVAR removed — use static/extern directly */
-
-#define LOCALFUNC static MayNotInline
-#define FORWARDFUNC LOCALFUNC
-#define GLOBALFUNC MayNotInline
-#define EXPORTFUNC extern
-#define IMPORTFUNC EXPORTFUNC
-#define TYPEDEFFUNC typedef
-
-#define LOCALPROC LOCALFUNC void
-#define GLOBALPROC GLOBALFUNC void
-#define EXPORTPROC EXPORTFUNC void
-#define IMPORTPROC IMPORTFUNC void
-#define FORWARDPROC FORWARDFUNC void
-#define TYPEDEFPROC TYPEDEFFUNC void
-
-#define LOCALINLINEFUNC static MayInline
-#define LOCALINLINEPROC LOCALINLINEFUNC void
-
-#define LOCALFUNCUSEDONCE LOCALINLINEFUNC
-#define LOCALPROCUSEDONCE LOCALINLINEPROC
-
-#define GLOBALOSGLUFUNC GLOBALFUNC my_osglu_call
-#define EXPORTOSGLUFUNC EXPORTFUNC my_osglu_call
-#define GLOBALOSGLUPROC GLOBALFUNC my_osglu_call void
-#define EXPORTOSGLUPROC EXPORTFUNC my_osglu_call void
-	/*
-		For functions in operating system glue that
-		are called by rest of program.
-	*/
+/* All visibility macros (LOCALVAR/GLOBALVAR/EXPORTVAR/LOCALFUNC/GLOBALFUNC/etc.)
+   removed — use static/extern/inline/void directly */
 
 #ifndef BigEndianUnaligned
 #define BigEndianUnaligned 0

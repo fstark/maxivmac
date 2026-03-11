@@ -21,5 +21,5 @@
 #endif
 
 #if MySoundEnabled
-EXPORTPROC MacSound_SubTick(int SubTick);
+extern void MacSound_SubTick(int SubTick);
 #endif

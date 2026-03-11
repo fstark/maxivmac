@@ -30,7 +30,7 @@
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
+void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
 }
@@ -68,7 +68,7 @@ static int Display_bg2_Main = 0;
 static FILE *dbglog_File = NULL;
 #endif
 
-LOCALFUNC bool dbglog_open0(void)
+static bool dbglog_open0(void)
 {
 #if dbglog_ToStdErr
 	return true;
@@ -78,7 +78,7 @@ LOCALFUNC bool dbglog_open0(void)
 #endif
 }
 
-LOCALPROC dbglog_write0(char *s, uint32_t L)
+static void dbglog_write0(char *s, uint32_t L)
 {
 #if dbglog_ToStdErr
 	(void) fwrite(s, 1, L, stderr);
@@ -89,7 +89,7 @@ LOCALPROC dbglog_write0(char *s, uint32_t L)
 #endif
 }
 
-LOCALPROC dbglog_close0(void)
+static void dbglog_close0(void)
 {
 #if ! dbglog_ToStdErr
 	if (dbglog_File != NULL) {
@@ -106,7 +106,7 @@ LOCALPROC dbglog_close0(void)
 #if ! dbglog_HAVE
 #define WriteExtraErr(s)
 #else
-LOCALPROC WriteExtraErr(char *s)
+static void WriteExtraErr(char *s)
 {
 	dbglog_writeCStr("*** error: ");
 	dbglog_writeCStr(s);
@@ -121,7 +121,7 @@ LOCALPROC WriteExtraErr(char *s)
 #include "COMOSGLU.h"
 #include "CONTROLM.h"
 
-LOCALPROC NativeStrFromCStr(char *r, char *s)
+static void NativeStrFromCStr(char *r, char *s)
 {
 	uint8_t ps[ClStrMaxLength];
 	int i;
@@ -145,7 +145,7 @@ static FILE *Drives[NumDrives]; /* open disk image files */
 static char *DriveNames[NumDrives];
 #endif
 
-LOCALPROC InitDrives(void)
+static void InitDrives(void)
 {
 	/*
 		This isn't really needed, Drives[i] and DriveNames[i]
@@ -161,7 +161,7 @@ LOCALPROC InitDrives(void)
 	}
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
+ tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount)
 {
@@ -188,7 +188,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	return err; /*& figure out what really to return &*/
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
+ tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 {
 	tMacErr err = mnvm_miscErr;
 	FILE *refnum = Drives[Drive_No];
@@ -205,7 +205,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 	return err; /*& figure out what really to return &*/
 }
 
-LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
+static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 {
 	FILE *refnum = Drives[Drive_No];
 
@@ -230,19 +230,19 @@ LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	return mnvm_noErr;
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyEject(tDrive Drive_No)
+ tMacErr vSonyEject(tDrive Drive_No)
 {
 	return vSonyEject0(Drive_No, false);
 }
 
 #if IncludeSonyNew
-GLOBALOSGLUFUNC tMacErr vSonyEjectDelete(tDrive Drive_No)
+ tMacErr vSonyEjectDelete(tDrive Drive_No)
 {
 	return vSonyEject0(Drive_No, true);
 }
 #endif
 
-LOCALPROC UnInitDrives(void)
+static void UnInitDrives(void)
 {
 	tDrive i;
 
@@ -254,7 +254,7 @@ LOCALPROC UnInitDrives(void)
 }
 
 #if IncludeSonyGetName
-GLOBALOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
+ tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 {
 	char *drivepath = DriveNames[Drive_No];
 	if (NULL == drivepath) {
@@ -271,7 +271,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 }
 #endif
 
-LOCALFUNC bool Sony_Insert0(FILE *refnum, bool locked,
+static bool Sony_Insert0(FILE *refnum, bool locked,
 	char *drivepath)
 {
 	tDrive Drive_No;
@@ -309,7 +309,7 @@ LOCALFUNC bool Sony_Insert0(FILE *refnum, bool locked,
 	return IsOk;
 }
 
-LOCALFUNC bool Sony_Insert1(char *drivepath, bool silentfail)
+static bool Sony_Insert1(char *drivepath, bool silentfail)
 {
 	bool locked = false;
 	/* printf("Sony_Insert1 %s\n", drivepath); */
@@ -334,7 +334,7 @@ LOCALFUNC bool Sony_Insert1(char *drivepath, bool silentfail)
 
 #define Sony_Insert2(s) Sony_Insert1(s, true)
 
-LOCALFUNC bool Sony_InsertIth(int i)
+static bool Sony_InsertIth(int i)
 {
 	bool v;
 
@@ -351,7 +351,7 @@ LOCALFUNC bool Sony_InsertIth(int i)
 	return v;
 }
 
-LOCALFUNC bool LoadInitialImages(void)
+static bool LoadInitialImages(void)
 {
 	int i;
 
@@ -365,7 +365,7 @@ LOCALFUNC bool LoadInitialImages(void)
 }
 
 #if IncludeSonyNew
-LOCALFUNC bool WriteZero(FILE *refnum, uint32_t L)
+static bool WriteZero(FILE *refnum, uint32_t L)
 {
 #define ZeroBufferSize 2048
 	uint32_t i;
@@ -385,7 +385,7 @@ LOCALFUNC bool WriteZero(FILE *refnum, uint32_t L)
 #endif
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDisk(uint32_t L, char *drivepath)
+static void MakeNewDisk(uint32_t L, char *drivepath)
 {
 	bool IsOk = false;
 	FILE *refnum = fopen(drivepath, "wb+");
@@ -407,7 +407,7 @@ LOCALPROC MakeNewDisk(uint32_t L, char *drivepath)
 #endif
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDiskAtDefault(uint32_t L)
+static void MakeNewDiskAtDefault(uint32_t L)
 {
 	char s[ClStrMaxLength + 1];
 
@@ -418,7 +418,7 @@ LOCALPROC MakeNewDiskAtDefault(uint32_t L)
 
 /* --- ROM --- */
 
-LOCALFUNC tMacErr LoadMacRomFrom(char *path)
+static tMacErr LoadMacRomFrom(char *path)
 {
 	tMacErr err;
 	FILE *ROM_File;
@@ -448,7 +448,7 @@ LOCALFUNC tMacErr LoadMacRomFrom(char *path)
 	return err;
 }
 
-LOCALFUNC bool LoadMacRom(void)
+static bool LoadMacRom(void)
 {
 	tMacErr err;
 
@@ -482,7 +482,7 @@ static bool CurSpeedStopped = true;
 #define MaxScale 1
 #endif
 
-LOCALPROC HaveChangedScreenBuff(uint16_t top, uint16_t left,
+static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	uint16_t bottom, uint16_t right)
 {
 	/*
@@ -501,7 +501,7 @@ LOCALPROC HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		((bottom - top) * vMacScreenWidth) >> 3);
 }
 
-LOCALPROC MyDrawChangesAndClear(void)
+static void MyDrawChangesAndClear(void)
 {
 	if (ScreenChangedBottom > ScreenChangedTop) {
 		HaveChangedScreenBuff(ScreenChangedTop, ScreenChangedLeft,
@@ -510,7 +510,7 @@ LOCALPROC MyDrawChangesAndClear(void)
 	}
 }
 
-GLOBALOSGLUPROC DoneWithDrawingForTick(void)
+void DoneWithDrawingForTick(void)
 {
 #if 0 && EnableFSMouseMotion
 	if (HaveMouseMotion) {
@@ -524,7 +524,7 @@ GLOBALOSGLUPROC DoneWithDrawingForTick(void)
 
 /* cursor state */
 
-LOCALPROC CheckMouseState(void)
+static void CheckMouseState(void)
 {
 	int32_t MotionX;
 	int32_t MotionY;
@@ -566,7 +566,7 @@ static uint8_t KC2MKC[256];
 	GCC Was turning this into a macro of some sort which of course
 	broke horribly with libnds's keyboard having some negative values.
 */
-LOCALPROC AssignKeyToMKC(int UKey, int LKey, uint8_t MKC)
+static void AssignKeyToMKC(int UKey, int LKey, uint8_t MKC)
 {
 	if (UKey != NOKEY) {
 		KC2MKC[UKey] = MKC;
@@ -577,7 +577,7 @@ LOCALPROC AssignKeyToMKC(int UKey, int LKey, uint8_t MKC)
 	}
 }
 
-LOCALFUNC bool KC2MKCInit(void)
+static bool KC2MKCInit(void)
 {
 	int i;
 
@@ -645,7 +645,7 @@ LOCALFUNC bool KC2MKCInit(void)
 	return true;
 }
 
-LOCALPROC DoKeyCode0(int i, bool down)
+static void DoKeyCode0(int i, bool down)
 {
 	uint8_t key = KC2MKC[i];
 	if (MKC_None != key) {
@@ -655,7 +655,7 @@ LOCALPROC DoKeyCode0(int i, bool down)
 	}
 }
 
-LOCALPROC DoKeyCode(int i, bool down)
+static void DoKeyCode(int i, bool down)
 {
 	if ((i >= 0) && (i < 256)) {
 		DoKeyCode0(i, down);
@@ -673,7 +673,7 @@ LOCALPROC DoKeyCode(int i, bool down)
 static bool DS_Keystate_Menu = false;
 static bool DS_Keystate_Shift = false;
 
-LOCALPROC DS_HandleKey(int32_t Key, bool Down)
+static void DS_HandleKey(int32_t Key, bool Down)
 {
 	if (Key == NOKEY) {
 		return;
@@ -709,7 +709,7 @@ LOCALPROC DS_HandleKey(int32_t Key, bool Down)
 	}
 }
 
-LOCALPROC DS_HandleKeyboard(void)
+static void DS_HandleKeyboard(void)
 {
 	LastKeyboardKey = KeyboardKey;
 	KeyboardKey = keyboardUpdate();
@@ -740,7 +740,7 @@ static uint32_t NewMacDateInSeconds;
 static uint32_t LastTimeSec;
 static uint32_t LastTimeUsec;
 
-LOCALPROC GetCurrentTicks(void)
+static void GetCurrentTicks(void)
 {
 	struct timeval t;
 
@@ -778,7 +778,7 @@ LOCALPROC GetCurrentTicks(void)
 static uint32_t NextTimeSec;
 static uint32_t NextTimeUsec;
 
-LOCALPROC IncrNextTime(void)
+static void IncrNextTime(void)
 {
 	NextTimeUsec += MyInvTimeStep;
 	if (NextTimeUsec >= TicksPerSecond) {
@@ -787,26 +787,26 @@ LOCALPROC IncrNextTime(void)
 	}
 }
 
-LOCALPROC InitNextTime(void)
+static void InitNextTime(void)
 {
 	NextTimeSec = LastTimeSec;
 	NextTimeUsec = LastTimeUsec;
 	IncrNextTime();
 }
 
-LOCALPROC StartUpTimeAdjust(void)
+static void StartUpTimeAdjust(void)
 {
 	GetCurrentTicks();
 	InitNextTime();
 }
 
-LOCALFUNC int32_t GetTimeDiff(void)
+static int32_t GetTimeDiff(void)
 {
 	return ((int32_t)(LastTimeSec - NextTimeSec)) * TicksPerSecond
 		+ ((int32_t)(LastTimeUsec - NextTimeUsec));
 }
 
-LOCALPROC UpdateTrueEmulatedTime(void)
+static void UpdateTrueEmulatedTime(void)
 {
 	int32_t TimeDiff;
 
@@ -831,7 +831,7 @@ LOCALPROC UpdateTrueEmulatedTime(void)
 	}
 }
 
-LOCALFUNC bool CheckDateTime(void)
+static bool CheckDateTime(void)
 {
 	if (CurMacDateInSeconds != NewMacDateInSeconds) {
 		CurMacDateInSeconds = NewMacDateInSeconds;
@@ -841,7 +841,7 @@ LOCALFUNC bool CheckDateTime(void)
 	}
 }
 
-LOCALFUNC bool InitLocationDat(void)
+static bool InitLocationDat(void)
 {
 	GetCurrentTicks();
 	CurMacDateInSeconds = NewMacDateInSeconds;
@@ -851,7 +851,7 @@ LOCALFUNC bool InitLocationDat(void)
 
 /* --- basic dialogs --- */
 
-LOCALPROC CheckSavedMacMsg(void)
+static void CheckSavedMacMsg(void)
 {
 	if (nullptr != SavedBriefMsg) {
 		char briefMsg0[ClStrMaxLength + 1];
@@ -878,7 +878,7 @@ LOCALPROC CheckSavedMacMsg(void)
 	Also we need to map 2 banks of vram so we have enough space for
 	our 512x512 surface.
 */
-LOCALFUNC bool Screen_Init(void)
+static bool Screen_Init(void)
 {
 	videoSetMode(MODE_5_2D);
 	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
@@ -893,7 +893,7 @@ LOCALFUNC bool Screen_Init(void)
 }
 
 #if VarFullScreen
-LOCALPROC ToggleWantFullScreen(void)
+static void ToggleWantFullScreen(void)
 {
 	WantFullScreen = ! WantFullScreen;
 }
@@ -901,7 +901,7 @@ LOCALPROC ToggleWantFullScreen(void)
 
 /* --- SavedTasks --- */
 
-LOCALPROC LeaveSpeedStopped(void)
+static void LeaveSpeedStopped(void)
 {
 #if MySoundEnabled
 	MySound_Start();
@@ -910,14 +910,14 @@ LOCALPROC LeaveSpeedStopped(void)
 	StartUpTimeAdjust();
 }
 
-LOCALPROC EnterSpeedStopped(void)
+static void EnterSpeedStopped(void)
 {
 #if MySoundEnabled
 	MySound_Stop();
 #endif
 }
 
-LOCALPROC CheckForSavedTasks(void)
+static void CheckForSavedTasks(void)
 {
 	if (MyEvtQNeedRecover) {
 		MyEvtQNeedRecover = false;
@@ -991,22 +991,22 @@ LOCALPROC CheckForSavedTasks(void)
 
 /* --- main program flow --- */
 
-GLOBALOSGLUFUNC bool ExtraTimeNotOver(void)
+ bool ExtraTimeNotOver(void)
 {
 	UpdateTrueEmulatedTime();
 	return TrueEmulatedTime == OnTrueTime;
 }
 
-LOCALPROC WaitForTheNextEvent(void)
+static void WaitForTheNextEvent(void)
 {
 }
 
-LOCALPROC CheckForSystemEvents(void)
+static void CheckForSystemEvents(void)
 {
 	DS_HandleKeyboard();
 }
 
-GLOBALOSGLUPROC WaitForNextTick(void)
+void WaitForNextTick(void)
 {
 label_retry:
 	CheckForSystemEvents();
@@ -1060,7 +1060,7 @@ label_retry:
 
 	Positions the screen as to center it over the emulated cursor.
 */
-LOCALPROC DS_ScrollBackground(void)
+static void DS_ScrollBackground(void)
 {
 	int ScrollX = 0;
 	int ScrollY = 0;
@@ -1111,7 +1111,7 @@ LOCALPROC DS_ScrollBackground(void)
 
 	Called when TIMER0_DATA overflows.
 */
-LOCALPROC DS_Timer1_IRQ(void)
+static void DS_Timer1_IRQ(void)
 {
 	TimerBaseMSec += 65536;
 }
@@ -1121,7 +1121,7 @@ LOCALPROC DS_Timer1_IRQ(void)
 
 	Vertical blank interrupt callback.
 */
-LOCALPROC DS_VBlank_IRQ(void)
+static void DS_VBlank_IRQ(void)
 {
 	scanKeys();
 
@@ -1163,7 +1163,7 @@ LOCALPROC DS_VBlank_IRQ(void)
 	Called at the start of the horizontal blanking period.
 	This is here mainly as a simple performance test.
 */
-LOCALPROC DS_HBlank_IRQ(void)
+static void DS_HBlank_IRQ(void)
 {
 	++HBlankCounter;
 }
@@ -1173,7 +1173,7 @@ LOCALPROC DS_HBlank_IRQ(void)
 
 	Initializes DS specific system hardware and interrupts.
 */
-LOCALPROC DS_SysInit(void)
+static void DS_SysInit(void)
 {
 	defaultExceptionHandler();
 	powerOn(POWER_ALL_2D);
@@ -1230,7 +1230,7 @@ LOCALPROC DS_SysInit(void)
 	Make sure all of the video memory and background/object palettes
 	are zeroed out just in-case the loader doesn't do it for us.
 */
-LOCALPROC DS_ClearVRAM(void)
+static void DS_ClearVRAM(void)
 {
 	vramSetPrimaryBanks(VRAM_A_LCD, VRAM_B_LCD, VRAM_C_LCD, VRAM_D_LCD);
 
@@ -1247,7 +1247,7 @@ LOCALPROC DS_ClearVRAM(void)
 
 #include "PROGMAIN.h"
 
-LOCALPROC ReserveAllocAll(void)
+static void ReserveAllocAll(void)
 {
 #if dbglog_HAVE
 	dbglog_ReserveAlloc();
@@ -1269,7 +1269,7 @@ LOCALPROC ReserveAllocAll(void)
 	EmulationReserveAlloc();
 }
 
-LOCALFUNC bool AllocMyMemory(void)
+static bool AllocMyMemory(void)
 {
 	uint32_t n;
 	bool IsOk = false;
@@ -1294,20 +1294,20 @@ LOCALFUNC bool AllocMyMemory(void)
 	return IsOk;
 }
 
-LOCALPROC UnallocMyMemory(void)
+static void UnallocMyMemory(void)
 {
 	if (nullptr != ReserveAllocBigBlock) {
 		free((char *)ReserveAllocBigBlock);
 	}
 }
 
-LOCALPROC ZapOSGLUVars(void)
+static void ZapOSGLUVars(void)
 {
 	InitDrives();
 	DS_ClearVRAM();
 }
 
-LOCALFUNC bool InitOSGLU(void)
+static bool InitOSGLU(void)
 {
 	DS_SysInit();
 
@@ -1331,7 +1331,7 @@ LOCALFUNC bool InitOSGLU(void)
 	return false;
 }
 
-LOCALPROC UnInitOSGLU(void)
+static void UnInitOSGLU(void)
 {
 	if (MacMsgDisplayed) {
 		MacMsgDisplayOff();

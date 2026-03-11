@@ -20,29 +20,29 @@
 #define VIAEMDEV_H
 #endif
 
-EXPORTPROC VIA1_Zap(void);
-EXPORTPROC VIA1_Reset(void);
+extern void VIA1_Zap(void);
+extern void VIA1_Reset(void);
 
-EXPORTFUNC uint32_t VIA1_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+extern uint32_t VIA1_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 
-EXPORTPROC VIA1_ExtraTimeBegin(void);
-EXPORTPROC VIA1_ExtraTimeEnd(void);
+extern void VIA1_ExtraTimeBegin(void);
+extern void VIA1_ExtraTimeEnd(void);
 #ifdef VIA1_iCA1_PulseNtfy
-EXPORTPROC VIA1_iCA1_PulseNtfy(void);
+extern void VIA1_iCA1_PulseNtfy(void);
 #endif
 #ifdef VIA1_iCA2_PulseNtfy
-EXPORTPROC VIA1_iCA2_PulseNtfy(void);
+extern void VIA1_iCA2_PulseNtfy(void);
 #endif
 #ifdef VIA1_iCB1_PulseNtfy
-EXPORTPROC VIA1_iCB1_PulseNtfy(void);
+extern void VIA1_iCB1_PulseNtfy(void);
 #endif
 #ifdef VIA1_iCB2_PulseNtfy
-EXPORTPROC VIA1_iCB2_PulseNtfy(void);
+extern void VIA1_iCB2_PulseNtfy(void);
 #endif
-EXPORTPROC VIA1_DoTimer1Check(void);
-EXPORTPROC VIA1_DoTimer2Check(void);
+extern void VIA1_DoTimer1Check(void);
+extern void VIA1_DoTimer2Check(void);
 
-EXPORTFUNC uint16_t VIA1_GetT1InvertTime(void);
+extern uint16_t VIA1_GetT1InvertTime(void);
 
-EXPORTPROC VIA1_ShiftInData(uint8_t v);
-EXPORTFUNC uint8_t VIA1_ShiftOutData(void);
+extern void VIA1_ShiftInData(uint8_t v);
+extern uint8_t VIA1_ShiftOutData(void);

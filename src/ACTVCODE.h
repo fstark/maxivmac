@@ -18,7 +18,7 @@
 	ACTiVation CODE
 */
 
-LOCALFUNC uint32_t KeyFun0(uint32_t x, uint32_t y, uint32_t m)
+static uint32_t KeyFun0(uint32_t x, uint32_t y, uint32_t m)
 {
 	uint32_t r = x + y;
 
@@ -29,7 +29,7 @@ LOCALFUNC uint32_t KeyFun0(uint32_t x, uint32_t y, uint32_t m)
 	return r;
 }
 
-LOCALFUNC uint32_t KeyFun1(uint32_t x, uint32_t y, uint32_t m)
+static uint32_t KeyFun1(uint32_t x, uint32_t y, uint32_t m)
 {
 	uint32_t r = 0;
 	uint32_t t = x;
@@ -46,7 +46,7 @@ LOCALFUNC uint32_t KeyFun1(uint32_t x, uint32_t y, uint32_t m)
 	return r;
 }
 
-LOCALFUNC uint32_t KeyFun2(uint32_t x, uint32_t y, uint32_t m)
+static uint32_t KeyFun2(uint32_t x, uint32_t y, uint32_t m)
 {
 	uint32_t r = 1;
 	uint32_t t = x;
@@ -63,7 +63,7 @@ LOCALFUNC uint32_t KeyFun2(uint32_t x, uint32_t y, uint32_t m)
 	return r;
 }
 
-LOCALFUNC bool CheckActvCode(uint8_t * p, bool *Trial)
+static bool CheckActvCode(uint8_t * p, bool *Trial)
 {
 	bool IsOk = false;
 	uint32_t v0 = do_get_mem_long(p);
@@ -93,7 +93,7 @@ LOCALFUNC bool CheckActvCode(uint8_t * p, bool *Trial)
 
 /* user interface */
 
-LOCALFUNC bool Key2Digit(uint8_t key, uint8_t *r)
+static bool Key2Digit(uint8_t key, uint8_t *r)
 {
 	uint8_t v;
 
@@ -154,13 +154,13 @@ static uint8_t ActvCodeDigits[ActvCodeMaxLen];
 #define ActvCodeFileLen 8
 
 #if UseActvFile
-FORWARDFUNC tMacErr ActvCodeFileSave(uint8_t * p);
-FORWARDFUNC tMacErr ActvCodeFileLoad(uint8_t * p);
+static tMacErr ActvCodeFileSave(uint8_t * p);
+static tMacErr ActvCodeFileLoad(uint8_t * p);
 #endif
 
 static uint8_t CurActvCode[ActvCodeFileLen];
 
-LOCALPROC DoActvCodeModeKey(uint8_t key)
+static void DoActvCodeModeKey(uint8_t key)
 {
 	uint8_t digit;
 	uint8_t L;
@@ -227,7 +227,7 @@ LOCALPROC DoActvCodeModeKey(uint8_t key)
 	}
 }
 
-LOCALPROC DrawCellsActvCodeModeBody(void)
+static void DrawCellsActvCodeModeBody(void)
 {
 #if UseActvFile
 	DrawCellsOneLineStr("Please enter your activation code:");
@@ -283,7 +283,7 @@ LOCALPROC DrawCellsActvCodeModeBody(void)
 #endif
 }
 
-LOCALPROC DrawActvCodeMode(void)
+static void DrawActvCodeMode(void)
 {
 	DrawSpclMode0(
 #if UseActvFile
@@ -295,14 +295,14 @@ LOCALPROC DrawActvCodeMode(void)
 }
 
 #if UseActvFile
-LOCALPROC ClStrAppendHexLong(int *L0, uint8_t *r, uint32_t v)
+static void ClStrAppendHexLong(int *L0, uint8_t *r, uint32_t v)
 {
 	ClStrAppendHexWord(L0, r, (v >> 16) & 0xFFFF);
 	ClStrAppendHexWord(L0, r, v & 0xFFFF);
 }
 #endif
 
-LOCALPROC CopyRegistrationStr(void)
+static void CopyRegistrationStr(void)
 {
 	uint8_t ps[ClStrMaxLength];
 	int i;
@@ -354,7 +354,7 @@ LOCALPROC CopyRegistrationStr(void)
 	}
 }
 
-LOCALFUNC bool ActvCodeInit(void)
+static bool ActvCodeInit(void)
 {
 #if UseActvFile
 	bool Trial;

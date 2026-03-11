@@ -35,32 +35,32 @@
 
 
 #if WantAbnormalReports
-EXPORTOSGLUPROC WarnMsgAbnormalID(uint16_t id);
+extern void WarnMsgAbnormalID(uint16_t id);
 #endif
 
 #if NonDiskProtect
-EXPORTOSGLUPROC WarnMsgUnsupportedDisk(void);
+extern void WarnMsgUnsupportedDisk(void);
 #endif
 
 #if dbglog_HAVE
-EXPORTOSGLUPROC dbglog_writeCStr(char *s);
-EXPORTOSGLUPROC dbglog_writeReturn(void);
-EXPORTOSGLUPROC dbglog_writeHex(uint32_t x);
-EXPORTOSGLUPROC dbglog_writeNum(uint32_t x);
-EXPORTOSGLUPROC dbglog_writeMacChar(uint8_t x);
-EXPORTOSGLUPROC dbglog_writeln(char *s);
-EXPORTOSGLUPROC dbglog_writelnHex(char *s, uint32_t x);
-EXPORTOSGLUPROC dbglog_writelnNum(char *s, int32_t v);
+extern void dbglog_writeCStr(char *s);
+extern void dbglog_writeReturn(void);
+extern void dbglog_writeHex(uint32_t x);
+extern void dbglog_writeNum(uint32_t x);
+extern void dbglog_writeMacChar(uint8_t x);
+extern void dbglog_writeln(char *s);
+extern void dbglog_writelnHex(char *s, uint32_t x);
+extern void dbglog_writelnNum(char *s, int32_t v);
 #endif
 
 #if dbglog_HAVE
-EXPORTOSGLUPROC MacMsgDebugAlert(char *s);
+extern void MacMsgDebugAlert(char *s);
 #endif
 
-EXPORTOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n, uint8_t align,
+extern void ReserveAllocOneBlock(uint8_t * *p, uint32_t n, uint8_t align,
 	bool FillOnes);
 
-EXPORTOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
+extern void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
 
 
 extern uint8_t * ROM;
@@ -117,12 +117,12 @@ extern uint8_t * ROM;
 
 #define NotAPbuf ((tPbuf)0xFFFF)
 
-EXPORTOSGLUFUNC tMacErr CheckPbuf(tPbuf Pbuf_No);
-EXPORTOSGLUFUNC tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count);
+extern tMacErr CheckPbuf(tPbuf Pbuf_No);
+extern tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count);
 
-EXPORTOSGLUFUNC tMacErr PbufNew(uint32_t count, tPbuf *r);
-EXPORTOSGLUPROC PbufDispose(tPbuf i);
-EXPORTOSGLUPROC PbufTransfer(uint8_t * Buffer,
+extern tMacErr PbufNew(uint32_t count, tPbuf *r);
+extern void PbufDispose(tPbuf i);
+extern void PbufTransfer(uint8_t * Buffer,
 	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite);
 
 #endif
@@ -135,14 +135,14 @@ extern uint32_t vSonyInsertedMask;
 #define vSonyIsInserted(Drive_No) \
 	((vSonyInsertedMask & ((uint32_t)1 << (Drive_No))) != 0)
 
-EXPORTOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
+extern tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount);
-EXPORTOSGLUFUNC tMacErr vSonyEject(tDrive Drive_No);
-EXPORTOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count);
+extern tMacErr vSonyEject(tDrive Drive_No);
+extern tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count);
 
-EXPORTOSGLUFUNC bool AnyDiskInserted(void);
-EXPORTOSGLUPROC DiskRevokeWritable(tDrive Drive_No);
+extern bool AnyDiskInserted(void);
+extern void DiskRevokeWritable(tDrive Drive_No);
 
 #if IncludeSonyRawMode
 extern bool vSonyRawMode;
@@ -151,7 +151,7 @@ extern bool vSonyRawMode;
 #if IncludeSonyNew
 extern bool vSonyNewDiskWanted;
 extern uint32_t vSonyNewDiskSize;
-EXPORTOSGLUFUNC tMacErr vSonyEjectDelete(tDrive Drive_No);
+extern tMacErr vSonyEjectDelete(tDrive Drive_No);
 #endif
 
 #if IncludeSonyNameNew
@@ -159,12 +159,12 @@ extern tPbuf vSonyNewDiskName;
 #endif
 
 #if IncludeSonyGetName
-EXPORTOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r);
+extern tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r);
 #endif
 
 #if IncludeHostTextClipExchange
-EXPORTOSGLUFUNC tMacErr HTCEexport(tPbuf i);
-EXPORTOSGLUFUNC tMacErr HTCEimport(tPbuf *r);
+extern tMacErr HTCEexport(tPbuf i);
+extern tMacErr HTCEimport(tPbuf *r);
 #endif
 
 extern uint32_t OnTrueTime;
@@ -210,8 +210,8 @@ extern uint16_t CLUT_blues[CLUT_size];
 extern bool EmVideoDisable;
 extern int8_t EmLagTime;
 
-EXPORTOSGLUPROC Screen_OutputFrame(uint8_t * screencurrentbuff);
-EXPORTOSGLUPROC DoneWithDrawingForTick(void);
+extern void Screen_OutputFrame(uint8_t * screencurrentbuff);
+extern void DoneWithDrawingForTick(void);
 
 extern bool ForceMacOff;
 
@@ -219,7 +219,7 @@ extern bool WantMacInterrupt;
 
 extern bool WantMacReset;
 
-EXPORTOSGLUFUNC bool ExtraTimeNotOver(void);
+extern bool ExtraTimeNotOver(void);
 
 extern uint8_t SpeedValue;
 
@@ -260,8 +260,8 @@ extern uint32_t QuietSubTicks;
 
 #if MySoundEnabled
 
-EXPORTOSGLUFUNC tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL);
-EXPORTOSGLUPROC MySound_EndWrite(uint16_t actL);
+extern tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL);
+extern void MySound_EndWrite(uint16_t actL);
 
 /* 370 samples per tick = 22,254.54 per second */
 #endif
@@ -278,16 +278,16 @@ extern bool CertainlyNotMyPacket;
 extern uint8_t * LT_TxBuffer;
 extern uint16_t LT_TxBuffSz;
 
-EXPORTOSGLUPROC LT_TransmitPacket(void);
+extern void LT_TransmitPacket(void);
 
 extern uint8_t * LT_RxBuffer;
 extern uint32_t LT_RxBuffSz;
 
-EXPORTOSGLUPROC LT_ReceivePacket(void);
+extern void LT_ReceivePacket(void);
 
 #endif
 
-EXPORTOSGLUPROC WaitForNextTick(void);
+extern void WaitForNextTick(void);
 
 #define MyEvtQElKindKey 0
 #define MyEvtQElKindMouseButton 1
@@ -311,8 +311,8 @@ struct MyEvtQEl {
 };
 typedef struct MyEvtQEl MyEvtQEl;
 
-EXPORTOSGLUFUNC MyEvtQEl * MyEvtQOutP(void);
-EXPORTOSGLUPROC MyEvtQOutDone(void);
+extern MyEvtQEl * MyEvtQOutP(void);
+extern void MyEvtQOutDone(void);
 
 #define MKC_A 0x00
 #define MKC_B 0x0B

@@ -42,7 +42,7 @@
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
+void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
 }
@@ -62,7 +62,7 @@ static char *app_parent = NULL;
 static char *app_name = NULL;
 #endif
 
-LOCALFUNC tMacErr ChildPath(char *x, char *y, char **r)
+static tMacErr ChildPath(char *x, char *y, char **r)
 {
 	tMacErr err = mnvm_miscErr;
 	int nx = strlen(x);
@@ -92,7 +92,7 @@ LOCALFUNC tMacErr ChildPath(char *x, char *y, char **r)
 }
 
 #if UseActvFile || IncludeSonyNew
-LOCALFUNC tMacErr FindOrMakeChild(char *x, char *y, char **r)
+static tMacErr FindOrMakeChild(char *x, char *y, char **r)
 {
 	tMacErr err;
 	struct stat folder_info;
@@ -120,7 +120,7 @@ LOCALFUNC tMacErr FindOrMakeChild(char *x, char *y, char **r)
 }
 #endif
 
-LOCALPROC MyMayFree(char *p)
+static void MyMayFree(char *p)
 {
 	if (NULL != p) {
 		free(p);
@@ -139,7 +139,7 @@ LOCALPROC MyMayFree(char *p)
 static FILE *dbglog_File = NULL;
 #endif
 
-LOCALFUNC bool dbglog_open0(void)
+static bool dbglog_open0(void)
 {
 #if dbglog_ToStdErr
 	return true;
@@ -149,7 +149,7 @@ LOCALFUNC bool dbglog_open0(void)
 #endif
 }
 
-LOCALPROC dbglog_write0(char *s, uint32_t L)
+static void dbglog_write0(char *s, uint32_t L)
 {
 #if dbglog_ToStdErr
 	(void) fwrite(s, 1, L, stderr);
@@ -160,7 +160,7 @@ LOCALPROC dbglog_write0(char *s, uint32_t L)
 #endif
 }
 
-LOCALPROC dbglog_close0(void)
+static void dbglog_close0(void)
 {
 #if ! dbglog_ToStdErr
 	if (dbglog_File != NULL) {
@@ -177,7 +177,7 @@ LOCALPROC dbglog_close0(void)
 #if ! dbglog_HAVE
 #define WriteExtraErr(s)
 #else
-LOCALPROC WriteExtraErr(char *s)
+static void WriteExtraErr(char *s)
 {
 	dbglog_writeCStr("*** error: ");
 	dbglog_writeCStr(s);
@@ -190,7 +190,7 @@ static Display *x_display = NULL;
 #define MyDbgEvents (dbglog_HAVE && 0)
 
 #if MyDbgEvents
-LOCALPROC WriteDbgAtom(char *s, Atom x)
+static void WriteDbgAtom(char *s, Atom x)
 {
 	char *name = XGetAtomName(x_display, x);
 	if (name != NULL) {
@@ -229,7 +229,7 @@ static Atom MyXA_TARGETS = (Atom)0;
 static Atom MyXA_MinivMac_Clip = (Atom)0;
 #endif
 
-LOCALPROC LoadMyXA(void)
+static void LoadMyXA(void)
 {
 	MyXA_DeleteW = XInternAtom(x_display, "WM_DELETE_WINDOW", False);
 #if EnableDragDrop
@@ -262,7 +262,7 @@ LOCALPROC LoadMyXA(void)
 }
 
 #if EnableDragDrop
-LOCALFUNC bool NetSupportedContains(Atom x)
+static bool NetSupportedContains(Atom x)
 {
 	/*
 		Note that the window manager could be replaced at
@@ -338,7 +338,7 @@ static const uint8_t Native2MacRomanTab[] = {
 #endif
 
 #if IncludePbufs
-LOCALFUNC tMacErr NativeTextToMacRomanPbuf(char *x, tPbuf *r)
+static tMacErr NativeTextToMacRomanPbuf(char *x, tPbuf *r)
 {
 	if (NULL == x) {
 		return mnvm_miscErr;
@@ -393,7 +393,7 @@ static const uint8_t MacRoman2NativeTab[] = {
 #endif
 
 #if IncludePbufs
-LOCALFUNC bool MacRomanTextToNativePtr(tPbuf i, bool IsFileName,
+static bool MacRomanTextToNativePtr(tPbuf i, bool IsFileName,
 	uint8_t * *r)
 {
 	uint8_t * p;
@@ -450,7 +450,7 @@ LOCALFUNC bool MacRomanTextToNativePtr(tPbuf i, bool IsFileName,
 }
 #endif
 
-LOCALPROC NativeStrFromCStr(char *r, char *s)
+static void NativeStrFromCStr(char *r, char *s)
 {
 	uint8_t ps[ClStrMaxLength];
 	int i;
@@ -474,7 +474,7 @@ static FILE *Drives[NumDrives]; /* open disk image files */
 static char *DriveNames[NumDrives];
 #endif
 
-LOCALPROC InitDrives(void)
+static void InitDrives(void)
 {
 	/*
 		This isn't really needed, Drives[i] and DriveNames[i]
@@ -490,7 +490,7 @@ LOCALPROC InitDrives(void)
 	}
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
+ tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount)
 {
@@ -517,7 +517,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	return err; /*& figure out what really to return &*/
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
+ tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 {
 	tMacErr err = mnvm_miscErr;
 	FILE *refnum = Drives[Drive_No];
@@ -544,7 +544,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 */
 
 #if HaveAdvisoryLocks
-LOCALFUNC bool MyLockFile(FILE *refnum)
+static bool MyLockFile(FILE *refnum)
 {
 	bool IsOk = false;
 
@@ -579,7 +579,7 @@ LOCALFUNC bool MyLockFile(FILE *refnum)
 #endif
 
 #if HaveAdvisoryLocks
-LOCALPROC MyUnlockFile(FILE *refnum)
+static void MyUnlockFile(FILE *refnum)
 {
 #if 1
 	struct flock fl;
@@ -602,7 +602,7 @@ LOCALPROC MyUnlockFile(FILE *refnum)
 }
 #endif
 
-LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
+static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 {
 	FILE *refnum = Drives[Drive_No];
 
@@ -631,19 +631,19 @@ LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	return mnvm_noErr;
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyEject(tDrive Drive_No)
+ tMacErr vSonyEject(tDrive Drive_No)
 {
 	return vSonyEject0(Drive_No, false);
 }
 
 #if IncludeSonyNew
-GLOBALOSGLUFUNC tMacErr vSonyEjectDelete(tDrive Drive_No)
+ tMacErr vSonyEjectDelete(tDrive Drive_No)
 {
 	return vSonyEject0(Drive_No, true);
 }
 #endif
 
-LOCALPROC UnInitDrives(void)
+static void UnInitDrives(void)
 {
 	tDrive i;
 
@@ -655,7 +655,7 @@ LOCALPROC UnInitDrives(void)
 }
 
 #if IncludeSonyGetName
-GLOBALOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
+ tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 {
 	char *drivepath = DriveNames[Drive_No];
 	if (NULL == drivepath) {
@@ -672,7 +672,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 }
 #endif
 
-LOCALFUNC bool Sony_Insert0(FILE *refnum, bool locked,
+static bool Sony_Insert0(FILE *refnum, bool locked,
 	char *drivepath)
 {
 	tDrive Drive_No;
@@ -713,7 +713,7 @@ LOCALFUNC bool Sony_Insert0(FILE *refnum, bool locked,
 	return IsOk;
 }
 
-LOCALFUNC bool Sony_Insert1(char *drivepath, bool silentfail)
+static bool Sony_Insert1(char *drivepath, bool silentfail)
 {
 	bool locked = false;
 	/* printf("Sony_Insert1 %s\n", drivepath); */
@@ -732,7 +732,7 @@ LOCALFUNC bool Sony_Insert1(char *drivepath, bool silentfail)
 	return false;
 }
 
-LOCALFUNC tMacErr LoadMacRomFrom(char *path)
+static tMacErr LoadMacRomFrom(char *path)
 {
 	tMacErr err;
 	FILE *ROM_File;
@@ -762,7 +762,7 @@ LOCALFUNC tMacErr LoadMacRomFrom(char *path)
 	return err;
 }
 
-LOCALFUNC bool Sony_Insert1a(char *drivepath, bool silentfail)
+static bool Sony_Insert1a(char *drivepath, bool silentfail)
 {
 	bool v;
 
@@ -775,7 +775,7 @@ LOCALFUNC bool Sony_Insert1a(char *drivepath, bool silentfail)
 	return v;
 }
 
-LOCALFUNC bool Sony_Insert2(char *s)
+static bool Sony_Insert2(char *s)
 {
 	char *d =
 #if CanGetAppPath
@@ -798,7 +798,7 @@ LOCALFUNC bool Sony_Insert2(char *s)
 	return IsOk;
 }
 
-LOCALFUNC bool Sony_InsertIth(int i)
+static bool Sony_InsertIth(int i)
 {
 	bool v;
 
@@ -815,7 +815,7 @@ LOCALFUNC bool Sony_InsertIth(int i)
 	return v;
 }
 
-LOCALFUNC bool LoadInitialImages(void)
+static bool LoadInitialImages(void)
 {
 	if (! AnyDiskInserted()) {
 		int i;
@@ -829,7 +829,7 @@ LOCALFUNC bool LoadInitialImages(void)
 }
 
 #if IncludeSonyNew
-LOCALFUNC bool WriteZero(FILE *refnum, uint32_t L)
+static bool WriteZero(FILE *refnum, uint32_t L)
 {
 #define ZeroBufferSize 2048
 	uint32_t i;
@@ -849,7 +849,7 @@ LOCALFUNC bool WriteZero(FILE *refnum, uint32_t L)
 #endif
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDisk0(uint32_t L, char *drivepath)
+static void MakeNewDisk0(uint32_t L, char *drivepath)
 {
 	bool IsOk = false;
 	FILE *refnum = fopen(drivepath, "wb+");
@@ -871,7 +871,7 @@ LOCALPROC MakeNewDisk0(uint32_t L, char *drivepath)
 #endif
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDisk(uint32_t L, char *drivename)
+static void MakeNewDisk(uint32_t L, char *drivename)
 {
 	char *d =
 #if CanGetAppPath
@@ -899,7 +899,7 @@ LOCALPROC MakeNewDisk(uint32_t L, char *drivename)
 #endif
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDiskAtDefault(uint32_t L)
+static void MakeNewDiskAtDefault(uint32_t L)
 {
 	char s[ClStrMaxLength + 1];
 
@@ -917,7 +917,7 @@ static char *rom_path = NULL;
 #include <unistd.h>
 #endif
 
-LOCALFUNC tMacErr FindUserHomeFolder(char **r)
+static tMacErr FindUserHomeFolder(char **r)
 {
 	tMacErr err;
 	char *s;
@@ -955,7 +955,7 @@ LOCALFUNC tMacErr FindUserHomeFolder(char **r)
 	return err;
 }
 
-LOCALFUNC tMacErr LoadMacRomFromHome(void)
+static tMacErr LoadMacRomFromHome(void)
 {
 	tMacErr err;
 	char *s;
@@ -979,7 +979,7 @@ LOCALFUNC tMacErr LoadMacRomFromHome(void)
 }
 
 #if CanGetAppPath
-LOCALFUNC tMacErr LoadMacRomFromAppPar(void)
+static tMacErr LoadMacRomFromAppPar(void)
 {
 	tMacErr err;
 	char *d =
@@ -1005,7 +1005,7 @@ LOCALFUNC tMacErr LoadMacRomFromAppPar(void)
 }
 #endif
 
-LOCALFUNC bool LoadMacRom(void)
+static bool LoadMacRom(void)
 {
 	tMacErr err;
 
@@ -1026,7 +1026,7 @@ LOCALFUNC bool LoadMacRom(void)
 
 #define ActvCodeFileName "act_1"
 
-LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
+static tMacErr ActvCodeFileLoad(uint8_t * p)
 {
 	tMacErr err;
 	char *s;
@@ -1067,7 +1067,7 @@ LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
 	return err;
 }
 
-LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
+static tMacErr ActvCodeFileSave(uint8_t * p)
 {
 	tMacErr err;
 	char *s;
@@ -1185,7 +1185,7 @@ static uint8_t * ScalingBuff = nullptr;
 
 
 #if EnableMagnify && ! UseColorImage
-LOCALPROC SetUpScalingTabl(void)
+static void SetUpScalingTabl(void)
 {
 	uint8_t *p4;
 	int i;
@@ -1215,7 +1215,7 @@ LOCALPROC SetUpScalingTabl(void)
 #endif
 
 #if EnableMagnify && (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-LOCALPROC SetUpColorScalingTabl(void)
+static void SetUpColorScalingTabl(void)
 {
 	int i;
 	int j;
@@ -1240,7 +1240,7 @@ LOCALPROC SetUpColorScalingTabl(void)
 #endif
 
 #if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-LOCALPROC SetUpColorTabl(void)
+static void SetUpColorTabl(void)
 {
 	int i;
 	int j;
@@ -1260,7 +1260,7 @@ LOCALPROC SetUpColorTabl(void)
 #endif
 
 #if EnableMagnify && UseColorImage
-LOCALPROC SetUpBW2ColorScalingTabl(void)
+static void SetUpBW2ColorScalingTabl(void)
 {
 	int i;
 	int k;
@@ -1286,7 +1286,7 @@ LOCALPROC SetUpBW2ColorScalingTabl(void)
 #endif
 
 #if UseColorImage
-LOCALPROC SetUpBW2ColorTabl(void)
+static void SetUpBW2ColorTabl(void)
 {
 	int i;
 	int k;
@@ -1407,7 +1407,7 @@ LOCALPROC SetUpBW2ColorTabl(void)
 #endif
 
 
-LOCALPROC HaveChangedScreenBuff(uint16_t top, uint16_t left,
+static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	uint16_t bottom, uint16_t right)
 {
 	int XDest;
@@ -1578,7 +1578,7 @@ label_exit:
 #endif
 }
 
-LOCALPROC MyDrawChangesAndClear(void)
+static void MyDrawChangesAndClear(void)
 {
 	if (ScreenChangedBottom > ScreenChangedTop) {
 		HaveChangedScreenBuff(ScreenChangedTop, ScreenChangedLeft,
@@ -1594,7 +1594,7 @@ LOCALPROC MyDrawChangesAndClear(void)
 static bool HaveCursorHidden = false;
 static bool WantCursorHidden = false;
 
-LOCALPROC ForceShowCursor(void)
+static void ForceShowCursor(void)
 {
 	if (HaveCursorHidden) {
 		HaveCursorHidden = false;
@@ -1606,7 +1606,7 @@ LOCALPROC ForceShowCursor(void)
 
 static Cursor blankCursor = None;
 
-LOCALFUNC bool CreateMyBlankCursor(Window rootwin)
+static bool CreateMyBlankCursor(Window rootwin)
 /*
 	adapted from X11_CreateNullCursor in context.x11.c
 	in quakeforge 0.5.5, copyright Id Software, Inc.
@@ -1653,7 +1653,7 @@ LOCALFUNC bool CreateMyBlankCursor(Window rootwin)
 /* cursor moving */
 
 #if EnableMoveMouse
-LOCALFUNC bool MyMoveMouse(int16_t h, int16_t v)
+static bool MyMoveMouse(int16_t h, int16_t v)
 {
 	int NewMousePosh;
 	int NewMousePosv;
@@ -1707,7 +1707,7 @@ LOCALFUNC bool MyMoveMouse(int16_t h, int16_t v)
 #endif
 
 #if EnableFSMouseMotion
-LOCALPROC StartSaveMouseMotion(void)
+static void StartSaveMouseMotion(void)
 {
 	if (! HaveMouseMotion) {
 		if (MyMoveMouse(ViewHStart + (ViewHSize / 2),
@@ -1722,7 +1722,7 @@ LOCALPROC StartSaveMouseMotion(void)
 #endif
 
 #if EnableFSMouseMotion
-LOCALPROC StopSaveMouseMotion(void)
+static void StopSaveMouseMotion(void)
 {
 	if (HaveMouseMotion) {
 		(void) MyMoveMouse(CurMouseH, CurMouseV);
@@ -1734,7 +1734,7 @@ LOCALPROC StopSaveMouseMotion(void)
 /* cursor state */
 
 #if EnableFSMouseMotion
-LOCALPROC MyMouseConstrain(void)
+static void MyMouseConstrain(void)
 {
 	int16_t shiftdh;
 	int16_t shiftdv;
@@ -1763,7 +1763,7 @@ LOCALPROC MyMouseConstrain(void)
 }
 #endif
 
-LOCALPROC MousePositionNotify(int NewMousePosh, int NewMousePosv)
+static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 {
 	bool ShouldHaveCursorHidden = true;
 
@@ -1838,7 +1838,7 @@ LOCALPROC MousePositionNotify(int NewMousePosh, int NewMousePosv)
 	WantCursorHidden = ShouldHaveCursorHidden;
 }
 
-LOCALPROC CheckMouseState(void)
+static void CheckMouseState(void)
 {
 	int NewMousePosh;
 	int NewMousePosv;
@@ -2794,7 +2794,7 @@ static uint8_t KC2MKC[256];
 
 #define KMInit_dolog (dbglog_HAVE && 0)
 
-LOCALFUNC bool KC2MKCInit(void)
+static bool KC2MKCInit(void)
 {
 	int i;
 	int j;
@@ -2901,7 +2901,7 @@ label_retry:
 	return true;
 }
 
-LOCALPROC CheckTheCapsLock(void)
+static void CheckTheCapsLock(void)
 {
 	int NewMousePosh;
 	int NewMousePosv;
@@ -2921,7 +2921,7 @@ LOCALPROC CheckTheCapsLock(void)
 		(mask_return & LockMask) != 0);
 }
 
-LOCALPROC DoKeyCode0(int i, bool down)
+static void DoKeyCode0(int i, bool down)
 {
 	uint8_t key = KC2MKC[i];
 
@@ -2936,7 +2936,7 @@ LOCALPROC DoKeyCode0(int i, bool down)
 	}
 }
 
-LOCALPROC DoKeyCode(int i, bool down)
+static void DoKeyCode(int i, bool down)
 {
 	if ((i >= 0) && (i < 256)) {
 		uint8_t key = KC2MKC[i];
@@ -2958,7 +2958,7 @@ static bool KeyboardIsGrabbed = false;
 #endif
 
 #if MayFullScreen && GrabKeysFullScreen
-LOCALPROC MyGrabKeyboard(void)
+static void MyGrabKeyboard(void)
 {
 	if (! KeyboardIsGrabbed) {
 		(void) XGrabKeyboard(x_display, my_main_wind,
@@ -2970,7 +2970,7 @@ LOCALPROC MyGrabKeyboard(void)
 #endif
 
 #if MayFullScreen && GrabKeysFullScreen
-LOCALPROC MyUnGrabKeyboard(void)
+static void MyUnGrabKeyboard(void)
 {
 	if (KeyboardIsGrabbed && my_main_wind) {
 		XUngrabKeyboard(x_display, CurrentTime);
@@ -2982,7 +2982,7 @@ LOCALPROC MyUnGrabKeyboard(void)
 static bool NoKeyRepeat = false;
 static int SaveKeyRepeat;
 
-LOCALPROC DisableKeyRepeat(void)
+static void DisableKeyRepeat(void)
 {
 	XKeyboardState r;
 	XKeyboardControl k;
@@ -2998,7 +2998,7 @@ LOCALPROC DisableKeyRepeat(void)
 	}
 }
 
-LOCALPROC RestoreKeyRepeat(void)
+static void RestoreKeyRepeat(void)
 {
 	XKeyboardControl k;
 
@@ -3012,7 +3012,7 @@ LOCALPROC RestoreKeyRepeat(void)
 
 static bool WantCmdOptOnReconnect = false;
 
-LOCALPROC GetTheDownKeys(void)
+static void GetTheDownKeys(void)
 {
 	char keys_return[32];
 	int i;
@@ -3033,7 +3033,7 @@ LOCALPROC GetTheDownKeys(void)
 	}
 }
 
-LOCALPROC ReconnectKeyCodes3(void)
+static void ReconnectKeyCodes3(void)
 {
 	CheckTheCapsLock();
 
@@ -3044,7 +3044,7 @@ LOCALPROC ReconnectKeyCodes3(void)
 	}
 }
 
-LOCALPROC DisconnectKeyCodes3(void)
+static void DisconnectKeyCodes3(void)
 {
 	DisconnectKeyCodes2();
 	MyMouseButtonSet(false);
@@ -3068,7 +3068,7 @@ static uint32_t NewMacDateInSeconds;
 static uint32_t LastTimeSec;
 static uint32_t LastTimeUsec;
 
-LOCALPROC GetCurrentTicks(void)
+static void GetCurrentTicks(void)
 {
 	struct timeval t;
 
@@ -3098,7 +3098,7 @@ LOCALPROC GetCurrentTicks(void)
 static uint32_t NextTimeSec;
 static uint32_t NextTimeUsec;
 
-LOCALPROC IncrNextTime(void)
+static void IncrNextTime(void)
 {
 	NextTimeUsec += MyInvTimeStep;
 	if (NextTimeUsec >= TicksPerSecond) {
@@ -3107,26 +3107,26 @@ LOCALPROC IncrNextTime(void)
 	}
 }
 
-LOCALPROC InitNextTime(void)
+static void InitNextTime(void)
 {
 	NextTimeSec = LastTimeSec;
 	NextTimeUsec = LastTimeUsec;
 	IncrNextTime();
 }
 
-LOCALPROC StartUpTimeAdjust(void)
+static void StartUpTimeAdjust(void)
 {
 	GetCurrentTicks();
 	InitNextTime();
 }
 
-LOCALFUNC int32_t GetTimeDiff(void)
+static int32_t GetTimeDiff(void)
 {
 	return ((int32_t)(LastTimeSec - NextTimeSec)) * TicksPerSecond
 		+ ((int32_t)(LastTimeUsec - NextTimeUsec));
 }
 
-LOCALPROC UpdateTrueEmulatedTime(void)
+static void UpdateTrueEmulatedTime(void)
 {
 	int32_t TimeDiff;
 
@@ -3160,7 +3160,7 @@ LOCALPROC UpdateTrueEmulatedTime(void)
 	}
 }
 
-LOCALFUNC bool CheckDateTime(void)
+static bool CheckDateTime(void)
 {
 	if (CurMacDateInSeconds != NewMacDateInSeconds) {
 		CurMacDateInSeconds = NewMacDateInSeconds;
@@ -3170,7 +3170,7 @@ LOCALFUNC bool CheckDateTime(void)
 	}
 }
 
-LOCALFUNC bool InitLocationDat(void)
+static bool InitLocationDat(void)
 {
 	GetCurrentTicks();
 	CurMacDateInSeconds = NewMacDateInSeconds;
@@ -3213,7 +3213,7 @@ static uint16_t TheFillOffset;
 static uint16_t TheWriteOffset;
 static uint16_t MinFilledSoundBuffs;
 
-LOCALPROC MySound_Start0(void)
+static void MySound_Start0(void)
 {
 	/* Reset variables */
 	ThePlayOffset = 0;
@@ -3222,7 +3222,7 @@ LOCALPROC MySound_Start0(void)
 	MinFilledSoundBuffs = kSoundBuffers;
 }
 
-GLOBALOSGLUFUNC tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL)
+ tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL)
 {
 	uint16_t ToFillLen = kAllBuffLen - (TheWriteOffset - ThePlayOffset);
 	uint16_t WriteBuffContig =
@@ -3243,7 +3243,7 @@ GLOBALOSGLUFUNC tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL)
 	return TheSoundBuffer + (TheWriteOffset & kAllBuffMask);
 }
 
-LOCALFUNC bool MySound_EndWrite0(uint16_t actL)
+static bool MySound_EndWrite0(uint16_t actL)
 {
 	bool v;
 
@@ -3262,7 +3262,7 @@ LOCALFUNC bool MySound_EndWrite0(uint16_t actL)
 	return v;
 }
 
-LOCALPROC MySound_SecondNotify0(void)
+static void MySound_SecondNotify0(void)
 {
 	if (MinFilledSoundBuffs > DesiredMinFilledSoundBuffs) {
 #if dbglog_SoundStuff
@@ -3286,7 +3286,7 @@ LOCALPROC MySound_SecondNotify0(void)
 
 /* --- basic dialogs --- */
 
-LOCALPROC CheckSavedMacMsg(void)
+static void CheckSavedMacMsg(void)
 {
 	if (nullptr != SavedBriefMsg) {
 		char briefMsg0[ClStrMaxLength + 1];
@@ -3309,7 +3309,7 @@ static uint8_t * MyClipBuffer = NULL;
 #endif
 
 #if IncludeHostTextClipExchange
-LOCALPROC FreeMyClipBuffer(void)
+static void FreeMyClipBuffer(void)
 {
 	if (MyClipBuffer != NULL) {
 		free(MyClipBuffer);
@@ -3319,7 +3319,7 @@ LOCALPROC FreeMyClipBuffer(void)
 #endif
 
 #if IncludeHostTextClipExchange
-GLOBALOSGLUFUNC tMacErr HTCEexport(tPbuf i)
+ tMacErr HTCEexport(tPbuf i)
 {
 	tMacErr err = mnvm_miscErr;
 
@@ -3339,7 +3339,7 @@ GLOBALOSGLUFUNC tMacErr HTCEexport(tPbuf i)
 #endif
 
 #if IncludeHostTextClipExchange
-LOCALFUNC bool WaitForClipboardSelection(XEvent *xevent)
+static bool WaitForClipboardSelection(XEvent *xevent)
 {
 	struct timespec rqt;
 	struct timespec rmt;
@@ -3370,7 +3370,7 @@ LOCALFUNC bool WaitForClipboardSelection(XEvent *xevent)
 #endif
 
 #if IncludeHostTextClipExchange
-LOCALPROC HTCEimport_do(void)
+static void HTCEimport_do(void)
 {
 	Window w = XGetSelectionOwner(x_display, MyXA_CLIPBOARD);
 
@@ -3435,7 +3435,7 @@ LOCALPROC HTCEimport_do(void)
 #endif
 
 #if IncludeHostTextClipExchange
-GLOBALOSGLUFUNC tMacErr HTCEimport(tPbuf *r)
+ tMacErr HTCEimport(tPbuf *r)
 {
 	HTCEimport_do();
 
@@ -3444,7 +3444,7 @@ GLOBALOSGLUFUNC tMacErr HTCEimport(tPbuf *r)
 #endif
 
 #if IncludeHostTextClipExchange
-LOCALFUNC bool HandleSelectionRequestClipboard(XEvent *theEvent)
+static bool HandleSelectionRequestClipboard(XEvent *theEvent)
 {
 	bool RequestFilled = false;
 
@@ -3495,7 +3495,7 @@ LOCALFUNC bool HandleSelectionRequestClipboard(XEvent *theEvent)
 /* --- drag and drop --- */
 
 #if EnableDragDrop
-LOCALPROC MyActivateWind(Time time)
+static void MyActivateWind(Time time)
 {
 	if (NetSupportedContains(MyXA_NetActiveWindow)) {
 		XEvent xevent;
@@ -3537,7 +3537,7 @@ LOCALPROC MyActivateWind(Time time)
 #endif
 
 #if EnableDragDrop
-LOCALPROC ParseOneUri(char *s)
+static void ParseOneUri(char *s)
 {
 	/* printf("ParseOneUri %s\n", s); */
 	if (('f' == s[0]) && ('i' == s[1]) && ('l' == s[2])
@@ -3562,7 +3562,7 @@ LOCALPROC ParseOneUri(char *s)
 #endif
 
 #if EnableDragDrop
-LOCALFUNC int HexChar2Nib(char x)
+static int HexChar2Nib(char x)
 {
 	if ((x >= '0') && (x <= '9')) {
 		return x - '0';
@@ -3577,7 +3577,7 @@ LOCALFUNC int HexChar2Nib(char x)
 #endif
 
 #if EnableDragDrop
-LOCALPROC ParseUriList(char *s)
+static void ParseUriList(char *s)
 {
 	char *p1 = s;
 	char *p0 = s;
@@ -3616,7 +3616,7 @@ static Window PendingDragWindow = None;
 #endif
 
 #if EnableDragDrop
-LOCALPROC HandleSelectionNotifyDnd(XEvent *theEvent)
+static void HandleSelectionNotifyDnd(XEvent *theEvent)
 {
 	bool DropOk = false;
 
@@ -3685,7 +3685,7 @@ LOCALPROC HandleSelectionNotifyDnd(XEvent *theEvent)
 #endif
 
 #if EnableDragDrop
-LOCALPROC HandleClientMessageDndPosition(XEvent *theEvent)
+static void HandleClientMessageDndPosition(XEvent *theEvent)
 {
 	XEvent xevent;
 	int xr;
@@ -3725,7 +3725,7 @@ LOCALPROC HandleClientMessageDndPosition(XEvent *theEvent)
 #endif
 
 #if EnableDragDrop
-LOCALPROC HandleClientMessageDndDrop(XEvent *theEvent)
+static void HandleClientMessageDndDrop(XEvent *theEvent)
 {
 	Time timestamp = theEvent->xclient.data.l[2];
 	PendingDragWindow = (Window) theEvent->xclient.data.l[0];
@@ -3754,7 +3754,7 @@ struct xqpr {
 typedef struct xqpr xqpr;
 
 
-LOCALFUNC bool EntropyGather(void)
+static bool EntropyGather(void)
 {
 	/*
 		gather some entropy from several places, just in case
@@ -3891,7 +3891,7 @@ static int SavedTransV;
 
 /* --- event handling for main window --- */
 
-LOCALPROC HandleTheEvent(XEvent *theEvent)
+static void HandleTheEvent(XEvent *theEvent)
 {
 	if (theEvent->xany.display != x_display) {
 		WriteExtraErr("Got event for some other display");
@@ -4225,7 +4225,7 @@ static char **my_argv;
 
 static char *display_name = NULL;
 
-LOCALFUNC bool Screen_Init(void)
+static bool Screen_Init(void)
 {
 	Window rootwin;
 	int screen;
@@ -4354,7 +4354,7 @@ LOCALFUNC bool Screen_Init(void)
 	return true;
 }
 
-LOCALPROC CloseMainWindow(void)
+static void CloseMainWindow(void)
 {
 	if (my_gc != NULL) {
 		XFreeGC(x_display, my_gc);
@@ -4384,14 +4384,14 @@ static int WinPositionWinsV[kNumMagStates];
 #endif
 
 #if EnableRecreateW
-LOCALPROC ZapMyWState(void)
+static void ZapMyWState(void)
 {
 	my_main_wind = 0;
 	my_gc = NULL;
 }
 #endif
 
-LOCALFUNC bool CreateMainWindow(void)
+static bool CreateMainWindow(void)
 {
 	Window rootwin;
 	int screen;
@@ -4675,7 +4675,7 @@ static bool GrabMachine = false;
 #endif
 
 #if MayFullScreen
-LOCALPROC GrabTheMachine(void)
+static void GrabTheMachine(void)
 {
 #if EnableFSMouseMotion
 	StartSaveMouseMotion();
@@ -4687,7 +4687,7 @@ LOCALPROC GrabTheMachine(void)
 #endif
 
 #if MayFullScreen
-LOCALPROC UngrabMachine(void)
+static void UngrabMachine(void)
 {
 #if EnableFSMouseMotion
 	StopSaveMouseMotion();
@@ -4721,7 +4721,7 @@ typedef struct MyWState MyWState;
 #endif
 
 #if EnableRecreateW
-LOCALPROC GetMyWState(MyWState *r)
+static void GetMyWState(MyWState *r)
 {
 	r->f_my_main_wind = my_main_wind;
 	r->f_my_gc = my_gc;
@@ -4743,7 +4743,7 @@ LOCALPROC GetMyWState(MyWState *r)
 #endif
 
 #if EnableRecreateW
-LOCALPROC SetMyWState(MyWState *r)
+static void SetMyWState(MyWState *r)
 {
 	my_main_wind = r->f_my_main_wind;
 	my_gc = r->f_my_gc;
@@ -4771,7 +4771,7 @@ static uint16_t RestoreMouseV;
 #endif
 
 #if EnableRecreateW
-LOCALFUNC bool ReCreateMainWindow(void)
+static bool ReCreateMainWindow(void)
 {
 	MyWState old_state;
 	MyWState new_state;
@@ -4912,7 +4912,7 @@ enum {
 static int WinMagStates[kNumWinStates];
 #endif
 
-LOCALPROC ZapWinStateVars(void)
+static void ZapWinStateVars(void)
 {
 #if MayNotFullScreen
 	{
@@ -4935,7 +4935,7 @@ LOCALPROC ZapWinStateVars(void)
 }
 
 #if VarFullScreen
-LOCALPROC ToggleWantFullScreen(void)
+static void ToggleWantFullScreen(void)
 {
 	WantFullScreen = ! WantFullScreen;
 
@@ -4983,13 +4983,13 @@ LOCALPROC ToggleWantFullScreen(void)
 
 /* --- SavedTasks --- */
 
-LOCALPROC LeaveBackground(void)
+static void LeaveBackground(void)
 {
 	ReconnectKeyCodes3();
 	DisableKeyRepeat();
 }
 
-LOCALPROC EnterBackground(void)
+static void EnterBackground(void)
 {
 	RestoreKeyRepeat();
 	DisconnectKeyCodes3();
@@ -4997,7 +4997,7 @@ LOCALPROC EnterBackground(void)
 	ForceShowCursor();
 }
 
-LOCALPROC LeaveSpeedStopped(void)
+static void LeaveSpeedStopped(void)
 {
 #if MySoundEnabled
 	MySound_Start();
@@ -5006,14 +5006,14 @@ LOCALPROC LeaveSpeedStopped(void)
 	StartUpTimeAdjust();
 }
 
-LOCALPROC EnterSpeedStopped(void)
+static void EnterSpeedStopped(void)
 {
 #if MySoundEnabled
 	MySound_Stop();
 #endif
 }
 
-LOCALPROC CheckForSavedTasks(void)
+static void CheckForSavedTasks(void)
 {
 	if (MyEvtQNeedRecover) {
 		MyEvtQNeedRecover = false;
@@ -5231,7 +5231,7 @@ LOCALPROC CheckForSavedTasks(void)
 
 /* --- command line parsing --- */
 
-LOCALFUNC bool ScanCommandLine(void)
+static bool ScanCommandLine(void)
 {
 	char *pa;
 	int i = 1;
@@ -5304,7 +5304,7 @@ label_retry:
 
 /* --- main program flow --- */
 
-GLOBALOSGLUPROC DoneWithDrawingForTick(void)
+void DoneWithDrawingForTick(void)
 {
 #if EnableFSMouseMotion
 	if (HaveMouseMotion) {
@@ -5315,13 +5315,13 @@ GLOBALOSGLUPROC DoneWithDrawingForTick(void)
 	XFlush(x_display);
 }
 
-GLOBALOSGLUFUNC bool ExtraTimeNotOver(void)
+ bool ExtraTimeNotOver(void)
 {
 	UpdateTrueEmulatedTime();
 	return TrueEmulatedTime == OnTrueTime;
 }
 
-LOCALPROC WaitForTheNextEvent(void)
+static void WaitForTheNextEvent(void)
 {
 	XEvent event;
 
@@ -5329,7 +5329,7 @@ LOCALPROC WaitForTheNextEvent(void)
 	HandleTheEvent(&event);
 }
 
-LOCALPROC CheckForSystemEvents(void)
+static void CheckForSystemEvents(void)
 {
 	int i = 10;
 
@@ -5340,7 +5340,7 @@ LOCALPROC CheckForSystemEvents(void)
 	}
 }
 
-GLOBALOSGLUPROC WaitForNextTick(void)
+void WaitForNextTick(void)
 {
 label_retry:
 	CheckForSystemEvents();
@@ -5397,13 +5397,13 @@ label_retry:
 
 #include "PROGMAIN.h"
 
-LOCALPROC ZapOSGLUVars(void)
+static void ZapOSGLUVars(void)
 {
 	InitDrives();
 	ZapWinStateVars();
 }
 
-LOCALPROC ReserveAllocAll(void)
+static void ReserveAllocAll(void)
 {
 #if dbglog_HAVE
 	dbglog_ReserveAlloc();
@@ -5433,7 +5433,7 @@ LOCALPROC ReserveAllocAll(void)
 	EmulationReserveAlloc();
 }
 
-LOCALFUNC bool AllocMyMemory(void)
+static bool AllocMyMemory(void)
 {
 	uint32_t n;
 	bool IsOk = false;
@@ -5458,7 +5458,7 @@ LOCALFUNC bool AllocMyMemory(void)
 	return IsOk;
 }
 
-LOCALPROC UnallocMyMemory(void)
+static void UnallocMyMemory(void)
 {
 	if (nullptr != ReserveAllocBigBlock) {
 		free((char *)ReserveAllocBigBlock);
@@ -5466,7 +5466,7 @@ LOCALPROC UnallocMyMemory(void)
 }
 
 #if HaveAppPathLink
-LOCALFUNC bool ReadLink_Alloc(char *path, char **r)
+static bool ReadLink_Alloc(char *path, char **r)
 {
 	/*
 		This should work to find size:
@@ -5521,7 +5521,7 @@ label_retry:
 #endif
 
 #if HaveSysctlPath
-LOCALFUNC bool ReadKernProcPathname(char **r)
+static bool ReadKernProcPathname(char **r)
 {
 	size_t s_alloc;
 	char *s;
@@ -5561,7 +5561,7 @@ LOCALFUNC bool ReadKernProcPathname(char **r)
 #endif
 
 #if CanGetAppPath
-LOCALFUNC bool Path2ParentAndName(char *path,
+static bool Path2ParentAndName(char *path,
 	char **parent, char **name)
 {
 	bool IsOk = false;
@@ -5605,7 +5605,7 @@ LOCALFUNC bool Path2ParentAndName(char *path,
 #endif
 
 #if CanGetAppPath
-LOCALFUNC bool InitWhereAmI(void)
+static bool InitWhereAmI(void)
 {
 	char *s;
 
@@ -5638,14 +5638,14 @@ LOCALFUNC bool InitWhereAmI(void)
 #endif
 
 #if CanGetAppPath
-LOCALPROC UninitWhereAmI(void)
+static void UninitWhereAmI(void)
 {
 	MyMayFree(app_parent);
 	MyMayFree(app_name);
 }
 #endif
 
-LOCALFUNC bool InitOSGLU(void)
+static bool InitOSGLU(void)
 {
 	if (AllocMyMemory())
 #if CanGetAppPath
@@ -5678,7 +5678,7 @@ LOCALFUNC bool InitOSGLU(void)
 	return false;
 }
 
-LOCALPROC UnInitOSGLU(void)
+static void UnInitOSGLU(void)
 {
 	if (MacMsgDisplayed) {
 		MacMsgDisplayOff();

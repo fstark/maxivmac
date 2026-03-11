@@ -20,20 +20,20 @@
 #define MINEM68K_H
 #endif
 
-EXPORTPROC MINEM68K_Init(
+extern void MINEM68K_Init(
 	uint8_t *fIPL);
 #if SmallGlobals
-EXPORTPROC MINEM68K_ReserveAlloc(void);
+extern void MINEM68K_ReserveAlloc(void);
 #endif
 
-EXPORTPROC m68k_IPLchangeNtfy(void);
-EXPORTPROC DiskInsertedPsuedoException(uint32_t newpc, uint32_t data);
-EXPORTPROC m68k_reset(void);
+extern void m68k_IPLchangeNtfy(void);
+extern void DiskInsertedPsuedoException(uint32_t newpc, uint32_t data);
+extern void m68k_reset(void);
 
-EXPORTFUNC int32_t GetCyclesRemaining(void);
-EXPORTPROC SetCyclesRemaining(int32_t n);
+extern int32_t GetCyclesRemaining(void);
+extern void SetCyclesRemaining(int32_t n);
 
-EXPORTPROC m68k_go_nCycles(uint32_t n);
+extern void m68k_go_nCycles(uint32_t n);
 
 /*
 	general purpose access of address space
@@ -41,13 +41,13 @@ EXPORTPROC m68k_go_nCycles(uint32_t n);
 	memory mapped hardware.)
 */
 
-EXPORTFUNC uint8_t get_vm_byte(uint32_t addr);
-EXPORTFUNC uint16_t get_vm_word(uint32_t addr);
-EXPORTFUNC uint32_t get_vm_long(uint32_t addr);
+extern uint8_t get_vm_byte(uint32_t addr);
+extern uint16_t get_vm_word(uint32_t addr);
+extern uint32_t get_vm_long(uint32_t addr);
 
-EXPORTPROC put_vm_byte(uint32_t addr, uint8_t b);
-EXPORTPROC put_vm_word(uint32_t addr, uint16_t w);
-EXPORTPROC put_vm_long(uint32_t addr, uint32_t l);
+extern void put_vm_byte(uint32_t addr, uint8_t b);
+extern void put_vm_word(uint32_t addr, uint16_t w);
+extern void put_vm_long(uint32_t addr, uint32_t l);
 
-EXPORTPROC SetHeadATTel(ATTep p);
-EXPORTFUNC ATTep FindATTel(uint32_t addr);
+extern void SetHeadATTel(ATTep p);
+extern ATTep FindATTel(uint32_t addr);

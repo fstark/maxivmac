@@ -64,7 +64,7 @@
 	ReportAbnormalID unused 0x1002 - 0x10FF
 */
 
-LOCALPROC EmulatedHardwareZap(void)
+static void EmulatedHardwareZap(void)
 {
 	Memory_Reset();
 	ICT_Zap();
@@ -82,13 +82,13 @@ LOCALPROC EmulatedHardwareZap(void)
 	m68k_reset();
 }
 
-LOCALPROC DoMacReset(void)
+static void DoMacReset(void)
 {
 	Sony_EjectAllDisks();
 	EmulatedHardwareZap();
 }
 
-LOCALPROC InterruptReset_Update(void)
+static void InterruptReset_Update(void)
 {
 	SetInterruptButton(false);
 		/*
@@ -106,7 +106,7 @@ LOCALPROC InterruptReset_Update(void)
 	}
 }
 
-LOCALPROC SubTickNotify(int SubTick)
+static void SubTickNotify(int SubTick)
 {
 #if 0
 	dbglog_writeCStr("ending sub tick ");
@@ -127,7 +127,7 @@ LOCALPROC SubTickNotify(int SubTick)
 
 static uint16_t SubTickCounter;
 
-LOCALPROC SubTickTaskDo(void)
+static void SubTickTaskDo(void)
 {
 	SubTickNotify(SubTickCounter);
 	++SubTickCounter;
@@ -142,18 +142,18 @@ LOCALPROC SubTickTaskDo(void)
 	}
 }
 
-LOCALPROC SubTickTaskStart(void)
+static void SubTickTaskStart(void)
 {
 	SubTickCounter = 0;
 	ICT_add(kICT_SubTick, CyclesScaledPerSubTick);
 }
 
-LOCALPROC SubTickTaskEnd(void)
+static void SubTickTaskEnd(void)
 {
 	SubTickNotify(kNumSubTicks - 1);
 }
 
-LOCALPROC SixtiethSecondNotify(void)
+static void SixtiethSecondNotify(void)
 {
 #if dbglog_HAVE && 0
 	dbglog_WriteNote("begin new Sixtieth");
@@ -183,7 +183,7 @@ LOCALPROC SixtiethSecondNotify(void)
 	SubTickTaskStart();
 }
 
-LOCALPROC SixtiethEndNotify(void)
+static void SixtiethEndNotify(void)
 {
 	SubTickTaskEnd();
 	Mouse_EndTickNotify();
@@ -193,7 +193,7 @@ LOCALPROC SixtiethEndNotify(void)
 #endif
 }
 
-LOCALPROC ExtraTimeBeginNotify(void)
+static void ExtraTimeBeginNotify(void)
 {
 #if 0
 	dbglog_writeCStr("begin extra time");
@@ -207,7 +207,7 @@ LOCALPROC ExtraTimeBeginNotify(void)
 #endif
 }
 
-LOCALPROC ExtraTimeEndNotify(void)
+static void ExtraTimeEndNotify(void)
 {
 #if EmVIA1
 	VIA1_ExtraTimeEnd();
@@ -221,7 +221,7 @@ LOCALPROC ExtraTimeEndNotify(void)
 #endif
 }
 
-GLOBALPROC EmulationReserveAlloc(void)
+void EmulationReserveAlloc(void)
 {
 	ReserveAllocOneBlock(&RAM,
 		kRAM_Size + RAMSafetyMarginFudge, 5, false);
@@ -237,7 +237,7 @@ GLOBALPROC EmulationReserveAlloc(void)
 #endif
 }
 
-LOCALFUNC bool InitEmulation(void)
+static bool InitEmulation(void)
 {
 #if EmRTC
 	if (RTC_Init())
@@ -254,7 +254,7 @@ LOCALFUNC bool InitEmulation(void)
 	return false;
 }
 
-LOCALPROC ICT_DoTask(int taskid)
+static void ICT_DoTask(int taskid)
 {
 	switch (taskid) {
 		case kICT_SubTick:
@@ -300,7 +300,7 @@ LOCALPROC ICT_DoTask(int taskid)
 	}
 }
 
-LOCALPROC ICT_DoCurrentTasks(void)
+static void ICT_DoCurrentTasks(void)
 {
 	int i = 0;
 	uint32_t m = ICTactive;
@@ -332,7 +332,7 @@ LOCALPROC ICT_DoCurrentTasks(void)
 	}
 }
 
-LOCALFUNC uint32_t ICT_DoGetNext(uint32_t maxn)
+static uint32_t ICT_DoGetNext(uint32_t maxn)
 {
 	int i = 0;
 	uint32_t m = ICTactive;
@@ -362,7 +362,7 @@ LOCALFUNC uint32_t ICT_DoGetNext(uint32_t maxn)
 	return v;
 }
 
-LOCALPROC m68k_go_nCycles_1(uint32_t n)
+static void m68k_go_nCycles_1(uint32_t n)
 {
 	uint32_t n2;
 	uint32_t StopiCount = NextiCount + n;
@@ -387,7 +387,7 @@ LOCALPROC m68k_go_nCycles_1(uint32_t n)
 
 static uint32_t ExtraSubTicksToDo = 0;
 
-LOCALPROC DoEmulateOneTick(void)
+static void DoEmulateOneTick(void)
 {
 #if EnableAutoSlow
 	{
@@ -429,7 +429,7 @@ LOCALPROC DoEmulateOneTick(void)
 	}
 }
 
-LOCALFUNC bool MoreSubTicksToDo(void)
+static bool MoreSubTicksToDo(void)
 {
 	bool v = false;
 
@@ -450,7 +450,7 @@ LOCALFUNC bool MoreSubTicksToDo(void)
 	return v;
 }
 
-LOCALPROC DoEmulateExtraTime(void)
+static void DoEmulateExtraTime(void)
 {
 	/*
 		DoEmulateExtraTime is used for
@@ -491,7 +491,7 @@ static uint32_t CurEmulatedTime = 0;
 		"DoEmulateOneTick" has been called.
 	*/
 
-LOCALPROC RunEmulatedTicksToTrueTime(void)
+static void RunEmulatedTicksToTrueTime(void)
 {
 	/*
 		The general idea is to call DoEmulateOneTick
@@ -543,7 +543,7 @@ LOCALPROC RunEmulatedTicksToTrueTime(void)
 	}
 }
 
-LOCALPROC MainEventLoop(void)
+static void MainEventLoop(void)
 {
 	for (; ; ) {
 		WaitForNextTick();
@@ -557,7 +557,7 @@ LOCALPROC MainEventLoop(void)
 	}
 }
 
-GLOBALPROC ProgramMain(void)
+void ProgramMain(void)
 {
 	if (InitEmulation())
 	{

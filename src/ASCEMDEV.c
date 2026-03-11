@@ -56,10 +56,10 @@ static bool ASC_Playing = false;
 #define ASC_dolog (dbglog_HAVE && 0)
 
 #ifdef ASC_interrupt_PulseNtfy
-IMPORTPROC ASC_interrupt_PulseNtfy(void);
+extern void ASC_interrupt_PulseNtfy(void);
 #endif
 
-LOCALPROC ASC_RecalcStatus(void)
+static void ASC_RecalcStatus(void)
 {
 	if ((1 == SoundReg801) && ASC_Playing) {
 		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200) {
@@ -87,7 +87,7 @@ LOCALPROC ASC_RecalcStatus(void)
 	}
 }
 
-LOCALPROC ASC_ClearFIFO(void)
+static void ASC_ClearFIFO(void)
 {
 	ASC_FIFO_Out = 0;
 	ASC_FIFO_InA = 0;
@@ -96,7 +96,7 @@ LOCALPROC ASC_ClearFIFO(void)
 	ASC_RecalcStatus();
 }
 
-GLOBALFUNC uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+ uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 	if (addr < 0x800) {
 		if (WriteMem) {
@@ -537,7 +537,7 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 	23,  23,  23,  23,  23,  23,  23,  24
 };
 
-GLOBALPROC ASC_SubTick(int SubTick)
+void ASC_SubTick(int SubTick)
 {
 	uint16_t actL;
 #if MySoundEnabled

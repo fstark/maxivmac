@@ -20,4 +20,4 @@
 #define ROMEMDEV_H
 #endif
 
-EXPORTFUNC bool ROM_Init(void);
+extern bool ROM_Init(void);

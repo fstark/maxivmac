@@ -50,7 +50,7 @@
 
 static uint8_t SCSI[kSCSI_Size];
 
-GLOBALPROC SCSI_Reset(void)
+void SCSI_Reset(void)
 {
 	int i;
 
@@ -59,7 +59,7 @@ GLOBALPROC SCSI_Reset(void)
 	}
 }
 
-LOCALPROC SCSI_BusReset(void)
+static void SCSI_BusReset(void)
 {
 	SCSI[scsiRd + sCDR] = 0;
 	SCSI[scsiWr + sODR] = 0;
@@ -86,7 +86,7 @@ LOCALPROC SCSI_BusReset(void)
 	put_ram_word(0xb22, get_ram_word(0xb22) | 0x8000);
 }
 
-LOCALPROC SCSI_Check(void)
+static void SCSI_Check(void)
 {
 	/*
 		The arbitration select/reselect scenario
@@ -134,7 +134,7 @@ LOCALPROC SCSI_Check(void)
 	}
 }
 
-GLOBALFUNC uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+ uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 	if (addr < (kSCSI_Size / 2)) {
 		addr *= 2;

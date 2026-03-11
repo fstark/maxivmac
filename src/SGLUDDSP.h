@@ -23,7 +23,7 @@ static int audio_fd = -1;
 static bool audio_started;
 
 #if 4 == kLn2SoundSampSz
-LOCALPROC ConvertSoundBlockToNative(tpSoundSamp p)
+static void ConvertSoundBlockToNative(tpSoundSamp p)
 {
 	int i;
 
@@ -35,7 +35,7 @@ LOCALPROC ConvertSoundBlockToNative(tpSoundSamp p)
 #define ConvertSoundBlockToNative(p)
 #endif
 
-LOCALPROC MySound_WriteOut(void)
+static void MySound_WriteOut(void)
 {
 	int retry_count = 32;
 
@@ -119,7 +119,7 @@ label_retry:
 	}
 }
 
-LOCALPROC MySound_Start(void)
+static void MySound_Start(void)
 {
 	if (audio_fd >= 0) {
 		MySound_Start0();
@@ -127,7 +127,7 @@ LOCALPROC MySound_Start(void)
 	}
 }
 
-LOCALPROC MySound_Stop(void)
+static void MySound_Stop(void)
 {
 	if (audio_fd >= 0) {
 		if (0 !=
@@ -145,7 +145,7 @@ LOCALPROC MySound_Stop(void)
 #define MyDesiredFormat AFMT_U8
 #endif
 
-LOCALFUNC bool MySound_Init(void)
+static bool MySound_Init(void)
 {
 	bool IsOk = false;
 
@@ -199,7 +199,7 @@ LOCALFUNC bool MySound_Init(void)
 	return true; /* keep going, even if no sound */
 }
 
-LOCALPROC MySound_UnInit(void)
+static void MySound_UnInit(void)
 {
 	if (audio_fd >= 0) {
 		if (close(audio_fd) != 0) {
@@ -209,7 +209,7 @@ LOCALPROC MySound_UnInit(void)
 	}
 }
 
-GLOBALOSGLUPROC MySound_EndWrite(uint16_t actL)
+void MySound_EndWrite(uint16_t actL)
 {
 	if (MySound_EndWrite0(actL)) {
 		ConvertSoundBlockToNative(TheSoundBuffer
@@ -220,7 +220,7 @@ GLOBALOSGLUPROC MySound_EndWrite(uint16_t actL)
 	}
 }
 
-LOCALPROC MySound_SecondNotify(void)
+static void MySound_SecondNotify(void)
 {
 	if (audio_fd >= 0) {
 		MySound_SecondNotify0();

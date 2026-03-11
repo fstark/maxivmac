@@ -21,4 +21,4 @@
 #define SCRNEMDV_H
 #endif
 
-EXPORTPROC Screen_EndTickNotify(void);
+extern void Screen_EndTickNotify(void);

@@ -237,7 +237,7 @@ static const uint8_t my_HappyMac_icon[] = {
 #define HappyMacBase 0x1948
 #endif
 
-LOCALPROC PatchHappyMac(void)
+static void PatchHappyMac(void)
 {
 #if (CurEmMd == kEmMd_PB100) \
 	|| (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
