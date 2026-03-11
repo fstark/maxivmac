@@ -16,6 +16,41 @@ set_property(CACHE MINIVMAC_BACKEND PROPERTY STRINGS auto cocoa sdl)
 set(MINIVMAC_MAINTAINER "egon.rath@gmail.com" CACHE STRING "Maintainer contact")
 set(MINIVMAC_HOMEPAGE "https://github.com/egrath" CACHE STRING "Project homepage")
 
+# Model selection — determines CPU, wire config, VIA layout
+set(MINIVMAC_MODEL "II" CACHE STRING "Mac model: II")
+set_property(CACHE MINIVMAC_MODEL PROPERTY STRINGS II)
+
+# Display
+set(MINIVMAC_SCREEN_WIDTH  "640" CACHE STRING "Screen width in pixels")
+set(MINIVMAC_SCREEN_HEIGHT "480" CACHE STRING "Screen height in pixels")
+set(MINIVMAC_SCREEN_DEPTH  "3"   CACHE STRING "Screen depth (log2 bits per pixel: 0=1bpp, 3=8bpp)")
+
+# Sound
+set(MINIVMAC_SOUND "1" CACHE STRING "Enable sound (1/0)")
+
+# Drives
+set(MINIVMAC_NUM_DRIVES "6" CACHE STRING "Number of floppy drives")
+
+# Magnify / fullscreen / speed
+set(MINIVMAC_MAGNIFY_ENABLE "1" CACHE STRING "Allow magnification (1/0)")
+set(MINIVMAC_MAGNIFY_INIT   "1" CACHE STRING "Start magnified (1/0)")
+set(MINIVMAC_WINDOW_SCALE   "2" CACHE STRING "Window scale factor")
+set(MINIVMAC_FULLSCREEN_VAR     "1" CACHE STRING "Variable fullscreen (1/0)")
+set(MINIVMAC_FULLSCREEN_INIT    "0" CACHE STRING "Start in fullscreen (1/0)")
+set(MINIVMAC_FULLSCREEN_MAY     "1" CACHE STRING "Allow fullscreen (1/0)")
+set(MINIVMAC_FULLSCREEN_MAY_NOT "1" CACHE STRING "Allow windowed mode (1/0)")
+set(MINIVMAC_SPEED "4" CACHE STRING "Initial speed value (0-5, 4=8x)")
+
+# Language
+set(MINIVMAC_LANGUAGE "English" CACHE STRING "UI language")
+set_property(CACHE MINIVMAC_LANGUAGE PROPERTY STRINGS
+    English French German Italian Spanish Dutch PortugueseBrazilian Polish Czech Serbian)
+
+# Debug
+set(MINIVMAC_DBGLOG "0" CACHE STRING "Enable debug log (1/0)")
+set(MINIVMAC_ABNORMAL_REPORTS "0" CACHE STRING "Enable abnormal reports (1/0)")
+set(MINIVMAC_LOCALTALK "0" CACHE STRING "Enable LocalTalk (1/0)")
+
 # ---------------------------------------------------------------------------
 # Source files — all compilation units from the project.
 # Files guarded by config #defines compile to empty translation units when
@@ -103,6 +138,76 @@ configure_file(
 )
 
 # ---------------------------------------------------------------------------
+# Model-specific settings (ROM file, checksums, CNFUDPIC.h)
+# ---------------------------------------------------------------------------
+if(MINIVMAC_MODEL STREQUAL "II")
+    set(MINIVMAC_ROM_FILE "MacII.ROM")
+    set(MINIVMAC_ROM_SIZE "0x00040000")
+    set(MINIVMAC_ROM_CHECKSUM1 "0x9779D2C4")
+    set(MINIVMAC_ROM_CHECKSUM2 "0x97221136")
+    set(MINIVMAC_CHECK_ROM_CHECKSUM "0")
+    set(MINIVMAC_MODEL_CNFUDPIC "${CMAKE_SOURCE_DIR}/cmake/models/MacII_CNFUDPIC.h")
+else()
+    message(FATAL_ERROR "Unknown model: ${MINIVMAC_MODEL}. Currently supported: II")
+endif()
+
+# ---------------------------------------------------------------------------
+# Language → header mapping
+# ---------------------------------------------------------------------------
+set(_lang_map_English    "STRCNENG.h")
+set(_lang_map_French     "STRCNFRE.h")
+set(_lang_map_German     "STRCNGER.h")
+set(_lang_map_Italian    "STRCNITA.h")
+set(_lang_map_Spanish    "STRCNSPA.h")
+set(_lang_map_Dutch      "STRCNDUT.h")
+set(_lang_map_PortugueseBrazilian "STRCNPTB.h")
+set(_lang_map_Polish     "STRCNPOL.h")
+set(_lang_map_Czech      "STRCNCZE.h")
+set(_lang_map_Serbian    "STRCNSRL.h")
+
+if(DEFINED _lang_map_${MINIVMAC_LANGUAGE})
+    set(MINIVMAC_LANGUAGE_HEADER "${_lang_map_${MINIVMAC_LANGUAGE}}")
+else()
+    message(FATAL_ERROR "Unknown language: ${MINIVMAC_LANGUAGE}")
+endif()
+
+# ---------------------------------------------------------------------------
+# Generate remaining config headers
+# ---------------------------------------------------------------------------
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cmake/CNFUDALL.h.in"
+    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUDALL.h"
+    @ONLY
+)
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cmake/CNFUDOSG.h.in"
+    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUDOSG.h"
+    @ONLY
+)
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cmake/STRCONST.h.in"
+    "${MINIVMAC_GENERATED_CFG_DIR}/STRCONST.h"
+    @ONLY
+)
+
+# Copy model-specific CNFUDPIC.h (wire/VIA config is too complex to template)
+configure_file(
+    "${MINIVMAC_MODEL_CNFUDPIC}"
+    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUDPIC.h"
+    COPYONLY
+)
+
+# CNFUIALL.h and CNFUIPIC.h are compiler/platform detection — copy as-is
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cfg/CNFUIALL.h"
+    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUIALL.h"
+    COPYONLY
+)
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cfg/CNFUIPIC.h"
+    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUIPIC.h"
+    COPYONLY
+)
 # Cocoa backend (macOS)
 # ---------------------------------------------------------------------------
 if(MINIVMAC_BACKEND STREQUAL "cocoa")
@@ -191,8 +296,8 @@ endif()
 # Common settings
 # ---------------------------------------------------------------------------
 
-# Include paths: generated cfg first (so generated CNFUIOSG.h wins), then
-# source cfg/, then src/ for source headers.
+# Include paths: generated cfg dir has all 7 config headers (generated or
+# copied). Source cfg/ kept as fallback. src/ for source headers.
 target_include_directories(minivmac PRIVATE
     "${MINIVMAC_GENERATED_CFG_DIR}"
     "${CMAKE_SOURCE_DIR}/cfg"
