@@ -2,10 +2,18 @@ cmake_minimum_required(VERSION 3.20)
 
 # Enable OBJC only on Apple — other platforms don't need it.
 if(APPLE)
-    project(minivmac VERSION 37.03 LANGUAGES C OBJC)
+    project(minivmac VERSION 37.03 LANGUAGES C CXX OBJC OBJCXX)
 else()
-    project(minivmac VERSION 37.03 LANGUAGES C)
+    project(minivmac VERSION 37.03 LANGUAGES C CXX)
 endif()
+
+# ---------------------------------------------------------------------------
+# C++17 — all .c files are compiled as C++ via source property below.
+# OSGLUCCO.m stays as Objective-C.
+# ---------------------------------------------------------------------------
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # ---------------------------------------------------------------------------
 # Options
@@ -319,11 +327,22 @@ target_include_directories(minivmac PRIVATE
     "${CMAKE_SOURCE_DIR}/src"
 )
 
+# Compile all .c source files as C++ (do NOT rename files yet — Phase 3).
+# OSGLUCCO.m is compiled as Objective-C++ for C++ linkage compatibility.
+foreach(_src ${MINIVMAC_SOURCES})
+    if(_src MATCHES "\\.c$")
+        set_source_files_properties(${_src} PROPERTIES LANGUAGE CXX)
+    elseif(_src MATCHES "\\.m$")
+        set_source_files_properties(${_src} PROPERTIES LANGUAGE OBJCXX)
+    endif()
+endforeach()
+
 # Compiler flags matching the original Xcode project
 target_compile_options(minivmac PRIVATE
     -Wall
     -Wundef
     -Wno-uninitialized
+    -Wno-write-strings
 )
 
 # Optimization: Release uses -Os (optimize for size), matching the original
@@ -332,4 +351,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_C_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)
 set(CMAKE_OBJC_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)
+set(CMAKE_OBJCXX_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)
