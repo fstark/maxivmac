@@ -6102,7 +6102,7 @@ static void UninitHotKeys(void)
 }
 #endif
 
-#include "PROGMAIN.h"
+#include "core/main.h"
 
 /* ************************ */
 

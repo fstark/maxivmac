@@ -22,7 +22,7 @@
 	This code adapted from "Sound.c" in vMac by Philip Cummins.
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #if EmClassicSnd
 

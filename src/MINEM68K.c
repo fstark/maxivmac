@@ -30,7 +30,7 @@
 		(this code now located in "FPCPEMDV.h")
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #include "M68KITAB.h"
 

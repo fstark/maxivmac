@@ -41,10 +41,10 @@
 		for all code.
 		In particular, configuration for current compiler.
 	*/
-#include "DFCNFCMP.h"
+#include "core/defaults.h"
 	/*
 		Default configuration of compiler
 		If options for compiler haven't been defined in any
 		configuration files, they are defined here.
 	*/
-#include "ENDIANAC.h"
+#include "core/endian.h"

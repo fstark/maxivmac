@@ -24,7 +24,7 @@
 	Macintosh port of vMac, by Philip Cummins.
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #include "SCRNEMDV.h"
 

@@ -18,7 +18,7 @@
 	Apple Sound Chip EMulated DEVice
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #if EmASC
 

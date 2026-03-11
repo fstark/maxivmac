@@ -18,7 +18,7 @@
 	Motorola 68K Instructions TABle
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #include "M68KITAB.h"
 

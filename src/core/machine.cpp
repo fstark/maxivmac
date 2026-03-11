@@ -24,7 +24,7 @@
 	Bernd Schmidt.
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 /*
 	ReportAbnormalID unused 0x111D - 0x11FF

@@ -1392,7 +1392,7 @@ label_retry:
 
 /* --- platform independent code can be thought of as going here --- */
 
-#include "PROGMAIN.h"
+#include "core/main.h"
 
 static void ReserveAllocAll(void) {
 #if dbglog_HAVE

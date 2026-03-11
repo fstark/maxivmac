@@ -22,7 +22,7 @@
 	This code adapted from "Keyboard.c" in vMac by Philip Cummins.
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #if EmClassicKbrd
 

@@ -18,7 +18,7 @@
 	Apple Desktop Bus EMulated DEVice
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #if EmADB
 

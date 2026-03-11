@@ -18,7 +18,7 @@
 	DISAssemble Motorola 68K instructions.
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #if WantDisasm
 

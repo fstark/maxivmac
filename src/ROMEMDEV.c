@@ -25,7 +25,7 @@
 	Support for "Twiggy" Mac by Mathew Hybler.
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #include "ROMEMDEV.h"
 

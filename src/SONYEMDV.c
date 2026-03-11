@@ -28,7 +28,7 @@
 	by Jesus A. Alvarez.
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 #include "MINEM68K.h"
 
 #include "SONYEMDV.h"

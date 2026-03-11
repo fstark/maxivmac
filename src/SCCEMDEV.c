@@ -38,7 +38,7 @@
 	"Zilog SCC/ESCC User's Manual".
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #include "SCCEMDEV.h"
 
