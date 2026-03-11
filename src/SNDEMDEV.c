@@ -26,7 +26,7 @@
 
 #if EmClassicSnd
 
-#include "MINEM68K.h"
+#include "cpu/m68k.h"
 
 #include "SNDEMDEV.h"
 

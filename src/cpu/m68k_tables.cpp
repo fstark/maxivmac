@@ -20,7 +20,7 @@
 
 #include "core/common.h"
 
-#include "M68KITAB.h"
+#include "cpu/m68k_tables.h"
 
 struct WorkR {
 	/* expected size : 8 bytes */

@@ -29,7 +29,7 @@
 */
 
 #include "core/common.h"
-#include "MINEM68K.h"
+#include "cpu/m68k.h"
 
 #include "SONYEMDV.h"
 

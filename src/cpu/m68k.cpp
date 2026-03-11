@@ -32,13 +32,13 @@
 
 #include "core/common.h"
 
-#include "M68KITAB.h"
+#include "cpu/m68k_tables.h"
 
 #if WantDisasm
-#include "DISAM68K.h"
+#include "cpu/disasm.h"
 #endif
 
-#include "MINEM68K.h"
+#include "cpu/m68k.h"
 
 /*
 	ReportAbnormalID unused 0x0123 - 0x01FF
@@ -8212,8 +8212,8 @@ LOCALIPROC DoCodeMMU(void)
 
 #if EmFPU
 
-#include "FPMATHEM.h"
-#include "FPCPEMDV.h"
+#include "cpu/fpu_math.h"
+#include "cpu/fpu_emdev.h"
 
 #endif
 

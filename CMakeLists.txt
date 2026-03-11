@@ -66,8 +66,8 @@ set(MINIVMAC_LOCALTALK "0" CACHE STRING "Enable LocalTalk (1/0)")
 # ---------------------------------------------------------------------------
 set(MINIVMAC_SOURCES
     src/core/machine.cpp
-    src/M68KITAB.c
-    src/MINEM68K.c
+    src/cpu/m68k_tables.cpp
+    src/cpu/m68k.cpp
     src/VIAEMDEV.c
     src/VIA2EMDV.c
     src/IWMEMDEV.c
@@ -84,7 +84,7 @@ set(MINIVMAC_SOURCES
     src/SNDEMDEV.c
     src/KBRDEMDV.c
     src/PMUEMDEV.c
-    src/DISAM68K.c
+    src/cpu/disasm.cpp
     src/core/main.cpp
 )
 
