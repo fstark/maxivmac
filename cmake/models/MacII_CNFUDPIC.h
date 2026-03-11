@@ -33,7 +33,7 @@
 #define kRAMb_Size 0x00400000
 
 #define IncludeVidMem 1
-#define kVidMemRAM_Size 0x00080000
+#define kVidMemRAM_Size @MINIVMAC_VIDMEM_SIZE@
 
 #define EmVidCard 1
 #define kVidROM_Size 0x000800

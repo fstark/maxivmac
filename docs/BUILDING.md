@@ -13,6 +13,15 @@ cmake --build --preset macos-cocoa
 cp -R bld/macos-cocoa/minivmac.app ./
 ```
 
+```bash
+cmake --preset macos-cocoa \
+    -DMINIVMAC_SCREEN_WIDTH=1280 \
+    -DMINIVMAC_SCREEN_HEIGHT=1024 \
+    -DMINIVMAC_MAGNIFY_ENABLE=0 \
+    -DMINIVMAC_MAGNIFY_INIT=0
+cmake --build --preset macos-cocoa
+```
+
 The app bundle is at `bld/macos-cocoa/minivmac.app`. Drop a Mac II ROM file (`MacII.ROM`) next to the app and a System 7 disk image onto the window to boot.
 
 ## Requirements
