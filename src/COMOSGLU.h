@@ -37,17 +37,17 @@
 #endif
 
 GLOBALVAR uint8_t * ROM = nullpr;
-LOCALVAR blnr ROM_loaded = falseblnr;
+LOCALVAR bool ROM_loaded = false;
 
 GLOBALVAR uint32_t vSonyWritableMask = 0;
 GLOBALVAR uint32_t vSonyInsertedMask = 0;
 
 #if IncludeSonyRawMode
-GLOBALVAR blnr vSonyRawMode = falseblnr;
+GLOBALVAR bool vSonyRawMode = false;
 #endif
 
 #if IncludeSonyNew
-GLOBALVAR blnr vSonyNewDiskWanted = falseblnr;
+GLOBALVAR bool vSonyNewDiskWanted = false;
 GLOBALVAR uint32_t vSonyNewDiskSize;
 #endif
 
@@ -65,12 +65,12 @@ GLOBALVAR uint32_t CurMacDelta = 0;
 #endif
 
 #if 0 != vMacScreenDepth
-GLOBALVAR blnr UseColorMode = falseblnr;
-GLOBALVAR blnr ColorModeWorks = falseblnr;
+GLOBALVAR bool UseColorMode = false;
+GLOBALVAR bool ColorModeWorks = false;
 #endif
 
 #if 0 != vMacScreenDepth
-GLOBALVAR blnr ColorMappingChanged = falseblnr;
+GLOBALVAR bool ColorMappingChanged = false;
 #endif
 
 #if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
@@ -79,25 +79,25 @@ GLOBALVAR uint16_t CLUT_greens[CLUT_size];
 GLOBALVAR uint16_t CLUT_blues[CLUT_size];
 #endif
 
-LOCALVAR blnr RequestMacOff = falseblnr;
+LOCALVAR bool RequestMacOff = false;
 
-GLOBALVAR blnr ForceMacOff = falseblnr;
+GLOBALVAR bool ForceMacOff = false;
 
-GLOBALVAR blnr WantMacInterrupt = falseblnr;
+GLOBALVAR bool WantMacInterrupt = false;
 
-GLOBALVAR blnr WantMacReset = falseblnr;
+GLOBALVAR bool WantMacReset = false;
 
 GLOBALVAR uint8_t SpeedValue = WantInitSpeedValue;
 
 #if EnableAutoSlow
-GLOBALVAR blnr WantNotAutoSlow = (WantInitNotAutoSlow != 0);
+GLOBALVAR bool WantNotAutoSlow = (WantInitNotAutoSlow != 0);
 #endif
 
 GLOBALVAR uint16_t CurMouseV = 0;
 GLOBALVAR uint16_t CurMouseH = 0;
 
 #if EnableFSMouseMotion
-LOCALVAR blnr HaveMouseMotion = falseblnr;
+LOCALVAR bool HaveMouseMotion = false;
 #endif
 
 #if EnableAutoSlow
@@ -110,7 +110,7 @@ GLOBALVAR uint32_t QuietSubTicks = 0;
 GLOBALVAR uint8_t LT_NodeHint = 0;
 
 #if LT_MayHaveEcho
-GLOBALVAR blnr CertainlyNotMyPacket = falseblnr;
+GLOBALVAR bool CertainlyNotMyPacket = false;
 #endif
 
 GLOBALVAR uint8_t * LT_TxBuffer = NULL;
@@ -144,17 +144,17 @@ LOCALVAR uint32_t PbufSize[NumPbufs];
 #endif
 
 #if IncludePbufs
-LOCALFUNC blnr FirstFreePbuf(tPbuf *r)
+LOCALFUNC bool FirstFreePbuf(tPbuf *r)
 {
 	tPbuf i;
 
 	for (i = 0; i < NumPbufs; ++i) {
 		if (! PbufIsAllocated(i)) {
 			*r = i;
-			return trueblnr;
+			return true;
 		}
 	}
-	return falseblnr;
+	return false;
 }
 #endif
 
@@ -203,7 +203,7 @@ GLOBALOSGLUFUNC tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
 }
 #endif
 
-LOCALFUNC blnr FirstFreeDisk(tDrive *Drive_No)
+LOCALFUNC bool FirstFreeDisk(tDrive *Drive_No)
 {
 	tDrive i;
 
@@ -212,23 +212,23 @@ LOCALFUNC blnr FirstFreeDisk(tDrive *Drive_No)
 			if (nullpr != Drive_No) {
 				*Drive_No = i;
 			}
-			return trueblnr;
+			return true;
 		}
 	}
-	return falseblnr;
+	return false;
 }
 
-GLOBALOSGLUFUNC blnr AnyDiskInserted(void)
+GLOBALOSGLUFUNC bool AnyDiskInserted(void)
 {
 #if 0
 	tDrive i;
 
 	for (i = 0; i < NumDrives; ++i) {
 		if (vSonyIsInserted(i)) {
-			return trueblnr;
+			return true;
 		}
 	}
-	return falseblnr;
+	return false;
 #endif
 	return 0 != vSonyInsertedMask;
 }
@@ -238,7 +238,7 @@ GLOBALOSGLUPROC DiskRevokeWritable(tDrive Drive_No)
 	vSonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
 }
 
-LOCALPROC DiskInsertNotify(tDrive Drive_No, blnr locked)
+LOCALPROC DiskInsertNotify(tDrive Drive_No, bool locked)
 {
 	vSonyInsertedMask |= ((uint32_t)1 << Drive_No);
 	if (! locked) {
@@ -283,7 +283,7 @@ LOCALPROC DiskEjectedNotify(tDrive Drive_No)
 #define ln2uiblockbitsn (3 + ln2uiblockn)
 #define uiblockbitsn (8 * uiblockn)
 
-LOCALFUNC blnr FindFirstChangeInLVecs(uibb *ptr1, uibb *ptr2,
+LOCALFUNC bool FindFirstChangeInLVecs(uibb *ptr1, uibb *ptr2,
 					uint32_t L, uint32_t *j)
 {
 /*
@@ -297,10 +297,10 @@ LOCALFUNC blnr FindFirstChangeInLVecs(uibb *ptr1, uibb *ptr2,
 		if (*p1++ != *p2++) {
 			--p1;
 			*j = p1 - ptr1;
-			return trueblnr;
+			return true;
 		}
 	}
-	return falseblnr;
+	return false;
 }
 
 LOCALPROC FindLastChangeInLVecs(uibb *ptr1, uibb *ptr2,
@@ -389,10 +389,10 @@ LOCALVAR uint32_t NextDrawRow = 0;
 #endif
 
 #if WantColorTransValid
-LOCALVAR blnr ColorTransValid = falseblnr;
+LOCALVAR bool ColorTransValid = false;
 #endif
 
-LOCALFUNC blnr ScreenFindChanges(uint8_t * screencurrentbuff,
+LOCALFUNC bool ScreenFindChanges(uint8_t * screencurrentbuff,
 	int8_t TimeAdjust, int16_t *top, int16_t *left, int16_t *bottom, int16_t *right)
 {
 	uint32_t j0;
@@ -423,13 +423,13 @@ LOCALFUNC blnr ScreenFindChanges(uint8_t * screencurrentbuff,
 #if 0 != vMacScreenDepth
 	if (UseColorMode) {
 		if (ColorMappingChanged) {
-			ColorMappingChanged = falseblnr;
+			ColorMappingChanged = false;
 			j0h = 0;
 			j1h = vMacScreenWidth;
 			j0v = 0;
 			j1v = vMacScreenHeight;
 #if WantColorTransValid
-			ColorTransValid = falseblnr;
+			ColorTransValid = false;
 #endif
 		} else {
 			if (! FindFirstChangeInLVecs(
@@ -442,7 +442,7 @@ LOCALFUNC blnr ScreenFindChanges(uint8_t * screencurrentbuff,
 				&j0))
 			{
 				NextDrawRow = 0;
-				return falseblnr;
+				return false;
 			}
 			j0v = j0 / (vMacScreenBitWidth / uiblockbitsn);
 			j0h = j0 - j0v * (vMacScreenBitWidth / uiblockbitsn);
@@ -522,13 +522,13 @@ Label_2c:
 	{
 #if 0 != vMacScreenDepth
 		if (ColorMappingChanged) {
-			ColorMappingChanged = falseblnr;
+			ColorMappingChanged = false;
 			j0h = 0;
 			j1h = vMacScreenWidth;
 			j0v = 0;
 			j1v = vMacScreenHeight;
 #if WantColorTransValid
-			ColorTransValid = falseblnr;
+			ColorTransValid = false;
 #endif
 		} else
 #endif
@@ -543,7 +543,7 @@ Label_2c:
 				&j0))
 			{
 				NextDrawRow = 0;
-				return falseblnr;
+				return false;
 			}
 			j0v = j0 / (vMacScreenWidth / uiblockbitsn);
 			j0h = j0 - j0v * (vMacScreenWidth / uiblockbitsn);
@@ -612,10 +612,10 @@ Label_2:
 	*bottom = j1v;
 	*right = j1h;
 
-	return trueblnr;
+	return true;
 }
 
-GLOBALVAR blnr EmVideoDisable = falseblnr;
+GLOBALVAR bool EmVideoDisable = false;
 GLOBALVAR int8_t EmLagTime = 0;
 
 GLOBALVAR uint32_t OnTrueTime = 0;
@@ -835,7 +835,7 @@ LOCALVAR uint8_t * ReserveAllocBigBlock = nullpr;
 	/* warning - CeilPow2Mult evaluates p twice */
 
 GLOBALOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
-	uint8_t align, blnr FillOnes)
+	uint8_t align, bool FillOnes)
 {
 	ReserveAllocOffset = CeilPow2Mult(ReserveAllocOffset, align);
 	if (nullpr == ReserveAllocBigBlock) {
@@ -870,7 +870,7 @@ LOCALVAR char *dbglog_bufp = nullpr;
 LOCALPROC dbglog_ReserveAlloc(void)
 {
 	ReserveAllocOneBlock((uint8_t * *)&dbglog_bufp, dbglog_bufsz,
-		5, falseblnr);
+		5, false);
 }
 
 #define dbglog_open dbglog_open0
@@ -1039,7 +1039,7 @@ GLOBALOSGLUPROC MyEvtQOutDone(void)
 	++MyEvtQOut;
 }
 
-LOCALVAR blnr MyEvtQNeedRecover = falseblnr;
+LOCALVAR bool MyEvtQNeedRecover = false;
 	/* events lost because of full queue */
 
 LOCALFUNC MyEvtQEl * MyEvtQElPreviousIn(void)
@@ -1056,7 +1056,7 @@ LOCALFUNC MyEvtQEl * MyEvtQElAlloc(void)
 {
 	MyEvtQEl *p = NULL;
 	if (MyEvtQIn - MyEvtQOut >= MyEvtQSz) {
-		MyEvtQNeedRecover = trueblnr;
+		MyEvtQNeedRecover = true;
 	} else {
 		p = &MyEvtQA[MyEvtQIn & MyEvtQIMask];
 
@@ -1068,13 +1068,13 @@ LOCALFUNC MyEvtQEl * MyEvtQElAlloc(void)
 
 LOCALVAR uint32_t theKeys[4];
 
-LOCALPROC Keyboard_UpdateKeyMap(uint8_t key, blnr down)
+LOCALPROC Keyboard_UpdateKeyMap(uint8_t key, bool down)
 {
 	uint8_t k = key & 127; /* just for safety */
 	uint8_t bit = 1 << (k & 7);
 	uint8_t *kp = (uint8_t *)theKeys;
 	uint8_t *kpi = &kp[k / 8];
-	blnr CurDown = ((*kpi & bit) != 0);
+	bool CurDown = ((*kpi & bit) != 0);
 	if (CurDown != down) {
 		MyEvtQEl *p = MyEvtQElAlloc();
 		if (NULL != p) {
@@ -1093,9 +1093,9 @@ LOCALPROC Keyboard_UpdateKeyMap(uint8_t key, blnr down)
 	}
 }
 
-LOCALVAR blnr MyMouseButtonState = falseblnr;
+LOCALVAR bool MyMouseButtonState = false;
 
-LOCALPROC MyMouseButtonSet(blnr down)
+LOCALPROC MyMouseButtonSet(bool down)
 {
 	if (MyMouseButtonState != down) {
 		MyEvtQEl *p = MyEvtQElAlloc();
@@ -1204,7 +1204,7 @@ LOCALPROC DisconnectKeyCodes(uint32_t KeepMask)
 						default: m = 0; break;
 					}
 					if (0 == (KeepMask & m)) {
-						Keyboard_UpdateKeyMap(key, falseblnr);
+						Keyboard_UpdateKeyMap(key, false);
 					}
 				}
 				bit <<= 1;
@@ -1215,7 +1215,7 @@ LOCALPROC DisconnectKeyCodes(uint32_t KeepMask)
 
 LOCALPROC MyEvtQTryRecoverFromFull(void)
 {
-	MyMouseButtonSet(falseblnr);
+	MyMouseButtonSet(false);
 	DisconnectKeyCodes(0);
 }
 
@@ -1226,9 +1226,9 @@ LOCALVAR char *SavedLongMsg;
 #if WantAbnormalReports
 LOCALVAR uint16_t SavedIDMsg = 0;
 #endif
-LOCALVAR blnr SavedFatalMsg;
+LOCALVAR bool SavedFatalMsg;
 
-LOCALPROC MacMsg(char *briefMsg, char *longMsg, blnr fatal)
+LOCALPROC MacMsg(char *briefMsg, char *longMsg, bool fatal)
 {
 	if (nullpr != SavedBriefMsg) {
 		/*
@@ -1246,7 +1246,7 @@ LOCALPROC MacMsg(char *briefMsg, char *longMsg, blnr fatal)
 GLOBALOSGLUPROC WarnMsgAbnormalID(uint16_t id)
 {
 	MacMsg(kStrReportAbnormalTitle,
-		kStrReportAbnormalMessage, falseblnr);
+		kStrReportAbnormalMessage, false);
 
 	if (0 != SavedIDMsg) {
 		/*

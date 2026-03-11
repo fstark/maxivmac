@@ -58,9 +58,9 @@ typedef BOOL (WINAPI *SHGetSpecialFolderPathProcPtr) (
 	BOOL fCreate
 );
 LOCALVAR SHGetSpecialFolderPathProcPtr MySHGetSpecialFolderPath = NULL;
-LOCALVAR blnr DidSHGetSpecialFolderPath = falseblnr;
+LOCALVAR bool DidSHGetSpecialFolderPath = false;
 
-LOCALFUNC blnr HaveMySHGetSpecialFolderPath(void)
+LOCALFUNC bool HaveMySHGetSpecialFolderPath(void)
 {
 	if (! DidSHGetSpecialFolderPath) {
 		HMODULE hLibModule = LoadLibrary(TEXT("shell32.dll"));
@@ -76,7 +76,7 @@ LOCALFUNC blnr HaveMySHGetSpecialFolderPath(void)
 				);
 			/* FreeLibrary(hLibModule); */
 		}
-		DidSHGetSpecialFolderPath = trueblnr;
+		DidSHGetSpecialFolderPath = true;
 	}
 	return (MySHGetSpecialFolderPath != NULL);
 }
@@ -96,7 +96,7 @@ LOCALFUNC blnr HaveMySHGetSpecialFolderPath(void)
 #include "INTLCHAR.h"
 
 
-LOCALPROC NativeStrFromCStr(LPTSTR r, char *s, blnr AddEllipsis)
+LOCALPROC NativeStrFromCStr(LPTSTR r, char *s, bool AddEllipsis)
 {
 	uint8_t ps[ClStrMaxLength];
 	int i;
@@ -147,22 +147,22 @@ LOCALFUNC LPTSTR FindLastTerm(LPTSTR s, TCHAR delim)
 
 LOCALVAR HINSTANCE AppInstance;
 
-LOCALFUNC blnr GetAppDir(LPTSTR pathName)
+LOCALFUNC bool GetAppDir(LPTSTR pathName)
 /* be sure at least _MAX_PATH long! */
 {
 	if (GetModuleFileName(AppInstance, pathName, _MAX_PATH) == 0) {
-		/* MacMsg("error", "GetModuleFileName failed", falseblnr); */
+		/* MacMsg("error", "GetModuleFileName failed", false); */
 	} else {
 		LPTSTR p = FindLastTerm(pathName,
 			(TCHAR)('\\'));
 		if (p == nullpr) {
-			/* MacMsg("error", "strrchr failed", falseblnr); */
+			/* MacMsg("error", "strrchr failed", false); */
 		} else {
 			*--p = (TCHAR)('\0');
-			return trueblnr;
+			return true;
 		}
 	}
-	return falseblnr;
+	return false;
 }
 
 /* --- sending debugging info to file --- */
@@ -171,7 +171,7 @@ LOCALFUNC blnr GetAppDir(LPTSTR pathName)
 
 LOCALVAR HANDLE dbglog_File = INVALID_HANDLE_VALUE;
 
-LOCALFUNC blnr dbglog_open0(void)
+LOCALFUNC bool dbglog_open0(void)
 {
 	TCHAR pathName[_MAX_PATH];
 	TCHAR Child0[] = TEXT("\\dbglog.txt");
@@ -350,7 +350,7 @@ LOCALPROC PbufUnlock(tPbuf i)
 
 #if IncludePbufs
 GLOBALOSGLUPROC PbufTransfer(uint8_t * Buffer,
-	tPbuf i, uint32_t offset, uint32_t count, blnr IsWrite)
+	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
 {
 	HGLOBAL h = PbufDat[i];
 	uint8_t * p0 = GlobalLock(h);
@@ -383,11 +383,11 @@ LOCALVAR unsigned long oldDisplayOrientation;
 #endif
 
 #if VarFullScreen
-LOCALVAR blnr UseFullScreen = (WantInitFullScreen != 0);
+LOCALVAR bool UseFullScreen = (WantInitFullScreen != 0);
 #endif
 
 #if EnableMagnify
-LOCALVAR blnr UseMagnify = (WantInitMagnify != 0);
+LOCALVAR bool UseMagnify = (WantInitMagnify != 0);
 #endif
 
 #if MayFullScreen
@@ -397,13 +397,13 @@ LOCALVAR short vOffset;
 
 /* cursor hiding */
 
-LOCALVAR blnr HaveCursorHidden = falseblnr;
-LOCALVAR blnr WantCursorHidden = falseblnr;
+LOCALVAR bool HaveCursorHidden = false;
+LOCALVAR bool WantCursorHidden = false;
 
 LOCALPROC ForceShowCursor(void)
 {
 	if (HaveCursorHidden) {
-		HaveCursorHidden = falseblnr;
+		HaveCursorHidden = false;
 		(void) ShowCursor(TRUE);
 		SetCursor(LoadCursor(NULL, IDC_ARROW));
 	}
@@ -411,11 +411,11 @@ LOCALPROC ForceShowCursor(void)
 
 /* cursor moving */
 
-LOCALFUNC blnr MyMoveMouse(int16_t h, int16_t v)
+LOCALFUNC bool MyMoveMouse(int16_t h, int16_t v)
 {
 	POINT NewMousePos;
 	uint32_t difftime;
-	blnr IsOk;
+	bool IsOk;
 	DWORD StartTime = GetTickCount();
 	LONG x = h;
 	LONG y = v;
@@ -453,7 +453,7 @@ LOCALFUNC blnr MyMoveMouse(int16_t h, int16_t v)
 	do {
 		(void) SetCursorPos(x, y);
 		if (! GetCursorPos(&NewMousePos)) {
-			IsOk = falseblnr;
+			IsOk = false;
 		} else {
 			IsOk = (x == NewMousePos.x) && (y == NewMousePos.y);
 		}
@@ -471,7 +471,7 @@ LOCALPROC StartSaveMouseMotion(void)
 		{
 			SavedMouseH = ViewHStart + (ViewHSize / 2);
 			SavedMouseV = ViewVStart + (ViewVSize / 2);
-			HaveMouseMotion = trueblnr;
+			HaveMouseMotion = true;
 		}
 	}
 }
@@ -482,14 +482,14 @@ LOCALPROC StopSaveMouseMotion(void)
 {
 	if (HaveMouseMotion) {
 		(void) MyMoveMouse(CurMouseH, CurMouseV);
-		HaveMouseMotion = falseblnr;
+		HaveMouseMotion = false;
 	}
 }
 #endif
 
-LOCALVAR blnr MyMouseCaptured = falseblnr;
+LOCALVAR bool MyMouseCaptured = false;
 
-LOCALPROC MyMouseCaptureSet(blnr v)
+LOCALPROC MyMouseCaptureSet(bool v)
 {
 	if (v != MyMouseCaptured) {
 		if (v) {
@@ -501,7 +501,7 @@ LOCALPROC MyMouseCaptureSet(blnr v)
 	}
 }
 
-LOCALPROC SetCurMouseButton(blnr v)
+LOCALPROC SetCurMouseButton(bool v)
 {
 	MyMouseButtonSet(v);
 	MyMouseCaptureSet(v);
@@ -1591,7 +1591,7 @@ LOCALVAR uint32_t CurKyBdLytNm = 0;
 #endif
 
 #if ItnlKyBdFix
-LOCALFUNC blnr tStrIsHex(TCHAR *s, int n, uint32_t *r)
+LOCALFUNC bool tStrIsHex(TCHAR *s, int n, uint32_t *r)
 {
 	short i;
 	TCHAR c1;
@@ -1608,20 +1608,20 @@ LOCALFUNC blnr tStrIsHex(TCHAR *s, int n, uint32_t *r)
 		} else if ((c1 >= 'a') && (c1 <= 'f')) {
 			v += c1 - ('a' - 10);
 		} else {
-			return falseblnr;
+			return false;
 		}
 	}
 
 	*r = v;
-	return trueblnr;
+	return true;
 }
 #endif
 
 #if ItnlKyBdFix
-LOCALFUNC blnr MyGetKeyboardLayoutHex(uint32_t *r)
+LOCALFUNC bool MyGetKeyboardLayoutHex(uint32_t *r)
 {
 	TCHAR s[KL_NAMELENGTH];
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (! GetKeyboardLayoutName(s)) {
 		/* ReportWinLastError(); */
@@ -1677,7 +1677,7 @@ LOCALPROC AssignOneMacKey(uint8_t WinKey, uint8_t MacKey)
 	WinKey2Mac[WinKey] = MacKey;
 }
 
-LOCALFUNC blnr InitWinKey2Mac(void)
+LOCALFUNC bool InitWinKey2Mac(void)
 {
 	int i;
 
@@ -1828,10 +1828,10 @@ LOCALFUNC blnr InitWinKey2Mac(void)
 	MyInitCheckKeyboardLayout();
 #endif
 
-	return trueblnr;
+	return true;
 }
 
-LOCALPROC DoKeyCode(int i, blnr down)
+LOCALPROC DoKeyCode(int i, bool down)
 {
 	uint8_t key = WinKey2Mac[
 #if ItnlKyBdFix
@@ -1854,7 +1854,7 @@ LOCALPROC DoKeyCode(int i, blnr down)
 #endif /* EnableGrabSpecialKeys */
 
 #if EnableGrabSpecialKeys
-LOCALVAR blnr HaveSetSysParam = falseblnr;
+LOCALVAR bool HaveSetSysParam = false;
 #endif
 
 LOCALPROC CheckTheCapsLock(void)
@@ -1863,8 +1863,8 @@ LOCALPROC CheckTheCapsLock(void)
 }
 
 #if EnableGrabSpecialKeys
-LOCALVAR blnr VK_LWIN_pressed = falseblnr;
-LOCALVAR blnr VK_RWIN_pressed = falseblnr;
+LOCALVAR bool VK_LWIN_pressed = false;
+LOCALVAR bool VK_RWIN_pressed = false;
 #endif
 
 #if EnableGrabSpecialKeys
@@ -1874,21 +1874,21 @@ LOCALPROC CheckForLostKeyUps(void)
 		/* check for lost key ups */
 		if (VK_LWIN_pressed) {
 			if ((GetAsyncKeyState(VK_LWIN) & 0x8000) == 0) {
-				DoKeyCode(VK_LWIN, falseblnr);
-				VK_LWIN_pressed = falseblnr;
+				DoKeyCode(VK_LWIN, false);
+				VK_LWIN_pressed = false;
 			}
 		}
 		if (VK_RWIN_pressed) {
 			if ((GetAsyncKeyState(VK_RWIN) & 0x8000) == 0) {
-				DoKeyCode(VK_RWIN, falseblnr);
-				VK_RWIN_pressed = falseblnr;
+				DoKeyCode(VK_RWIN, false);
+				VK_RWIN_pressed = false;
 			}
 		}
 	}
 }
 #endif
 
-LOCALPROC DoVKcode0(int i, blnr down)
+LOCALPROC DoVKcode0(int i, bool down)
 {
 #if EnableGrabSpecialKeys
 	if (HaveSetSysParam) {
@@ -1903,7 +1903,7 @@ LOCALPROC DoVKcode0(int i, blnr down)
 	DoKeyCode(i, down);
 }
 
-LOCALPROC DoVKcode(int i, uint8_t flags, blnr down)
+LOCALPROC DoVKcode(int i, uint8_t flags, bool down)
 {
 	switch (i) {
 #if MKC_formac_Control != MKC_formac_RControl
@@ -1991,7 +1991,7 @@ LOCALPROC DoVKcode(int i, uint8_t flags, blnr down)
 	}
 }
 
-LOCALVAR blnr WantCmdOptOnReconnect = falseblnr;
+LOCALVAR bool WantCmdOptOnReconnect = false;
 
 LOCALPROC ReconnectKeyCodes3(void)
 {
@@ -2000,14 +2000,14 @@ LOCALPROC ReconnectKeyCodes3(void)
 	CheckTheCapsLock();
 
 	if (WantCmdOptOnReconnect) {
-		WantCmdOptOnReconnect = falseblnr;
+		WantCmdOptOnReconnect = false;
 
 		for (i = 0; i < 256; ++i) {
 			if ((GetKeyState(i) & 0x8000) != 0) {
 				if ((VK_CAPITAL != i)
 					&& (VK_RETURN != i))
 				{
-					DoVKcode0(i, trueblnr);
+					DoVKcode0(i, true);
 				}
 			}
 		}
@@ -2017,7 +2017,7 @@ LOCALPROC ReconnectKeyCodes3(void)
 LOCALPROC DisconnectKeyCodes3(void)
 {
 	DisconnectKeyCodes2();
-	SetCurMouseButton(falseblnr);
+	SetCurMouseButton(false);
 }
 
 #if EnableGrabSpecialKeys
@@ -2055,12 +2055,12 @@ LRESULT CALLBACK LowLevelKeyboardProc(
 			switch (wParam) {
 				case WM_KEYDOWN:
 				case WM_SYSKEYDOWN:
-					DoVKcode(p->vkCode, p->flags, trueblnr);
+					DoVKcode(p->vkCode, p->flags, true);
 					return 1;
 					break;
 				case WM_KEYUP:
 				case WM_SYSKEYUP:
-					DoVKcode(p->vkCode, p->flags, falseblnr);
+					DoVKcode(p->vkCode, p->flags, false);
 					return 1;
 					break;
 			}
@@ -2100,7 +2100,7 @@ LOCALPROC GrabSpecialKeys(void)
 			/* this works on Windows 95/98 */
 			SystemParametersInfo(My_SPI_SETSCREENSAVERRUNNING, TRUE,
 				&nPreviousState, 0);
-			HaveSetSysParam = trueblnr;
+			HaveSetSysParam = true;
 		}
 	}
 }
@@ -2116,7 +2116,7 @@ LOCALPROC UnGrabSpecialKeys(void)
 	if (HaveSetSysParam) {
 		SystemParametersInfo(My_SPI_SETSCREENSAVERRUNNING, FALSE,
 			&nPreviousState, 0);
-		HaveSetSysParam = falseblnr;
+		HaveSetSysParam = false;
 	}
 }
 #endif
@@ -2132,7 +2132,7 @@ LOCALPROC UnGrabSpecialKeys(void)
 #endif /* EnableChangePriority */
 
 #if EnableChangePriority
-LOCALVAR blnr MyPriorityRaised = falseblnr;
+LOCALVAR bool MyPriorityRaised = false;
 #endif
 
 #if EnableChangePriority
@@ -2150,10 +2150,10 @@ LOCALPROC RaiseMyPriority(void)
 				not recursive:
 				MacMsg("SetPriorityClass failed",
 					"Sorry, Mini vMac encountered errors"
-					" and cannot continue.", trueblnr);
+					" and cannot continue.", true);
 			*/
 		}
-		MyPriorityRaised = trueblnr;
+		MyPriorityRaised = true;
 	}
 }
 #endif
@@ -2171,10 +2171,10 @@ LOCALPROC LowerMyPriority(void)
 				not recursive:
 				MacMsg("SetPriorityClass failed",
 					"Sorry, Mini vMac encountered errors"
-					" and cannot continue.", trueblnr);
+					" and cannot continue.", true);
 			*/
 		}
-		MyPriorityRaised = falseblnr;
+		MyPriorityRaised = false;
 	}
 }
 #endif
@@ -2210,7 +2210,7 @@ LOCALPROC InitNextTime(void)
 	IncrNextTime();
 }
 
-LOCALFUNC blnr UpdateTrueEmulatedTime(void)
+LOCALFUNC bool UpdateTrueEmulatedTime(void)
 {
 	DWORD LatestTime;
 	int32_t TimeDiff;
@@ -2237,7 +2237,7 @@ LOCALFUNC blnr UpdateTrueEmulatedTime(void)
 					TimeDiff = (LatestTime - NextIntTime);
 				} while (TimeDiff >= 0);
 			}
-			return trueblnr;
+			return true;
 		} else if (TimeDiff < -256) {
 			/* clock goofed if ever get here, reset */
 #if dbglog_TimeStuff
@@ -2247,7 +2247,7 @@ LOCALFUNC blnr UpdateTrueEmulatedTime(void)
 			InitNextTime();
 		}
 	}
-	return falseblnr;
+	return false;
 }
 
 LOCALVAR uint32_t TimeSecBase;
@@ -2255,7 +2255,7 @@ LOCALVAR DWORD TimeMilliBase;
 
 #include "DATE2SEC.h"
 
-LOCALFUNC blnr CheckDateTime(void)
+LOCALFUNC bool CheckDateTime(void)
 {
 	uint32_t NewMacDateInSecond;
 
@@ -2264,13 +2264,13 @@ LOCALFUNC blnr CheckDateTime(void)
 	if (CurMacDateInSeconds != NewMacDateInSecond) {
 		CurMacDateInSeconds = NewMacDateInSecond;
 
-		return trueblnr;
+		return true;
 	} else {
-		return falseblnr;
+		return false;
 	}
 }
 
-LOCALFUNC blnr Init60thCheck(void)
+LOCALFUNC bool Init60thCheck(void)
 {
 	SYSTEMTIME s;
 #if AutoTimeZone
@@ -2304,7 +2304,7 @@ LOCALFUNC blnr Init60thCheck(void)
 
 	(void) CheckDateTime();
 
-	return trueblnr;
+	return true;
 }
 
 #ifndef MyTimeResolution
@@ -2317,7 +2317,7 @@ LOCALFUNC blnr Init60thCheck(void)
 	*/
 
 #if (MyTimeResolution != 0)
-LOCALVAR blnr HaveSetTimeResolution = falseblnr;
+LOCALVAR bool HaveSetTimeResolution = false;
 #endif
 
 #if (MyTimeResolution != 0)
@@ -2325,7 +2325,7 @@ LOCALPROC MyTimer_Suspend(void)
 {
 	if (HaveSetTimeResolution) {
 		(void) timeEndPeriod(MyTimeResolution);
-		HaveSetTimeResolution = falseblnr;
+		HaveSetTimeResolution = false;
 	}
 }
 #endif
@@ -2344,7 +2344,7 @@ LOCALPROC MyTimer_Resume(void)
 			if (timeBeginPeriod(MyTimeResolution)
 				== TIMERR_NOERROR)
 			{
-				HaveSetTimeResolution = trueblnr;
+				HaveSetTimeResolution = true;
 			}
 		}
 	}
@@ -2384,7 +2384,7 @@ LOCALPROC MyTimer_Resume(void)
 LOCALVAR tpSoundSamp TheSoundBuffer = nullpr;
 LOCALVAR uint16_t ThePlayOffset;
 LOCALVAR uint16_t TheFillOffset;
-LOCALVAR blnr wantplaying;
+LOCALVAR bool wantplaying;
 LOCALVAR uint16_t MinFilledSoundBuffs;
 LOCALVAR uint16_t TheWriteOffset;
 
@@ -2443,7 +2443,7 @@ LOCALPROC MySound_Start(void)
 				not recursive:
 				MacMsg("waveOutOpen failed",
 					"Sorry, Mini vMac encountered errors"
-					" and cannot continue.", trueblnr);
+					" and cannot continue.", true);
 			*/
 		} else {
 			p = TheSoundBuffer;
@@ -2462,7 +2462,7 @@ LOCALPROC MySound_Start(void)
 						not recursive:
 						MacMsg("waveOutPrepareHeader failed",
 							"Sorry, Mini vMac encountered errors"
-							" and cannot continue.", trueblnr);
+							" and cannot continue.", true);
 					*/
 				} else {
 					pwh->dwFlags |= WHDR_DONE;
@@ -2475,7 +2475,7 @@ LOCALPROC MySound_Start(void)
 			ThePlayOffset = 0;
 			TheWriteOffset = 0;
 			MinFilledSoundBuffs = kSoundBuffers;
-			wantplaying = falseblnr;
+			wantplaying = false;
 		}
 	}
 }
@@ -2485,7 +2485,7 @@ LOCALPROC MySound_Stop(void)
 	MMRESULT mmr;
 	int i;
 
-	wantplaying = falseblnr;
+	wantplaying = false;
 	if (hWaveOut != NULL) {
 		DWORD StartTime = GetTickCount();
 		for (i = 0; i < kSoundBuffers; ++i) {
@@ -2502,7 +2502,7 @@ LOCALPROC MySound_Stop(void)
 					not recursive:
 					MacMsg("waveOutUnprepareHeader failed",
 						"Sorry, Mini vMac encountered errors"
-						" and cannot continue.", trueblnr);
+						" and cannot continue.", true);
 				*/
 			}
 		}
@@ -2512,7 +2512,7 @@ LOCALPROC MySound_Stop(void)
 			/*
 				MacMsg("waveOutClose failed",
 					"Sorry, Mini vMac encountered errors"
-					" and cannot continue.", trueblnr);
+					" and cannot continue.", true);
 			*/
 		}
 		hWaveOut = NULL;
@@ -2563,7 +2563,7 @@ label_retry:
 						not recursive:
 						MacMsg("waveOutWrite failed",
 							"Sorry, Mini vMac encountered errors"
-							" and cannot continue.", trueblnr);
+							" and cannot continue.", true);
 					*/
 				}
 				ThePlayOffset = PrevPlayOffset;
@@ -2591,7 +2591,7 @@ LOCALPROC MySound_FilledBlocks(void)
 	while (0 != ((TheWriteOffset - TheFillOffset) >> kLnOneBuffLen)) {
 		uint16_t CurFillBuffer =
 			(TheFillOffset >> kLnOneBuffLen) & kSoundBuffMask;
-		blnr IsOk = falseblnr;
+		bool IsOk = false;
 
 		ConvertSoundBlockToNative((tpSoundSamp)
 			whdr[CurFillBuffer].lpData);
@@ -2600,7 +2600,7 @@ LOCALPROC MySound_FilledBlocks(void)
 			MMRESULT mmr = waveOutWrite(hWaveOut,
 				&whdr[CurFillBuffer], sizeof(WAVEHDR));
 			if (mmr == MMSYSERR_NOERROR) {
-				IsOk = trueblnr;
+				IsOk = true;
 			}
 		}
 
@@ -2609,7 +2609,7 @@ LOCALPROC MySound_FilledBlocks(void)
 				not recursive:
 				MacMsg("waveOutWrite failed",
 					"Sorry, Mini vMac encountered errors"
-					" and cannot continue.", trueblnr);
+					" and cannot continue.", true);
 			*/
 			whdr[CurFillBuffer].dwFlags |= WHDR_DONE;
 		}
@@ -2627,7 +2627,7 @@ LOCALPROC MySound_WroteABlock(void)
 		/* just wait */
 	} else {
 		MySound_FilledBlocks();
-		wantplaying = trueblnr;
+		wantplaying = true;
 		MySound_BeginPlaying();
 	}
 }
@@ -2716,7 +2716,7 @@ LOCALPROC UnGrabTheMachine(void)
 #endif
 
 #if MayFullScreen
-LOCALVAR blnr GrabMachine = falseblnr;
+LOCALVAR bool GrabMachine = false;
 #endif
 
 #if MayFullScreen
@@ -2738,7 +2738,7 @@ LOCALPROC MyBeginDialog(void)
 {
 	DisconnectKeyCodes3();
 #if MayFullScreen
-	GrabMachine = falseblnr;
+	GrabMachine = false;
 	UnGrabTheMachine();
 #endif
 	ForceShowCursor();
@@ -2755,8 +2755,8 @@ LOCALPROC CheckSavedMacMsg(void)
 		TCHAR briefMsg0[ClStrMaxLength + 1];
 		TCHAR longMsg0[ClStrMaxLength + 1];
 
-		NativeStrFromCStr(briefMsg0, SavedBriefMsg, falseblnr);
-		NativeStrFromCStr(longMsg0, SavedLongMsg, falseblnr);
+		NativeStrFromCStr(briefMsg0, SavedBriefMsg, false);
+		NativeStrFromCStr(longMsg0, SavedLongMsg, false);
 
 		MessageBox(MainWnd, longMsg0, briefMsg0,
 			MB_APPLMODAL | MB_OK | (SavedFatalMsg ? MB_ICONSTOP : 0));
@@ -2795,15 +2795,15 @@ LOCALVAR int32_t CmdShow;
 LOCALVAR TCHAR WndTitle[_MAX_PATH];
 LOCALVAR const TCHAR WndClassName[] = TEXT("minivmac");
 
-LOCALVAR blnr gBackgroundFlag = falseblnr;
-LOCALVAR blnr gTrueBackgroundFlag = falseblnr;
-LOCALVAR blnr CurSpeedStopped = trueblnr;
+LOCALVAR bool gBackgroundFlag = false;
+LOCALVAR bool gTrueBackgroundFlag = false;
+LOCALVAR bool CurSpeedStopped = true;
 
 LOCALPROC GetWndTitle(void)
 {
 	TCHAR pathName[_MAX_PATH];
 	WIN32_FIND_DATA fd;
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (GetModuleFileName(AppInstance, pathName, _MAX_PATH) != 0) {
 		HANDLE hf = FindFirstFile(pathName, &fd);
@@ -2817,7 +2817,7 @@ LOCALPROC GetWndTitle(void)
 			}
 
 			_tcscpy(WndTitle, fd.cFileName);
-			IsOk = trueblnr;
+			IsOk = true;
 			FindClose(hf);
 		}
 	}
@@ -2854,13 +2854,13 @@ enum {
 
 #if MayNotFullScreen
 LOCALVAR int CurWinIndx;
-LOCALVAR blnr HavePositionWins[kNumMagStates];
+LOCALVAR bool HavePositionWins[kNumMagStates];
 LOCALVAR POINT WinPositionWins[kNumMagStates];
 #endif
 
 #if MayNotFullScreen
 LOCALPROC MyAppendConvertMenuItem(HMENU hMenu,
-	UINT uIDNewItem, char *s, blnr AddEllipsis)
+	UINT uIDNewItem, char *s, bool AddEllipsis)
 {
 	TCHAR ts[ClStrMaxLength + 1];
 
@@ -2878,7 +2878,7 @@ LOCALPROC MyAppendSubmenuConvertName(HMENU hMenu,
 	TCHAR ts[ClStrMaxLength + 1];
 	MENUITEMINFO mii;
 
-	NativeStrFromCStr(ts, s, falseblnr);
+	NativeStrFromCStr(ts, s, false);
 
 #if 0
 	(void) InsertMenu(hMenu, 0xFFFFFFFF,
@@ -2902,7 +2902,7 @@ LOCALPROC MyAppendSubmenuConvertName(HMENU hMenu,
 #define kStrMenuFile_win kStrMenuFile
 #endif
 
-LOCALFUNC blnr ReCreateMainWindow(void)
+LOCALFUNC bool ReCreateMainWindow(void)
 {
 #if MayNotFullScreen
 	HMENU m;
@@ -2999,7 +2999,7 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 		if (! HavePositionWins[WinIndx]) {
 			WinPositionWins[WinIndx].x = DfltWndX;
 			WinPositionWins[WinIndx].y = DfltWndY;
-			HavePositionWins[WinIndx] = trueblnr;
+			HavePositionWins[WinIndx] = true;
 		}
 
 		NewWinR.left = WinPositionWins[WinIndx].x;
@@ -3050,22 +3050,22 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 				m = CreateMenu();
 				if (m != NULL) {
 					MyAppendConvertMenuItem(m, ID_FILE_INSERTDISK1,
-						kStrMenuItemOpen, trueblnr);
+						kStrMenuItemOpen, true);
 					(void) AppendMenu(m, MF_SEPARATOR, 0, NULL);
 					MyAppendConvertMenuItem(m, ID_FILE_QUIT,
-						kStrMenuItemQuit, falseblnr);
+						kStrMenuItemQuit, false);
 					MyAppendSubmenuConvertName(mb, m, kStrMenuFile_win);
 				}
 				m = CreateMenu();
 				if (m != NULL) {
 					MyAppendConvertMenuItem(m, ID_SPECIAL_MORECOMMANDS,
-						kStrMenuItemMore, trueblnr);
+						kStrMenuItemMore, true);
 					MyAppendSubmenuConvertName(mb, m, kStrMenuSpecial);
 				}
 				m = CreateMenu();
 				if (m != NULL) {
 					MyAppendConvertMenuItem(m, ID_HELP_ABOUT,
-						kStrMenuItemAbout, trueblnr);
+						kStrMenuItemAbout, true);
 					MyAppendSubmenuConvertName(mb, m, kStrMenuHelp);
 				}
 			}
@@ -3085,17 +3085,17 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 		if (NewMainWindow == NULL) {
 			MacMsg("CreateWindow failed",
 				"Sorry, Mini vMac encountered errors"
-				" and cannot continue.", trueblnr);
-			return falseblnr;
+				" and cannot continue.", true);
+			return false;
 		}
 
 		NewMainWndDC = GetDC(NewMainWindow);
 		if (NewMainWndDC == NULL) {
 			MacMsg("GetDC failed",
 				"Sorry, Mini vMac encountered errors"
-				" and cannot continue.", trueblnr);
+				" and cannot continue.", true);
 			DestroyWindow(NewMainWindow);
-			return falseblnr;
+			return false;
 		}
 	} else {
 		NewMainWndDC = OldMainWndDC;
@@ -3106,7 +3106,7 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 	}
 
 #if 0 != vMacScreenDepth
-	ColorModeWorks = trueblnr;
+	ColorModeWorks = true;
 #endif
 
 	{
@@ -3126,7 +3126,7 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 	}
 
 #if MayFullScreen
-	GrabMachine = falseblnr;
+	GrabMachine = false;
 	UnGrabTheMachine();
 #endif
 
@@ -3141,7 +3141,7 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 
 	MainWnd = NewMainWindow;
 	MainWndDC = NewMainWndDC;
-	gTrueBackgroundFlag = falseblnr;
+	gTrueBackgroundFlag = false;
 #if VarFullScreen
 	UseFullScreen = WantFullScreen;
 #endif
@@ -3204,8 +3204,8 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 		{
 			MacMsg("CreateWindow failed",
 				"Sorry, Mini vMac encountered errors"
-				" and cannot continue.", trueblnr);
-			return falseblnr;
+				" and cannot continue.", true);
+			return false;
 		}
 
 		lppal->palNumEntries = 2;
@@ -3225,24 +3225,24 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 			free(lppal);
 			MacMsg("CreateWindow failed",
 				"Sorry, Mini vMac encountered errors"
-				" and cannot continue.", trueblnr);
-			return falseblnr;
+				" and cannot continue.", true);
+			return false;
 		}
 
 		if (SelectPalette(MainWndDC, hpal, FALSE) == NULL) {
 			free(lppal);
 			MacMsg("CreateWindow failed",
 				"Sorry, Mini vMac encountered errors"
-				" and cannot continue.", trueblnr);
-			return falseblnr;
+				" and cannot continue.", true);
+			return false;
 		}
 
 		if (RealizePalette(MainWndDC) == GDI_ERROR) {
 			free(lppal);
 			MacMsg("CreateWindow failed",
 				"Sorry, Mini vMac encountered errors"
-				" and cannot continue.", trueblnr);
-			return falseblnr;
+				" and cannot continue.", true);
+			return false;
 		}
 
 		free(lppal);
@@ -3258,14 +3258,14 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 
 	if (HaveCursorHidden) {
 		(void) MyMoveMouse(CurMouseH, CurMouseV);
-		WantCursorHidden = trueblnr;
+		WantCursorHidden = true;
 	}
 
-	return trueblnr;
+	return true;
 }
 
 #if UseWinCE
-LOCALFUNC blnr AlreadyRunningCheck(void)
+LOCALFUNC bool AlreadyRunningCheck(void)
 {
 	/*
 		Adapted from example program from Microsoft eMbedded Visual C++
@@ -3274,7 +3274,7 @@ LOCALFUNC blnr AlreadyRunningCheck(void)
 	/* If it is already running, then focus on the window */
 	HWND hWnd = FindWindow(WndClassName, WndTitle);
 	if (hWnd == NULL) {
-		return falseblnr;
+		return false;
 	} else {
 		/*
 			Set focus to foremost child window.
@@ -3282,7 +3282,7 @@ LOCALFUNC blnr AlreadyRunningCheck(void)
 			windows to the foreground and activate them.
 		*/
 		SetForegroundWindow((HWND)((ULONG) hWnd | 0x00000001));
-		return trueblnr;
+		return true;
 	}
 }
 #endif
@@ -3732,10 +3732,10 @@ GLOBALOSGLUPROC DoneWithDrawingForTick(void)
 	MyDrawChangesAndClear();
 }
 
-LOCALFUNC blnr InitTheCursor(void)
+LOCALFUNC bool InitTheCursor(void)
 {
 	SetCursor(LoadCursor(NULL, IDC_ARROW));
-	return trueblnr;
+	return true;
 }
 
 #if EnableFSMouseMotion
@@ -3764,7 +3764,7 @@ LOCALPROC MyMouseConstrain(void)
 		SavedMouseH += shiftdh;
 		SavedMouseV += shiftdv;
 		if (! MyMoveMouse(SavedMouseH, SavedMouseV)) {
-			HaveMouseMotion = falseblnr;
+			HaveMouseMotion = false;
 		}
 	}
 }
@@ -3772,7 +3772,7 @@ LOCALPROC MyMouseConstrain(void)
 
 LOCALPROC MousePositionNotify(LONG NewMousePosx, LONG NewMousePosy)
 {
-	blnr ShouldHaveCursorHidden = trueblnr;
+	bool ShouldHaveCursorHidden = true;
 
 #if VarFullScreen
 	if (UseFullScreen)
@@ -3812,17 +3812,17 @@ LOCALPROC MousePositionNotify(LONG NewMousePosx, LONG NewMousePosy)
 	{
 		if (NewMousePosx < 0) {
 			NewMousePosx = 0;
-			ShouldHaveCursorHidden = falseblnr;
+			ShouldHaveCursorHidden = false;
 		} else if (NewMousePosx > vMacScreenWidth) {
 			NewMousePosx = vMacScreenWidth - 1;
-			ShouldHaveCursorHidden = falseblnr;
+			ShouldHaveCursorHidden = false;
 		}
 		if (NewMousePosy < 0) {
 			NewMousePosy = 0;
-			ShouldHaveCursorHidden = falseblnr;
+			ShouldHaveCursorHidden = false;
 		} else if (NewMousePosy > vMacScreenHeight) {
 			NewMousePosy = vMacScreenHeight - 1;
-			ShouldHaveCursorHidden = falseblnr;
+			ShouldHaveCursorHidden = false;
 		}
 
 #if VarFullScreen
@@ -3830,7 +3830,7 @@ LOCALPROC MousePositionNotify(LONG NewMousePosx, LONG NewMousePosy)
 #endif
 #if MayFullScreen
 		{
-			ShouldHaveCursorHidden = trueblnr;
+			ShouldHaveCursorHidden = true;
 		}
 #endif
 
@@ -3959,15 +3959,15 @@ LOCALVAR const uint8_t MacRoman2NativeTab[] = {
 };
 
 #if IncludePbufs
-LOCALFUNC blnr MacRomanTextToNativeHand(tPbuf Pbuf_no,
-	blnr IsFileName, HGLOBAL *r)
+LOCALFUNC bool MacRomanTextToNativeHand(tPbuf Pbuf_no,
+	bool IsFileName, HGLOBAL *r)
 {
 	HGLOBAL h;
 	uint32_t i;
 	uint32_t rn = 0;
 	HGLOBAL bh = PbufDat[Pbuf_no];
 	uint32_t L = PbufSize[Pbuf_no];
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (IsFileName) {
 		if (L > 255) {
@@ -4023,7 +4023,7 @@ LOCALFUNC blnr MacRomanTextToNativeHand(tPbuf Pbuf_no,
 				*p1++ = (TCHAR) 0; /* null character */
 
 				*r = h;
-				IsOk = trueblnr;
+				IsOk = true;
 
 				(void) GlobalUnlock(h);
 			}
@@ -4044,7 +4044,7 @@ GLOBALOSGLUFUNC tMacErr HTCEexport(tPbuf i)
 	HGLOBAL h;
 	tMacErr err = mnvm_miscErr;
 
-	if (MacRomanTextToNativeHand(i, falseblnr, &h)) {
+	if (MacRomanTextToNativeHand(i, false, &h)) {
 		if (! OpenClipboard(MainWnd)) {
 			/* ReportGetLastError(); */
 		} else {
@@ -4100,7 +4100,7 @@ GLOBALOSGLUFUNC tMacErr HTCEimport(tPbuf *r)
 
 #if EmLocalTalk
 
-LOCALFUNC blnr EntropyGather(void)
+LOCALFUNC bool EntropyGather(void)
 {
 	/*
 		gather some entropy from several places, just in case
@@ -4159,7 +4159,7 @@ LOCALFUNC blnr EntropyGather(void)
 		EntropyPoolAddPtr((uint8_t *)&t, sizeof(t) / sizeof(uint8_t));
 	}
 
-	return trueblnr;
+	return true;
 }
 #endif
 
@@ -4204,7 +4204,7 @@ LOCALPROC InitDrives(void)
 	}
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyTransfer(blnr IsWrite, uint8_t * Buffer,
+GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount)
 {
@@ -4285,7 +4285,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 	return result;
 }
 
-LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, blnr deleteit)
+LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 {
 	HANDLE refnum = Drives[Drive_No];
 
@@ -4322,13 +4322,13 @@ LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, blnr deleteit)
 
 GLOBALOSGLUFUNC tMacErr vSonyEject(tDrive Drive_No)
 {
-	return vSonyEject0(Drive_No, falseblnr);
+	return vSonyEject0(Drive_No, false);
 }
 
 #if IncludeSonyNew
 GLOBALOSGLUFUNC tMacErr vSonyEjectDelete(tDrive Drive_No)
 {
-	return vSonyEject0(Drive_No, trueblnr);
+	return vSonyEject0(Drive_No, true);
 }
 #endif
 
@@ -4344,9 +4344,9 @@ LOCALPROC UnInitDrives(void)
 }
 
 #if NeedDriveNames
-LOCALFUNC blnr LPTSTRtoHand(LPTSTR s, HGLOBAL *r)
+LOCALFUNC bool LPTSTRtoHand(LPTSTR s, HGLOBAL *r)
 {
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	size_t L = _tcslen(s);
 	HGLOBAL h = GlobalAlloc(GMEM_DDESHARE,
@@ -4355,7 +4355,7 @@ LOCALFUNC blnr LPTSTRtoHand(LPTSTR s, HGLOBAL *r)
 		LPTSTR p = GlobalLock(h);
 		if (p != NULL) {
 			_tcscpy(p, s);
-			IsOk = trueblnr;
+			IsOk = true;
 			(void) GlobalUnlock(h);
 		}
 		if (! IsOk) {
@@ -4395,7 +4395,7 @@ GLOBALOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 }
 #endif
 
-LOCALFUNC blnr Sony_Insert0(HANDLE refnum, blnr locked,
+LOCALFUNC bool Sony_Insert0(HANDLE refnum, bool locked,
 	LPTSTR drivepath)
 {
 	tDrive Drive_No;
@@ -4407,8 +4407,8 @@ LOCALFUNC blnr Sony_Insert0(HANDLE refnum, blnr locked,
 	if (! FirstFreeDisk(&Drive_No)) {
 		(void) CloseHandle(refnum);
 		MacMsg(kStrTooManyImagesTitle,
-			kStrTooManyImagesMessage, falseblnr);
-		return falseblnr;
+			kStrTooManyImagesMessage, false);
+		return false;
 	} else {
 		Drives[Drive_No] = refnum;
 		DiskInsertNotify(Drive_No, locked);
@@ -4423,13 +4423,13 @@ LOCALFUNC blnr Sony_Insert0(HANDLE refnum, blnr locked,
 			DriveNames[Drive_No] = h;
 		}
 #endif
-		return trueblnr;
+		return true;
 	}
 }
 
-LOCALFUNC blnr Sony_Insert1(LPTSTR drivepath, blnr SilentOnMissing)
+LOCALFUNC bool Sony_Insert1(LPTSTR drivepath, bool SilentOnMissing)
 {
-	blnr locked = falseblnr;
+	bool locked = false;
 	HANDLE refnum = CreateFile(
 		drivepath, /* pointer to name of the file */
 		GENERIC_READ + GENERIC_WRITE, /* access (read-write) mode */
@@ -4441,7 +4441,7 @@ LOCALFUNC blnr Sony_Insert1(LPTSTR drivepath, blnr SilentOnMissing)
 	);
 	if (refnum == INVALID_HANDLE_VALUE) {
 		if (ERROR_ACCESS_DENIED == GetLastError()) {
-			locked = trueblnr;
+			locked = true;
 			refnum = CreateFile(
 				drivepath, /* pointer to name of the file */
 				GENERIC_READ, /* access (read-write) mode */
@@ -4457,22 +4457,22 @@ LOCALFUNC blnr Sony_Insert1(LPTSTR drivepath, blnr SilentOnMissing)
 		DWORD err = GetLastError();
 		if (ERROR_SHARING_VIOLATION == err) {
 			MacMsg(kStrImageInUseTitle,
-				kStrImageInUseMessage, falseblnr);
+				kStrImageInUseMessage, false);
 		} else if ((ERROR_FILE_NOT_FOUND == err) && SilentOnMissing) {
 			/* ignore it */
 		} else {
-			MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, falseblnr);
+			MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, false);
 		}
 	} else {
 		return Sony_Insert0(refnum, locked, drivepath);
 	}
-	return falseblnr;
+	return false;
 }
 
-LOCALFUNC blnr LoadMacRomFromPath(LPTSTR drivepath)
+LOCALFUNC bool LoadMacRomFromPath(LPTSTR drivepath)
 {
 	HANDLE refnum = INVALID_HANDLE_VALUE;
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	refnum = CreateFile(
 		drivepath, /* pointer to name of the file */
@@ -4485,7 +4485,7 @@ LOCALFUNC blnr LoadMacRomFromPath(LPTSTR drivepath)
 	);
 
 	if (refnum == INVALID_HANDLE_VALUE) {
-		/* MacMsg(kStrNoROMTitle, kStrNoROMMessage, trueblnr); */
+		/* MacMsg(kStrNoROMTitle, kStrNoROMMessage, true); */
 	} else {
 		DWORD BytesRead;
 
@@ -4514,8 +4514,8 @@ LOCALFUNC blnr LoadMacRomFromPath(LPTSTR drivepath)
 #endif
 
 #if EnableShellLinks
-LOCALVAR blnr COMinited = falseblnr;
-LOCALVAR blnr COMinitedOK;
+LOCALVAR bool COMinited = false;
+LOCALVAR bool COMinitedOK;
 #endif
 
 #if EnableShellLinks
@@ -4528,25 +4528,25 @@ LOCALPROC MyUninitCOM(void)
 #endif
 
 #if EnableShellLinks
-LOCALFUNC blnr MyNeedCOM(void)
+LOCALFUNC bool MyNeedCOM(void)
 {
 	HRESULT hres;
 
 	if (! COMinited) {
-		COMinitedOK = falseblnr;
+		COMinitedOK = false;
 		hres = CoInitialize(NULL);
 		if (SUCCEEDED(hres)) {
-			COMinitedOK = trueblnr;
+			COMinitedOK = true;
 		}
 
-		COMinited = trueblnr;
+		COMinited = true;
 	}
 	return COMinitedOK;
 }
 #endif
 
 #if EnableShellLinks
-LOCALFUNC blnr MyResolveShortcut(LPTSTR FilePath, blnr *directory)
+LOCALFUNC bool MyResolveShortcut(LPTSTR FilePath, bool *directory)
 /* adapted from Microsoft example code */
 {
 	HRESULT hres;
@@ -4554,7 +4554,7 @@ LOCALFUNC blnr MyResolveShortcut(LPTSTR FilePath, blnr *directory)
 	IPersistFile* ppf;
 	TCHAR szGotPath[MAX_PATH];
 	WIN32_FIND_DATA wfd;
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (MyNeedCOM()) {
 		hres = CoCreateInstance(&CLSID_ShellLink, NULL,
@@ -4605,7 +4605,7 @@ LOCALFUNC blnr MyResolveShortcut(LPTSTR FilePath, blnr *directory)
 								*directory = (0 != (wfd.dwFileAttributes
 									& FILE_ATTRIBUTE_DIRECTORY));
 							}
-							IsOk = trueblnr;
+							IsOk = true;
 						}
 					}
 				}
@@ -4620,26 +4620,26 @@ LOCALFUNC blnr MyResolveShortcut(LPTSTR FilePath, blnr *directory)
 #endif
 
 #if EnableShellLinks
-LOCALFUNC blnr FileIsLink(LPTSTR drivepath)
+LOCALFUNC bool FileIsLink(LPTSTR drivepath)
 {
 	LPTSTR p = FindLastTerm(drivepath, (TCHAR)('.'));
 
 	if (p != nullpr) {
 		if (_tcscmp(p, TEXT("lnk")) == 0) {
-			return trueblnr;
+			return true;
 		}
 	}
-	return falseblnr;
+	return false;
 }
 #endif
 
-LOCALFUNC blnr InsertDiskOrAlias(LPTSTR drivepath,
-	blnr MaybeROM, blnr MaybeAlias)
+LOCALFUNC bool InsertDiskOrAlias(LPTSTR drivepath,
+	bool MaybeROM, bool MaybeAlias)
 {
 #if EnableShellLinks
 	if (MaybeAlias && FileIsLink(drivepath)) {
 		if (! MyResolveShortcut(drivepath, NULL)) {
-			return falseblnr;
+			return false;
 		}
 	}
 #endif
@@ -4647,22 +4647,22 @@ LOCALFUNC blnr InsertDiskOrAlias(LPTSTR drivepath,
 	if (MaybeROM && ! ROM_loaded) {
 		return LoadMacRomFromPath(drivepath);
 	} else {
-		return Sony_Insert1(drivepath, falseblnr);
+		return Sony_Insert1(drivepath, false);
 	}
 }
 
-LOCALFUNC blnr MyFileExists(LPTSTR pathName, blnr *directory)
+LOCALFUNC bool MyFileExists(LPTSTR pathName, bool *directory)
 {
 	WIN32_FIND_DATA fd;
 	HANDLE hf = FindFirstFile(pathName, &fd);
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (hf != INVALID_HANDLE_VALUE) {
 		if (NULL != directory) {
 			*directory =
 				(0 != (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY));
 		}
-		IsOk = trueblnr;
+		IsOk = true;
 		FindClose(hf);
 	}
 
@@ -4670,7 +4670,7 @@ LOCALFUNC blnr MyFileExists(LPTSTR pathName, blnr *directory)
 }
 
 LOCALFUNC tMacErr ResolveNamedChild0(LPTSTR pathName,
-	LPTSTR Child, blnr *directory)
+	LPTSTR Child, bool *directory)
 {
 	size_t newlen;
 	size_t oldlen = _tcslen(pathName);
@@ -4705,27 +4705,27 @@ LOCALFUNC tMacErr ResolveNamedChild0(LPTSTR pathName,
 }
 
 LOCALFUNC tMacErr ResolveNamedChild(LPTSTR pathName,
-	char *Child, blnr *directory)
+	char *Child, bool *directory)
 {
 	TCHAR Child0[ClStrMaxLength + 1];
 
-	NativeStrFromCStr(Child0, Child, falseblnr);
+	NativeStrFromCStr(Child0, Child, false);
 
 	return ResolveNamedChild0(pathName, Child0, directory);
 }
 
-LOCALFUNC blnr ResolveNamedChildDir(LPTSTR pathName, char *Child)
+LOCALFUNC bool ResolveNamedChildDir(LPTSTR pathName, char *Child)
 {
-	blnr directory;
+	bool directory;
 
 	return (mnvm_noErr == ResolveNamedChild(
 		pathName, Child, &directory))
 		&& directory;
 }
 
-LOCALFUNC blnr ResolveNamedChildFile(LPTSTR pathName, char *Child)
+LOCALFUNC bool ResolveNamedChildFile(LPTSTR pathName, char *Child)
 {
-	blnr directory;
+	bool directory;
 
 	return (mnvm_noErr == ResolveNamedChild(
 		pathName, Child, &directory))
@@ -4733,17 +4733,17 @@ LOCALFUNC blnr ResolveNamedChildFile(LPTSTR pathName, char *Child)
 }
 
 #if UseActvFile || (IncludeSonyNew && ! SaveDialogEnable)
-LOCALFUNC blnr MakeNamedChildDir(LPTSTR pathName, char *Child)
+LOCALFUNC bool MakeNamedChildDir(LPTSTR pathName, char *Child)
 {
-	blnr directory;
-	blnr IsOk = falseblnr;
+	bool directory;
+	bool IsOk = false;
 	tMacErr err = ResolveNamedChild(pathName, Child, &directory);
 
 	if (mnvm_noErr == err) {
 		IsOk = directory;
 	} else if (mnvm_fnfErr == err) {
 		if (CreateDirectory(pathName, NULL)) {
-			IsOk = trueblnr;
+			IsOk = true;
 		}
 	}
 
@@ -4751,17 +4751,17 @@ LOCALFUNC blnr MakeNamedChildDir(LPTSTR pathName, char *Child)
 }
 #endif
 
-LOCALFUNC blnr MyGetAppDataPath(LPTSTR lpszPath,
+LOCALFUNC bool MyGetAppDataPath(LPTSTR lpszPath,
 	BOOL fCreate)
 {
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (HaveMySHGetSpecialFolderPath())
 	if (MySHGetSpecialFolderPath(
 		NULL /* HWND hwndOwner */,
 		lpszPath, My_CSIDL_APPDATA, fCreate))
 	{
-		IsOk = trueblnr;
+		IsOk = true;
 	}
 	/*
 		if not available, could perhaps
@@ -4782,7 +4782,7 @@ LOCALFUNC blnr MyGetAppDataPath(LPTSTR lpszPath,
 #if UseWinCE
 /* Are we in control mode? */
 /* Needed because you can't hold down a key with the virtual keyboard */
-LOCALVAR blnr CtrlMode = falseblnr;
+LOCALVAR bool CtrlMode = false;
 #endif
 
 LOCALPROC InsertADisk0(void)
@@ -4797,7 +4797,7 @@ LOCALPROC InsertADisk0(void)
 	size_t cbString;
 	TCHAR chReplace;
 	TCHAR szFilter[256];
-	blnr IsOk;
+	bool IsOk;
 
 	szDirName[0] = (TCHAR)('\0');
 	szFile[0] = (TCHAR)('\0');
@@ -4842,38 +4842,38 @@ LOCALPROC InsertADisk0(void)
 		if (szFile[0]) {
 			char wMsg[1024];
 			sprintf(wMsg, "Couldn't open %ls", szFile);
-			MacMsg("error", wMsg, falseblnr);
+			MacMsg("error", wMsg, false);
 		}
 #endif
 	} else {
 		(void) InsertDiskOrAlias(ofn.lpstrFile,
-			trueblnr, falseblnr);
+			true, false);
 	}
 
 #if UseWinCE
-	CtrlMode = falseblnr;
+	CtrlMode = false;
 #endif
 }
 
-LOCALFUNC blnr LoadInitialImageFromName(char *ImageName)
+LOCALFUNC bool LoadInitialImageFromName(char *ImageName)
 {
 	TCHAR ImageFile[_MAX_PATH];
 
 	if (GetAppDir(ImageFile))
 	if (ResolveNamedChildFile(ImageFile, ImageName))
-	if (Sony_Insert1(ImageFile, trueblnr))
+	if (Sony_Insert1(ImageFile, true))
 	{
-		return trueblnr;
+		return true;
 	}
-	return falseblnr;
+	return false;
 }
 
-LOCALFUNC blnr Sony_InsertIth(int i)
+LOCALFUNC bool Sony_InsertIth(int i)
 {
-	blnr v;
+	bool v;
 
 	if ((i > 9) || ! FirstFreeDisk(nullpr)) {
-		v = falseblnr;
+		v = false;
 	} else {
 		char s[] = "disk?.dsk";
 
@@ -4886,7 +4886,7 @@ LOCALFUNC blnr Sony_InsertIth(int i)
 	return v;
 }
 
-LOCALFUNC blnr LoadInitialImages(void)
+LOCALFUNC bool LoadInitialImages(void)
 {
 	if (! AnyDiskInserted()) {
 		int i;
@@ -4896,7 +4896,7 @@ LOCALFUNC blnr LoadInitialImages(void)
 		}
 	}
 
-	return trueblnr;
+	return true;
 }
 
 #if UseActvFile
@@ -4908,7 +4908,7 @@ LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
 	TCHAR pathName[_MAX_PATH];
 	DWORD BytesRead;
 	HANDLE refnum = INVALID_HANDLE_VALUE;
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (MyGetAppDataPath(pathName, FALSE))
 	if (ResolveNamedChildDir(pathName, "Gryphel"))
@@ -4945,7 +4945,7 @@ LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
 			{
 				/* report error */
 			} else {
-				IsOk = trueblnr;
+				IsOk = true;
 			}
 			(void) CloseHandle(refnum);
 		}
@@ -4954,16 +4954,16 @@ LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
 	return IsOk ? mnvm_noErr : mnvm_miscErr;
 }
 
-LOCALFUNC blnr NewNamedChildFile(LPTSTR pathName, char *Child)
+LOCALFUNC bool NewNamedChildFile(LPTSTR pathName, char *Child)
 {
-	blnr directory;
-	blnr IsOk = falseblnr;
+	bool directory;
+	bool IsOk = false;
 	tMacErr err = ResolveNamedChild(pathName, Child, &directory);
 
 	if (mnvm_noErr == err) {
 		IsOk = ! directory;
 	} else if (mnvm_fnfErr == err) {
-		IsOk = trueblnr;
+		IsOk = true;
 	}
 
 	return IsOk;
@@ -4974,7 +4974,7 @@ LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
 	TCHAR pathName[_MAX_PATH];
 	DWORD BytesWritten;
 	HANDLE refnum = INVALID_HANDLE_VALUE;
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (MyGetAppDataPath(pathName, TRUE))
 	if (MakeNamedChildDir(pathName, "Gryphel"))
@@ -5011,7 +5011,7 @@ LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
 			{
 				/* report error */
 			} else {
-				IsOk = trueblnr;
+				IsOk = true;
 			}
 			(void) CloseHandle(refnum);
 			if (! IsOk) {
@@ -5026,7 +5026,7 @@ LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
 #endif /* UseActvFile */
 
 #if IncludeSonyNew
-LOCALFUNC blnr WriteZero(HANDLE refnum, uint32_t L)
+LOCALFUNC bool WriteZero(HANDLE refnum, uint32_t L)
 {
 	if (SetFilePointer(
 		refnum, /* handle of file */
@@ -5035,7 +5035,7 @@ LOCALFUNC blnr WriteZero(HANDLE refnum, uint32_t L)
 		FILE_BEGIN /* how to move */
 		) != 0)
 	{
-		return falseblnr;
+		return false;
 	} else {
 #define ZeroBufferSize 2048
 		uint32_t i;
@@ -5054,11 +5054,11 @@ LOCALFUNC blnr WriteZero(HANDLE refnum, uint32_t L)
 				nullpr) /* address of structure for data */
 				|| ((uint32_t)BytesWritten != i))
 			{
-				return falseblnr;
+				return false;
 			}
 			L -= i;
 		}
-		return trueblnr;
+		return true;
 	}
 }
 #endif
@@ -5068,10 +5068,10 @@ LOCALFUNC blnr WriteZero(HANDLE refnum, uint32_t L)
 #if IncludeSonyNew
 LOCALPROC MakeNewDisk0(uint32_t L, LPTSTR pathName)
 {
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 	HANDLE newrefNum;
 
-	IsOk = falseblnr;
+	IsOk = false;
 	newrefNum = CreateFile(
 		pathName, /* pointer to name of the file */
 		GENERIC_READ + GENERIC_WRITE, /* access (read-write) mode */
@@ -5099,7 +5099,7 @@ LOCALPROC MakeNewDisk0(uint32_t L, LPTSTR pathName)
 			/* report error */
 		} else {
 			IsOk =
-				Sony_Insert0(newrefNum, falseblnr, pathName);
+				Sony_Insert0(newrefNum, false, pathName);
 			newrefNum = INVALID_HANDLE_VALUE;
 		}
 		if (INVALID_HANDLE_VALUE != newrefNum) {
@@ -5117,7 +5117,7 @@ LOCALPROC MakeNewDisk(uint32_t L, HGLOBAL NewDiskNameDat)
 {
 #if SaveDialogEnable
 	OPENFILENAME ofn;
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 	TCHAR szFile[MaxSavePathSize];
 	TCHAR szFileTitle[MaxSavePathSize];
 
@@ -5135,7 +5135,7 @@ LOCALPROC MakeNewDisk(uint32_t L, HGLOBAL NewDiskNameDat)
 	} else
 #endif
 	{
-		NativeStrFromCStr(szFile, "untitled", falseblnr);
+		NativeStrFromCStr(szFile, "untitled", false);
 	}
 
 	ofn.lStructSize = sizeof(OPENFILENAME);
@@ -5165,7 +5165,7 @@ LOCALPROC MakeNewDisk(uint32_t L, HGLOBAL NewDiskNameDat)
 	if (GetAppDir(pathName))
 	if (MakeNamedChildDir(pathName, "out"))
 	{
-		blnr directory;
+		bool directory;
 		LPTSTR p = GlobalLock(NewDiskNameDat);
 
 		if (p != NULL) {
@@ -5191,15 +5191,15 @@ LOCALPROC MakeNewDisk(uint32_t L, HGLOBAL NewDiskNameDat)
 }
 #endif
 
-LOCALFUNC blnr LoadMacRom(void)
+LOCALFUNC bool LoadMacRom(void)
 {
 	TCHAR ROMFile[_MAX_PATH];
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (GetAppDir(ROMFile))
 	if (ResolveNamedChildFile(ROMFile, RomFileName))
 	{
-		IsOk = trueblnr;
+		IsOk = true;
 	}
 
 	if (! IsOk) {
@@ -5208,7 +5208,7 @@ LOCALFUNC blnr LoadMacRom(void)
 		if (ResolveNamedChildDir(ROMFile, "mnvm_rom"))
 		if (ResolveNamedChildFile(ROMFile, RomFileName))
 		{
-			IsOk = trueblnr;
+			IsOk = true;
 		}
 
 	}
@@ -5217,7 +5217,7 @@ LOCALFUNC blnr LoadMacRom(void)
 		IsOk = LoadMacRomFromPath(ROMFile);
 	}
 
-	return trueblnr;
+	return true;
 }
 
 #if InstallFileIcons
@@ -5240,7 +5240,7 @@ LOCALPROC MySetRegKey(HKEY hKeyRoot,
 
 LOCALPROC RegisterShellFileType(LPTSTR AppPath, LPTSTR strFilterExt,
 	LPTSTR strFileTypeId, LPTSTR strFileTypeName,
-	LPTSTR strIconId, blnr CanOpen)
+	LPTSTR strIconId, bool CanOpen)
 {
 	TCHAR strRegKey[_MAX_PATH];
 	TCHAR strRegValue[_MAX_PATH + 2];
@@ -5267,7 +5267,7 @@ LOCALPROC RegisterShellFileType(LPTSTR AppPath, LPTSTR strFilterExt,
 	}
 }
 
-LOCALFUNC blnr RegisterInRegistry(void)
+LOCALFUNC bool RegisterInRegistry(void)
 {
 	TCHAR AppPath[_MAX_PATH];
 
@@ -5277,17 +5277,17 @@ LOCALFUNC blnr RegisterInRegistry(void)
 #endif
 
 	RegisterShellFileType(AppPath, TEXT(".rom"), TEXT("minivmac.rom"),
-		TEXT("Mini vMac ROM Image"), TEXT("1"), falseblnr);
+		TEXT("Mini vMac ROM Image"), TEXT("1"), false);
 	RegisterShellFileType(AppPath, TEXT(".dsk"), TEXT("minivmac.dsk"),
-		TEXT("Mini vMac Disk Image"), TEXT("2"), trueblnr);
+		TEXT("Mini vMac Disk Image"), TEXT("2"), true);
 
-	return trueblnr;
+	return true;
 }
 #endif
 
 LOCALVAR LPTSTR CommandLine;
 
-LOCALFUNC blnr ScanCommandLine(void)
+LOCALFUNC bool ScanCommandLine(void)
 {
 	TCHAR *p = CommandLine;
 	TCHAR *p1;
@@ -5340,17 +5340,17 @@ LOCALFUNC blnr ScanCommandLine(void)
 #endif
 					{
 						MacMsg(kStrBadArgTitle, kStrBadArgMessage,
-							falseblnr);
+							false);
 					}
 				} else {
 					(void) InsertDiskOrAlias(fileName,
-						falseblnr, trueblnr);
+						false, true);
 				}
 			}
 		}
 	}
 
-	return trueblnr;
+	return true;
 }
 
 #if EnableRecreateW
@@ -5394,7 +5394,7 @@ LOCALPROC ZapWinStateVars(void)
 		int i;
 
 		for (i = 0; i < kNumMagStates; ++i) {
-			HavePositionWins[i] = falseblnr;
+			HavePositionWins[i] = false;
 		}
 	}
 #endif
@@ -5428,7 +5428,7 @@ LOCALPROC ToggleWantFullScreen(void)
 		if (kMagStateAuto != NewMagState) {
 			WantMagnify = (kMagStateMagnifgy == NewMagState);
 		} else {
-			WantMagnify = falseblnr;
+			WantMagnify = false;
 			if (WantFullScreen) {
 				if ((GetSystemMetrics(SM_CXSCREEN)
 						>= vMacScreenWidth * MyWindowScale)
@@ -5436,7 +5436,7 @@ LOCALPROC ToggleWantFullScreen(void)
 						>= vMacScreenHeight * MyWindowScale)
 					)
 				{
-					WantMagnify = trueblnr;
+					WantMagnify = true;
 				}
 			}
 		}
@@ -5456,7 +5456,7 @@ LOCALPROC DragFunc(HDROP hDrop)
 	for (i = 0; i < n; ++i) {
 		if (DragQueryFile(hDrop, i, NULL, 0) < _MAX_PATH - 1) {
 			(void) DragQueryFile(hDrop, i, a, _MAX_PATH);
-			(void) InsertDiskOrAlias(a, trueblnr, trueblnr);
+			(void) InsertDiskOrAlias(a, true, true);
 		}
 	}
 
@@ -5467,12 +5467,12 @@ LOCALPROC DragFunc(HDROP hDrop)
 			/* error message here ? */
 		}
 
-		WantCmdOptOnReconnect = trueblnr;
+		WantCmdOptOnReconnect = true;
 	}
 }
 #endif
 
-GLOBALOSGLUFUNC blnr ExtraTimeNotOver(void)
+GLOBALOSGLUFUNC bool ExtraTimeNotOver(void)
 {
 #if MySoundEnabled
 	SoundCheckVeryOften();
@@ -5527,7 +5527,7 @@ LOCALPROC CheckForSavedTasks(void)
 	*/
 
 	if (MyEvtQNeedRecover) {
-		MyEvtQNeedRecover = falseblnr;
+		MyEvtQNeedRecover = false;
 
 		/* attempt cleanup, MyEvtQNeedRecover may get set again */
 		MyEvtQTryRecoverFromFull();
@@ -5540,12 +5540,12 @@ LOCALPROC CheckForSavedTasks(void)
 #endif
 
 	if (RequestMacOff) {
-		RequestMacOff = falseblnr;
+		RequestMacOff = false;
 		if (AnyDiskInserted()) {
 			MacMsgOverride(kStrQuitWarningTitle,
 				kStrQuitWarningMessage);
 		} else {
-			ForceMacOff = trueblnr;
+			ForceMacOff = true;
 		}
 	}
 
@@ -5605,7 +5605,7 @@ LOCALPROC CheckForSavedTasks(void)
 #if IncludeSonyNameNew
 			if (vSonyNewDiskName != NotAPbuf) {
 				HGLOBAL NewDiskNameDat;
-				if (MacRomanTextToNativeHand(vSonyNewDiskName, trueblnr,
+				if (MacRomanTextToNativeHand(vSonyNewDiskName, true,
 					&NewDiskNameDat))
 				{
 					MakeNewDisk(vSonyNewDiskSize, NewDiskNameDat);
@@ -5618,12 +5618,12 @@ LOCALPROC CheckForSavedTasks(void)
 			{
 				MakeNewDisk(vSonyNewDiskSize, NULL);
 			}
-			vSonyNewDiskWanted = falseblnr;
+			vSonyNewDiskWanted = false;
 				/* must be done after may have gotten disk */
 		}
 #endif
 		if (RequestInsertDisk) {
-			RequestInsertDisk = falseblnr;
+			RequestInsertDisk = false;
 			InsertADisk0();
 		}
 	}
@@ -5652,14 +5652,14 @@ LOCALPROC CheckForSavedTasks(void)
 	}
 
 	if (NeedWholeScreenDraw) {
-		NeedWholeScreenDraw = falseblnr;
+		NeedWholeScreenDraw = false;
 		ScreenChangedAll();
 	}
 }
 
 #if UseWinCE
 /* Sip Status ON/OFF */
-LOCALVAR blnr SipOn = falseblnr;
+LOCALVAR bool SipOn = false;
 #endif
 
 LRESULT CALLBACK Win32WMProc(HWND hwnd,
@@ -5698,7 +5698,7 @@ LRESULT CALLBACK Win32WMProc(HWND hwnd,
 		case WM_KEYDOWN:
 		case WM_SYSKEYDOWN:
 #if UseWinCE
-			SipOn = falseblnr;
+			SipOn = false;
 
 			{
 				SIPINFO r;
@@ -5719,17 +5719,17 @@ LRESULT CALLBACK Win32WMProc(HWND hwnd,
 			{
 				break;
 			} else if (wparam == VK_CONTROL && CtrlMode) {
-				DoVKcode0(wparam, falseblnr);
-				CtrlMode = falseblnr;
+				DoVKcode0(wparam, false);
+				CtrlMode = false;
 				break;
 			} else if (wparam == VK_CONTROL) {
-				DoVKcode0(wparam, trueblnr);
-				CtrlMode = trueblnr;
+				DoVKcode0(wparam, true);
+				CtrlMode = true;
 				break;
 			}
 #endif
 			if (! TestBit(lparam, 30)) { /* ignore repeats */
-				DoVKcode(wparam, lparam >> 24, trueblnr);
+				DoVKcode(wparam, lparam >> 24, true);
 			}
 
 #if UseWinCE
@@ -5744,7 +5744,7 @@ LRESULT CALLBACK Win32WMProc(HWND hwnd,
 		case WM_KEYUP:
 		case WM_SYSKEYUP:
 #if UseWinCE
-			SipOn = falseblnr;
+			SipOn = false;
 
 			{
 				SIPINFO r;
@@ -5804,7 +5804,7 @@ LRESULT CALLBACK Win32WMProc(HWND hwnd,
 				break;
 			}
 #endif
-			DoVKcode(wparam, lparam >> 24, falseblnr);
+			DoVKcode(wparam, lparam >> 24, false);
 
 #if UseWinCE
 			return TRUE;
@@ -5823,12 +5823,12 @@ LRESULT CALLBACK Win32WMProc(HWND hwnd,
 #endif
 
 		case WM_CLOSE:
-			RequestMacOff = trueblnr;
+			RequestMacOff = true;
 			break;
 #if ! UseWinCE
 		case WM_QUERYENDSESSION:
 			if (AnyDiskInserted()) {
-				RequestMacOff = trueblnr;
+				RequestMacOff = true;
 				return FALSE;
 			} else {
 				return TRUE;
@@ -5844,10 +5844,10 @@ LRESULT CALLBACK Win32WMProc(HWND hwnd,
 			switch(LOWORD(wparam))
 			{
 				case ID_FILE_INSERTDISK1:
-					RequestInsertDisk = trueblnr;
+					RequestInsertDisk = true;
 					break;
 				case ID_FILE_QUIT:
-					RequestMacOff = trueblnr;
+					RequestMacOff = true;
 					break;
 				case ID_SPECIAL_MORECOMMANDS:
 					DoMoreCommandsMsg();
@@ -5868,12 +5868,12 @@ LRESULT CALLBACK Win32WMProc(HWND hwnd,
 		case WM_LBUTTONDOWN:
 		case WM_RBUTTONDOWN:
 			MousePositionNotify(LOWORD (lparam), HIWORD (lparam));
-			SetCurMouseButton(trueblnr);
+			SetCurMouseButton(true);
 			break;
 		case WM_LBUTTONUP:
 		case WM_RBUTTONUP:
 			MousePositionNotify(LOWORD (lparam), HIWORD (lparam));
-			SetCurMouseButton(falseblnr);
+			SetCurMouseButton(false);
 			break;
 		case WM_MOUSEMOVE:
 #if UseWinCE
@@ -5906,7 +5906,7 @@ LRESULT CALLBACK Win32WMProc(HWND hwnd,
 	return 0;
 }
 
-LOCALFUNC blnr RegisterOurClass(void)
+LOCALFUNC bool RegisterOurClass(void)
 {
 	WNDCLASS wc;
 
@@ -5928,10 +5928,10 @@ LOCALFUNC blnr RegisterOurClass(void)
 	if (! RegisterClass(&wc)) {
 		MacMsg("RegisterClass failed",
 			"Sorry, Mini vMac encountered errors"
-			" and cannot continue.", trueblnr);
-		return falseblnr;
+			" and cannot continue.", true);
+		return false;
 	} else {
-		return trueblnr;
+		return true;
 	}
 }
 
@@ -6003,7 +6003,7 @@ label_retry:
 }
 
 #if UseWinCE
-LOCALFUNC blnr Init_ChangeOrientation(void)
+LOCALFUNC bool Init_ChangeOrientation(void)
 {
 	DEVMODE dm;
 
@@ -6031,11 +6031,11 @@ LOCALFUNC blnr Init_ChangeOrientation(void)
 			DISP_CHANGE_SUCCESSFUL)
 		{
 			MacMsg ("warning",
-				"Couldn't switch to Landscape mode.", falseblnr);
+				"Couldn't switch to Landscape mode.", false);
 		}
 	*/
 
-	return trueblnr;
+	return true;
 }
 #endif
 
@@ -6067,21 +6067,21 @@ LOCALVAR HINSTANCE hCoreDLL = NULL;
 #endif
 
 #if UseWinCE
-LOCALFUNC blnr InitHotKeys(void)
+LOCALFUNC bool InitHotKeys(void)
 {
 	UnregisterFunc1Proc procUndergisterFunc;
 	int i;
 
 	hCoreDLL = LoadLibrary(TEXT("coredll.dll"));
 	if (! hCoreDLL) {
-		MacMsg ("Fatal", "Could not load coredll.dll", trueblnr);
+		MacMsg ("Fatal", "Could not load coredll.dll", true);
 	} else {
 		procUndergisterFunc =
 			(UnregisterFunc1Proc) GetProcAddress(hCoreDLL,
 			TEXT("UnregisterFunc1"));
 		if (! procUndergisterFunc) {
 			MacMsg ("Fatal",
-				"Could not get UnregisterFunc1 procedure", trueblnr);
+				"Could not get UnregisterFunc1 procedure", true);
 		} else {
 			for (i = 0xc1; i <= 0xcf; ++i) {
 				procUndergisterFunc(MOD_WIN, i);
@@ -6089,7 +6089,7 @@ LOCALFUNC blnr InitHotKeys(void)
 			}
 		}
 	}
-	return trueblnr;
+	return true;
 }
 #endif
 
@@ -6117,12 +6117,12 @@ LOCALPROC ReserveAllocAll(void)
 #if dbglog_HAVE
 	dbglog_ReserveAlloc();
 #endif
-	ReserveAllocOneBlock(&ROM, kROM_Size, 5, falseblnr);
+	ReserveAllocOneBlock(&ROM, kROM_Size, 5, false);
 	ReserveAllocOneBlock(&screencomparebuff,
-		vMacScreenNumBytes, 5, trueblnr);
+		vMacScreenNumBytes, 5, true);
 #if UseControlKeys
 	ReserveAllocOneBlock(&CntrlDisplayBuff,
-		vMacScreenNumBytes, 5, falseblnr);
+		vMacScreenNumBytes, 5, false);
 #endif
 #if EnableScalingBuff
 	{
@@ -6140,21 +6140,21 @@ LOCALPROC ReserveAllocAll(void)
 			n = vMacScreenNumBytes;
 		}
 #endif
-		ReserveAllocOneBlock(&ScalingBuff, n, 5, falseblnr);
+		ReserveAllocOneBlock(&ScalingBuff, n, 5, false);
 	}
 #endif
 #if MySoundEnabled
 	ReserveAllocOneBlock((uint8_t * *)&TheSoundBuffer,
-		dbhBufferSize, 5, falseblnr);
+		dbhBufferSize, 5, false);
 #endif
 
 	EmulationReserveAlloc();
 }
 
-LOCALFUNC blnr AllocMyMemory(void)
+LOCALFUNC bool AllocMyMemory(void)
 {
 	uint32_t n;
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	ReserveAllocOffset = 0;
 	ReserveAllocBigBlock = nullpr;
@@ -6163,14 +6163,14 @@ LOCALFUNC blnr AllocMyMemory(void)
 	ReserveAllocBigBlock =
 		(uint8_t *)GlobalAlloc(GMEM_FIXED | GMEM_ZEROINIT, n);
 	if (NULL == ReserveAllocBigBlock) {
-		MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, trueblnr);
+		MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, true);
 	} else {
 		ReserveAllocOffset = 0;
 		ReserveAllocAll();
 		if (n != ReserveAllocOffset) {
 			/* oops, program error */
 		} else {
-			IsOk = trueblnr;
+			IsOk = true;
 		}
 	}
 
@@ -6181,12 +6181,12 @@ LOCALPROC UnallocMyMemory(void)
 {
 	if (nullpr != ReserveAllocBigBlock) {
 		if (GlobalFree(ReserveAllocBigBlock) != NULL) {
-			MacMsg("error", "GlobalFree failed", falseblnr);
+			MacMsg("error", "GlobalFree failed", false);
 		}
 	}
 }
 
-LOCALFUNC blnr InitOSGLU(void)
+LOCALFUNC bool InitOSGLU(void)
 {
 	if (AllocMyMemory())
 #if dbglog_HAVE
@@ -6218,9 +6218,9 @@ LOCALFUNC blnr InitOSGLU(void)
 #endif
 	if (WaitForRom())
 	{
-		return trueblnr;
+		return true;
 	}
-	return falseblnr;
+	return false;
 }
 
 LOCALPROC UnInitOSGLU(void)
@@ -6228,7 +6228,7 @@ LOCALPROC UnInitOSGLU(void)
 #if (MyTimeResolution != 0)
 	MyTimer_Suspend();
 #endif
-	MyMouseCaptureSet(falseblnr);
+	MyMouseCaptureSet(false);
 
 	if (MacMsgDisplayed) {
 		MacMsgDisplayOff();

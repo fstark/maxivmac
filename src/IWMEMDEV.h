@@ -22,4 +22,4 @@
 
 EXPORTPROC IWM_Reset(void);
 
-EXPORTFUNC uint32_t IWM_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
+EXPORTFUNC uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr);

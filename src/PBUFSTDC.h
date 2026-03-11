@@ -109,7 +109,7 @@ LOCALFUNC uint8_t * PbufLock(tPbuf i)
 
 #if IncludePbufs
 GLOBALOSGLUPROC PbufTransfer(uint8_t * Buffer,
-	tPbuf i, uint32_t offset, uint32_t count, blnr IsWrite)
+	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
 {
 	void *p = ((uint8_t *)PbufDat[i]) + offset;
 	if (IsWrite) {

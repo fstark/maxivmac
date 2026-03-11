@@ -272,7 +272,7 @@ LOCALPROC ROMscrambleForMTB(void)
 }
 #endif
 
-GLOBALFUNC blnr ROM_Init(void)
+GLOBALFUNC bool ROM_Init(void)
 {
 #if DisableRomCheck
 
@@ -326,5 +326,5 @@ GLOBALFUNC blnr ROM_Init(void)
 	ROMscrambleForMTB();
 #endif
 
-	return trueblnr;
+	return true;
 }

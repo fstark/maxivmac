@@ -90,19 +90,19 @@ LOCALPROC DoMacReset(void)
 
 LOCALPROC InterruptReset_Update(void)
 {
-	SetInterruptButton(falseblnr);
+	SetInterruptButton(false);
 		/*
 			in case has been set. so only stays set
 			for 60th of a second.
 		*/
 
 	if (WantMacInterrupt) {
-		SetInterruptButton(trueblnr);
-		WantMacInterrupt = falseblnr;
+		SetInterruptButton(true);
+		WantMacInterrupt = false;
 	}
 	if (WantMacReset) {
 		DoMacReset();
-		WantMacReset = falseblnr;
+		WantMacReset = false;
 	}
 }
 
@@ -224,20 +224,20 @@ LOCALPROC ExtraTimeEndNotify(void)
 GLOBALPROC EmulationReserveAlloc(void)
 {
 	ReserveAllocOneBlock(&RAM,
-		kRAM_Size + RAMSafetyMarginFudge, 5, falseblnr);
+		kRAM_Size + RAMSafetyMarginFudge, 5, false);
 #if EmVidCard
-	ReserveAllocOneBlock(&VidROM, kVidROM_Size, 5, falseblnr);
+	ReserveAllocOneBlock(&VidROM, kVidROM_Size, 5, false);
 #endif
 #if IncludeVidMem
 	ReserveAllocOneBlock(&VidMem,
-		kVidMemRAM_Size + RAMSafetyMarginFudge, 5, trueblnr);
+		kVidMemRAM_Size + RAMSafetyMarginFudge, 5, true);
 #endif
 #if SmallGlobals
 	MINEM68K_ReserveAlloc();
 #endif
 }
 
-LOCALFUNC blnr InitEmulation(void)
+LOCALFUNC bool InitEmulation(void)
 {
 #if EmRTC
 	if (RTC_Init())
@@ -249,9 +249,9 @@ LOCALFUNC blnr InitEmulation(void)
 	if (AddrSpac_Init())
 	{
 		EmulatedHardwareZap();
-		return trueblnr;
+		return true;
 	}
-	return falseblnr;
+	return false;
 }
 
 LOCALPROC ICT_DoTask(int taskid)
@@ -429,9 +429,9 @@ LOCALPROC DoEmulateOneTick(void)
 	}
 }
 
-LOCALFUNC blnr MoreSubTicksToDo(void)
+LOCALFUNC bool MoreSubTicksToDo(void)
 {
-	blnr v = falseblnr;
+	bool v = false;
 
 	if (ExtraTimeNotOver() && (ExtraSubTicksToDo > 0)) {
 #if EnableAutoSlow
@@ -443,7 +443,7 @@ LOCALFUNC blnr MoreSubTicksToDo(void)
 		} else
 #endif
 		{
-			v = trueblnr;
+			v = true;
 		}
 	}
 
@@ -528,7 +528,7 @@ LOCALPROC RunEmulatedTicksToTrueTime(void)
 		if (ExtraTimeNotOver() && (--n > 0)) {
 			/* lagging, catch up */
 
-			EmVideoDisable = trueblnr;
+			EmVideoDisable = true;
 
 			do {
 				DoEmulateOneTick();
@@ -536,7 +536,7 @@ LOCALPROC RunEmulatedTicksToTrueTime(void)
 			} while (ExtraTimeNotOver()
 				&& (--n > 0));
 
-			EmVideoDisable = falseblnr;
+			EmVideoDisable = false;
 		}
 
 		EmLagTime = n;

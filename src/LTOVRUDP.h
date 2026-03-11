@@ -71,10 +71,10 @@ LOCALVAR uint8_t tx_buffer[4 + LT_TxBfMxSz] =
 LOCALVAR unsigned int rx_buffer_allocation = 1800;
 
 LOCALVAR my_SOCKET sock_fd = my_INVALID_SOCKET;
-LOCALVAR blnr udp_ok = falseblnr;
+LOCALVAR bool udp_ok = false;
 
 #if use_winsock
-LOCALVAR blnr have_winsock = falseblnr;
+LOCALVAR bool have_winsock = false;
 #endif
 
 LOCALPROC start_udp(void)
@@ -93,7 +93,7 @@ LOCALPROC start_udp(void)
 #endif
 		return;
 	}
-	have_winsock = trueblnr;
+	have_winsock = true;
 #endif
 
 	if (my_INVALID_SOCKET == (sock_fd =
@@ -177,7 +177,7 @@ LOCALPROC start_udp(void)
 	fcntl(sock_fd, F_SETFL, O_NONBLOCK);
 #endif
 
-	udp_ok = trueblnr;
+	udp_ok = true;
 }
 
 LOCALVAR unsigned char *MyRxBuffer = NULL;
@@ -187,7 +187,7 @@ LOCALVAR struct sockaddr_in MyRxAddress;
 	External function needed at startup to initialize the LocalTalk
 	functionality.
 */
-LOCALFUNC blnr InitLocalTalk(void)
+LOCALFUNC bool InitLocalTalk(void)
 {
 	LT_PickStampNodeHint();
 
@@ -195,14 +195,14 @@ LOCALFUNC blnr InitLocalTalk(void)
 
 	MyRxBuffer = malloc(rx_buffer_allocation);
 	if (NULL == MyRxBuffer) {
-		return falseblnr;
+		return false;
 	}
 
 	/* Set up UDP socket */
 	start_udp();
 
 	/* Initialized properly */
-	return trueblnr;
+	return true;
 }
 
 LOCALPROC UnInitLocalTalk(void)

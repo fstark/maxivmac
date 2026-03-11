@@ -571,7 +571,7 @@ LOCALPROC VIA2_CheckInterruptFlag(void)
 LOCALVAR uint8_t VIA2_T1_Active = 0;
 LOCALVAR uint8_t VIA2_T2_Active = 0;
 
-LOCALVAR blnr VIA2_T1IntReady = falseblnr;
+LOCALVAR bool VIA2_T1IntReady = false;
 
 LOCALPROC VIA2_Clear(void)
 {
@@ -584,7 +584,7 @@ LOCALPROC VIA2_Clear(void)
 	VIA2_D.SR = VIA2_D.ACR = 0x00;
 	VIA2_D.PCR   = VIA2_D.IFR   = VIA2_D.IER   = 0x00;
 	VIA2_T1_Active = VIA2_T2_Active = 0x00;
-	VIA2_T1IntReady = falseblnr;
+	VIA2_T1IntReady = false;
 }
 
 GLOBALPROC VIA2_Zap(void)
@@ -666,7 +666,7 @@ GLOBALFUNC uint8_t VIA2_ShiftOutData(void)
 #define CyclesPerViaTime (10 * kMyClockMult)
 #define CyclesScaledPerViaTime (kCycleScale * CyclesPerViaTime)
 
-LOCALVAR blnr VIA2_T1Running = trueblnr;
+LOCALVAR bool VIA2_T1Running = true;
 LOCALVAR iCountt VIA2_T1LastTime = 0;
 
 GLOBALPROC VIA2_DoTimer1Check(void)
@@ -718,7 +718,7 @@ GLOBALPROC VIA2_DoTimer1Check(void)
 			VIA2_T1LastTime = NewTime;
 		}
 
-		VIA2_T1IntReady = falseblnr;
+		VIA2_T1IntReady = false;
 		if ((VIA2_D.IFR & (1 << kIntT1)) == 0) {
 			if (((VIA2_D.ACR & 0x40) != 0) || (VIA2_T1_Active == 1)) {
 				uint32_t NewTemp = VIA2_D.T1C_F; /* Get Timer 1 Counter */
@@ -734,7 +734,7 @@ GLOBALPROC VIA2_DoTimer1Check(void)
 						* CyclesPerViaTime;
 				}
 				ICT_add(kICT_VIA2_Timer1Check, NewTimer);
-				VIA2_T1IntReady = trueblnr;
+				VIA2_T1IntReady = true;
 			}
 		}
 	}
@@ -743,11 +743,11 @@ GLOBALPROC VIA2_DoTimer1Check(void)
 LOCALPROC CheckT1IntReady(void)
 {
 	if (VIA2_T1Running) {
-		blnr NewT1IntReady = falseblnr;
+		bool NewT1IntReady = false;
 
 		if ((VIA2_D.IFR & (1 << kIntT1)) == 0) {
 			if (((VIA2_D.ACR & 0x40) != 0) || (VIA2_T1_Active == 1)) {
-				NewT1IntReady = trueblnr;
+				NewT1IntReady = true;
 			}
 		}
 
@@ -772,8 +772,8 @@ GLOBALFUNC uint16_t VIA2_GetT1InvertTime(void)
 	return v;
 }
 
-LOCALVAR blnr VIA2_T2Running = trueblnr;
-LOCALVAR blnr VIA2_T2C_ShortTime = falseblnr;
+LOCALVAR bool VIA2_T2Running = true;
+LOCALVAR bool VIA2_T2C_ShortTime = false;
 	/*
 		Running too many instructions during a short
 		timer interval can crash when playing sounds.
@@ -808,7 +808,7 @@ GLOBALPROC VIA2_DoTimer2Check(void)
 			if ((deltaTime > (0x00010000UL * CyclesScaledPerViaTime))
 				|| ((Temp <= deltaTemp) && (Temp != 0)))
 			{
-				VIA2_T2C_ShortTime = falseblnr;
+				VIA2_T2C_ShortTime = false;
 				VIA2_T2_Active = 0;
 				VIA2_SetInterruptFlag(kIntT2);
 #if VIA2_dolog && 1
@@ -854,7 +854,7 @@ GLOBALPROC VIA2_DoTimer2Check(void)
 #define kIER    0x0E
 #define kORA    0x0F
 
-GLOBALFUNC uint32_t VIA2_Access(uint32_t Data, blnr WriteMem, uint32_t addr)
+GLOBALFUNC uint32_t VIA2_Access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 	switch (addr) {
 		case kORB   :
@@ -979,7 +979,7 @@ GLOBALFUNC uint32_t VIA2_Access(uint32_t Data, blnr WriteMem, uint32_t addr)
 					dbglog_writeHex(VIA2_T2C_ShortTime);
 					dbglog_writeReturn();
 #endif
-					VIA2_T2C_ShortTime = trueblnr;
+					VIA2_T2C_ShortTime = true;
 				}
 				VIA2_T2LastTime = GetCuriCount();
 				VIA2_DoTimer2Check();
@@ -1196,11 +1196,11 @@ GLOBALPROC VIA2_ExtraTimeBegin(void)
 #endif
 	if (VIA2_T1Running) {
 		VIA2_DoTimer1Check(); /* run up to this moment */
-		VIA2_T1Running = falseblnr;
+		VIA2_T1Running = false;
 	}
 	if (VIA2_T2Running) {
 		VIA2_DoTimer2Check(); /* run up to this moment */
-		VIA2_T2Running = falseblnr;
+		VIA2_T2Running = false;
 	}
 }
 
@@ -1210,12 +1210,12 @@ GLOBALPROC VIA2_ExtraTimeEnd(void)
 	dbglog_WriteNote("VIA2_ExtraTimeEnd");
 #endif
 	if (! VIA2_T1Running) {
-		VIA2_T1Running = trueblnr;
+		VIA2_T1Running = true;
 		VIA2_T1LastTime = GetCuriCount();
 		VIA2_DoTimer1Check();
 	}
 	if (! VIA2_T2Running) {
-		VIA2_T2Running = trueblnr;
+		VIA2_T2Running = true;
 		if (! VIA2_T2C_ShortTime) {
 			VIA2_T2LastTime = GetCuriCount();
 		}

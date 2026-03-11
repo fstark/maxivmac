@@ -58,7 +58,7 @@ EXPORTOSGLUPROC MacMsgDebugAlert(char *s);
 #endif
 
 EXPORTOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n, uint8_t align,
-	blnr FillOnes);
+	bool FillOnes);
 
 EXPORTOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount);
 
@@ -123,7 +123,7 @@ EXPORTOSGLUFUNC tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count);
 EXPORTOSGLUFUNC tMacErr PbufNew(uint32_t count, tPbuf *r);
 EXPORTOSGLUPROC PbufDispose(tPbuf i);
 EXPORTOSGLUPROC PbufTransfer(uint8_t * Buffer,
-	tPbuf i, uint32_t offset, uint32_t count, blnr IsWrite);
+	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite);
 
 #endif
 
@@ -135,21 +135,21 @@ EXPORTVAR(uint32_t, vSonyInsertedMask)
 #define vSonyIsInserted(Drive_No) \
 	((vSonyInsertedMask & ((uint32_t)1 << (Drive_No))) != 0)
 
-EXPORTOSGLUFUNC tMacErr vSonyTransfer(blnr IsWrite, uint8_t * Buffer,
+EXPORTOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount);
 EXPORTOSGLUFUNC tMacErr vSonyEject(tDrive Drive_No);
 EXPORTOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count);
 
-EXPORTOSGLUFUNC blnr AnyDiskInserted(void);
+EXPORTOSGLUFUNC bool AnyDiskInserted(void);
 EXPORTOSGLUPROC DiskRevokeWritable(tDrive Drive_No);
 
 #if IncludeSonyRawMode
-EXPORTVAR(blnr, vSonyRawMode)
+EXPORTVAR(bool, vSonyRawMode)
 #endif
 
 #if IncludeSonyNew
-EXPORTVAR(blnr, vSonyNewDiskWanted)
+EXPORTVAR(bool, vSonyNewDiskWanted)
 EXPORTVAR(uint32_t, vSonyNewDiskSize)
 EXPORTOSGLUFUNC tMacErr vSonyEjectDelete(tDrive Drive_No);
 #endif
@@ -191,12 +191,12 @@ EXPORTVAR(uint32_t, CurMacDelta)
 #define vMacScreenMonoByteWidth ((long)vMacScreenWidth / 8)
 
 #if 0 != vMacScreenDepth
-EXPORTVAR(blnr, UseColorMode)
-EXPORTVAR(blnr, ColorModeWorks)
+EXPORTVAR(bool, UseColorMode)
+EXPORTVAR(bool, ColorModeWorks)
 #endif
 
 #if 0 != vMacScreenDepth
-EXPORTVAR(blnr, ColorMappingChanged)
+EXPORTVAR(bool, ColorMappingChanged)
 #endif
 
 #if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
@@ -207,24 +207,24 @@ EXPORTVAR(uint16_t, CLUT_greens[CLUT_size])
 EXPORTVAR(uint16_t, CLUT_blues[CLUT_size])
 #endif
 
-EXPORTVAR(blnr, EmVideoDisable)
+EXPORTVAR(bool, EmVideoDisable)
 EXPORTVAR(int8_t, EmLagTime)
 
 EXPORTOSGLUPROC Screen_OutputFrame(uint8_t * screencurrentbuff);
 EXPORTOSGLUPROC DoneWithDrawingForTick(void);
 
-EXPORTVAR(blnr, ForceMacOff)
+EXPORTVAR(bool, ForceMacOff)
 
-EXPORTVAR(blnr, WantMacInterrupt)
+EXPORTVAR(bool, WantMacInterrupt)
 
-EXPORTVAR(blnr, WantMacReset)
+EXPORTVAR(bool, WantMacReset)
 
-EXPORTOSGLUFUNC blnr ExtraTimeNotOver(void);
+EXPORTOSGLUFUNC bool ExtraTimeNotOver(void);
 
 EXPORTVAR(uint8_t, SpeedValue)
 
 #if EnableAutoSlow
-EXPORTVAR(blnr, WantNotAutoSlow)
+EXPORTVAR(bool, WantNotAutoSlow)
 #endif
 
 /* where emulated machine thinks mouse is */
@@ -271,7 +271,7 @@ EXPORTOSGLUPROC MySound_EndWrite(uint16_t actL);
 EXPORTVAR(uint8_t, LT_NodeHint)
 
 #if LT_MayHaveEcho
-EXPORTVAR(blnr, CertainlyNotMyPacket)
+EXPORTVAR(bool, CertainlyNotMyPacket)
 #endif
 
 #define LT_TxBfMxSz 1024

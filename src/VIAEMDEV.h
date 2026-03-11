@@ -23,7 +23,7 @@
 EXPORTPROC VIA1_Zap(void);
 EXPORTPROC VIA1_Reset(void);
 
-EXPORTFUNC uint32_t VIA1_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
+EXPORTFUNC uint32_t VIA1_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 
 EXPORTPROC VIA1_ExtraTimeBegin(void);
 EXPORTPROC VIA1_ExtraTimeEnd(void);

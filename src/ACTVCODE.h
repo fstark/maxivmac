@@ -63,9 +63,9 @@ LOCALFUNC uint32_t KeyFun2(uint32_t x, uint32_t y, uint32_t m)
 	return r;
 }
 
-LOCALFUNC blnr CheckActvCode(uint8_t * p, blnr *Trial)
+LOCALFUNC bool CheckActvCode(uint8_t * p, bool *Trial)
 {
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 	uint32_t v0 = do_get_mem_long(p);
 	uint32_t v1 = do_get_mem_long(p + 4);
 
@@ -80,11 +80,11 @@ LOCALFUNC blnr CheckActvCode(uint8_t * p, blnr *Trial)
 		uint32_t t3 = KeyFun0(t2, KeyCon4 - t1, KeyCon4);
 		uint32_t t4 = KeyFun0(t3, KeyCon4 - KeyCon5, KeyCon4);
 		if ((0 == (t4 >> 8)) && (t4 >= KeyCon6)) {
-			*Trial = falseblnr;
-			IsOk = trueblnr;
+			*Trial = false;
+			IsOk = true;
 		} else if (0 == t4) {
-			*Trial = trueblnr;
-			IsOk = trueblnr;
+			*Trial = true;
+			IsOk = true;
 		}
 	}
 
@@ -93,7 +93,7 @@ LOCALFUNC blnr CheckActvCode(uint8_t * p, blnr *Trial)
 
 /* user interface */
 
-LOCALFUNC blnr Key2Digit(uint8_t key, uint8_t *r)
+LOCALFUNC bool Key2Digit(uint8_t key, uint8_t *r)
 {
 	uint8_t v;
 
@@ -139,12 +139,12 @@ LOCALFUNC blnr Key2Digit(uint8_t key, uint8_t *r)
 			v = 9;
 			break;
 		default:
-			return falseblnr;
+			return false;
 			break;
 	}
 
 	*r = v;
-	return trueblnr;
+	return true;
 }
 
 #define ActvCodeMaxLen 20
@@ -165,18 +165,18 @@ LOCALPROC DoActvCodeModeKey(uint8_t key)
 	uint8_t digit;
 	uint8_t L;
 	int i;
-	blnr Trial;
+	bool Trial;
 
 	if (MKC_BackSpace == key) {
 		if (ActvCodeLen > 0) {
 			--ActvCodeLen;
-			NeedWholeScreenDraw = trueblnr;
+			NeedWholeScreenDraw = true;
 		}
 	} else if (Key2Digit(key, &digit)) {
 		if (ActvCodeLen < (ActvCodeMaxLen - 1)) {
 			ActvCodeDigits[ActvCodeLen] = digit;
 			++ActvCodeLen;
-			NeedWholeScreenDraw = trueblnr;
+			NeedWholeScreenDraw = true;
 			L = ActvCodeDigits[0] + (1 + 9);
 			if (ActvCodeLen == L) {
 				uint32_t v0 = 0;
@@ -194,30 +194,30 @@ LOCALPROC DoActvCodeModeKey(uint8_t key)
 
 				if (CheckActvCode(CurActvCode, &Trial)) {
 					SpecialModeClr(SpclModeActvCode);
-					NeedWholeScreenDraw = trueblnr;
+					NeedWholeScreenDraw = true;
 #if UseActvFile
 					if (Trial) {
 						MacMsg(
 							"Using temporary code.",
 							"Thank you for trying Mini vMac!",
-							falseblnr);
+							false);
 					} else {
 						if (mnvm_noErr != ActvCodeFileSave(CurActvCode))
 						{
 							MacMsg("Oops",
 								"I could not save the activation code"
 								" to disk.",
-								falseblnr);
+								false);
 						} else {
 							MacMsg("Activation succeeded.",
-								"Thank you!", falseblnr);
+								"Thank you!", false);
 						}
 					}
 #else
 					MacMsg(
 						"Thank you for trying Mini vMac!",
 						"sample variation : ^v",
-						falseblnr);
+						false);
 #endif
 				}
 			} else if (ActvCodeLen > L) {
@@ -349,15 +349,15 @@ LOCALPROC CopyRegistrationStr(void)
 #endif
 
 	if (mnvm_noErr == PbufNew(L, &j)) {
-		PbufTransfer(ps, j, 0, L, trueblnr);
+		PbufTransfer(ps, j, 0, L, true);
 		HTCEexport(j);
 	}
 }
 
-LOCALFUNC blnr ActvCodeInit(void)
+LOCALFUNC bool ActvCodeInit(void)
 {
 #if UseActvFile
-	blnr Trial;
+	bool Trial;
 
 	if ((mnvm_noErr != ActvCodeFileLoad(CurActvCode))
 		|| (! CheckActvCode(CurActvCode, &Trial))
@@ -366,8 +366,8 @@ LOCALFUNC blnr ActvCodeInit(void)
 #endif
 	{
 		SpecialModeSet(SpclModeActvCode);
-		NeedWholeScreenDraw = trueblnr;
+		NeedWholeScreenDraw = true;
 	}
 
-	return trueblnr;
+	return true;
 }

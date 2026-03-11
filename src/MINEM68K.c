@@ -214,10 +214,10 @@ LOCALVAR struct regstruct
 	uint32_t ArgKind;
 #endif
 
-	blnr TracePending;
-	blnr ExternalInterruptPending;
+	bool TracePending;
+	bool ExternalInterruptPending;
 #if 0
-	blnr ResetPending;
+	bool ResetPending;
 #endif
 	uint8_t *fIPL;
 #ifdef r_regs
@@ -4528,7 +4528,7 @@ LOCALPROC NeedToGetOut(void)
 
 LOCALPROC SetExternalInterruptPending(void)
 {
-	V_regs.ExternalInterruptPending = trueblnr;
+	V_regs.ExternalInterruptPending = true;
 	NeedToGetOut();
 }
 
@@ -4576,7 +4576,7 @@ LOCALPROC my_reg_call m68k_setSR(uint16_t newsr)
 	if (V_regs.t1 != 0) {
 		NeedToGetOut();
 	} else {
-		/* V_regs.TracePending = falseblnr; */
+		/* V_regs.TracePending = false; */
 	}
 
 	m68k_setCR(newsr);
@@ -4627,7 +4627,7 @@ LOCALPROC my_reg_call ExceptionTo(uint32_t newpc
 	V_regs.t0 = 0;
 	V_regs.m = 0;
 #endif
-	V_regs.TracePending = falseblnr;
+	V_regs.TracePending = false;
 }
 
 LOCALPROC my_reg_call Exception(int nr)
@@ -7295,14 +7295,14 @@ LOCALPROC Ui6r_Negate(ui6r0 *v)
 #endif
 
 #if Use68020
-LOCALFUNC blnr my_reg_call Ui6r_IsZero(ui6r0 *v)
+LOCALFUNC bool my_reg_call Ui6r_IsZero(ui6r0 *v)
 {
 	return (v->hi == 0) && (v->lo == 0);
 }
 #endif
 
 #if Use68020
-LOCALFUNC blnr my_reg_call Ui6r_IsNeg(ui6r0 *v)
+LOCALFUNC bool my_reg_call Ui6r_IsNeg(ui6r0 *v)
 {
 	return ((int32_t)v->hi) < 0;
 }
@@ -7329,7 +7329,7 @@ LOCALPROC mul_unsigned(uint32_t src1, uint32_t src2, ui6r0 *dst)
 #endif
 
 #if Use68020
-LOCALFUNC blnr div_unsigned(ui6r0 *src, uint32_t div,
+LOCALFUNC bool div_unsigned(ui6r0 *src, uint32_t div,
 	uint32_t *quot, uint32_t *rem)
 {
 	int i;
@@ -7339,7 +7339,7 @@ LOCALFUNC blnr div_unsigned(ui6r0 *src, uint32_t div,
 	uint32_t src_lo = src->lo;
 
 	if (div <= src_hi) {
-		return trueblnr;
+		return true;
 	}
 	for (i = 0 ; i < 32 ; i++) {
 		cbit = src_hi & 0x80000000ul;
@@ -7356,7 +7356,7 @@ LOCALFUNC blnr div_unsigned(ui6r0 *src, uint32_t div,
 	}
 	*quot = q;
 	*rem = src_hi;
-	return falseblnr;
+	return false;
 }
 #endif
 
@@ -7376,9 +7376,9 @@ LOCALIPROC DoCodeMulL(void)
 
 		int32_t src1 = (int32_t)srcvalue;
 		int32_t src2 = (int32_t)dstvalue;
-		blnr s1 = src1 < 0;
-		blnr s2 = src2 < 0;
-		blnr sr = s1 != s2;
+		bool s1 = src1 < 0;
+		bool s2 = src2 < 0;
+		bool sr = s1 != s2;
 
 		/* ReportAbnormal("MULS.L"); */
 		/* used by Sys 7.5.5 boot extensions */
@@ -7460,9 +7460,9 @@ LOCALIPROC DoCodeDivL(void)
 	}
 	if (0 != (extra & 0x0800)) {
 		/* signed variant */
-		blnr sr;
-		blnr s2;
-		blnr s1 = ((int32_t)src < 0);
+		bool sr;
+		bool s2;
+		bool s1 = ((int32_t)src < 0);
 
 		v2.lo = (int32_t)m68k_dreg(rDq);
 		if (extra & 0x0400) {
@@ -7976,9 +7976,9 @@ LOCALIPROC DoBitField(void)
 #endif
 
 #if EmMMU | EmFPU
-LOCALFUNC blnr DecodeModeRegister(uint32_t sz)
+LOCALFUNC bool DecodeModeRegister(uint32_t sz)
 {
-	blnr IsOk;
+	bool IsOk;
 	uint16_t Dat = V_regs.CurDecOpY.v[0].ArgDat;
 	uint16_t themode = (Dat >> 3) & 7;
 	uint16_t thereg = Dat & 7;
@@ -7987,17 +7987,17 @@ LOCALFUNC blnr DecodeModeRegister(uint32_t sz)
 		case 0 :
 			V_regs.ArgKind = AKRegister;
 			V_regs.ArgAddr.rga = &V_regs.regs[thereg];
-			IsOk = trueblnr;
+			IsOk = true;
 			break;
 		case 1 :
 			V_regs.ArgKind = AKRegister;
 			V_regs.ArgAddr.rga = &V_regs.regs[thereg + 8];
-			IsOk = trueblnr;
+			IsOk = true;
 			break;
 		case 2 :
 			V_regs.ArgKind = AKMemory;
 			V_regs.ArgAddr.mem = m68k_areg(thereg);
-			IsOk = trueblnr;
+			IsOk = true;
 			break;
 		case 3 :
 			V_regs.ArgKind = AKMemory;
@@ -8007,7 +8007,7 @@ LOCALFUNC blnr DecodeModeRegister(uint32_t sz)
 			} else {
 				m68k_areg(thereg) += sz;
 			}
-			IsOk = trueblnr;
+			IsOk = true;
 			break;
 		case 4 :
 			V_regs.ArgKind = AKMemory;
@@ -8017,41 +8017,41 @@ LOCALFUNC blnr DecodeModeRegister(uint32_t sz)
 				m68k_areg(thereg) -= sz;
 			}
 			V_regs.ArgAddr.mem = m68k_areg(thereg);
-			IsOk = trueblnr;
+			IsOk = true;
 			break;
 		case 5 :
 			V_regs.ArgKind = AKMemory;
 			V_regs.ArgAddr.mem = m68k_areg(thereg)
 				+ nextiSWord();
-			IsOk = trueblnr;
+			IsOk = true;
 			break;
 		case 6 :
 			V_regs.ArgKind = AKMemory;
 			V_regs.ArgAddr.mem = get_disp_ea(m68k_areg(thereg));
-			IsOk = trueblnr;
+			IsOk = true;
 			break;
 		case 7 :
 			switch (thereg) {
 				case 0 :
 					V_regs.ArgKind = AKMemory;
 					V_regs.ArgAddr.mem = nextiSWord();
-					IsOk = trueblnr;
+					IsOk = true;
 					break;
 				case 1 :
 					V_regs.ArgKind = AKMemory;
 					V_regs.ArgAddr.mem = nextilong();
-					IsOk = trueblnr;
+					IsOk = true;
 					break;
 				case 2 :
 					V_regs.ArgKind = AKMemory;
 					V_regs.ArgAddr.mem = m68k_getpc();
 					V_regs.ArgAddr.mem += nextiSWord();
-					IsOk = trueblnr;
+					IsOk = true;
 					break;
 				case 3 :
 					V_regs.ArgKind = AKMemory;
 					V_regs.ArgAddr.mem = get_disp_ea(m68k_getpc());
-					IsOk = trueblnr;
+					IsOk = true;
 					break;
 				case 4 :
 					V_regs.ArgKind = AKMemory;
@@ -8060,15 +8060,15 @@ LOCALFUNC blnr DecodeModeRegister(uint32_t sz)
 						++V_regs.ArgAddr.mem;
 					}
 					m68k_setpc(V_regs.ArgAddr.mem + sz);
-					IsOk = trueblnr;
+					IsOk = true;
 					break;
 				default:
-					IsOk = falseblnr;
+					IsOk = false;
 					break;
 			}
 			break;
 		default:
-			IsOk = falseblnr;
+			IsOk = false;
 			break;
 	}
 
@@ -8264,9 +8264,9 @@ LOCALPROC Em_Swap(void)
 #endif
 
 #if HaveGlbReg
-LOCALFUNC blnr LocalMemAccessNtfy(ATTep pT)
+LOCALFUNC bool LocalMemAccessNtfy(ATTep pT)
 {
-	blnr v;
+	bool v;
 
 	Em_Exit();
 	v = MemAccessNtfy(pT);
@@ -8280,7 +8280,7 @@ LOCALFUNC blnr LocalMemAccessNtfy(ATTep pT)
 
 #if HaveGlbReg
 LOCALFUNC uint32_t LocalMMDV_Access(ATTep p, uint32_t Data,
-	blnr WriteMem, blnr ByteSize, uint32_t addr)
+	bool WriteMem, bool ByteSize, uint32_t addr)
 {
 	uint32_t v;
 
@@ -8357,7 +8357,7 @@ Label_Retry:
 
 		Data = *m;
 	} else if (0 != (AccFlags & kATTA_mmdvmask)) {
-		Data = LocalMMDV_Access(p, 0, falseblnr, trueblnr, addr);
+		Data = LocalMMDV_Access(p, 0, false, true, addr);
 	} else if (0 != (AccFlags & kATTA_ntfymask)) {
 		if (LocalMemAccessNtfy(p)) {
 			goto Label_Retry;
@@ -8387,7 +8387,7 @@ Label_Retry:
 		*m = b;
 	} else if (0 != (AccFlags & kATTA_mmdvmask)) {
 		(void) LocalMMDV_Access(p, b & 0x00FF,
-			trueblnr, trueblnr, addr);
+			true, true, addr);
 	} else if (0 != (AccFlags & kATTA_ntfymask)) {
 		if (LocalMemAccessNtfy(p)) {
 			goto Label_Retry;
@@ -8423,7 +8423,7 @@ Label_Retry:
 			m = p->usebase + (addr & p->usemask);
 			Data = do_get_mem_word(m);
 		} else if (0 != (AccFlags & kATTA_mmdvmask)) {
-			Data = LocalMMDV_Access(p, 0, falseblnr, falseblnr, addr);
+			Data = LocalMMDV_Access(p, 0, false, false, addr);
 		} else if (0 != (AccFlags & kATTA_ntfymask)) {
 			if (LocalMemAccessNtfy(p)) {
 				goto Label_Retry;
@@ -8459,7 +8459,7 @@ Label_Retry:
 			do_put_mem_word(m, w);
 		} else if (0 != (AccFlags & kATTA_mmdvmask)) {
 			(void) LocalMMDV_Access(p, w & 0x0000FFFF,
-				trueblnr, falseblnr, addr);
+				true, false, addr);
 		} else if (0 != (AccFlags & kATTA_ntfymask)) {
 			if (LocalMemAccessNtfy(p)) {
 				goto Label_Retry;
@@ -8514,9 +8514,9 @@ Label_Retry:
 			Data = do_get_mem_long(m);
 		} else if (0 != (AccFlags & kATTA_mmdvmask)) {
 			uint32_t hi = LocalMMDV_Access(p, 0,
-				falseblnr, falseblnr, addr);
+				false, false, addr);
 			uint32_t lo = LocalMMDV_Access(p, 0,
-				falseblnr, falseblnr, addr + 2);
+				false, false, addr + 2);
 			Data = ((hi << 16) & 0xFFFF0000)
 				| (lo & 0x0000FFFF);
 		} else if (0 != (AccFlags & kATTA_ntfymask)) {
@@ -8556,9 +8556,9 @@ Label_Retry:
 			do_put_mem_long(m, l);
 		} else if (0 != (AccFlags & kATTA_mmdvmask)) {
 			(void) LocalMMDV_Access(p, (l >> 16) & 0x0000FFFF,
-				trueblnr, falseblnr, addr);
+				true, false, addr);
 			(void) LocalMMDV_Access(p, l & 0x0000FFFF,
-				trueblnr, falseblnr, addr + 2);
+				true, false, addr + 2);
 		} else if (0 != (AccFlags & kATTA_ntfymask)) {
 			if (LocalMemAccessNtfy(p)) {
 				goto Label_Retry;
@@ -8649,7 +8649,7 @@ LOCALPROC DoCheckExternalInterruptPending(void)
 
 LOCALPROC do_trace(void)
 {
-	V_regs.TracePending = trueblnr;
+	V_regs.TracePending = true;
 	NeedToGetOut();
 }
 
@@ -8672,7 +8672,7 @@ GLOBALPROC m68k_go_nCycles(uint32_t n)
 			Exception(9);
 		}
 		if (V_regs.ExternalInterruptPending) {
-			V_regs.ExternalInterruptPending = falseblnr;
+			V_regs.ExternalInterruptPending = false;
 			DoCheckExternalInterruptPending();
 		}
 		if (V_regs.t1 != 0) {
@@ -8876,7 +8876,7 @@ GLOBALPROC m68k_reset(void)
 		/* illegal instruction opcode */
 
 #if 0
-	V_regs.ResetPending = trueblnr;
+	V_regs.ResetPending = true;
 	NeedToGetOut();
 #else
 /* Sets the MC68000 reset jump vector... */
@@ -8896,8 +8896,8 @@ GLOBALPROC m68k_reset(void)
 	V_regs.LazyFlagKind = kLazyFlagsDefault;
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 
-	V_regs.ExternalInterruptPending = falseblnr;
-	V_regs.TracePending = falseblnr;
+	V_regs.ExternalInterruptPending = false;
+	V_regs.TracePending = false;
 	V_regs.intmask = 7;
 
 #if Use68020
@@ -8916,7 +8916,7 @@ GLOBALPROC m68k_reset(void)
 GLOBALPROC MINEM68K_ReserveAlloc(void)
 {
 	ReserveAllocOneBlock((uint8_t * *)&regs.disp_table,
-		disp_table_sz * 8, 6, falseblnr);
+		disp_table_sz * 8, 6, false);
 }
 #endif
 

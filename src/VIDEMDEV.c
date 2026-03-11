@@ -150,7 +150,7 @@ LOCALPROC PatchAnEndOfLst(void)
 	PatchADatLstEntry(0xFF /* endOfList */, 0x00000000);
 }
 
-GLOBALFUNC blnr Vid_Init(void)
+GLOBALFUNC bool Vid_Init(void)
 {
 	int i;
 	uint32_t UsedSoFar;
@@ -388,7 +388,7 @@ GLOBALFUNC blnr Vid_Init(void)
 	UsedSoFar = (pPatch - VidROM) + 20;
 	if (UsedSoFar > kVidROM_Size) {
 		ReportAbnormalID(0x0A01, "kVidROM_Size too small");
-		return falseblnr;
+		return false;
 	}
 
 	for (i = kVidROM_Size - UsedSoFar; --i >= 0; ) {
@@ -416,7 +416,7 @@ GLOBALFUNC blnr Vid_Init(void)
 	CLUT_blues[CLUT_size - 1] = 0;
 #endif
 
-	return trueblnr;
+	return true;
 }
 
 IMPORTPROC Vid_VBLinterrupt_PulseNotify(void);
@@ -445,7 +445,7 @@ LOCALFUNC tMacErr Vid_SetMode(uint16_t v)
 #else
 	if (UseColorMode != ((v != 128) && ColorModeWorks)) {
 		UseColorMode = ! UseColorMode;
-		ColorMappingChanged = trueblnr;
+		ColorMappingChanged = true;
 	}
 #endif
 	return mnvm_noErr;
@@ -454,7 +454,7 @@ LOCALFUNC tMacErr Vid_SetMode(uint16_t v)
 GLOBALFUNC uint16_t Vid_Reset(void)
 {
 #if 0 != vMacScreenDepth
-	UseColorMode = falseblnr;
+	UseColorMode = false;
 #endif
 	return 128;
 }
@@ -483,7 +483,7 @@ GLOBALFUNC uint16_t Vid_Reset(void)
 #define VidBaseAddr 0xF9900000
 	/* appears to be completely ignored */
 
-LOCALVAR blnr UseGrayTones = falseblnr;
+LOCALVAR bool UseGrayTones = false;
 
 LOCALPROC FillScreenWithGrayPattern(void)
 {
@@ -662,7 +662,7 @@ GLOBALPROC ExtnVideo_Access(uint32_t p)
 									}
 									csTable += 8;
 								}
-								ColorMappingChanged = trueblnr;
+								ColorMappingChanged = true;
 							} else
 							if (csStart + csCount < csStart) {
 								/* overflow */
@@ -696,7 +696,7 @@ GLOBALPROC ExtnVideo_Access(uint32_t p)
 									}
 									csTable += 8;
 								}
-								ColorMappingChanged = trueblnr;
+								ColorMappingChanged = true;
 								result = mnvm_noErr;
 							}
 						} else
