@@ -28,8 +28,8 @@
 	The main entry point '_tWinMain' is at the end of this file.
 */
 
-#include "OSGCOMUI.h"
-#include "OSGCOMUD.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
 
 #ifdef WantOSGLUWIN
 
@@ -93,7 +93,7 @@ static bool HaveMySHGetSpecialFolderPath(void)
 #define NeedDoMoreCommandsMsg 1
 #define NeedDoAboutMsg 1
 
-#include "INTLCHAR.h"
+#include "platform/common/intl_chars_impl.h"
 
 
 static void NativeStrFromCStr(LPTSTR r, char *s, bool AddEllipsis)
@@ -240,7 +240,7 @@ static void dbglog_close0(void)
 
 #endif
 
-#include "COMOSGLU.h"
+#include "platform/common/osglu_common_impl.h"
 
 #ifndef InstallFileIcons
 #define InstallFileIcons 0
@@ -368,7 +368,7 @@ void PbufTransfer(uint8_t * Buffer,
 
 /* --- control mode and internationalization --- */
 
-#include "CONTROLM.h"
+#include "platform/common/control_mode_impl.h"
 
 /* --- main window info --- */
 
@@ -2253,7 +2253,7 @@ static bool UpdateTrueEmulatedTime(void)
 static uint32_t TimeSecBase;
 static DWORD TimeMilliBase;
 
-#include "DATE2SEC.h"
+#include "platform/common/date_to_sec.h"
 
 static bool CheckDateTime(void)
 {
@@ -4165,7 +4165,7 @@ static bool EntropyGather(void)
 
 #if EmLocalTalk
 
-#include "LOCALTLK.h"
+#include "platform/localtalk.h"
 
 #endif
 

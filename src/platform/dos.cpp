@@ -19,8 +19,8 @@
 	Operating System GLUe for (ms-)DOS
 */
 
-#include "OSGCOMUI.h"
-#include "OSGCOMUD.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
 #include "CNFUIPIC.h"
 
 #ifdef WantOSGLUDOS
@@ -35,7 +35,7 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount) {
 
 #define NeedCell2PlainAsciiMap 1
 
-#include "INTLCHAR.h"
+#include "platform/common/intl_chars_impl.h"
 
 /* --- sending debugging info to file --- */
 
@@ -109,11 +109,11 @@ static void WriteDbgAtom(char *s, Atom x) {
 
 /* --- information about the environment --- */
 
-#include "COMOSGLU.h"
+#include "platform/common/osglu_common_impl.h"
 
-#include "PBUFSTDC.h"
+#include "platform/common/param_buffers_impl.h"
 
-#include "CONTROLM.h"
+#include "platform/common/control_mode_impl.h"
 
 /* --- text translation --- */
 
@@ -1098,7 +1098,7 @@ static void CheckKeyboardState(void) {
 
 static uint32_t TrueEmulatedTime = 0;
 
-#include "DATE2SEC.h"
+#include "platform/common/date_to_sec.h"
 
 #define TicksPerSecond 1000000
 

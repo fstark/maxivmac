@@ -30,8 +30,8 @@
 	The main entry point 'main' is at the end of this file.
 */
 
-#include "OSGCOMUI.h"
-#include "OSGCOMUD.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
 
 #ifdef WantOSGLUOSX
 
@@ -659,7 +659,7 @@ static void PStrFromChar(uint8_t * r, char x)
 #define NeedDoMoreCommandsMsg 1
 #define NeedDoAboutMsg 1
 
-#include "INTLCHAR.h"
+#include "platform/common/intl_chars_impl.h"
 
 static void UniCharStrFromSubstCStr(int *L, UniChar *x, char *s)
 {
@@ -899,7 +899,7 @@ static void dbglog_close0(void)
 #define WantColorTransValid 1
 #endif
 
-#include "COMOSGLU.h"
+#include "platform/common/osglu_common_impl.h"
 
 /* --- time, date --- */
 
@@ -974,7 +974,7 @@ static bool CheckDateTime(void)
 
 /* --- parameter buffers --- */
 
-#include "PBUFSTDC.h"
+#include "platform/common/param_buffers_impl.h"
 
 /* --- drives --- */
 
@@ -1269,7 +1269,7 @@ static bool EntropyGather(void)
 
 #if EmLocalTalk
 
-#include "LOCALTLK.h"
+#include "platform/localtalk.h"
 
 #endif
 
@@ -1278,7 +1278,7 @@ static bool EntropyGather(void)
 
 #define WantKeyboard_RemapMac 1
 
-#include "CONTROLM.h"
+#include "platform/common/control_mode_impl.h"
 
 
 /* --- video out --- */
@@ -1371,7 +1371,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 
 #if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
@@ -1383,7 +1383,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif
 
@@ -1396,7 +1396,7 @@ static uint8_t * CLUT_final;
 #define ScrnTrns_DstDepth 5
 #define ScrnTrns_DstZLo 1
 
-#include "SCRNTRNS.h"
+#include "platform/common/screen_translate.h"
 
 #endif
 
@@ -2047,7 +2047,7 @@ static bool InitMousePosition(void)
 
 /* --- time, date, location, part 2 --- */
 
-#include "DATE2SEC.h"
+#include "platform/common/date_to_sec.h"
 
 static bool InitLocationDat(void)
 {

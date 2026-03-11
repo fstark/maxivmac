@@ -33,6 +33,6 @@
 		Configuration file dependent on user options
 		for all code.
 	*/
-#include "OSGLUAAA.h"
+#include "platform/platform.h"
 
 #include "STRCONST.h"

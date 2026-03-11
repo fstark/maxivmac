@@ -25,8 +25,8 @@
 	port of vMac, by Philip Cummins.
 */
 
-#include "OSGCOMUI.h"
-#include "OSGCOMUD.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
 
 #ifdef WantOSGLUMAC
 
@@ -729,13 +729,13 @@ static void dbglog_close0(void)
 #define NeedDoMoreCommandsMsg 1
 #define NeedDoAboutMsg 1
 
-#include "INTLCHAR.h"
+#include "platform/common/intl_chars_impl.h"
 
-#include "COMOSGLU.h"
+#include "platform/common/osglu_common_impl.h"
 
 #define WantKeyboard_RemapMac 1
 
-#include "CONTROLM.h"
+#include "platform/common/control_mode_impl.h"
 
 /* --- some simple utilities --- */
 
@@ -1026,7 +1026,7 @@ static uint8_t * ScalingTabl = nullptr;
 #define ScrnMapr_Map ScalingTabl
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif
 

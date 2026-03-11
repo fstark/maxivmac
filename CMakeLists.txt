@@ -234,7 +234,7 @@ configure_file(
 # Cocoa backend (macOS)
 # ---------------------------------------------------------------------------
 if(MINIVMAC_BACKEND STREQUAL "cocoa")
-    list(APPEND MINIVMAC_SOURCES src/OSGLUCCO.m)
+    list(APPEND MINIVMAC_SOURCES src/platform/cocoa.mm)
 
     add_executable(minivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
 
@@ -277,7 +277,7 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
 # SDL backend (Linux / Windows / macOS-SDL)
 # ---------------------------------------------------------------------------
 elseif(MINIVMAC_BACKEND STREQUAL "sdl")
-    list(APPEND MINIVMAC_SOURCES src/OSGLUSDL.c)
+    list(APPEND MINIVMAC_SOURCES src/platform/sdl.cpp)
 
     if(APPLE)
         add_executable(minivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})

@@ -315,7 +315,7 @@ static void DrawSpclMode0(char *Title, SpclModeBody Body)
 }
 
 #if EnableAltKeysMode
-#include "ALTKEYSM.h"
+#include "platform/common/alt_keys.h"
 #else
 #define Keyboard_UpdateKeyMap1 Keyboard_UpdateKeyMap
 #define DisconnectKeyCodes1 DisconnectKeyCodes
@@ -1077,7 +1077,7 @@ static void DemoModeSecondNotify(void)
 #endif /* EnableDemoMsg */
 
 #if UseActvCode
-#include "ACTVCODE.h"
+#include "platform/common/actv_code.h"
 #endif
 
 static void DrawSpclMode(void)

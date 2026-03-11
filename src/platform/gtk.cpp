@@ -21,12 +21,12 @@
 	GIMP Toolkit should go here.
 */
 
-#include "OSGCOMUI.h"
-#include "OSGCOMUD.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
 
 #ifdef WantOSGLUGTK
 
-#include "COMOSGLU.h"
+#include "platform/common/osglu_common_impl.h"
 
 /* --- some simple utilities --- */
 
@@ -42,9 +42,9 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 #define NeedDoMoreCommandsMsg 1
 #define NeedDoAboutMsg 1
 
-#include "INTLCHAR.h"
+#include "platform/common/intl_chars_impl.h"
 
-#include "CONTROLM.h"
+#include "platform/common/control_mode_impl.h"
 
 /* --- sending debugging info to file --- */
 
@@ -778,7 +778,7 @@ static void DoKeyCode(guint keycode, bool down)
 
 static uint32_t TrueEmulatedTime = 0;
 
-#include "DATE2SEC.h"
+#include "platform/common/date_to_sec.h"
 
 #define TicksPerSecond 1000000
 
