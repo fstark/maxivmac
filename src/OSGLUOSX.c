@@ -46,9 +46,9 @@
 #define UsingCarbonLib 0
 #endif
 
-LOCALVAR CFBundleRef AppServBunRef;
+static CFBundleRef AppServBunRef;
 
-LOCALVAR bool DidApplicationServicesBun = false;
+static bool DidApplicationServicesBun = false;
 
 LOCALFUNC bool HaveApplicationServicesBun(void)
 {
@@ -62,9 +62,9 @@ LOCALFUNC bool HaveApplicationServicesBun(void)
 
 #if MayFullScreen || UsingCarbonLib
 
-LOCALVAR CFBundleRef HIToolboxBunRef;
+static CFBundleRef HIToolboxBunRef;
 
-LOCALVAR bool DidHIToolboxBunRef = false;
+static bool DidHIToolboxBunRef = false;
 
 LOCALFUNC bool HaveHIToolboxBunRef(void)
 {
@@ -78,9 +78,9 @@ LOCALFUNC bool HaveHIToolboxBunRef(void)
 
 #endif
 
-LOCALVAR CFBundleRef AGLBunRef;
+static CFBundleRef AGLBunRef;
 
-LOCALVAR bool DidAGLBunRef = false;
+static bool DidAGLBunRef = false;
 
 LOCALFUNC bool HaveAGLBunRef(void)
 {
@@ -116,8 +116,8 @@ enum {
 
 typedef OSStatus (*SetSystemUIModeProcPtr)
 	(MySystemUIMode inMode, MySystemUIOptions inOptions);
-LOCALVAR SetSystemUIModeProcPtr MySetSystemUIMode = NULL;
-LOCALVAR bool DidSetSystemUIMode = false;
+static SetSystemUIModeProcPtr MySetSystemUIMode = NULL;
+static bool DidSetSystemUIMode = false;
 
 LOCALFUNC bool HaveMySetSystemUIMode(void)
 {
@@ -139,9 +139,9 @@ LOCALFUNC bool HaveMySetSystemUIMode(void)
 
 typedef OSStatus (*LSCopyDisplayNameForRefProcPtr)
 	(const FSRef *inRef, CFStringRef *outDisplayName);
-LOCALVAR LSCopyDisplayNameForRefProcPtr MyLSCopyDisplayNameForRef
+static LSCopyDisplayNameForRefProcPtr MyLSCopyDisplayNameForRef
 	= NULL;
-LOCALVAR bool DidLSCopyDisplayNameForRef = false;
+static bool DidLSCopyDisplayNameForRef = false;
 
 LOCALFUNC bool HaveMyLSCopyDisplayNameForRef(void)
 {
@@ -161,8 +161,8 @@ LOCALFUNC bool HaveMyLSCopyDisplayNameForRef(void)
 
 typedef GLboolean (*aglSetWindowRefProcPtr)
 	(AGLContext ctx, WindowRef window);
-LOCALVAR aglSetWindowRefProcPtr MyaglSetWindowRef = NULL;
-LOCALVAR bool DidaglSetWindowRef = false;
+static aglSetWindowRefProcPtr MyaglSetWindowRef = NULL;
+static bool DidaglSetWindowRef = false;
 
 LOCALFUNC bool HaveMyaglSetWindowRef(void)
 {
@@ -183,8 +183,8 @@ LOCALFUNC bool HaveMyaglSetWindowRef(void)
 typedef CGrafPtr My_AGLDrawable;
 typedef GLboolean (*aglSetDrawableProcPtr)
 	(AGLContext ctx, My_AGLDrawable draw);
-LOCALVAR aglSetDrawableProcPtr MyaglSetDrawable = NULL;
-LOCALVAR bool DidaglSetDrawable = false;
+static aglSetDrawableProcPtr MyaglSetDrawable = NULL;
+static bool DidaglSetDrawable = false;
 
 LOCALFUNC bool HaveMyaglSetDrawable(void)
 {
@@ -210,8 +210,8 @@ typedef CGDisplayErr
 	CGDisplayCount       maxDisplays,
 	CGDirectDisplayID *  activeDspys,
 	CGDisplayCount *     dspyCnt);
-LOCALVAR CGGetActiveDisplayListProcPtr MyCGGetActiveDisplayList = NULL;
-LOCALVAR bool DidCGGetActiveDisplayList = false;
+static CGGetActiveDisplayListProcPtr MyCGGetActiveDisplayList = NULL;
+static bool DidCGGetActiveDisplayList = false;
 
 LOCALFUNC bool HaveMyCGGetActiveDisplayList(void)
 {
@@ -239,8 +239,8 @@ LOCALFUNC bool HaveMyCGGetActiveDisplayList(void)
 
 typedef CGRect
 (*CGDisplayBoundsProcPtr) (CGDirectDisplayID display);
-LOCALVAR CGDisplayBoundsProcPtr MyCGDisplayBounds = NULL;
-LOCALVAR bool DidCGDisplayBounds = false;
+static CGDisplayBoundsProcPtr MyCGDisplayBounds = NULL;
+static bool DidCGDisplayBounds = false;
 
 LOCALFUNC bool HaveMyCGDisplayBounds(void)
 {
@@ -268,8 +268,8 @@ LOCALFUNC bool HaveMyCGDisplayBounds(void)
 
 typedef size_t
 (*CGDisplayPixelsWideProcPtr) (CGDirectDisplayID display);
-LOCALVAR CGDisplayPixelsWideProcPtr MyCGDisplayPixelsWide = NULL;
-LOCALVAR bool DidCGDisplayPixelsWide = false;
+static CGDisplayPixelsWideProcPtr MyCGDisplayPixelsWide = NULL;
+static bool DidCGDisplayPixelsWide = false;
 
 LOCALFUNC bool HaveMyCGDisplayPixelsWide(void)
 {
@@ -297,8 +297,8 @@ LOCALFUNC bool HaveMyCGDisplayPixelsWide(void)
 
 typedef size_t
 (*CGDisplayPixelsHighProcPtr) (CGDirectDisplayID display);
-LOCALVAR CGDisplayPixelsHighProcPtr MyCGDisplayPixelsHigh = NULL;
-LOCALVAR bool DidCGDisplayPixelsHigh = false;
+static CGDisplayPixelsHighProcPtr MyCGDisplayPixelsHigh = NULL;
+static bool DidCGDisplayPixelsHigh = false;
 
 LOCALFUNC bool HaveMyCGDisplayPixelsHigh(void)
 {
@@ -326,8 +326,8 @@ LOCALFUNC bool HaveMyCGDisplayPixelsHigh(void)
 
 typedef CGDisplayErr
 (*CGDisplayHideCursorProcPtr) (CGDirectDisplayID display);
-LOCALVAR CGDisplayHideCursorProcPtr MyCGDisplayHideCursor = NULL;
-LOCALVAR bool DidCGDisplayHideCursor = false;
+static CGDisplayHideCursorProcPtr MyCGDisplayHideCursor = NULL;
+static bool DidCGDisplayHideCursor = false;
 
 LOCALFUNC bool HaveMyCGDisplayHideCursor(void)
 {
@@ -355,8 +355,8 @@ LOCALFUNC bool HaveMyCGDisplayHideCursor(void)
 
 typedef CGDisplayErr
 (*CGDisplayShowCursorProcPtr) (CGDirectDisplayID display);
-LOCALVAR CGDisplayShowCursorProcPtr MyCGDisplayShowCursor = NULL;
-LOCALVAR bool DidCGDisplayShowCursor = false;
+static CGDisplayShowCursorProcPtr MyCGDisplayShowCursor = NULL;
+static bool DidCGDisplayShowCursor = false;
 
 LOCALFUNC bool HaveMyCGDisplayShowCursor(void)
 {
@@ -384,9 +384,9 @@ LOCALFUNC bool HaveMyCGDisplayShowCursor(void)
 
 typedef CGDisplayErr (*CGDisplayMoveCursorToPointProcPtr)
 	(CGDirectDisplayID display, CGPoint point);
-LOCALVAR CGDisplayMoveCursorToPointProcPtr MyCGDisplayMoveCursorToPoint
+static CGDisplayMoveCursorToPointProcPtr MyCGDisplayMoveCursorToPoint
 	= NULL;
-LOCALVAR bool DidCGDisplayMoveCursorToPoint = false;
+static bool DidCGDisplayMoveCursorToPoint = false;
 
 LOCALFUNC bool HaveMyCGDisplayMoveCursorToPoint(void)
 {
@@ -409,9 +409,9 @@ LOCALFUNC bool HaveMyCGDisplayMoveCursorToPoint(void)
 
 typedef CGEventErr
 (*CGWarpMouseCursorPositionProcPtr) (CGPoint newCursorPosition);
-LOCALVAR CGWarpMouseCursorPositionProcPtr MyCGWarpMouseCursorPosition
+static CGWarpMouseCursorPositionProcPtr MyCGWarpMouseCursorPosition
 	= NULL;
-LOCALVAR bool DidCGWarpMouseCursorPosition = false;
+static bool DidCGWarpMouseCursorPosition = false;
 
 LOCALFUNC bool HaveMyCGWarpMouseCursorPosition(void)
 {
@@ -439,9 +439,9 @@ LOCALFUNC bool HaveMyCGWarpMouseCursorPosition(void)
 
 typedef CGEventErr
 (*CGSetLocalEventsSuppressionIntervalProcPtr) (CFTimeInterval seconds);
-LOCALVAR CGSetLocalEventsSuppressionIntervalProcPtr
+static CGSetLocalEventsSuppressionIntervalProcPtr
 	MyCGSetLocalEventsSuppressionInterval = NULL;
-LOCALVAR bool DidCGSetLocalEventsSuppressionInterval = false;
+static bool DidCGSetLocalEventsSuppressionInterval = false;
 
 LOCALFUNC bool HaveMyCGSetLocalEventsSuppressionInterval(void)
 {
@@ -476,8 +476,8 @@ typedef OSStatus (*CreateStandardAlertProcPtr) (
 	const AlertStdCFStringAlertParamRec * param,
 	DialogRef * outAlert
 );
-LOCALVAR CreateStandardAlertProcPtr MyCreateStandardAlert = NULL;
-LOCALVAR bool DidCreateStandardAlert = false;
+static CreateStandardAlertProcPtr MyCreateStandardAlert = NULL;
+static bool DidCreateStandardAlert = false;
 
 LOCALFUNC bool HaveMyCreateStandardAlert(void)
 {
@@ -508,8 +508,8 @@ typedef OSStatus (*RunStandardAlertProcPtr) (
 	ModalFilterUPP filterProc,
 	DialogItemIndex * outItemHit
 );
-LOCALVAR RunStandardAlertProcPtr MyRunStandardAlert = NULL;
-LOCALVAR bool DidRunStandardAlert = false;
+static RunStandardAlertProcPtr MyRunStandardAlert = NULL;
+static bool DidRunStandardAlert = false;
 
 LOCALFUNC bool HaveMyRunStandardAlert(void)
 {
@@ -535,8 +535,8 @@ LOCALFUNC bool HaveMyRunStandardAlert(void)
 
 typedef CGDirectDisplayID (*CGMainDisplayIDProcPtr)(void);
 
-LOCALVAR CGMainDisplayIDProcPtr MyCGMainDisplayID = NULL;
-LOCALVAR bool DidCGMainDisplayID = false;
+static CGMainDisplayIDProcPtr MyCGMainDisplayID = NULL;
+static bool DidCGMainDisplayID = false;
 
 LOCALFUNC bool HaveMyCGMainDisplayID(void)
 {
@@ -561,9 +561,9 @@ typedef CGError
 	CGDisplayReconfigurationCallBack proc,
 	void *userInfo
 	);
-LOCALVAR CGDisplayRegisterReconfigurationCallbackProcPtr
+static CGDisplayRegisterReconfigurationCallbackProcPtr
 	MyCGDisplayRegisterReconfigurationCallback = NULL;
-LOCALVAR bool DidCGDisplayRegisterReconfigurationCallback = false;
+static bool DidCGDisplayRegisterReconfigurationCallback = false;
 
 LOCALFUNC bool HaveMyCGDisplayRegisterReconfigurationCallback(void)
 {
@@ -586,9 +586,9 @@ typedef CGError
 	CGDisplayReconfigurationCallBack proc,
 	void *userInfo
 	);
-LOCALVAR CGDisplayRemoveReconfigurationCallbackProcPtr
+static CGDisplayRemoveReconfigurationCallbackProcPtr
 	MyCGDisplayRemoveReconfigurationCallback = NULL;
-LOCALVAR bool DidCGDisplayRemoveReconfigurationCallback = false;
+static bool DidCGDisplayRemoveReconfigurationCallback = false;
 
 LOCALFUNC bool HaveMyCGDisplayRemoveReconfigurationCallback(void)
 {
@@ -608,8 +608,8 @@ LOCALFUNC bool HaveMyCGDisplayRemoveReconfigurationCallback(void)
 
 typedef boolean_t (*CGCursorIsVisibleProcPtr)(void);
 
-LOCALVAR CGCursorIsVisibleProcPtr MyCGCursorIsVisible = NULL;
-LOCALVAR bool DidCGCursorIsVisible = false;
+static CGCursorIsVisibleProcPtr MyCGCursorIsVisible = NULL;
+static bool DidCGCursorIsVisible = false;
 
 LOCALFUNC bool HaveMyCGCursorIsVisible(void)
 {
@@ -805,9 +805,9 @@ LOCALFUNC tMacErr FindOrMakeNamedChildRef(FSRef *ParentRef,
 }
 #endif
 
-LOCALVAR FSRef MyDatDirRef;
+static FSRef MyDatDirRef;
 
-LOCALVAR CFStringRef MyAppName = NULL;
+static CFStringRef MyAppName = NULL;
 
 LOCALPROC UnInitMyApplInfo(void)
 {
@@ -857,7 +857,7 @@ LOCALFUNC bool InitMyApplInfo(void)
 
 #if dbglog_HAVE
 
-LOCALVAR SInt16 dbglog_File = NotAfileRef;
+static SInt16 dbglog_File = NotAfileRef;
 
 LOCALFUNC bool dbglog_open0(void)
 {
@@ -910,9 +910,9 @@ LOCALPROC dbglog_close0(void)
 
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
 
-LOCALVAR uint32_t TrueEmulatedTime = 0;
+static uint32_t TrueEmulatedTime = 0;
 
-LOCALVAR EventTime NextTickChangeTime;
+static EventTime NextTickChangeTime;
 
 #define MyTickDuration (kEventDurationSecond / 60.14742)
 
@@ -947,9 +947,9 @@ GLOBALOSGLUFUNC bool ExtraTimeNotOver(void)
 	return TrueEmulatedTime == OnTrueTime;
 }
 
-/* LOCALVAR EventTime ETimeBase; */
-LOCALVAR CFAbsoluteTime ATimeBase;
-LOCALVAR uint32_t TimeSecBase;
+/* static EventTime ETimeBase; */
+static CFAbsoluteTime ATimeBase;
+static uint32_t TimeSecBase;
 
 LOCALFUNC bool CheckDateTime(void)
 {
@@ -978,7 +978,7 @@ LOCALFUNC bool CheckDateTime(void)
 
 /* --- drives --- */
 
-LOCALVAR SInt16 Drives[NumDrives]; /* open disk image files */
+static SInt16 Drives[NumDrives]; /* open disk image files */
 
 GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
@@ -1283,24 +1283,24 @@ LOCALFUNC bool EntropyGather(void)
 
 /* --- video out --- */
 
-LOCALVAR WindowPtr gMyMainWindow = NULL;
-LOCALVAR WindowPtr gMyOldWindow = NULL;
+static WindowPtr gMyMainWindow = NULL;
+static WindowPtr gMyOldWindow = NULL;
 
 #if MayFullScreen
-LOCALVAR short hOffset;
-LOCALVAR short vOffset;
+static short hOffset;
+static short vOffset;
 #endif
 
 #if MayFullScreen
-LOCALVAR bool GrabMachine = false;
+static bool GrabMachine = false;
 #endif
 
 #if VarFullScreen
-LOCALVAR bool UseFullScreen = (WantInitFullScreen != 0);
+static bool UseFullScreen = (WantInitFullScreen != 0);
 #endif
 
 #if EnableMagnify
-LOCALVAR bool UseMagnify = (WantInitMagnify != 0);
+static bool UseMagnify = (WantInitMagnify != 0);
 #endif
 
 #if EnableMagnify
@@ -1346,9 +1346,9 @@ LOCALPROC SetScrnRectFromCoords(Rect *r,
 #endif
 }
 
-LOCALVAR uint8_t * ScalingBuff = nullptr;
+static uint8_t * ScalingBuff = nullptr;
 
-LOCALVAR uint8_t * CLUT_final;
+static uint8_t * CLUT_final;
 
 #define CLUT_finalsz1 (256 * 8)
 
@@ -1452,9 +1452,9 @@ LOCALPROC UpdateLuminanceCopy(int16_t top, int16_t left,
 	}
 }
 
-LOCALVAR AGLContext ctx = NULL;
-LOCALVAR short GLhOffset;
-LOCALVAR short GLvOffset;
+static AGLContext ctx = NULL;
+static short GLhOffset;
+static short GLvOffset;
 
 #ifndef UseAGLdoublebuff
 #define UseAGLdoublebuff 0
@@ -1599,13 +1599,13 @@ LOCALPROC MyDrawChangesAndClear(void)
 }
 
 
-LOCALVAR bool MouseIsOutside = false;
+static bool MouseIsOutside = false;
 	/*
 		MouseIsOutside true if sure mouse outside our window. If in
 		our window, or not sure, set false.
 	*/
 
-LOCALVAR bool WantCursorHidden = false;
+static bool WantCursorHidden = false;
 
 LOCALPROC MousePositionNotify(Point NewMousePos)
 {
@@ -1700,8 +1700,8 @@ LOCALPROC CheckMouseState(void)
 	MousePositionNotify(NewMousePos);
 }
 
-LOCALVAR bool gLackFocusFlag = false;
-LOCALVAR bool gWeAreActive = false;
+static bool gLackFocusFlag = false;
+static bool gWeAreActive = false;
 
 GLOBALOSGLUPROC DoneWithDrawingForTick(void)
 {
@@ -1713,11 +1713,11 @@ GLOBALOSGLUPROC DoneWithDrawingForTick(void)
 	MyDrawChangesAndClear();
 }
 
-LOCALVAR bool CurSpeedStopped = true;
+static bool CurSpeedStopped = true;
 
 /* --- keyboard --- */
 
-LOCALVAR UInt32 SavedModifiers = 0;
+static UInt32 SavedModifiers = 0;
 
 LOCALPROC MyUpdateKeyboardModifiers(UInt32 theModifiers)
 {
@@ -1807,7 +1807,7 @@ LOCALPROC DoForEachDisplay(ForEachDisplayProcPtr p)
 	}
 }
 
-LOCALVAR void *datp;
+static void *datp;
 
 LOCALPROC MyMainDisplayIDProc(CGDirectDisplayID display)
 {
@@ -1873,7 +1873,7 @@ LOCALPROC MyHideCursor(void)
 	}
 }
 
-LOCALVAR bool HaveCursorHidden = false;
+static bool HaveCursorHidden = false;
 
 LOCALPROC ForceShowCursor(void)
 {
@@ -2124,14 +2124,14 @@ LOCALPROC StartUpTimeAdjust(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
+static tpSoundSamp TheSoundBuffer = nullptr;
 volatile static uint16_t ThePlayOffset;
 volatile static uint16_t TheFillOffset;
 volatile static uint16_t MinFilledSoundBuffs;
 #if dbglog_SoundBuffStats
-LOCALVAR uint16_t MaxFilledSoundBuffs;
+static uint16_t MaxFilledSoundBuffs;
 #endif
-LOCALVAR uint16_t TheWriteOffset;
+static uint16_t TheWriteOffset;
 
 LOCALPROC MySound_Start0(void)
 {
@@ -2431,11 +2431,11 @@ MySound_CallBack(SndChannelPtr theChannel, SndCommand * theCallBackCmd)
 	}
 }
 
-LOCALVAR MySoundR cur_audio;
+static MySoundR cur_audio;
 
-LOCALVAR SndCallBackUPP gCarbonSndPlayDoubleBufferCallBackUPP = NULL;
+static SndCallBackUPP gCarbonSndPlayDoubleBufferCallBackUPP = NULL;
 
-LOCALVAR SndChannelPtr sndChannel = NULL; /* our sound channel */
+static SndChannelPtr sndChannel = NULL; /* our sound channel */
 
 LOCALPROC MySound_Start(void)
 {
@@ -2660,7 +2660,7 @@ LOCALPROC MyAdjustGLforSize(int h, int v)
 	}
 }
 
-LOCALVAR bool WantScreensChangedCheck = false;
+static bool WantScreensChangedCheck = false;
 
 LOCALPROC MyUpdateOpenGLContext(void)
 {
@@ -2674,7 +2674,7 @@ LOCALPROC MyUpdateOpenGLContext(void)
 }
 
 #if 0 /* some experiments */
-LOCALVAR CGrafPtr GrabbedPort = NULL;
+static CGrafPtr GrabbedPort = NULL;
 #endif
 
 #if 0
@@ -2735,16 +2735,16 @@ LOCALPROC MyCaptureAllDisplays(void)
 }
 #endif
 
-LOCALVAR AGLPixelFormat window_fmt = NULL;
-LOCALVAR AGLContext window_ctx = NULL;
+static AGLPixelFormat window_fmt = NULL;
+static AGLContext window_ctx = NULL;
 
 #ifndef UseAGLfullscreen
 #define UseAGLfullscreen 0
 #endif
 
 #if UseAGLfullscreen
-LOCALVAR AGLPixelFormat fullscreen_fmt = NULL;
-LOCALVAR AGLContext fullscreen_ctx = NULL;
+static AGLPixelFormat fullscreen_fmt = NULL;
+static AGLContext fullscreen_ctx = NULL;
 #endif
 
 #if UseAGLfullscreen
@@ -2948,7 +2948,7 @@ LOCALPROC CheckSavedMacMsg(void)
 	}
 }
 
-LOCALVAR bool gTrueBackgroundFlag = false;
+static bool gTrueBackgroundFlag = false;
 
 LOCALPROC MyBeginDialog(void)
 {
@@ -3898,8 +3898,8 @@ static pascal OSErr GlobalReceiveHandler(WindowRef pWindow,
 	return noErr;
 }
 
-LOCALVAR DragTrackingHandlerUPP gGlobalTrackingHandler = NULL;
-LOCALVAR DragReceiveHandlerUPP gGlobalReceiveHandler = NULL;
+static DragTrackingHandlerUPP gGlobalTrackingHandler = NULL;
+static DragReceiveHandlerUPP gGlobalReceiveHandler = NULL;
 
 LOCALPROC UnPrepareForDragging(void)
 {
@@ -3972,7 +3972,7 @@ LOCALPROC HandleEventModifiers(EventRef theEvent)
 	}
 }
 
-LOCALVAR bool IsOurMouseMove;
+static bool IsOurMouseMove;
 
 static pascal OSStatus windowEventHandler(
 	EventHandlerCallRef nextHandler, EventRef theEvent,
@@ -4182,9 +4182,9 @@ enum {
 #define kMagStateAuto kNumMagStates
 
 #if MayNotFullScreen
-LOCALVAR int CurWinIndx;
-LOCALVAR bool HavePositionWins[kNumMagStates];
-LOCALVAR Point WinPositionWins[kNumMagStates];
+static int CurWinIndx;
+static bool HavePositionWins[kNumMagStates];
+static Point WinPositionWins[kNumMagStates];
 #endif
 
 LOCALFUNC bool CreateMainWindow(void)
@@ -4642,7 +4642,7 @@ enum {
 #endif
 
 #if VarFullScreen && EnableMagnify
-LOCALVAR int WinMagStates[kNumWinStates];
+static int WinMagStates[kNumWinStates];
 #endif
 
 LOCALPROC ZapWinStateVars(void)
@@ -5213,7 +5213,7 @@ LOCALFUNC bool InstallOurAppearanceClient(void)
 	return true;
 }
 
-LOCALVAR bool DisplayRegistrationCallBackSuccessful = false;
+static bool DisplayRegistrationCallBackSuccessful = false;
 
 static void DisplayRegisterReconfigurationCallback(
 	CGDirectDisplayID display, CGDisplayChangeSummaryFlags flags,

@@ -54,12 +54,12 @@ GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCou
 #include "INTLCHAR.h"
 
 
-LOCALVAR char *d_arg = NULL;
-LOCALVAR char *n_arg = NULL;
+static char *d_arg = NULL;
+static char *n_arg = NULL;
 
 #if CanGetAppPath
-LOCALVAR char *app_parent = NULL;
-LOCALVAR char *app_name = NULL;
+static char *app_parent = NULL;
+static char *app_name = NULL;
 #endif
 
 LOCALFUNC tMacErr ChildPath(char *x, char *y, char **r)
@@ -136,7 +136,7 @@ LOCALPROC MyMayFree(char *p)
 #endif
 
 #if ! dbglog_ToStdErr
-LOCALVAR FILE *dbglog_File = NULL;
+static FILE *dbglog_File = NULL;
 #endif
 
 LOCALFUNC bool dbglog_open0(void)
@@ -185,7 +185,7 @@ LOCALPROC WriteExtraErr(char *s)
 }
 #endif
 
-LOCALVAR Display *x_display = NULL;
+static Display *x_display = NULL;
 
 #define MyDbgEvents (dbglog_HAVE && 0)
 
@@ -206,27 +206,27 @@ LOCALPROC WriteDbgAtom(char *s, Atom x)
 
 /* --- information about the environment --- */
 
-LOCALVAR Atom MyXA_DeleteW = (Atom)0;
+static Atom MyXA_DeleteW = (Atom)0;
 #if EnableDragDrop
-LOCALVAR Atom MyXA_UriList = (Atom)0;
-LOCALVAR Atom MyXA_DndAware = (Atom)0;
-LOCALVAR Atom MyXA_DndEnter = (Atom)0;
-LOCALVAR Atom MyXA_DndLeave = (Atom)0;
-LOCALVAR Atom MyXA_DndDrop = (Atom)0;
-LOCALVAR Atom MyXA_DndPosition = (Atom)0;
-LOCALVAR Atom MyXA_DndStatus = (Atom)0;
-LOCALVAR Atom MyXA_DndActionCopy = (Atom)0;
-LOCALVAR Atom MyXA_DndActionPrivate = (Atom)0;
-LOCALVAR Atom MyXA_DndSelection = (Atom)0;
-LOCALVAR Atom MyXA_DndFinished = (Atom)0;
-LOCALVAR Atom MyXA_MinivMac_DndXchng = (Atom)0;
-LOCALVAR Atom MyXA_NetActiveWindow = (Atom)0;
-LOCALVAR Atom MyXA_NetSupported = (Atom)0;
+static Atom MyXA_UriList = (Atom)0;
+static Atom MyXA_DndAware = (Atom)0;
+static Atom MyXA_DndEnter = (Atom)0;
+static Atom MyXA_DndLeave = (Atom)0;
+static Atom MyXA_DndDrop = (Atom)0;
+static Atom MyXA_DndPosition = (Atom)0;
+static Atom MyXA_DndStatus = (Atom)0;
+static Atom MyXA_DndActionCopy = (Atom)0;
+static Atom MyXA_DndActionPrivate = (Atom)0;
+static Atom MyXA_DndSelection = (Atom)0;
+static Atom MyXA_DndFinished = (Atom)0;
+static Atom MyXA_MinivMac_DndXchng = (Atom)0;
+static Atom MyXA_NetActiveWindow = (Atom)0;
+static Atom MyXA_NetSupported = (Atom)0;
 #endif
 #if IncludeHostTextClipExchange
-LOCALVAR Atom MyXA_CLIPBOARD = (Atom)0;
-LOCALVAR Atom MyXA_TARGETS = (Atom)0;
-LOCALVAR Atom MyXA_MinivMac_Clip = (Atom)0;
+static Atom MyXA_CLIPBOARD = (Atom)0;
+static Atom MyXA_TARGETS = (Atom)0;
+static Atom MyXA_MinivMac_Clip = (Atom)0;
 #endif
 
 LOCALPROC LoadMyXA(void)
@@ -317,7 +317,7 @@ LOCALFUNC bool NetSupportedContains(Atom x)
 
 #if IncludePbufs
 /* this is table for Windows, any changes needed for X? */
-LOCALVAR const uint8_t Native2MacRomanTab[] = {
+static const uint8_t Native2MacRomanTab[] = {
 	0xAD, 0xB0, 0xE2, 0xC4, 0xE3, 0xC9, 0xA0, 0xE0,
 	0xF6, 0xE4, 0xB6, 0xDC, 0xCE, 0xB2, 0xB3, 0xB7,
 	0xB8, 0xD4, 0xD5, 0xD2, 0xD3, 0xA5, 0xD0, 0xD1,
@@ -372,7 +372,7 @@ LOCALFUNC tMacErr NativeTextToMacRomanPbuf(char *x, tPbuf *r)
 
 #if IncludePbufs
 /* this is table for Windows, any changes needed for X? */
-LOCALVAR const uint8_t MacRoman2NativeTab[] = {
+static const uint8_t MacRoman2NativeTab[] = {
 	0xC4, 0xC5, 0xC7, 0xC9, 0xD1, 0xD6, 0xDC, 0xE1,
 	0xE0, 0xE2, 0xE4, 0xE3, 0xE5, 0xE7, 0xE9, 0xE8,
 	0xEA, 0xEB, 0xED, 0xEC, 0xEE, 0xEF, 0xF1, 0xF3,
@@ -469,9 +469,9 @@ LOCALPROC NativeStrFromCStr(char *r, char *s)
 
 #define NotAfileRef NULL
 
-LOCALVAR FILE *Drives[NumDrives]; /* open disk image files */
+static FILE *Drives[NumDrives]; /* open disk image files */
 #if IncludeSonyGetName || IncludeSonyNew
-LOCALVAR char *DriveNames[NumDrives];
+static char *DriveNames[NumDrives];
 #endif
 
 LOCALPROC InitDrives(void)
@@ -910,7 +910,7 @@ LOCALPROC MakeNewDiskAtDefault(uint32_t L)
 
 /* --- ROM --- */
 
-LOCALVAR char *rom_path = NULL;
+static char *rom_path = NULL;
 
 #if 0
 #include <pwd.h>
@@ -1108,39 +1108,39 @@ LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
 
 /* --- video out --- */
 
-LOCALVAR Window my_main_wind = 0;
-LOCALVAR GC my_gc = NULL;
-LOCALVAR bool NeedFinishOpen1 = false;
-LOCALVAR bool NeedFinishOpen2 = false;
+static Window my_main_wind = 0;
+static GC my_gc = NULL;
+static bool NeedFinishOpen1 = false;
+static bool NeedFinishOpen2 = false;
 
-LOCALVAR XColor x_black;
-LOCALVAR XColor x_white;
+static XColor x_black;
+static XColor x_white;
 
 #if MayFullScreen
-LOCALVAR short hOffset;
-LOCALVAR short vOffset;
+static short hOffset;
+static short vOffset;
 #endif
 
 #if VarFullScreen
-LOCALVAR bool UseFullScreen = (WantInitFullScreen != 0);
+static bool UseFullScreen = (WantInitFullScreen != 0);
 #endif
 
 #if EnableMagnify
-LOCALVAR bool UseMagnify = (WantInitMagnify != 0);
+static bool UseMagnify = (WantInitMagnify != 0);
 #endif
 
-LOCALVAR bool gBackgroundFlag = false;
-LOCALVAR bool gTrueBackgroundFlag = false;
-LOCALVAR bool CurSpeedStopped = true;
+static bool gBackgroundFlag = false;
+static bool gTrueBackgroundFlag = false;
+static bool CurSpeedStopped = true;
 
 #ifndef UseColorImage
 #define UseColorImage (0 != vMacScreenDepth)
 #endif
 
-LOCALVAR XImage *my_image = NULL;
+static XImage *my_image = NULL;
 
 #if EnableMagnify
-LOCALVAR XImage *my_Scaled_image = NULL;
+static XImage *my_Scaled_image = NULL;
 #endif
 
 #if EnableMagnify
@@ -1153,7 +1153,7 @@ LOCALVAR XImage *my_Scaled_image = NULL;
 
 #if WantScalingTabl
 
-LOCALVAR uint8_t * ScalingTabl = nullptr;
+static uint8_t * ScalingTabl = nullptr;
 
 #define ScalingTablsz1 (256 * MaxScale)
 
@@ -1170,7 +1170,7 @@ LOCALVAR uint8_t * ScalingTabl = nullptr;
 
 #if WantScalingBuff
 
-LOCALVAR uint8_t * ScalingBuff = nullptr;
+static uint8_t * ScalingBuff = nullptr;
 
 
 #if UseColorImage
@@ -1591,8 +1591,8 @@ LOCALPROC MyDrawChangesAndClear(void)
 
 /* cursor hiding */
 
-LOCALVAR bool HaveCursorHidden = false;
-LOCALVAR bool WantCursorHidden = false;
+static bool HaveCursorHidden = false;
+static bool WantCursorHidden = false;
 
 LOCALPROC ForceShowCursor(void)
 {
@@ -1604,7 +1604,7 @@ LOCALPROC ForceShowCursor(void)
 	}
 }
 
-LOCALVAR Cursor blankCursor = None;
+static Cursor blankCursor = None;
 
 LOCALFUNC bool CreateMyBlankCursor(Window rootwin)
 /*
@@ -2183,7 +2183,7 @@ enum {
 	MT2KeySym was generated by a script from
 	enum and comments above.
 */
-LOCALVAR const KeySym MT2KeySym[kNumMTs + 1] = {
+static const KeySym MT2KeySym[kNumMTs + 1] = {
 	XK_Escape, /* kMT_Escape */
 	XK_1, /* kMT_1 */
 	XK_2, /* kMT_2 */
@@ -2487,7 +2487,7 @@ LOCALVAR const KeySym MT2KeySym[kNumMTs + 1] = {
 	MT2MKC was generated by a script from
 	enum and comments above.
 */
-LOCALVAR const uint8_t MT2MKC[kNumMTs + 1] = {
+static const uint8_t MT2MKC[kNumMTs + 1] = {
 	MKC_formac_Escape, /* kMT_Escape */
 	MKC_1, /* kMT_1 */
 	MKC_2, /* kMT_2 */
@@ -2787,7 +2787,7 @@ LOCALVAR const uint8_t MT2MKC[kNumMTs + 1] = {
 	0 /* just so last above line can end in ',' */
 };
 
-LOCALVAR uint8_t KC2MKC[256];
+static uint8_t KC2MKC[256];
 	/*
 		translate X11 key code to Macintosh key code
 	*/
@@ -2954,7 +2954,7 @@ LOCALPROC DoKeyCode(int i, bool down)
 }
 
 #if MayFullScreen && GrabKeysFullScreen
-LOCALVAR bool KeyboardIsGrabbed = false;
+static bool KeyboardIsGrabbed = false;
 #endif
 
 #if MayFullScreen && GrabKeysFullScreen
@@ -2979,8 +2979,8 @@ LOCALPROC MyUnGrabKeyboard(void)
 }
 #endif
 
-LOCALVAR bool NoKeyRepeat = false;
-LOCALVAR int SaveKeyRepeat;
+static bool NoKeyRepeat = false;
+static int SaveKeyRepeat;
 
 LOCALPROC DisableKeyRepeat(void)
 {
@@ -3010,7 +3010,7 @@ LOCALPROC RestoreKeyRepeat(void)
 	}
 }
 
-LOCALVAR bool WantCmdOptOnReconnect = false;
+static bool WantCmdOptOnReconnect = false;
 
 LOCALPROC GetTheDownKeys(void)
 {
@@ -3054,19 +3054,19 @@ LOCALPROC DisconnectKeyCodes3(void)
 
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
 
-LOCALVAR uint32_t TrueEmulatedTime = 0;
+static uint32_t TrueEmulatedTime = 0;
 
 #include "DATE2SEC.h"
 
 #define TicksPerSecond 1000000
 
-LOCALVAR bool HaveTimeDelta = false;
-LOCALVAR uint32_t TimeDelta;
+static bool HaveTimeDelta = false;
+static uint32_t TimeDelta;
 
-LOCALVAR uint32_t NewMacDateInSeconds;
+static uint32_t NewMacDateInSeconds;
 
-LOCALVAR uint32_t LastTimeSec;
-LOCALVAR uint32_t LastTimeUsec;
+static uint32_t LastTimeSec;
+static uint32_t LastTimeUsec;
 
 LOCALPROC GetCurrentTicks(void)
 {
@@ -3095,8 +3095,8 @@ LOCALPROC GetCurrentTicks(void)
 
 #define MyInvTimeStep 16626 /* TicksPerSecond / 60.14742 */
 
-LOCALVAR uint32_t NextTimeSec;
-LOCALVAR uint32_t NextTimeUsec;
+static uint32_t NextTimeSec;
+static uint32_t NextTimeUsec;
 
 LOCALPROC IncrNextTime(void)
 {
@@ -3207,11 +3207,11 @@ LOCALFUNC bool InitLocationDat(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
-LOCALVAR uint16_t ThePlayOffset;
-LOCALVAR uint16_t TheFillOffset;
-LOCALVAR uint16_t TheWriteOffset;
-LOCALVAR uint16_t MinFilledSoundBuffs;
+static tpSoundSamp TheSoundBuffer = nullptr;
+static uint16_t ThePlayOffset;
+static uint16_t TheFillOffset;
+static uint16_t TheWriteOffset;
+static uint16_t MinFilledSoundBuffs;
 
 LOCALPROC MySound_Start0(void)
 {
@@ -3305,7 +3305,7 @@ LOCALPROC CheckSavedMacMsg(void)
 /* --- clipboard --- */
 
 #if IncludeHostTextClipExchange
-LOCALVAR uint8_t * MyClipBuffer = NULL;
+static uint8_t * MyClipBuffer = NULL;
 #endif
 
 #if IncludeHostTextClipExchange
@@ -3612,7 +3612,7 @@ LOCALPROC ParseUriList(char *s)
 #endif
 
 #if EnableDragDrop
-LOCALVAR Window PendingDragWindow = None;
+static Window PendingDragWindow = None;
 #endif
 
 #if EnableDragDrop
@@ -3881,12 +3881,12 @@ LOCALFUNC bool EntropyGather(void)
 #define UseMotionEvents 1
 
 #if UseMotionEvents
-LOCALVAR bool CaughtMouse = false;
+static bool CaughtMouse = false;
 #endif
 
 #if MayNotFullScreen
-LOCALVAR int SavedTransH;
-LOCALVAR int SavedTransV;
+static int SavedTransH;
+static int SavedTransV;
 #endif
 
 /* --- event handling for main window --- */
@@ -4220,10 +4220,10 @@ LOCALPROC HandleTheEvent(XEvent *theEvent)
 
 /* --- main window creation and disposal --- */
 
-LOCALVAR int my_argc;
-LOCALVAR char **my_argv;
+static int my_argc;
+static char **my_argv;
 
-LOCALVAR char *display_name = NULL;
+static char *display_name = NULL;
 
 LOCALFUNC bool Screen_Init(void)
 {
@@ -4377,10 +4377,10 @@ enum {
 #define kMagStateAuto kNumMagStates
 
 #if MayNotFullScreen
-LOCALVAR int CurWinIndx;
-LOCALVAR bool HavePositionWins[kNumMagStates];
-LOCALVAR int WinPositionWinsH[kNumMagStates];
-LOCALVAR int WinPositionWinsV[kNumMagStates];
+static int CurWinIndx;
+static bool HavePositionWins[kNumMagStates];
+static int WinPositionWinsH[kNumMagStates];
+static int WinPositionWinsV[kNumMagStates];
 #endif
 
 #if EnableRecreateW
@@ -4671,7 +4671,7 @@ LOCALFUNC bool CreateMainWindow(void)
 }
 
 #if MayFullScreen
-LOCALVAR bool GrabMachine = false;
+static bool GrabMachine = false;
 #endif
 
 #if MayFullScreen
@@ -4765,9 +4765,9 @@ LOCALPROC SetMyWState(MyWState *r)
 #endif
 
 #if EnableRecreateW
-LOCALVAR bool WantRestoreCursPos = false;
-LOCALVAR uint16_t RestoreMouseH;
-LOCALVAR uint16_t RestoreMouseV;
+static bool WantRestoreCursPos = false;
+static uint16_t RestoreMouseH;
+static uint16_t RestoreMouseV;
 #endif
 
 #if EnableRecreateW
@@ -4909,7 +4909,7 @@ enum {
 #endif
 
 #if VarFullScreen && EnableMagnify
-LOCALVAR int WinMagStates[kNumWinStates];
+static int WinMagStates[kNumWinStates];
 #endif
 
 LOCALPROC ZapWinStateVars(void)

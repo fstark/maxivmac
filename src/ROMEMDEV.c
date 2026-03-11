@@ -38,7 +38,7 @@
 #endif
 
 #if UseSonyPatch
-LOCALVAR const uint8_t sony_driver[] = {
+static const uint8_t sony_driver[] = {
 /*
 	Replacement for .Sony driver
 	68k machine code, compiled from mydriver.a
@@ -106,7 +106,7 @@ LOCALVAR const uint8_t sony_driver[] = {
 #endif
 
 #if UseSonyPatch
-LOCALVAR const uint8_t my_disk_icon[] = {
+static const uint8_t my_disk_icon[] = {
 	0x7F, 0xFF, 0xFF, 0xF0,
 	0x81, 0x00, 0x01, 0x08,
 	0x81, 0x00, 0x71, 0x04,

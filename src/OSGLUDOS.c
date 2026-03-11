@@ -46,7 +46,7 @@ GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCou
 #endif
 
 #if ! dbglog_ToStdErr
-LOCALVAR FILE *dbglog_File = NULL;
+static FILE *dbglog_File = NULL;
 #endif
 
 LOCALFUNC bool dbglog_open0(void) {
@@ -119,7 +119,7 @@ LOCALPROC WriteDbgAtom(char *s, Atom x) {
 
 #if IncludePbufs
 /* this is table for Windows, any changes needed for X? */
-LOCALVAR const uint8_t Native2MacRomanTab[] = {
+static const uint8_t Native2MacRomanTab[] = {
 	0xAD, 0xB0, 0xE2, 0xC4, 0xE3, 0xC9, 0xA0, 0xE0,
 	0xF6, 0xE4, 0xB6, 0xDC, 0xCE, 0xB2, 0xB3, 0xB7,
 	0xB8, 0xD4, 0xD5, 0xD2, 0xD3, 0xA5, 0xD0, 0xD1,
@@ -173,7 +173,7 @@ LOCALFUNC tMacErr NativeTextToMacRomanPbuf(char *x, tPbuf *r) {
 
 #if IncludePbufs
 /* this is table for Windows, any changes needed for X? */
-LOCALVAR const uint8_t MacRoman2NativeTab[] = {
+static const uint8_t MacRoman2NativeTab[] = {
 	0xC4, 0xC5, 0xC7, 0xC9, 0xD1, 0xD6, 0xDC, 0xE1,
 	0xE0, 0xE2, 0xE4, 0xE3, 0xE5, 0xE7, 0xE9, 0xE8,
 	0xEA, 0xEB, 0xED, 0xEC, 0xEE, 0xEF, 0xF1, 0xF3,
@@ -269,9 +269,9 @@ LOCALPROC NativeStrFromCStr(char *r, char *s) {
 
 #define NotAfileRef NULL
 
-LOCALVAR FILE *Drives[NumDrives]; /* open disk image files */
+static FILE *Drives[NumDrives]; /* open disk image files */
 #if IncludeSonyGetName || IncludeSonyNew
-LOCALVAR char *DriveNames[NumDrives];
+static char *DriveNames[NumDrives];
 #endif
 
 GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
@@ -512,7 +512,7 @@ LOCALPROC MakeNewDiskAtDefault(uint32_t L) {
 
 /* --- ROM --- */
 
-LOCALVAR char *rom_path = NULL;
+static char *rom_path = NULL;
 
 LOCALFUNC tMacErr LoadMacRomFrom(char *path) {
 	tMacErr err;
@@ -553,9 +553,9 @@ LOCALFUNC bool LoadMacRom(void) {
 }
 
 /* --- command line parsing --- */
-LOCALVAR int my_argc;
-LOCALVAR char **my_argv;
-LOCALVAR int mouseEdgeStick = 0;
+static int my_argc;
+static char **my_argv;
+static int mouseEdgeStick = 0;
 
 LOCALFUNC bool ScanCommandLine(void) {
 	int i;
@@ -584,8 +584,8 @@ LOCALFUNC bool ScanCommandLine(void) {
 
 /* VESA_CopyToScreen(FrameBuffer, sizeof(FrameBuffer)); */
 
-LOCALVAR bool CurSpeedStopped = true;
-LOCALVAR bool FrameBuffer[VESAWidth*VESAHeight];
+static bool CurSpeedStopped = true;
+static bool FrameBuffer[VESAWidth*VESAHeight];
 int renderOffset[2] = { (VESAWidth - vMacScreenWidth) / 2, (VESAHeight - vMacScreenHeight) / 2};
 
 /* https://www.delorie.com/djgpp/doc/ug/graphics/vesa.html.en */
@@ -1071,10 +1071,10 @@ LOCALPROC CheckMouseState(void) {
 
 /* --- keyboard input --- */
 
-LOCALVAR volatile int LastKeyboardKey = MKC_None;
-LOCALVAR volatile int KeyboardKey = MKC_None;
-LOCALVAR unsigned int CapsLock = false;
-LOCALVAR unsigned char KC2MKC[256] = {
+static volatile int LastKeyboardKey = MKC_None;
+static volatile int KeyboardKey = MKC_None;
+static unsigned int CapsLock = false;
+static unsigned char KC2MKC[256] = {
 	MKC_None, MKC_formac_Escape, MKC_1, MKC_2, MKC_3, MKC_4, MKC_5, MKC_6, MKC_7, MKC_8, MKC_9, MKC_0, MKC_Minus, MKC_Equal, MKC_BackSpace, MKC_Tab, MKC_Q, MKC_W, MKC_E, MKC_R, MKC_T, MKC_Y, MKC_U, MKC_I, MKC_O, MKC_P, MKC_LeftBracket, MKC_RightBracket, MKC_formac_Enter, MKC_formac_Control, MKC_A, MKC_S, MKC_D, MKC_F, MKC_G, MKC_H, MKC_J, MKC_K, MKC_L, MKC_SemiColon, MKC_SingleQuote, MKC_formac_Grave, MKC_formac_Shift, MKC_formac_Slash, MKC_Z, MKC_X, MKC_C, MKC_V, MKC_B, MKC_N, MKC_M, MKC_Comma, MKC_Period, MKC_formac_Slash, MKC_formac_Shift, MKC_KPMultiply, MKC_formac_Option, MKC_Space, MKC_formac_CapsLock, MKC_formac_F1, MKC_formac_F2, MKC_formac_F3, MKC_formac_F4, MKC_formac_F5, MKC_F6, MKC_F7, MKC_F8, MKC_F9, MKC_F10, MKC_Clear, MKC_ScrollLock, MKC_formac_Home, MKC_Up, MKC_formac_PageUp, MKC_KPSubtract, MKC_Left, MKC_KP5, MKC_Right, MKC_KPAdd, MKC_formac_End, MKC_Down, MKC_formac_PageDown, MKC_formac_Help, MKC_formac_ForwardDel, MKC_None, MKC_None, MKC_formac_BackSlash, MKC_F11, MKC_F12, MKC_KPEqual, MKC_None, MKC_formac_Command, MKC_formac_Command, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None,
 	MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None, MKC_None
 };
@@ -1096,19 +1096,19 @@ LOCALPROC CheckKeyboardState(void) {
 
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
 
-LOCALVAR uint32_t TrueEmulatedTime = 0;
+static uint32_t TrueEmulatedTime = 0;
 
 #include "DATE2SEC.h"
 
 #define TicksPerSecond 1000000
 
-LOCALVAR bool HaveTimeDelta = false;
-LOCALVAR uint32_t TimeDelta;
+static bool HaveTimeDelta = false;
+static uint32_t TimeDelta;
 
-LOCALVAR uint32_t NewMacDateInSeconds;
+static uint32_t NewMacDateInSeconds;
 
-LOCALVAR uint32_t LastTimeSec;
-LOCALVAR uint32_t LastTimeUsec;
+static uint32_t LastTimeSec;
+static uint32_t LastTimeUsec;
 
 LOCALPROC GetCurrentTicks(void) {
 	struct timeval t;
@@ -1136,8 +1136,8 @@ LOCALPROC GetCurrentTicks(void) {
 
 #define MyInvTimeStep 16626 /* TicksPerSecond / 60.14742 */
 
-LOCALVAR uint32_t NextTimeSec;
-LOCALVAR uint32_t NextTimeUsec;
+static uint32_t NextTimeSec;
+static uint32_t NextTimeUsec;
 
 LOCALPROC IncrNextTime(void) {
 	NextTimeUsec += MyInvTimeStep;

@@ -149,7 +149,7 @@ typedef void (my_reg_call *ArgSetDstP)(uint32_t f);
 #define HaveGlbReg 0
 #endif
 
-LOCALVAR struct regstruct
+static struct regstruct
 {
 	uint32_t regs[16]; /* Data and Address registers */
 
@@ -297,7 +297,7 @@ register uint8_t * g_pc_pHi asm (r_pc_pHi);
 #endif
 
 #if WantDumpTable
-LOCALVAR uint32_t DumpTable[kNumIKinds];
+static uint32_t DumpTable[kNumIKinds];
 #endif
 
 #if USE_PCLIMIT
@@ -557,7 +557,7 @@ FORWARDPROC DoCodeFPU_dflt(void);
 
 typedef void (*func_pointer_t)(void);
 
-LOCALVAR const func_pointer_t OpDispatch[kNumIKinds + 1] = {
+static const func_pointer_t OpDispatch[kNumIKinds + 1] = {
 	DoCodeTst /* kIKindTst */,
 	DoCodeCmpB /* kIKindCmpB */,
 	DoCodeCmpW /* kIKindCmpW */,
@@ -1192,7 +1192,7 @@ LOCALFUNC uint32_t my_reg_call DecodeAddr_PCIndex(uint8_t ArgDat)
 
 typedef uint32_t (my_reg_call *DecodeAddrP)(uint8_t ArgDat);
 
-LOCALVAR const DecodeAddrP DecodeAddrDispatch[kNumAMds] = {
+static const DecodeAddrP DecodeAddrDispatch[kNumAMds] = {
 	(DecodeAddrP)nullptr /* kAMdRegB */,
 	(DecodeAddrP)nullptr /* kAMdRegW */,
 	(DecodeAddrP)nullptr /* kAMdRegL */,
@@ -1461,7 +1461,7 @@ LOCALFUNC uint32_t my_reg_call DecodeGetSrcDst_Dat4(uint8_t ArgDat)
 
 typedef uint32_t (my_reg_call *DecodeGetSrcDstP)(uint8_t ArgDat);
 
-LOCALVAR const DecodeGetSrcDstP DecodeGetSrcDstDispatch[kNumAMds] = {
+static const DecodeGetSrcDstP DecodeGetSrcDstDispatch[kNumAMds] = {
 	DecodeGetSrcDst_RegB /* kAMdRegB */,
 	DecodeGetSrcDst_RegW /* kAMdRegW */,
 	DecodeGetSrcDst_RegL /* kAMdRegL */,
@@ -1722,7 +1722,7 @@ LOCALPROC my_reg_call DecodeSetSrcDst_PCIndexL(uint32_t v, uint8_t ArgDat)
 
 typedef void (my_reg_call *DecodeSetSrcDstP)(uint32_t v, uint8_t ArgDat);
 
-LOCALVAR const DecodeSetSrcDstP DecodeSetSrcDstDispatch[kNumAMds] = {
+static const DecodeSetSrcDstP DecodeSetSrcDstDispatch[kNumAMds] = {
 	DecodeSetSrcDst_RegB /* kAMdRegB */,
 	DecodeSetSrcDst_RegW /* kAMdRegW */,
 	DecodeSetSrcDst_RegL /* kAMdRegL */,
@@ -2054,7 +2054,7 @@ LOCALFUNC uint32_t my_reg_call DecodeGetSetSrcDst_PCIndexL(uint8_t ArgDat)
 
 typedef uint32_t (my_reg_call *DecodeGetSetSrcDstP)(uint8_t ArgDat);
 
-LOCALVAR const DecodeGetSetSrcDstP
+static const DecodeGetSetSrcDstP
 	DecodeGetSetSrcDstDispatch[kNumAMds] =
 {
 	DecodeGetSetSrcDst_RegB /* kAMdRegB */,
@@ -2932,7 +2932,7 @@ FORWARDPROC my_reg_call cctrue_Dflt(cond_actP t_act, cond_actP f_act);
 
 typedef void (my_reg_call *cctrueP)(cond_actP t_act, cond_actP f_act);
 
-LOCALVAR const cctrueP cctrueDispatch[CCdispSz + 1] = {
+static const cctrueP cctrueDispatch[CCdispSz + 1] = {
 	cctrue_T /* kLazyFlagsDefault T */,
 	cctrue_F /* kLazyFlagsDefault F */,
 	cctrue_HI /* kLazyFlagsDefault HI */,
@@ -3449,7 +3449,7 @@ LOCALPROC NeedDefaultLazyXFlagDefault(void)
 
 typedef void (*NeedLazyFlagP)(void);
 
-LOCALVAR const NeedLazyFlagP
+static const NeedLazyFlagP
 	NeedLazyXFlagDispatch[kNumLazyFlagsKinds + 1] =
 {
 	NeedDefaultLazyXFlagDefault /* kLazyFlagsDefault */,
@@ -3859,7 +3859,7 @@ LOCALPROC NeedDefaultLazyFlagsAslL(void)
 FORWARDPROC NeedDefaultLazyFlagsZSet(void);
 #endif
 
-LOCALVAR const NeedLazyFlagP
+static const NeedLazyFlagP
 	NeedLazyFlagDispatch[kNumLazyFlagsKinds + 1] =
 {
 	NeedDefaultLazyXFlag /* kLazyFlagsDefault */,

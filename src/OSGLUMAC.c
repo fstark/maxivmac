@@ -128,8 +128,8 @@ LOCALFUNC bool OSTrapAvailable(short trap_num)
 		GetToolTrapAddress(_Unimplemented);
 }
 
-LOCALVAR bool MyEnvrAttrWaitNextEventAvail;
-LOCALVAR bool HaveEnvrAttrWaitNextEventAvail = false;
+static bool MyEnvrAttrWaitNextEventAvail;
+static bool HaveEnvrAttrWaitNextEventAvail = false;
 
 LOCALFUNC bool HaveWaitNextEventAvail(void)
 {
@@ -141,8 +141,8 @@ LOCALFUNC bool HaveWaitNextEventAvail(void)
 	return MyEnvrAttrWaitNextEventAvail;
 }
 
-LOCALVAR bool MyEnvrAttrGestaltAvail;
-LOCALVAR bool HaveEnvrAttrGestaltAvail = false;
+static bool MyEnvrAttrGestaltAvail;
+static bool HaveEnvrAttrGestaltAvail = false;
 
 LOCALFUNC bool HaveGestaltAvail(void)
 {
@@ -172,8 +172,8 @@ LOCALFUNC bool HaveGestaltAvail(void)
 
 #endif
 
-LOCALVAR bool MyEnvrAttrAliasMgrAvail;
-LOCALVAR bool HaveEnvrAttrAliasMgrAvail = false;
+static bool MyEnvrAttrAliasMgrAvail;
+static bool HaveEnvrAttrAliasMgrAvail = false;
 
 LOCALFUNC bool HaveAliasMgrAvail(void)
 {
@@ -189,8 +189,8 @@ LOCALFUNC bool HaveAliasMgrAvail(void)
 	return MyEnvrAttrAliasMgrAvail;
 }
 
-LOCALVAR bool MyEnvrAttrAppleEvtMgrAvail;
-LOCALVAR bool HaveEnvrAttrAppleEvtMgrAvail = false;
+static bool MyEnvrAttrAppleEvtMgrAvail;
+static bool HaveEnvrAttrAppleEvtMgrAvail = false;
 
 LOCALFUNC bool HaveAppleEvtMgrAvail(void)
 {
@@ -208,8 +208,8 @@ LOCALFUNC bool HaveAppleEvtMgrAvail(void)
 
 #if EnableDragDrop
 
-LOCALVAR bool MyEnvrAttrDragMgrAvail;
-LOCALVAR bool HaveEnvrAttrDragMgrAvail = false;
+static bool MyEnvrAttrDragMgrAvail;
+static bool HaveEnvrAttrDragMgrAvail = false;
 
 LOCALFUNC bool HaveDragMgrAvail(void)
 {
@@ -232,8 +232,8 @@ LOCALFUNC bool HaveDragMgrAvail(void)
 #endif
 
 #if Windows85APIAvail
-LOCALVAR bool MyEnvrAttrHideShowMenuAvail;
-LOCALVAR bool HaveEnvrAttrHideShowMenuAvail = false;
+static bool MyEnvrAttrHideShowMenuAvail;
+static bool HaveEnvrAttrHideShowMenuAvail = false;
 
 LOCALFUNC bool HaveHideShowMenuAvail(void)
 {
@@ -250,8 +250,8 @@ LOCALFUNC bool HaveHideShowMenuAvail(void)
 #endif
 
 #if AppearanceAvail
-LOCALVAR bool MyEnvrAttrAppearanceAvail;
-LOCALVAR bool HaveEnvrAttrAppearanceAvail = false;
+static bool MyEnvrAttrAppearanceAvail;
+static bool HaveEnvrAttrAppearanceAvail = false;
 
 LOCALFUNC bool HaveAppearanceAvail(void)
 {
@@ -268,8 +268,8 @@ LOCALFUNC bool HaveAppearanceAvail(void)
 #endif
 
 #if HaveCPUfamM68K
-LOCALVAR bool MyEnvrAttrSndMngrAvail;
-LOCALVAR bool HaveEnvrAttrSndMngrAvail = false;
+static bool MyEnvrAttrSndMngrAvail;
+static bool HaveEnvrAttrSndMngrAvail = false;
 
 LOCALFUNC bool HaveSndMngrAvail(void)
 {
@@ -282,8 +282,8 @@ LOCALFUNC bool HaveSndMngrAvail(void)
 #endif
 
 #if NavigationAvail
-LOCALVAR bool MyEnvrAttrNavServicesAvail;
-LOCALVAR bool HaveEnvrAttrNavServicesAvail = false;
+static bool MyEnvrAttrNavServicesAvail;
+static bool HaveEnvrAttrNavServicesAvail = false;
 
 LOCALFUNC bool HaveNavServicesAvail(void)
 {
@@ -296,8 +296,8 @@ LOCALFUNC bool HaveNavServicesAvail(void)
 #endif
 
 #if HaveCPUfamM68K
-LOCALVAR bool MyEnvrAttrFSSpecCallsAvail;
-LOCALVAR bool HaveEnvrAttrFSSpecCallsAvail = false;
+static bool MyEnvrAttrFSSpecCallsAvail;
+static bool HaveEnvrAttrFSSpecCallsAvail = false;
 
 LOCALFUNC bool HaveFSSpecCallsAvail(void)
 {
@@ -315,8 +315,8 @@ LOCALFUNC bool HaveFSSpecCallsAvail(void)
 #endif
 
 #if Windows85APIAvail
-LOCALVAR bool MyEnvrAttrNewWndMgrAvail;
-LOCALVAR bool HaveEnvrAttrNewWndMgrAvail = false;
+static bool MyEnvrAttrNewWndMgrAvail;
+static bool HaveEnvrAttrNewWndMgrAvail = false;
 
 LOCALFUNC bool HaveNewWndMgrAvail(void)
 {
@@ -338,7 +338,7 @@ LOCALFUNC bool HaveNewWndMgrAvail(void)
 #if defined(__SC__) || ((defined(powerc) || defined(__powerc)) \
 	&& ! defined(__MWERKS__))
 
-/* GLOBALVAR */ QDGlobals qd;
+/* */ QDGlobals qd;
 #endif
 
 LOCALFUNC bool InitMacManagers(void)
@@ -676,8 +676,8 @@ LOCALFUNC tMyErr MyOpenNewFile_v3(MyDir_R *d, StringPtr s,
 }
 
 
-LOCALVAR short dbglog_File = NotAfileRef;
-LOCALVAR tMyErr dbglog_err = noErr;
+static short dbglog_File = NotAfileRef;
+static tMyErr dbglog_err = noErr;
 
 LOCALFUNC bool dbglog_open0(void)
 {
@@ -941,23 +941,23 @@ LOCALPROC MyGetGrayRgnBounds(Rect *r)
 
 /* --- main window data --- */
 
-LOCALVAR WindowPtr gMyMainWindow = NULL;
+static WindowPtr gMyMainWindow = NULL;
 
 #if MayFullScreen
-LOCALVAR short hOffset;
-LOCALVAR short vOffset;
+static short hOffset;
+static short vOffset;
 #endif
 
 #if MayFullScreen
-LOCALVAR bool GrabMachine = false;
+static bool GrabMachine = false;
 #endif
 
 #if VarFullScreen
-LOCALVAR bool UseFullScreen = (WantInitFullScreen != 0);
+static bool UseFullScreen = (WantInitFullScreen != 0);
 #endif
 
 #if EnableMagnify
-LOCALVAR bool UseMagnify = (WantInitMagnify != 0);
+static bool UseMagnify = (WantInitMagnify != 0);
 #endif
 
 #if EnableMagnify
@@ -1010,12 +1010,12 @@ LOCALPROC SetScrnRectFromCoords(Rect *r,
 #endif
 
 #if EnableMagnify
-LOCALVAR uint8_t * ScalingBuff = nullptr;
+static uint8_t * ScalingBuff = nullptr;
 #endif
 
 #if EnableMagnify
 
-LOCALVAR uint8_t * ScalingTabl = nullptr;
+static uint8_t * ScalingTabl = nullptr;
 #define ScalingTablsz (256 * MyWindowScale)
 
 #define ScrnMapr_DoMap UpdateScaledBWCopy
@@ -1237,7 +1237,7 @@ GLOBALOSGLUPROC DoneWithDrawingForTick(void)
 
 /* --- keyboard --- */
 
-LOCALVAR uint32_t LastEmKeys[4];
+static uint32_t LastEmKeys[4];
 
 LOCALPROC ZapEmKeys(void)
 {
@@ -1274,7 +1274,7 @@ LOCALPROC CheckKeyBoardState(void)
 	}
 }
 
-LOCALVAR WantCmdOptOnReconnect = false;
+static WantCmdOptOnReconnect = false;
 
 #define KeyMap_TestBit(m, key) \
 	((((uint8_t *)m)[(key) / 8] & (1 << ((key) & 7))) != 0)
@@ -1322,8 +1322,8 @@ LOCALPROC ReconnectKeyCodes3(void)
 
 /* --- cursor hiding --- */
 
-LOCALVAR bool HaveCursorHidden = false;
-LOCALVAR bool WantCursorHidden = false;
+static bool HaveCursorHidden = false;
+static bool WantCursorHidden = false;
 
 LOCALPROC ForceShowCursor(void)
 {
@@ -1686,9 +1686,9 @@ LOCALPROC DisconnectKeyCodes3(void)
 	overflows and wraps.
 */
 
-LOCALVAR uint32_t TrueEmulatedTime = 0;
+static uint32_t TrueEmulatedTime = 0;
 
-LOCALVAR long int LastTime;
+static long int LastTime;
 
 LOCALPROC StartUpTimeAdjust(void)
 {
@@ -1781,14 +1781,14 @@ LOCALFUNC bool InitLocationDat(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
+static tpSoundSamp TheSoundBuffer = nullptr;
 volatile static uint16_t ThePlayOffset;
 volatile static uint16_t TheFillOffset;
 volatile static uint16_t MinFilledSoundBuffs;
 #if dbglog_SoundBuffStats
-LOCALVAR uint16_t MaxFilledSoundBuffs;
+static uint16_t MaxFilledSoundBuffs;
 #endif
-LOCALVAR uint16_t TheWriteOffset;
+static uint16_t TheWriteOffset;
 
 LOCALPROC MySound_Start0(void)
 {
@@ -2088,11 +2088,11 @@ MySound_CallBack(SndChannelPtr theChannel, SndCommand * theCallBackCmd)
 	}
 }
 
-LOCALVAR MySoundR cur_audio;
+static MySoundR cur_audio;
 
-LOCALVAR SndCallBackUPP gCarbonSndPlayDoubleBufferCallBackUPP = NULL;
+static SndCallBackUPP gCarbonSndPlayDoubleBufferCallBackUPP = NULL;
 
-LOCALVAR SndChannelPtr sndChannel = NULL; /* our sound channel */
+static SndChannelPtr sndChannel = NULL; /* our sound channel */
 
 LOCALPROC MySound_Start(void)
 {
@@ -2335,14 +2335,14 @@ LOCALPROC NativeStrFromCStr(uint8_t * r, char *s, bool AddEllipsis)
 #endif
 
 #if HogCPU
-LOCALVAR long NoEventsCounter = 0;
+static long NoEventsCounter = 0;
 #endif
 
-LOCALVAR bool gBackgroundFlag = false;
-LOCALVAR bool gTrueBackgroundFlag = false;
-LOCALVAR bool CurSpeedStopped = true;
+static bool gBackgroundFlag = false;
+static bool gTrueBackgroundFlag = false;
+static bool CurSpeedStopped = true;
 
-LOCALVAR bool ADialogIsUp = false;
+static bool ADialogIsUp = false;
 
 LOCALPROC MyBeginDialog(void)
 {
@@ -2413,8 +2413,8 @@ LOCALPROC CheckSavedMacMsg(void)
 
 #if MayFullScreen
 #if MightNotHaveWindows85Avail
-LOCALVAR RgnHandle GrayRgnSave = NULL;
-LOCALVAR short mBarHeightSave;
+static RgnHandle GrayRgnSave = NULL;
+static short mBarHeightSave;
 #endif
 #endif
 
@@ -2506,7 +2506,7 @@ LOCALPROC My_ShowMenuBar(void)
 #endif
 
 #if IncludePbufs
-LOCALVAR Handle PbufDat[NumPbufs];
+static Handle PbufDat[NumPbufs];
 #endif
 
 #if IncludePbufs
@@ -2663,9 +2663,9 @@ GLOBALOSGLUFUNC tMacErr HTCEimport(tPbuf *r)
 
 /* --- drives --- */
 
-LOCALVAR short Drives[NumDrives]; /* open disk image files */
+static short Drives[NumDrives]; /* open disk image files */
 #if (IncludeSonyGetName || IncludeSonyNew) && HaveCPUfamM68K
-LOCALVAR Handle DriveNames[NumDrives];
+static Handle DriveNames[NumDrives];
 #endif
 
 LOCALPROC InitDrives(void)
@@ -3271,7 +3271,7 @@ LOCALPROC InsertADisk0(void)
 #define MyAppIsBundle 0
 #endif
 
-LOCALVAR MyDir_R MyDatDir;
+static MyDir_R MyDatDir;
 
 #if MyAppIsBundle
 LOCALFUNC bool DirectorySpec2DirId(FSSpec *spec, long *dirID)
@@ -4379,9 +4379,9 @@ enum {
 #define kMagStateAuto kNumMagStates
 
 #if MayNotFullScreen
-LOCALVAR int CurWinIndx;
-LOCALVAR bool HavePositionWins[kNumMagStates];
-LOCALVAR Point WinPositionWins[kNumMagStates];
+static int CurWinIndx;
+static bool HavePositionWins[kNumMagStates];
+static Point WinPositionWins[kNumMagStates];
 #endif
 
 LOCALFUNC bool CreateMainWindow(void)
@@ -4712,7 +4712,7 @@ enum {
 #endif
 
 #if VarFullScreen && EnableMagnify
-LOCALVAR int WinMagStates[kNumWinStates];
+static int WinMagStates[kNumWinStates];
 #endif
 
 LOCALPROC ZapWinStateVars(void)

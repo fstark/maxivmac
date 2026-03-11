@@ -36,92 +36,92 @@
 #define EnableMoveMouse 0
 #endif
 
-GLOBALVAR uint8_t * ROM = nullptr;
-LOCALVAR bool ROM_loaded = false;
+uint8_t * ROM = nullptr;
+static bool ROM_loaded = false;
 
-GLOBALVAR uint32_t vSonyWritableMask = 0;
-GLOBALVAR uint32_t vSonyInsertedMask = 0;
+uint32_t vSonyWritableMask = 0;
+uint32_t vSonyInsertedMask = 0;
 
 #if IncludeSonyRawMode
-GLOBALVAR bool vSonyRawMode = false;
+bool vSonyRawMode = false;
 #endif
 
 #if IncludeSonyNew
-GLOBALVAR bool vSonyNewDiskWanted = false;
-GLOBALVAR uint32_t vSonyNewDiskSize;
+bool vSonyNewDiskWanted = false;
+uint32_t vSonyNewDiskSize;
 #endif
 
 #if IncludeSonyNameNew
-GLOBALVAR tPbuf vSonyNewDiskName = NotAPbuf;
+tPbuf vSonyNewDiskName = NotAPbuf;
 #endif
 
-GLOBALVAR uint32_t CurMacDateInSeconds = 0;
+uint32_t CurMacDateInSeconds = 0;
 #if AutoLocation
-GLOBALVAR uint32_t CurMacLatitude = 0;
-GLOBALVAR uint32_t CurMacLongitude = 0;
+uint32_t CurMacLatitude = 0;
+uint32_t CurMacLongitude = 0;
 #endif
 #if AutoTimeZone
-GLOBALVAR uint32_t CurMacDelta = 0;
+uint32_t CurMacDelta = 0;
 #endif
 
 #if 0 != vMacScreenDepth
-GLOBALVAR bool UseColorMode = false;
-GLOBALVAR bool ColorModeWorks = false;
+bool UseColorMode = false;
+bool ColorModeWorks = false;
 #endif
 
 #if 0 != vMacScreenDepth
-GLOBALVAR bool ColorMappingChanged = false;
+bool ColorMappingChanged = false;
 #endif
 
 #if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-GLOBALVAR uint16_t CLUT_reds[CLUT_size];
-GLOBALVAR uint16_t CLUT_greens[CLUT_size];
-GLOBALVAR uint16_t CLUT_blues[CLUT_size];
+uint16_t CLUT_reds[CLUT_size];
+uint16_t CLUT_greens[CLUT_size];
+uint16_t CLUT_blues[CLUT_size];
 #endif
 
-LOCALVAR bool RequestMacOff = false;
+static bool RequestMacOff = false;
 
-GLOBALVAR bool ForceMacOff = false;
+bool ForceMacOff = false;
 
-GLOBALVAR bool WantMacInterrupt = false;
+bool WantMacInterrupt = false;
 
-GLOBALVAR bool WantMacReset = false;
+bool WantMacReset = false;
 
-GLOBALVAR uint8_t SpeedValue = WantInitSpeedValue;
+uint8_t SpeedValue = WantInitSpeedValue;
 
 #if EnableAutoSlow
-GLOBALVAR bool WantNotAutoSlow = (WantInitNotAutoSlow != 0);
+bool WantNotAutoSlow = (WantInitNotAutoSlow != 0);
 #endif
 
-GLOBALVAR uint16_t CurMouseV = 0;
-GLOBALVAR uint16_t CurMouseH = 0;
+uint16_t CurMouseV = 0;
+uint16_t CurMouseH = 0;
 
 #if EnableFSMouseMotion
-LOCALVAR bool HaveMouseMotion = false;
+static bool HaveMouseMotion = false;
 #endif
 
 #if EnableAutoSlow
-GLOBALVAR uint32_t QuietTime = 0;
-GLOBALVAR uint32_t QuietSubTicks = 0;
+uint32_t QuietTime = 0;
+uint32_t QuietSubTicks = 0;
 #endif
 
 #if EmLocalTalk
 
-GLOBALVAR uint8_t LT_NodeHint = 0;
+uint8_t LT_NodeHint = 0;
 
 #if LT_MayHaveEcho
-GLOBALVAR bool CertainlyNotMyPacket = false;
+bool CertainlyNotMyPacket = false;
 #endif
 
-GLOBALVAR uint8_t * LT_TxBuffer = NULL;
+uint8_t * LT_TxBuffer = NULL;
 
 /* Transmit state */
-GLOBALVAR uint16_t LT_TxBuffSz = 0;
+uint16_t LT_TxBuffSz = 0;
 
 /* Receive state */
-GLOBALVAR uint8_t * LT_RxBuffer = NULL;
+uint8_t * LT_RxBuffer = NULL;
 	/* When data pending, this is used */
-GLOBALVAR uint32_t LT_RxBuffSz = 0;
+uint32_t LT_RxBuffSz = 0;
 	/* When data pending, this is used */
 
 #endif
@@ -135,8 +135,8 @@ GLOBALVAR uint32_t LT_RxBuffSz = 0;
 #endif
 
 #if IncludePbufs
-LOCALVAR uint32_t PbufAllocatedMask;
-LOCALVAR uint32_t PbufSize[NumPbufs];
+static uint32_t PbufAllocatedMask;
+static uint32_t PbufSize[NumPbufs];
 #endif
 
 #if IncludePbufs
@@ -367,9 +367,9 @@ Label_3:
 	*RightMask0 = RightMask;
 }
 
-LOCALVAR uint8_t * screencomparebuff = nullptr;
+static uint8_t * screencomparebuff = nullptr;
 
-LOCALVAR uint32_t NextDrawRow = 0;
+static uint32_t NextDrawRow = 0;
 
 
 #if BigEndianUnaligned
@@ -389,7 +389,7 @@ LOCALVAR uint32_t NextDrawRow = 0;
 #endif
 
 #if WantColorTransValid
-LOCALVAR bool ColorTransValid = false;
+static bool ColorTransValid = false;
 #endif
 
 LOCALFUNC bool ScreenFindChanges(uint8_t * screencurrentbuff,
@@ -615,19 +615,19 @@ Label_2:
 	return true;
 }
 
-GLOBALVAR bool EmVideoDisable = false;
-GLOBALVAR int8_t EmLagTime = 0;
+bool EmVideoDisable = false;
+int8_t EmLagTime = 0;
 
-GLOBALVAR uint32_t OnTrueTime = 0;
+uint32_t OnTrueTime = 0;
 	/*
 		The time slice we are currently dealing
 		with, in the same units as TrueEmulatedTime.
 	*/
 
-LOCALVAR int16_t ScreenChangedTop;
-LOCALVAR int16_t ScreenChangedLeft;
-LOCALVAR int16_t ScreenChangedBottom;
-LOCALVAR int16_t ScreenChangedRight;
+static int16_t ScreenChangedTop;
+static int16_t ScreenChangedLeft;
+static int16_t ScreenChangedBottom;
+static int16_t ScreenChangedRight;
 
 LOCALPROC ScreenClearChanges(void)
 {
@@ -646,10 +646,10 @@ LOCALPROC ScreenChangedAll(void)
 }
 
 #if EnableAutoSlow
-LOCALVAR int16_t ScreenChangedQuietTop = vMacScreenHeight;
-LOCALVAR int16_t ScreenChangedQuietLeft = vMacScreenWidth;
-LOCALVAR int16_t ScreenChangedQuietBottom = 0;
-LOCALVAR int16_t ScreenChangedQuietRight = 0;
+static int16_t ScreenChangedQuietTop = vMacScreenHeight;
+static int16_t ScreenChangedQuietLeft = vMacScreenWidth;
+static int16_t ScreenChangedQuietBottom = 0;
+static int16_t ScreenChangedQuietRight = 0;
 #endif
 
 GLOBALOSGLUPROC Screen_OutputFrame(uint8_t * screencurrentbuff)
@@ -707,13 +707,13 @@ GLOBALOSGLUPROC Screen_OutputFrame(uint8_t * screencurrentbuff)
 }
 
 #if MayFullScreen
-LOCALVAR uint16_t ViewHSize;
-LOCALVAR uint16_t ViewVSize;
-LOCALVAR uint16_t ViewHStart = 0;
-LOCALVAR uint16_t ViewVStart = 0;
+static uint16_t ViewHSize;
+static uint16_t ViewVSize;
+static uint16_t ViewHStart = 0;
+static uint16_t ViewVStart = 0;
 #if EnableFSMouseMotion
-LOCALVAR int16_t SavedMouseH;
-LOCALVAR int16_t SavedMouseV;
+static int16_t SavedMouseH;
+static int16_t SavedMouseV;
 #endif
 #endif
 
@@ -823,8 +823,8 @@ LOCALPROC SetLongs(uint32_t *p, long n)
 	}
 }
 
-LOCALVAR uint32_t ReserveAllocOffset;
-LOCALVAR uint8_t * ReserveAllocBigBlock = nullptr;
+static uint32_t ReserveAllocOffset;
+static uint8_t * ReserveAllocBigBlock = nullptr;
 
 #define PowOf2(p) ((uint32_t)1 << (p))
 #define Pow2Mask(p) (PowOf2(p) - 1)
@@ -863,9 +863,9 @@ GLOBALOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
 #else
 
 #define dbglog_bufsz PowOf2(dbglog_buflnsz)
-LOCALVAR uint32_t dbglog_bufpos = 0;
+static uint32_t dbglog_bufpos = 0;
 
-LOCALVAR char *dbglog_bufp = nullptr;
+static char *dbglog_bufp = nullptr;
 
 LOCALPROC dbglog_ReserveAlloc(void)
 {
@@ -1021,9 +1021,9 @@ GLOBALOSGLUPROC dbglog_writelnNum(char *s, int32_t v)
 #define MyEvtQSz (1 << MyEvtQLg2Sz)
 #define MyEvtQIMask (MyEvtQSz - 1)
 
-LOCALVAR MyEvtQEl MyEvtQA[MyEvtQSz];
-LOCALVAR uint16_t MyEvtQIn = 0;
-LOCALVAR uint16_t MyEvtQOut = 0;
+static MyEvtQEl MyEvtQA[MyEvtQSz];
+static uint16_t MyEvtQIn = 0;
+static uint16_t MyEvtQOut = 0;
 
 GLOBALOSGLUFUNC MyEvtQEl * MyEvtQOutP(void)
 {
@@ -1039,7 +1039,7 @@ GLOBALOSGLUPROC MyEvtQOutDone(void)
 	++MyEvtQOut;
 }
 
-LOCALVAR bool MyEvtQNeedRecover = false;
+static bool MyEvtQNeedRecover = false;
 	/* events lost because of full queue */
 
 LOCALFUNC MyEvtQEl * MyEvtQElPreviousIn(void)
@@ -1066,7 +1066,7 @@ LOCALFUNC MyEvtQEl * MyEvtQElAlloc(void)
 	return p;
 }
 
-LOCALVAR uint32_t theKeys[4];
+static uint32_t theKeys[4];
 
 LOCALPROC Keyboard_UpdateKeyMap(uint8_t key, bool down)
 {
@@ -1093,7 +1093,7 @@ LOCALPROC Keyboard_UpdateKeyMap(uint8_t key, bool down)
 	}
 }
 
-LOCALVAR bool MyMouseButtonState = false;
+static bool MyMouseButtonState = false;
 
 LOCALPROC MyMouseButtonSet(bool down)
 {
@@ -1132,8 +1132,8 @@ LOCALPROC MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 }
 #endif
 
-LOCALVAR uint16_t MyMousePosCurV = 0;
-LOCALVAR uint16_t MyMousePosCurH = 0;
+static uint16_t MyMousePosCurV = 0;
+static uint16_t MyMousePosCurH = 0;
 
 LOCALPROC MyMousePositionSet(uint16_t h, uint16_t v)
 {
@@ -1221,12 +1221,12 @@ LOCALPROC MyEvtQTryRecoverFromFull(void)
 
 /* MacMsg */
 
-LOCALVAR char *SavedBriefMsg = nullptr;
-LOCALVAR char *SavedLongMsg;
+static char *SavedBriefMsg = nullptr;
+static char *SavedLongMsg;
 #if WantAbnormalReports
-LOCALVAR uint16_t SavedIDMsg = 0;
+static uint16_t SavedIDMsg = 0;
 #endif
-LOCALVAR bool SavedFatalMsg;
+static bool SavedFatalMsg;
 
 LOCALPROC MacMsg(char *briefMsg, char *longMsg, bool fatal)
 {
@@ -1273,7 +1273,7 @@ GLOBALOSGLUPROC WarnMsgAbnormalID(uint16_t id)
 	Mini vMac pick the same LT_NodeHint and LT_MyStamp.
 */
 
-LOCALVAR uint32_t e_p[2] = {
+static uint32_t e_p[2] = {
 	0, 0
 	};
 
@@ -1335,7 +1335,7 @@ LOCALPROC EntropyPoolAddPtr(uint8_t * p, uint32_t n)
 
 
 
-LOCALVAR uint32_t LT_MyStamp = 0;
+static uint32_t LT_MyStamp = 0;
 	/*
 		randomly chosen value included in sent packets.
 		if received packets have different value, then know it

@@ -74,11 +74,11 @@ typedef struct
 	uint8_t PARAMRAM[PARAMRAMSize];
 } RTC_Ty;
 
-LOCALVAR RTC_Ty RTC;
+static RTC_Ty RTC;
 
 /* RTC Functions */
 
-LOCALVAR uint32_t LastRealDate;
+static uint32_t LastRealDate;
 
 #ifndef RTCinitPRAM
 #define RTCinitPRAM 1

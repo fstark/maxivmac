@@ -148,8 +148,8 @@ LOCALFUNC bool Key2Digit(uint8_t key, uint8_t *r)
 }
 
 #define ActvCodeMaxLen 20
-LOCALVAR uint16_t ActvCodeLen = 0;
-LOCALVAR uint8_t ActvCodeDigits[ActvCodeMaxLen];
+static uint16_t ActvCodeLen = 0;
+static uint8_t ActvCodeDigits[ActvCodeMaxLen];
 
 #define ActvCodeFileLen 8
 
@@ -158,7 +158,7 @@ FORWARDFUNC tMacErr ActvCodeFileSave(uint8_t * p);
 FORWARDFUNC tMacErr ActvCodeFileLoad(uint8_t * p);
 #endif
 
-LOCALVAR uint8_t CurActvCode[ActvCodeFileLen];
+static uint8_t CurActvCode[ActvCodeFileLen];
 
 LOCALPROC DoActvCodeModeKey(uint8_t key)
 {

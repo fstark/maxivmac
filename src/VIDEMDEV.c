@@ -42,7 +42,7 @@
 
 #define VID_dolog (dbglog_HAVE && 0)
 
-LOCALVAR const uint8_t VidDrvr_contents[] = {
+static const uint8_t VidDrvr_contents[] = {
 0x4C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 0x00, 0x2A, 0x00, 0x00, 0x00, 0xE2, 0x00, 0xEC,
 0x00, 0xB6, 0x15, 0x2E, 0x44, 0x69, 0x73, 0x70,
@@ -94,7 +94,7 @@ LOCALPROC ChecksumSlotROM(void)
 	do_put_mem_long(p - 12, crc);
 }
 
-LOCALVAR uint8_t * pPatch;
+static uint8_t * pPatch;
 
 LOCALPROC PatchAByte(uint8_t v)
 {
@@ -483,7 +483,7 @@ GLOBALFUNC uint16_t Vid_Reset(void)
 #define VidBaseAddr 0xF9900000
 	/* appears to be completely ignored */
 
-LOCALVAR bool UseGrayTones = false;
+static bool UseGrayTones = false;
 
 LOCALPROC FillScreenWithGrayPattern(void)
 {

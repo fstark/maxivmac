@@ -26,7 +26,7 @@
 
 #include "DISAM68K.h"
 
-LOCALVAR uint32_t Disasm_pc;
+static uint32_t Disasm_pc;
 
 /*
 	don't use get_vm_byte/get_vm_word/get_vm_long
@@ -34,9 +34,9 @@ LOCALVAR uint32_t Disasm_pc;
 		(if pc points to memory mapped device)
 */
 
-LOCALVAR uint8_t * Disasm_pcp;
-LOCALVAR uint32_t Disasm_pc_blockmask;
-LOCALVAR uint8_t Disasm_pcp_dummy[2] = {
+static uint8_t * Disasm_pcp;
+static uint32_t Disasm_pc_blockmask;
+static uint8_t Disasm_pcp_dummy[2] = {
 	0, 0
 };
 
@@ -94,9 +94,9 @@ LOCALPROC Disasm_setpc(uint32_t newpc)
 	}
 }
 
-LOCALVAR uint32_t Disasm_opcode;
+static uint32_t Disasm_opcode;
 
-LOCALVAR uint32_t Disasm_opsize;
+static uint32_t Disasm_opsize;
 
 #define Disasm_b76 ((Disasm_opcode >> 6) & 3)
 #define Disasm_b8 ((Disasm_opcode >> 8) & 1)
@@ -2828,9 +2828,9 @@ LOCALPROC m68k_Disasm_one(void)
 #define Ln2SavedPCs 4
 #define NumSavedPCs (1 << Ln2SavedPCs)
 #define SavedPCsMask (NumSavedPCs - 1)
-LOCALVAR uint32_t SavedPCs[NumSavedPCs];
-LOCALVAR uint32_t SavedPCsIn = 0;
-LOCALVAR uint32_t SavedPCsOut = 0;
+static uint32_t SavedPCs[NumSavedPCs];
+static uint32_t SavedPCsIn = 0;
+static uint32_t SavedPCsOut = 0;
 
 #define DisasmIncludeCycles 0
 
@@ -2915,7 +2915,7 @@ LOCALPROCUSEDONCE DisasmSavedPCs(void)
 	}
 }
 
-LOCALVAR uint32_t DisasmCounter = 0;
+static uint32_t DisasmCounter = 0;
 
 GLOBALPROC DisasmOneOrSave(uint32_t pc)
 {

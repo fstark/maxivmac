@@ -63,7 +63,7 @@ EXPORTOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n, uint8_t align,
 EXPORTOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
 
 
-EXPORTVAR(uint8_t *, ROM)
+extern uint8_t * ROM;
 
 /*
 	error codes returned by Mini vMac extensions
@@ -129,8 +129,8 @@ EXPORTOSGLUPROC PbufTransfer(uint8_t * Buffer,
 
 #define tDrive uint16_t
 
-EXPORTVAR(uint32_t, vSonyWritableMask)
-EXPORTVAR(uint32_t, vSonyInsertedMask)
+extern uint32_t vSonyWritableMask;
+extern uint32_t vSonyInsertedMask;
 
 #define vSonyIsInserted(Drive_No) \
 	((vSonyInsertedMask & ((uint32_t)1 << (Drive_No))) != 0)
@@ -145,17 +145,17 @@ EXPORTOSGLUFUNC bool AnyDiskInserted(void);
 EXPORTOSGLUPROC DiskRevokeWritable(tDrive Drive_No);
 
 #if IncludeSonyRawMode
-EXPORTVAR(bool, vSonyRawMode)
+extern bool vSonyRawMode;
 #endif
 
 #if IncludeSonyNew
-EXPORTVAR(bool, vSonyNewDiskWanted)
-EXPORTVAR(uint32_t, vSonyNewDiskSize)
+extern bool vSonyNewDiskWanted;
+extern uint32_t vSonyNewDiskSize;
 EXPORTOSGLUFUNC tMacErr vSonyEjectDelete(tDrive Drive_No);
 #endif
 
 #if IncludeSonyNameNew
-EXPORTVAR(tPbuf, vSonyNewDiskName)
+extern tPbuf vSonyNewDiskName;
 #endif
 
 #if IncludeSonyGetName
@@ -167,15 +167,15 @@ EXPORTOSGLUFUNC tMacErr HTCEexport(tPbuf i);
 EXPORTOSGLUFUNC tMacErr HTCEimport(tPbuf *r);
 #endif
 
-EXPORTVAR(uint32_t, OnTrueTime)
+extern uint32_t OnTrueTime;
 
-EXPORTVAR(uint32_t, CurMacDateInSeconds)
+extern uint32_t CurMacDateInSeconds;
 #if AutoLocation
-EXPORTVAR(uint32_t, CurMacLatitude)
-EXPORTVAR(uint32_t, CurMacLongitude)
+extern uint32_t CurMacLatitude;
+extern uint32_t CurMacLongitude;
 #endif
 #if AutoTimeZone
-EXPORTVAR(uint32_t, CurMacDelta)
+extern uint32_t CurMacDelta;
 	/* (dlsDelta << 24) | (gmtDelta & 0x00FFFFFF) */
 #endif
 
@@ -191,49 +191,49 @@ EXPORTVAR(uint32_t, CurMacDelta)
 #define vMacScreenMonoByteWidth ((long)vMacScreenWidth / 8)
 
 #if 0 != vMacScreenDepth
-EXPORTVAR(bool, UseColorMode)
-EXPORTVAR(bool, ColorModeWorks)
+extern bool UseColorMode;
+extern bool ColorModeWorks;
 #endif
 
 #if 0 != vMacScreenDepth
-EXPORTVAR(bool, ColorMappingChanged)
+extern bool ColorMappingChanged;
 #endif
 
 #if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
 #define CLUT_size (1 << (1 << vMacScreenDepth))
 
-EXPORTVAR(uint16_t, CLUT_reds[CLUT_size])
-EXPORTVAR(uint16_t, CLUT_greens[CLUT_size])
-EXPORTVAR(uint16_t, CLUT_blues[CLUT_size])
+extern uint16_t CLUT_reds[CLUT_size];
+extern uint16_t CLUT_greens[CLUT_size];
+extern uint16_t CLUT_blues[CLUT_size];
 #endif
 
-EXPORTVAR(bool, EmVideoDisable)
-EXPORTVAR(int8_t, EmLagTime)
+extern bool EmVideoDisable;
+extern int8_t EmLagTime;
 
 EXPORTOSGLUPROC Screen_OutputFrame(uint8_t * screencurrentbuff);
 EXPORTOSGLUPROC DoneWithDrawingForTick(void);
 
-EXPORTVAR(bool, ForceMacOff)
+extern bool ForceMacOff;
 
-EXPORTVAR(bool, WantMacInterrupt)
+extern bool WantMacInterrupt;
 
-EXPORTVAR(bool, WantMacReset)
+extern bool WantMacReset;
 
 EXPORTOSGLUFUNC bool ExtraTimeNotOver(void);
 
-EXPORTVAR(uint8_t, SpeedValue)
+extern uint8_t SpeedValue;
 
 #if EnableAutoSlow
-EXPORTVAR(bool, WantNotAutoSlow)
+extern bool WantNotAutoSlow;
 #endif
 
 /* where emulated machine thinks mouse is */
-EXPORTVAR(uint16_t, CurMouseV)
-EXPORTVAR(uint16_t, CurMouseH)
+extern uint16_t CurMouseV;
+extern uint16_t CurMouseH;
 
 #if EnableAutoSlow
-EXPORTVAR(uint32_t, QuietTime)
-EXPORTVAR(uint32_t, QuietSubTicks)
+extern uint32_t QuietTime;
+extern uint32_t QuietSubTicks;
 
 #define QuietEnds() \
 { \
@@ -268,20 +268,20 @@ EXPORTOSGLUPROC MySound_EndWrite(uint16_t actL);
 
 #if EmLocalTalk
 
-EXPORTVAR(uint8_t, LT_NodeHint)
+extern uint8_t LT_NodeHint;
 
 #if LT_MayHaveEcho
-EXPORTVAR(bool, CertainlyNotMyPacket)
+extern bool CertainlyNotMyPacket;
 #endif
 
 #define LT_TxBfMxSz 1024
-EXPORTVAR(uint8_t *, LT_TxBuffer)
-EXPORTVAR(uint16_t, LT_TxBuffSz)
+extern uint8_t * LT_TxBuffer;
+extern uint16_t LT_TxBuffSz;
 
 EXPORTOSGLUPROC LT_TransmitPacket(void);
 
-EXPORTVAR(uint8_t *, LT_RxBuffer)
-EXPORTVAR(uint32_t, LT_RxBuffSz)
+extern uint8_t * LT_RxBuffer;
+extern uint32_t LT_RxBuffSz;
 
 EXPORTOSGLUPROC LT_ReceivePacket(void);
 

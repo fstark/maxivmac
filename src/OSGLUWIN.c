@@ -57,8 +57,8 @@ typedef BOOL (WINAPI *SHGetSpecialFolderPathProcPtr) (
 	int nFolder,
 	BOOL fCreate
 );
-LOCALVAR SHGetSpecialFolderPathProcPtr MySHGetSpecialFolderPath = NULL;
-LOCALVAR bool DidSHGetSpecialFolderPath = false;
+static SHGetSpecialFolderPathProcPtr MySHGetSpecialFolderPath = NULL;
+static bool DidSHGetSpecialFolderPath = false;
 
 LOCALFUNC bool HaveMySHGetSpecialFolderPath(void)
 {
@@ -145,7 +145,7 @@ LOCALFUNC LPTSTR FindLastTerm(LPTSTR s, TCHAR delim)
 	return p;
 }
 
-LOCALVAR HINSTANCE AppInstance;
+static HINSTANCE AppInstance;
 
 LOCALFUNC bool GetAppDir(LPTSTR pathName)
 /* be sure at least _MAX_PATH long! */
@@ -169,7 +169,7 @@ LOCALFUNC bool GetAppDir(LPTSTR pathName)
 
 #if dbglog_HAVE
 
-LOCALVAR HANDLE dbglog_File = INVALID_HANDLE_VALUE;
+static HANDLE dbglog_File = INVALID_HANDLE_VALUE;
 
 LOCALFUNC bool dbglog_open0(void)
 {
@@ -269,7 +269,7 @@ GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCou
 /* --- Parameter buffers --- */
 
 #if IncludePbufs
-LOCALVAR HGLOBAL PbufDat[NumPbufs];
+static HGLOBAL PbufDat[NumPbufs];
 #endif
 
 #if IncludePbufs
@@ -372,33 +372,33 @@ GLOBALOSGLUPROC PbufTransfer(uint8_t * Buffer,
 
 /* --- main window info --- */
 
-LOCALVAR HWND MainWnd = NULL;
+static HWND MainWnd = NULL;
 
-LOCALVAR int WndX;
-LOCALVAR int WndY;
+static int WndX;
+static int WndY;
 
 #if UseWinCE
-LOCALVAR short oldOrientation;
-LOCALVAR unsigned long oldDisplayOrientation;
+static short oldOrientation;
+static unsigned long oldDisplayOrientation;
 #endif
 
 #if VarFullScreen
-LOCALVAR bool UseFullScreen = (WantInitFullScreen != 0);
+static bool UseFullScreen = (WantInitFullScreen != 0);
 #endif
 
 #if EnableMagnify
-LOCALVAR bool UseMagnify = (WantInitMagnify != 0);
+static bool UseMagnify = (WantInitMagnify != 0);
 #endif
 
 #if MayFullScreen
-LOCALVAR short hOffset;
-LOCALVAR short vOffset;
+static short hOffset;
+static short vOffset;
 #endif
 
 /* cursor hiding */
 
-LOCALVAR bool HaveCursorHidden = false;
-LOCALVAR bool WantCursorHidden = false;
+static bool HaveCursorHidden = false;
+static bool WantCursorHidden = false;
 
 LOCALPROC ForceShowCursor(void)
 {
@@ -487,7 +487,7 @@ LOCALPROC StopSaveMouseMotion(void)
 }
 #endif
 
-LOCALVAR bool MyMouseCaptured = false;
+static bool MyMouseCaptured = false;
 
 LOCALPROC MyMouseCaptureSet(bool v)
 {
@@ -543,7 +543,7 @@ LOCALPROC SetCurMouseButton(bool v)
 #endif
 
 #if ItnlKyBdFix
-LOCALVAR uint8_t MyVkMapA[256];
+static uint8_t MyVkMapA[256];
 #endif
 
 #if ItnlKyBdFix
@@ -1587,7 +1587,7 @@ LOCALPROC MyVkMapFromLayout(uint32_t sv)
 #endif
 
 #if ItnlKyBdFix
-LOCALVAR uint32_t CurKyBdLytNm = 0;
+static uint32_t CurKyBdLytNm = 0;
 #endif
 
 #if ItnlKyBdFix
@@ -1670,7 +1670,7 @@ LOCALPROC MyInitCheckKeyboardLayout(void)
 }
 #endif
 
-LOCALVAR uint8_t WinKey2Mac[256];
+static uint8_t WinKey2Mac[256];
 
 LOCALPROC AssignOneMacKey(uint8_t WinKey, uint8_t MacKey)
 {
@@ -1854,7 +1854,7 @@ LOCALPROC DoKeyCode(int i, bool down)
 #endif /* EnableGrabSpecialKeys */
 
 #if EnableGrabSpecialKeys
-LOCALVAR bool HaveSetSysParam = false;
+static bool HaveSetSysParam = false;
 #endif
 
 LOCALPROC CheckTheCapsLock(void)
@@ -1863,8 +1863,8 @@ LOCALPROC CheckTheCapsLock(void)
 }
 
 #if EnableGrabSpecialKeys
-LOCALVAR bool VK_LWIN_pressed = false;
-LOCALVAR bool VK_RWIN_pressed = false;
+static bool VK_LWIN_pressed = false;
+static bool VK_RWIN_pressed = false;
 #endif
 
 #if EnableGrabSpecialKeys
@@ -1991,7 +1991,7 @@ LOCALPROC DoVKcode(int i, uint8_t flags, bool down)
 	}
 }
 
-LOCALVAR bool WantCmdOptOnReconnect = false;
+static bool WantCmdOptOnReconnect = false;
 
 LOCALPROC ReconnectKeyCodes3(void)
 {
@@ -2081,7 +2081,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(
 #endif
 
 #if EnableGrabSpecialKeys
-LOCALVAR UINT nPreviousState;
+static UINT nPreviousState;
 #endif
 
 #if EnableGrabSpecialKeys
@@ -2132,7 +2132,7 @@ LOCALPROC UnGrabSpecialKeys(void)
 #endif /* EnableChangePriority */
 
 #if EnableChangePriority
-LOCALVAR bool MyPriorityRaised = false;
+static bool MyPriorityRaised = false;
 #endif
 
 #if EnableChangePriority
@@ -2184,17 +2184,17 @@ LOCALPROC LowerMyPriority(void)
 
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
 
-LOCALVAR uint32_t TrueEmulatedTime = 0;
+static uint32_t TrueEmulatedTime = 0;
 
 #define MyInvTimeDivPow 16
 #define MyInvTimeDiv (1 << MyInvTimeDivPow)
 #define MyInvTimeDivMask (MyInvTimeDiv - 1)
 #define MyInvTimeStep 1089590 /* 1000 / 60.14742 * MyInvTimeDiv */
 
-LOCALVAR DWORD LastTime;
+static DWORD LastTime;
 
-LOCALVAR DWORD NextIntTime;
-LOCALVAR uint32_t NextFracTime;
+static DWORD NextIntTime;
+static uint32_t NextFracTime;
 
 LOCALPROC IncrNextTime(void)
 {
@@ -2250,8 +2250,8 @@ LOCALFUNC bool UpdateTrueEmulatedTime(void)
 	return false;
 }
 
-LOCALVAR uint32_t TimeSecBase;
-LOCALVAR DWORD TimeMilliBase;
+static uint32_t TimeSecBase;
+static DWORD TimeMilliBase;
 
 #include "DATE2SEC.h"
 
@@ -2317,7 +2317,7 @@ LOCALFUNC bool Init60thCheck(void)
 	*/
 
 #if (MyTimeResolution != 0)
-LOCALVAR bool HaveSetTimeResolution = false;
+static bool HaveSetTimeResolution = false;
 #endif
 
 #if (MyTimeResolution != 0)
@@ -2381,12 +2381,12 @@ LOCALPROC MyTimer_Resume(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
-LOCALVAR uint16_t ThePlayOffset;
-LOCALVAR uint16_t TheFillOffset;
-LOCALVAR bool wantplaying;
-LOCALVAR uint16_t MinFilledSoundBuffs;
-LOCALVAR uint16_t TheWriteOffset;
+static tpSoundSamp TheSoundBuffer = nullptr;
+static uint16_t ThePlayOffset;
+static uint16_t TheFillOffset;
+static bool wantplaying;
+static uint16_t MinFilledSoundBuffs;
+static uint16_t TheWriteOffset;
 
 #define SOUND_SAMPLERATE /* 22050 */ 22255
 	/* = round(7833600 * 2 / 704) */
@@ -2402,8 +2402,8 @@ LOCALPROC FillWithSilence(tpSoundSamp p, int n, trSoundSamp v)
 }
 
 
-LOCALVAR HWAVEOUT hWaveOut = NULL;
-LOCALVAR WAVEHDR whdr[kSoundBuffers];
+static HWAVEOUT hWaveOut = NULL;
+static WAVEHDR whdr[kSoundBuffers];
 
 
 LOCALPROC MySound_BeginPlaying(void)
@@ -2716,7 +2716,7 @@ LOCALPROC UnGrabTheMachine(void)
 #endif
 
 #if MayFullScreen
-LOCALVAR bool GrabMachine = false;
+static bool GrabMachine = false;
 #endif
 
 #if MayFullScreen
@@ -2785,19 +2785,19 @@ enum {
 #endif
 
 #if EnableScalingBuff
-LOCALVAR uint8_t * ScalingBuff = NULL;
+static uint8_t * ScalingBuff = NULL;
 #endif
 
-LOCALVAR HDC MainWndDC = NULL;
+static HDC MainWndDC = NULL;
 
-LOCALVAR int32_t CmdShow;
+static int32_t CmdShow;
 
-LOCALVAR TCHAR WndTitle[_MAX_PATH];
-LOCALVAR const TCHAR WndClassName[] = TEXT("minivmac");
+static TCHAR WndTitle[_MAX_PATH];
+static const TCHAR WndClassName[] = TEXT("minivmac");
 
-LOCALVAR bool gBackgroundFlag = false;
-LOCALVAR bool gTrueBackgroundFlag = false;
-LOCALVAR bool CurSpeedStopped = true;
+static bool gBackgroundFlag = false;
+static bool gTrueBackgroundFlag = false;
+static bool CurSpeedStopped = true;
 
 LOCALPROC GetWndTitle(void)
 {
@@ -2853,9 +2853,9 @@ enum {
 #define kMagStateAuto kNumMagStates
 
 #if MayNotFullScreen
-LOCALVAR int CurWinIndx;
-LOCALVAR bool HavePositionWins[kNumMagStates];
-LOCALVAR POINT WinPositionWins[kNumMagStates];
+static int CurWinIndx;
+static bool HavePositionWins[kNumMagStates];
+static POINT WinPositionWins[kNumMagStates];
 #endif
 
 #if MayNotFullScreen
@@ -3859,7 +3859,7 @@ LOCALPROC CheckMouseState(void)
 }
 #endif
 
-LOCALVAR const uint8_t Native2MacRomanTab[] = {
+static const uint8_t Native2MacRomanTab[] = {
 	0xAD, 0xB0, 0xE2, 0xC4, 0xE3, 0xC9, 0xA0, 0xE0,
 	0xF6, 0xE4, 0xB6, 0xDC, 0xCE, 0xB2, 0xB3, 0xB7,
 	0xB8, 0xD4, 0xD5, 0xD2, 0xD3, 0xA5, 0xD0, 0xD1,
@@ -3939,7 +3939,7 @@ LOCALFUNC tMacErr NativeTextToMacRomanPbuf(HGLOBAL x, tPbuf *r)
 }
 #endif
 
-LOCALVAR const uint8_t MacRoman2NativeTab[] = {
+static const uint8_t MacRoman2NativeTab[] = {
 	0xC4, 0xC5, 0xC7, 0xC9, 0xD1, 0xD6, 0xDC, 0xE1,
 	0xE0, 0xE2, 0xE4, 0xE3, 0xE5, 0xE7, 0xE9, 0xE8,
 	0xEA, 0xEB, 0xED, 0xEC, 0xEE, 0xEF, 0xF1, 0xF3,
@@ -4174,12 +4174,12 @@ LOCALFUNC bool EntropyGather(void)
 
 #define NotAfileRef INVALID_HANDLE_VALUE
 
-LOCALVAR HANDLE Drives[NumDrives]; /* open disk image files */
+static HANDLE Drives[NumDrives]; /* open disk image files */
 
 #define NeedDriveNames (IncludeSonyGetName || IncludeSonyNew)
 
 #if NeedDriveNames
-LOCALVAR HGLOBAL DriveNames[NumDrives];
+static HGLOBAL DriveNames[NumDrives];
 	/*
 		It is supposed to be possible to use
 		GetMappedFileName to get name of open file,
@@ -4514,8 +4514,8 @@ LOCALFUNC bool LoadMacRomFromPath(LPTSTR drivepath)
 #endif
 
 #if EnableShellLinks
-LOCALVAR bool COMinited = false;
-LOCALVAR bool COMinitedOK;
+static bool COMinited = false;
+static bool COMinitedOK;
 #endif
 
 #if EnableShellLinks
@@ -4782,7 +4782,7 @@ LOCALFUNC bool MyGetAppDataPath(LPTSTR lpszPath,
 #if UseWinCE
 /* Are we in control mode? */
 /* Needed because you can't hold down a key with the virtual keyboard */
-LOCALVAR bool CtrlMode = false;
+static bool CtrlMode = false;
 #endif
 
 LOCALPROC InsertADisk0(void)
@@ -5285,7 +5285,7 @@ LOCALFUNC bool RegisterInRegistry(void)
 }
 #endif
 
-LOCALVAR LPTSTR CommandLine;
+static LPTSTR CommandLine;
 
 LOCALFUNC bool ScanCommandLine(void)
 {
@@ -5384,7 +5384,7 @@ enum {
 #endif
 
 #if VarFullScreen && EnableMagnify
-LOCALVAR int WinMagStates[kNumWinStates];
+static int WinMagStates[kNumWinStates];
 #endif
 
 LOCALPROC ZapWinStateVars(void)
@@ -5659,7 +5659,7 @@ LOCALPROC CheckForSavedTasks(void)
 
 #if UseWinCE
 /* Sip Status ON/OFF */
-LOCALVAR bool SipOn = false;
+static bool SipOn = false;
 #endif
 
 LRESULT CALLBACK Win32WMProc(HWND hwnd,
@@ -6063,7 +6063,7 @@ LOCALPROC Uninit_ChangeOrientation(void)
 
 #if UseWinCE
 typedef BOOL (__stdcall *UnregisterFunc1Proc)(UINT, UINT);
-LOCALVAR HINSTANCE hCoreDLL = NULL;
+static HINSTANCE hCoreDLL = NULL;
 #endif
 
 #if UseWinCE

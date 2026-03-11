@@ -37,7 +37,7 @@
 #define RAMSafetyMarginFudge 4
 
 #define kRAM_Size (kRAMa_Size + kRAMb_Size)
-EXPORTVAR(uint8_t *, RAM)
+extern uint8_t * RAM;
 	/*
 		allocated by OSGLUxxx to be at least
 			kRAM_Size + RAMSafetyMarginFudge
@@ -46,11 +46,11 @@ EXPORTVAR(uint8_t *, RAM)
 	*/
 
 #if EmVidCard
-EXPORTVAR(uint8_t *, VidROM)
+extern uint8_t * VidROM;
 #endif
 
 #if IncludeVidMem
-EXPORTVAR(uint8_t *, VidMem)
+extern uint8_t * VidMem;
 #endif
 
 EXPORTPROC MemOverlay_ChangeNtfy(void);
@@ -151,7 +151,7 @@ EXPORTPROC DoReportAbnormalID(uint16_t id
 
 EXPORTPROC VIAorSCCinterruptChngNtfy(void);
 
-EXPORTVAR(bool, InterruptButton)
+extern bool InterruptButton;
 EXPORTPROC SetInterruptButton(bool v);
 
 enum {
@@ -184,11 +184,11 @@ EXPORTPROC ICT_add(int taskid, uint32_t n);
 EXPORTFUNC iCountt GetCuriCount(void);
 EXPORTPROC ICT_Zap(void);
 
-EXPORTVAR(uint32_t, ICTactive)
-EXPORTVAR(iCountt, ICTwhen[kNumICTs])
-EXPORTVAR(iCountt, NextiCount)
+extern uint32_t ICTactive;
+extern iCountt ICTwhen[kNumICTs];
+extern iCountt NextiCount;
 
-EXPORTVAR(uint8_t, Wires[kNumWires])
+extern uint8_t Wires[kNumWires];
 
 #define kLn2CycleScale 6
 #define kCycleScale (1 << kLn2CycleScale)
@@ -203,7 +203,7 @@ EXPORTVAR(uint8_t, Wires[kNumWires])
 
 #define HaveMasterMyEvtQLock EmClassicKbrd
 #if HaveMasterMyEvtQLock
-EXPORTVAR(uint16_t, MasterMyEvtQLock)
+extern uint16_t MasterMyEvtQLock;
 #endif
 EXPORTFUNC bool FindKeyEvent(int *VirtualKey, bool *KeyDown);
 
@@ -239,7 +239,7 @@ enum {
 
 #define kcom_callcheck 0x5B17
 
-EXPORTVAR(uint32_t, my_disk_icon_addr)
+extern uint32_t my_disk_icon_addr;
 
 EXPORTPROC Memory_Reset(void);
 

@@ -53,7 +53,7 @@ GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCou
 #define dbglog_ToStdErr 0
 
 #if ! dbglog_ToStdErr
-LOCALVAR FILE *dbglog_File = NULL;
+static FILE *dbglog_File = NULL;
 #endif
 
 LOCALFUNC bool dbglog_open0(void)
@@ -134,7 +134,7 @@ LOCALPROC NativeStrFromCStr(char *r, char *s, bool AddEllipsis)
 
 #define NotAfileRef NULL
 
-LOCALVAR FILE *Drives[NumDrives]; /* open disk image files */
+static FILE *Drives[NumDrives]; /* open disk image files */
 
 LOCALPROC InitDrives(void)
 {
@@ -315,7 +315,7 @@ LOCALFUNC bool LoadInitialImages(void)
 
 /* --- ROM --- */
 
-LOCALVAR char *rom_path = NULL;
+static char *rom_path = NULL;
 
 LOCALFUNC bool LoadMacRom(void)
 {
@@ -334,9 +334,9 @@ LOCALFUNC bool LoadMacRom(void)
 
 static GtkWidget *drawing_area;
 
-LOCALVAR bool gBackgroundFlag = false;
-LOCALVAR bool gTrueBackgroundFlag = false;
-LOCALVAR bool CurSpeedStopped = true;
+static bool gBackgroundFlag = false;
+static bool gTrueBackgroundFlag = false;
+static bool CurSpeedStopped = true;
 
 LOCALPROC HaveChangedScreenBuff(int16_t top, int16_t left,
 	int16_t bottom, int16_t right)
@@ -391,8 +391,8 @@ GLOBALOSGLUPROC DoneWithDrawingForTick(void)
 
 /* --- mouse --- */
 
-LOCALVAR bool HaveCursorHidden = false;
-LOCALVAR bool WantCursorHidden = false;
+static bool HaveCursorHidden = false;
+static bool WantCursorHidden = false;
 
 static GdkCursor *blank_cursor;
 static GtkWidget *window = NULL;
@@ -473,7 +473,7 @@ LOCALPROC CheckMouseState(void)
 	*/
 
 
-LOCALVAR uint8_t KC2MKC[MaxNumKeycode];
+static uint8_t KC2MKC[MaxNumKeycode];
 
 LOCALPROC KC2MKCAssignOne(guint keyval, uint8_t key)
 {
@@ -776,19 +776,19 @@ LOCALPROC DoKeyCode(guint keycode, bool down)
 
 /* --- time, date, location --- */
 
-LOCALVAR uint32_t TrueEmulatedTime = 0;
+static uint32_t TrueEmulatedTime = 0;
 
 #include "DATE2SEC.h"
 
 #define TicksPerSecond 1000000
 
-LOCALVAR bool HaveTimeDelta = false;
-LOCALVAR uint32_t TimeDelta;
+static bool HaveTimeDelta = false;
+static uint32_t TimeDelta;
 
-LOCALVAR uint32_t NewMacDateInSeconds;
+static uint32_t NewMacDateInSeconds;
 
-LOCALVAR uint32_t LastTimeSec;
-LOCALVAR uint32_t LastTimeUsec;
+static uint32_t LastTimeSec;
+static uint32_t LastTimeUsec;
 
 LOCALPROC GetCurrentTicks(void)
 {
@@ -823,8 +823,8 @@ LOCALPROC GetCurrentTicks(void)
 
 #define MyInvTimeStep 16626 /* TicksPerSecond / 60.14742 */
 
-LOCALVAR uint32_t NextTimeSec;
-LOCALVAR uint32_t NextTimeUsec;
+static uint32_t NextTimeSec;
+static uint32_t NextTimeUsec;
 
 LOCALPROC IncrNextTime(void)
 {
@@ -915,12 +915,12 @@ LOCALPROC CheckSavedMacMsg(void)
 	}
 }
 
-LOCALVAR bool CaughtMouse = false;
+static bool CaughtMouse = false;
 
 /* --- main window creation and disposal --- */
 
-LOCALVAR int my_argc;
-LOCALVAR char **my_argv;
+static int my_argc;
+static char **my_argv;
 
 /* Create a new backing pixmap of the appropriate size */
 static gboolean configure_event(GtkWidget *widget,
@@ -1055,7 +1055,7 @@ LOCALPROC DisconnectKeyCodes3(void)
 	MyMouseButtonSet(false);
 }
 
-LOCALVAR bool ADialogIsUp = false;
+static bool ADialogIsUp = false;
 
 LOCALPROC MyBeginDialog(void)
 {

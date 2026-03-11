@@ -43,9 +43,9 @@ enum {
 	kNumSpclModes
 };
 
-LOCALVAR uint32_t SpecialModes = 0;
+static uint32_t SpecialModes = 0;
 
-LOCALVAR bool NeedWholeScreenDraw = false;
+static bool NeedWholeScreenDraw = false;
 
 #define SpecialModeSet(i) SpecialModes |= (1 << (i))
 #define SpecialModeClr(i) SpecialModes &= ~ (1 << (i))
@@ -53,7 +53,7 @@ LOCALVAR bool NeedWholeScreenDraw = false;
 
 #define MacMsgDisplayed SpecialModeTst(SpclModeMessage)
 
-LOCALVAR uint8_t * CntrlDisplayBuff = nullptr;
+static uint8_t * CntrlDisplayBuff = nullptr;
 
 LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
 {
@@ -156,8 +156,8 @@ LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
 #define hStart (ControlBoxh0 + 1)
 
 
-LOCALVAR int CurCellh0;
-LOCALVAR int CurCellv0;
+static int CurCellh0;
+static int CurCellv0;
 
 LOCALPROC DrawCellsBeginLine(void)
 {
@@ -468,9 +468,9 @@ LOCALPROC DrawNoRomMode(void)
 
 #if UseControlKeys
 
-LOCALVAR bool LastControlKey = false;
-LOCALVAR int CurControlMode = 0;
-LOCALVAR int ControlMessage = 0;
+static bool LastControlKey = false;
+static int CurControlMode = 0;
+static int ControlMessage = 0;
 
 enum {
 	kCntrlModeOff,

@@ -19,8 +19,8 @@
 		OSS and related, accessed through "/dev/dsp"
 */
 
-LOCALVAR int audio_fd = -1;
-LOCALVAR bool audio_started;
+static int audio_fd = -1;
+static bool audio_started;
 
 #if 4 == kLn2SoundSampSz
 LOCALPROC ConvertSoundBlockToNative(tpSoundSamp p)

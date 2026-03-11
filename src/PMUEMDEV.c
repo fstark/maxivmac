@@ -42,16 +42,16 @@ enum {
 };
 
 #define PMU_BuffSz 8
-LOCALVAR uint8_t PMU_BuffA[PMU_BuffSz];
-LOCALVAR uint8_t * PMU_p;
-LOCALVAR uint8_t PMU_rem;
-LOCALVAR uint8_t PMU_i;
+static uint8_t PMU_BuffA[PMU_BuffSz];
+static uint8_t * PMU_p;
+static uint8_t PMU_rem;
+static uint8_t PMU_i;
 
-LOCALVAR int PMUState = kPMUStateReadyForCommand;
+static int PMUState = kPMUStateReadyForCommand;
 
-LOCALVAR uint8_t PMU_CurCommand;
-LOCALVAR uint8_t PMU_SendNext;
-LOCALVAR uint8_t PMU_BuffL;
+static uint8_t PMU_CurCommand;
+static uint8_t PMU_SendNext;
+static uint8_t PMU_BuffL;
 
 LOCALPROC PmuStartSendResult(uint8_t ResultCode, uint8_t L)
 {
@@ -60,7 +60,7 @@ LOCALPROC PmuStartSendResult(uint8_t ResultCode, uint8_t L)
 	PMUState = kPMUStateSendLength;
 }
 
-LOCALVAR uint8_t PARAMRAM[128];
+static uint8_t PARAMRAM[128];
 
 LOCALPROC PmuCheckCommandOp(void)
 {
@@ -311,7 +311,7 @@ LOCALPROC SetPMUbus(uint8_t v)
 	VIA1_iA7 = v & 0x01;
 }
 
-LOCALVAR bool PMU_Sending = false;
+static bool PMU_Sending = false;
 
 LOCALPROC PmuCheckCommandCompletion(void)
 {

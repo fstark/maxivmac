@@ -32,16 +32,16 @@
 
 #define ADB_MaxSzDatBuf 8
 
-LOCALVAR uint8_t ADB_SzDatBuf;
-LOCALVAR bool ADB_TalkDatBuf = false;
-LOCALVAR uint8_t ADB_DatBuf[ADB_MaxSzDatBuf];
-LOCALVAR uint8_t ADB_CurCmd = 0;
-LOCALVAR uint8_t NotSoRandAddr = 1;
+static uint8_t ADB_SzDatBuf;
+static bool ADB_TalkDatBuf = false;
+static uint8_t ADB_DatBuf[ADB_MaxSzDatBuf];
+static uint8_t ADB_CurCmd = 0;
+static uint8_t NotSoRandAddr = 1;
 
-LOCALVAR uint8_t MouseADBAddress;
-LOCALVAR bool SavedCurMouseButton = false;
-LOCALVAR uint16_t MouseADBDeltaH = 0;
-LOCALVAR uint16_t MouseADBDeltaV = 0;
+static uint8_t MouseADBAddress;
+static bool SavedCurMouseButton = false;
+static uint16_t MouseADBDeltaH = 0;
+static uint16_t MouseADBDeltaV = 0;
 
 LOCALPROC ADB_DoMouseTalk(void)
 {
@@ -137,7 +137,7 @@ LOCALPROC ADB_DoMouseListen(void)
 	}
 }
 
-LOCALVAR uint8_t KeyboardADBAddress;
+static uint8_t KeyboardADBAddress;
 
 LOCALFUNC bool CheckForADBkeyEvt(uint8_t *NextADBkeyevt)
 {

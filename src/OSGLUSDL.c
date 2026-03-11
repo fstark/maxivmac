@@ -77,12 +77,12 @@ GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCou
 #endif
 #endif
 
-LOCALVAR char *d_arg = NULL;
-LOCALVAR char *n_arg = NULL;
+static char *d_arg = NULL;
+static char *n_arg = NULL;
 
 #if CanGetAppPath
-LOCALVAR char *app_parent = NULL;
-LOCALVAR char *pref_dir = NULL;
+static char *app_parent = NULL;
+static char *pref_dir = NULL;
 #endif
 
 #ifdef _WIN32
@@ -92,7 +92,7 @@ LOCALVAR char *pref_dir = NULL;
 #endif
 
 #if SDL_MAJOR_VERSION >= 3
-LOCALVAR SDL_AudioStream *stream = NULL;
+static SDL_AudioStream *stream = NULL;
 #endif
 
 LOCALFUNC tMacErr ChildPath(char *x, char *y, char **r)
@@ -143,7 +143,7 @@ LOCALPROC MyMayFree(char *p)
 #endif
 
 #if ! dbglog_ToStdErr
-LOCALVAR FILE *dbglog_File = NULL;
+static FILE *dbglog_File = NULL;
 #endif
 
 LOCALFUNC bool dbglog_open0(void)
@@ -276,7 +276,7 @@ LOCALPROC NativeStrFromCStr(char *r, char *s)
 #define MyFileEof feof
 #endif
 
-LOCALVAR MyFilePtr Drives[NumDrives]; /* open disk image files */
+static MyFilePtr Drives[NumDrives]; /* open disk image files */
 
 LOCALPROC InitDrives(void)
 {
@@ -545,7 +545,7 @@ LOCALFUNC bool LoadInitialImages(void)
 
 /* --- ROM --- */
 
-LOCALVAR char *rom_path = NULL;
+static char *rom_path = NULL;
 
 #if CanGetAppPath
 LOCALFUNC tMacErr LoadMacRomFromPrefDir(void)
@@ -628,25 +628,25 @@ LOCALFUNC bool LoadMacRom(void)
 /* --- video out --- */
 
 #if MayFullScreen && (SDL_MAJOR_VERSION >= 2)
-LOCALVAR int hOffset;
-LOCALVAR int vOffset;
+static int hOffset;
+static int vOffset;
 #endif
 
 #if VarFullScreen
-LOCALVAR bool UseFullScreen = (WantInitFullScreen != 0);
+static bool UseFullScreen = (WantInitFullScreen != 0);
 #endif
 
 #if EnableMagnify
-LOCALVAR bool UseMagnify = (WantInitMagnify != 0);
+static bool UseMagnify = (WantInitMagnify != 0);
 #endif
 
 #ifndef UseSDLscaling
 #define UseSDLscaling 0
 #endif
 
-LOCALVAR bool gBackgroundFlag = false;
-LOCALVAR bool gTrueBackgroundFlag = false;
-LOCALVAR bool CurSpeedStopped = true;
+static bool gBackgroundFlag = false;
+static bool gTrueBackgroundFlag = false;
+static bool CurSpeedStopped = true;
 
 #if EnableMagnify && ! UseSDLscaling
 #define MaxScale MyWindowScale
@@ -656,13 +656,13 @@ LOCALVAR bool CurSpeedStopped = true;
 
 
 #if 1 == SDL_MAJOR_VERSION
-LOCALVAR SDL_Surface *my_surface = nullptr;
+static SDL_Surface *my_surface = nullptr;
 #define my_format (my_surface->format)
 #elif SDL_MAJOR_VERSION >= 2
-LOCALVAR SDL_Window *my_main_wind = NULL;
-LOCALVAR SDL_Renderer *my_renderer = NULL;
-LOCALVAR SDL_Texture *my_texture = NULL;
-LOCALVAR
+static SDL_Window *my_main_wind = NULL;
+static SDL_Renderer *my_renderer = NULL;
+static SDL_Texture *my_texture = NULL;
+static
 #if SDL_MAJOR_VERSION >= 3
 const SDL_PixelFormatDetails
 #else
@@ -671,9 +671,9 @@ SDL_PixelFormat
 *my_format = NULL;
 #endif
 
-LOCALVAR uint8_t * ScalingBuff = nullptr;
+static uint8_t * ScalingBuff = nullptr;
 
-LOCALVAR uint8_t * CLUT_final;
+static uint8_t * CLUT_final;
 
 #define CLUT_finalsz (256 * 8 * 4 * MaxScale)
 	/*
@@ -1264,8 +1264,8 @@ GLOBALOSGLUPROC DoneWithDrawingForTick(void)
 
 /* cursor hiding */
 
-LOCALVAR bool HaveCursorHidden = false;
-LOCALVAR bool WantCursorHidden = false;
+static bool HaveCursorHidden = false;
+static bool WantCursorHidden = false;
 
 LOCALPROC ForceShowCursor(void)
 {
@@ -1841,7 +1841,7 @@ LOCALPROC DisconnectKeyCodes3(void)
 
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
 
-LOCALVAR uint32_t TrueEmulatedTime = 0;
+static uint32_t TrueEmulatedTime = 0;
 	/*
 		OSGLUxxx common:
 		The amount of time the program has
@@ -1867,10 +1867,10 @@ LOCALVAR uint32_t TrueEmulatedTime = 0;
 #define MyInvTimeDivMask (MyInvTimeDiv - 1)
 #define MyInvTimeStep 1089590 /* 1000 / 60.14742 * MyInvTimeDiv */
 
-LOCALVAR Uint32 LastTime;
+static Uint32 LastTime;
 
-LOCALVAR Uint32 NextIntTime;
-LOCALVAR uint32_t NextFracTime;
+static Uint32 NextIntTime;
+static uint32_t NextFracTime;
 
 #endif /* 0 != SDL_MAJOR_VERSION */
 
@@ -1892,7 +1892,7 @@ LOCALPROC InitNextTime(void)
 #endif /* 0 != SDL_MAJOR_VERSION */
 }
 
-LOCALVAR uint32_t NewMacDateInSeconds;
+static uint32_t NewMacDateInSeconds;
 
 LOCALFUNC bool UpdateTrueEmulatedTime(void)
 {
@@ -2031,14 +2031,14 @@ LOCALFUNC bool InitLocationDat(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
+static tpSoundSamp TheSoundBuffer = nullptr;
 volatile static uint16_t ThePlayOffset;
 volatile static uint16_t TheFillOffset;
 volatile static uint16_t MinFilledSoundBuffs;
 #if dbglog_SoundBuffStats
-LOCALVAR uint16_t MaxFilledSoundBuffs;
+static uint16_t MaxFilledSoundBuffs;
 #endif
-LOCALVAR uint16_t TheWriteOffset;
+static uint16_t TheWriteOffset;
 
 LOCALPROC MySound_Init0(void)
 {
@@ -2352,9 +2352,9 @@ static void SDLCALL sdl3_audio_callback(void *udata, SDL_AudioStream *stream, in
 #endif
 #endif /* 0 != SDL_MAJOR_VERSION */
 
-LOCALVAR MySoundR cur_audio;
+static MySoundR cur_audio;
 
-LOCALVAR bool HaveSoundOut = false;
+static bool HaveSoundOut = false;
 
 LOCALPROC MySound_Stop(void)
 {
@@ -3666,7 +3666,7 @@ GLOBALOSGLUFUNC tMacErr HTCEimport(tPbuf *r)
 #define UseMotionEvents 1
 
 #if UseMotionEvents
-LOCALVAR bool CaughtMouse = false;
+static bool CaughtMouse = false;
 #endif
 
 #if 0 != SDL_MAJOR_VERSION
@@ -3915,8 +3915,8 @@ LOCALPROC HandleTheEvent(SDL_Event *event)
 
 /* --- main window creation and disposal --- */
 
-LOCALVAR int my_argc;
-LOCALVAR char **my_argv;
+static int my_argc;
+static char **my_argv;
 
 LOCALFUNC bool Screen_Init(void)
 {
@@ -3959,7 +3959,7 @@ LOCALFUNC bool Screen_Init(void)
 }
 
 #if MayFullScreen
-LOCALVAR bool GrabMachine = false;
+static bool GrabMachine = false;
 #endif
 
 #if MayFullScreen
@@ -4207,10 +4207,10 @@ enum {
 #define kMagStateAuto kNumMagStates
 
 #if MayNotFullScreen
-LOCALVAR int CurWinIndx;
-LOCALVAR bool HavePositionWins[kNumMagStates];
-LOCALVAR int WinPositionsX[kNumMagStates];
-LOCALVAR int WinPositionsY[kNumMagStates];
+static int CurWinIndx;
+static bool HavePositionWins[kNumMagStates];
+static int WinPositionsX[kNumMagStates];
+static int WinPositionsY[kNumMagStates];
 #endif
 
 LOCALFUNC bool CreateMainWindow(void)
@@ -4601,7 +4601,7 @@ enum {
 #endif
 
 #if VarFullScreen && EnableMagnify
-LOCALVAR int WinMagStates[kNumWinStates];
+static int WinMagStates[kNumWinStates];
 #endif
 
 #if EnableRecreateW

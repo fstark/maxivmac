@@ -38,7 +38,7 @@
 */
 
 
-LOCALVAR uint32_t vSonyMountedMask = 0;
+static uint32_t vSonyMountedMask = 0;
 
 #define vSonyIsLocked(Drive_No) \
 	((vSonyWritableMask & ((uint32_t)1 << (Drive_No))) == 0)
@@ -145,13 +145,13 @@ label_1:
 	}
 }
 
-LOCALVAR uint32_t ImageDataOffset[NumDrives];
+static uint32_t ImageDataOffset[NumDrives];
 	/* size of any header in disk image file */
-LOCALVAR uint32_t ImageDataSize[NumDrives];
+static uint32_t ImageDataSize[NumDrives];
 	/* size of disk image file contents */
 
 #if Sony_SupportTags
-LOCALVAR uint32_t ImageTagOffset[NumDrives];
+static uint32_t ImageTagOffset[NumDrives];
 	/* offset to disk image file tags */
 #endif
 
@@ -491,9 +491,9 @@ LOCALFUNC tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 		if call PostEvent too frequently, insert events seem to get lost
 	*/
 
-LOCALVAR uint16_t DelayUntilNextInsert;
+static uint16_t DelayUntilNextInsert;
 
-LOCALVAR uint32_t MountCallBack = 0;
+static uint32_t MountCallBack = 0;
 
 /* This checks to see if a disk (image) has been inserted */
 GLOBALPROC Sony_Update (void)
@@ -569,7 +569,7 @@ LOCALFUNC tMacErr Drive_Transfer(bool IsWrite, uint32_t Buffera,
 	return result;
 }
 
-LOCALVAR bool QuitOnEject = false;
+static bool QuitOnEject = false;
 
 GLOBALPROC Sony_SetQuitOnEject(void)
 {
@@ -989,7 +989,7 @@ typedef struct MyDriverDat_R MyDriverDat_R;
 #define Sony_dolog (dbglog_HAVE && 0)
 
 #if Sony_SupportTags
-LOCALVAR uint32_t TheTagBuffer;
+static uint32_t TheTagBuffer;
 #endif
 
 LOCALFUNC uint32_t DriveVarsLocation(tDrive Drive_No)
