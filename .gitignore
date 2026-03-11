@@ -11,3 +11,4 @@
 /*.ROM
 remove*
 CMakeUserPresets.json
+.DS_Store

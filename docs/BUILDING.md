@@ -2,9 +2,15 @@
 
 ## Quick Start (macOS)
 
+Clean:
+```bash
+rm -rf bld/
+```
+
 ```bash
 cmake --preset macos-cocoa
 cmake --build --preset macos-cocoa
+cp -R bld/macos-cocoa/minivmac.app ./
 ```
 
 The app bundle is at `bld/macos-cocoa/minivmac.app`. Drop a Mac II ROM file (`MacII.ROM`) next to the app and a System 7 disk image onto the window to boot.
