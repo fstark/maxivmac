@@ -8,9 +8,28 @@
 #include <cstdint>
 #include <cstddef>
 
+/* Optimization hints — compiler may override */
 #define SmallGlobals 0
 #define cIncludeUnused 0
-#define UnusedParam(p) (void) p
+#define UNUSED(p) (void)(p)
+#define UnusedParam(p) (void)(p)
+
+/* Endian/alignment support */
+#ifndef BigEndianUnaligned
+#define BigEndianUnaligned 0
+#endif
+
+#ifndef LittleEndianUnaligned
+#define LittleEndianUnaligned 0
+#endif
+
+#ifndef Have_ASR
+#define Have_ASR 0
+#endif
+
+#ifndef HaveMySwapUi5r
+#define HaveMySwapUi5r 0
+#endif
 
 /* 64-bit integer types (for FPU emulation) */
 using si6r = int64_t;
