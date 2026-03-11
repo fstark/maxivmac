@@ -21,11 +21,7 @@
 	that can not go in OSGLCMUI, because they depend on user options.
 */
 
-#ifdef OSGCOMUD_H
-#error "header already included"
-#else
-#define OSGCOMUD_H
-#endif
+#pragma once
 
 #include "CNFUDOSG.h"
 	/*

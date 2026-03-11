@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef ASCEMDEV_H
-#error "header already included"
-#else
-#define ASCEMDEV_H
-#endif
+#pragma once
 
 extern uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 extern void ASC_SubTick(int SubTick);

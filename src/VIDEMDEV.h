@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef VIDEMDEV_H
-#error "header already included"
-#else
-#define VIDEMDEV_H
-#endif
+#pragma once
 
 extern bool Vid_Init(void);
 extern uint16_t Vid_Reset(void);

@@ -18,11 +18,7 @@
 	DeFaults for CoNFiguration of CoMPiler — mostly empty after type cleanup
 */
 
-#ifdef DFCNFCMP_H
-#error "header already included"
-#else
-#define DFCNFCMP_H
-#endif
+#pragma once
 
 /* Branch prediction hint */
 #ifndef my_cond_rare

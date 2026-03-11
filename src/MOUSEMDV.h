@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef MOUSEMDV_H
-#error "header already included"
-#else
-#define MOUSEMDV_H
-#endif
+#pragma once
 
 extern void Mouse_Update(void);
 extern void Mouse_EndTickNotify(void);

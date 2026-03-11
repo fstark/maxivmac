@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef PMUEMDEV_H
-#error "header already included"
-#else
-#define PMUEMDEV_H
-#endif
+#pragma once
 
 extern void PmuToReady_ChangeNtfy(void);
 extern void PMU_DoTask(void);

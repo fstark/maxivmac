@@ -18,11 +18,7 @@
 	ALTernate KEYs Mode
 */
 
-#ifdef ALTKEYSM_H
-#error "header already included"
-#else
-#define ALTKEYSM_H
-#endif
+#pragma once
 
 static bool AltKeysLockText = false;
 static bool AltKeysTrueCmnd = false;

@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef IWMEVDEV_H
-#error "header already included"
-#else
-#define IWMEVDEV_H
-#endif
+#pragma once
 
 extern void IWM_Reset(void);
 

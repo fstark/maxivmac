@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef RTCEMDEV_H
-#error "header already included"
-#else
-#define RTCEMDEV_H
-#endif
+#pragma once
 
 extern bool RTC_Init(void);
 extern void RTC_Interrupt(void);

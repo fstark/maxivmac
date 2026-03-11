@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef M68KITAB_H
-#error "header already included"
-#else
-#define M68KITAB_H
-#endif
+#pragma once
 
 enum {
 	kIKindTst,

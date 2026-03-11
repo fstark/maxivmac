@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef SNDEMDEV_H
-#error "header already included"
-#else
-#define SNDEMDEV_H
-#endif
+#pragma once
 
 #if MySoundEnabled
 extern void MacSound_SubTick(int SubTick);

@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef GLOBGLUE_H
-#error "header already included"
-#else
-#define GLOBGLUE_H
-#endif
+#pragma once
 
 
 #define kEmMd_Twig43      0

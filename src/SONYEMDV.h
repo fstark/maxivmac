@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef SONYEMDV_H
-#error "header already included"
-#else
-#define SONYEMDV_H
-#endif
+#pragma once
 
 #include <string.h>
 
