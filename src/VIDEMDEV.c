@@ -27,7 +27,7 @@
 		Basilisk II source code, especially slot_rom.cpp
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #if EmVidCard
 

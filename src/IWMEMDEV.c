@@ -29,7 +29,7 @@
 	includes Status and Mode Register Accesses.
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #include "IWMEMDEV.h"
 

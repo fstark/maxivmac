@@ -65,7 +65,7 @@ set(MINIVMAC_LOCALTALK "0" CACHE STRING "Enable LocalTalk (1/0)")
 # their feature is disabled, so it's safe to always include them.
 # ---------------------------------------------------------------------------
 set(MINIVMAC_SOURCES
-    src/GLOBGLUE.c
+    src/core/machine.cpp
     src/M68KITAB.c
     src/MINEM68K.c
     src/VIAEMDEV.c
@@ -85,7 +85,7 @@ set(MINIVMAC_SOURCES
     src/KBRDEMDV.c
     src/PMUEMDEV.c
     src/DISAM68K.c
-    src/PROGMAIN.c
+    src/core/main.cpp
 )
 
 # ---------------------------------------------------------------------------

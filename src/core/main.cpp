@@ -18,7 +18,7 @@
 	PROGram MAIN.
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 #include "MINEM68K.h"
 #if EmVIA1
 #include "VIAEMDEV.h"
@@ -58,7 +58,7 @@
 #include "MOUSEMDV.h"
 
 
-#include "PROGMAIN.h"
+#include "core/main.h"
 
 /*
 	ReportAbnormalID unused 0x1002 - 0x10FF

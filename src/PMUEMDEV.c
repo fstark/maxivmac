@@ -18,7 +18,7 @@
 	Power Management Unit EMulated DEVice
 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 
 #if EmPMU
 

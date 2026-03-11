@@ -24,7 +24,7 @@
 
 /* NCR5380 chip emulation by Yoav Shadmi, 1998 */
 
-#include "PICOMMON.h"
+#include "core/common.h"
 #include "MINEM68K.h"
 
 #include "SCSIEMDV.h"

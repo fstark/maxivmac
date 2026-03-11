@@ -5351,7 +5351,7 @@ label_retry:
 #endif
 }
 
-#include "PROGMAIN.h"
+#include "core/main.h"
 
 static void AppendMenuCStr(MenuHandle menu, char *s)
 {

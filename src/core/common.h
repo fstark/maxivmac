@@ -37,9 +37,9 @@
 		operating system glue, then could define the different compiler
 		configuration here and in CNFUIOSG, instead of CNFUIALL.
 	*/
-#include "DFCNFCMP.h"
+#include "core/defaults.h"
 	/* see OSGCOMUI.h for comment */
-#include "ENDIANAC.h"
+#include "core/endian.h"
 #include "CNFUDALL.h"
 	/* see OSGCOMUD.h for comment */
 #include "OSGLUAAA.h"
@@ -48,4 +48,4 @@
 		Configuration file dependent on user options
 		suitable for platform indendent code.
 	*/
-#include "GLOBGLUE.h"
+#include "core/machine.h"
