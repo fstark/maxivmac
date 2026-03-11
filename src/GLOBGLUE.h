@@ -180,7 +180,7 @@ enum {
 
 extern void ICT_add(int taskid, uint32_t n);
 
-#define iCountt uint32_t
+using iCountt = uint32_t;
 extern iCountt GetCuriCount(void);
 extern void ICT_Zap(void);
 
