@@ -8,8 +8,7 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------
-# C++17 — all .c files are compiled as C++ via source property below.
-# OSGLUCCO.m stays as Objective-C.
+# C++17 — all sources are .cpp or .mm (ObjC++).
 # ---------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -320,22 +319,14 @@ endif()
 # ---------------------------------------------------------------------------
 
 # Include paths: generated cfg dir has all 7 config headers (generated or
-# copied). Source cfg/ kept as fallback. src/ for source headers.
+# copied). src/config/ for static fallback configs. src/ for source headers.
 target_include_directories(minivmac PRIVATE
     "${MINIVMAC_GENERATED_CFG_DIR}"
     "${CMAKE_SOURCE_DIR}/src/config"
     "${CMAKE_SOURCE_DIR}/src"
 )
 
-# Compile all .c source files as C++ (do NOT rename files yet — Phase 3).
-# OSGLUCCO.m is compiled as Objective-C++ for C++ linkage compatibility.
-foreach(_src ${MINIVMAC_SOURCES})
-    if(_src MATCHES "\\.c$")
-        set_source_files_properties(${_src} PROPERTIES LANGUAGE CXX)
-    elseif(_src MATCHES "\\.m$")
-        set_source_files_properties(${_src} PROPERTIES LANGUAGE OBJCXX)
-    endif()
-endforeach()
+# All sources are now .cpp or .mm — no LANGUAGE overrides needed.
 
 # Compiler flags matching the original Xcode project
 target_compile_options(minivmac PRIVATE
