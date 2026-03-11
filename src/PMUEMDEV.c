@@ -311,7 +311,7 @@ LOCALPROC SetPMUbus(uint8_t v)
 	VIA1_iA7 = v & 0x01;
 }
 
-LOCALVAR blnr PMU_Sending = falseblnr;
+LOCALVAR bool PMU_Sending = false;
 
 LOCALPROC PmuCheckCommandCompletion(void)
 {
@@ -327,7 +327,7 @@ LOCALPROC PmuCheckCommandCompletion(void)
 				PMUState = kPMUStateSendLength;
 			}
 			PMU_i = 0;
-			PMU_Sending = trueblnr;
+			PMU_Sending = true;
 			ICT_add(kICT_PMU_Task,
 				20400UL * kCycleScale / 64 * kMyClockMult);
 		}
@@ -337,7 +337,7 @@ LOCALPROC PmuCheckCommandCompletion(void)
 GLOBALPROC PmuToReady_ChangeNtfy(void)
 {
 	if (PMU_Sending) {
-		PMU_Sending = falseblnr;
+		PMU_Sending = false;
 		ReportAbnormalID(0x0E0C,
 			"PmuToReady_ChangeNtfy while PMU_Sending");
 		PmuFromReady = 0;
@@ -396,7 +396,7 @@ GLOBALPROC PmuToReady_ChangeNtfy(void)
 			} else {
 				PMU_SendNext = PMU_BuffL;
 				PMUState = kPMUStateSendBuffer;
-				PMU_Sending = trueblnr;
+				PMU_Sending = true;
 				ICT_add(kICT_PMU_Task,
 					20400UL * kCycleScale / 64 * kMyClockMult);
 			}
@@ -421,7 +421,7 @@ GLOBALPROC PmuToReady_ChangeNtfy(void)
 					PMU_SendNext = *PMU_p++;
 					--PMU_rem;
 					++PMU_i;
-					PMU_Sending = trueblnr;
+					PMU_Sending = true;
 					ICT_add(kICT_PMU_Task,
 						20400UL * kCycleScale / 64 * kMyClockMult);
 				}
@@ -433,7 +433,7 @@ GLOBALPROC PmuToReady_ChangeNtfy(void)
 GLOBALPROC PMU_DoTask(void)
 {
 	if (PMU_Sending) {
-		PMU_Sending = falseblnr;
+		PMU_Sending = false;
 		SetPMUbus(PMU_SendNext);
 		PmuFromReady = 0;
 	}

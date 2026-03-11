@@ -36,9 +36,7 @@
 */
 /* uimr/simr typedefs removed — use uint32_t/int32_t directly */
 
-#define blnr uint8_t
-#define trueblnr 1
-#define falseblnr 0
+/* blnr/trueblnr/falseblnr removed — use bool/true/false directly */
 
 #define nullpr nullptr
 

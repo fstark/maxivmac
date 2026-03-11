@@ -69,14 +69,14 @@ typedef struct __CFError * CFErrorRef;
 
 LOCALVAR CFBundleRef AppServBunRef;
 
-LOCALVAR blnr DidApplicationServicesBun = falseblnr;
+LOCALVAR bool DidApplicationServicesBun = false;
 
-LOCALFUNC blnr HaveApplicationServicesBun(void)
+LOCALFUNC bool HaveApplicationServicesBun(void)
 {
 	if (! DidApplicationServicesBun) {
 		AppServBunRef = CFBundleGetBundleWithIdentifier(
 			CFSTR("com.apple.ApplicationServices"));
-		DidApplicationServicesBun = trueblnr;
+		DidApplicationServicesBun = true;
 	}
 	return (AppServBunRef != NULL);
 }
@@ -85,14 +85,14 @@ LOCALFUNC blnr HaveApplicationServicesBun(void)
 
 LOCALVAR CFBundleRef HIToolboxBunRef;
 
-LOCALVAR blnr DidHIToolboxBunRef = falseblnr;
+LOCALVAR bool DidHIToolboxBunRef = false;
 
-LOCALFUNC blnr HaveHIToolboxBunRef(void)
+LOCALFUNC bool HaveHIToolboxBunRef(void)
 {
 	if (! DidHIToolboxBunRef) {
 		HIToolboxBunRef = CFBundleGetBundleWithIdentifier(
 			CFSTR("com.apple.HIToolbox"));
-		DidHIToolboxBunRef = trueblnr;
+		DidHIToolboxBunRef = true;
 	}
 	return (HIToolboxBunRef != NULL);
 }
@@ -124,9 +124,9 @@ enum {
 typedef OSStatus (*SetSystemUIModeProcPtr)
 	(MySystemUIMode inMode, MySystemUIOptions inOptions);
 LOCALVAR SetSystemUIModeProcPtr MySetSystemUIMode = NULL;
-LOCALVAR blnr DidSetSystemUIMode = falseblnr;
+LOCALVAR bool DidSetSystemUIMode = false;
 
-LOCALFUNC blnr HaveMySetSystemUIMode(void)
+LOCALFUNC bool HaveMySetSystemUIMode(void)
 {
 	if (! DidSetSystemUIMode) {
 		if (HaveHIToolboxBunRef()) {
@@ -135,7 +135,7 @@ LOCALFUNC blnr HaveMySetSystemUIMode(void)
 				CFBundleGetFunctionPointerForName(
 					HIToolboxBunRef, CFSTR("SetSystemUIMode"));
 		}
-		DidSetSystemUIMode = trueblnr;
+		DidSetSystemUIMode = true;
 	}
 	return (MySetSystemUIMode != NULL);
 }
@@ -151,9 +151,9 @@ typedef Boolean (*CFURLCopyResourcePropertyForKeyProcPtr) (
 	);
 LOCALVAR CFURLCopyResourcePropertyForKeyProcPtr
 	MyCFURLCopyResourcePropertyForKey = NULL;
-LOCALVAR blnr DidCFURLCopyResourcePropertyForKey = falseblnr;
+LOCALVAR bool DidCFURLCopyResourcePropertyForKey = false;
 
-LOCALFUNC blnr HaveMyCFURLCopyResourcePropertyForKey(void)
+LOCALFUNC bool HaveMyCFURLCopyResourcePropertyForKey(void)
 {
 	if (! DidCFURLCopyResourcePropertyForKey) {
 		if (HaveApplicationServicesBun()) {
@@ -163,7 +163,7 @@ LOCALFUNC blnr HaveMyCFURLCopyResourcePropertyForKey(void)
 					AppServBunRef,
 					CFSTR("CFURLCopyResourcePropertyForKey"));
 		}
-		DidCFURLCopyResourcePropertyForKey = trueblnr;
+		DidCFURLCopyResourcePropertyForKey = true;
 	}
 	return (MyCFURLCopyResourcePropertyForKey != NULL);
 }
@@ -171,9 +171,9 @@ LOCALFUNC blnr HaveMyCFURLCopyResourcePropertyForKey(void)
 
 LOCALVAR const CFStringRef *MykCFURLIsAliasFileKey
 	= NULL;
-LOCALVAR blnr DidkCFURLIsAliasFileKey = falseblnr;
+LOCALVAR bool DidkCFURLIsAliasFileKey = false;
 
-LOCALFUNC blnr HaveMykCFURLIsAliasFileKey(void)
+LOCALFUNC bool HaveMykCFURLIsAliasFileKey(void)
 {
 	if (! DidkCFURLIsAliasFileKey) {
 		if (HaveApplicationServicesBun()) {
@@ -182,7 +182,7 @@ LOCALFUNC blnr HaveMykCFURLIsAliasFileKey(void)
 				CFBundleGetDataPointerForName(
 					AppServBunRef, CFSTR("kCFURLIsAliasFileKey"));
 		}
-		DidkCFURLIsAliasFileKey = trueblnr;
+		DidkCFURLIsAliasFileKey = true;
 	}
 	return (MykCFURLIsAliasFileKey != NULL);
 }
@@ -190,9 +190,9 @@ LOCALFUNC blnr HaveMykCFURLIsAliasFileKey(void)
 
 LOCALVAR const CFStringRef *MykCFURLIsSymbolicLinkKey
 	= NULL;
-LOCALVAR blnr DidkCFURLIsSymbolicLinkKey = falseblnr;
+LOCALVAR bool DidkCFURLIsSymbolicLinkKey = false;
 
-LOCALFUNC blnr HaveMykCFURLIsSymbolicLinkKey(void)
+LOCALFUNC bool HaveMykCFURLIsSymbolicLinkKey(void)
 {
 	if (! DidkCFURLIsSymbolicLinkKey) {
 		if (HaveApplicationServicesBun()) {
@@ -201,7 +201,7 @@ LOCALFUNC blnr HaveMykCFURLIsSymbolicLinkKey(void)
 				CFBundleGetDataPointerForName(
 					AppServBunRef, CFSTR("kCFURLIsSymbolicLinkKey"));
 		}
-		DidkCFURLIsSymbolicLinkKey = trueblnr;
+		DidkCFURLIsSymbolicLinkKey = true;
 	}
 	return (MykCFURLIsSymbolicLinkKey != NULL);
 }
@@ -211,9 +211,9 @@ typedef CFDataRef (*CFURLCreateBookmarkDataFromFileProcPtr) (
 	CFAllocatorRef allocator, CFURLRef fileURL, CFErrorRef *errorRef);
 LOCALVAR CFURLCreateBookmarkDataFromFileProcPtr
 	MyCFURLCreateBookmarkDataFromFile = NULL;
-LOCALVAR blnr DidCFURLCreateBookmarkDataFromFile = falseblnr;
+LOCALVAR bool DidCFURLCreateBookmarkDataFromFile = false;
 
-LOCALFUNC blnr HaveMyCFURLCreateBookmarkDataFromFile(void)
+LOCALFUNC bool HaveMyCFURLCreateBookmarkDataFromFile(void)
 {
 	if (! DidCFURLCreateBookmarkDataFromFile) {
 		if (HaveApplicationServicesBun()) {
@@ -222,7 +222,7 @@ LOCALFUNC blnr HaveMyCFURLCreateBookmarkDataFromFile(void)
 				CFBundleGetFunctionPointerForName(AppServBunRef,
 					CFSTR("CFURLCreateBookmarkDataFromFile"));
 		}
-		DidCFURLCreateBookmarkDataFromFile = trueblnr;
+		DidCFURLCreateBookmarkDataFromFile = true;
 	}
 	return (MyCFURLCreateBookmarkDataFromFile != NULL);
 }
@@ -237,9 +237,9 @@ typedef CFURLRef (*CFURLCreateByResolvingBookmarkDataProcPtr) (
 	Boolean* isStale, CFErrorRef* error);
 LOCALVAR CFURLCreateByResolvingBookmarkDataProcPtr
 	MyCFURLCreateByResolvingBookmarkData = NULL;
-LOCALVAR blnr DidCFURLCreateByResolvingBookmarkData = falseblnr;
+LOCALVAR bool DidCFURLCreateByResolvingBookmarkData = false;
 
-LOCALFUNC blnr HaveMyCFURLCreateByResolvingBookmarkData(void)
+LOCALFUNC bool HaveMyCFURLCreateByResolvingBookmarkData(void)
 {
 	if (! DidCFURLCreateByResolvingBookmarkData) {
 		if (HaveApplicationServicesBun()) {
@@ -248,7 +248,7 @@ LOCALFUNC blnr HaveMyCFURLCreateByResolvingBookmarkData(void)
 				CFBundleGetFunctionPointerForName(AppServBunRef,
 					CFSTR("CFURLCreateByResolvingBookmarkData"));
 		}
-		DidCFURLCreateByResolvingBookmarkData = trueblnr;
+		DidCFURLCreateByResolvingBookmarkData = true;
 	}
 	return (MyCFURLCreateByResolvingBookmarkData != NULL);
 }
@@ -257,9 +257,9 @@ LOCALFUNC blnr HaveMyCFURLCreateByResolvingBookmarkData(void)
 typedef boolean_t (*CGCursorIsVisibleProcPtr)(void);
 
 LOCALVAR CGCursorIsVisibleProcPtr MyCGCursorIsVisible = NULL;
-LOCALVAR blnr DidCGCursorIsVisible = falseblnr;
+LOCALVAR bool DidCGCursorIsVisible = false;
 
-LOCALFUNC blnr HaveMyCGCursorIsVisible(void)
+LOCALFUNC bool HaveMyCGCursorIsVisible(void)
 {
 	if (! DidCGCursorIsVisible) {
 		if (HaveApplicationServicesBun()) {
@@ -268,7 +268,7 @@ LOCALFUNC blnr HaveMyCGCursorIsVisible(void)
 				CFBundleGetFunctionPointerForName(
 					AppServBunRef, CFSTR("CGCursorIsVisible"));
 		}
-		DidCGCursorIsVisible = trueblnr;
+		DidCGCursorIsVisible = true;
 	}
 	return (MyCGCursorIsVisible != NULL);
 }
@@ -408,10 +408,10 @@ LOCALVAR NSString *MyDataPath = nil;
 LOCALVAR FILE *dbglog_File = NULL;
 #endif
 
-LOCALFUNC blnr dbglog_open0(void)
+LOCALFUNC bool dbglog_open0(void)
 {
 #if dbglog_ToStdErr
-	return trueblnr;
+	return true;
 #else
 	NSString *myLogPath = [MyDataPath
 		stringByAppendingPathComponent: @"dbglog.txt"];
@@ -485,7 +485,7 @@ LOCALFUNC NSString * NSStringCreateFromSubstCStr(char *s)
 }
 
 #if IncludeSonyNameNew
-LOCALFUNC blnr MacRomanFileNameToNSString(tPbuf i,
+LOCALFUNC bool MacRomanFileNameToNSString(tPbuf i,
 	NSString **r)
 {
 	uint8_t * p;
@@ -542,10 +542,10 @@ LOCALFUNC blnr MacRomanFileNameToNSString(tPbuf i,
 
 		[d release];
 
-		return trueblnr;
+		return true;
 	}
 
-	return falseblnr;
+	return false;
 }
 #endif
 
@@ -601,10 +601,10 @@ LOCALFUNC tMacErr NSStringToRomanPbuf(NSString *string, tPbuf *r)
 
 /* --- drives --- */
 
-LOCALFUNC blnr FindNamedChildPath(NSString *parentPath,
+LOCALFUNC bool FindNamedChildPath(NSString *parentPath,
 	char *ChildName, NSString **childPath)
 {
-	blnr v = falseblnr;
+	bool v = false;
 
 #if 0
 	NSString *ss = [NSString stringWithCString:s
@@ -623,7 +623,7 @@ LOCALFUNC blnr FindNamedChildPath(NSString *parentPath,
 		NSString *r = [parentPath stringByAppendingPathComponent: ss];
 		if (nil != r) {
 			*childPath = r;
-			v = trueblnr;
+			v = true;
 		}
 	}
 
@@ -731,13 +731,13 @@ LOCALFUNC NSString *MyResolveAlias(NSString *filePath,
 	return resolvedPath;
 }
 
-LOCALFUNC blnr FindNamedChildDirPath(NSString *parentPath,
+LOCALFUNC bool FindNamedChildDirPath(NSString *parentPath,
 	char *ChildName, NSString **childPath)
 {
 	NSString *r;
 	BOOL isDir;
 	Boolean isDirectory;
-	blnr v = falseblnr;
+	bool v = false;
 
 	if (FindNamedChildPath(parentPath, ChildName, &r))
 	if ([[NSFileManager defaultManager]
@@ -745,13 +745,13 @@ LOCALFUNC blnr FindNamedChildDirPath(NSString *parentPath,
 	{
 		if (isDir) {
 			*childPath = r;
-			v = trueblnr;
+			v = true;
 		} else {
 			NSString *RslvPath = MyResolveAlias(r, &isDirectory);
 			if (nil != RslvPath) {
 				if (isDirectory) {
 					*childPath = RslvPath;
-					v = trueblnr;
+					v = true;
 				}
 			}
 		}
@@ -760,13 +760,13 @@ LOCALFUNC blnr FindNamedChildDirPath(NSString *parentPath,
 	return v;
 }
 
-LOCALFUNC blnr FindNamedChildFilePath(NSString *parentPath,
+LOCALFUNC bool FindNamedChildFilePath(NSString *parentPath,
 	char *ChildName, NSString **childPath)
 {
 	NSString *r;
 	BOOL isDir;
 	Boolean isDirectory;
-	blnr v = falseblnr;
+	bool v = false;
 
 	if (FindNamedChildPath(parentPath, ChildName, &r))
 	if ([[NSFileManager defaultManager]
@@ -777,11 +777,11 @@ LOCALFUNC blnr FindNamedChildFilePath(NSString *parentPath,
 			if (nil != RslvPath) {
 				if (! isDirectory) {
 					*childPath = RslvPath;
-					v = trueblnr;
+					v = true;
 				}
 			} else {
 				*childPath = r;
-				v = trueblnr;
+				v = true;
 			}
 		}
 	}
@@ -813,7 +813,7 @@ LOCALPROC InitDrives(void)
 	}
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyTransfer(blnr IsWrite, uint8_t * Buffer,
+GLOBALOSGLUFUNC tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount)
 {
@@ -867,9 +867,9 @@ GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 */
 
 #if HaveAdvisoryLocks
-LOCALFUNC blnr MyLockFile(FILE *refnum)
+LOCALFUNC bool MyLockFile(FILE *refnum)
 {
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 #if 0
 	struct flock fl;
@@ -882,9 +882,9 @@ LOCALFUNC blnr MyLockFile(FILE *refnum)
 	fl.l_whence = SEEK_SET; /* type of l_start */
 	if (-1 == fcntl(fd, F_SETLK, &fl)) {
 		MacMsg(kStrImageInUseTitle, kStrImageInUseMessage,
-			falseblnr);
+			false);
 	} else {
-		IsOk = trueblnr;
+		IsOk = true;
 	}
 #else
 	int fd = fileno(refnum);
@@ -893,7 +893,7 @@ LOCALFUNC blnr MyLockFile(FILE *refnum)
 		if (EWOULDBLOCK == errno) {
 			/* already locked */
 			MacMsg(kStrImageInUseTitle, kStrImageInUseMessage,
-				falseblnr);
+				false);
 		} else
 		{
 			/*
@@ -901,10 +901,10 @@ LOCALFUNC blnr MyLockFile(FILE *refnum)
 				for this volume.
 				Don't prevent opening.
 			*/
-			IsOk = trueblnr;
+			IsOk = true;
 		}
 	} else {
-		IsOk = trueblnr;
+		IsOk = true;
 	}
 #endif
 
@@ -936,7 +936,7 @@ LOCALPROC MyUnlockFile(FILE *refnum)
 }
 #endif
 
-LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, blnr deleteit)
+LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 {
 	FILE *refnum = Drives[Drive_No];
 
@@ -971,13 +971,13 @@ LOCALFUNC tMacErr vSonyEject0(tDrive Drive_No, blnr deleteit)
 
 GLOBALOSGLUFUNC tMacErr vSonyEject(tDrive Drive_No)
 {
-	return vSonyEject0(Drive_No, falseblnr);
+	return vSonyEject0(Drive_No, false);
 }
 
 #if IncludeSonyNew
 GLOBALOSGLUFUNC tMacErr vSonyEjectDelete(tDrive Drive_No)
 {
-	return vSonyEject0(Drive_No, trueblnr);
+	return vSonyEject0(Drive_No, true);
 }
 #endif
 
@@ -1009,15 +1009,15 @@ GLOBALOSGLUFUNC tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 }
 #endif
 
-LOCALFUNC blnr Sony_Insert0(FILE *refnum, blnr locked,
+LOCALFUNC bool Sony_Insert0(FILE *refnum, bool locked,
 	NSString *filePath)
 {
 	tDrive Drive_No;
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	if (! FirstFreeDisk(&Drive_No)) {
 		MacMsg(kStrTooManyImagesTitle, kStrTooManyImagesMessage,
-			falseblnr);
+			false);
 	} else {
 		/* printf("Sony_Insert0 %d\n", (int)Drive_No); */
 
@@ -1032,7 +1032,7 @@ LOCALFUNC blnr Sony_Insert0(FILE *refnum, blnr locked,
 			DriveNames[Drive_No] = [filePath retain];
 #endif
 
-			IsOk = trueblnr;
+			IsOk = true;
 		}
 	}
 
@@ -1043,35 +1043,35 @@ LOCALFUNC blnr Sony_Insert0(FILE *refnum, blnr locked,
 	return IsOk;
 }
 
-LOCALFUNC blnr Sony_Insert1(NSString *filePath, blnr silentfail)
+LOCALFUNC bool Sony_Insert1(NSString *filePath, bool silentfail)
 {
 	/* const char *drivepath = [filePath UTF8String]; */
 	const char *drivepath = [filePath fileSystemRepresentation];
-	blnr locked = falseblnr;
+	bool locked = false;
 	/* printf("Sony_Insert1 %s\n", drivepath); */
 	FILE *refnum = fopen(drivepath, "rb+");
 	if (NULL == refnum) {
-		locked = trueblnr;
+		locked = true;
 		refnum = fopen(drivepath, "rb");
 	}
 	if (NULL == refnum) {
 		if (! silentfail) {
-			MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, falseblnr);
+			MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, false);
 		}
 	} else {
 		return Sony_Insert0(refnum, locked, filePath);
 	}
-	return falseblnr;
+	return false;
 }
 
-LOCALFUNC blnr Sony_Insert2(char *s)
+LOCALFUNC bool Sony_Insert2(char *s)
 {
 	NSString *sPath;
 
 	if (! FindNamedChildFilePath(MyDataPath, s, &sPath)) {
-		return falseblnr;
+		return false;
 	} else {
-		return Sony_Insert1(sPath, trueblnr);
+		return Sony_Insert1(sPath, true);
 	}
 }
 
@@ -1104,14 +1104,14 @@ LOCALFUNC tMacErr LoadMacRomPath(NSString *RomPath)
 	return err;
 }
 
-LOCALFUNC blnr Sony_Insert1a(NSString *filePath)
+LOCALFUNC bool Sony_Insert1a(NSString *filePath)
 {
-	blnr v;
+	bool v;
 
 	if (! ROM_loaded) {
 		v = (mnvm_noErr == LoadMacRomPath(filePath));
 	} else {
-		v = Sony_Insert1(filePath, falseblnr);
+		v = Sony_Insert1(filePath, false);
 	}
 
 	return v;
@@ -1130,12 +1130,12 @@ LOCALPROC Sony_ResolveInsert(NSString *filePath)
 	}
 }
 
-LOCALFUNC blnr Sony_InsertIth(int i)
+LOCALFUNC bool Sony_InsertIth(int i)
 {
-	blnr v;
+	bool v;
 
 	if ((i > 9) || ! FirstFreeDisk(nullpr)) {
-		v = falseblnr;
+		v = false;
 	} else {
 		char s[] = "disk?.dsk";
 
@@ -1147,7 +1147,7 @@ LOCALFUNC blnr Sony_InsertIth(int i)
 	return v;
 }
 
-LOCALFUNC blnr LoadInitialImages(void)
+LOCALFUNC bool LoadInitialImages(void)
 {
 	if (! AnyDiskInserted()) {
 		int i;
@@ -1157,11 +1157,11 @@ LOCALFUNC blnr LoadInitialImages(void)
 		}
 	}
 
-	return trueblnr;
+	return true;
 }
 
 #if IncludeSonyNew
-LOCALFUNC blnr WriteZero(FILE *refnum, uint32_t L)
+LOCALFUNC bool WriteZero(FILE *refnum, uint32_t L)
 {
 #define ZeroBufferSize 2048
 	uint32_t i;
@@ -1172,25 +1172,25 @@ LOCALFUNC blnr WriteZero(FILE *refnum, uint32_t L)
 	while (L > 0) {
 		i = (L > ZeroBufferSize) ? ZeroBufferSize : L;
 		if (fwrite(buffer, 1, i, refnum) != i) {
-			return falseblnr;
+			return false;
 		}
 		L -= i;
 	}
-	return trueblnr;
+	return true;
 }
 #endif
 
 #if IncludeSonyNew
 LOCALPROC MakeNewDisk0(uint32_t L, NSString *sPath)
 {
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 	const char *drivepath = [sPath fileSystemRepresentation];
 	FILE *refnum = fopen(drivepath, "wb+");
 	if (NULL == refnum) {
-		MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, falseblnr);
+		MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, false);
 	} else {
 		if (WriteZero(refnum, L)) {
-			IsOk = Sony_Insert0(refnum, falseblnr, sPath);
+			IsOk = Sony_Insert0(refnum, false, sPath);
 			refnum = NULL;
 		}
 		if (refnum != NULL) {
@@ -1264,7 +1264,7 @@ LOCALFUNC tMacErr LoadMacRomFromGlobalDir(void)
 	return err;
 }
 
-LOCALFUNC blnr LoadMacRom(void)
+LOCALFUNC bool LoadMacRom(void)
 {
 	tMacErr err;
 
@@ -1275,7 +1275,7 @@ LOCALFUNC blnr LoadMacRom(void)
 	}
 
 	(void) err; /* ignore any errors */
-	return trueblnr; /* keep launching Mini vMac, regardless */
+	return true; /* keep launching Mini vMac, regardless */
 }
 
 
@@ -1356,7 +1356,7 @@ GLOBALOSGLUFUNC tMacErr HTCEimport(tPbuf *r)
 
 
 #if EmLocalTalk
-LOCALFUNC blnr EntropyGather(void)
+LOCALFUNC bool EntropyGather(void)
 {
 	/*
 		gather some entropy from several places, just in case
@@ -1438,7 +1438,7 @@ LOCALFUNC blnr EntropyGather(void)
 		}
 	}
 
-	return trueblnr;
+	return true;
 }
 #endif
 
@@ -1623,7 +1623,7 @@ LOCALPROC MyUpdateKeyboardModifiers(NSUInteger newMods)
 
 /* cursor hiding */
 
-LOCALVAR blnr WantCursorHidden = falseblnr;
+LOCALVAR bool WantCursorHidden = false;
 
 #if MayFullScreen
 LOCALVAR short hOffset;
@@ -1633,19 +1633,19 @@ LOCALVAR short vOffset;
 #endif
 
 #if MayFullScreen
-LOCALVAR blnr GrabMachine = falseblnr;
+LOCALVAR bool GrabMachine = false;
 #endif
 
 #if VarFullScreen
-LOCALVAR blnr UseFullScreen = (0 != WantInitFullScreen);
+LOCALVAR bool UseFullScreen = (0 != WantInitFullScreen);
 #endif
 
 #if EnableMagnify
-LOCALVAR blnr UseMagnify = (0 != WantInitMagnify);
+LOCALVAR bool UseMagnify = (0 != WantInitMagnify);
 #endif
 
-LOCALVAR blnr gBackgroundFlag = falseblnr;
-LOCALVAR blnr CurSpeedStopped = trueblnr;
+LOCALVAR bool gBackgroundFlag = false;
+LOCALVAR bool CurSpeedStopped = true;
 
 #if EnableMagnify
 #define MaxScale MyWindowScale
@@ -1653,12 +1653,12 @@ LOCALVAR blnr CurSpeedStopped = trueblnr;
 #define MaxScale 1
 #endif
 
-LOCALVAR blnr HaveCursorHidden = falseblnr;
+LOCALVAR bool HaveCursorHidden = false;
 
 LOCALPROC ForceShowCursor(void)
 {
 	if (HaveCursorHidden) {
-		HaveCursorHidden = falseblnr;
+		HaveCursorHidden = false;
 		MyShowCursor();
 	}
 }
@@ -1666,7 +1666,7 @@ LOCALPROC ForceShowCursor(void)
 /* cursor moving */
 
 #if EnableMoveMouse
-LOCALFUNC blnr MyMoveMouse(int16_t h, int16_t v)
+LOCALFUNC bool MyMoveMouse(int16_t h, int16_t v)
 {
 	NSPoint p;
 	CGPoint cgp;
@@ -1718,7 +1718,7 @@ LOCALFUNC blnr MyMoveMouse(int16_t h, int16_t v)
 	}
 #endif
 
-	return trueblnr;
+	return true;
 }
 #endif
 
@@ -1736,14 +1736,14 @@ LOCALPROC AdjustMouseMotionGrab(void)
 		{
 			SavedMouseH = ViewHStart + (ViewHSize / 2);
 			SavedMouseV = ViewVStart + (ViewVSize / 2);
-			HaveMouseMotion = trueblnr;
+			HaveMouseMotion = true;
 		}
 	} else
 #endif
 	{
 		if (HaveMouseMotion) {
 			(void) MyMoveMouse(CurMouseH, CurMouseV);
-			HaveMouseMotion = falseblnr;
+			HaveMouseMotion = false;
 		}
 	}
 }
@@ -1773,7 +1773,7 @@ LOCALPROC MyMouseConstrain(void)
 		SavedMouseH += shiftdh;
 		SavedMouseV += shiftdv;
 		if (! MyMoveMouse(SavedMouseH, SavedMouseV)) {
-			HaveMouseMotion = falseblnr;
+			HaveMouseMotion = false;
 		}
 	}
 }
@@ -1783,7 +1783,7 @@ LOCALPROC MyMouseConstrain(void)
 
 LOCALPROC MousePositionNotify(int NewMousePosh, int NewMousePosv)
 {
-	blnr ShouldHaveCursorHidden = trueblnr;
+	bool ShouldHaveCursorHidden = true;
 
 #if VarFullScreen
 	if (UseFullScreen)
@@ -1823,17 +1823,17 @@ LOCALPROC MousePositionNotify(int NewMousePosh, int NewMousePosv)
 	{
 		if (NewMousePosh < 0) {
 			NewMousePosh = 0;
-			ShouldHaveCursorHidden = falseblnr;
+			ShouldHaveCursorHidden = false;
 		} else if (NewMousePosh >= vMacScreenWidth) {
 			NewMousePosh = vMacScreenWidth - 1;
-			ShouldHaveCursorHidden = falseblnr;
+			ShouldHaveCursorHidden = false;
 		}
 		if (NewMousePosv < 0) {
 			NewMousePosv = 0;
-			ShouldHaveCursorHidden = falseblnr;
+			ShouldHaveCursorHidden = false;
 		} else if (NewMousePosv >= vMacScreenHeight) {
 			NewMousePosv = vMacScreenHeight - 1;
-			ShouldHaveCursorHidden = falseblnr;
+			ShouldHaveCursorHidden = false;
 		}
 
 #if VarFullScreen
@@ -1841,7 +1841,7 @@ LOCALPROC MousePositionNotify(int NewMousePosh, int NewMousePosv)
 #endif
 #if MayFullScreen
 		{
-			ShouldHaveCursorHidden = trueblnr;
+			ShouldHaveCursorHidden = true;
 		}
 #endif
 
@@ -1868,7 +1868,7 @@ LOCALPROC CheckMouseState(void)
 	MousePositionNotify((int) p.x, (int) p.y);
 }
 
-LOCALVAR blnr gTrueBackgroundFlag = falseblnr;
+LOCALVAR bool gTrueBackgroundFlag = false;
 
 
 LOCALVAR uint8_t * ScalingBuff = nullpr;
@@ -1949,7 +1949,7 @@ LOCALPROC UpdateLuminanceCopy(int16_t top, int16_t left,
 						| ((long)CLUT_blues[j] & 0xFF00);
 				}
 			}
-			ColorTransValid = trueblnr;
+			ColorTransValid = true;
 		}
 
 		UpdateMappedColorCopy(top, left, bottom, right);
@@ -1970,7 +1970,7 @@ LOCALPROC UpdateLuminanceCopy(int16_t top, int16_t left,
 					*p4++ = ((i >> k) & 0x01) - 1;
 				}
 			}
-			ColorTransValid = trueblnr;
+			ColorTransValid = true;
 		}
 
 		UpdateBWLuminanceCopy(top, left, bottom, right);
@@ -2120,7 +2120,7 @@ LOCALVAR NSTimeInterval NextTickChangeTime;
 
 LOCALVAR uint32_t NewMacDateInSeconds;
 
-LOCALVAR blnr EmulationWasInterrupted = falseblnr;
+LOCALVAR bool EmulationWasInterrupted = false;
 
 LOCALPROC UpdateTrueEmulatedTime(void)
 {
@@ -2135,7 +2135,7 @@ LOCALPROC UpdateTrueEmulatedTime(void)
 			++TrueEmulatedTime;
 			NextTickChangeTime = LatestTime + MyTickDuration;
 
-			EmulationWasInterrupted = trueblnr;
+			EmulationWasInterrupted = true;
 #if dbglog_TimeStuff
 			dbglog_writelnNum("emulation interrupted",
 				TrueEmulatedTime);
@@ -2163,14 +2163,14 @@ LOCALPROC UpdateTrueEmulatedTime(void)
 
 LOCALVAR uint32_t MyDateDelta;
 
-LOCALFUNC blnr CheckDateTime(void)
+LOCALFUNC bool CheckDateTime(void)
 {
 	NewMacDateInSeconds = ((uint32_t)LatestTime) + MyDateDelta;
 	if (CurMacDateInSeconds != NewMacDateInSeconds) {
 		CurMacDateInSeconds = NewMacDateInSeconds;
-		return trueblnr;
+		return true;
 	} else {
-		return falseblnr;
+		return false;
 	}
 }
 
@@ -2180,7 +2180,7 @@ LOCALPROC StartUpTimeAdjust(void)
 	NextTickChangeTime = LatestTime;
 }
 
-LOCALFUNC blnr InitLocationDat(void)
+LOCALFUNC bool InitLocationDat(void)
 {
 	NSTimeZone *MyZone = [NSTimeZone localTimeZone];
 	uint32_t TzOffSet = (uint32_t)[MyZone secondsFromGMT];
@@ -2197,7 +2197,7 @@ LOCALFUNC blnr InitLocationDat(void)
 		| ((isdst ? 0x80 : 0) << 24);
 #endif
 
-	return trueblnr;
+	return true;
 }
 
 /* --- sound --- */
@@ -2312,20 +2312,20 @@ LOCALPROC MySound_WroteABlock(void)
 #endif
 }
 
-LOCALFUNC blnr MySound_EndWrite0(uint16_t actL)
+LOCALFUNC bool MySound_EndWrite0(uint16_t actL)
 {
-	blnr v;
+	bool v;
 
 	TheWriteOffset += actL;
 
 	if (0 != (TheWriteOffset & kOneBuffMask)) {
-		v = falseblnr;
+		v = false;
 	} else {
 		/* just finished a block */
 
 		MySound_WroteABlock();
 
-		v = trueblnr;
+		v = true;
 	}
 
 	return v;
@@ -2420,9 +2420,9 @@ struct MySoundR {
 
 	volatile trSoundTemp lastv;
 
-	blnr enabled;
-	blnr wantplaying;
-	blnr HaveStartedPlaying;
+	bool enabled;
+	bool wantplaying;
+	bool HaveStartedPlaying;
 
 	AudioUnit outputAudioUnit;
 };
@@ -2484,7 +2484,7 @@ label_retry:
 				dbglog_writeln("finished start transition");
 #endif
 
-				datp->HaveStartedPlaying = trueblnr;
+				datp->HaveStartedPlaying = true;
 			}
 		}
 	}
@@ -2577,7 +2577,7 @@ LOCALPROC MySound_Stop(void)
 		OSStatus result;
 		uint16_t retry_limit = 50; /* half of a second */
 
-		cur_audio.wantplaying = falseblnr;
+		cur_audio.wantplaying = false;
 
 label_retry:
 		if (kCenterTempSound == cur_audio.lastv) {
@@ -2638,8 +2638,8 @@ LOCALPROC MySound_Start(void)
 
 		MySound_Start0();
 		cur_audio.lastv = kCenterTempSound;
-		cur_audio.HaveStartedPlaying = falseblnr;
-		cur_audio.wantplaying = trueblnr;
+		cur_audio.HaveStartedPlaying = false;
+		cur_audio.wantplaying = true;
 
 		if (noErr != (result = AudioOutputUnitStart(
 			cur_audio.outputAudioUnit)))
@@ -2647,7 +2647,7 @@ LOCALPROC MySound_Start(void)
 #if dbglog_HAVE
 			dbglog_writeln("AudioOutputUnitStart fails");
 #endif
-			cur_audio.wantplaying = falseblnr;
+			cur_audio.wantplaying = false;
 		}
 
 #if dbglog_SoundStuff
@@ -2668,7 +2668,7 @@ LOCALPROC MySound_UnInit(void)
 		OSStatus result;
 		struct AURenderCallbackStruct callback;
 
-		cur_audio.enabled = falseblnr;
+		cur_audio.enabled = false;
 
 		/* Remove the input callback */
 		callback.inputProc = 0;
@@ -2715,7 +2715,7 @@ LOCALPROC MySound_UnInit(void)
 
 #define SOUND_SAMPLERATE 22255 /* = round(7833600 * 2 / 704) */
 
-LOCALFUNC blnr MySound_Init(void)
+LOCALFUNC bool MySound_Init(void)
 {
 	OSStatus result = noErr;
 #if UseAudioComp
@@ -2732,7 +2732,7 @@ LOCALFUNC blnr MySound_Init(void)
 	cur_audio.fPlayOffset = &ThePlayOffset;
 	cur_audio.fFillOffset = &TheFillOffset;
 	cur_audio.fMinFilledSoundBuffs = &MinFilledSoundBuffs;
-	cur_audio.wantplaying = falseblnr;
+	cur_audio.wantplaying = false;
 
 	desc.componentType = kAudioUnitType_Output;
 	desc.componentSubType = kAudioUnitSubType_DefaultOutput;
@@ -2844,7 +2844,7 @@ LOCALFUNC blnr MySound_Init(void)
 	} else
 
 	{
-		cur_audio.enabled = trueblnr;
+		cur_audio.enabled = true;
 
 		MySound_Start();
 			/*
@@ -2855,7 +2855,7 @@ LOCALFUNC blnr MySound_Init(void)
 	}
 
 	(void) result; /* ignore any errors */
-	return trueblnr; /* keep going, even if no sound */
+	return true; /* keep going, even if no sound */
 }
 
 GLOBALOSGLUPROC MySound_EndWrite(uint16_t actL)
@@ -3205,7 +3205,7 @@ LOCALPROC ReconnectKeyCodes3(void)
 LOCALPROC DisconnectKeyCodes3(void)
 {
 	DisconnectKeyCodes2();
-	MyMouseButtonSet(falseblnr);
+	MyMouseButtonSet(false);
 }
 
 /* --- basic dialogs --- */
@@ -3312,7 +3312,7 @@ LOCALPROC MyBeginDialog(void)
 LOCALPROC MyEndDialog(void)
 {
 	[MyWindow makeKeyWindow];
-	EmulationWasInterrupted = trueblnr;
+	EmulationWasInterrupted = true;
 }
 
 LOCALPROC InsertADisk0(void)
@@ -3340,7 +3340,7 @@ LOCALPROC InsertADisk0(void)
 
 /* --- main window creation and disposal --- */
 
-LOCALFUNC blnr Screen_Init(void)
+LOCALFUNC bool Screen_Init(void)
 {
 #if 0
 	if (noErr != Gestalt(gestaltSystemVersion,
@@ -3360,7 +3360,7 @@ LOCALFUNC blnr Screen_Init(void)
 
 	InitKeyCodes();
 
-	return trueblnr;
+	return true;
 }
 
 #if MayFullScreen
@@ -3375,7 +3375,7 @@ LOCALPROC AdjustMachineGrab(void)
 #if MayFullScreen
 LOCALPROC UngrabMachine(void)
 {
-	GrabMachine = falseblnr;
+	GrabMachine = false;
 	AdjustMachineGrab();
 }
 #endif
@@ -3412,7 +3412,7 @@ LOCALPROC MyAdjustGLforSize(int h, int v)
 	ScreenChangedAll();
 }
 
-LOCALVAR blnr WantScreensChangedCheck = falseblnr;
+LOCALVAR bool WantScreensChangedCheck = false;
 
 LOCALPROC MyUpdateOpenGLContext(void)
 {
@@ -3440,9 +3440,9 @@ LOCALPROC CloseMyOpenGLContext(void)
 - (void)setWantsBestResolutionOpenGLSurface:(BOOL)aBool;
 @end
 
-LOCALFUNC blnr GetOpnGLCntxt(void)
+LOCALFUNC bool GetOpnGLCntxt(void)
 {
-	blnr v = falseblnr;
+	bool v = false;
 
 	if (nil == MyNSOpnGLCntxt) {
 		NSRect NewWinRect = [MyNSview frame];
@@ -3495,10 +3495,10 @@ LOCALFUNC blnr GetOpnGLCntxt(void)
 			NewWinRect.size.height);
 
 #if 0 != vMacScreenDepth
-		ColorModeWorks = trueblnr;
+		ColorModeWorks = true;
 #endif
 	}
-	v = trueblnr;
+	v = true;
 
 label_exit:
 	return v;
@@ -3632,18 +3632,18 @@ typedef NSUInteger (*modifierFlagsProcPtr)
 
 - (BOOL)windowShouldClose:(id)sender
 {
-	RequestMacOff = trueblnr;
+	RequestMacOff = true;
 	return NO;
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)aNotification
 {
-	gTrueBackgroundFlag = falseblnr;
+	gTrueBackgroundFlag = false;
 }
 
 - (void)windowDidResignKey:(NSNotification *)aNotification
 {
-	gTrueBackgroundFlag = trueblnr;
+	gTrueBackgroundFlag = true;
 }
 
 @end
@@ -3770,13 +3770,13 @@ enum {
 
 #if MayNotFullScreen
 LOCALVAR int CurWinIndx;
-LOCALVAR blnr HavePositionWins[kNumMagStates];
+LOCALVAR bool HavePositionWins[kNumMagStates];
 LOCALVAR NSPoint WinPositionWins[kNumMagStates];
 #endif
 
 LOCALVAR NSRect SavedScrnBounds;
 
-LOCALFUNC blnr CreateMainWindow(void)
+LOCALFUNC bool CreateMainWindow(void)
 {
 #if UseCGContextDrawImage
 	CGColorSpaceRef cgColorspace;
@@ -3788,7 +3788,7 @@ LOCALFUNC blnr CreateMainWindow(void)
 	NSPoint botleftPos;
 	int NewWindowHeight = vMacScreenHeight;
 	int NewWindowWidth = vMacScreenWidth;
-	blnr v = falseblnr;
+	bool v = false;
 
 #if VarFullScreen
 	if (UseFullScreen) {
@@ -3902,7 +3902,7 @@ LOCALFUNC blnr CreateMainWindow(void)
 		if (! HavePositionWins[WinIndx]) {
 			WinPositionWins[WinIndx].x = botleftPos.x;
 			WinPositionWins[WinIndx].y = botleftPos.y;
-			HavePositionWins[WinIndx] = trueblnr;
+			HavePositionWins[WinIndx] = true;
 			NewWinRect = NSMakeRect(botleftPos.x, botleftPos.y,
 				NewWindowWidth, NewWindowHeight);
 		} else {
@@ -4012,7 +4012,7 @@ LOCALFUNC blnr CreateMainWindow(void)
 	MyBytesPerPixel = 4;
 #endif
 
-	v = trueblnr;
+	v = true;
 
 label_exit:
 
@@ -4045,10 +4045,10 @@ struct MyWState {
 	short f_vOffset;
 #endif
 #if VarFullScreen
-	blnr f_UseFullScreen;
+	bool f_UseFullScreen;
 #endif
 #if EnableMagnify
-	blnr f_UseMagnify;
+	bool f_UseMagnify;
 #endif
 #if MayNotFullScreen
 	int f_CurWinIndx;
@@ -4147,7 +4147,7 @@ LOCALPROC ReCreateMainWindow(void)
 {
 	MyWState old_state;
 	MyWState new_state;
-	blnr HadCursorHidden = HaveCursorHidden;
+	bool HadCursorHidden = HaveCursorHidden;
 
 #if VarFullScreen
 	if (! UseFullScreen)
@@ -4164,7 +4164,7 @@ LOCALPROC ReCreateMainWindow(void)
 
 #if MayFullScreen
 	if (GrabMachine) {
-		GrabMachine = falseblnr;
+		GrabMachine = false;
 		UngrabMachine();
 	}
 #endif
@@ -4236,7 +4236,7 @@ LOCALPROC ZapWinStateVars(void)
 		int i;
 
 		for (i = 0; i < kNumMagStates; ++i) {
-			HavePositionWins[i] = falseblnr;
+			HavePositionWins[i] = false;
 		}
 	}
 #endif
@@ -4270,7 +4270,7 @@ LOCALPROC ToggleWantFullScreen(void)
 		if (kMagStateAuto != NewMagState) {
 			WantMagnify = (kMagStateMagnifgy == NewMagState);
 		} else {
-			WantMagnify = falseblnr;
+			WantMagnify = false;
 			if (WantFullScreen) {
 				NSRect MainScrnBounds = [[NSScreen mainScreen] frame];
 
@@ -4280,7 +4280,7 @@ LOCALPROC ToggleWantFullScreen(void)
 						>= vMacScreenHeight * MyWindowScale)
 					)
 				{
-					WantMagnify = trueblnr;
+					WantMagnify = true;
 				}
 			}
 		}
@@ -4295,7 +4295,7 @@ LOCALPROC LeaveBackground(void)
 {
 	ReconnectKeyCodes3();
 	DisableKeyRepeat();
-	EmulationWasInterrupted = trueblnr;
+	EmulationWasInterrupted = true;
 }
 
 LOCALPROC EnterBackground(void)
@@ -4323,27 +4323,27 @@ LOCALPROC EnterSpeedStopped(void)
 }
 
 #if IncludeSonyNew && ! SaveDialogEnable
-LOCALFUNC blnr FindOrMakeNamedChildDirPath(NSString *parentPath,
+LOCALFUNC bool FindOrMakeNamedChildDirPath(NSString *parentPath,
 	char *ChildName, NSString **childPath)
 {
 	NSString *r;
 	BOOL isDir;
 	Boolean isDirectory;
 	NSFileManager *fm = [NSFileManager defaultManager];
-	blnr v = falseblnr;
+	bool v = false;
 
 	if (FindNamedChildPath(parentPath, ChildName, &r)) {
 		if ([fm fileExistsAtPath:r isDirectory: &isDir])
 		{
 			if (isDir) {
 				*childPath = r;
-				v = trueblnr;
+				v = true;
 			} else {
 				NSString *RslvPath = MyResolveAlias(r, &isDirectory);
 				if (nil != RslvPath) {
 					if (isDirectory) {
 						*childPath = RslvPath;
-						v = trueblnr;
+						v = true;
 					}
 				}
 			}
@@ -4359,7 +4359,7 @@ createDirectoryAtPath:withIntermediateDirectories:attributes:error:
 					error:nil])
 				{
 					*childPath = r;
-					v = trueblnr;
+					v = true;
 				}
 			} else
 			if ([fm respondsToSelector:
@@ -4370,7 +4370,7 @@ createDirectoryAtPath:withIntermediateDirectories:attributes:error:
 					attributes:nil])
 				{
 					*childPath = r;
-					v = trueblnr;
+					v = true;
 				}
 			} else
 			{
@@ -4472,19 +4472,19 @@ LOCALPROC MakeNewDiskAtDefault(uint32_t L)
 LOCALPROC CheckForSavedTasks(void)
 {
 	if (MyEvtQNeedRecover) {
-		MyEvtQNeedRecover = falseblnr;
+		MyEvtQNeedRecover = false;
 
 		/* attempt cleanup, MyEvtQNeedRecover may get set again */
 		MyEvtQTryRecoverFromFull();
 	}
 
 	if (RequestMacOff) {
-		RequestMacOff = falseblnr;
+		RequestMacOff = false;
 		if (AnyDiskInserted()) {
 			MacMsgOverride(kStrQuitWarningTitle,
 				kStrQuitWarningMessage);
 		} else {
-			ForceMacOff = trueblnr;
+			ForceMacOff = true;
 		}
 	}
 
@@ -4502,7 +4502,7 @@ LOCALPROC CheckForSavedTasks(void)
 	}
 
 	if (EmulationWasInterrupted) {
-		EmulationWasInterrupted = falseblnr;
+		EmulationWasInterrupted = false;
 
 		if (! gTrueBackgroundFlag) {
 			CheckMouseState();
@@ -4522,7 +4522,7 @@ LOCALPROC CheckForSavedTasks(void)
 #endif
 
 	if (WantScreensChangedCheck) {
-		WantScreensChangedCheck = falseblnr;
+		WantScreensChangedCheck = false;
 
 		MyUpdateOpenGLContext();
 
@@ -4603,19 +4603,19 @@ LOCALPROC CheckForSavedTasks(void)
 		{
 			MakeNewDiskAtDefault(vSonyNewDiskSize);
 		}
-		vSonyNewDiskWanted = falseblnr;
+		vSonyNewDiskWanted = false;
 			/* must be done after may have gotten disk */
 	}
 #endif
 
 	if (NeedWholeScreenDraw) {
-		NeedWholeScreenDraw = falseblnr;
+		NeedWholeScreenDraw = false;
 		ScreenChangedAll();
 	}
 
 	if (! gTrueBackgroundFlag) {
 		if (RequestInsertDisk) {
-			RequestInsertDisk = falseblnr;
+			RequestInsertDisk = false;
 			InsertADisk0();
 		}
 	}
@@ -4680,7 +4680,7 @@ LOCALPROC CheckForSavedTasks(void)
 
 /* --- main program flow --- */
 
-GLOBALOSGLUFUNC blnr ExtraTimeNotOver(void)
+GLOBALOSGLUFUNC bool ExtraTimeNotOver(void)
 {
 	UpdateTrueEmulatedTime();
 	return TrueEmulatedTime == OnTrueTime;
@@ -4709,7 +4709,7 @@ LOCALPROC ProcessEventLocation(NSEvent *event)
 	MousePositionNotify((int) p.x, (int) p.y);
 }
 
-LOCALPROC ProcessKeyEvent(blnr down, NSEvent *event)
+LOCALPROC ProcessKeyEvent(bool down, NSEvent *event)
 {
 	uint8_t scancode = [event keyCode];
 
@@ -4740,7 +4740,7 @@ LOCALPROC ProcessOneSystemEvent(NSEvent *event)
 #endif
 				)
 			{
-				MyMouseButtonSet(trueblnr);
+				MyMouseButtonSet(true);
 			} else {
 				/* doesn't belong to us */
 				[NSApp sendEvent: event];
@@ -4760,7 +4760,7 @@ LOCALPROC ProcessOneSystemEvent(NSEvent *event)
 				/* doesn't belong to us */
 				[NSApp sendEvent: event];
 			} else {
-				MyMouseButtonSet(falseblnr);
+				MyMouseButtonSet(false);
 			}
 			break;
 
@@ -4782,10 +4782,10 @@ LOCALPROC ProcessOneSystemEvent(NSEvent *event)
 			}
 			break;
 		case MyNSEventTypeKeyUp:
-			ProcessKeyEvent(falseblnr, event);
+			ProcessKeyEvent(false, event);
 			break;
 		case MyNSEventTypeKeyDown:
-			ProcessKeyEvent(trueblnr, event);
+			ProcessKeyEvent(true, event);
 			break;
 		case MyNSEventTypeFlagsChanged:
 			ProcessEventModifiers(event);
@@ -4912,7 +4912,7 @@ typedef CFURLRef (*SecTranslocateCreateOriginalPathForURL_t)(
 #define WantUnTranslocate 0
 #endif
 
-LOCALFUNC blnr setupWorkingDirectory(void)
+LOCALFUNC bool setupWorkingDirectory(void)
 {
 	NSString *myAppDir;
 	NSString *contentsPath;
@@ -5007,7 +5007,7 @@ LOCALFUNC blnr setupWorkingDirectory(void)
 	}
 	[MyDataPath retain];
 
-	return trueblnr;
+	return true;
 }
 
 @interface MyClassApplicationDelegate : NSObject <NSApplicationDelegate>
@@ -5050,7 +5050,7 @@ LOCALFUNC blnr setupWorkingDirectory(void)
 - (void)applicationDidChangeScreenParameters:
 	(NSNotification *)aNotification
 {
-	WantScreensChangedCheck = trueblnr;
+	WantScreensChangedCheck = true;
 }
 
 - (IBAction)performSpecialMoreCommands:(id)sender
@@ -5060,7 +5060,7 @@ LOCALFUNC blnr setupWorkingDirectory(void)
 
 - (IBAction)performFileOpen:(id)sender
 {
-	RequestInsertDisk = trueblnr;
+	RequestInsertDisk = true;
 }
 
 - (IBAction)performApplicationAbout:(id)sender
@@ -5072,7 +5072,7 @@ LOCALFUNC blnr setupWorkingDirectory(void)
 
 LOCALVAR MyClassApplicationDelegate *MyApplicationDelegate = nil;
 
-LOCALFUNC blnr InitCocoaStuff(void)
+LOCALFUNC bool InitCocoaStuff(void)
 {
 	NSApplication *MyNSApp = [NSApplication sharedApplication];
 		/*
@@ -5105,7 +5105,7 @@ LOCALFUNC blnr InitCocoaStuff(void)
 			immediate halt.
 		*/
 
-	return trueblnr;
+	return true;
 }
 
 LOCALPROC UnInitCocoaStuff(void)
@@ -5139,38 +5139,38 @@ LOCALPROC ReserveAllocAll(void)
 #if dbglog_HAVE
 	dbglog_ReserveAlloc();
 #endif
-	ReserveAllocOneBlock(&ROM, kROM_Size, 5, falseblnr);
+	ReserveAllocOneBlock(&ROM, kROM_Size, 5, false);
 
 	ReserveAllocOneBlock(&screencomparebuff,
-		vMacScreenNumBytes, 5, trueblnr);
+		vMacScreenNumBytes, 5, true);
 #if UseControlKeys
 	ReserveAllocOneBlock(&CntrlDisplayBuff,
-		vMacScreenNumBytes, 5, falseblnr);
+		vMacScreenNumBytes, 5, false);
 #endif
 
 	ReserveAllocOneBlock(&ScalingBuff, vMacScreenNumPixels
 #if 0 != vMacScreenDepth
 		* 4
 #endif
-		, 5, falseblnr);
-	ReserveAllocOneBlock(&CLUT_final, CLUT_finalsz, 5, falseblnr);
+		, 5, false);
+	ReserveAllocOneBlock(&CLUT_final, CLUT_finalsz, 5, false);
 
 #if MySoundEnabled
 	ReserveAllocOneBlock((uint8_t * *)&TheSoundBuffer,
-		dbhBufferSize, 5, falseblnr);
+		dbhBufferSize, 5, false);
 #endif
 
 	EmulationReserveAlloc();
 }
 
-LOCALFUNC blnr AllocMyMemory(void)
+LOCALFUNC bool AllocMyMemory(void)
 {
 #if 0 /* for testing start up error reporting */
-	MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, trueblnr);
-	return falseblnr;
+	MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, true);
+	return false;
 #else
 	uint32_t n;
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	ReserveAllocOffset = 0;
 	ReserveAllocBigBlock = nullpr;
@@ -5178,14 +5178,14 @@ LOCALFUNC blnr AllocMyMemory(void)
 	n = ReserveAllocOffset;
 	ReserveAllocBigBlock = (uint8_t *)calloc(1, n);
 	if (NULL == ReserveAllocBigBlock) {
-		MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, trueblnr);
+		MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, true);
 	} else {
 		ReserveAllocOffset = 0;
 		ReserveAllocAll();
 		if (n != ReserveAllocOffset) {
 			/* oops, program error */
 		} else {
-			IsOk = trueblnr;
+			IsOk = true;
 		}
 	}
 
@@ -5200,9 +5200,9 @@ LOCALPROC UnallocMyMemory(void)
 	}
 }
 
-LOCALFUNC blnr InitOSGLU(void)
+LOCALFUNC bool InitOSGLU(void)
 {
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 
 	if (AllocMyMemory())
@@ -5234,7 +5234,7 @@ LOCALFUNC blnr InitOSGLU(void)
 #endif
 	if (WaitForRom())
 	{
-		IsOk = trueblnr;
+		IsOk = true;
 	}
 
 	[pool release];

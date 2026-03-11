@@ -68,7 +68,7 @@ EXPORTPROC Addr32_ChangeNtfy(void);
 	mapping of address space to real memory
 */
 
-EXPORTFUNC uint8_t * get_real_address0(uint32_t L, blnr WritableMem, uint32_t addr,
+EXPORTFUNC uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
 	uint32_t *actL);
 
 /*
@@ -106,7 +106,7 @@ EXPORTFUNC uint8_t * get_real_address0(uint32_t L, blnr WritableMem, uint32_t ad
 	real memory, i.e. memory mapped devices
 */
 
-EXPORTFUNC blnr AddrSpac_Init(void);
+EXPORTFUNC bool AddrSpac_Init(void);
 
 
 #define ui5r_FromSByte(x) ((uint32_t)(int32_t)(int8_t)(uint8_t)(x))
@@ -125,13 +125,13 @@ EXPORTPROC dbglog_StartLine(void);
 #endif
 
 #if dbglog_HAVE
-EXPORTPROC dbglog_WriteMemArrow(blnr WriteMem);
+EXPORTPROC dbglog_WriteMemArrow(bool WriteMem);
 
 EXPORTPROC dbglog_WriteNote(char *s);
-EXPORTPROC dbglog_WriteSetBool(char *s, blnr v);
+EXPORTPROC dbglog_WriteSetBool(char *s, bool v);
 EXPORTPROC dbglog_AddrAccess(char *s,
-	uint32_t Data, blnr WriteMem, uint32_t addr);
-EXPORTPROC dbglog_Access(char *s, uint32_t Data, blnr WriteMem);
+	uint32_t Data, bool WriteMem, uint32_t addr);
+EXPORTPROC dbglog_Access(char *s, uint32_t Data, bool WriteMem);
 #endif
 
 #if ! WantAbnormalReports
@@ -151,8 +151,8 @@ EXPORTPROC DoReportAbnormalID(uint16_t id
 
 EXPORTPROC VIAorSCCinterruptChngNtfy(void);
 
-EXPORTVAR(blnr, InterruptButton)
-EXPORTPROC SetInterruptButton(blnr v);
+EXPORTVAR(bool, InterruptButton)
+EXPORTPROC SetInterruptButton(bool v);
 
 enum {
 	kICT_SubTick,
@@ -205,7 +205,7 @@ EXPORTVAR(uint8_t, Wires[kNumWires])
 #if HaveMasterMyEvtQLock
 EXPORTVAR(uint16_t, MasterMyEvtQLock)
 #endif
-EXPORTFUNC blnr FindKeyEvent(int *VirtualKey, blnr *KeyDown);
+EXPORTFUNC bool FindKeyEvent(int *VirtualKey, bool *KeyDown);
 
 
 /* minivmac extensions */
@@ -275,5 +275,5 @@ typedef ATTer *ATTep;
 #define kATTA_ntfymask (1 << kATTA_ntfybit)
 
 EXPORTFUNC uint32_t MMDV_Access(ATTep p, uint32_t Data,
-	blnr WriteMem, blnr ByteSize, uint32_t addr);
-EXPORTFUNC blnr MemAccessNtfy(ATTep pT);
+	bool WriteMem, bool ByteSize, uint32_t addr);
+EXPORTFUNC bool MemAccessNtfy(ATTep pT);

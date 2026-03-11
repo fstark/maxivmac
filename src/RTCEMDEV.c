@@ -141,14 +141,14 @@ GLOBALPROC DumpRTC(void)
 }
 #endif
 
-GLOBALFUNC blnr RTC_Init(void)
+GLOBALFUNC bool RTC_Init(void)
 {
 	int Counter;
 	uint32_t secs;
 
 	RTC.Mode = RTC.ShiftData = RTC.Counter = 0;
 	RTC.DataOut = RTC.DataNextOut = 0;
-	RTC.WrProtect = falseblnr;
+	RTC.WrProtect = false;
 
 	secs = CurMacDateInSeconds;
 	LastRealDate = secs;
@@ -308,7 +308,7 @@ GLOBALFUNC blnr RTC_Init(void)
 
 #endif /* RTCinitPRAM */
 
-	return trueblnr;
+	return true;
 }
 
 #ifdef RTC_OneSecond_PulseNtfy
@@ -338,7 +338,7 @@ GLOBALPROC RTC_Interrupt(void)
 	}
 }
 
-LOCALFUNC uint8_t RTC_Access_PRAM_Reg(uint8_t Data, blnr WriteReg, uint8_t t)
+LOCALFUNC uint8_t RTC_Access_PRAM_Reg(uint8_t Data, bool WriteReg, uint8_t t)
 {
 	if (WriteReg) {
 		if (! RTC.WrProtect) {
@@ -353,7 +353,7 @@ LOCALFUNC uint8_t RTC_Access_PRAM_Reg(uint8_t Data, blnr WriteReg, uint8_t t)
 	return Data;
 }
 
-LOCALFUNC uint8_t RTC_Access_Reg(uint8_t Data, blnr WriteReg, uint8_t TheCmd)
+LOCALFUNC uint8_t RTC_Access_Reg(uint8_t Data, bool WriteReg, uint8_t TheCmd)
 {
 	uint8_t t = (TheCmd & 0x7C) >> 2;
 	if (t < 8) {
@@ -405,7 +405,7 @@ LOCALPROC RTC_DoCmd(void)
 			{
 				if ((RTC.ShiftData & 0x80) != 0x00) { /* Read Command */
 					RTC.ShiftData =
-						RTC_Access_Reg(0, falseblnr, RTC.ShiftData);
+						RTC_Access_Reg(0, false, RTC.ShiftData);
 					RTC.DataNextOut = 1;
 				} else { /* Write Command */
 					RTC.SavedCmd = RTC.ShiftData;
@@ -415,7 +415,7 @@ LOCALPROC RTC_DoCmd(void)
 			break;
 		case 1: /* This Byte is data for RTC Write */
 			(void) RTC_Access_Reg(RTC.ShiftData,
-				trueblnr, RTC.SavedCmd);
+				true, RTC.SavedCmd);
 			RTC.Mode = 0;
 			break;
 #if HaveXPRAM
@@ -442,7 +442,7 @@ LOCALPROC RTC_DoCmd(void)
 			break;
 		case 3: /* This Byte is data for an Extended RTC Write */
 			(void) RTC_Access_PRAM_Reg(RTC.ShiftData,
-				trueblnr, RTC.Sector);
+				true, RTC.Sector);
 			RTC.Mode = 0;
 			break;
 #endif

@@ -20,7 +20,7 @@
 */
 
 LOCALVAR int audio_fd = -1;
-LOCALVAR blnr audio_started;
+LOCALVAR bool audio_started;
 
 #if 4 == kLn2SoundSampSz
 LOCALPROC ConvertSoundBlockToNative(tpSoundSamp p)
@@ -62,7 +62,7 @@ label_retry:
 				/* fprintf(stderr, "buffer used %d\n", (int)used); */
 			} else {
 				if (PrivateBuffUsed >= kAllBuffLen - kOneBuffLen) {
-					audio_started = trueblnr;
+					audio_started = true;
 				} else {
 					info.bytes = 0;
 				}
@@ -123,7 +123,7 @@ LOCALPROC MySound_Start(void)
 {
 	if (audio_fd >= 0) {
 		MySound_Start0();
-		audio_started = falseblnr;
+		audio_started = false;
 	}
 }
 
@@ -145,9 +145,9 @@ LOCALPROC MySound_Stop(void)
 #define MyDesiredFormat AFMT_U8
 #endif
 
-LOCALFUNC blnr MySound_Init(void)
+LOCALFUNC bool MySound_Init(void)
 {
-	blnr IsOk = falseblnr;
+	bool IsOk = false;
 
 	audio_fd = open(AudioDevPath, O_WRONLY, 0);
 	if (audio_fd < 0) {
@@ -187,7 +187,7 @@ LOCALFUNC blnr MySound_Init(void)
 			fprintf(stderr, "SNDCTL_DSP_SPEED fails\n");
 		} else
 		{
-			IsOk = trueblnr;
+			IsOk = true;
 		}
 
 		if (! IsOk) {
@@ -196,7 +196,7 @@ LOCALFUNC blnr MySound_Init(void)
 		}
 	}
 
-	return trueblnr; /* keep going, even if no sound */
+	return true; /* keep going, even if no sound */
 }
 
 LOCALPROC MySound_UnInit(void)

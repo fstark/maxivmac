@@ -51,11 +51,11 @@
 
 #if EmLocalTalk
 
-LOCALVAR blnr CTSpacketPending = falseblnr;
+LOCALVAR bool CTSpacketPending = false;
 LOCALVAR uint8_t CTSpacketRxDA;
 LOCALVAR uint8_t CTSpacketRxSA;
 
-LOCALVAR blnr IsFindingNode = falseblnr;
+LOCALVAR bool IsFindingNode = false;
 
 /*
 	Function used when all the tx data is sent to the SCC as indicated
@@ -94,7 +94,7 @@ LOCALPROC LT_TransmitPacket1(void)
 		if (type < 0x80) {
 			/* data packet */
 #if LT_MayHaveEcho
-			IsFindingNode = falseblnr;
+			IsFindingNode = false;
 #endif
 			LT_TransmitPacket();
 		} else {
@@ -112,7 +112,7 @@ LOCALPROC LT_TransmitPacket1(void)
 					"SCC LLAP packet lapENQ");
 #endif
 #if LT_MayHaveEcho
-				IsFindingNode = trueblnr;
+				IsFindingNode = true;
 #endif
 				LT_TransmitPacket();
 			} else
@@ -143,7 +143,7 @@ LOCALPROC LT_TransmitPacket1(void)
 #endif
 					CTSpacketRxDA = LT_TxBuffer[1]; /* rx da = tx sa */
 					CTSpacketRxSA = LT_TxBuffer[0]; /* rx sa = tx da */
-					CTSpacketPending = trueblnr;
+					CTSpacketPending = true;
 				}
 			} else
 			if (0x85 == type) {
@@ -184,13 +184,13 @@ LOCALPROC GetCTSpacket(void)
 	LT_RxBuffer = device_buffer;
 	LT_RxBuffSz = 3;
 
-	CTSpacketPending = falseblnr;
+	CTSpacketPending = false;
 }
 
 /* LLAP/SDLC address */
 LOCALVAR uint8_t my_node_address = 0;
 
-LOCALVAR blnr LTAddrSrchMd = falseblnr;
+LOCALVAR bool LTAddrSrchMd = false;
 
 LOCALPROC GetNextPacketForMe(void)
 {
@@ -300,7 +300,7 @@ LOCALPROC LT_ReceivePacket1(void)
 	}
 }
 
-LOCALPROC LT_AddrSrchMdSet(blnr v)
+LOCALPROC LT_AddrSrchMdSet(bool v)
 {
 #if SCC_dolog
 	dbglog_StartLine();
@@ -343,12 +343,12 @@ LOCALPROC LT_NodeAddressSet(uint8_t v)
 #define SCC_B_Ext      1 /* External/Status Change */
 
 typedef struct {
-	blnr TxEnable;
-	blnr RxEnable;
-	blnr TxIE; /* Transmit Interrupt Enable */
-	blnr TxUnderrun;
-	blnr SyncHunt;
-	blnr TxIP; /* Transmit Interrupt Pending */
+	bool TxEnable;
+	bool RxEnable;
+	bool TxIE; /* Transmit Interrupt Enable */
+	bool TxUnderrun;
+	bool SyncHunt;
+	bool TxIP; /* Transmit Interrupt Pending */
 #if EmLocalTalk
 	uint8_t RxBuff;
 #endif
@@ -358,49 +358,49 @@ typedef struct {
 		though should behave as went false
 		for an instant when write to transmit buffer
 	*/
-	blnr TxBufferEmpty;
+	bool TxBufferEmpty;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	blnr ExtIE;
+	bool ExtIE;
 #endif
 #if SCC_TrackMore
-	blnr WaitRqstEnbl;
+	bool WaitRqstEnbl;
 #endif
 #if SCC_TrackMore
-	blnr WaitRqstSlct;
+	bool WaitRqstSlct;
 #endif
 #if SCC_TrackMore
-	blnr WaitRqstRT;
+	bool WaitRqstRT;
 #endif
 #if SCC_TrackMore
-	blnr PrtySpclCond;
+	bool PrtySpclCond;
 #endif
 #if SCC_TrackMore
-	blnr PrtyEnable;
+	bool PrtyEnable;
 #endif
 #if SCC_TrackMore
-	blnr PrtyEven;
+	bool PrtyEven;
 #endif
 #if SCC_TrackMore
-	blnr RxCRCEnbl;
+	bool RxCRCEnbl;
 #endif
 #if SCC_TrackMore
-	blnr TxCRCEnbl;
+	bool TxCRCEnbl;
 #endif
 #if SCC_TrackMore
-	blnr RTSctrl;
+	bool RTSctrl;
 #endif
 #if SCC_TrackMore
-	blnr SndBrkCtrl;
+	bool SndBrkCtrl;
 #endif
 #if SCC_TrackMore
-	blnr DTRctrl;
+	bool DTRctrl;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	blnr AddrSrchMd;
+	bool AddrSrchMd;
 #endif
 #if SCC_TrackMore
-	blnr SyncChrLdInhb;
+	bool SyncChrLdInhb;
 #endif
 #if SCC_TrackMore
 	uint8_t ClockRate;
@@ -427,7 +427,7 @@ typedef struct {
 	uint8_t RxIntMode;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	blnr FirstChar;
+	bool FirstChar;
 #endif
 #if EmLocalTalk || SCC_TrackMore
 	uint8_t SyncMode;
@@ -436,13 +436,13 @@ typedef struct {
 	uint8_t StopBits;
 #endif
 #if 0 /* AllSent always true */
-	blnr AllSent;
+	bool AllSent;
 #endif
 #if 0 /* CTS always false */
-	blnr CTS; /* input pin, unattached, so false? */
+	bool CTS; /* input pin, unattached, so false? */
 #endif
 #if 0 /* DCD always false */
-	blnr DCD; /* Data Carrier Detect */
+	bool DCD; /* Data Carrier Detect */
 		/*
 			input pin for mouse interrupts. but since
 			not emulating mouse this way, leave false.
@@ -450,44 +450,44 @@ typedef struct {
 #endif
 #if EmLocalTalk
 	/* otherwise RxChrAvail always false */
-	blnr RxChrAvail;
+	bool RxChrAvail;
 #endif
 #if 0 /* RxOverrun always false */
-	blnr RxOverrun;
+	bool RxOverrun;
 #endif
 #if 0 /* CRCFramingErr always false */
-	blnr CRCFramingErr;
+	bool CRCFramingErr;
 #endif
 #if EmLocalTalk
 	/* otherwise EndOfFrame always false */
-	blnr EndOfFrame;
+	bool EndOfFrame;
 #endif
 #if 0 /* ParityErr always false */
-	blnr ParityErr;
+	bool ParityErr;
 #endif
 #if 0 /* ZeroCount always false */
-	blnr ZeroCount;
+	bool ZeroCount;
 #endif
 #if 0 /* BreakAbort always false */
-	blnr BreakAbort;
+	bool BreakAbort;
 #endif
 #if 0 /* SyncHuntIE usually false */
-	blnr SyncHuntIE;
+	bool SyncHuntIE;
 #endif
 #if SCC_TrackMore /* don't care about CTS_IE */
-	blnr CTS_IE;
+	bool CTS_IE;
 #endif
 #if SCC_TrackMore
-	blnr CRCPreset;
+	bool CRCPreset;
 #endif
 #if SCC_TrackMore
-	blnr BRGEnbl;
+	bool BRGEnbl;
 #endif
 #if 0 /* don't care about DCD_IE, always true */
-	blnr DCD_IE;
+	bool DCD_IE;
 #endif
 #if SCC_TrackMore /* don't care about BreakAbortIE */
-	blnr BreakAbortIE;
+	bool BreakAbortIE;
 #endif
 #if SCC_TrackMore /* don't care about Baud */
 	uint8_t BaudLo;
@@ -500,12 +500,12 @@ typedef struct {
 	int SCC_Interrupt_Type;
 	int PointerBits;
 	uint8_t InterruptVector;
-	blnr MIE; /* master interrupt enable */
+	bool MIE; /* master interrupt enable */
 #if SCC_TrackMore
-	blnr NoVectorSlct;
+	bool NoVectorSlct;
 #endif
 #if 0 /* StatusHiLo always false */
-	blnr StatusHiLo;
+	bool StatusHiLo;
 #endif
 } SCC_Ty;
 
@@ -521,7 +521,7 @@ static int rx_data_offset = 0;
 	/* when data pending, this is used */
 #endif
 
-EXPORTFUNC blnr SCC_InterruptsEnabled(void)
+EXPORTFUNC bool SCC_InterruptsEnabled(void)
 {
 	return SCC.MIE;
 }
@@ -532,7 +532,7 @@ EXPORTFUNC blnr SCC_InterruptsEnabled(void)
 LOCALPROC CheckSCCInterruptFlag(void)
 {
 #if 0 /* ReceiveAInterrupt always false */
-	blnr ReceiveAInterrupt = falseblnr
+	bool ReceiveAInterrupt = false
 		/*
 			also dependeds on WR1, bits 3 and 4, but
 			this doesn't change that it's all false
@@ -557,14 +557,14 @@ LOCALPROC CheckSCCInterruptFlag(void)
 		;
 #endif
 #if 0
-	blnr TransmitAInterrupt = SCC.a[0].TxBufferEmpty;
+	bool TransmitAInterrupt = SCC.a[0].TxBufferEmpty;
 	/*
 		but probably looking for transitions not
 		current value
 	*/
 #endif
 #if 0
-	blnr ExtStatusAInterrupt = 0
+	bool ExtStatusAInterrupt = 0
 #if 0 /* ZeroCount always false */
 		| SCC.a[0].ZeroCount
 #endif
@@ -585,8 +585,8 @@ LOCALPROC CheckSCCInterruptFlag(void)
 	uint8_t NewSCCInterruptRequest;
 
 #if EmLocalTalk
-	blnr ReceiveBInterrupt = falseblnr;
-	blnr RxSpclBInterrupt = falseblnr
+	bool ReceiveBInterrupt = false;
+	bool RxSpclBInterrupt = false
 		/* otherwise EndOfFrame always false */
 		| SCC.a[1].EndOfFrame
 		;
@@ -596,18 +596,18 @@ LOCALPROC CheckSCCInterruptFlag(void)
 	switch (SCC.a[1].RxIntMode) {
 		case 0:
 			/* disabled */
-			RxSpclBInterrupt = falseblnr;
+			RxSpclBInterrupt = false;
 			break;
 		case 1:
 			/* Rx INT on 1st char or special condition */
 			if (SCC.a[1].RxChrAvail && SCC.a[1].FirstChar) {
-				ReceiveBInterrupt = trueblnr;
+				ReceiveBInterrupt = true;
 			}
 			break;
 		case 2:
 			/* INT on all Rx char or special condition */
 			if (SCC.a[1].RxChrAvail) {
-				ReceiveBInterrupt = trueblnr;
+				ReceiveBInterrupt = true;
 			}
 			break;
 		case 3:
@@ -669,25 +669,25 @@ LOCALPROC SCC_InitChannel(int chan)
 {
 	/* anything not done by ResetChannel */
 
-	SCC.a[chan].SyncHunt = trueblnr;
+	SCC.a[chan].SyncHunt = true;
 #if 0 /* DCD always false */
-	SCC.a[chan].DCD = falseblnr; /* input pin, reset doesn't change */
+	SCC.a[chan].DCD = false; /* input pin, reset doesn't change */
 #endif
 #if 0 /* CTS always false */
-	SCC.a[chan].CTS = falseblnr; /* input pin, reset doesn't change */
+	SCC.a[chan].CTS = false; /* input pin, reset doesn't change */
 #endif
 #if 0 /* AllSent always true */
-	SCC.a[chan].AllSent = trueblnr;
+	SCC.a[chan].AllSent = true;
 #endif
 #if SCC_TrackMore /* don't care about Baud */
 	SCC.a[chan].BaudLo = 0;
 	SCC.a[chan].BaudHi = 0;
 #endif
 #if 0 /* BreakAbort always false */
-	SCC.a[chan].BreakAbort = falseblnr;
+	SCC.a[chan].BreakAbort = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].BRGEnbl = falseblnr;
+	SCC.a[chan].BRGEnbl = false;
 #endif
 #if SCC_TrackMore
 	SCC.a[chan].TRxCsrc = 0;
@@ -708,75 +708,75 @@ LOCALPROC SCC_ResetChannel(int chan)
 #endif
 #if EmLocalTalk
 	/* otherwise RxChrAvail always false */
-	SCC.a[chan].RxChrAvail = falseblnr;
+	SCC.a[chan].RxChrAvail = false;
 #endif
 #if 0 /* ZeroCount always false */
-	SCC.a[chan].ZeroCount = falseblnr;
+	SCC.a[chan].ZeroCount = false;
 #endif
 #if EmLocalTalk
 	/* otherwise TxBufferEmpty always true */
-	SCC.a[chan].TxBufferEmpty = trueblnr;
+	SCC.a[chan].TxBufferEmpty = true;
 #endif
-	SCC.a[chan].TxUnderrun = trueblnr;
+	SCC.a[chan].TxUnderrun = true;
 /* RR 1 */
 #if 0 /* ParityErr always false */
-	SCC.a[chan].ParityErr = falseblnr;
+	SCC.a[chan].ParityErr = false;
 #endif
 #if 0 /* RxOverrun always false */
-	SCC.a[chan].RxOverrun = falseblnr;
+	SCC.a[chan].RxOverrun = false;
 #endif
 #if 0 /* CRCFramingErr always false */
-	SCC.a[chan].CRCFramingErr = falseblnr;
+	SCC.a[chan].CRCFramingErr = false;
 #endif
 #if EmLocalTalk
 	/* otherwise EndOfFrame always false */
-	SCC.a[chan].EndOfFrame = falseblnr;
+	SCC.a[chan].EndOfFrame = false;
 #endif
 /* RR 3 */
 #if EmLocalTalk || SCC_TrackMore
-	SCC.a[chan].ExtIE = falseblnr;
+	SCC.a[chan].ExtIE = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].RxCRCEnbl = falseblnr;
+	SCC.a[chan].RxCRCEnbl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].TxCRCEnbl = falseblnr;
+	SCC.a[chan].TxCRCEnbl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].RTSctrl = falseblnr;
+	SCC.a[chan].RTSctrl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].SndBrkCtrl = falseblnr;
+	SCC.a[chan].SndBrkCtrl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].DTRctrl = falseblnr;
+	SCC.a[chan].DTRctrl = false;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	SCC.a[chan].AddrSrchMd = falseblnr;
+	SCC.a[chan].AddrSrchMd = false;
 	if (0 != chan) {
-		LT_AddrSrchMdSet(falseblnr);
+		LT_AddrSrchMdSet(false);
 	}
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].SyncChrLdInhb = falseblnr;
+	SCC.a[chan].SyncChrLdInhb = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].WaitRqstEnbl = falseblnr;
+	SCC.a[chan].WaitRqstEnbl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].WaitRqstSlct = falseblnr;
+	SCC.a[chan].WaitRqstSlct = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].WaitRqstRT = falseblnr;
+	SCC.a[chan].WaitRqstRT = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].PrtySpclCond = falseblnr;
+	SCC.a[chan].PrtySpclCond = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].PrtyEnable = falseblnr;
+	SCC.a[chan].PrtyEnable = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].PrtyEven = falseblnr;
+	SCC.a[chan].PrtyEven = false;
 #endif
 #if SCC_TrackMore
 	SCC.a[chan].ClockRate = 0;
@@ -794,7 +794,7 @@ LOCALPROC SCC_ResetChannel(int chan)
 	SCC.a[chan].RxIntMode = 0;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	SCC.a[chan].FirstChar = falseblnr;
+	SCC.a[chan].FirstChar = false;
 #endif
 #if EmLocalTalk || SCC_TrackMore
 	SCC.a[chan].SyncMode = 0;
@@ -803,28 +803,28 @@ LOCALPROC SCC_ResetChannel(int chan)
 	SCC.a[chan].StopBits = 0;
 #endif
 #if SCC_TrackMore
-	SCC.NoVectorSlct = falseblnr;
+	SCC.NoVectorSlct = false;
 #endif
-	SCC.a[chan].TxIP = falseblnr;
+	SCC.a[chan].TxIP = false;
 
-	SCC.a[chan].TxEnable = falseblnr;
-	SCC.a[chan].RxEnable = falseblnr;
-	SCC.a[chan].TxIE = falseblnr;
+	SCC.a[chan].TxEnable = false;
+	SCC.a[chan].RxEnable = false;
+	SCC.a[chan].TxIE = false;
 
 #if 0 /* don't care about DCD_IE, always true */
-	SCC.a[chan].DCD_IE = trueblnr;
+	SCC.a[chan].DCD_IE = true;
 #endif
 #if SCC_TrackMore /* don't care about CTS_IE */
-	SCC.a[chan].CTS_IE = trueblnr;
+	SCC.a[chan].CTS_IE = true;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].CRCPreset = falseblnr;
+	SCC.a[chan].CRCPreset = false;
 #endif
 #if 0 /* SyncHuntIE usually false */
-	SCC.a[chan].SyncHuntIE = trueblnr;
+	SCC.a[chan].SyncHuntIE = true;
 #endif
 #if SCC_TrackMore /* don't care about BreakAbortIE */
-	SCC.a[chan].BreakAbortIE = trueblnr;
+	SCC.a[chan].BreakAbortIE = true;
 #endif
 
 	SCC.PointerBits = 0;
@@ -846,10 +846,10 @@ GLOBALPROC SCC_Reset(void)
 
 	SCCInterruptRequest = 0;
 	SCC.PointerBits = 0;
-	SCC.MIE = falseblnr;
+	SCC.MIE = false;
 	SCC.InterruptVector = 0;
 #if 0 /* StatusHiLo always false */
-	SCC.StatusHiLo = falseblnr;
+	SCC.StatusHiLo = false;
 #endif
 
 	SCC_InitChannel(1);
@@ -893,7 +893,7 @@ LOCALPROC rx_complete(void)
 	*/
 	LT_RxBuffer = nullpr;
 
-	SCC.a[1].EndOfFrame = trueblnr;
+	SCC.a[1].EndOfFrame = true;
 }
 
 LOCALPROC SCC_RxBuffAdvance(void)
@@ -909,7 +909,7 @@ LOCALPROC SCC_RxBuffAdvance(void)
 
 	if (nullpr == LT_RxBuffer) {
 		value = 0x7E;
-		SCC.a[1].RxChrAvail = falseblnr;
+		SCC.a[1].RxChrAvail = false;
 	} else {
 		if (rx_data_offset < LT_RxBuffSz) {
 			value = LT_RxBuffer[rx_data_offset];
@@ -948,9 +948,9 @@ GLOBALPROC LocalTalkTick(void)
 
 		if (nullpr != LT_RxBuffer) {
 			rx_data_offset  = 0;
-			SCC.a[1].EndOfFrame = falseblnr;
-			SCC.a[1].RxChrAvail = trueblnr;
-			SCC.a[1].SyncHunt = falseblnr;
+			SCC.a[1].EndOfFrame = false;
+			SCC.a[1].RxChrAvail = true;
+			SCC.a[1].SyncHunt = false;
 
 			SCC_RxBuffAdvance();
 			/* We can update the rx interrupt if enabled */
@@ -983,7 +983,7 @@ LOCALPROC SCC_Int(void)
 
 	/* Turn off Sync/Hunt Mode */
 	if (SCC.a[0].SyncHunt) {
-		SCC.a[0].SyncHunt = falseblnr;
+		SCC.a[0].SyncHunt = false;
 
 #ifdef _SCC_Debug2
 		vMac_Message("SCC_Int: Disable Sync/Hunt on A");
@@ -996,7 +996,7 @@ LOCALPROC SCC_Int(void)
 #endif
 	}
 	if (SCC.a[1].SyncHunt) {
-		SCC.a[1].SyncHunt = falseblnr;
+		SCC.a[1].SyncHunt = false;
 
 #ifdef _SCC_Debug2
 		vMac_Message("SCC_Int: Disable Sync/Hunt on B");
@@ -1019,14 +1019,14 @@ LOCALPROC SCC_Int(void)
 
 		if ((ModemBytes > 0) && (ModemCount > ModemBytes - 1))
 		{
-			SCC.a[0].RxChrAvail = falseblnr;
+			SCC.a[0].RxChrAvail = false;
 			ReadModem = ModemBytes = ModemCount = 0;
 		}
 
 		if (ReadModem) {
 			ReadModem = 2;
 
-			SCC.a[0].RxChrAvail = trueblnr;
+			SCC.a[0].RxChrAvail = true;
 
 			if (SCC.a[0].WR[0] & Bit5
 				&& ! (SCC.a[0].WR[0] & (Bit4 | Bit3)))
@@ -1053,14 +1053,14 @@ LOCALPROC SCC_Int(void)
 		}
 
 		if ((PrintBytes > 0) && (PrintCount > PrintBytes - 1)) {
-			SCC.a[1].RxChrAvail = falseblnr;
+			SCC.a[1].RxChrAvail = false;
 			ReadPrint = PrintBytes = PrintCount = 0;
 		}
 
 		if (ReadPrint) {
 			ReadPrint = 2;
 
-			SCC.a[1].RxChrAvail = trueblnr;
+			SCC.a[1].RxChrAvail = true;
 
 			if (SCC.a[1].WR[0] & Bit5
 				&& ! (SCC.a[1].WR[0] & (Bit4 | Bit3)))
@@ -1303,7 +1303,7 @@ LOCALFUNC uint8_t SCC_GetRR8(int chan)
 				if necessary
 			*/
 			value = SCC.a[1].RxBuff;
-			SCC.a[1].FirstChar = falseblnr;
+			SCC.a[1].FirstChar = false;
 			SCC_RxBuffAdvance();
 		} else {
 			value = 0x7E;
@@ -1411,7 +1411,7 @@ LOCALPROC SCC_DbgLogChanCmnd(int chan, char *s)
 #endif
 
 #if SCC_dolog
-LOCALPROC SCC_DbgLogChanChngBit(int chan, char *s, blnr v)
+LOCALPROC SCC_DbgLogChanChngBit(int chan, char *s, bool v)
 {
 	SCC_DbgLogChanStartLine(chan);
 	dbglog_writeCStr(" ");
@@ -1460,14 +1460,14 @@ LOCALPROC SCC_PutWR0(uint8_t Data, int chan)
 #if 0 /* It seems to work better without this */
 			if (SCC.a[chan].TxEnable) {
 				/* Tx Enabled */
-				SCC.a[chan].TxUnderrun = falseblnr;
+				SCC.a[chan].TxUnderrun = false;
 
 				if (SCC.a[chan].WR[10] & Bit2) {
 					/* Abort/Flag on Underrun */
 					/* Send Abort */
-					SCC.a[chan].TxUnderrun = trueblnr;
+					SCC.a[chan].TxUnderrun = true;
 #if 0 /* TxBufferEmpty always true */
-					SCC.a[chan].TxBufferEmpty = trueblnr;
+					SCC.a[chan].TxBufferEmpty = true;
 #endif
 
 					/* Send Flag */
@@ -1490,26 +1490,26 @@ LOCALPROC SCC_PutWR0(uint8_t Data, int chan)
 			SCC_DbgLogChanCmnd(chan, "Reset Ext/Status Ints");
 #endif
 			/* happens on boot always */
-			SCC.a[chan].SyncHunt = falseblnr;
+			SCC.a[chan].SyncHunt = false;
 #if 0 /* only in sync mode */
-			SCC.a[chan].TxUnderrun = falseblnr;
+			SCC.a[chan].TxUnderrun = false;
 #endif
 #if 0 /* ZeroCount always false */
-			SCC.a[chan].ZeroCount = falseblnr;
+			SCC.a[chan].ZeroCount = false;
 #endif
 #if 0 /* BreakAbort always false */
-			SCC.a[chan].BreakAbort = falseblnr;
+			SCC.a[chan].BreakAbort = false;
 #endif
 			break;
 		case 3:
 			ReportAbnormalID(0x070C, "Send Abort (SDLC)");
 #if EmLocalTalk
-			SCC.a[chan].TxBufferEmpty = trueblnr;
+			SCC.a[chan].TxBufferEmpty = true;
 #endif
 #if 0
-			SCC.a[chan].TxUnderrun = trueblnr;
+			SCC.a[chan].TxUnderrun = true;
 #if 0 /* TxBufferEmpty always true */
-			SCC.a[chan].TxBufferEmpty = trueblnr;
+			SCC.a[chan].TxBufferEmpty = true;
 #endif
 #endif
 			break;
@@ -1519,7 +1519,7 @@ LOCALPROC SCC_PutWR0(uint8_t Data, int chan)
 				"Enable Int on next Rx char");
 #endif
 #if EmLocalTalk || SCC_TrackMore
-			SCC.a[chan].FirstChar = trueblnr;
+			SCC.a[chan].FirstChar = true;
 #endif
 			/* happens in MacCheck */
 			break;
@@ -1529,7 +1529,7 @@ LOCALPROC SCC_PutWR0(uint8_t Data, int chan)
 #endif
 			/* happens in MacCheck */
 			/* happens in Print to ImageWriter */
-			SCC.a[chan].TxIP = falseblnr;
+			SCC.a[chan].TxIP = false;
 			CheckSCCInterruptFlag();
 			break;
 		case 6:
@@ -1538,16 +1538,16 @@ LOCALPROC SCC_PutWR0(uint8_t Data, int chan)
 #endif
 			/* happens on boot with appletalk on */
 #if EmLocalTalk
-			SCC.a[chan].EndOfFrame = falseblnr;
+			SCC.a[chan].EndOfFrame = false;
 #endif
 #if 0 /* ParityErr always false */
-			SCC.a[chan].ParityErr = falseblnr;
+			SCC.a[chan].ParityErr = false;
 #endif
 #if 0 /* RxOverrun always false */
-			SCC.a[chan].RxOverrun = falseblnr;
+			SCC.a[chan].RxOverrun = false;
 #endif
 #if 0 /* CRCFramingErr always false */
-			SCC.a[chan].CRCFramingErr = falseblnr;
+			SCC.a[chan].CRCFramingErr = false;
 #endif
 			break;
 		case 7:
@@ -1570,7 +1570,7 @@ LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
 {
 #if EmLocalTalk || SCC_TrackMore
 	{
-		blnr NewExtIE = (Data & Bit0) != 0;
+		bool NewExtIE = (Data & Bit0) != 0;
 		if (SCC.a[chan].ExtIE != NewExtIE) {
 			SCC.a[chan].ExtIE = NewExtIE;
 #if SCC_dolog
@@ -1586,7 +1586,7 @@ LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
 #endif
 
 	{
-		blnr NewTxIE = (Data & Bit1) != 0;
+		bool NewTxIE = (Data & Bit1) != 0;
 		if (SCC.a[chan].TxIE != NewTxIE) {
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan, "Tx Int Enable",
@@ -1601,7 +1601,7 @@ LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewPrtySpclCond = (Data & Bit2) != 0;
+		bool NewPrtySpclCond = (Data & Bit2) != 0;
 		if (SCC.a[chan].PrtySpclCond != NewPrtySpclCond) {
 			SCC.a[chan].PrtySpclCond = NewPrtySpclCond;
 #if SCC_dolog
@@ -1635,7 +1635,7 @@ LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
 						"Rx INT on 1st char"
 						" or special condition");
 #endif
-					SCC.a[chan].FirstChar = trueblnr;
+					SCC.a[chan].FirstChar = true;
 					/* happens on boot with appletalk on */
 					break;
 				case 2:
@@ -1658,7 +1658,7 @@ LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewWaitRqstRT = (Data & Bit5) != 0;
+		bool NewWaitRqstRT = (Data & Bit5) != 0;
 		if (SCC.a[chan].WaitRqstRT != NewWaitRqstRT) {
 			SCC.a[chan].WaitRqstRT = NewWaitRqstRT;
 #if SCC_dolog
@@ -1673,7 +1673,7 @@ LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewWaitRqstSlct = (Data & Bit6) != 0;
+		bool NewWaitRqstSlct = (Data & Bit6) != 0;
 		if (SCC.a[chan].WaitRqstSlct != NewWaitRqstSlct) {
 			SCC.a[chan].WaitRqstSlct = NewWaitRqstSlct;
 #if SCC_dolog
@@ -1687,7 +1687,7 @@ LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewWaitRqstEnbl = (Data & Bit7) != 0;
+		bool NewWaitRqstEnbl = (Data & Bit7) != 0;
 		if (SCC.a[chan].WaitRqstEnbl != NewWaitRqstEnbl) {
 			SCC.a[chan].WaitRqstEnbl = NewWaitRqstEnbl;
 #if SCC_dolog
@@ -1803,7 +1803,7 @@ LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
 #endif
 		/* happens on boot with appletalk on */
 		if (! (SCC.a[chan].SyncHunt)) {
-			SCC.a[chan].SyncHunt = trueblnr;
+			SCC.a[chan].SyncHunt = true;
 
 #if 0 /* SyncHuntIE usually false */
 			if (SCC.a[chan].SyncHuntIE) {
@@ -1817,7 +1817,7 @@ LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewRxCRCEnbl = (Data & Bit3) != 0;
+		bool NewRxCRCEnbl = (Data & Bit3) != 0;
 		if (SCC.a[chan].RxCRCEnbl != NewRxCRCEnbl) {
 			SCC.a[chan].RxCRCEnbl = NewRxCRCEnbl;
 #if SCC_dolog
@@ -1831,7 +1831,7 @@ LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
 
 #if EmLocalTalk || SCC_TrackMore
 	{
-		blnr NewAddrSrchMd = (Data & Bit2) != 0;
+		bool NewAddrSrchMd = (Data & Bit2) != 0;
 		if (SCC.a[chan].AddrSrchMd != NewAddrSrchMd) {
 			SCC.a[chan].AddrSrchMd = NewAddrSrchMd;
 #if SCC_dolog
@@ -1848,7 +1848,7 @@ LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewSyncChrLdInhb = (Data & Bit1) != 0;
+		bool NewSyncChrLdInhb = (Data & Bit1) != 0;
 		if (SCC.a[chan].SyncChrLdInhb != NewSyncChrLdInhb) {
 			SCC.a[chan].SyncChrLdInhb = NewSyncChrLdInhb;
 #if SCC_dolog
@@ -1861,7 +1861,7 @@ LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
 #endif
 
 	{
-		blnr NewRxEnable = (Data & Bit0) != 0;
+		bool NewRxEnable = (Data & Bit0) != 0;
 		if (SCC.a[chan].RxEnable != NewRxEnable) {
 			SCC.a[chan].RxEnable = NewRxEnable;
 #if SCC_dolog
@@ -1883,9 +1883,9 @@ LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
 					Go back into the idle state if we were
 					waiting for EOF
 				*/
-				SCC.a[chan].EndOfFrame = falseblnr;
-				SCC.a[chan].RxChrAvail = falseblnr;
-				SCC.a[chan].SyncHunt = trueblnr;
+				SCC.a[chan].EndOfFrame = false;
+				SCC.a[chan].RxChrAvail = false;
+				SCC.a[chan].SyncHunt = true;
 			} else {
 				/* look for a packet */
 				if (0 != chan) {
@@ -1907,7 +1907,7 @@ LOCALPROC SCC_PutWR4(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewPrtyEnable = (Data & Bit0) != 0;
+		bool NewPrtyEnable = (Data & Bit0) != 0;
 		if (SCC.a[chan].PrtyEnable != NewPrtyEnable) {
 			SCC.a[chan].PrtyEnable = NewPrtyEnable;
 #if SCC_dolog
@@ -1920,7 +1920,7 @@ LOCALPROC SCC_PutWR4(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewPrtyEven = (Data & Bit1) != 0;
+		bool NewPrtyEven = (Data & Bit1) != 0;
 		if (SCC.a[chan].PrtyEven != NewPrtyEven) {
 			SCC.a[chan].PrtyEven = NewPrtyEven;
 #if SCC_dolog
@@ -1987,7 +1987,7 @@ LOCALPROC SCC_PutWR4(uint8_t Data, int chan)
 #endif
 					/* happens on boot with appletalk on */
 #if EmLocalTalk
-					SCC.a[chan].TxBufferEmpty = trueblnr;
+					SCC.a[chan].TxBufferEmpty = true;
 #endif
 					break;
 				case 3:
@@ -2039,7 +2039,7 @@ LOCALPROC SCC_PutWR5(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewTxCRCEnbl = (Data & Bit0) != 0;
+		bool NewTxCRCEnbl = (Data & Bit0) != 0;
 		if (SCC.a[chan].TxCRCEnbl != NewTxCRCEnbl) {
 			SCC.a[chan].TxCRCEnbl = NewTxCRCEnbl;
 #if SCC_dolog
@@ -2053,7 +2053,7 @@ LOCALPROC SCC_PutWR5(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewRTSctrl = (Data & Bit1) != 0;
+		bool NewRTSctrl = (Data & Bit1) != 0;
 		if (SCC.a[chan].RTSctrl != NewRTSctrl) {
 			SCC.a[chan].RTSctrl = NewRTSctrl;
 #if SCC_dolog
@@ -2074,7 +2074,7 @@ LOCALPROC SCC_PutWR5(uint8_t Data, int chan)
 	}
 
 	{
-		blnr NewTxEnable = (Data & Bit3) != 0;
+		bool NewTxEnable = (Data & Bit3) != 0;
 		if (SCC.a[chan].TxEnable != NewTxEnable) {
 			SCC.a[chan].TxEnable = NewTxEnable;
 #if SCC_dolog
@@ -2092,7 +2092,7 @@ LOCALPROC SCC_PutWR5(uint8_t Data, int chan)
 #endif
 			} else {
 #if EmLocalTalk
-				SCC.a[chan].TxBufferEmpty = trueblnr;
+				SCC.a[chan].TxBufferEmpty = true;
 #endif
 			}
 		}
@@ -2100,7 +2100,7 @@ LOCALPROC SCC_PutWR5(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewSndBrkCtrl = (Data & Bit4) != 0;
+		bool NewSndBrkCtrl = (Data & Bit4) != 0;
 		if (SCC.a[chan].SndBrkCtrl != NewSndBrkCtrl) {
 			SCC.a[chan].SndBrkCtrl = NewSndBrkCtrl;
 #if SCC_dolog
@@ -2143,7 +2143,7 @@ LOCALPROC SCC_PutWR5(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewDTRctrl = (Data & Bit7) != 0;
+		bool NewDTRctrl = (Data & Bit7) != 0;
 		if (SCC.a[chan].DTRctrl != NewDTRctrl) {
 			SCC.a[chan].DTRctrl = NewDTRctrl;
 #if SCC_dolog
@@ -2239,18 +2239,18 @@ LOCALPROC SCC_PutWR8(uint8_t Data, int chan)
 		}
 #else
 #if 0 /* TxBufferEmpty always true */
-		SCC.a[chan].TxBufferEmpty = trueblnr;
+		SCC.a[chan].TxBufferEmpty = true;
 #endif
-		SCC.a[chan].TxUnderrun = trueblnr; /* underrun ? */
+		SCC.a[chan].TxUnderrun = true; /* underrun ? */
 #endif
 
-		SCC.a[chan].TxIP = trueblnr;
+		SCC.a[chan].TxIP = true;
 		CheckSCCInterruptFlag();
 	} else {
 		ReportAbnormalID(0x071F,
 			"write when Transmit Buffer not Enabled");
 #if 0 /* TxBufferEmpty always true */
-		SCC.a[chan].TxBufferEmpty = falseblnr;
+		SCC.a[chan].TxBufferEmpty = false;
 #endif
 	}
 }
@@ -2271,7 +2271,7 @@ LOCALPROC SCC_PutWR9(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewNoVectorSlct = (Data & Bit1) != 0;
+		bool NewNoVectorSlct = (Data & Bit1) != 0;
 		if (SCC.NoVectorSlct != NewNoVectorSlct) {
 			SCC.NoVectorSlct = NewNoVectorSlct;
 #if SCC_dolog
@@ -2288,7 +2288,7 @@ LOCALPROC SCC_PutWR9(uint8_t Data, int chan)
 	}
 
 	{
-		blnr NewMIE = (Data & Bit3) != 0;
+		bool NewMIE = (Data & Bit3) != 0;
 			/* has both values on boot always */
 		if (SCC.MIE != NewMIE) {
 			SCC.MIE = NewMIE;
@@ -2407,7 +2407,7 @@ LOCALPROC SCC_PutWR10(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewCRCPreset = (Data & Bit7) != 0;
+		bool NewCRCPreset = (Data & Bit7) != 0;
 		if (SCC.a[chan].CRCPreset != NewCRCPreset) {
 			SCC.a[chan].CRCPreset = NewCRCPreset;
 #if SCC_dolog
@@ -2627,7 +2627,7 @@ LOCALPROC SCC_PutWR14(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewBRGEnbl = (Data & Bit0) != 0;
+		bool NewBRGEnbl = (Data & Bit0) != 0;
 		if (SCC.a[chan].BRGEnbl != NewBRGEnbl) {
 			SCC.a[chan].BRGEnbl = NewBRGEnbl;
 #if SCC_dolog
@@ -2742,7 +2742,7 @@ LOCALPROC SCC_PutWR15(uint8_t Data, int chan)
 
 #if SCC_TrackMore /* don't care about CTS_IE */
 	{
-		blnr NewCTS_IE = (Data & Bit5) != 0;
+		bool NewCTS_IE = (Data & Bit5) != 0;
 		if (SCC.a[chan].CTS_IE != NewCTS_IE) {
 			SCC.a[chan].CTS_IE = NewCTS_IE;
 #if SCC_dolog
@@ -2761,7 +2761,7 @@ LOCALPROC SCC_PutWR15(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		blnr NewBreakAbortIE = (Data & Bit7) != 0;
+		bool NewBreakAbortIE = (Data & Bit7) != 0;
 		if (SCC.a[chan].BreakAbortIE != NewBreakAbortIE) {
 			SCC.a[chan].BreakAbortIE = NewBreakAbortIE;
 #if SCC_dolog
@@ -2937,7 +2937,7 @@ LOCALPROC SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 #endif
 }
 
-GLOBALFUNC uint32_t SCC_Access(uint32_t Data, blnr WriteMem, uint32_t addr)
+GLOBALFUNC uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 #if EmLocalTalk
 	/*

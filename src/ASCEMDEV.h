@@ -20,5 +20,5 @@
 #define ASCEMDEV_H
 #endif
 
-EXPORTFUNC uint32_t ASC_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
+EXPORTFUNC uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 EXPORTPROC ASC_SubTick(int SubTick);

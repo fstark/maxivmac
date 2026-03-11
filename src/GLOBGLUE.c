@@ -64,17 +64,17 @@ IMPORTPROC SetCyclesRemaining(int32_t n);
 IMPORTPROC SetHeadATTel(ATTep p);
 IMPORTFUNC ATTep FindATTel(uint32_t addr);
 
-IMPORTFUNC uint32_t SCSI_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
-IMPORTFUNC uint32_t SCC_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
-IMPORTFUNC uint32_t IWM_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
+IMPORTFUNC uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+IMPORTFUNC uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+IMPORTFUNC uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 #if EmVIA1
-IMPORTFUNC uint32_t VIA1_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
+IMPORTFUNC uint32_t VIA1_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 #endif
 #if EmVIA2
-IMPORTFUNC uint32_t VIA2_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
+IMPORTFUNC uint32_t VIA2_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 #endif
 #if EmASC
-IMPORTFUNC uint32_t ASC_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
+IMPORTFUNC uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
 #endif
 
 IMPORTFUNC uint8_t get_vm_byte(uint32_t addr);
@@ -101,7 +101,7 @@ GLOBALPROC customreset(void)
 	Sony_Reset();
 	Extn_Reset();
 #if CurEmMd <= kEmMd_Plus
-	WantMacReset = trueblnr;
+	WantMacReset = true;
 	/*
 		kludge, code in Finder appears
 		to do RESET and not expect
@@ -139,7 +139,7 @@ GLOBALPROC dbglog_StartLine(void)
 #endif
 
 #if dbglog_HAVE
-GLOBALPROC dbglog_WriteMemArrow(blnr WriteMem)
+GLOBALPROC dbglog_WriteMemArrow(bool WriteMem)
 {
 	if (WriteMem) {
 		dbglog_writeCStr(" <- ");
@@ -151,7 +151,7 @@ GLOBALPROC dbglog_WriteMemArrow(blnr WriteMem)
 
 #if dbglog_HAVE
 GLOBALPROC dbglog_AddrAccess(char *s, uint32_t Data,
-	blnr WriteMem, uint32_t addr)
+	bool WriteMem, uint32_t addr)
 {
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
@@ -165,7 +165,7 @@ GLOBALPROC dbglog_AddrAccess(char *s, uint32_t Data,
 #endif
 
 #if dbglog_HAVE
-GLOBALPROC dbglog_Access(char *s, uint32_t Data, blnr WriteMem)
+GLOBALPROC dbglog_Access(char *s, uint32_t Data, bool WriteMem)
 {
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
@@ -185,7 +185,7 @@ GLOBALPROC dbglog_WriteNote(char *s)
 #endif
 
 #if dbglog_HAVE
-GLOBALPROC dbglog_WriteSetBool(char *s, blnr v)
+GLOBALPROC dbglog_WriteSetBool(char *s, bool v)
 {
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
@@ -200,7 +200,7 @@ GLOBALPROC dbglog_WriteSetBool(char *s, blnr v)
 #endif
 
 #if WantAbnormalReports
-LOCALVAR blnr GotOneAbnormal = falseblnr;
+LOCALVAR bool GotOneAbnormal = false;
 #endif
 
 #ifndef ReportAbnormalInterrupt
@@ -224,9 +224,9 @@ GLOBALPROC DoReportAbnormalID(uint16_t id
 	if (! GotOneAbnormal) {
 		WarnMsgAbnormalID(id);
 #if ReportAbnormalInterrupt
-		SetInterruptButton(trueblnr);
+		SetInterruptButton(true);
 #endif
-		GotOneAbnormal = trueblnr;
+		GotOneAbnormal = true;
 	}
 }
 #endif
@@ -301,7 +301,7 @@ GLOBALPROC DoReportAbnormalID(uint16_t id
 
 #if IncludeExtnPbufs
 LOCALFUNC tMacErr PbufTransferVM(uint32_t Buffera,
-	tPbuf i, uint32_t offset, uint32_t count, blnr IsWrite)
+	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
 {
 	tMacErr result;
 	uint32_t contig;
@@ -390,7 +390,7 @@ LOCALPROC ExtnParamBuffers_Access(uint32_t p)
 				uint32_t offset = get_vm_long(p + ExtnDat_params + 4);
 				uint32_t count = get_vm_long(p + ExtnDat_params + 8);
 				uint32_t Buffera = get_vm_long(p + ExtnDat_params + 12);
-				blnr IsWrite =
+				bool IsWrite =
 					(get_vm_word(p + ExtnDat_params + 16) != 0);
 				result = PbufGetSize(Pbuf_No, &PbufCount);
 				if (mnvm_noErr == result) {
@@ -1302,7 +1302,7 @@ LOCALPROC get_fail_realblock(ATTep p)
 #endif
 
 GLOBALFUNC uint32_t MMDV_Access(ATTep p, uint32_t Data,
-	blnr WriteMem, blnr ByteSize, uint32_t addr)
+	bool WriteMem, bool ByteSize, uint32_t addr)
 {
 	switch (p->MMDV) {
 #if EmVIA1
@@ -1533,9 +1533,9 @@ GLOBALFUNC uint32_t MMDV_Access(ATTep p, uint32_t Data,
 	return Data;
 }
 
-GLOBALFUNC blnr MemAccessNtfy(ATTep pT)
+GLOBALFUNC bool MemAccessNtfy(ATTep pT)
 {
-	blnr v = falseblnr;
+	bool v = false;
 
 	switch (pT->Ntfy) {
 #if CurEmMd >= kEmMd_SE
@@ -1545,7 +1545,7 @@ GLOBALFUNC blnr MemAccessNtfy(ATTep pT)
 			MemOverlay = 0;
 			SetUpMemBanks();
 
-			v = trueblnr;
+			v = true;
 
 			break;
 #endif
@@ -1570,7 +1570,7 @@ GLOBALPROC Addr32_ChangeNtfy(void)
 }
 #endif
 
-LOCALFUNC ATTep get_address_realblock1(blnr WriteMem, uint32_t addr)
+LOCALFUNC ATTep get_address_realblock1(bool WriteMem, uint32_t addr)
 {
 	ATTep p;
 
@@ -1592,7 +1592,7 @@ Label_Retry:
 	return p;
 }
 
-GLOBALFUNC uint8_t * get_real_address0(uint32_t L, blnr WritableMem, uint32_t addr,
+GLOBALFUNC uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
 	uint32_t *actL)
 {
 	uint32_t bankleft;
@@ -1619,9 +1619,9 @@ GLOBALFUNC uint8_t * get_real_address0(uint32_t L, blnr WritableMem, uint32_t ad
 	return p;
 }
 
-GLOBALVAR blnr InterruptButton = falseblnr;
+GLOBALVAR bool InterruptButton = false;
 
-GLOBALPROC SetInterruptButton(blnr v)
+GLOBALPROC SetInterruptButton(bool v)
 {
 	if (InterruptButton != v) {
 		InterruptButton = v;
@@ -1660,7 +1660,7 @@ GLOBALPROC VIAorSCCinterruptChngNtfy(void)
 	}
 }
 
-GLOBALFUNC blnr AddrSpac_Init(void)
+GLOBALFUNC bool AddrSpac_Init(void)
 {
 	int i;
 
@@ -1670,7 +1670,7 @@ GLOBALFUNC blnr AddrSpac_Init(void)
 
 	MINEM68K_Init(
 		&CurIPL);
-	return trueblnr;
+	return true;
 }
 
 GLOBALPROC Memory_Reset(void)
@@ -1684,7 +1684,7 @@ EXPORTPROC PowerOff_ChangeNtfy(void);
 GLOBALPROC PowerOff_ChangeNtfy(void)
 {
 	if (! VIA2_iB2) {
-		ForceMacOff = trueblnr;
+		ForceMacOff = true;
 	}
 }
 #endif
@@ -1700,7 +1700,7 @@ GLOBALVAR uint16_t MasterMyEvtQLock = 0;
 	*/
 #endif
 
-GLOBALFUNC blnr FindKeyEvent(int *VirtualKey, blnr *KeyDown)
+GLOBALFUNC bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
 {
 	MyEvtQEl *p;
 
@@ -1714,11 +1714,11 @@ GLOBALFUNC blnr FindKeyEvent(int *VirtualKey, blnr *KeyDown)
 			*VirtualKey = p->u.press.key;
 			*KeyDown = p->u.press.down;
 			MyEvtQOutDone();
-			return trueblnr;
+			return true;
 		}
 	}
 
-	return falseblnr;
+	return false;
 }
 
 /* task management */
