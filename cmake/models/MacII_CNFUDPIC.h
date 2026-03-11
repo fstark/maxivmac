@@ -56,10 +56,10 @@
 #define pr_HilColGreen 0x0000
 #define pr_HilColBlue 0x0000
 
-
 /* the Wire variables are 1/0, not true/false */
 
-enum {
+enum
+{
 
 	Wire_unknown_SoundDisable,
 #define SoundDisable (Wires[Wire_unknown_SoundDisable])
@@ -183,10 +183,9 @@ enum {
 	kNumWires
 };
 
-
 /* VIA configuration */
 #define VIA1_ORA_FloatVal 0xBF
-	/* bit 6 used to check version of hardware */
+/* bit 6 used to check version of hardware */
 #define VIA1_ORB_FloatVal 0xFF
 #define VIA1_ORA_CanIn 0x80
 #define VIA1_ORA_CanOut 0x3F
@@ -209,7 +208,7 @@ enum {
 #define VIA2_CB2modesAllowed 0x01
 #define VIA2_CA2modesAllowed 0x01
 
-#define Mouse_Enabled() (! ADBMouseDisabled)
+#define Mouse_Enabled() (!ADBMouseDisabled)
 
 #define VIA1_iCA1_PulseNtfy VIA1_iCA1_Sixtieth_PulseNtfy
 #define Sixtieth_PulseNtfy VIA1_iCA1_Sixtieth_PulseNtfy
