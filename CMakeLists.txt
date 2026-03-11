@@ -222,12 +222,12 @@ configure_file(
 
 # CNFUIALL.h and CNFUIPIC.h are compiler/platform detection — copy as-is
 configure_file(
-    "${CMAKE_SOURCE_DIR}/cfg/CNFUIALL.h"
+    "${CMAKE_SOURCE_DIR}/src/config/CNFUIALL.h"
     "${MINIVMAC_GENERATED_CFG_DIR}/CNFUIALL.h"
     COPYONLY
 )
 configure_file(
-    "${CMAKE_SOURCE_DIR}/cfg/CNFUIPIC.h"
+    "${CMAKE_SOURCE_DIR}/src/config/CNFUIPIC.h"
     "${MINIVMAC_GENERATED_CFG_DIR}/CNFUIPIC.h"
     COPYONLY
 )
@@ -239,7 +239,7 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
     add_executable(minivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
 
     set_target_properties(minivmac PROPERTIES
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/cfg/Info.plist"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/src/config/Info.plist"
         MACOSX_BUNDLE_BUNDLE_NAME "Mini vMac"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.gryphel.minivmac"
     )
@@ -250,12 +250,12 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources
     )
     set_source_files_properties(
-        cfg/English.lproj/dummy.txt
+        src/config/English.lproj/dummy.txt
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources/English.lproj
     )
     target_sources(minivmac PRIVATE
         src/ICONAPPO.icns
-        cfg/English.lproj/dummy.txt
+        src/config/English.lproj/dummy.txt
     )
 
     # macOS frameworks
@@ -282,7 +282,7 @@ elseif(MINIVMAC_BACKEND STREQUAL "sdl")
     if(APPLE)
         add_executable(minivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
         set_target_properties(minivmac PROPERTIES
-            MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/cfg/Info.plist"
+            MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/src/config/Info.plist"
             MACOSX_BUNDLE_BUNDLE_NAME "Mini vMac"
             MACOSX_BUNDLE_GUI_IDENTIFIER "com.gryphel.minivmac"
         )
@@ -323,7 +323,7 @@ endif()
 # copied). Source cfg/ kept as fallback. src/ for source headers.
 target_include_directories(minivmac PRIVATE
     "${MINIVMAC_GENERATED_CFG_DIR}"
-    "${CMAKE_SOURCE_DIR}/cfg"
+    "${CMAKE_SOURCE_DIR}/src/config"
     "${CMAKE_SOURCE_DIR}/src"
 )
 
