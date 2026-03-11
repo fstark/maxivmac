@@ -24,4 +24,4 @@ EXPORTFUNC blnr Vid_Init(void);
 EXPORTFUNC uint16_t Vid_Reset(void);
 EXPORTPROC Vid_Update(void);
 
-EXPORTPROC ExtnVideo_Access(CPTR p);
+EXPORTPROC ExtnVideo_Access(uint32_t p);

@@ -533,7 +533,7 @@ LOCALPROC FillScreenWithGrayPattern(void)
 	}
 }
 
-GLOBALPROC ExtnVideo_Access(CPTR p)
+GLOBALPROC ExtnVideo_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -571,8 +571,8 @@ GLOBALPROC ExtnVideo_Access(CPTR p)
 			break;
 		case kCmndVideoControl:
 			{
-				CPTR CntrlParams = get_vm_long(p + 8);
-				CPTR csParam =
+				uint32_t CntrlParams = get_vm_long(p + 8);
+				uint32_t csParam =
 					get_vm_long(CntrlParams + CntrlParam_csParam);
 				uint16_t csCode =
 					get_vm_word(CntrlParams + CntrlParam_csCode);
@@ -626,7 +626,7 @@ GLOBALPROC ExtnVideo_Access(CPTR p)
 #endif
 #if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
 						if (UseColorMode) {
-							CPTR csTable = get_vm_long(
+							uint32_t csTable = get_vm_long(
 								csParam + VDSetEntryRecord_csTable);
 							uint16_t csStart = get_vm_word(
 								csParam + VDSetEntryRecord_csStart);
@@ -712,7 +712,7 @@ GLOBALPROC ExtnVideo_Access(CPTR p)
 #endif
 						{
 #if 0
-							CPTR csTable = get_vm_long(
+							uint32_t csTable = get_vm_long(
 								csParam + VDGammaRecord_csGTable);
 							/* not implemented */
 #endif
@@ -794,8 +794,8 @@ GLOBALPROC ExtnVideo_Access(CPTR p)
 			break;
 		case kCmndVideoStatus:
 			{
-				CPTR CntrlParams = get_vm_long(p + 8);
-				CPTR csParam = get_vm_long(
+				uint32_t CntrlParams = get_vm_long(p + 8);
+				uint32_t csParam = get_vm_long(
 					CntrlParams + CntrlParam_csParam);
 				uint16_t csCode = get_vm_word(
 					CntrlParams + CntrlParam_csCode);
@@ -823,7 +823,7 @@ GLOBALPROC ExtnVideo_Access(CPTR p)
 #endif
 						{
 #if 0
-							CPTR csTable = get_vm_long(
+							uint32_t csTable = get_vm_long(
 								csParam + VDSetEntryRecord_csTable);
 							put_vm_word(
 								csParam + VDSetEntryRecord_csStart,

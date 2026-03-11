@@ -60,15 +60,15 @@ EXPORTPROC Addr32_ChangeNtfy(void);
 #endif
 
 /*
-	representation of pointer into memory of emulated computer.
+	representation of pointer into memory of emulated computer:
+	uint32_t (was CPTR typedef)
 */
-typedef uint32_t CPTR;
 
 /*
 	mapping of address space to real memory
 */
 
-EXPORTFUNC uint8_t * get_real_address0(uint32_t L, blnr WritableMem, CPTR addr,
+EXPORTFUNC uint8_t * get_real_address0(uint32_t L, blnr WritableMem, uint32_t addr,
 	uint32_t *actL);
 
 /*
@@ -275,5 +275,5 @@ typedef ATTer *ATTep;
 #define kATTA_ntfymask (1 << kATTA_ntfybit)
 
 EXPORTFUNC uint32_t MMDV_Access(ATTep p, uint32_t Data,
-	blnr WriteMem, blnr ByteSize, CPTR addr);
+	blnr WriteMem, blnr ByteSize, uint32_t addr);
 EXPORTFUNC blnr MemAccessNtfy(ATTep pT);

@@ -854,7 +854,7 @@ GLOBALPROC VIA2_DoTimer2Check(void)
 #define kIER    0x0E
 #define kORA    0x0F
 
-GLOBALFUNC uint32_t VIA2_Access(uint32_t Data, blnr WriteMem, CPTR addr)
+GLOBALFUNC uint32_t VIA2_Access(uint32_t Data, blnr WriteMem, uint32_t addr)
 {
 	switch (addr) {
 		case kORB   :

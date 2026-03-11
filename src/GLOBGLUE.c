@@ -46,10 +46,10 @@ IMPORTPROC VIA2_Reset(void);
 #endif
 IMPORTPROC Sony_Reset(void);
 
-IMPORTPROC ExtnDisk_Access(CPTR p);
-IMPORTPROC ExtnSony_Access(CPTR p);
+IMPORTPROC ExtnDisk_Access(uint32_t p);
+IMPORTPROC ExtnSony_Access(uint32_t p);
 #if EmVidCard
-IMPORTPROC ExtnVideo_Access(CPTR p);
+IMPORTPROC ExtnVideo_Access(uint32_t p);
 #endif
 
 IMPORTPROC Sony_SetQuitOnEject(void);
@@ -62,28 +62,28 @@ IMPORTFUNC uint32_t GetCyclesRemaining(void);
 IMPORTPROC SetCyclesRemaining(int32_t n);
 
 IMPORTPROC SetHeadATTel(ATTep p);
-IMPORTFUNC ATTep FindATTel(CPTR addr);
+IMPORTFUNC ATTep FindATTel(uint32_t addr);
 
-IMPORTFUNC uint32_t SCSI_Access(uint32_t Data, blnr WriteMem, CPTR addr);
-IMPORTFUNC uint32_t SCC_Access(uint32_t Data, blnr WriteMem, CPTR addr);
-IMPORTFUNC uint32_t IWM_Access(uint32_t Data, blnr WriteMem, CPTR addr);
+IMPORTFUNC uint32_t SCSI_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
+IMPORTFUNC uint32_t SCC_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
+IMPORTFUNC uint32_t IWM_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
 #if EmVIA1
-IMPORTFUNC uint32_t VIA1_Access(uint32_t Data, blnr WriteMem, CPTR addr);
+IMPORTFUNC uint32_t VIA1_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
 #endif
 #if EmVIA2
-IMPORTFUNC uint32_t VIA2_Access(uint32_t Data, blnr WriteMem, CPTR addr);
+IMPORTFUNC uint32_t VIA2_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
 #endif
 #if EmASC
-IMPORTFUNC uint32_t ASC_Access(uint32_t Data, blnr WriteMem, CPTR addr);
+IMPORTFUNC uint32_t ASC_Access(uint32_t Data, blnr WriteMem, uint32_t addr);
 #endif
 
-IMPORTFUNC uint8_t get_vm_byte(CPTR addr);
-IMPORTFUNC uint16_t get_vm_word(CPTR addr);
-IMPORTFUNC uint32_t get_vm_long(CPTR addr);
+IMPORTFUNC uint8_t get_vm_byte(uint32_t addr);
+IMPORTFUNC uint16_t get_vm_word(uint32_t addr);
+IMPORTFUNC uint32_t get_vm_long(uint32_t addr);
 
-IMPORTPROC put_vm_byte(CPTR addr, uint8_t b);
-IMPORTPROC put_vm_word(CPTR addr, uint16_t w);
-IMPORTPROC put_vm_long(CPTR addr, uint32_t l);
+IMPORTPROC put_vm_byte(uint32_t addr, uint8_t b);
+IMPORTPROC put_vm_word(uint32_t addr, uint16_t w);
+IMPORTPROC put_vm_long(uint32_t addr, uint32_t l);
 
 GLOBALVAR uint32_t my_disk_icon_addr;
 
@@ -300,7 +300,7 @@ GLOBALPROC DoReportAbnormalID(uint16_t id
 
 
 #if IncludeExtnPbufs
-LOCALFUNC tMacErr PbufTransferVM(CPTR Buffera,
+LOCALFUNC tMacErr PbufTransferVM(uint32_t Buffera,
 	tPbuf i, uint32_t offset, uint32_t count, blnr IsWrite)
 {
 	tMacErr result;
@@ -338,7 +338,7 @@ label_1:
 #endif
 
 #if IncludeExtnPbufs
-LOCALPROC ExtnParamBuffers_Access(CPTR p)
+LOCALPROC ExtnParamBuffers_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -389,7 +389,7 @@ LOCALPROC ExtnParamBuffers_Access(CPTR p)
 				/* reserved word at offset 2, should be zero */
 				uint32_t offset = get_vm_long(p + ExtnDat_params + 4);
 				uint32_t count = get_vm_long(p + ExtnDat_params + 8);
-				CPTR Buffera = get_vm_long(p + ExtnDat_params + 12);
+				uint32_t Buffera = get_vm_long(p + ExtnDat_params + 12);
 				blnr IsWrite =
 					(get_vm_word(p + ExtnDat_params + 16) != 0);
 				result = PbufGetSize(Pbuf_No, &PbufCount);
@@ -419,7 +419,7 @@ LOCALPROC ExtnParamBuffers_Access(CPTR p)
 #endif
 
 #if IncludeExtnHostTextClipExchange
-LOCALPROC ExtnHostTextClipExchange_Access(CPTR p)
+LOCALPROC ExtnHostTextClipExchange_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -471,7 +471,7 @@ LOCALPROC ExtnHostTextClipExchange_Access(CPTR p)
 #define kParamFindExtnTheExtn 8
 #define kParamFindExtnTheId 12
 
-LOCALPROC ExtnFind_Access(CPTR p)
+LOCALPROC ExtnFind_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -560,7 +560,7 @@ LOCALPROC ExtnFind_Access(CPTR p)
 
 LOCALVAR uint16_t ParamAddrHi;
 
-LOCALPROC Extn_Access(uint32_t Data, CPTR addr)
+LOCALPROC Extn_Access(uint32_t Data, uint32_t addr)
 {
 	switch (addr) {
 		case kDSK_Params_Hi:
@@ -568,7 +568,7 @@ LOCALPROC Extn_Access(uint32_t Data, CPTR addr)
 			break;
 		case kDSK_Params_Lo:
 			{
-				CPTR p = ParamAddrHi << 16 | Data;
+				uint32_t p = ParamAddrHi << 16 | Data;
 
 				ParamAddrHi = (uint16_t) - 1;
 				if (kcom_callcheck == get_vm_word(p + ExtnDat_checkval))
@@ -1302,7 +1302,7 @@ LOCALPROC get_fail_realblock(ATTep p)
 #endif
 
 GLOBALFUNC uint32_t MMDV_Access(ATTep p, uint32_t Data,
-	blnr WriteMem, blnr ByteSize, CPTR addr)
+	blnr WriteMem, blnr ByteSize, uint32_t addr)
 {
 	switch (p->MMDV) {
 #if EmVIA1
@@ -1570,7 +1570,7 @@ GLOBALPROC Addr32_ChangeNtfy(void)
 }
 #endif
 
-LOCALFUNC ATTep get_address_realblock1(blnr WriteMem, CPTR addr)
+LOCALFUNC ATTep get_address_realblock1(blnr WriteMem, uint32_t addr)
 {
 	ATTep p;
 
@@ -1592,7 +1592,7 @@ Label_Retry:
 	return p;
 }
 
-GLOBALFUNC uint8_t * get_real_address0(uint32_t L, blnr WritableMem, CPTR addr,
+GLOBALFUNC uint8_t * get_real_address0(uint32_t L, blnr WritableMem, uint32_t addr,
 	uint32_t *actL)
 {
 	uint32_t bankleft;

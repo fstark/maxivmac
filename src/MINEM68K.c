@@ -224,10 +224,10 @@ LOCALVAR struct regstruct
 	struct regstruct *save_regs;
 #endif
 
-	CPTR usp; /* User Stack Pointer */
-	CPTR isp; /* Interrupt Stack Pointer */
+	uint32_t usp; /* User Stack Pointer */
+	uint32_t isp; /* Interrupt Stack Pointer */
 #if Use68020
-	CPTR msp; /* Master Stack Pointer */
+	uint32_t msp; /* Master Stack Pointer */
 	uint32_t sfc; /* Source Function Code register */
 	uint32_t dfc; /* Destination Function Code register */
 	uint32_t vbr; /* Vector Base Register */
@@ -377,7 +377,7 @@ LOCALINLINEPROC BackupPC(void)
 #endif
 }
 
-LOCALINLINEFUNC CPTR m68k_getpc(void)
+LOCALINLINEFUNC uint32_t m68k_getpc(void)
 {
 	return V_regs.pc + (V_pc_p - V_regs.pc_pLo);
 }
@@ -823,7 +823,7 @@ LOCALPROC m68k_go_MaxCycles(void)
 
 #if WantDisasm || WantBreakPoint
 		{
-			CPTR pc = m68k_getpc() - 2;
+			uint32_t pc = m68k_getpc() - 2;
 #if WantDisasm
 			DisasmOneOrSave(pc);
 #endif
@@ -846,9 +846,9 @@ LOCALPROC m68k_go_MaxCycles(void)
 	UnDecodeNextInstruction(Cycles);
 }
 
-FORWARDFUNC uint32_t my_reg_call get_byte_ext(CPTR addr);
+FORWARDFUNC uint32_t my_reg_call get_byte_ext(uint32_t addr);
 
-LOCALFUNC uint32_t my_reg_call get_byte(CPTR addr)
+LOCALFUNC uint32_t my_reg_call get_byte(uint32_t addr)
 {
 	uint8_t * m = (addr & V_regs.MATCrdB.usemask) + V_regs.MATCrdB.usebase;
 
@@ -859,9 +859,9 @@ LOCALFUNC uint32_t my_reg_call get_byte(CPTR addr)
 	}
 }
 
-FORWARDPROC my_reg_call put_byte_ext(CPTR addr, uint32_t b);
+FORWARDPROC my_reg_call put_byte_ext(uint32_t addr, uint32_t b);
 
-LOCALPROC my_reg_call put_byte(CPTR addr, uint32_t b)
+LOCALPROC my_reg_call put_byte(uint32_t addr, uint32_t b)
 {
 	uint8_t * m = (addr & V_regs.MATCwrB.usemask) + V_regs.MATCwrB.usebase;
 	if ((addr & V_regs.MATCwrB.cmpmask) == V_regs.MATCwrB.cmpvalu) {
@@ -871,9 +871,9 @@ LOCALPROC my_reg_call put_byte(CPTR addr, uint32_t b)
 	}
 }
 
-FORWARDFUNC uint32_t my_reg_call get_word_ext(CPTR addr);
+FORWARDFUNC uint32_t my_reg_call get_word_ext(uint32_t addr);
 
-LOCALFUNC uint32_t my_reg_call get_word(CPTR addr)
+LOCALFUNC uint32_t my_reg_call get_word(uint32_t addr)
 {
 	uint8_t * m = (addr & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
 	if ((addr & V_regs.MATCrdW.cmpmask) == V_regs.MATCrdW.cmpvalu) {
@@ -883,9 +883,9 @@ LOCALFUNC uint32_t my_reg_call get_word(CPTR addr)
 	}
 }
 
-FORWARDPROC my_reg_call put_word_ext(CPTR addr, uint32_t w);
+FORWARDPROC my_reg_call put_word_ext(uint32_t addr, uint32_t w);
 
-LOCALPROC my_reg_call put_word(CPTR addr, uint32_t w)
+LOCALPROC my_reg_call put_word(uint32_t addr, uint32_t w)
 {
 	uint8_t * m = (addr & V_regs.MATCwrW.usemask) + V_regs.MATCwrW.usebase;
 	if ((addr & V_regs.MATCwrW.cmpmask) == V_regs.MATCwrW.cmpvalu) {
@@ -895,11 +895,11 @@ LOCALPROC my_reg_call put_word(CPTR addr, uint32_t w)
 	}
 }
 
-FORWARDFUNC uint32_t my_reg_call get_long_misaligned_ext(CPTR addr);
+FORWARDFUNC uint32_t my_reg_call get_long_misaligned_ext(uint32_t addr);
 
-LOCALFUNC uint32_t my_reg_call get_long_misaligned(CPTR addr)
+LOCALFUNC uint32_t my_reg_call get_long_misaligned(uint32_t addr)
 {
-	CPTR addr2 = addr + 2;
+	uint32_t addr2 = addr + 2;
 	uint8_t * m = (addr & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
 	uint8_t * m2 = (addr2 & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
 	if (((addr & V_regs.MATCrdW.cmpmask) == V_regs.MATCrdW.cmpvalu)
@@ -917,11 +917,11 @@ LOCALFUNC uint32_t my_reg_call get_long_misaligned(CPTR addr)
 }
 
 #if FasterAlignedL
-FORWARDFUNC uint32_t my_reg_call get_long_ext(CPTR addr);
+FORWARDFUNC uint32_t my_reg_call get_long_ext(uint32_t addr);
 #endif
 
 #if FasterAlignedL
-LOCALFUNC uint32_t my_reg_call get_long(CPTR addr)
+LOCALFUNC uint32_t my_reg_call get_long(uint32_t addr)
 {
 	if (0 == (addr & 0x03)) {
 		uint8_t * m = (addr & V_regs.MATCrdL.usemask)
@@ -939,11 +939,11 @@ LOCALFUNC uint32_t my_reg_call get_long(CPTR addr)
 #define get_long get_long_misaligned
 #endif
 
-FORWARDPROC my_reg_call put_long_misaligned_ext(CPTR addr, uint32_t l);
+FORWARDPROC my_reg_call put_long_misaligned_ext(uint32_t addr, uint32_t l);
 
-LOCALPROC my_reg_call put_long_misaligned(CPTR addr, uint32_t l)
+LOCALPROC my_reg_call put_long_misaligned(uint32_t addr, uint32_t l)
 {
-	CPTR addr2 = addr + 2;
+	uint32_t addr2 = addr + 2;
 	uint8_t * m = (addr & V_regs.MATCwrW.usemask) + V_regs.MATCwrW.usebase;
 	uint8_t * m2 = (addr2 & V_regs.MATCwrW.usemask) + V_regs.MATCwrW.usebase;
 	if (((addr & V_regs.MATCwrW.cmpmask) == V_regs.MATCwrW.cmpvalu)
@@ -957,11 +957,11 @@ LOCALPROC my_reg_call put_long_misaligned(CPTR addr, uint32_t l)
 }
 
 #if FasterAlignedL
-FORWARDPROC my_reg_call put_long_ext(CPTR addr, uint32_t l);
+FORWARDPROC my_reg_call put_long_ext(uint32_t addr, uint32_t l);
 #endif
 
 #if FasterAlignedL
-LOCALPROC my_reg_call put_long(CPTR addr, uint32_t l)
+LOCALPROC my_reg_call put_long(uint32_t addr, uint32_t l)
 {
 	if (0 == (addr & 0x03)) {
 		uint8_t * m = (addr & V_regs.MATCwrL.usemask)
@@ -1178,7 +1178,7 @@ LOCALFUNC uint32_t my_reg_call DecodeAddr_AbsL(uint8_t ArgDat)
 
 LOCALFUNC uint32_t my_reg_call DecodeAddr_PCDisp(uint8_t ArgDat)
 {
-	CPTR pc = m68k_getpc();
+	uint32_t pc = m68k_getpc();
 
 	UnusedParam(ArgDat);
 	return pc + nextiSWord();
@@ -4362,9 +4362,9 @@ LOCALIPROC DoCodeBsrW(void)
 #endif
 
 #if WantDumpAJump
-LOCALPROCUSEDONCE DumpAJump(CPTR toaddr)
+LOCALPROCUSEDONCE DumpAJump(uint32_t toaddr)
 {
-	CPTR fromaddr = m68k_getpc();
+	uint32_t fromaddr = m68k_getpc();
 	if ((toaddr > fromaddr) || (toaddr < V_regs.pc))
 	{
 		dbglog_writeHex(fromaddr);
@@ -4375,7 +4375,7 @@ LOCALPROCUSEDONCE DumpAJump(CPTR toaddr)
 }
 #endif
 
-LOCALPROC my_reg_call m68k_setpc(CPTR newpc)
+LOCALPROC my_reg_call m68k_setpc(uint32_t newpc)
 {
 #if WantDumpAJump
 	DumpAJump(newpc);
@@ -4408,7 +4408,7 @@ LOCALIPROC DoCodeJsr(void)
 
 LOCALIPROC DoCodeLinkA6(void)
 {
-	CPTR stackp = m68k_areg(7);
+	uint32_t stackp = m68k_areg(7);
 	stackp -= 4;
 	put_long(stackp, m68k_areg(6));
 	m68k_areg(6) = stackp;
@@ -4534,8 +4534,8 @@ LOCALPROC SetExternalInterruptPending(void)
 
 LOCALPROC my_reg_call m68k_setSR(uint16_t newsr)
 {
-	CPTR *pnewstk;
-	CPTR *poldstk = (V_regs.s != 0) ? (
+	uint32_t *pnewstk;
+	uint32_t *poldstk = (V_regs.s != 0) ? (
 #if Use68020
 		(V_regs.m != 0) ? &V_regs.msp :
 #endif
@@ -4582,7 +4582,7 @@ LOCALPROC my_reg_call m68k_setSR(uint16_t newsr)
 	m68k_setCR(newsr);
 }
 
-LOCALPROC my_reg_call ExceptionTo(CPTR newpc
+LOCALPROC my_reg_call ExceptionTo(uint32_t newpc
 #if Use68020
 	, int nr
 #endif
@@ -6600,7 +6600,7 @@ LOCALIPROC DoCodeRte(void)
 		DoPrivilegeViolation();
 	} else {
 		uint32_t NewPC;
-		CPTR stackp = m68k_areg(7);
+		uint32_t stackp = m68k_areg(7);
 		uint32_t NewSR = get_word(stackp);
 		stackp += 2;
 		NewPC = get_long(stackp);
@@ -6671,7 +6671,7 @@ LOCALIPROC DoCodeMoveP0(void)
 
 	uint32_t Displacement = nextiword_nm();
 		/* shouldn't this sign extend ? */
-	CPTR memp = *srcp + Displacement;
+	uint32_t memp = *srcp + Displacement;
 
 	uint16_t val = ((get_byte(memp) & 0x00FF) << 8)
 		| (get_byte(memp + 2) & 0x00FF);
@@ -6698,7 +6698,7 @@ LOCALIPROC DoCodeMoveP1(void)
 
 	uint32_t Displacement = nextiword_nm();
 		/* shouldn't this sign extend ? */
-	CPTR memp = *srcp + Displacement;
+	uint32_t memp = *srcp + Displacement;
 
 	uint32_t val = ((get_byte(memp) & 0x00FF) << 24)
 		| ((get_byte(memp + 2) & 0x00FF) << 16)
@@ -6718,7 +6718,7 @@ LOCALIPROC DoCodeMoveP2(void)
 
 	uint32_t Displacement = nextiword_nm();
 		/* shouldn't this sign extend ? */
-	CPTR memp = *srcp + Displacement;
+	uint32_t memp = *srcp + Displacement;
 
 	uint16_t val = *dstp;
 
@@ -6736,7 +6736,7 @@ LOCALIPROC DoCodeMoveP3(void)
 
 	uint32_t Displacement = nextiword_nm();
 		/* shouldn't this sign extend ? */
-	CPTR memp = *srcp + Displacement;
+	uint32_t memp = *srcp + Displacement;
 
 	uint32_t val = *dstp;
 
@@ -6806,7 +6806,7 @@ LOCALIPROC DoCodeRtr(void)
 {
 	/* Rtr 0100111001110111 */
 	uint32_t NewPC;
-	CPTR stackp = m68k_areg(7);
+	uint32_t stackp = m68k_areg(7);
 	uint32_t NewCR = get_word(stackp);
 	stackp += 2;
 	NewPC = get_long(stackp);
@@ -6820,7 +6820,7 @@ LOCALIPROC DoCodeLink(void)
 {
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
-	CPTR stackp = m68k_areg(7);
+	uint32_t stackp = m68k_areg(7);
 
 	stackp -= 4;
 	m68k_areg(7) = stackp; /* only matters if dstreg == 7 + 8 */
@@ -7162,8 +7162,8 @@ LOCALPROC DoCAS2(void)
 	int du2 = (extra >> 6) & 7;
 	int dc1 = (extra >> 16) & 7;
 	int du1 = (extra >> 22) & 7;
-	CPTR rn1 = V_regs.regs[(extra >> 28) & 0x0F];
-	CPTR rn2 = V_regs.regs[(extra >> 12) & 0x0F];
+	uint32_t rn1 = V_regs.regs[(extra >> 28) & 0x0F];
+	uint32_t rn2 = V_regs.regs[(extra >> 12) & 0x0F];
 	int32_t src = m68k_dreg(dc1);
 	int32_t dst1;
 	int32_t dst2;
@@ -7687,7 +7687,7 @@ LOCALIPROC DoCodeLinkL(void)
 
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
-	CPTR stackp = m68k_areg(7);
+	uint32_t stackp = m68k_areg(7);
 
 	ReportAbnormalID(0x011A, "Link.L");
 
@@ -7775,7 +7775,7 @@ LOCALIPROC DoBitField(void)
 {
 	uint32_t tmp;
 	uint32_t newtmp;
-	CPTR dsta;
+	uint32_t dsta;
 	uint32_t bf0;
 	uint8_t bf1;
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
@@ -8280,7 +8280,7 @@ LOCALFUNC blnr LocalMemAccessNtfy(ATTep pT)
 
 #if HaveGlbReg
 LOCALFUNC uint32_t LocalMMDV_Access(ATTep p, uint32_t Data,
-	blnr WriteMem, blnr ByteSize, CPTR addr)
+	blnr WriteMem, blnr ByteSize, uint32_t addr)
 {
 	uint32_t v;
 
@@ -8301,7 +8301,7 @@ LOCALPROC local_customreset(void)
 	Em_Enter();
 }
 
-LOCALFUNC ATTep LocalFindATTel(CPTR addr)
+LOCALFUNC ATTep LocalFindATTel(uint32_t addr)
 {
 	ATTep prev;
 	ATTep p;
@@ -8340,7 +8340,7 @@ LOCALPROC SetUpMATC(
 	CurMATC->usebase = p->usebase;
 }
 
-LOCALFUNC uint32_t my_reg_call get_byte_ext(CPTR addr)
+LOCALFUNC uint32_t my_reg_call get_byte_ext(uint32_t addr)
 {
 	ATTep p;
 	uint8_t * m;
@@ -8371,7 +8371,7 @@ Label_Retry:
 	return ui5r_FromSByte(Data);
 }
 
-LOCALPROC my_reg_call put_byte_ext(CPTR addr, uint32_t b)
+LOCALPROC my_reg_call put_byte_ext(uint32_t addr, uint32_t b)
 {
 	ATTep p;
 	uint8_t * m;
@@ -8399,7 +8399,7 @@ Label_Retry:
 	}
 }
 
-LOCALFUNC uint32_t my_reg_call get_word_ext(CPTR addr)
+LOCALFUNC uint32_t my_reg_call get_word_ext(uint32_t addr)
 {
 	uint32_t Data;
 
@@ -8438,7 +8438,7 @@ Label_Retry:
 	return ui5r_FromSWord(Data);
 }
 
-LOCALPROC my_reg_call put_word_ext(CPTR addr, uint32_t w)
+LOCALPROC my_reg_call put_word_ext(uint32_t addr, uint32_t w)
 {
 	if (0 != (addr & 0x01)) {
 		put_byte(addr, w >> 8);
@@ -8472,7 +8472,7 @@ Label_Retry:
 	}
 }
 
-LOCALFUNC uint32_t my_reg_call get_long_misaligned_ext(CPTR addr)
+LOCALFUNC uint32_t my_reg_call get_long_misaligned_ext(uint32_t addr)
 {
 	uint32_t hi = get_word(addr);
 	uint32_t lo = get_word(addr + 2);
@@ -8482,14 +8482,14 @@ LOCALFUNC uint32_t my_reg_call get_long_misaligned_ext(CPTR addr)
 	return ui5r_FromSLong(Data);
 }
 
-LOCALPROC my_reg_call put_long_misaligned_ext(CPTR addr, uint32_t l)
+LOCALPROC my_reg_call put_long_misaligned_ext(uint32_t addr, uint32_t l)
 {
 	put_word(addr, l >> 16);
 	put_word(addr + 2, l);
 }
 
 #if FasterAlignedL
-LOCALFUNC uint32_t my_reg_call get_long_ext(CPTR addr)
+LOCALFUNC uint32_t my_reg_call get_long_ext(uint32_t addr)
 {
 	uint32_t Data;
 
@@ -8535,7 +8535,7 @@ Label_Retry:
 #endif
 
 #if FasterAlignedL
-LOCALPROC my_reg_call put_long_ext(CPTR addr, uint32_t l)
+LOCALPROC my_reg_call put_long_ext(uint32_t addr, uint32_t l)
 {
 	if (0 != (addr & 0x03)) {
 		put_word(addr, l >> 16);
@@ -8575,7 +8575,7 @@ Label_Retry:
 LOCALPROC Recalc_PC_Block(void)
 {
 	ATTep p;
-	CPTR curpc = m68k_getpc();
+	uint32_t curpc = m68k_getpc();
 
 Label_Retry:
 	p = LocalFindATTel(curpc);
@@ -8713,7 +8713,7 @@ GLOBALPROC SetCyclesRemaining(int32_t n)
 	Em_Exit();
 }
 
-GLOBALFUNC ATTep FindATTel(CPTR addr)
+GLOBALFUNC ATTep FindATTel(uint32_t addr)
 {
 	ATTep v;
 
@@ -8724,7 +8724,7 @@ GLOBALFUNC ATTep FindATTel(CPTR addr)
 	return v;
 }
 
-GLOBALFUNC uint8_t get_vm_byte(CPTR addr)
+GLOBALFUNC uint8_t get_vm_byte(uint32_t addr)
 {
 	uint8_t v;
 
@@ -8735,7 +8735,7 @@ GLOBALFUNC uint8_t get_vm_byte(CPTR addr)
 	return v;
 }
 
-GLOBALFUNC uint16_t get_vm_word(CPTR addr)
+GLOBALFUNC uint16_t get_vm_word(uint32_t addr)
 {
 	uint16_t v;
 
@@ -8746,7 +8746,7 @@ GLOBALFUNC uint16_t get_vm_word(CPTR addr)
 	return v;
 }
 
-GLOBALFUNC uint32_t get_vm_long(CPTR addr)
+GLOBALFUNC uint32_t get_vm_long(uint32_t addr)
 {
 	uint32_t v;
 
@@ -8757,21 +8757,21 @@ GLOBALFUNC uint32_t get_vm_long(CPTR addr)
 	return v;
 }
 
-GLOBALPROC put_vm_byte(CPTR addr, uint8_t b)
+GLOBALPROC put_vm_byte(uint32_t addr, uint8_t b)
 {
 	Em_Enter();
 	put_byte(addr, ui5r_FromSByte(b));
 	Em_Exit();
 }
 
-GLOBALPROC put_vm_word(CPTR addr, uint16_t w)
+GLOBALPROC put_vm_word(uint32_t addr, uint16_t w)
 {
 	Em_Enter();
 	put_word(addr, ui5r_FromSWord(w));
 	Em_Exit();
 }
 
-GLOBALPROC put_vm_long(CPTR addr, uint32_t l)
+GLOBALPROC put_vm_long(uint32_t addr, uint32_t l)
 {
 	Em_Enter();
 	put_long(addr, ui5r_FromSLong(l));
@@ -8805,7 +8805,7 @@ GLOBALPROC SetHeadATTel(ATTep p)
 	Em_Exit();
 }
 
-GLOBALPROC DiskInsertedPsuedoException(CPTR newpc, uint32_t data)
+GLOBALPROC DiskInsertedPsuedoException(uint32_t newpc, uint32_t data)
 {
 	Em_Enter();
 	ExceptionTo(newpc
