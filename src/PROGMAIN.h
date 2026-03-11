@@ -15,11 +15,7 @@
 	license for more details.
 */
 
-#ifdef PROGMAIN_H
-#error "header already included"
-#else
-#define PROGMAIN_H
-#endif
+#pragma once
 
 extern void EmulationReserveAlloc(void);
 extern void ProgramMain(void);

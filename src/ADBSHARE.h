@@ -19,11 +19,7 @@
 	shared by emulation of different implementations of ADB
 */
 
-#ifdef ADBSHARE_H
-#error "header already included"
-#else
-#define ADBSHARE_H
-#endif
+#pragma once
 
 
 /*

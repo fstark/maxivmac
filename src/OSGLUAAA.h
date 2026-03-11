@@ -27,11 +27,7 @@
 	port of vMac, by Philip Cummins.
 */
 
-#ifdef OSGLUAAA_H
-#error "header already included"
-#else
-#define OSGLUAAA_H
-#endif
+#pragma once
 
 
 #if WantAbnormalReports

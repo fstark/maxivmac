@@ -18,11 +18,7 @@
 	CONTROL Mode
 */
 
-#ifdef CONTROLM_H
-#error "header already included"
-#else
-#define CONTROLM_H
-#endif
+#pragma once
 
 enum {
 #if EnableDemoMsg

@@ -25,11 +25,7 @@
 	by Bradford L. Barrett.
 */
 
-#ifdef DATE2SEC_H
-#error "header already included"
-#else
-#define DATE2SEC_H
-#endif
+#pragma once
 
 /*
 	The function jdate was found at the end of the file

@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef VIAEMDEV_H
-#error "header already included"
-#else
-#define VIAEMDEV_H
-#endif
+#pragma once
 
 extern void VIA1_Zap(void);
 extern void VIA1_Reset(void);

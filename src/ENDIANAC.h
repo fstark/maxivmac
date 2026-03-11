@@ -23,11 +23,7 @@
 	Bernd Schmidt, as found in vMac by Philip Cummins.
 */
 
-#ifdef ENDIANAC_H
-#error "header already included"
-#else
-#define ENDIANAC_H
-#endif
+#pragma once
 
 
 #define do_get_mem_byte(a) ((uint8_t)*((uint8_t *)(a)))

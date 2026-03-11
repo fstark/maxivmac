@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef SCCEMDEV_H
-#error "header already included"
-#else
-#define SCCEMDEV_H
-#endif
+#pragma once
 
 extern void SCC_Reset(void);
 

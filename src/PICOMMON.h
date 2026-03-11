@@ -25,11 +25,7 @@
 		platform idendependent files of a given Variation.
 */
 
-#ifdef PICOMMON_H
-#error "header already included"
-#else
-#define PICOMMON_H
-#endif
+#pragma once
 
 #include "CNFUIALL.h"
 	/* see OSGCOMUI.h for comment */

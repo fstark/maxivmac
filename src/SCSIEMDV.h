@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef SCSIEMDV_H
-#error "header already included"
-#else
-#define SCSIEMDV_H
-#endif
+#pragma once
 
 extern void SCSI_Reset(void);
 

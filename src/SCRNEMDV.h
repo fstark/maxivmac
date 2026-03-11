@@ -15,10 +15,6 @@
 	license for more details.
 */
 
-#ifdef SCRNEMDV_H
-#error "header already included"
-#else
-#define SCRNEMDV_H
-#endif
+#pragma once
 
 extern void Screen_EndTickNotify(void);

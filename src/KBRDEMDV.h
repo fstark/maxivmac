@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef KBRDEMDV_H
-#error "header already included"
-#else
-#define KBRDEMDV_H
-#endif
+#pragma once
 
 
 extern void Kybd_DataLineChngNtfy(void);

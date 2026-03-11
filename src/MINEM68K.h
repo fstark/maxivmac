@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef MINEM68K_H
-#error "header already included"
-#else
-#define MINEM68K_H
-#endif
+#pragma once
 
 extern void MINEM68K_Init(
 	uint8_t *fIPL);

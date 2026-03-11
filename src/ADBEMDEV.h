@@ -14,11 +14,7 @@
 	license for more details.
 */
 
-#ifdef ADBEMDEV_H
-#error "header already included"
-#else
-#define ADBEMDEV_H
-#endif
+#pragma once
 
 
 extern void ADBstate_ChangeNtfy(void);

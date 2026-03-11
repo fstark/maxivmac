@@ -26,11 +26,7 @@
 		Variations of a given port.
 */
 
-#ifdef OSGCOMUI_H
-#error "header already included"
-#else
-#define OSGCOMUI_H
-#endif
+#pragma once
 
 
 #include "CNFUIOSG.h"
