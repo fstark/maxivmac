@@ -151,6 +151,21 @@ else()
     message(FATAL_ERROR "Unknown model: ${MINIVMAC_MODEL}. Currently supported: II")
 endif()
 
+# Compute video RAM size: width * height * bytes_per_pixel, rounded up to
+# next power of two. Prevents VRAM overflow at non-standard resolutions.
+math(EXPR _pixels "${MINIVMAC_SCREEN_WIDTH} * ${MINIVMAC_SCREEN_HEIGHT}")
+math(EXPR _bpp "1 << ${MINIVMAC_SCREEN_DEPTH}")  # depth is log2(bpp)
+math(EXPR _vram_bytes "${_pixels} * ${_bpp} / 8")
+# Round up to next power of 2
+set(_pow2 65536)  # minimum 64KB
+while(_pow2 LESS _vram_bytes)
+    math(EXPR _pow2 "${_pow2} * 2")
+endwhile()
+# Format as hex for the C header
+math(EXPR _pow2_hex "${_pow2}" OUTPUT_FORMAT HEXADECIMAL)
+set(MINIVMAC_VIDMEM_SIZE "${_pow2_hex}")
+message(STATUS "Video RAM: ${MINIVMAC_SCREEN_WIDTH}x${MINIVMAC_SCREEN_HEIGHT}@${_bpp}bpp -> ${MINIVMAC_VIDMEM_SIZE}")
+
 # ---------------------------------------------------------------------------
 # Language → header mapping
 # ---------------------------------------------------------------------------
@@ -190,11 +205,11 @@ configure_file(
     @ONLY
 )
 
-# Copy model-specific CNFUDPIC.h (wire/VIA config is too complex to template)
+# Model-specific CNFUDPIC.h — uses @ONLY to substitute VRAM size
 configure_file(
     "${MINIVMAC_MODEL_CNFUDPIC}"
     "${MINIVMAC_GENERATED_CFG_DIR}/CNFUDPIC.h"
-    COPYONLY
+    @ONLY
 )
 
 # CNFUIALL.h and CNFUIPIC.h are compiler/platform detection — copy as-is

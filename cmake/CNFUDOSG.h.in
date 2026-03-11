@@ -5,11 +5,10 @@
     OS-glue display/input configuration.
 */
 
-
 #define RomFileName "@MINIVMAC_ROM_FILE@"
 #define kCheckSumRom_Size @MINIVMAC_ROM_SIZE@
-#define kRomCheckSum1 @MINIVMAC_ROM_CHECKSUM1@
-#define kRomCheckSum2 @MINIVMAC_ROM_CHECKSUM2@
+#define kRomCheckSum1 @MINIVMAC_ROM_CHECKSUM1 @
+#define kRomCheckSum2 @MINIVMAC_ROM_CHECKSUM2 @
 #define CheckRomCheckSum @MINIVMAC_CHECK_ROM_CHECKSUM@
 #define RomStartCheckSum 1
 #define SaveDialogEnable 1
@@ -39,7 +38,7 @@
 #define MKC_formac_RCommand MKC_Command
 #define MKC_formac_ROption MKC_Option
 #define MKC_formac_RShift MKC_Shift
-#define MKC_UnMappedKey  MKC_Control
+#define MKC_UnMappedKey MKC_Control
 #define VarFullScreen @MINIVMAC_FULLSCREEN_VAR@
 #define WantInitFullScreen @MINIVMAC_FULLSCREEN_INIT@
 #define MayFullScreen @MINIVMAC_FULLSCREEN_MAY@
