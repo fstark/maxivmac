@@ -177,16 +177,16 @@ message(STATUS "Video RAM: ${MINIVMAC_SCREEN_WIDTH}x${MINIVMAC_SCREEN_HEIGHT}@${
 # ---------------------------------------------------------------------------
 # Language → header mapping
 # ---------------------------------------------------------------------------
-set(_lang_map_English    "STRCNENG.h")
-set(_lang_map_French     "STRCNFRE.h")
-set(_lang_map_German     "STRCNGER.h")
-set(_lang_map_Italian    "STRCNITA.h")
-set(_lang_map_Spanish    "STRCNSPA.h")
-set(_lang_map_Dutch      "STRCNDUT.h")
-set(_lang_map_PortugueseBrazilian "STRCNPTB.h")
-set(_lang_map_Polish     "STRCNPOL.h")
-set(_lang_map_Czech      "STRCNCZE.h")
-set(_lang_map_Serbian    "STRCNSRL.h")
+set(_lang_map_English    "lang/strings_english.h")
+set(_lang_map_French     "lang/strings_french.h")
+set(_lang_map_German     "lang/strings_german.h")
+set(_lang_map_Italian    "lang/strings_italian.h")
+set(_lang_map_Spanish    "lang/strings_spanish.h")
+set(_lang_map_Dutch      "lang/strings_dutch.h")
+set(_lang_map_PortugueseBrazilian "lang/strings_portuguese.h")
+set(_lang_map_Polish     "lang/strings_polish.h")
+set(_lang_map_Czech      "lang/strings_czech.h")
+set(_lang_map_Serbian    "lang/strings_serbian.h")
 
 if(DEFINED _lang_map_${MINIVMAC_LANGUAGE})
     set(MINIVMAC_LANGUAGE_HEADER "${_lang_map_${MINIVMAC_LANGUAGE}}")
