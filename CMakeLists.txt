@@ -246,7 +246,7 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
 
     # Bundle resources
     set_source_files_properties(
-        src/ICONAPPO.icns
+        src/resources/ICONAPPO.icns
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources
     )
     set_source_files_properties(
@@ -254,7 +254,7 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources/English.lproj
     )
     target_sources(minivmac PRIVATE
-        src/ICONAPPO.icns
+        src/resources/ICONAPPO.icns
         src/config/English.lproj/dummy.txt
     )
 
