@@ -42,7 +42,7 @@
 #include "core/endian.h"
 #include "CNFUDALL.h"
 	/* see OSGCOMUD.h for comment */
-#include "OSGLUAAA.h"
+#include "platform/platform.h"
 #include "CNFUDPIC.h"
 	/*
 		Configuration file dependent on user options

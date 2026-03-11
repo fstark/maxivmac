@@ -35,8 +35,8 @@
 	looking at included examples, one by Paul Sheer.
 */
 
-#include "OSGCOMUI.h"
-#include "OSGCOMUD.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
 
 #ifdef WantOSGLUXWN
 
@@ -51,7 +51,7 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 
 #define NeedCell2PlainAsciiMap 1
 
-#include "INTLCHAR.h"
+#include "platform/common/intl_chars_impl.h"
 
 
 static char *d_arg = NULL;
@@ -307,11 +307,11 @@ static bool NetSupportedContains(Atom x)
 
 #define WantColorTransValid 1
 
-#include "COMOSGLU.h"
+#include "platform/common/osglu_common_impl.h"
 
-#include "PBUFSTDC.h"
+#include "platform/common/param_buffers_impl.h"
 
-#include "CONTROLM.h"
+#include "platform/common/control_mode_impl.h"
 
 /* --- text translation --- */
 
@@ -1318,7 +1318,7 @@ static void SetUpBW2ColorTabl(void)
 #define ScrnMapr_Map ScalingTabl
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif
 
@@ -1332,7 +1332,7 @@ static void SetUpBW2ColorTabl(void)
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map ScalingTabl
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif
 
@@ -1347,7 +1347,7 @@ static void SetUpBW2ColorTabl(void)
 #define ScrnMapr_Map ScalingTabl
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif
 
@@ -1360,7 +1360,7 @@ static void SetUpBW2ColorTabl(void)
 #define ScrnTrns_SrcDepth vMacScreenDepth
 #define ScrnTrns_DstDepth 5
 
-#include "SCRNTRNS.h"
+#include "platform/common/screen_translate.h"
 
 #endif
 
@@ -1373,7 +1373,7 @@ static void SetUpBW2ColorTabl(void)
 #define ScrnTrns_DstDepth 5
 #define ScrnTrns_Scale MyWindowScale
 
-#include "SCRNTRNS.h"
+#include "platform/common/screen_translate.h"
 
 #endif
 
@@ -1388,7 +1388,7 @@ static void SetUpBW2ColorTabl(void)
 #define ScrnMapr_Map ScalingTabl
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif
 
@@ -1402,7 +1402,7 @@ static void SetUpBW2ColorTabl(void)
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map ScalingTabl
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif
 
@@ -3056,7 +3056,7 @@ static void DisconnectKeyCodes3(void)
 
 static uint32_t TrueEmulatedTime = 0;
 
-#include "DATE2SEC.h"
+#include "platform/common/date_to_sec.h"
 
 #define TicksPerSecond 1000000
 
@@ -3873,7 +3873,7 @@ static bool EntropyGather(void)
 
 #if EmLocalTalk
 
-#include "LOCALTLK.h"
+#include "platform/localtalk.h"
 
 #endif
 

@@ -24,8 +24,8 @@
 	by Sam Lantinga (but little trace of that remains).
 */
 
-#include "OSGCOMUI.h"
-#include "OSGCOMUD.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
 
 #ifdef WantOSGLUCCO
 
@@ -393,7 +393,7 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 #define NeedDoMoreCommandsMsg 1
 #define NeedDoAboutMsg 1
 
-#include "INTLCHAR.h"
+#include "platform/common/intl_chars_impl.h"
 
 /* --- sending debugging info to file --- */
 
@@ -449,13 +449,13 @@ static void dbglog_close0(void)
 
 #define WantColorTransValid 1
 
-#include "COMOSGLU.h"
+#include "platform/common/osglu_common_impl.h"
 
 #define WantKeyboard_RemapMac 1
 
-#include "PBUFSTDC.h"
+#include "platform/common/param_buffers_impl.h"
 
-#include "CONTROLM.h"
+#include "platform/common/control_mode_impl.h"
 
 /* --- text translation --- */
 
@@ -1444,7 +1444,7 @@ static bool EntropyGather(void)
 
 #if EmLocalTalk
 
-#include "LOCALTLK.h"
+#include "platform/localtalk.h"
 
 #endif
 
@@ -1896,7 +1896,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 
 #if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
@@ -1908,7 +1908,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif
 
@@ -1921,7 +1921,7 @@ static uint8_t * CLUT_final;
 #define ScrnTrns_DstDepth 5
 #define ScrnTrns_DstZLo 1
 
-#include "SCRNTRNS.h"
+#include "platform/common/screen_translate.h"
 
 #endif
 

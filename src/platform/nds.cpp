@@ -18,8 +18,8 @@
 	Operating System GLUe for Nintendo DS
 */
 
-#include "OSGCOMUI.h"
-#include "OSGCOMUD.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
 
 #ifdef WantOSGLUNDS
 
@@ -56,7 +56,7 @@ static int Display_bg2_Main = 0;
 
 #define NeedCell2PlainAsciiMap 1
 
-#include "INTLCHAR.h"
+#include "platform/common/intl_chars_impl.h"
 
 /* --- sending debugging info to file --- */
 
@@ -118,8 +118,8 @@ static void WriteExtraErr(char *s)
 
 #define WantColorTransValid 0
 
-#include "COMOSGLU.h"
-#include "CONTROLM.h"
+#include "platform/common/osglu_common_impl.h"
+#include "platform/common/control_mode_impl.h"
 
 static void NativeStrFromCStr(char *r, char *s)
 {
@@ -727,7 +727,7 @@ static void DS_HandleKeyboard(void)
 
 static uint32_t TrueEmulatedTime = 0;
 
-#include "DATE2SEC.h"
+#include "platform/common/date_to_sec.h"
 
 #define TicksPerSecond 1000000
 /* #define TicksPerSecond  1000 */

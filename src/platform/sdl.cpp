@@ -39,8 +39,8 @@
 	The main entry point 'main' is at the end of this file.
 */
 
-#include "OSGCOMUI.h"
-#include "OSGCOMUD.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
 
 #ifdef WantOSGLUSDL
 
@@ -57,7 +57,7 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 
 #define dbglog_OSGInit (0 && dbglog_HAVE)
 
-#include "INTLCHAR.h"
+#include "platform/common/intl_chars_impl.h"
 
 
 #ifndef SDL_MAJOR_VERSION
@@ -210,11 +210,11 @@ static void dbglog_close0(void)
 
 #define WantColorTransValid 0
 
-#include "COMOSGLU.h"
+#include "platform/common/osglu_common_impl.h"
 
-#include "PBUFSTDC.h"
+#include "platform/common/param_buffers_impl.h"
 
-#include "CONTROLM.h"
+#include "platform/common/control_mode_impl.h"
 
 /* --- text translation --- */
 
@@ -690,7 +690,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateBWDepth4Copy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -699,7 +699,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 4
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateBWDepth5Copy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -708,7 +708,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #if EnableMagnify && ! UseSDLscaling
 
@@ -720,7 +720,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Map CLUT_final
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateBWDepth4ScaledCopy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -730,7 +730,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Map CLUT_final
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateBWDepth5ScaledCopy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -740,7 +740,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Map CLUT_final
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif /* EnableMagnify && ! UseSDLscaling */
 
@@ -754,7 +754,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorDepth4Copy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -763,7 +763,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 4
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorDepth5Copy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -772,7 +772,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #if EnableMagnify && ! UseSDLscaling
 
@@ -784,7 +784,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Map CLUT_final
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorDepth4ScaledCopy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -794,7 +794,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Map CLUT_final
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorDepth5ScaledCopy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -804,7 +804,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Map CLUT_final
 #define ScrnMapr_Scale MyWindowScale
 
-#include "SCRNMAPR.h"
+#include "platform/common/screen_map.h"
 
 #endif /* EnableMagnify && ! UseSDLscaling */
 
