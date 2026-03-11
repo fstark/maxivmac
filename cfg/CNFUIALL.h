@@ -20,22 +20,22 @@
 
 /* --- integer types ---- */
 
-using ui3b = uint8_t;
+using uint8_t = uint8_t;
 #define HaveRealui3b 1
 
-using si3b = int8_t;
+using int8_t = int8_t;
 #define HaveRealsi3b 1
 
-using ui4b = uint16_t;
+using uint16_t = uint16_t;
 #define HaveRealui4b 1
 
-using si4b = int16_t;
+using int16_t = int16_t;
 #define HaveRealsi4b 1
 
-using ui5b = uint32_t;
+using uint32_t = uint32_t;
 #define HaveRealui5b 1
 
-using si5b = int32_t;
+using int32_t = int32_t;
 #define HaveRealsi5b 1
 
 #define HaveRealui6b 0
@@ -43,22 +43,22 @@ using si5b = int32_t;
 
 /* --- integer representation types ---- */
 
-using ui3r = uint8_t;
+using uint8_t = uint8_t;
 #define ui3beqr 1
 
-using si3r = int8_t;
+using int8_t = int8_t;
 #define si3beqr 1
 
-using ui4r = uint16_t;
+using uint16_t = uint16_t;
 #define ui4beqr 1
 
-using si4r = int16_t;
+using int16_t = int16_t;
 #define si4beqr 1
 
-using ui5r = uint32_t;
+using uint32_t = uint32_t;
 #define ui5beqr 1
 
-using si5r = int32_t;
+using int32_t = int32_t;
 #define si5beqr 1
 
 using si6r = int64_t;

@@ -27,7 +27,7 @@
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, si5b byteCount) {
+GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount) {
 	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
 }
 
@@ -58,7 +58,7 @@ LOCALFUNC blnr dbglog_open0(void) {
 #endif
 }
 
-LOCALPROC dbglog_write0(char *s, uimr L) {
+LOCALPROC dbglog_write0(char *s, uint32_t L) {
 #if dbglog_ToStdErr
 	(void) fwrite(s, 1, L, stderr);
 #else
@@ -119,7 +119,7 @@ LOCALPROC WriteDbgAtom(char *s, Atom x) {
 
 #if IncludePbufs
 /* this is table for Windows, any changes needed for X? */
-LOCALVAR const ui3b Native2MacRomanTab[] = {
+LOCALVAR const uint8_t Native2MacRomanTab[] = {
 	0xAD, 0xB0, 0xE2, 0xC4, 0xE3, 0xC9, 0xA0, 0xE0,
 	0xF6, 0xE4, 0xB6, 0xDC, 0xCE, 0xB2, 0xB3, 0xB7,
 	0xB8, 0xD4, 0xD5, 0xD2, 0xD3, 0xA5, 0xD0, 0xD1,
@@ -144,19 +144,19 @@ LOCALFUNC tMacErr NativeTextToMacRomanPbuf(char *x, tPbuf *r) {
 	if (NULL == x) {
 		return mnvm_miscErr;
 	} else {
-		ui3p p;
-		ui5b L = strlen(x);
+		uint8_t * p;
+		uint32_t L = strlen(x);
 
-		p = (ui3p)malloc(L);
+		p = (uint8_t *)malloc(L);
 		if (NULL == p) {
 			return mnvm_miscErr;
 		} else {
-			ui3b *p0 = (ui3b *)x;
-			ui3b *p1 = (ui3b *)p;
+			uint8_t *p0 = (uint8_t *)x;
+			uint8_t *p1 = (uint8_t *)p;
 			int i;
 
 			for (i = L; --i >= 0; ) {
-				ui3b v = *p0++;
+				uint8_t v = *p0++;
 				if (v >= 128) {
 					v = Native2MacRomanTab[v - 128];
 				} else if (10 == v) {
@@ -173,7 +173,7 @@ LOCALFUNC tMacErr NativeTextToMacRomanPbuf(char *x, tPbuf *r) {
 
 #if IncludePbufs
 /* this is table for Windows, any changes needed for X? */
-LOCALVAR const ui3b MacRoman2NativeTab[] = {
+LOCALVAR const uint8_t MacRoman2NativeTab[] = {
 	0xC4, 0xC5, 0xC7, 0xC9, 0xD1, 0xD6, 0xDC, 0xE1,
 	0xE0, 0xE2, 0xE4, 0xE3, 0xE5, 0xE7, 0xE9, 0xE8,
 	0xEA, 0xEB, 0xED, 0xEC, 0xEE, 0xEF, 0xF1, 0xF3,
@@ -195,20 +195,20 @@ LOCALVAR const ui3b MacRoman2NativeTab[] = {
 
 #if IncludePbufs
 LOCALFUNC blnr MacRomanTextToNativePtr(tPbuf i, blnr IsFileName,
-	ui3p *r) {
-	ui3p p;
+	uint8_t * *r) {
+	uint8_t * p;
 	void *Buffer = PbufDat[i];
-	ui5b L = PbufSize[i];
+	uint32_t L = PbufSize[i];
 
-	p = (ui3p)malloc(L + 1);
+	p = (uint8_t *)malloc(L + 1);
 	if (p != NULL) {
-		ui3b *p0 = (ui3b *)Buffer;
-		ui3b *p1 = (ui3b *)p;
+		uint8_t *p0 = (uint8_t *)Buffer;
+		uint8_t *p1 = (uint8_t *)p;
 		int j;
 
 		if (IsFileName) {
 			for (j = L; --j >= 0; ) {
-				ui3b x = *p0++;
+				uint8_t x = *p0++;
 				if (x < 32) {
 					x = '-';
 				} else if (x >= 128) {
@@ -232,7 +232,7 @@ LOCALFUNC blnr MacRomanTextToNativePtr(tPbuf i, blnr IsFileName,
 			}
 		} else {
 			for (j = L; --j >= 0; ) {
-				ui3b x = *p0++;
+				uint8_t x = *p0++;
 				if (x >= 128) {
 					x = MacRoman2NativeTab[x - 128];
 				} else if (13 == x) {
@@ -251,7 +251,7 @@ LOCALFUNC blnr MacRomanTextToNativePtr(tPbuf i, blnr IsFileName,
 #endif
 
 LOCALPROC NativeStrFromCStr(char *r, char *s) {
-	ui3b ps[ClStrMaxLength];
+	uint8_t ps[ClStrMaxLength];
 	int i;
 	int L;
 
@@ -274,12 +274,12 @@ LOCALVAR FILE *Drives[NumDrives]; /* open disk image files */
 LOCALVAR char *DriveNames[NumDrives];
 #endif
 
-GLOBALOSGLUFUNC tMacErr vSonyTransfer(blnr IsWrite, ui3p Buffer,
-	tDrive Drive_No, ui5r Sony_Start, ui5r Sony_Count,
-	ui5r *Sony_ActCount) {
+GLOBALOSGLUFUNC tMacErr vSonyTransfer(blnr IsWrite, uint8_t * Buffer,
+	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
+	uint32_t *Sony_ActCount) {
 	tMacErr err = mnvm_miscErr;
 	FILE *refnum = Drives[Drive_No];
-	ui5r NewSony_Count = 0;
+	uint32_t NewSony_Count = 0;
 
 	if (0 == fseek(refnum, Sony_Start, SEEK_SET)) {
 		if (IsWrite) {
@@ -300,7 +300,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(blnr IsWrite, ui3p Buffer,
 	return err; /*& figure out what really to return &*/
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, ui5r *Sony_Count) {
+GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count) {
 	tMacErr err = mnvm_miscErr;
 	FILE *refnum = Drives[Drive_No];
 	long v;
@@ -394,7 +394,7 @@ LOCALFUNC blnr Sony_InsercurrentPixel(FILE *refnum, blnr locked,
 
 #if IncludeSonyGetName || IncludeSonyNew
 			{
-				ui5b L = strlen(drivepath);
+				uint32_t L = strlen(drivepath);
 				char *p = malloc(L + 1);
 				if (p != NULL) {
 					(void) memcpy(p, drivepath, L + 1);
@@ -462,10 +462,10 @@ LOCALFUNC blnr LoadInitialImages(void) {
 }
 
 #if IncludeSonyNew
-LOCALFUNC blnr WriteZero(FILE *refnum, ui5b L) {
+LOCALFUNC blnr WriteZero(FILE *refnum, uint32_t L) {
 #define ZeroBufferSize 2048
-	ui5b i;
-	ui3b buffer[ZeroBufferSize];
+	uint32_t i;
+	uint8_t buffer[ZeroBufferSize];
 
 	memset(&buffer, 0, ZeroBufferSize);
 
@@ -481,7 +481,7 @@ LOCALFUNC blnr WriteZero(FILE *refnum, ui5b L) {
 #endif
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDisk(ui5b L, char *drivepath) {
+LOCALPROC MakeNewDisk(uint32_t L, char *drivepath) {
 	blnr IsOk = falseblnr;
 	FILE *refnum = fopen(drivepath, "wb+");
 	if (NULL == refnum) {
@@ -502,7 +502,7 @@ LOCALPROC MakeNewDisk(ui5b L, char *drivepath) {
 #endif
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDiskAtDefault(ui5b L) {
+LOCALPROC MakeNewDiskAtDefault(uint32_t L) {
 	char s[ClStrMaxLength + 1];
 
 	NativeStrFromCStr(s, "untitled.dsk");
@@ -1019,10 +1019,10 @@ LOCALPROC Video_SetColor(int color, int red, int green, int blue) {
 	outportb(0x3C9, blue);
 }
 
-LOCALPROC HaveChangedScreenBuff(ui4r top, ui4r left, ui4r bottom, ui4r right) {
-	ui3r *drawBuffer = GetCurDrawBuff();
-	ui3r *fBuffer = FrameBuffer;
-	ui5r currentPixel;
+LOCALPROC HaveChangedScreenBuff(uint16_t top, uint16_t left, uint16_t bottom, uint16_t right) {
+	uint8_t *drawBuffer = GetCurDrawBuff();
+	uint8_t *fBuffer = FrameBuffer;
+	uint32_t currentPixel;
 	
 	for (unsigned int i = 0; i < (bottom - top) + renderOffset[1]; i++) {
 		for (unsigned int j = 0; j < VESAWidth / 8; j++) {
@@ -1096,19 +1096,19 @@ LOCALPROC CheckKeyboardState(void) {
 
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
 
-LOCALVAR ui5b TrueEmulatedTime = 0;
+LOCALVAR uint32_t TrueEmulatedTime = 0;
 
 #include "DATE2SEC.h"
 
 #define TicksPerSecond 1000000
 
 LOCALVAR blnr HaveTimeDelta = falseblnr;
-LOCALVAR ui5b TimeDelta;
+LOCALVAR uint32_t TimeDelta;
 
-LOCALVAR ui5b NewMacDateInSeconds;
+LOCALVAR uint32_t NewMacDateInSeconds;
 
-LOCALVAR ui5b LastTimeSec;
-LOCALVAR ui5b LastTimeUsec;
+LOCALVAR uint32_t LastTimeSec;
+LOCALVAR uint32_t LastTimeUsec;
 
 LOCALPROC GetCurrentTicks(void) {
 	struct timeval t;
@@ -1123,21 +1123,21 @@ LOCALPROC GetCurrentTicks(void) {
 		TimeDelta = Date2MacSeconds(s->tm_sec, s->tm_min, s->tm_hour,
 			s->tm_mday, 1 + s->tm_mon, 1900 + s->tm_year) - t.tv_sec;
 #if 0 && AutoTimeZone /* how portable is this ? */
-		CurMacDelta = ((ui5b)(s->tm_gmtoff) & 0x00FFFFFF)
+		CurMacDelta = ((uint32_t)(s->tm_gmtoff) & 0x00FFFFFF)
 			| ((s->tm_isdst ? 0x80 : 0) << 24);
 #endif
 		HaveTimeDelta = trueblnr;
 	}
 
 	NewMacDateInSeconds = t.tv_sec + TimeDelta;
-	LastTimeSec = (ui5b)t.tv_sec;
-	LastTimeUsec = (ui5b)t.tv_usec;
+	LastTimeSec = (uint32_t)t.tv_sec;
+	LastTimeUsec = (uint32_t)t.tv_usec;
 }
 
 #define MyInvTimeStep 16626 /* TicksPerSecond / 60.14742 */
 
-LOCALVAR ui5b NextTimeSec;
-LOCALVAR ui5b NextTimeUsec;
+LOCALVAR uint32_t NextTimeSec;
+LOCALVAR uint32_t NextTimeUsec;
 
 LOCALPROC IncrNextTime(void) {
 	NextTimeUsec += MyInvTimeStep;
@@ -1158,13 +1158,13 @@ LOCALPROC StartUpTimeAdjust(void) {
 	InitNextTime();
 }
 
-LOCALFUNC si5b GetTimeDiff(void) {
-	return ((si5b)(LastTimeSec - NextTimeSec)) * TicksPerSecond
-		+ ((si5b)(LastTimeUsec - NextTimeUsec));
+LOCALFUNC int32_t GetTimeDiff(void) {
+	return ((int32_t)(LastTimeSec - NextTimeSec)) * TicksPerSecond
+		+ ((int32_t)(LastTimeUsec - NextTimeUsec));
 }
 
 LOCALPROC UpdateTrueEmulatedTime(void) {
-	si5b TimeDiff;
+	int32_t TimeDiff;
 
 	GetCurrentTicks();
 
@@ -1285,7 +1285,7 @@ LOCALPROC CheckForSavedTasks(void) {
 	if (vSonyNewDiskWanted) {
 #if IncludeSonyNameNew
 		if (vSonyNewDiskName != NotAPbuf) {
-			ui3p NewDiskNameDat;
+			uint8_t * NewDiskNameDat;
 			if (MacRomanTextToNativePtr(vSonyNewDiskName, trueblnr,
 				&NewDiskNameDat))
 			{
@@ -1408,7 +1408,7 @@ LOCALPROC ReserveAllocAll(void) {
 #endif
 
 /*#if MySoundEnabled
-	ReserveAllocOneBlock((ui3p *)&TheSoundBuffer,
+	ReserveAllocOneBlock((uint8_t * *)&TheSoundBuffer,
 		dbhBufferSize, 5, falseblnr);
 #endif*/
 
@@ -1416,14 +1416,14 @@ LOCALPROC ReserveAllocAll(void) {
 }
 
 LOCALFUNC blnr AllocMyMemory(void) {
-	uimr n;
+	uint32_t n;
 	blnr IsOk = falseblnr;
 
 	ReserveAllocOffset = 0;
 	ReserveAllocBigBlock = nullpr;
 	ReserveAllocAll();
 	n = ReserveAllocOffset;
-	ReserveAllocBigBlock = (ui3p)calloc(1, n);
+	ReserveAllocBigBlock = (uint8_t *)calloc(1, n);
 	if (NULL == ReserveAllocBigBlock) {
 		MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, trueblnr);
 	} else {
