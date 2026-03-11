@@ -70,7 +70,7 @@ extern uint8_t * ROM;
 	(passed back to the emulated 68k code).
 */
 
-#define tMacErr uint16_t
+using tMacErr = uint16_t;
 
 #define mnvm_noErr      ((tMacErr) 0x0000)
 	/* (uint16_t)    0 - No Error */
@@ -113,7 +113,7 @@ extern uint8_t * ROM;
 
 #if IncludePbufs
 
-#define tPbuf uint16_t
+using tPbuf = uint16_t;
 
 #define NotAPbuf ((tPbuf)0xFFFF)
 
@@ -127,7 +127,7 @@ extern void PbufTransfer(uint8_t * Buffer,
 
 #endif
 
-#define tDrive uint16_t
+using tDrive = uint16_t;
 
 extern uint32_t vSonyWritableMask;
 extern uint32_t vSonyInsertedMask;
@@ -245,14 +245,14 @@ extern uint32_t QuietSubTicks;
 #endif
 
 #if 3 == kLn2SoundSampSz
-#define trSoundSamp uint8_t
-#define tbSoundSamp uint8_t
-#define tpSoundSamp uint8_t *
+using trSoundSamp = uint8_t;
+using tbSoundSamp = uint8_t;
+using tpSoundSamp = uint8_t *;
 #define kCenterSound 0x80
 #elif 4 == kLn2SoundSampSz
-#define trSoundSamp uint16_t
-#define tbSoundSamp uint16_t
-#define tpSoundSamp uint16_t *
+using trSoundSamp = uint16_t;
+using tbSoundSamp = uint16_t;
+using tpSoundSamp = uint16_t *;
 #define kCenterSound 0x8000
 #else
 #error "unsupported kLn2SoundSampSz"
