@@ -252,7 +252,7 @@ LOCALFUNC int get_ethernet(void)
 	return true;
 }
 
-LOCALVAR unsigned char *MyRxBuffer = NULL;
+static unsigned char *MyRxBuffer = NULL;
 
 /*
 	External function needed at startup to initialize the LocalTalk
@@ -308,8 +308,8 @@ GLOBALOSGLUPROC LT_TransmitPacket(void)
 	(void)count; /* unused */
 }
 
-LOCALVAR unsigned char* NextPacket = NULL;
-LOCALVAR unsigned char* EndPackets = NULL;
+static unsigned char* NextPacket = NULL;
+static unsigned char* EndPackets = NULL;
 
 LOCALPROC LocalTalkTick0(void)
 {

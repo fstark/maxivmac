@@ -20,7 +20,7 @@
 
 
 #if IncludePbufs
-LOCALVAR void *PbufDat[NumPbufs];
+static void *PbufDat[NumPbufs];
 #endif
 
 #if IncludePbufs

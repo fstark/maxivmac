@@ -29,7 +29,7 @@
 	ClStrAppendSubstCStr encoding
 	HTML character entity
 */
-LOCALVAR const uint8_t CellData[] = {
+static const uint8_t CellData[] = {
 	/* kCellUpA 101 0x41 0x0041 'A' 'A' A */
 	0x00, 0x00, 0x00, 0x3C, 0x42, 0x42, 0x42, 0x7E,
 	0x42, 0x42, 0x42, 0x42, 0x00, 0x00, 0x00, 0x00,
@@ -913,7 +913,7 @@ enum {
 
 #if NeedCell2MacAsciiMap
 /* Mac Roman character set */
-LOCALVAR const char Cell2MacAsciiMap[] = {
+static const char Cell2MacAsciiMap[] = {
 	'\101', /* kCellUpA */
 	'\102', /* kCellUpB */
 	'\103', /* kCellUpC */
@@ -1108,7 +1108,7 @@ LOCALVAR const char Cell2MacAsciiMap[] = {
 
 #if NeedCell2WinAsciiMap
 /* Windows character set (windows-1252 code page) */
-LOCALVAR const uint8_t Cell2WinAsciiMap[] = {
+static const uint8_t Cell2WinAsciiMap[] = {
 	0x41, /* kCellUpA */
 	0x42, /* kCellUpB */
 	0x43, /* kCellUpC */
@@ -1303,7 +1303,7 @@ LOCALVAR const uint8_t Cell2WinAsciiMap[] = {
 
 #if NeedCell2PlainAsciiMap
 /* Plain ascii - remove accents when possible */
-LOCALVAR const char Cell2PlainAsciiMap[] = {
+static const char Cell2PlainAsciiMap[] = {
 	'A', /* kCellUpA */
 	'B', /* kCellUpB */
 	'C', /* kCellUpC */
@@ -1498,7 +1498,7 @@ LOCALVAR const char Cell2PlainAsciiMap[] = {
 
 #if NeedCell2UnicodeMap
 /* Unicode character set */
-LOCALVAR const uint16_t Cell2UnicodeMap[] = {
+static const uint16_t Cell2UnicodeMap[] = {
 	0x0041, /* kCellUpA */
 	0x0042, /* kCellUpB */
 	0x0043, /* kCellUpC */
@@ -1687,16 +1687,16 @@ LOCALVAR const uint16_t Cell2UnicodeMap[] = {
 };
 #endif
 
-LOCALVAR bool SpeedStopped = false;
+static bool SpeedStopped = false;
 
-LOCALVAR bool RunInBackground = (WantInitRunInBackground != 0);
+static bool RunInBackground = (WantInitRunInBackground != 0);
 
 #if VarFullScreen
-LOCALVAR bool WantFullScreen = (WantInitFullScreen != 0);
+static bool WantFullScreen = (WantInitFullScreen != 0);
 #endif
 
 #if EnableMagnify
-LOCALVAR bool WantMagnify = (WantInitMagnify != 0);
+static bool WantMagnify = (WantInitMagnify != 0);
 #endif
 
 #ifndef NeedRequestInsertDisk
@@ -1712,7 +1712,7 @@ LOCALVAR bool WantMagnify = (WantInitMagnify != 0);
 #endif
 
 #if NeedRequestInsertDisk
-LOCALVAR bool RequestInsertDisk = false;
+static bool RequestInsertDisk = false;
 #endif
 
 #ifndef NeedRequestIthDisk
@@ -1720,11 +1720,11 @@ LOCALVAR bool RequestInsertDisk = false;
 #endif
 
 #if NeedRequestIthDisk
-LOCALVAR uint8_t RequestIthDisk = 0;
+static uint8_t RequestIthDisk = 0;
 #endif
 
 #if UseControlKeys
-LOCALVAR bool ControlKeyPressed = false;
+static bool ControlKeyPressed = false;
 #endif
 
 #ifndef kStrCntrlKyName

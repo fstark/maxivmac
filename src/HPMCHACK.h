@@ -38,7 +38,7 @@
 #define kAHM_yuck 13
 #define kAHM_zombie 14
 
-LOCALVAR const uint8_t my_HappyMac_icon[] = {
+static const uint8_t my_HappyMac_icon[] = {
 #if CurAltHappyMac == kAHM_aside
 	0x00, 0x00,
 	0x39, 0x38,

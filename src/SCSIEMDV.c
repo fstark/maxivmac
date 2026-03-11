@@ -48,7 +48,7 @@
 
 #define kSCSI_Size 0x00010
 
-LOCALVAR uint8_t SCSI[kSCSI_Size];
+static uint8_t SCSI[kSCSI_Size];
 
 GLOBALPROC SCSI_Reset(void)
 {

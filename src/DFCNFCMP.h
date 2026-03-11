@@ -58,9 +58,7 @@
 
 #define UNUSED(exp) (void)(exp)
 
-#define LOCALVAR static
-#define GLOBALVAR
-#define EXPORTVAR(t, v) extern t v;
+/* LOCALVAR/GLOBALVAR/EXPORTVAR removed — use static/extern directly */
 
 #define LOCALFUNC static MayNotInline
 #define FORWARDFUNC LOCALFUNC

@@ -221,7 +221,7 @@ typedef struct {
 	uint8_t ORA;    /* Buffer A */
 } VIA1_Ty;
 
-LOCALVAR VIA1_Ty VIA1_D;
+static VIA1_Ty VIA1_D;
 
 #define kIntCA2 0 /* One_Second */
 #define kIntCA1 1 /* Vertical_Blanking */
@@ -568,10 +568,10 @@ LOCALPROC VIA1_CheckInterruptFlag(void)
 }
 
 
-LOCALVAR uint8_t VIA1_T1_Active = 0;
-LOCALVAR uint8_t VIA1_T2_Active = 0;
+static uint8_t VIA1_T1_Active = 0;
+static uint8_t VIA1_T2_Active = 0;
 
-LOCALVAR bool VIA1_T1IntReady = false;
+static bool VIA1_T1IntReady = false;
 
 LOCALPROC VIA1_Clear(void)
 {
@@ -666,8 +666,8 @@ GLOBALFUNC uint8_t VIA1_ShiftOutData(void)
 #define CyclesPerViaTime (10 * kMyClockMult)
 #define CyclesScaledPerViaTime (kCycleScale * CyclesPerViaTime)
 
-LOCALVAR bool VIA1_T1Running = true;
-LOCALVAR iCountt VIA1_T1LastTime = 0;
+static bool VIA1_T1Running = true;
+static iCountt VIA1_T1LastTime = 0;
 
 GLOBALPROC VIA1_DoTimer1Check(void)
 {
@@ -772,8 +772,8 @@ GLOBALFUNC uint16_t VIA1_GetT1InvertTime(void)
 	return v;
 }
 
-LOCALVAR bool VIA1_T2Running = true;
-LOCALVAR bool VIA1_T2C_ShortTime = false;
+static bool VIA1_T2Running = true;
+static bool VIA1_T2C_ShortTime = false;
 	/*
 		Running too many instructions during a short
 		timer interval can crash when playing sounds.
@@ -793,7 +793,7 @@ LOCALVAR bool VIA1_T2C_ShortTime = false;
 			* "Try Scale With Sound" command of a
 				"snds" resource in ResEdit.
 	*/
-LOCALVAR iCountt VIA1_T2LastTime = 0;
+static iCountt VIA1_T2LastTime = 0;
 
 GLOBALPROC VIA1_DoTimer2Check(void)
 {

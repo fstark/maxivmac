@@ -67,9 +67,9 @@ typedef struct __CFError * CFErrorRef;
 #endif
 
 
-LOCALVAR CFBundleRef AppServBunRef;
+static CFBundleRef AppServBunRef;
 
-LOCALVAR bool DidApplicationServicesBun = false;
+static bool DidApplicationServicesBun = false;
 
 LOCALFUNC bool HaveApplicationServicesBun(void)
 {
@@ -83,9 +83,9 @@ LOCALFUNC bool HaveApplicationServicesBun(void)
 
 #if MayFullScreen
 
-LOCALVAR CFBundleRef HIToolboxBunRef;
+static CFBundleRef HIToolboxBunRef;
 
-LOCALVAR bool DidHIToolboxBunRef = false;
+static bool DidHIToolboxBunRef = false;
 
 LOCALFUNC bool HaveHIToolboxBunRef(void)
 {
@@ -123,8 +123,8 @@ enum {
 
 typedef OSStatus (*SetSystemUIModeProcPtr)
 	(MySystemUIMode inMode, MySystemUIOptions inOptions);
-LOCALVAR SetSystemUIModeProcPtr MySetSystemUIMode = NULL;
-LOCALVAR bool DidSetSystemUIMode = false;
+static SetSystemUIModeProcPtr MySetSystemUIMode = NULL;
+static bool DidSetSystemUIMode = false;
 
 LOCALFUNC bool HaveMySetSystemUIMode(void)
 {
@@ -149,9 +149,9 @@ typedef Boolean (*CFURLCopyResourcePropertyForKeyProcPtr) (
 	void        *propertyValueTypeRefPtr,
 	CFErrorRef  *error
 	);
-LOCALVAR CFURLCopyResourcePropertyForKeyProcPtr
+static CFURLCopyResourcePropertyForKeyProcPtr
 	MyCFURLCopyResourcePropertyForKey = NULL;
-LOCALVAR bool DidCFURLCopyResourcePropertyForKey = false;
+static bool DidCFURLCopyResourcePropertyForKey = false;
 
 LOCALFUNC bool HaveMyCFURLCopyResourcePropertyForKey(void)
 {
@@ -169,9 +169,9 @@ LOCALFUNC bool HaveMyCFURLCopyResourcePropertyForKey(void)
 }
 
 
-LOCALVAR const CFStringRef *MykCFURLIsAliasFileKey
+static const CFStringRef *MykCFURLIsAliasFileKey
 	= NULL;
-LOCALVAR bool DidkCFURLIsAliasFileKey = false;
+static bool DidkCFURLIsAliasFileKey = false;
 
 LOCALFUNC bool HaveMykCFURLIsAliasFileKey(void)
 {
@@ -188,9 +188,9 @@ LOCALFUNC bool HaveMykCFURLIsAliasFileKey(void)
 }
 
 
-LOCALVAR const CFStringRef *MykCFURLIsSymbolicLinkKey
+static const CFStringRef *MykCFURLIsSymbolicLinkKey
 	= NULL;
-LOCALVAR bool DidkCFURLIsSymbolicLinkKey = false;
+static bool DidkCFURLIsSymbolicLinkKey = false;
 
 LOCALFUNC bool HaveMykCFURLIsSymbolicLinkKey(void)
 {
@@ -209,9 +209,9 @@ LOCALFUNC bool HaveMykCFURLIsSymbolicLinkKey(void)
 
 typedef CFDataRef (*CFURLCreateBookmarkDataFromFileProcPtr) (
 	CFAllocatorRef allocator, CFURLRef fileURL, CFErrorRef *errorRef);
-LOCALVAR CFURLCreateBookmarkDataFromFileProcPtr
+static CFURLCreateBookmarkDataFromFileProcPtr
 	MyCFURLCreateBookmarkDataFromFile = NULL;
-LOCALVAR bool DidCFURLCreateBookmarkDataFromFile = false;
+static bool DidCFURLCreateBookmarkDataFromFile = false;
 
 LOCALFUNC bool HaveMyCFURLCreateBookmarkDataFromFile(void)
 {
@@ -235,9 +235,9 @@ typedef CFURLRef (*CFURLCreateByResolvingBookmarkDataProcPtr) (
 	MyCFURLBookmarkResolutionOptions options, CFURLRef relativeToURL,
 	CFArrayRef resourcePropertiesToInclude,
 	Boolean* isStale, CFErrorRef* error);
-LOCALVAR CFURLCreateByResolvingBookmarkDataProcPtr
+static CFURLCreateByResolvingBookmarkDataProcPtr
 	MyCFURLCreateByResolvingBookmarkData = NULL;
-LOCALVAR bool DidCFURLCreateByResolvingBookmarkData = false;
+static bool DidCFURLCreateByResolvingBookmarkData = false;
 
 LOCALFUNC bool HaveMyCFURLCreateByResolvingBookmarkData(void)
 {
@@ -256,8 +256,8 @@ LOCALFUNC bool HaveMyCFURLCreateByResolvingBookmarkData(void)
 
 typedef boolean_t (*CGCursorIsVisibleProcPtr)(void);
 
-LOCALVAR CGCursorIsVisibleProcPtr MyCGCursorIsVisible = NULL;
-LOCALVAR bool DidCGCursorIsVisible = false;
+static CGCursorIsVisibleProcPtr MyCGCursorIsVisible = NULL;
+static bool DidCGCursorIsVisible = false;
 
 LOCALFUNC bool HaveMyCGCursorIsVisible(void)
 {
@@ -397,15 +397,15 @@ GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCou
 
 /* --- sending debugging info to file --- */
 
-LOCALVAR NSString *myAppName = nil;
-LOCALVAR NSString *MyDataPath = nil;
+static NSString *myAppName = nil;
+static NSString *MyDataPath = nil;
 
 #if dbglog_HAVE
 
 #define dbglog_ToStdErr 0
 
 #if ! dbglog_ToStdErr
-LOCALVAR FILE *dbglog_File = NULL;
+static FILE *dbglog_File = NULL;
 #endif
 
 LOCALFUNC bool dbglog_open0(void)
@@ -792,9 +792,9 @@ LOCALFUNC bool FindNamedChildFilePath(NSString *parentPath,
 
 #define NotAfileRef NULL
 
-LOCALVAR FILE *Drives[NumDrives]; /* open disk image files */
+static FILE *Drives[NumDrives]; /* open disk image files */
 #if IncludeSonyGetName || IncludeSonyNew
-LOCALVAR NSString *DriveNames[NumDrives];
+static NSString *DriveNames[NumDrives];
 #endif
 
 LOCALPROC InitDrives(void)
@@ -1451,19 +1451,19 @@ LOCALFUNC bool EntropyGather(void)
 
 #define UseCGContextDrawImage 0
 
-LOCALVAR NSWindow *MyWindow = nil;
-LOCALVAR NSView *MyNSview = nil;
+static NSWindow *MyWindow = nil;
+static NSView *MyNSview = nil;
 #if UseCGContextDrawImage
-LOCALVAR NSGraphicsContext *MyNSgfxContext = nil;
-LOCALVAR CGContextRef MyCGcontext = nil;
-LOCALVAR void *MyPixels = NULL;
-LOCALVAR uint16_t MyPitch;
-LOCALVAR uint8_t MyBytesPerPixel;
+static NSGraphicsContext *MyNSgfxContext = nil;
+static CGContextRef MyCGcontext = nil;
+static void *MyPixels = NULL;
+static uint16_t MyPitch;
+static uint8_t MyBytesPerPixel;
 #endif
 
-LOCALVAR NSOpenGLContext *MyNSOpnGLCntxt = nil;
-LOCALVAR short GLhOffset;
-LOCALVAR short GLvOffset;
+static NSOpenGLContext *MyNSOpnGLCntxt = nil;
+static short GLhOffset;
+static short GLvOffset;
 	/* OpenGL coordinates of upper left point of drawing area */
 
 
@@ -1519,7 +1519,7 @@ LOCALPROC QZ_GetMouseLocation(NSPoint *p)
 
 /* --- keyboard --- */
 
-LOCALVAR NSUInteger MyCurrentMods = 0;
+static NSUInteger MyCurrentMods = 0;
 
 /*
 	Apple documentation says:
@@ -1623,29 +1623,29 @@ LOCALPROC MyUpdateKeyboardModifiers(NSUInteger newMods)
 
 /* cursor hiding */
 
-LOCALVAR bool WantCursorHidden = false;
+static bool WantCursorHidden = false;
 
 #if MayFullScreen
-LOCALVAR short hOffset;
+static short hOffset;
 	/* number of pixels to left of drawing area in window */
-LOCALVAR short vOffset;
+static short vOffset;
 	/* number of pixels above drawing area in window */
 #endif
 
 #if MayFullScreen
-LOCALVAR bool GrabMachine = false;
+static bool GrabMachine = false;
 #endif
 
 #if VarFullScreen
-LOCALVAR bool UseFullScreen = (0 != WantInitFullScreen);
+static bool UseFullScreen = (0 != WantInitFullScreen);
 #endif
 
 #if EnableMagnify
-LOCALVAR bool UseMagnify = (0 != WantInitMagnify);
+static bool UseMagnify = (0 != WantInitMagnify);
 #endif
 
-LOCALVAR bool gBackgroundFlag = false;
-LOCALVAR bool CurSpeedStopped = true;
+static bool gBackgroundFlag = false;
+static bool CurSpeedStopped = true;
 
 #if EnableMagnify
 #define MaxScale MyWindowScale
@@ -1653,7 +1653,7 @@ LOCALVAR bool CurSpeedStopped = true;
 #define MaxScale 1
 #endif
 
-LOCALVAR bool HaveCursorHidden = false;
+static bool HaveCursorHidden = false;
 
 LOCALPROC ForceShowCursor(void)
 {
@@ -1868,12 +1868,12 @@ LOCALPROC CheckMouseState(void)
 	MousePositionNotify((int) p.x, (int) p.y);
 }
 
-LOCALVAR bool gTrueBackgroundFlag = false;
+static bool gTrueBackgroundFlag = false;
 
 
-LOCALVAR uint8_t * ScalingBuff = nullptr;
+static uint8_t * ScalingBuff = nullptr;
 
-LOCALVAR uint8_t * CLUT_final;
+static uint8_t * CLUT_final;
 
 #define CLUT_finalsz1 (256 * 8)
 
@@ -2111,16 +2111,16 @@ LOCALPROC SDL_UpdateRect(int32_t x, int32_t y, uint32_t w, uint32_t h)
 
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
 
-LOCALVAR uint32_t TrueEmulatedTime = 0;
+static uint32_t TrueEmulatedTime = 0;
 
-LOCALVAR NSTimeInterval LatestTime;
-LOCALVAR NSTimeInterval NextTickChangeTime;
+static NSTimeInterval LatestTime;
+static NSTimeInterval NextTickChangeTime;
 
 #define MyTickDuration (1.0 / 60.14742)
 
-LOCALVAR uint32_t NewMacDateInSeconds;
+static uint32_t NewMacDateInSeconds;
 
-LOCALVAR bool EmulationWasInterrupted = false;
+static bool EmulationWasInterrupted = false;
 
 LOCALPROC UpdateTrueEmulatedTime(void)
 {
@@ -2161,7 +2161,7 @@ LOCALPROC UpdateTrueEmulatedTime(void)
 }
 
 
-LOCALVAR uint32_t MyDateDelta;
+static uint32_t MyDateDelta;
 
 LOCALFUNC bool CheckDateTime(void)
 {
@@ -2229,14 +2229,14 @@ LOCALFUNC bool InitLocationDat(void)
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
-LOCALVAR tpSoundSamp TheSoundBuffer = nullptr;
+static tpSoundSamp TheSoundBuffer = nullptr;
 static volatile uint16_t ThePlayOffset;
 static volatile uint16_t TheFillOffset;
 static volatile uint16_t MinFilledSoundBuffs;
 #if dbglog_SoundBuffStats
-LOCALVAR uint16_t MaxFilledSoundBuffs;
+static uint16_t MaxFilledSoundBuffs;
 #endif
-LOCALVAR uint16_t TheWriteOffset;
+static uint16_t TheWriteOffset;
 
 LOCALPROC MySound_Start0(void)
 {
@@ -2560,7 +2560,7 @@ LOCALFUNC OSStatus audioCallback(
 	return 0;
 }
 
-LOCALVAR MySoundR cur_audio;
+static MySoundR cur_audio;
 
 LOCALPROC ZapAudioVars(void)
 {
@@ -3412,7 +3412,7 @@ LOCALPROC MyAdjustGLforSize(int h, int v)
 	ScreenChangedAll();
 }
 
-LOCALVAR bool WantScreensChangedCheck = false;
+static bool WantScreensChangedCheck = false;
 
 LOCALPROC MyUpdateOpenGLContext(void)
 {
@@ -3708,7 +3708,7 @@ CG_EXTERN CGImageRef CGBitmapContextCreateImage(CGContextRef);
 #endif
 
 
-LOCALVAR MyClassWindowDelegate *MyWinDelegate = nil;
+static MyClassWindowDelegate *MyWinDelegate = nil;
 
 LOCALPROC CloseMainWindow(void)
 {
@@ -3769,12 +3769,12 @@ enum {
 #define kMagStateAuto kNumMagStates
 
 #if MayNotFullScreen
-LOCALVAR int CurWinIndx;
-LOCALVAR bool HavePositionWins[kNumMagStates];
-LOCALVAR NSPoint WinPositionWins[kNumMagStates];
+static int CurWinIndx;
+static bool HavePositionWins[kNumMagStates];
+static NSPoint WinPositionWins[kNumMagStates];
 #endif
 
-LOCALVAR NSRect SavedScrnBounds;
+static NSRect SavedScrnBounds;
 
 LOCALFUNC bool CreateMainWindow(void)
 {
@@ -4226,7 +4226,7 @@ enum {
 #endif
 
 #if VarFullScreen && EnableMagnify
-LOCALVAR int WinMagStates[kNumWinStates];
+static int WinMagStates[kNumWinStates];
 #endif
 
 LOCALPROC ZapWinStateVars(void)
@@ -5070,7 +5070,7 @@ LOCALFUNC bool setupWorkingDirectory(void)
 
 @end
 
-LOCALVAR MyClassApplicationDelegate *MyApplicationDelegate = nil;
+static MyClassApplicationDelegate *MyApplicationDelegate = nil;
 
 LOCALFUNC bool InitCocoaStuff(void)
 {

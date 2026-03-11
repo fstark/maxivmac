@@ -24,12 +24,12 @@
 #define ALTKEYSM_H
 #endif
 
-LOCALVAR bool AltKeysLockText = false;
-LOCALVAR bool AltKeysTrueCmnd = false;
-LOCALVAR bool AltKeysTrueOption = false;
-LOCALVAR bool AltKeysTrueShift = false;
-LOCALVAR bool AltKeysModOn = false;
-LOCALVAR bool AltKeysTextOn = false;
+static bool AltKeysLockText = false;
+static bool AltKeysTrueCmnd = false;
+static bool AltKeysTrueOption = false;
+static bool AltKeysTrueShift = false;
+static bool AltKeysModOn = false;
+static bool AltKeysTextOn = false;
 
 LOCALPROC CheckAltKeyUseMode(void)
 {

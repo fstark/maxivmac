@@ -158,7 +158,7 @@ enum {
 | and exception flags.
 *----------------------------------------------------------------------------*/
 
-LOCALVAR int8_t float_rounding_mode = float_round_nearest_even;
+static int8_t float_rounding_mode = float_round_nearest_even;
 
 
 /*----------------------------------------------------------------------------
@@ -172,14 +172,14 @@ enum {
 	float_flag_underflow = 16,
 	float_flag_inexact   = 32
 };
-LOCALVAR int8_t float_exception_flags = 0;
+static int8_t float_exception_flags = 0;
 
 /*----------------------------------------------------------------------------
 | Software IEC/IEEE extended double-precision rounding precision.  Valid
 | values are 32, 64, and 80.
 *----------------------------------------------------------------------------*/
 
-LOCALVAR int8_t floatx80_rounding_precision = 80;
+static int8_t floatx80_rounding_precision = 80;
 
 /*----------------------------------------------------------------------------
 | Primitive arithmetic functions, including multi-word arithmetic, and
@@ -956,7 +956,7 @@ enum {
 | Underflow tininess-detection mode, statically initialized to default value.
 | (The declaration in `softfloat.h' must match the `int8_t' type here.)
 *----------------------------------------------------------------------------*/
-LOCALVAR int8_t float_detect_tininess = float_tininess_after_rounding;
+static int8_t float_detect_tininess = float_tininess_after_rounding;
 
 /*----------------------------------------------------------------------------
 | Routine to raise any or all of the software IEC/IEEE floating-point
@@ -6220,7 +6220,7 @@ LOCALFUNC uint32_t myfp_GetFPCR(void)
 	return v;
 }
 
-LOCALVAR struct myfp_envStruct
+static struct myfp_envStruct
 {
 	uint32_t FPSR;  /* Floating point status register */
 } myfp_env;

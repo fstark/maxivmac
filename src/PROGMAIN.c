@@ -125,7 +125,7 @@ LOCALPROC SubTickNotify(int SubTick)
 #define CyclesScaledPerTick (130240UL * kMyClockMult * kCycleScale)
 #define CyclesScaledPerSubTick (CyclesScaledPerTick / kNumSubTicks)
 
-LOCALVAR uint16_t SubTickCounter;
+static uint16_t SubTickCounter;
 
 LOCALPROC SubTickTaskDo(void)
 {
@@ -385,7 +385,7 @@ LOCALPROC m68k_go_nCycles_1(uint32_t n)
 	} while (n != 0);
 }
 
-LOCALVAR uint32_t ExtraSubTicksToDo = 0;
+static uint32_t ExtraSubTicksToDo = 0;
 
 LOCALPROC DoEmulateOneTick(void)
 {
@@ -482,7 +482,7 @@ LOCALPROC DoEmulateExtraTime(void)
 	}
 }
 
-LOCALVAR uint32_t CurEmulatedTime = 0;
+static uint32_t CurEmulatedTime = 0;
 	/*
 		The number of ticks that have been
 		emulated so far.

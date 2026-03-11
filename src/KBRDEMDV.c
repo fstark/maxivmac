@@ -48,10 +48,10 @@ enum {
 	kKybdStates
 };
 
-LOCALVAR int KybdState = kKybdStateIdle;
+static int KybdState = kKybdStateIdle;
 
-LOCALVAR bool HaveKeyBoardResult = false;
-LOCALVAR uint8_t KeyBoardResult;
+static bool HaveKeyBoardResult = false;
+static uint8_t KeyBoardResult;
 
 LOCALPROC GotKeyBoardData(uint8_t v)
 {
@@ -64,7 +64,7 @@ LOCALPROC GotKeyBoardData(uint8_t v)
 	}
 }
 
-LOCALVAR uint8_t InstantCommandData = 0x7B;
+static uint8_t InstantCommandData = 0x7B;
 
 LOCALFUNC bool AttemptToFinishInquiry(void)
 {
@@ -100,7 +100,7 @@ LOCALFUNC bool AttemptToFinishInquiry(void)
 		to keep connection.
 	*/
 
-LOCALVAR int InquiryCommandTimer = 0;
+static int InquiryCommandTimer = 0;
 
 GLOBALPROC DoKybd_ReceiveCommand(void)
 {

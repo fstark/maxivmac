@@ -51,11 +51,11 @@
 
 #if EmLocalTalk
 
-LOCALVAR bool CTSpacketPending = false;
-LOCALVAR uint8_t CTSpacketRxDA;
-LOCALVAR uint8_t CTSpacketRxSA;
+static bool CTSpacketPending = false;
+static uint8_t CTSpacketRxDA;
+static uint8_t CTSpacketRxSA;
 
-LOCALVAR bool IsFindingNode = false;
+static bool IsFindingNode = false;
 
 /*
 	Function used when all the tx data is sent to the SCC as indicated
@@ -165,7 +165,7 @@ LOCALPROC LT_TransmitPacket1(void)
 	}
 }
 
-LOCALVAR uint8_t MyCTSBuffer[4];
+static uint8_t MyCTSBuffer[4];
 
 LOCALPROC GetCTSpacket(void)
 {
@@ -188,9 +188,9 @@ LOCALPROC GetCTSpacket(void)
 }
 
 /* LLAP/SDLC address */
-LOCALVAR uint8_t my_node_address = 0;
+static uint8_t my_node_address = 0;
 
-LOCALVAR bool LTAddrSrchMd = false;
+static bool LTAddrSrchMd = false;
 
 LOCALPROC GetNextPacketForMe(void)
 {
@@ -509,11 +509,11 @@ typedef struct {
 #endif
 } SCC_Ty;
 
-LOCALVAR SCC_Ty SCC;
+static SCC_Ty SCC;
 
 #if 0
-LOCALVAR int ReadPrint;
-LOCALVAR int ReadModem;
+static int ReadPrint;
+static int ReadModem;
 #endif
 
 #if EmLocalTalk

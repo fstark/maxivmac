@@ -24,7 +24,7 @@
 */
 
 
-LOCALVAR struct fpustruct
+static struct fpustruct
 {
 	myfpr fp[8];
 	uint32_t FPIAR; /* Floating point instruction address register */

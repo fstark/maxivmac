@@ -41,16 +41,16 @@ GLOBALOSGLUPROC MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCou
 #define DS_ScreenWidth 256
 #define DS_ScreenHeight 192
 
-LOCALVAR volatile int VBlankCounter = 0;
-LOCALVAR volatile int HBlankCounter = 0;
-LOCALVAR volatile unsigned int TimerBaseMSec = 0;
-LOCALVAR Keyboard* DSKeyboard = NULL;
-LOCALVAR volatile int LastKeyboardKey = NOKEY;
-LOCALVAR volatile int KeyboardKey = NOKEY;
-LOCALVAR volatile int KeysHeld = 0;
-LOCALVAR volatile int CursorX = 0;
-LOCALVAR volatile int CursorY = 0;
-LOCALVAR int Display_bg2_Main = 0;
+static volatile int VBlankCounter = 0;
+static volatile int HBlankCounter = 0;
+static volatile unsigned int TimerBaseMSec = 0;
+static Keyboard* DSKeyboard = NULL;
+static volatile int LastKeyboardKey = NOKEY;
+static volatile int KeyboardKey = NOKEY;
+static volatile int KeysHeld = 0;
+static volatile int CursorX = 0;
+static volatile int CursorY = 0;
+static int Display_bg2_Main = 0;
 
 /* --- control mode and internationalization --- */
 
@@ -65,7 +65,7 @@ LOCALVAR int Display_bg2_Main = 0;
 #define dbglog_ToStdErr 1
 
 #if ! dbglog_ToStdErr
-LOCALVAR FILE *dbglog_File = NULL;
+static FILE *dbglog_File = NULL;
 #endif
 
 LOCALFUNC bool dbglog_open0(void)
@@ -140,9 +140,9 @@ LOCALPROC NativeStrFromCStr(char *r, char *s)
 
 #define NotAfileRef NULL
 
-LOCALVAR FILE *Drives[NumDrives]; /* open disk image files */
+static FILE *Drives[NumDrives]; /* open disk image files */
 #if IncludeSonyGetName || IncludeSonyNew
-LOCALVAR char *DriveNames[NumDrives];
+static char *DriveNames[NumDrives];
 #endif
 
 LOCALPROC InitDrives(void)
@@ -462,19 +462,19 @@ LOCALFUNC bool LoadMacRom(void)
 /* --- video out --- */
 
 #if MayFullScreen
-LOCALVAR short hOffset;
-LOCALVAR short vOffset;
+static short hOffset;
+static short vOffset;
 #endif
 
 #if VarFullScreen
-LOCALVAR bool UseFullScreen = (WantInitFullScreen != 0);
+static bool UseFullScreen = (WantInitFullScreen != 0);
 #endif
 
 #if EnableMagnify
-LOCALVAR bool UseMagnify = (WantInitMagnify != 0);
+static bool UseMagnify = (WantInitMagnify != 0);
 #endif
 
-LOCALVAR bool CurSpeedStopped = true;
+static bool CurSpeedStopped = true;
 
 #if EnableMagnify
 #define MaxScale MyWindowScale
@@ -559,7 +559,7 @@ LOCALPROC CheckMouseState(void)
 
 /* --- keyboard input --- */
 
-LOCALVAR uint8_t KC2MKC[256];
+static uint8_t KC2MKC[256];
 
 /*
 	AHA!
@@ -670,8 +670,8 @@ LOCALPROC DoKeyCode(int i, bool down)
 	is weird about those.
 */
 
-LOCALVAR bool DS_Keystate_Menu = false;
-LOCALVAR bool DS_Keystate_Shift = false;
+static bool DS_Keystate_Menu = false;
+static bool DS_Keystate_Shift = false;
 
 LOCALPROC DS_HandleKey(int32_t Key, bool Down)
 {
@@ -725,20 +725,20 @@ LOCALPROC DS_HandleKeyboard(void)
 
 /* --- time, date, location --- */
 
-LOCALVAR uint32_t TrueEmulatedTime = 0;
+static uint32_t TrueEmulatedTime = 0;
 
 #include "DATE2SEC.h"
 
 #define TicksPerSecond 1000000
 /* #define TicksPerSecond  1000 */
 
-LOCALVAR bool HaveTimeDelta = false;
-LOCALVAR uint32_t TimeDelta;
+static bool HaveTimeDelta = false;
+static uint32_t TimeDelta;
 
-LOCALVAR uint32_t NewMacDateInSeconds;
+static uint32_t NewMacDateInSeconds;
 
-LOCALVAR uint32_t LastTimeSec;
-LOCALVAR uint32_t LastTimeUsec;
+static uint32_t LastTimeSec;
+static uint32_t LastTimeUsec;
 
 LOCALPROC GetCurrentTicks(void)
 {
@@ -775,8 +775,8 @@ LOCALPROC GetCurrentTicks(void)
 /* #define MyInvTimeStep 16626 */ /* TicksPerSecond / 60.14742 */
 #define MyInvTimeStep 17
 
-LOCALVAR uint32_t NextTimeSec;
-LOCALVAR uint32_t NextTimeUsec;
+static uint32_t NextTimeSec;
+static uint32_t NextTimeUsec;
 
 LOCALPROC IncrNextTime(void)
 {

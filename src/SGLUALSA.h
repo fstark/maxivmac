@@ -237,7 +237,7 @@
 
 static void *alsa_handle = NULL;
 
-LOCALVAR bool DidAlsaLib = false;
+static bool DidAlsaLib = false;
 
 LOCALFUNC bool HaveAlsaLib(void)
 {
@@ -465,8 +465,8 @@ typedef long My_snd_pcm_sframes_t;
 typedef int (*snd_pcm_open_ProcPtr)
 	(My_snd_pcm_t **pcm, const char *name, My_snd_pcm_stream_t stream,
 		int mode);
-LOCALVAR snd_pcm_open_ProcPtr My_snd_pcm_open = NULL;
-LOCALVAR bool Did_snd_pcm_open = false;
+static snd_pcm_open_ProcPtr My_snd_pcm_open = NULL;
+static bool Did_snd_pcm_open = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_open(void)
 {
@@ -484,8 +484,8 @@ LOCALFUNC bool HaveMy_snd_pcm_open(void)
 }
 
 typedef int (*snd_pcm_close_ProcPtr)(My_snd_pcm_t *pcm);
-LOCALVAR snd_pcm_close_ProcPtr My_snd_pcm_close = NULL;
-LOCALVAR bool Did_snd_pcm_close = false;
+static snd_pcm_close_ProcPtr My_snd_pcm_close = NULL;
+static bool Did_snd_pcm_close = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_close(void)
 {
@@ -504,9 +504,9 @@ LOCALFUNC bool HaveMy_snd_pcm_close(void)
 
 typedef int (*snd_pcm_hw_params_malloc_ProcPtr)
 	(My_snd_pcm_hw_params_t **ptr);
-LOCALVAR snd_pcm_hw_params_malloc_ProcPtr My_snd_pcm_hw_params_malloc
+static snd_pcm_hw_params_malloc_ProcPtr My_snd_pcm_hw_params_malloc
 	= NULL;
-LOCALVAR bool Did_snd_pcm_hw_params_malloc = false;
+static bool Did_snd_pcm_hw_params_malloc = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params_malloc(void)
 {
@@ -527,9 +527,9 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params_malloc(void)
 
 typedef void (*snd_pcm_hw_params_free_ProcPtr)
 	(My_snd_pcm_hw_params_t *obj);
-LOCALVAR snd_pcm_hw_params_free_ProcPtr
+static snd_pcm_hw_params_free_ProcPtr
 	My_snd_pcm_hw_params_free = NULL;
-LOCALVAR bool Did_snd_pcm_hw_params_free = false;
+static bool Did_snd_pcm_hw_params_free = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params_free(void)
 {
@@ -549,8 +549,8 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params_free(void)
 
 typedef int (*snd_pcm_hw_params_any_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_hw_params_t *params);
-LOCALVAR snd_pcm_hw_params_any_ProcPtr My_snd_pcm_hw_params_any = NULL;
-LOCALVAR bool Did_snd_pcm_hw_params_any = false;
+static snd_pcm_hw_params_any_ProcPtr My_snd_pcm_hw_params_any = NULL;
+static bool Did_snd_pcm_hw_params_any = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params_any(void)
 {
@@ -570,9 +570,9 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params_any(void)
 typedef int (*snd_pcm_hw_params_set_access_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_hw_params_t *params,
 		My_snd_pcm_access_t _access);
-LOCALVAR snd_pcm_hw_params_set_access_ProcPtr
+static snd_pcm_hw_params_set_access_ProcPtr
 	My_snd_pcm_hw_params_set_access = NULL;
-LOCALVAR bool Did_snd_pcm_hw_params_set_access = false;
+static bool Did_snd_pcm_hw_params_set_access = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_access(void)
 {
@@ -594,9 +594,9 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_access(void)
 typedef int (*snd_pcm_hw_params_set_format_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_hw_params_t *params,
 		My_snd_pcm_format_t val);
-LOCALVAR snd_pcm_hw_params_set_format_ProcPtr
+static snd_pcm_hw_params_set_format_ProcPtr
 	My_snd_pcm_hw_params_set_format = NULL;
-LOCALVAR bool Did_snd_pcm_hw_params_set_format = false;
+static bool Did_snd_pcm_hw_params_set_format = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_format(void)
 {
@@ -618,9 +618,9 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_format(void)
 typedef int (*snd_pcm_hw_params_set_rate_near_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_hw_params_t *params,
 		unsigned int *val, int *dir);
-LOCALVAR snd_pcm_hw_params_set_rate_near_ProcPtr
+static snd_pcm_hw_params_set_rate_near_ProcPtr
 	My_snd_pcm_hw_params_set_rate_near = NULL;
-LOCALVAR bool Did_snd_pcm_hw_params_set_rate_near = false;
+static bool Did_snd_pcm_hw_params_set_rate_near = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_rate_near(void)
 {
@@ -642,9 +642,9 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_rate_near(void)
 typedef int (*snd_pcm_hw_params_set_channels_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_hw_params_t *params,
 	unsigned int val);
-LOCALVAR snd_pcm_hw_params_set_channels_ProcPtr
+static snd_pcm_hw_params_set_channels_ProcPtr
 	My_snd_pcm_hw_params_set_channels = NULL;
-LOCALVAR bool Did_snd_pcm_hw_params_set_channels = false;
+static bool Did_snd_pcm_hw_params_set_channels = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_channels(void)
 {
@@ -666,9 +666,9 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_channels(void)
 typedef int (*snd_pcm_hw_params_set_buffer_size_near_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_hw_params_t *params,
 		My_snd_pcm_uframes_t *val);
-LOCALVAR snd_pcm_hw_params_set_buffer_size_near_ProcPtr
+static snd_pcm_hw_params_set_buffer_size_near_ProcPtr
 	My_snd_pcm_hw_params_set_buffer_size_near = NULL;
-LOCALVAR bool Did_snd_pcm_hw_params_set_buffer_size_near = false;
+static bool Did_snd_pcm_hw_params_set_buffer_size_near = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_buffer_size_near(void)
 {
@@ -692,9 +692,9 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_buffer_size_near(void)
 typedef int (*snd_pcm_hw_params_set_period_size_near_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_hw_params_t *params,
 		My_snd_pcm_uframes_t *val, int *dir);
-LOCALVAR snd_pcm_hw_params_set_period_size_near_ProcPtr
+static snd_pcm_hw_params_set_period_size_near_ProcPtr
 	My_snd_pcm_hw_params_set_period_size_near = NULL;
-LOCALVAR bool Did_snd_pcm_hw_params_set_period_size_near = false;
+static bool Did_snd_pcm_hw_params_set_period_size_near = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_period_size_near(void)
 {
@@ -717,8 +717,8 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params_set_period_size_near(void)
 
 typedef int (*snd_pcm_hw_params_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_hw_params_t *params);
-LOCALVAR snd_pcm_hw_params_ProcPtr My_snd_pcm_hw_params = NULL;
-LOCALVAR bool Did_snd_pcm_hw_params = false;
+static snd_pcm_hw_params_ProcPtr My_snd_pcm_hw_params = NULL;
+static bool Did_snd_pcm_hw_params = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_hw_params(void)
 {
@@ -737,9 +737,9 @@ LOCALFUNC bool HaveMy_snd_pcm_hw_params(void)
 
 typedef int (*snd_pcm_sw_params_malloc_ProcPtr)
 	(My_snd_pcm_sw_params_t **ptr);
-LOCALVAR snd_pcm_sw_params_malloc_ProcPtr
+static snd_pcm_sw_params_malloc_ProcPtr
 	My_snd_pcm_sw_params_malloc = NULL;
-LOCALVAR bool Did_snd_pcm_sw_params_malloc = false;
+static bool Did_snd_pcm_sw_params_malloc = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_sw_params_malloc(void)
 {
@@ -760,9 +760,9 @@ LOCALFUNC bool HaveMy_snd_pcm_sw_params_malloc(void)
 
 typedef void (*snd_pcm_sw_params_free_ProcPtr)
 	(My_snd_pcm_sw_params_t *obj);
-LOCALVAR snd_pcm_sw_params_free_ProcPtr
+static snd_pcm_sw_params_free_ProcPtr
 	My_snd_pcm_sw_params_free = NULL;
-LOCALVAR bool Did_snd_pcm_sw_params_free = false;
+static bool Did_snd_pcm_sw_params_free = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_sw_params_free(void)
 {
@@ -782,9 +782,9 @@ LOCALFUNC bool HaveMy_snd_pcm_sw_params_free(void)
 
 typedef int (*snd_pcm_sw_params_current_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_sw_params_t *params);
-LOCALVAR snd_pcm_sw_params_current_ProcPtr
+static snd_pcm_sw_params_current_ProcPtr
 	My_snd_pcm_sw_params_current = NULL;
-LOCALVAR bool Did_snd_pcm_sw_params_current = false;
+static bool Did_snd_pcm_sw_params_current = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_sw_params_current(void)
 {
@@ -806,9 +806,9 @@ LOCALFUNC bool HaveMy_snd_pcm_sw_params_current(void)
 typedef int (*snd_pcm_sw_params_set_start_threshold_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_sw_params_t *params,
 		My_snd_pcm_uframes_t val);
-LOCALVAR snd_pcm_sw_params_set_start_threshold_ProcPtr
+static snd_pcm_sw_params_set_start_threshold_ProcPtr
 	My_snd_pcm_sw_params_set_start_threshold = NULL;
-LOCALVAR bool Did_snd_pcm_sw_params_set_start_threshold = false;
+static bool Did_snd_pcm_sw_params_set_start_threshold = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_sw_params_set_start_threshold(void)
 {
@@ -832,9 +832,9 @@ LOCALFUNC bool HaveMy_snd_pcm_sw_params_set_start_threshold(void)
 typedef int (*snd_pcm_sw_params_set_avail_min_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_sw_params_t *params,
 		My_snd_pcm_uframes_t val);
-LOCALVAR snd_pcm_sw_params_set_avail_min_ProcPtr
+static snd_pcm_sw_params_set_avail_min_ProcPtr
 	My_snd_pcm_sw_params_set_avail_min = NULL;
-LOCALVAR bool Did_snd_pcm_sw_params_set_avail_min = false;
+static bool Did_snd_pcm_sw_params_set_avail_min = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_sw_params_set_avail_min(void)
 {
@@ -856,9 +856,9 @@ LOCALFUNC bool HaveMy_snd_pcm_sw_params_set_avail_min(void)
 typedef int (*snd_pcm_sw_params_set_xfer_align_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_sw_params_t *params,
 		My_snd_pcm_uframes_t val);
-LOCALVAR snd_pcm_sw_params_set_xfer_align_ProcPtr
+static snd_pcm_sw_params_set_xfer_align_ProcPtr
 	My_snd_pcm_sw_params_set_xfer_align = NULL;
-LOCALVAR bool Did_snd_pcm_sw_params_set_xfer_align = false;
+static bool Did_snd_pcm_sw_params_set_xfer_align = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_sw_params_set_xfer_align(void)
 {
@@ -879,8 +879,8 @@ LOCALFUNC bool HaveMy_snd_pcm_sw_params_set_xfer_align(void)
 
 typedef int (*snd_pcm_sw_params_ProcPtr)
 	(My_snd_pcm_t *pcm, My_snd_pcm_sw_params_t *params);
-LOCALVAR snd_pcm_sw_params_ProcPtr My_snd_pcm_sw_params = NULL;
-LOCALVAR bool Did_snd_pcm_sw_params = false;
+static snd_pcm_sw_params_ProcPtr My_snd_pcm_sw_params = NULL;
+static bool Did_snd_pcm_sw_params = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_sw_params(void)
 {
@@ -899,8 +899,8 @@ LOCALFUNC bool HaveMy_snd_pcm_sw_params(void)
 
 typedef int (*snd_pcm_nonblock_ProcPtr)
 	(My_snd_pcm_t *pcm, int nonblock);
-LOCALVAR snd_pcm_nonblock_ProcPtr My_snd_pcm_nonblock = NULL;
-LOCALVAR bool Did_snd_pcm_nonblock = false;
+static snd_pcm_nonblock_ProcPtr My_snd_pcm_nonblock = NULL;
+static bool Did_snd_pcm_nonblock = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_nonblock(void)
 {
@@ -918,8 +918,8 @@ LOCALFUNC bool HaveMy_snd_pcm_nonblock(void)
 }
 
 typedef My_snd_pcm_state_t (*snd_pcm_state_ProcPtr)(My_snd_pcm_t *pcm);
-LOCALVAR snd_pcm_state_ProcPtr My_snd_pcm_state = NULL;
-LOCALVAR bool Did_snd_pcm_state = false;
+static snd_pcm_state_ProcPtr My_snd_pcm_state = NULL;
+static bool Did_snd_pcm_state = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_state(void)
 {
@@ -937,8 +937,8 @@ LOCALFUNC bool HaveMy_snd_pcm_state(void)
 }
 
 typedef int (*snd_pcm_prepare_ProcPtr)(My_snd_pcm_t *pcm);
-LOCALVAR snd_pcm_prepare_ProcPtr My_snd_pcm_prepare = NULL;
-LOCALVAR bool Did_snd_pcm_prepare = false;
+static snd_pcm_prepare_ProcPtr My_snd_pcm_prepare = NULL;
+static bool Did_snd_pcm_prepare = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_prepare(void)
 {
@@ -956,8 +956,8 @@ LOCALFUNC bool HaveMy_snd_pcm_prepare(void)
 }
 
 typedef int (*snd_pcm_start_ProcPtr)(My_snd_pcm_t *pcm);
-LOCALVAR snd_pcm_start_ProcPtr My_snd_pcm_start = NULL;
-LOCALVAR bool Did_snd_pcm_start = false;
+static snd_pcm_start_ProcPtr My_snd_pcm_start = NULL;
+static bool Did_snd_pcm_start = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_start(void)
 {
@@ -975,8 +975,8 @@ LOCALFUNC bool HaveMy_snd_pcm_start(void)
 }
 
 typedef int (*snd_pcm_resume_ProcPtr)(My_snd_pcm_t *pcm);
-LOCALVAR snd_pcm_resume_ProcPtr My_snd_pcm_resume = NULL;
-LOCALVAR bool Did_snd_pcm_resume = false;
+static snd_pcm_resume_ProcPtr My_snd_pcm_resume = NULL;
+static bool Did_snd_pcm_resume = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_resume(void)
 {
@@ -995,8 +995,8 @@ LOCALFUNC bool HaveMy_snd_pcm_resume(void)
 
 typedef My_snd_pcm_sframes_t (*snd_pcm_avail_update_ProcPtr)
 	(My_snd_pcm_t *pcm);
-LOCALVAR snd_pcm_avail_update_ProcPtr My_snd_pcm_avail_update = NULL;
-LOCALVAR bool Did_snd_pcm_avail_update = false;
+static snd_pcm_avail_update_ProcPtr My_snd_pcm_avail_update = NULL;
+static bool Did_snd_pcm_avail_update = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_avail_update(void)
 {
@@ -1015,8 +1015,8 @@ LOCALFUNC bool HaveMy_snd_pcm_avail_update(void)
 
 typedef My_snd_pcm_sframes_t (*snd_pcm_writei_ProcPtr)
 	(My_snd_pcm_t *pcm, const void *buffer, My_snd_pcm_uframes_t size);
-LOCALVAR snd_pcm_writei_ProcPtr My_snd_pcm_writei = NULL;
-LOCALVAR bool Did_snd_pcm_writei = false;
+static snd_pcm_writei_ProcPtr My_snd_pcm_writei = NULL;
+static bool Did_snd_pcm_writei = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_writei(void)
 {
@@ -1034,8 +1034,8 @@ LOCALFUNC bool HaveMy_snd_pcm_writei(void)
 }
 
 typedef int (*snd_pcm_drop_ProcPtr)(My_snd_pcm_t *pcm);
-LOCALVAR snd_pcm_drop_ProcPtr My_snd_pcm_drop = NULL;
-LOCALVAR bool Did_snd_pcm_drop = false;
+static snd_pcm_drop_ProcPtr My_snd_pcm_drop = NULL;
+static bool Did_snd_pcm_drop = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_drop(void)
 {
@@ -1055,8 +1055,8 @@ LOCALFUNC bool HaveMy_snd_pcm_drop(void)
 #if RaspbianWorkAround
 typedef int (*snd_pcm_status_malloc_ProcPtr)
 	(My_snd_pcm_status_t **ptr);
-LOCALVAR snd_pcm_status_malloc_ProcPtr My_snd_pcm_status_malloc = NULL;
-LOCALVAR bool Did_snd_pcm_status_malloc = false;
+static snd_pcm_status_malloc_ProcPtr My_snd_pcm_status_malloc = NULL;
+static bool Did_snd_pcm_status_malloc = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_status_malloc(void)
 {
@@ -1077,8 +1077,8 @@ LOCALFUNC bool HaveMy_snd_pcm_status_malloc(void)
 #if RaspbianWorkAround
 typedef int (*snd_pcm_status_ProcPtr)(My_snd_pcm_t *pcm,
 	My_snd_pcm_status_t *status);
-LOCALVAR snd_pcm_status_ProcPtr My_snd_pcm_status = NULL;
-LOCALVAR bool Did_snd_pcm_status = false;
+static snd_pcm_status_ProcPtr My_snd_pcm_status = NULL;
+static bool Did_snd_pcm_status = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_status(void)
 {
@@ -1099,9 +1099,9 @@ LOCALFUNC bool HaveMy_snd_pcm_status(void)
 #if RaspbianWorkAround
 typedef My_snd_pcm_uframes_t (*snd_pcm_status_get_avail_ProcPtr)
 	(const My_snd_pcm_status_t *obj);
-LOCALVAR snd_pcm_status_get_avail_ProcPtr
+static snd_pcm_status_get_avail_ProcPtr
 	My_snd_pcm_status_get_avail = NULL;
-LOCALVAR bool Did_snd_pcm_status_get_avail = false;
+static bool Did_snd_pcm_status_get_avail = false;
 
 LOCALFUNC bool HaveMy_snd_pcm_status_get_avail(void)
 {
@@ -1122,8 +1122,8 @@ LOCALFUNC bool HaveMy_snd_pcm_status_get_avail(void)
 #endif
 
 typedef const char * (*snd_strerror_ProcPtr)(int errnum);
-LOCALVAR snd_strerror_ProcPtr My_snd_strerror = NULL;
-LOCALVAR bool Did_snd_strerror = false;
+static snd_strerror_ProcPtr My_snd_strerror = NULL;
+static bool Did_snd_strerror = false;
 
 LOCALFUNC bool HaveMy_snd_strerror(void)
 {
@@ -1169,17 +1169,17 @@ LOCALPROC ConvertSoundBlockToNative(tpSoundSamp p)
 #define desired_alsa_buffer_size kAllBuffLen
 #define desired_alsa_period_size kOneBuffLen
 
-LOCALVAR char *alsadev_name = NULL;
+static char *alsadev_name = NULL;
 
-LOCALVAR My_snd_pcm_t *pcm_handle = NULL;
-LOCALVAR My_snd_pcm_uframes_t buffer_size;
-LOCALVAR My_snd_pcm_uframes_t period_size;
+static My_snd_pcm_t *pcm_handle = NULL;
+static My_snd_pcm_uframes_t buffer_size;
+static My_snd_pcm_uframes_t period_size;
 
 
-LOCALVAR bool MySound_StartPend = false;
+static bool MySound_StartPend = false;
 
 #if RaspbianWorkAround
-LOCALVAR My_snd_pcm_status_t *my_status = NULL;
+static My_snd_pcm_status_t *my_status = NULL;
 
 LOCALFUNC bool HaveMyStatusAlloc(void)
 {

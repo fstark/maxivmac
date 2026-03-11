@@ -61,20 +61,20 @@ LOCALPROC dbglog_writeSockErr(char *s)
 /*
 	Transmit buffer for localtalk data and its metadata
 */
-LOCALVAR uint8_t tx_buffer[4 + LT_TxBfMxSz] =
+static uint8_t tx_buffer[4 + LT_TxBfMxSz] =
 	"pppp";
 
 
 /*
 	Receive buffer for LocalTalk data and its metadata
 */
-LOCALVAR unsigned int rx_buffer_allocation = 1800;
+static unsigned int rx_buffer_allocation = 1800;
 
-LOCALVAR my_SOCKET sock_fd = my_INVALID_SOCKET;
-LOCALVAR bool udp_ok = false;
+static my_SOCKET sock_fd = my_INVALID_SOCKET;
+static bool udp_ok = false;
 
 #if use_winsock
-LOCALVAR bool have_winsock = false;
+static bool have_winsock = false;
 #endif
 
 LOCALPROC start_udp(void)
@@ -180,8 +180,8 @@ LOCALPROC start_udp(void)
 	udp_ok = true;
 }
 
-LOCALVAR unsigned char *MyRxBuffer = NULL;
-LOCALVAR struct sockaddr_in MyRxAddress;
+static unsigned char *MyRxBuffer = NULL;
+static struct sockaddr_in MyRxAddress;
 
 /*
 	External function needed at startup to initialize the LocalTalk

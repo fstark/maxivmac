@@ -37,8 +37,8 @@ IMPORTFUNC uint8_t ADB_ShiftInData(void);
 
 #include "ADBSHARE.h"
 
-LOCALVAR bool ADB_ListenDatBuf;
-LOCALVAR uint8_t ADB_IndexDatBuf;
+static bool ADB_ListenDatBuf;
+static uint8_t ADB_IndexDatBuf;
 
 GLOBALPROC ADB_DoNewState(void)
 {

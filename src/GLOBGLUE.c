@@ -85,7 +85,7 @@ IMPORTPROC put_vm_byte(uint32_t addr, uint8_t b);
 IMPORTPROC put_vm_word(uint32_t addr, uint16_t w);
 IMPORTPROC put_vm_long(uint32_t addr, uint32_t l);
 
-GLOBALVAR uint32_t my_disk_icon_addr;
+uint32_t my_disk_icon_addr;
 
 GLOBALPROC customreset(void)
 {
@@ -113,17 +113,17 @@ GLOBALPROC customreset(void)
 #endif
 }
 
-GLOBALVAR uint8_t * RAM = nullptr;
+uint8_t * RAM = nullptr;
 
 #if EmVidCard
-GLOBALVAR uint8_t * VidROM = nullptr;
+uint8_t * VidROM = nullptr;
 #endif
 
 #if IncludeVidMem
-GLOBALVAR uint8_t * VidMem = nullptr;
+uint8_t * VidMem = nullptr;
 #endif
 
-GLOBALVAR uint8_t Wires[kNumWires];
+uint8_t Wires[kNumWires];
 
 
 #if WantDisasm
@@ -200,7 +200,7 @@ GLOBALPROC dbglog_WriteSetBool(char *s, bool v)
 #endif
 
 #if WantAbnormalReports
-LOCALVAR bool GotOneAbnormal = false;
+static bool GotOneAbnormal = false;
 #endif
 
 #ifndef ReportAbnormalInterrupt
@@ -558,7 +558,7 @@ LOCALPROC ExtnFind_Access(uint32_t p)
 #define kDSK_Params_Lo 1
 #define kDSK_QuitOnEject 3 /* obsolete */
 
-LOCALVAR uint16_t ParamAddrHi;
+static uint16_t ParamAddrHi;
 
 LOCALPROC Extn_Access(uint32_t Data, uint32_t addr)
 {
@@ -692,8 +692,8 @@ enum {
 };
 
 
-LOCALVAR ATTer ATTListA[MaxATTListN];
-LOCALVAR uint16_t LastATTel;
+static ATTer ATTListA[MaxATTListN];
+static uint16_t LastATTel;
 
 
 LOCALPROC AddToATTList(ATTep p)
@@ -1619,7 +1619,7 @@ GLOBALFUNC uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t ad
 	return p;
 }
 
-GLOBALVAR bool InterruptButton = false;
+bool InterruptButton = false;
 
 GLOBALPROC SetInterruptButton(bool v)
 {
@@ -1629,7 +1629,7 @@ GLOBALPROC SetInterruptButton(bool v)
 	}
 }
 
-LOCALVAR uint8_t CurIPL = 0;
+static uint8_t CurIPL = 0;
 
 GLOBALPROC VIAorSCCinterruptChngNtfy(void)
 {
@@ -1692,7 +1692,7 @@ GLOBALPROC PowerOff_ChangeNtfy(void)
 /* user event queue utilities */
 
 #if HaveMasterMyEvtQLock
-GLOBALVAR uint16_t MasterMyEvtQLock = 0;
+uint16_t MasterMyEvtQLock = 0;
 	/*
 		Takes a few ticks to process button event because
 		of debounce code of Mac. So have this mechanism
@@ -1727,8 +1727,8 @@ GLOBALFUNC bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
 #include <stdio.h>
 #endif
 
-GLOBALVAR uint32_t ICTactive;
-GLOBALVAR iCountt ICTwhen[kNumICTs];
+uint32_t ICTactive;
+iCountt ICTwhen[kNumICTs];
 
 GLOBALPROC ICT_Zap(void)
 {
@@ -1741,7 +1741,7 @@ LOCALPROC InsertICT(int taskid, iCountt when)
 	ICTactive |= (1 << taskid);
 }
 
-GLOBALVAR iCountt NextiCount = 0;
+iCountt NextiCount = 0;
 
 GLOBALFUNC iCountt GetCuriCount(void)
 {
