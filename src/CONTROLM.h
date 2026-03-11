@@ -43,7 +43,7 @@ enum {
 	kNumSpclModes
 };
 
-LOCALVAR uimr SpecialModes = 0;
+LOCALVAR uint32_t SpecialModes = 0;
 
 LOCALVAR blnr NeedWholeScreenDraw = falseblnr;
 
@@ -53,7 +53,7 @@ LOCALVAR blnr NeedWholeScreenDraw = falseblnr;
 
 #define MacMsgDisplayed SpecialModeTst(SpclModeMessage)
 
-LOCALVAR ui3p CntrlDisplayBuff = nullpr;
+LOCALVAR uint8_t * CntrlDisplayBuff = nullpr;
 
 LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
 {
@@ -64,19 +64,19 @@ LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
 #endif
 	{
 		int i;
-		ui3p p0 = ((ui3p)CellData) + 16 * x;
+		uint8_t * p0 = ((uint8_t *)CellData) + 16 * x;
 
 #if 0 != vMacScreenDepth
 		if (UseColorMode) {
-			ui3p p = CntrlDisplayBuff
+			uint8_t * p = CntrlDisplayBuff
 				+ ((h + 1) << vMacScreenDepth)
 				+ (v * 16 + 11) * vMacScreenByteWidth;
 
 			for (i = 16; --i >= 0; ) {
 #if 1 == vMacScreenDepth
 				int k;
-				ui3b t0 = *p0;
-				ui3p p2 = p;
+				uint8_t t0 = *p0;
+				uint8_t * p2 = p;
 				for (k = 2; --k >= 0; ) {
 					*p2++ = (((t0) & 0x80) ? 0xC0 : 0x00)
 						| (((t0) & 0x40) ? 0x30 : 0x00)
@@ -87,8 +87,8 @@ LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
 				}
 #elif 2 == vMacScreenDepth
 				int k;
-				ui3b t0 = *p0;
-				ui3p p2 = p;
+				uint8_t t0 = *p0;
+				uint8_t * p2 = p;
 				for (k = 4; --k >= 0; ) {
 					*p2++ = (((t0) & 0x40) ? 0x0F : 0x00)
 						| (((t0) & 0x80) ? 0xF0 : 0x00);
@@ -97,33 +97,33 @@ LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
 				}
 #elif 3 == vMacScreenDepth
 				int k;
-				ui3b t0 = *p0;
-				ui3p p2 = p;
+				uint8_t t0 = *p0;
+				uint8_t * p2 = p;
 				for (k = 8; --k >= 0; ) {
 					*p2++ = ((t0 >> k) & 0x01) ? 0xFF : 0x00;
 						/* black RRGGBBAA, white RRGGBBAA */
 				}
 #elif 4 == vMacScreenDepth
 				int k;
-				ui4r v;
-				ui3b t0 = *p0;
-				ui3p p2 = p;
+				uint16_t v;
+				uint8_t t0 = *p0;
+				uint8_t * p2 = p;
 				for (k = 8; --k >= 0; ) {
 					v = ((t0 >> k) & 0x01) ? 0x0000 : 0x7FFF;
 						/* black RRGGBBAA, white RRGGBBAA */
-					/* *((ui4b *)p2)++ = v; need big endian, so : */
+					/* *((uint16_t *)p2)++ = v; need big endian, so : */
 					*p2++ = v >> 8;
 					*p2++ = v;
 				}
 #elif 5 == vMacScreenDepth
 				int k;
-				ui5r v;
-				ui3b t0 = *p0;
-				ui3p p2 = p;
+				uint32_t v;
+				uint8_t t0 = *p0;
+				uint8_t * p2 = p;
 				for (k = 8; --k >= 0; ) {
 					v = ((t0 >> k) & 0x01) ? 0x00000000 : 0x00FFFFFF;
 						/* black RRGGBBAA, white RRGGBBAA */
-					/* *((ui5b *)p2)++ = v; need big endian, so : */
+					/* *((uint32_t *)p2)++ = v; need big endian, so : */
 					*p2++ = v >> 24;
 					*p2++ = v >> 16;
 					*p2++ = v >> 8;
@@ -136,7 +136,7 @@ LOCALPROC DrawCell(unsigned int h, unsigned int v, int x)
 		} else
 #endif
 		{
-			ui3p p = CntrlDisplayBuff + (h + 1)
+			uint8_t * p = CntrlDisplayBuff + (h + 1)
 				+ (v * 16 + 11) * vMacScreenMonoByteWidth;
 
 			for (i = 16; --i >= 0; ) {
@@ -201,8 +201,8 @@ LOCALPROC DrawCellsBlankLine(void)
 
 LOCALPROC DrawCellsFromStr(char *s)
 {
-	ui3b ps[ClStrMaxLength];
-	ui3b cs;
+	uint8_t ps[ClStrMaxLength];
+	uint8_t cs;
 	int L;
 	int i;
 	int j;
@@ -326,7 +326,7 @@ LOCALPROC DrawSpclMode0(char *Title, SpclModeBody Body)
 #endif
 
 #if WantAbnormalReports || UseActvFile
-LOCALPROC ClStrAppendHexNib(int *L0, ui3b *r, ui3r v)
+LOCALPROC ClStrAppendHexNib(int *L0, uint8_t *r, uint8_t v)
 {
 	if (v < 10) {
 		ClStrAppendChar(L0, r, kCellDigit0 + v);
@@ -337,7 +337,7 @@ LOCALPROC ClStrAppendHexNib(int *L0, ui3b *r, ui3r v)
 #endif
 
 #if WantAbnormalReports || UseActvFile
-LOCALPROC ClStrAppendHexByte(int *L0, ui3b *r, ui3r v)
+LOCALPROC ClStrAppendHexByte(int *L0, uint8_t *r, uint8_t v)
 {
 	ClStrAppendHexNib(L0, r, (v >> 4) & 0x0F);
 	ClStrAppendHexNib(L0, r, v & 0x0F);
@@ -345,7 +345,7 @@ LOCALPROC ClStrAppendHexByte(int *L0, ui3b *r, ui3r v)
 #endif
 
 #if WantAbnormalReports || UseActvFile
-LOCALPROC ClStrAppendHexWord(int *L0, ui3b *r, ui4r v)
+LOCALPROC ClStrAppendHexWord(int *L0, uint8_t *r, uint16_t v)
 {
 	ClStrAppendHexByte(L0, r, (v >> 8) & 0xFF);
 	ClStrAppendHexByte(L0, r, v & 0xFF);
@@ -353,9 +353,9 @@ LOCALPROC ClStrAppendHexWord(int *L0, ui3b *r, ui4r v)
 #endif
 
 #if WantAbnormalReports
-LOCALPROC DrawCellsOneLineHexWord(ui4r v)
+LOCALPROC DrawCellsOneLineHexWord(uint16_t v)
 {
-	ui3b ps[ClStrMaxLength];
+	uint8_t ps[ClStrMaxLength];
 	int L = 0;
 	int i;
 
@@ -405,7 +405,7 @@ LOCALPROC MacMsgDisplayOn(void)
 	SpecialModeSet(SpclModeMessage);
 }
 
-LOCALPROC DoMessageModeKey(ui3r key)
+LOCALPROC DoMessageModeKey(uint8_t key)
 {
 	if (MKC_C == key) {
 		MacMsgDisplayOff();
@@ -557,7 +557,7 @@ LOCALPROC Keyboard_UpdateControlKey(blnr down)
 	}
 }
 
-LOCALPROC SetSpeedValue(ui3b i)
+LOCALPROC SetSpeedValue(uint8_t i)
 {
 	SpeedValue = i;
 	CurControlMode = kCntrlModeBase;
@@ -579,7 +579,7 @@ LOCALPROC HTCEexportSubstCStr(char *s)
 
 	if (mnvm_noErr == PbufNew(n, &j)) {
 		blnr IsOk = falseblnr;
-		ui3p p = PbufLock(j);
+		uint8_t * p = PbufLock(j);
 
 		if (nullpr != p) {
 			L = 0;
@@ -602,7 +602,7 @@ LOCALPROC HTCEexportSubstCStr(char *s)
 		}
 	}
 #else
-	ui3b ps[ClStrMaxLength];
+	uint8_t ps[ClStrMaxLength];
 
 	ClStrFromSubstCStr(&L, ps, s);
 
@@ -637,7 +637,7 @@ LOCALPROC CopyRegistrationStr(void)
 #endif
 
 
-LOCALPROC DoControlModeKey(ui3r key)
+LOCALPROC DoControlModeKey(uint8_t key)
 {
 	switch (CurControlMode) {
 		case kCntrlModeBase:
@@ -845,7 +845,7 @@ LOCALPROC DoControlModeKey(ui3r key)
 					SetSpeedValue(5);
 					break;
 				case MKC_A:
-					SetSpeedValue((ui3b) -1);
+					SetSpeedValue((uint8_t) -1);
 					break;
 			}
 			break;
@@ -1117,9 +1117,9 @@ LOCALPROC DrawSpclMode(void)
 	}
 }
 
-LOCALFUNC ui3p GetCurDrawBuff(void)
+LOCALFUNC uint8_t * GetCurDrawBuff(void)
 {
-	ui3p p = screencomparebuff;
+	uint8_t * p = screencomparebuff;
 
 	if (0 != SpecialModes) {
 		MyMoveBytes((anyp)p, (anyp)CntrlDisplayBuff,
@@ -1137,7 +1137,7 @@ LOCALFUNC ui3p GetCurDrawBuff(void)
 }
 
 #ifdef WantKeyboard_RemapMac
-LOCALFUNC ui3r Keyboard_RemapMac(ui3r key)
+LOCALFUNC uint8_t Keyboard_RemapMac(uint8_t key)
 {
 	switch (key) {
 #if MKC_formac_Control != MKC_Control
@@ -1253,7 +1253,7 @@ LOCALFUNC ui3r Keyboard_RemapMac(ui3r key)
 }
 #endif /* WantKeyboard_RemapMac */
 
-LOCALPROC Keyboard_UpdateKeyMap2(ui3r key, blnr down)
+LOCALPROC Keyboard_UpdateKeyMap2(uint8_t key, blnr down)
 {
 #if UseControlKeys
 	if (MKC_CM == key) {
@@ -1311,11 +1311,11 @@ LOCALPROC DisconnectKeyCodes2(void)
 #endif
 
 #if CheckRomCheckSum
-LOCALFUNC ui5r Calc_Checksum(void)
+LOCALFUNC uint32_t Calc_Checksum(void)
 {
 	long int i;
-	ui5b CheckSum = 0;
-	ui3p p = 4 + ROM;
+	uint32_t CheckSum = 0;
+	uint8_t * p = 4 + ROM;
 
 	for (i = (kCheckSumRom_Size - 4) >> 1; --i >= 0; ) {
 		CheckSum += do_get_mem_word(p);
@@ -1344,7 +1344,7 @@ LOCALPROC WarnMsgUnsupportedROM(void)
 LOCALFUNC tMacErr ROM_IsValid(void)
 {
 #if CheckRomCheckSum
-	ui5r CheckSum =
+	uint32_t CheckSum =
 #if RomStartCheckSum
 		do_get_mem_long(ROM)
 #else
@@ -1376,7 +1376,7 @@ LOCALFUNC tMacErr ROM_IsValid(void)
 
 #if RomStartCheckSum
 	{
-		ui5r CheckSumActual = Calc_Checksum();
+		uint32_t CheckSumActual = Calc_Checksum();
 
 		if (CheckSum != CheckSumActual) {
 			WarnMsgCorruptedROM();

@@ -52,8 +52,8 @@
 #if EmLocalTalk
 
 LOCALVAR blnr CTSpacketPending = falseblnr;
-LOCALVAR ui3r CTSpacketRxDA;
-LOCALVAR ui3r CTSpacketRxSA;
+LOCALVAR uint8_t CTSpacketRxDA;
+LOCALVAR uint8_t CTSpacketRxSA;
 
 LOCALVAR blnr IsFindingNode = falseblnr;
 
@@ -80,7 +80,7 @@ LOCALPROC LT_TransmitPacket1(void)
 			"packet too small in "
 				"in LT_TransmitPacket1");
 	} else {
-		ui3r type = LT_TxBuffer[2];
+		uint8_t type = LT_TxBuffer[2];
 
 #if SCC_dolog
 		dbglog_StartLine();
@@ -165,12 +165,12 @@ LOCALPROC LT_TransmitPacket1(void)
 	}
 }
 
-LOCALVAR ui3b MyCTSBuffer[4];
+LOCALVAR uint8_t MyCTSBuffer[4];
 
 LOCALPROC GetCTSpacket(void)
 {
 	/* Get a single buffer worth of packets at a time */
-	ui3p device_buffer = MyCTSBuffer;
+	uint8_t * device_buffer = MyCTSBuffer;
 
 #if SCC_dolog
 	dbglog_WriteNote("SCC receiving CTS packet");
@@ -188,15 +188,15 @@ LOCALPROC GetCTSpacket(void)
 }
 
 /* LLAP/SDLC address */
-LOCALVAR ui3b my_node_address = 0;
+LOCALVAR uint8_t my_node_address = 0;
 
 LOCALVAR blnr LTAddrSrchMd = falseblnr;
 
 LOCALPROC GetNextPacketForMe(void)
 {
-	ui3r dst;
-	ui3r src;
-	ui3r type;
+	uint8_t dst;
+	uint8_t src;
+	uint8_t type;
 
 label_retry:
 	LT_ReceivePacket();
@@ -309,7 +309,7 @@ LOCALPROC LT_AddrSrchMdSet(blnr v)
 	LTAddrSrchMd = v;
 }
 
-LOCALPROC LT_NodeAddressSet(ui3r v)
+LOCALPROC LT_NodeAddressSet(uint8_t v)
 {
 #if SCC_dolog
 	dbglog_StartLine();
@@ -350,7 +350,7 @@ typedef struct {
 	blnr SyncHunt;
 	blnr TxIP; /* Transmit Interrupt Pending */
 #if EmLocalTalk
-	ui3r RxBuff;
+	uint8_t RxBuff;
 #endif
 #if EmLocalTalk
 	/* otherwise TxBufferEmpty always true */
@@ -403,37 +403,37 @@ typedef struct {
 	blnr SyncChrLdInhb;
 #endif
 #if SCC_TrackMore
-	ui3r ClockRate;
+	uint8_t ClockRate;
 #endif
 #if SCC_TrackMore
-	ui3r DataEncoding;
+	uint8_t DataEncoding;
 #endif
 #if SCC_TrackMore
-	ui3r TRxCsrc;
+	uint8_t TRxCsrc;
 #endif
 #if SCC_TrackMore
-	ui3r TClkSlct;
+	uint8_t TClkSlct;
 #endif
 #if SCC_TrackMore
-	ui3r RClkSlct;
+	uint8_t RClkSlct;
 #endif
 #if SCC_TrackMore
-	ui3r RBitsPerChar;
+	uint8_t RBitsPerChar;
 #endif
 #if SCC_TrackMore
-	ui3r TBitsPerChar;
+	uint8_t TBitsPerChar;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	ui3r RxIntMode;
+	uint8_t RxIntMode;
 #endif
 #if EmLocalTalk || SCC_TrackMore
 	blnr FirstChar;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	ui3r SyncMode;
+	uint8_t SyncMode;
 #endif
 #if SCC_TrackMore
-	ui3r StopBits;
+	uint8_t StopBits;
 #endif
 #if 0 /* AllSent always true */
 	blnr AllSent;
@@ -490,8 +490,8 @@ typedef struct {
 	blnr BreakAbortIE;
 #endif
 #if SCC_TrackMore /* don't care about Baud */
-	ui3r BaudLo;
-	ui3r BaudHi;
+	uint8_t BaudLo;
+	uint8_t BaudHi;
 #endif
 } Channel_Ty;
 
@@ -499,7 +499,7 @@ typedef struct {
 	Channel_Ty a[2]; /* 0 = channel A, 1 = channel B */
 	int SCC_Interrupt_Type;
 	int PointerBits;
-	ui3b InterruptVector;
+	uint8_t InterruptVector;
 	blnr MIE; /* master interrupt enable */
 #if SCC_TrackMore
 	blnr NoVectorSlct;
@@ -582,7 +582,7 @@ LOCALPROC CheckSCCInterruptFlag(void)
 #endif
 		;
 #endif
-	ui3b NewSCCInterruptRequest;
+	uint8_t NewSCCInterruptRequest;
 
 #if EmLocalTalk
 	blnr ReceiveBInterrupt = falseblnr;
@@ -862,7 +862,7 @@ GLOBALPROC SCC_Reset(void)
 
 #if EmLocalTalk
 
-LOCALPROC SCC_TxBuffPut(ui3r Data)
+LOCALPROC SCC_TxBuffPut(uint8_t Data)
 {
 	/* Buffer the data in the transmit buffer */
 	if (LT_TxBuffSz < LT_TxBfMxSz) {
@@ -898,7 +898,7 @@ LOCALPROC rx_complete(void)
 
 LOCALPROC SCC_RxBuffAdvance(void)
 {
-	ui3r value;
+	uint8_t value;
 
 	/*
 		From the manual:
@@ -914,7 +914,7 @@ LOCALPROC SCC_RxBuffAdvance(void)
 		if (rx_data_offset < LT_RxBuffSz) {
 			value = LT_RxBuffer[rx_data_offset];
 		} else {
-			ui5r i = rx_data_offset - LT_RxBuffSz;
+			uint32_t i = rx_data_offset - LT_RxBuffSz;
 
 			/* if i==0 in first byte of CRC, have not got EOF yet */
 			if (i == 1) {
@@ -1099,7 +1099,7 @@ LOCALPROC SCC_DbgLogChanStartLine(int chan)
 }
 #endif
 
-LOCALFUNC ui3r SCC_GetRR0(int chan)
+LOCALFUNC uint8_t SCC_GetRR0(int chan)
 {
 	/* happens on boot always */
 
@@ -1131,11 +1131,11 @@ LOCALFUNC ui3r SCC_GetRR0(int chan)
 		;
 }
 
-LOCALFUNC ui3r SCC_GetRR1(int chan)
+LOCALFUNC uint8_t SCC_GetRR1(int chan)
 {
 	/* happens in MacCheck */
 
-	ui3r value;
+	uint8_t value;
 #if ! EmLocalTalk
 	UnusedParam(chan);
 #endif
@@ -1164,12 +1164,12 @@ LOCALFUNC ui3r SCC_GetRR1(int chan)
 	return value;
 }
 
-LOCALFUNC ui3r SCC_GetRR2(int chan)
+LOCALFUNC uint8_t SCC_GetRR2(int chan)
 {
 	/* happens in MacCheck */
 	/* happens in Print to ImageWriter */
 
-	ui3r value = SCC.InterruptVector;
+	uint8_t value = SCC.InterruptVector;
 
 	if (0 != chan) { /* B Channel */
 #if 0 /* StatusHiLo always false */
@@ -1268,9 +1268,9 @@ LOCALFUNC ui3r SCC_GetRR2(int chan)
 	return value;
 }
 
-LOCALFUNC ui3r SCC_GetRR3(int chan)
+LOCALFUNC uint8_t SCC_GetRR3(int chan)
 {
-	ui3r value = 0;
+	uint8_t value = 0;
 
 	UnusedParam(chan);
 	ReportAbnormalID(0x0706, "RR 3");
@@ -1289,9 +1289,9 @@ LOCALFUNC ui3r SCC_GetRR3(int chan)
 	return value;
 }
 
-LOCALFUNC ui3r SCC_GetRR8(int chan)
+LOCALFUNC uint8_t SCC_GetRR8(int chan)
 {
-	ui3r value = 0;
+	uint8_t value = 0;
 
 	/* Receive Buffer */
 	/* happens on boot with appletalk on */
@@ -1325,11 +1325,11 @@ LOCALFUNC ui3r SCC_GetRR8(int chan)
 	return value;
 }
 
-LOCALFUNC ui3r SCC_GetRR10(int chan)
+LOCALFUNC uint8_t SCC_GetRR10(int chan)
 {
 	/* happens on boot with appletalk on */
 
-	ui3r value = 0;
+	uint8_t value = 0;
 	UnusedParam(chan);
 
 #if 0 && EmLocalTalk
@@ -1339,9 +1339,9 @@ LOCALFUNC ui3r SCC_GetRR10(int chan)
 	return value;
 }
 
-LOCALFUNC ui3r SCC_GetRR12(int chan)
+LOCALFUNC uint8_t SCC_GetRR12(int chan)
 {
-	ui3r value = 0;
+	uint8_t value = 0;
 
 #if ! SCC_TrackMore
 	UnusedParam(chan);
@@ -1355,9 +1355,9 @@ LOCALFUNC ui3r SCC_GetRR12(int chan)
 	return value;
 }
 
-LOCALFUNC ui3r SCC_GetRR13(int chan)
+LOCALFUNC uint8_t SCC_GetRR13(int chan)
 {
-	ui3r value = 0;
+	uint8_t value = 0;
 
 #if ! SCC_TrackMore
 	UnusedParam(chan);
@@ -1371,9 +1371,9 @@ LOCALFUNC ui3r SCC_GetRR13(int chan)
 	return value;
 }
 
-LOCALFUNC ui3r SCC_GetRR15(int chan)
+LOCALFUNC uint8_t SCC_GetRR15(int chan)
 {
-	ui3r value = 0;
+	uint8_t value = 0;
 
 	UnusedParam(chan);
 	ReportAbnormalID(0x070A, "RR 15");
@@ -1426,7 +1426,7 @@ LOCALPROC SCC_DbgLogChanChngBit(int chan, char *s, blnr v)
 }
 #endif
 
-LOCALPROC SCC_PutWR0(ui3r Data, int chan)
+LOCALPROC SCC_PutWR0(uint8_t Data, int chan)
 /*
 	"CRC initialize, initialization commands for the various modes,
 	Register Pointers"
@@ -1563,7 +1563,7 @@ LOCALPROC SCC_PutWR0(ui3r Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR1(ui3r Data, int chan)
+LOCALPROC SCC_PutWR1(uint8_t Data, int chan)
 /*
 	"Transmit/Receive interrupt and data transfer mode definition"
 */
@@ -1618,7 +1618,7 @@ LOCALPROC SCC_PutWR1(ui3r Data, int chan)
 
 #if EmLocalTalk || SCC_TrackMore
 	{
-		ui3r NewRxIntMode = (Data >> 3) & 3;
+		uint8_t NewRxIntMode = (Data >> 3) & 3;
 		if (SCC.a[chan].RxIntMode != NewRxIntMode) {
 			SCC.a[chan].RxIntMode = NewRxIntMode;
 
@@ -1700,7 +1700,7 @@ LOCALPROC SCC_PutWR1(ui3r Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR2(ui3r Data, int chan)
+LOCALPROC SCC_PutWR2(uint8_t Data, int chan)
 /* "Interrupt Vector (accessed through either channel)" */
 {
 	/*
@@ -1750,12 +1750,12 @@ LOCALPROC SCC_PutWR2(ui3r Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR3(ui3r Data, int chan)
+LOCALPROC SCC_PutWR3(uint8_t Data, int chan)
 /* "Receive parameters and control" */
 {
 #if SCC_TrackMore
 	{
-		ui3r NewRBitsPerChar = (Data >> 6) & 3;
+		uint8_t NewRBitsPerChar = (Data >> 6) & 3;
 		if (SCC.a[chan].RBitsPerChar != NewRBitsPerChar) {
 			SCC.a[chan].RBitsPerChar = NewRBitsPerChar;
 
@@ -1897,7 +1897,7 @@ LOCALPROC SCC_PutWR3(ui3r Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR4(ui3r Data, int chan)
+LOCALPROC SCC_PutWR4(uint8_t Data, int chan)
 /* "Transmit/Receive miscellaneous parameters and modes" */
 {
 #if ! (EmLocalTalk || SCC_TrackMore)
@@ -1933,7 +1933,7 @@ LOCALPROC SCC_PutWR4(ui3r Data, int chan)
 
 #if SCC_TrackMore
 	{
-		ui3r NewStopBits = (Data >> 2) & 3;
+		uint8_t NewStopBits = (Data >> 2) & 3;
 		if (SCC.a[chan].StopBits != NewStopBits) {
 			SCC.a[chan].StopBits = NewStopBits;
 
@@ -1967,7 +1967,7 @@ LOCALPROC SCC_PutWR4(ui3r Data, int chan)
 
 #if EmLocalTalk || SCC_TrackMore
 	{
-		ui3r NewSyncMode = (Data >> 4) & 3;
+		uint8_t NewSyncMode = (Data >> 4) & 3;
 		if (SCC.a[chan].SyncMode != NewSyncMode) {
 			SCC.a[chan].SyncMode = NewSyncMode;
 
@@ -2000,7 +2000,7 @@ LOCALPROC SCC_PutWR4(ui3r Data, int chan)
 
 #if SCC_TrackMore
 	{
-		ui3r NewClockRate = (Data >> 6) & 3;
+		uint8_t NewClockRate = (Data >> 6) & 3;
 		if (SCC.a[chan].ClockRate != NewClockRate) {
 			SCC.a[chan].ClockRate = NewClockRate;
 
@@ -2031,7 +2031,7 @@ LOCALPROC SCC_PutWR4(ui3r Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR5(ui3r Data, int chan)
+LOCALPROC SCC_PutWR5(uint8_t Data, int chan)
 /* "Transmit parameters and controls" */
 {
 	/* happens on boot with appletalk on */
@@ -2114,7 +2114,7 @@ LOCALPROC SCC_PutWR5(ui3r Data, int chan)
 
 #if SCC_TrackMore
 	{
-		ui3r NewTBitsPerChar = (Data >> 5) & 3;
+		uint8_t NewTBitsPerChar = (Data >> 5) & 3;
 		if (SCC.a[chan].TBitsPerChar != NewTBitsPerChar) {
 			SCC.a[chan].TBitsPerChar = NewTBitsPerChar;
 
@@ -2160,7 +2160,7 @@ LOCALPROC SCC_PutWR5(ui3r Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR6(ui3r Data, int chan)
+LOCALPROC SCC_PutWR6(uint8_t Data, int chan)
 /* "Sync characters or SDLC address field" */
 {
 	/* happens on boot with appletalk on */
@@ -2186,7 +2186,7 @@ LOCALPROC SCC_PutWR6(ui3r Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR7(ui3r Data, int chan)
+LOCALPROC SCC_PutWR7(uint8_t Data, int chan)
 /* "Sync character or SDLC flag" */
 {
 	/* happens on boot with appletalk on */
@@ -2208,7 +2208,7 @@ LOCALPROC SCC_PutWR7(ui3r Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR8(ui3r Data, int chan)
+LOCALPROC SCC_PutWR8(uint8_t Data, int chan)
 /* "Transmit Buffer" */
 {
 	/* happens on boot with appletalk on */
@@ -2255,7 +2255,7 @@ LOCALPROC SCC_PutWR8(ui3r Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR9(ui3r Data, int chan)
+LOCALPROC SCC_PutWR9(uint8_t Data, int chan)
 /*
 	"Master interrupt control and reset
 	(accessed through either channel)"
@@ -2346,7 +2346,7 @@ LOCALPROC SCC_PutWR9(ui3r Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR10(ui3r Data, int chan)
+LOCALPROC SCC_PutWR10(uint8_t Data, int chan)
 /* "Miscellaneous transmitter/receiver control bits" */
 {
 	/* happens on boot with appletalk on */
@@ -2374,7 +2374,7 @@ LOCALPROC SCC_PutWR10(ui3r Data, int chan)
 
 #if SCC_TrackMore
 	{
-		ui3r NewDataEncoding = (Data >> 5) & 3;
+		uint8_t NewDataEncoding = (Data >> 5) & 3;
 		if (SCC.a[chan].DataEncoding != NewDataEncoding) {
 			SCC.a[chan].DataEncoding = NewDataEncoding;
 
@@ -2421,7 +2421,7 @@ LOCALPROC SCC_PutWR10(ui3r Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR11(ui3r Data, int chan)
+LOCALPROC SCC_PutWR11(uint8_t Data, int chan)
 /* "Clock mode control" */
 {
 	/* happens on boot with appletalk on */
@@ -2435,7 +2435,7 @@ LOCALPROC SCC_PutWR11(ui3r Data, int chan)
 #if SCC_TrackMore
 	/* Transmit External Control Selection */
 	{
-		ui3r NewTRxCsrc = Data & 3;
+		uint8_t NewTRxCsrc = Data & 3;
 		if (SCC.a[chan].TRxCsrc != NewTRxCsrc) {
 			SCC.a[chan].TRxCsrc = NewTRxCsrc;
 
@@ -2471,7 +2471,7 @@ LOCALPROC SCC_PutWR11(ui3r Data, int chan)
 
 #if SCC_TrackMore
 	{
-		ui3r NewTClkSlct = (Data >> 3) & 3;
+		uint8_t NewTClkSlct = (Data >> 3) & 3;
 		if (SCC.a[chan].TClkSlct != NewTClkSlct) {
 			SCC.a[chan].TClkSlct = NewTClkSlct;
 
@@ -2507,7 +2507,7 @@ LOCALPROC SCC_PutWR11(ui3r Data, int chan)
 
 #if SCC_TrackMore
 	{
-		ui3r NewRClkSlct = (Data >> 5) & 3;
+		uint8_t NewRClkSlct = (Data >> 5) & 3;
 		if (SCC.a[chan].RClkSlct != NewRClkSlct) {
 			SCC.a[chan].RClkSlct = NewRClkSlct;
 
@@ -2548,7 +2548,7 @@ LOCALPROC SCC_PutWR11(ui3r Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR12(ui3r Data, int chan)
+LOCALPROC SCC_PutWR12(uint8_t Data, int chan)
 /* "Lower byte of baud rate generator time constant" */
 {
 	/* happens on boot with appletalk on */
@@ -2586,7 +2586,7 @@ LOCALPROC SCC_PutWR12(ui3r Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR13(ui3r Data, int chan)
+LOCALPROC SCC_PutWR13(uint8_t Data, int chan)
 /* "Upper byte of baud rate generator time constant" */
 {
 	/* happens on boot with appletalk on */
@@ -2616,7 +2616,7 @@ LOCALPROC SCC_PutWR13(ui3r Data, int chan)
 #endif
 }
 
-LOCALPROC SCC_PutWR14(ui3r Data, int chan)
+LOCALPROC SCC_PutWR14(uint8_t Data, int chan)
 /* "Miscellaneous control bits" */
 {
 	/* happens on boot with appletalk on */
@@ -2700,7 +2700,7 @@ LOCALPROC SCC_PutWR14(ui3r Data, int chan)
 	}
 }
 
-LOCALPROC SCC_PutWR15(ui3r Data, int chan)
+LOCALPROC SCC_PutWR15(uint8_t Data, int chan)
 /* "External/Status interrupt control" */
 {
 	/* happens on boot always */
@@ -2775,9 +2775,9 @@ LOCALPROC SCC_PutWR15(ui3r Data, int chan)
 #endif
 }
 
-LOCALFUNC ui3r SCC_GetReg(int chan, ui3r SCC_Reg)
+LOCALFUNC uint8_t SCC_GetReg(int chan, uint8_t SCC_Reg)
 {
-	ui3r value;
+	uint8_t value;
 
 	switch (SCC_Reg) {
 		case 0:
@@ -2862,7 +2862,7 @@ LOCALFUNC ui3r SCC_GetReg(int chan, ui3r SCC_Reg)
 	return value;
 }
 
-LOCALPROC SCC_PutReg(ui3r Data, int chan, ui3r SCC_Reg)
+LOCALPROC SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 {
 #if SCC_dolog && 0
 	SCC_DbgLogChanStartLine(chan);
@@ -2937,7 +2937,7 @@ LOCALPROC SCC_PutReg(ui3r Data, int chan, ui3r SCC_Reg)
 #endif
 }
 
-GLOBALFUNC ui5b SCC_Access(ui5b Data, blnr WriteMem, CPTR addr)
+GLOBALFUNC uint32_t SCC_Access(uint32_t Data, blnr WriteMem, CPTR addr)
 {
 #if EmLocalTalk
 	/*
@@ -2955,7 +2955,7 @@ GLOBALFUNC ui5b SCC_Access(ui5b Data, blnr WriteMem, CPTR addr)
 		a21   wr/rd
 	*/
 #endif
-	ui3b SCC_Reg;
+	uint8_t SCC_Reg;
 	int chan = (~ addr) & 1; /* 0=modem, 1=printer */
 	if (((addr >> 1) & 1) == 0) {
 		/* Channel Control */

@@ -25,29 +25,27 @@
 #endif
 
 
-typedef ui3b *ui3p;
-typedef ui4b *ui4p;
-typedef ui5b *ui5p;
+/* Pointer types — now using standard types directly */
+/* (ui3p, ui4p, ui5p typedefs removed — use uint8_t*, uint16_t*, uint32_t*) */
 
 /*
 	Largest efficiently supported
-	representation types. uimr should be
+	representation types. uint32_t should be
 	large enough to hold number of elements
 	of any array we will deal with.
 */
-typedef ui5r uimr;
-typedef si5r simr;
+/* uimr/simr typedefs removed — use uint32_t/int32_t directly */
 
-#define blnr ui3r
+#define blnr uint8_t
 #define trueblnr 1
 #define falseblnr 0
 
 #define nullpr nullptr
 
-#define anyp ui3p
+#define anyp uint8_t *
 
 /* pascal string, single byte characters */
-#define ps3p ui3p
+#define ps3p uint8_t *
 
 #ifndef MayInline
 #define MayInline
@@ -109,20 +107,20 @@ typedef si5r simr;
 #endif
 
 /*
-	best type for ui4r that is probably in register
+	best type for uint16_t that is probably in register
 	(when compiler messes up otherwise)
 */
 
-#ifndef ui3rr
-#define ui3rr ui3r
+#ifndef uint8_t
+#define uint8_t uint8_t
 #endif
 
-#ifndef ui4rr
-#define ui4rr ui4r
+#ifndef uint16_t
+#define uint16_t uint16_t
 #endif
 
-#ifndef si5rr
-#define si5rr si5r
+#ifndef int32_t
+#define int32_t int32_t
 #endif
 
 #ifndef my_align_8

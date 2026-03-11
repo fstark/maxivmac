@@ -36,11 +36,11 @@
 #define EnableMoveMouse 0
 #endif
 
-GLOBALVAR ui3p ROM = nullpr;
+GLOBALVAR uint8_t * ROM = nullpr;
 LOCALVAR blnr ROM_loaded = falseblnr;
 
-GLOBALVAR ui5b vSonyWritableMask = 0;
-GLOBALVAR ui5b vSonyInsertedMask = 0;
+GLOBALVAR uint32_t vSonyWritableMask = 0;
+GLOBALVAR uint32_t vSonyInsertedMask = 0;
 
 #if IncludeSonyRawMode
 GLOBALVAR blnr vSonyRawMode = falseblnr;
@@ -48,20 +48,20 @@ GLOBALVAR blnr vSonyRawMode = falseblnr;
 
 #if IncludeSonyNew
 GLOBALVAR blnr vSonyNewDiskWanted = falseblnr;
-GLOBALVAR ui5b vSonyNewDiskSize;
+GLOBALVAR uint32_t vSonyNewDiskSize;
 #endif
 
 #if IncludeSonyNameNew
 GLOBALVAR tPbuf vSonyNewDiskName = NotAPbuf;
 #endif
 
-GLOBALVAR ui5b CurMacDateInSeconds = 0;
+GLOBALVAR uint32_t CurMacDateInSeconds = 0;
 #if AutoLocation
-GLOBALVAR ui5b CurMacLatitude = 0;
-GLOBALVAR ui5b CurMacLongitude = 0;
+GLOBALVAR uint32_t CurMacLatitude = 0;
+GLOBALVAR uint32_t CurMacLongitude = 0;
 #endif
 #if AutoTimeZone
-GLOBALVAR ui5b CurMacDelta = 0;
+GLOBALVAR uint32_t CurMacDelta = 0;
 #endif
 
 #if 0 != vMacScreenDepth
@@ -74,9 +74,9 @@ GLOBALVAR blnr ColorMappingChanged = falseblnr;
 #endif
 
 #if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-GLOBALVAR ui4r CLUT_reds[CLUT_size];
-GLOBALVAR ui4r CLUT_greens[CLUT_size];
-GLOBALVAR ui4r CLUT_blues[CLUT_size];
+GLOBALVAR uint16_t CLUT_reds[CLUT_size];
+GLOBALVAR uint16_t CLUT_greens[CLUT_size];
+GLOBALVAR uint16_t CLUT_blues[CLUT_size];
 #endif
 
 LOCALVAR blnr RequestMacOff = falseblnr;
@@ -87,41 +87,41 @@ GLOBALVAR blnr WantMacInterrupt = falseblnr;
 
 GLOBALVAR blnr WantMacReset = falseblnr;
 
-GLOBALVAR ui3b SpeedValue = WantInitSpeedValue;
+GLOBALVAR uint8_t SpeedValue = WantInitSpeedValue;
 
 #if EnableAutoSlow
 GLOBALVAR blnr WantNotAutoSlow = (WantInitNotAutoSlow != 0);
 #endif
 
-GLOBALVAR ui4b CurMouseV = 0;
-GLOBALVAR ui4b CurMouseH = 0;
+GLOBALVAR uint16_t CurMouseV = 0;
+GLOBALVAR uint16_t CurMouseH = 0;
 
 #if EnableFSMouseMotion
 LOCALVAR blnr HaveMouseMotion = falseblnr;
 #endif
 
 #if EnableAutoSlow
-GLOBALVAR ui5r QuietTime = 0;
-GLOBALVAR ui5r QuietSubTicks = 0;
+GLOBALVAR uint32_t QuietTime = 0;
+GLOBALVAR uint32_t QuietSubTicks = 0;
 #endif
 
 #if EmLocalTalk
 
-GLOBALVAR ui3b LT_NodeHint = 0;
+GLOBALVAR uint8_t LT_NodeHint = 0;
 
 #if LT_MayHaveEcho
 GLOBALVAR blnr CertainlyNotMyPacket = falseblnr;
 #endif
 
-GLOBALVAR ui3p LT_TxBuffer = NULL;
+GLOBALVAR uint8_t * LT_TxBuffer = NULL;
 
 /* Transmit state */
-GLOBALVAR ui4r LT_TxBuffSz = 0;
+GLOBALVAR uint16_t LT_TxBuffSz = 0;
 
 /* Receive state */
-GLOBALVAR ui3p LT_RxBuffer = NULL;
+GLOBALVAR uint8_t * LT_RxBuffer = NULL;
 	/* When data pending, this is used */
-GLOBALVAR ui5r LT_RxBuffSz = 0;
+GLOBALVAR uint32_t LT_RxBuffSz = 0;
 	/* When data pending, this is used */
 
 #endif
@@ -135,12 +135,12 @@ GLOBALVAR ui5r LT_RxBuffSz = 0;
 #endif
 
 #if IncludePbufs
-LOCALVAR ui5b PbufAllocatedMask;
-LOCALVAR ui5b PbufSize[NumPbufs];
+LOCALVAR uint32_t PbufAllocatedMask;
+LOCALVAR uint32_t PbufSize[NumPbufs];
 #endif
 
 #if IncludePbufs
-#define PbufIsAllocated(i) ((PbufAllocatedMask & ((ui5b)1 << (i))) != 0)
+#define PbufIsAllocated(i) ((PbufAllocatedMask & ((uint32_t)1 << (i))) != 0)
 #endif
 
 #if IncludePbufs
@@ -159,17 +159,17 @@ LOCALFUNC blnr FirstFreePbuf(tPbuf *r)
 #endif
 
 #if IncludePbufs
-LOCALPROC PbufNewNotify(tPbuf Pbuf_No, ui5b count)
+LOCALPROC PbufNewNotify(tPbuf Pbuf_No, uint32_t count)
 {
 	PbufSize[Pbuf_No] = count;
-	PbufAllocatedMask |= ((ui5b)1 << Pbuf_No);
+	PbufAllocatedMask |= ((uint32_t)1 << Pbuf_No);
 }
 #endif
 
 #if IncludePbufs
 LOCALPROC PbufDisposeNotify(tPbuf Pbuf_No)
 {
-	PbufAllocatedMask &= ~ ((ui5b)1 << Pbuf_No);
+	PbufAllocatedMask &= ~ ((uint32_t)1 << Pbuf_No);
 }
 #endif
 
@@ -191,7 +191,7 @@ GLOBALOSGLUFUNC tMacErr CheckPbuf(tPbuf Pbuf_No)
 #endif
 
 #if IncludePbufs
-GLOBALOSGLUFUNC tMacErr PbufGetSize(tPbuf Pbuf_No, ui5r *Count)
+GLOBALOSGLUFUNC tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
 {
 	tMacErr result = CheckPbuf(Pbuf_No);
 
@@ -235,14 +235,14 @@ GLOBALOSGLUFUNC blnr AnyDiskInserted(void)
 
 GLOBALOSGLUPROC DiskRevokeWritable(tDrive Drive_No)
 {
-	vSonyWritableMask &= ~ ((ui5b)1 << Drive_No);
+	vSonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
 }
 
 LOCALPROC DiskInsertNotify(tDrive Drive_No, blnr locked)
 {
-	vSonyInsertedMask |= ((ui5b)1 << Drive_No);
+	vSonyInsertedMask |= ((uint32_t)1 << Drive_No);
 	if (! locked) {
-		vSonyWritableMask |= ((ui5b)1 << Drive_No);
+		vSonyWritableMask |= ((uint32_t)1 << Drive_No);
 	}
 
 	QuietEnds();
@@ -250,19 +250,19 @@ LOCALPROC DiskInsertNotify(tDrive Drive_No, blnr locked)
 
 LOCALPROC DiskEjectedNotify(tDrive Drive_No)
 {
-	vSonyWritableMask &= ~ ((ui5b)1 << Drive_No);
-	vSonyInsertedMask &= ~ ((ui5b)1 << Drive_No);
+	vSonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
+	vSonyInsertedMask &= ~ ((uint32_t)1 << Drive_No);
 }
 
 /*
-	block type - for operating on multiple ui3b elements
+	block type - for operating on multiple uint8_t elements
 		at a time.
 */
 
 #if LittleEndianUnaligned || BigEndianUnaligned
 
-#define uibb ui5b
-#define uibr ui5r
+#define uibb uint32_t
+#define uibr uint32_t
 #define ln2uiblockn 2
 
 #if 0
@@ -273,8 +273,8 @@ LOCALPROC DiskEjectedNotify(tDrive Drive_No)
 
 #else
 
-#define uibb ui3b
-#define uibr ui3r
+#define uibb uint8_t
+#define uibr uint8_t
 #define ln2uiblockn 0
 
 #endif
@@ -284,14 +284,14 @@ LOCALPROC DiskEjectedNotify(tDrive Drive_No)
 #define uiblockbitsn (8 * uiblockn)
 
 LOCALFUNC blnr FindFirstChangeInLVecs(uibb *ptr1, uibb *ptr2,
-					uimr L, uimr *j)
+					uint32_t L, uint32_t *j)
 {
 /*
 	find index of first difference
 */
 	uibb *p1 = ptr1;
 	uibb *p2 = ptr2;
-	uimr i;
+	uint32_t i;
 
 	for (i = L; i != 0; --i) {
 		if (*p1++ != *p2++) {
@@ -304,7 +304,7 @@ LOCALFUNC blnr FindFirstChangeInLVecs(uibb *ptr1, uibb *ptr2,
 }
 
 LOCALPROC FindLastChangeInLVecs(uibb *ptr1, uibb *ptr2,
-					uimr L, uimr *j)
+					uint32_t L, uint32_t *j)
 {
 /*
 	find index of last difference, assuming there is one
@@ -318,20 +318,20 @@ LOCALPROC FindLastChangeInLVecs(uibb *ptr1, uibb *ptr2,
 }
 
 LOCALPROC FindLeftRightChangeInLMat(uibb *ptr1, uibb *ptr2,
-	uimr width, uimr top, uimr bottom,
-	uimr *LeftMin0, uibr *LeftMask0,
-	uimr *RightMax0, uibr *RightMask0)
+	uint32_t width, uint32_t top, uint32_t bottom,
+	uint32_t *LeftMin0, uibr *LeftMask0,
+	uint32_t *RightMax0, uibr *RightMask0)
 {
-	uimr i;
-	uimr j;
+	uint32_t i;
+	uint32_t j;
 	uibb *p1;
 	uibb *p2;
 	uibr x;
-	ui5r offset = top * width;
+	uint32_t offset = top * width;
 	uibb *p10 = (uibb *)ptr1 + offset;
 	uibb *p20 = (uibb *)ptr2 + offset;
-	uimr LeftMin = *LeftMin0;
-	uimr RightMax = *RightMax0;
+	uint32_t LeftMin = *LeftMin0;
+	uint32_t RightMax = *RightMax0;
 	uibr LeftMask = 0;
 	uibr RightMask = 0;
 	for (i = top; i < bottom; ++i) {
@@ -367,9 +367,9 @@ Label_3:
 	*RightMask0 = RightMask;
 }
 
-LOCALVAR ui3p screencomparebuff = nullpr;
+LOCALVAR uint8_t * screencomparebuff = nullpr;
 
-LOCALVAR uimr NextDrawRow = 0;
+LOCALVAR uint32_t NextDrawRow = 0;
 
 
 #if BigEndianUnaligned
@@ -392,22 +392,22 @@ LOCALVAR uimr NextDrawRow = 0;
 LOCALVAR blnr ColorTransValid = falseblnr;
 #endif
 
-LOCALFUNC blnr ScreenFindChanges(ui3p screencurrentbuff,
-	si3b TimeAdjust, si4b *top, si4b *left, si4b *bottom, si4b *right)
+LOCALFUNC blnr ScreenFindChanges(uint8_t * screencurrentbuff,
+	int8_t TimeAdjust, int16_t *top, int16_t *left, int16_t *bottom, int16_t *right)
 {
-	uimr j0;
-	uimr j1;
-	uimr j0h;
-	uimr j1h;
-	uimr j0v;
-	uimr j1v;
-	uimr copysize;
-	uimr copyoffset;
-	uimr copyrows;
-	uimr LimitDrawRow;
-	uimr MaxRowsDrawnPerTick;
-	uimr LeftMin;
-	uimr RightMax;
+	uint32_t j0;
+	uint32_t j1;
+	uint32_t j0h;
+	uint32_t j1h;
+	uint32_t j0v;
+	uint32_t j1v;
+	uint32_t copysize;
+	uint32_t copyoffset;
+	uint32_t copyrows;
+	uint32_t LimitDrawRow;
+	uint32_t MaxRowsDrawnPerTick;
+	uint32_t LeftMin;
+	uint32_t RightMax;
 	uibr LeftMask;
 	uibr RightMask;
 	int j;
@@ -437,8 +437,8 @@ LOCALFUNC blnr ScreenFindChanges(ui3p screencurrentbuff,
 					+ NextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
 				(uibb *)screencomparebuff
 					+ NextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
-				((uimr)(vMacScreenHeight - NextDrawRow)
-					* (uimr)vMacScreenBitWidth) / uiblockbitsn,
+				((uint32_t)(vMacScreenHeight - NextDrawRow)
+					* (uint32_t)vMacScreenBitWidth) / uiblockbitsn,
 				&j0))
 			{
 				NextDrawRow = 0;
@@ -456,8 +456,8 @@ LOCALFUNC blnr ScreenFindChanges(ui3p screencurrentbuff,
 			}
 			FindLastChangeInLVecs((uibb *)screencurrentbuff,
 				(uibb *)screencomparebuff,
-				((uimr)LimitDrawRow
-					* (uimr)vMacScreenBitWidth) / uiblockbitsn,
+				((uint32_t)LimitDrawRow
+					* (uint32_t)vMacScreenBitWidth) / uiblockbitsn,
 				&j1);
 			j1v = j1 / (vMacScreenBitWidth / uiblockbitsn);
 			j1h = j1 - j1v * (vMacScreenBitWidth / uiblockbitsn);
@@ -538,8 +538,8 @@ Label_2c:
 					+ NextDrawRow * (vMacScreenWidth / uiblockbitsn),
 				(uibb *)screencomparebuff
 					+ NextDrawRow * (vMacScreenWidth / uiblockbitsn),
-				((uimr)(vMacScreenHeight - NextDrawRow)
-					* (uimr)vMacScreenWidth) / uiblockbitsn,
+				((uint32_t)(vMacScreenHeight - NextDrawRow)
+					* (uint32_t)vMacScreenWidth) / uiblockbitsn,
 				&j0))
 			{
 				NextDrawRow = 0;
@@ -557,8 +557,8 @@ Label_2c:
 			}
 			FindLastChangeInLVecs((uibb *)screencurrentbuff,
 				(uibb *)screencomparebuff,
-				((uimr)LimitDrawRow
-					* (uimr)vMacScreenWidth) / uiblockbitsn,
+				((uint32_t)LimitDrawRow
+					* (uint32_t)vMacScreenWidth) / uiblockbitsn,
 				&j1);
 			j1v = j1 / (vMacScreenWidth / uiblockbitsn);
 			j1h = j1 - j1v * (vMacScreenWidth / uiblockbitsn);
@@ -616,18 +616,18 @@ Label_2:
 }
 
 GLOBALVAR blnr EmVideoDisable = falseblnr;
-GLOBALVAR si3b EmLagTime = 0;
+GLOBALVAR int8_t EmLagTime = 0;
 
-GLOBALVAR ui5b OnTrueTime = 0;
+GLOBALVAR uint32_t OnTrueTime = 0;
 	/*
 		The time slice we are currently dealing
 		with, in the same units as TrueEmulatedTime.
 	*/
 
-LOCALVAR si4b ScreenChangedTop;
-LOCALVAR si4b ScreenChangedLeft;
-LOCALVAR si4b ScreenChangedBottom;
-LOCALVAR si4b ScreenChangedRight;
+LOCALVAR int16_t ScreenChangedTop;
+LOCALVAR int16_t ScreenChangedLeft;
+LOCALVAR int16_t ScreenChangedBottom;
+LOCALVAR int16_t ScreenChangedRight;
 
 LOCALPROC ScreenClearChanges(void)
 {
@@ -646,18 +646,18 @@ LOCALPROC ScreenChangedAll(void)
 }
 
 #if EnableAutoSlow
-LOCALVAR si4b ScreenChangedQuietTop = vMacScreenHeight;
-LOCALVAR si4b ScreenChangedQuietLeft = vMacScreenWidth;
-LOCALVAR si4b ScreenChangedQuietBottom = 0;
-LOCALVAR si4b ScreenChangedQuietRight = 0;
+LOCALVAR int16_t ScreenChangedQuietTop = vMacScreenHeight;
+LOCALVAR int16_t ScreenChangedQuietLeft = vMacScreenWidth;
+LOCALVAR int16_t ScreenChangedQuietBottom = 0;
+LOCALVAR int16_t ScreenChangedQuietRight = 0;
 #endif
 
-GLOBALOSGLUPROC Screen_OutputFrame(ui3p screencurrentbuff)
+GLOBALOSGLUPROC Screen_OutputFrame(uint8_t * screencurrentbuff)
 {
-	si4b top;
-	si4b left;
-	si4b bottom;
-	si4b right;
+	int16_t top;
+	int16_t left;
+	int16_t bottom;
+	int16_t right;
 
 	if (! EmVideoDisable) {
 		if (ScreenFindChanges(screencurrentbuff, EmLagTime,
@@ -707,13 +707,13 @@ GLOBALOSGLUPROC Screen_OutputFrame(ui3p screencurrentbuff)
 }
 
 #if MayFullScreen
-LOCALVAR ui4r ViewHSize;
-LOCALVAR ui4r ViewVSize;
-LOCALVAR ui4r ViewHStart = 0;
-LOCALVAR ui4r ViewVStart = 0;
+LOCALVAR uint16_t ViewHSize;
+LOCALVAR uint16_t ViewVSize;
+LOCALVAR uint16_t ViewHStart = 0;
+LOCALVAR uint16_t ViewVStart = 0;
 #if EnableFSMouseMotion
-LOCALVAR si4b SavedMouseH;
-LOCALVAR si4b SavedMouseV;
+LOCALVAR int16_t SavedMouseH;
+LOCALVAR int16_t SavedMouseV;
 #endif
 #endif
 
@@ -724,8 +724,8 @@ LOCALVAR si4b SavedMouseV;
 #if EnableFSMouseMotion
 LOCALPROC AutoScrollScreen(void)
 {
-	si4b Shift;
-	si4b Limit;
+	int16_t Shift;
+	int16_t Limit;
 
 	/*
 		Scroll in multiples of two pixels, so as to
@@ -814,19 +814,19 @@ LOCALPROC AutoScrollScreen(void)
 }
 #endif
 
-LOCALPROC SetLongs(ui5b *p, long n)
+LOCALPROC SetLongs(uint32_t *p, long n)
 {
 	long i;
 
 	for (i = n; --i >= 0; ) {
-		*p++ = (ui5b) -1;
+		*p++ = (uint32_t) -1;
 	}
 }
 
-LOCALVAR uimr ReserveAllocOffset;
-LOCALVAR ui3p ReserveAllocBigBlock = nullpr;
+LOCALVAR uint32_t ReserveAllocOffset;
+LOCALVAR uint8_t * ReserveAllocBigBlock = nullpr;
 
-#define PowOf2(p) ((uimr)1 << (p))
+#define PowOf2(p) ((uint32_t)1 << (p))
 #define Pow2Mask(p) (PowOf2(p) - 1)
 #define ModPow2(i, p) ((i) & Pow2Mask(p))
 #define FloorDivPow2(i, p) ((i) >> (p))
@@ -834,8 +834,8 @@ LOCALVAR ui3p ReserveAllocBigBlock = nullpr;
 #define CeilPow2Mult(i, p) FloorPow2Mult((i) + Pow2Mask(p), (p))
 	/* warning - CeilPow2Mult evaluates p twice */
 
-GLOBALOSGLUPROC ReserveAllocOneBlock(ui3p *p, uimr n,
-	ui3r align, blnr FillOnes)
+GLOBALOSGLUPROC ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
+	uint8_t align, blnr FillOnes)
 {
 	ReserveAllocOffset = CeilPow2Mult(ReserveAllocOffset, align);
 	if (nullpr == ReserveAllocBigBlock) {
@@ -843,7 +843,7 @@ GLOBALOSGLUPROC ReserveAllocOneBlock(ui3p *p, uimr n,
 	} else {
 		*p = ReserveAllocBigBlock + ReserveAllocOffset;
 		if (FillOnes) {
-			SetLongs((ui5b *)*p, n / 4);
+			SetLongs((uint32_t *)*p, n / 4);
 		}
 	}
 	ReserveAllocOffset += n;
@@ -863,13 +863,13 @@ GLOBALOSGLUPROC ReserveAllocOneBlock(ui3p *p, uimr n,
 #else
 
 #define dbglog_bufsz PowOf2(dbglog_buflnsz)
-LOCALVAR uimr dbglog_bufpos = 0;
+LOCALVAR uint32_t dbglog_bufpos = 0;
 
 LOCALVAR char *dbglog_bufp = nullpr;
 
 LOCALPROC dbglog_ReserveAlloc(void)
 {
-	ReserveAllocOneBlock((ui3p *)&dbglog_bufp, dbglog_bufsz,
+	ReserveAllocOneBlock((uint8_t * *)&dbglog_bufp, dbglog_bufsz,
 		5, falseblnr);
 }
 
@@ -877,7 +877,7 @@ LOCALPROC dbglog_ReserveAlloc(void)
 
 LOCALPROC dbglog_close(void)
 {
-	uimr n = ModPow2(dbglog_bufpos, dbglog_buflnsz);
+	uint32_t n = ModPow2(dbglog_bufpos, dbglog_buflnsz);
 	if (n != 0) {
 		dbglog_write0(dbglog_bufp, n);
 	}
@@ -885,13 +885,13 @@ LOCALPROC dbglog_close(void)
 	dbglog_close0();
 }
 
-LOCALPROC dbglog_write(char *p, uimr L)
+LOCALPROC dbglog_write(char *p, uint32_t L)
 {
-	uimr r;
-	uimr bufposmod;
-	uimr curbufdiv;
-	uimr newbufpos = dbglog_bufpos + L;
-	uimr newbufdiv = FloorDivPow2(newbufpos, dbglog_buflnsz);
+	uint32_t r;
+	uint32_t bufposmod;
+	uint32_t curbufdiv;
+	uint32_t newbufpos = dbglog_bufpos + L;
+	uint32_t newbufdiv = FloorDivPow2(newbufpos, dbglog_buflnsz);
 
 label_retry:
 	curbufdiv = FloorDivPow2(dbglog_bufpos, dbglog_buflnsz);
@@ -911,7 +911,7 @@ label_retry:
 
 #endif /* dbglog_buflnsz defined */
 
-LOCALFUNC uimr CStrLength(char *s)
+LOCALFUNC uint32_t CStrLength(char *s)
 {
 	char *p = s;
 
@@ -932,12 +932,12 @@ GLOBALOSGLUPROC dbglog_writeReturn(void)
 	/* fprintf(DumpFile, "\n"); */
 }
 
-GLOBALOSGLUPROC dbglog_writeHex(uimr x)
+GLOBALOSGLUPROC dbglog_writeHex(uint32_t x)
 {
-	ui3r v;
+	uint8_t v;
 	char s[16];
 	char *p = s + 16;
-	uimr n = 0;
+	uint32_t n = 0;
 
 	do {
 		v = x & 0x0F;
@@ -954,15 +954,15 @@ GLOBALOSGLUPROC dbglog_writeHex(uimr x)
 	/* fprintf(DumpFile, "%d", (int)x); */
 }
 
-GLOBALOSGLUPROC dbglog_writeNum(uimr x)
+GLOBALOSGLUPROC dbglog_writeNum(uint32_t x)
 {
-	uimr newx;
+	uint32_t newx;
 	char s[16];
 	char *p = s + 16;
-	uimr n = 0;
+	uint32_t n = 0;
 
 	do {
-		newx = x / (uimr)10;
+		newx = x / (uint32_t)10;
 		*--p = '0' + (x - newx * 10);
 		x = newx;
 		++n;
@@ -972,7 +972,7 @@ GLOBALOSGLUPROC dbglog_writeNum(uimr x)
 	/* fprintf(DumpFile, "%d", (int)x); */
 }
 
-GLOBALOSGLUPROC dbglog_writeMacChar(ui3r x)
+GLOBALOSGLUPROC dbglog_writeMacChar(uint8_t x)
 {
 	char s;
 
@@ -996,7 +996,7 @@ GLOBALOSGLUPROC dbglog_writeln(char *s)
 	dbglog_writeReturn();
 }
 
-GLOBALOSGLUPROC dbglog_writelnHex(char *s, uimr x)
+GLOBALOSGLUPROC dbglog_writelnHex(char *s, uint32_t x)
 {
 	dbglog_writeCStr(s);
 	dbglog_writeSpace();
@@ -1004,7 +1004,7 @@ GLOBALOSGLUPROC dbglog_writelnHex(char *s, uimr x)
 	dbglog_writeReturn();
 }
 
-GLOBALOSGLUPROC dbglog_writelnNum(char *s, simr v)
+GLOBALOSGLUPROC dbglog_writelnNum(char *s, int32_t v)
 {
 	dbglog_writeCStr(s);
 	dbglog_writeSpace();
@@ -1022,8 +1022,8 @@ GLOBALOSGLUPROC dbglog_writelnNum(char *s, simr v)
 #define MyEvtQIMask (MyEvtQSz - 1)
 
 LOCALVAR MyEvtQEl MyEvtQA[MyEvtQSz];
-LOCALVAR ui4r MyEvtQIn = 0;
-LOCALVAR ui4r MyEvtQOut = 0;
+LOCALVAR uint16_t MyEvtQIn = 0;
+LOCALVAR uint16_t MyEvtQOut = 0;
 
 GLOBALOSGLUFUNC MyEvtQEl * MyEvtQOutP(void)
 {
@@ -1066,14 +1066,14 @@ LOCALFUNC MyEvtQEl * MyEvtQElAlloc(void)
 	return p;
 }
 
-LOCALVAR ui5b theKeys[4];
+LOCALVAR uint32_t theKeys[4];
 
-LOCALPROC Keyboard_UpdateKeyMap(ui3r key, blnr down)
+LOCALPROC Keyboard_UpdateKeyMap(uint8_t key, blnr down)
 {
-	ui3r k = key & 127; /* just for safety */
-	ui3r bit = 1 << (k & 7);
-	ui3b *kp = (ui3b *)theKeys;
-	ui3b *kpi = &kp[k / 8];
+	uint8_t k = key & 127; /* just for safety */
+	uint8_t bit = 1 << (k & 7);
+	uint8_t *kp = (uint8_t *)theKeys;
+	uint8_t *kpi = &kp[k / 8];
 	blnr CurDown = ((*kpi & bit) != 0);
 	if (CurDown != down) {
 		MyEvtQEl *p = MyEvtQElAlloc();
@@ -1111,7 +1111,7 @@ LOCALPROC MyMouseButtonSet(blnr down)
 }
 
 #if EnableFSMouseMotion
-LOCALPROC MyMousePositionSetDelta(ui4r dh, ui4r dv)
+LOCALPROC MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
 	if ((dh != 0) || (dv != 0)) {
 		MyEvtQEl *p = MyEvtQElPreviousIn();
@@ -1132,10 +1132,10 @@ LOCALPROC MyMousePositionSetDelta(ui4r dh, ui4r dv)
 }
 #endif
 
-LOCALVAR ui4b MyMousePosCurV = 0;
-LOCALVAR ui4b MyMousePosCurH = 0;
+LOCALVAR uint16_t MyMousePosCurV = 0;
+LOCALVAR uint16_t MyMousePosCurH = 0;
 
-LOCALPROC MyMousePositionSet(ui4r h, ui4r v)
+LOCALPROC MyMousePositionSet(uint16_t h, uint16_t v)
 {
 	if ((h != MyMousePosCurH) || (v != MyMousePosCurV)) {
 		MyEvtQEl *p = MyEvtQElPreviousIn();
@@ -1157,7 +1157,7 @@ LOCALPROC MyMousePositionSet(ui4r h, ui4r v)
 
 #if 0
 #define Keyboard_TestKeyMap(key) \
-	((((ui3b *)theKeys)[(key) / 8] & (1 << ((key) & 7))) != 0)
+	((((uint8_t *)theKeys)[(key) / 8] & (1 << ((key) & 7))) != 0)
 #endif
 
 LOCALPROC InitKeyCodes(void)
@@ -1174,7 +1174,7 @@ LOCALPROC InitKeyCodes(void)
 #define kKeepMaskOption   (1 << 3)
 #define kKeepMaskShift    (1 << 4)
 
-LOCALPROC DisconnectKeyCodes(ui5b KeepMask)
+LOCALPROC DisconnectKeyCodes(uint32_t KeepMask)
 {
 	/*
 		Called when may miss key ups,
@@ -1186,12 +1186,12 @@ LOCALPROC DisconnectKeyCodes(ui5b KeepMask)
 	int j;
 	int b;
 	int key;
-	ui5b m;
+	uint32_t m;
 
 	for (j = 0; j < 16; ++j) {
-		ui3b k1 = ((ui3b *)theKeys)[j];
+		uint8_t k1 = ((uint8_t *)theKeys)[j];
 		if (0 != k1) {
-			ui3b bit = 1;
+			uint8_t bit = 1;
 			for (b = 0; b < 8; ++b) {
 				if (0 != (k1 & bit)) {
 					key = j * 8 + b;
@@ -1224,7 +1224,7 @@ LOCALPROC MyEvtQTryRecoverFromFull(void)
 LOCALVAR char *SavedBriefMsg = nullpr;
 LOCALVAR char *SavedLongMsg;
 #if WantAbnormalReports
-LOCALVAR ui4r SavedIDMsg = 0;
+LOCALVAR uint16_t SavedIDMsg = 0;
 #endif
 LOCALVAR blnr SavedFatalMsg;
 
@@ -1243,7 +1243,7 @@ LOCALPROC MacMsg(char *briefMsg, char *longMsg, blnr fatal)
 }
 
 #if WantAbnormalReports
-GLOBALOSGLUPROC WarnMsgAbnormalID(ui4r id)
+GLOBALOSGLUPROC WarnMsgAbnormalID(uint16_t id)
 {
 	MacMsg(kStrReportAbnormalTitle,
 		kStrReportAbnormalMessage, falseblnr);
@@ -1273,7 +1273,7 @@ GLOBALOSGLUPROC WarnMsgAbnormalID(ui4r id)
 	Mini vMac pick the same LT_NodeHint and LT_MyStamp.
 */
 
-LOCALVAR ui5b e_p[2] = {
+LOCALVAR uint32_t e_p[2] = {
 	0, 0
 	};
 
@@ -1288,11 +1288,11 @@ LOCALPROC EntropyPoolStir(void)
 			or modify it til it does.
 	*/
 
-	ui5b t0a = e_p[0];
-	ui5b t1a = e_p[1];
+	uint32_t t0a = e_p[0];
+	uint32_t t1a = e_p[1];
 
-	ui5b t0b = t0a * 0xAE3CC725 + 0xD860D735;
-	ui5b t1b = t1a * 0x9FE72885 + 0x641AD0A9;
+	uint32_t t0b = t0a * 0xAE3CC725 + 0xD860D735;
+	uint32_t t1b = t1a * 0x9FE72885 + 0x641AD0A9;
 		/*
 			multiplication constants from
 				"https://arxiv.org/abs/2001.05304",
@@ -1301,14 +1301,14 @@ LOCALPROC EntropyPoolStir(void)
 			addition constants are just random odd numbers.
 		*/
 
-	ui5b t0c = (t0b << 8) + (t1b >> 24);
-	ui5b t1c = (t1b << 8) + (t0b >> 24);
+	uint32_t t0c = (t0b << 8) + (t1b >> 24);
+	uint32_t t1c = (t1b << 8) + (t0b >> 24);
 
 	e_p[0] = t0c;
 	e_p[1] = t1c;
 }
 
-LOCALPROC EntropyPoolAddByte(ui3r v)
+LOCALPROC EntropyPoolAddByte(uint8_t v)
 {
 	e_p[0] += v;
 	e_p[1] += v;
@@ -1316,9 +1316,9 @@ LOCALPROC EntropyPoolAddByte(ui3r v)
 	EntropyPoolStir();
 }
 
-LOCALPROC EntropyPoolAddPtr(ui3p p, uimr n)
+LOCALPROC EntropyPoolAddPtr(uint8_t * p, uint32_t n)
 {
-	uimr i;
+	uint32_t i;
 
 	for (i = n + 1; 0 != --i; ) {
 		EntropyPoolAddByte(*p++);
@@ -1335,7 +1335,7 @@ LOCALPROC EntropyPoolAddPtr(ui3p p, uimr n)
 
 
 
-LOCALVAR ui5b LT_MyStamp = 0;
+LOCALVAR uint32_t LT_MyStamp = 0;
 	/*
 		randomly chosen value included in sent packets.
 		if received packets have different value, then know it

@@ -18,9 +18,9 @@
 	ACTiVation CODE
 */
 
-LOCALFUNC uimr KeyFun0(uimr x, uimr y, uimr m)
+LOCALFUNC uint32_t KeyFun0(uint32_t x, uint32_t y, uint32_t m)
 {
-	uimr r = x + y;
+	uint32_t r = x + y;
 
 	if ((r >= m) || (r < x)) {
 		r -= m;
@@ -29,11 +29,11 @@ LOCALFUNC uimr KeyFun0(uimr x, uimr y, uimr m)
 	return r;
 }
 
-LOCALFUNC uimr KeyFun1(uimr x, uimr y, uimr m)
+LOCALFUNC uint32_t KeyFun1(uint32_t x, uint32_t y, uint32_t m)
 {
-	uimr r = 0;
-	uimr t = x;
-	uimr s = y;
+	uint32_t r = 0;
+	uint32_t t = x;
+	uint32_t s = y;
 
 	while (s > 0) {
 		if (0 != (s & 1)) {
@@ -46,11 +46,11 @@ LOCALFUNC uimr KeyFun1(uimr x, uimr y, uimr m)
 	return r;
 }
 
-LOCALFUNC uimr KeyFun2(uimr x, uimr y, uimr m)
+LOCALFUNC uint32_t KeyFun2(uint32_t x, uint32_t y, uint32_t m)
 {
-	uimr r = 1;
-	uimr t = x;
-	uimr s = y;
+	uint32_t r = 1;
+	uint32_t t = x;
+	uint32_t s = y;
 
 	while (s > 0) {
 		if (0 != (s & 1)) {
@@ -63,22 +63,22 @@ LOCALFUNC uimr KeyFun2(uimr x, uimr y, uimr m)
 	return r;
 }
 
-LOCALFUNC blnr CheckActvCode(ui3p p, blnr *Trial)
+LOCALFUNC blnr CheckActvCode(uint8_t * p, blnr *Trial)
 {
 	blnr IsOk = falseblnr;
-	uimr v0 = do_get_mem_long(p);
-	uimr v1 = do_get_mem_long(p + 4);
+	uint32_t v0 = do_get_mem_long(p);
+	uint32_t v1 = do_get_mem_long(p + 4);
 
 	if (v0 > KeyCon2) {
 		/* v0 too big */
 	} else if (v1 > KeyCon4) {
 		/* v1 too big */
 	} else {
-		uimr t0 = KeyFun0(v0, KeyCon0, KeyCon2);
-		uimr t1 = KeyFun2(KeyCon1, t0, KeyCon2);
-		uimr t2 = KeyFun2(v1, KeyCon3, KeyCon4);
-		uimr t3 = KeyFun0(t2, KeyCon4 - t1, KeyCon4);
-		uimr t4 = KeyFun0(t3, KeyCon4 - KeyCon5, KeyCon4);
+		uint32_t t0 = KeyFun0(v0, KeyCon0, KeyCon2);
+		uint32_t t1 = KeyFun2(KeyCon1, t0, KeyCon2);
+		uint32_t t2 = KeyFun2(v1, KeyCon3, KeyCon4);
+		uint32_t t3 = KeyFun0(t2, KeyCon4 - t1, KeyCon4);
+		uint32_t t4 = KeyFun0(t3, KeyCon4 - KeyCon5, KeyCon4);
 		if ((0 == (t4 >> 8)) && (t4 >= KeyCon6)) {
 			*Trial = falseblnr;
 			IsOk = trueblnr;
@@ -93,9 +93,9 @@ LOCALFUNC blnr CheckActvCode(ui3p p, blnr *Trial)
 
 /* user interface */
 
-LOCALFUNC blnr Key2Digit(ui3r key, ui3r *r)
+LOCALFUNC blnr Key2Digit(uint8_t key, uint8_t *r)
 {
-	ui3r v;
+	uint8_t v;
 
 	switch (key) {
 		case MKC_0:
@@ -148,22 +148,22 @@ LOCALFUNC blnr Key2Digit(ui3r key, ui3r *r)
 }
 
 #define ActvCodeMaxLen 20
-LOCALVAR ui4r ActvCodeLen = 0;
-LOCALVAR ui3b ActvCodeDigits[ActvCodeMaxLen];
+LOCALVAR uint16_t ActvCodeLen = 0;
+LOCALVAR uint8_t ActvCodeDigits[ActvCodeMaxLen];
 
 #define ActvCodeFileLen 8
 
 #if UseActvFile
-FORWARDFUNC tMacErr ActvCodeFileSave(ui3p p);
-FORWARDFUNC tMacErr ActvCodeFileLoad(ui3p p);
+FORWARDFUNC tMacErr ActvCodeFileSave(uint8_t * p);
+FORWARDFUNC tMacErr ActvCodeFileLoad(uint8_t * p);
 #endif
 
-LOCALVAR ui3b CurActvCode[ActvCodeFileLen];
+LOCALVAR uint8_t CurActvCode[ActvCodeFileLen];
 
-LOCALPROC DoActvCodeModeKey(ui3r key)
+LOCALPROC DoActvCodeModeKey(uint8_t key)
 {
-	ui3r digit;
-	ui3r L;
+	uint8_t digit;
+	uint8_t L;
 	int i;
 	blnr Trial;
 
@@ -179,8 +179,8 @@ LOCALPROC DoActvCodeModeKey(ui3r key)
 			NeedWholeScreenDraw = trueblnr;
 			L = ActvCodeDigits[0] + (1 + 9);
 			if (ActvCodeLen == L) {
-				uimr v0 = 0;
-				uimr v1 = 0;
+				uint32_t v0 = 0;
+				uint32_t v1 = 0;
 
 				for (i = 1; i < (ActvCodeDigits[0] + 1); ++i) {
 					v0 = v0 * 10 + ActvCodeDigits[i];
@@ -244,7 +244,7 @@ LOCALPROC DrawCellsActvCodeModeBody(void)
 		DrawCellsOneLineStr("?");
 	} else {
 		int i;
-		ui3r L = ActvCodeDigits[0] + (1 + 9);
+		uint8_t L = ActvCodeDigits[0] + (1 + 9);
 
 		DrawCellsBeginLine();
 		for (i = 0; i < L; ++i) {
@@ -295,7 +295,7 @@ LOCALPROC DrawActvCodeMode(void)
 }
 
 #if UseActvFile
-LOCALPROC ClStrAppendHexLong(int *L0, ui3b *r, ui5r v)
+LOCALPROC ClStrAppendHexLong(int *L0, uint8_t *r, uint32_t v)
 {
 	ClStrAppendHexWord(L0, r, (v >> 16) & 0xFFFF);
 	ClStrAppendHexWord(L0, r, v & 0xFFFF);
@@ -304,13 +304,13 @@ LOCALPROC ClStrAppendHexLong(int *L0, ui3b *r, ui5r v)
 
 LOCALPROC CopyRegistrationStr(void)
 {
-	ui3b ps[ClStrMaxLength];
+	uint8_t ps[ClStrMaxLength];
 	int i;
 	int L;
 	tPbuf j;
 #if UseActvFile
 	int L0;
-	ui5r sum;
+	uint32_t sum;
 
 	ClStrFromSubstCStr(&L0, ps, "^v ");
 

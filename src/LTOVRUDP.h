@@ -61,7 +61,7 @@ LOCALPROC dbglog_writeSockErr(char *s)
 /*
 	Transmit buffer for localtalk data and its metadata
 */
-LOCALVAR ui3b tx_buffer[4 + LT_TxBfMxSz] =
+LOCALVAR uint8_t tx_buffer[4 + LT_TxBfMxSz] =
 	"pppp";
 
 
@@ -241,9 +241,9 @@ LOCALPROC embedMyPID(void)
 	int i;
 
 #if LT_MayHaveEcho
-	ui5r v = LT_MyStamp;
+	uint32_t v = LT_MyStamp;
 #else
-	ui5r v = (ui5r)getpid();
+	uint32_t v = (uint32_t)getpid();
 #endif
 
 	for (i = 0; i < 4; i++) {
@@ -287,12 +287,12 @@ LOCALFUNC int pidInPacketIsMine(void)
 {
 	/* is the PID in the packet my own PID? */
 	int i;
-	ui5r v;
+	uint32_t v;
 
 #if LT_MayHaveEcho
 	v = LT_MyStamp;
 #else
-	v = (ui5r)getpid();
+	v = (uint32_t)getpid();
 #endif
 
 	for (i = 0; i < 4; i++) {

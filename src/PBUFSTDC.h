@@ -24,7 +24,7 @@ LOCALVAR void *PbufDat[NumPbufs];
 #endif
 
 #if IncludePbufs
-LOCALFUNC tMacErr PbufNewFromPtr(void *p, ui5b count, tPbuf *r)
+LOCALFUNC tMacErr PbufNewFromPtr(void *p, uint32_t count, tPbuf *r)
 {
 	tPbuf i;
 	tMacErr err;
@@ -44,7 +44,7 @@ LOCALFUNC tMacErr PbufNewFromPtr(void *p, ui5b count, tPbuf *r)
 #endif
 
 #if IncludePbufs
-LOCALPROC PbufKillToPtr(void **p, ui5r *count, tPbuf r)
+LOCALPROC PbufKillToPtr(void **p, uint32_t *count, tPbuf r)
 {
 	*p = PbufDat[r];
 	*count = PbufSize[r];
@@ -54,7 +54,7 @@ LOCALPROC PbufKillToPtr(void **p, ui5r *count, tPbuf r)
 #endif
 
 #if IncludePbufs
-GLOBALOSGLUFUNC tMacErr PbufNew(ui5b count, tPbuf *r)
+GLOBALOSGLUFUNC tMacErr PbufNew(uint32_t count, tPbuf *r)
 {
 	tMacErr err = mnvm_miscErr;
 
@@ -71,7 +71,7 @@ GLOBALOSGLUFUNC tMacErr PbufNew(ui5b count, tPbuf *r)
 GLOBALOSGLUPROC PbufDispose(tPbuf i)
 {
 	void *p;
-	ui5r count;
+	uint32_t count;
 
 	PbufKillToPtr(&p, &count, i);
 
@@ -97,9 +97,9 @@ LOCALPROC UnInitPbufs(void)
 #endif
 
 #if IncludePbufs
-LOCALFUNC ui3p PbufLock(tPbuf i)
+LOCALFUNC uint8_t * PbufLock(tPbuf i)
 {
-	return (ui3p)PbufDat[i];
+	return (uint8_t *)PbufDat[i];
 }
 #endif
 
@@ -108,10 +108,10 @@ LOCALFUNC ui3p PbufLock(tPbuf i)
 #endif
 
 #if IncludePbufs
-GLOBALOSGLUPROC PbufTransfer(ui3p Buffer,
-	tPbuf i, ui5r offset, ui5r count, blnr IsWrite)
+GLOBALOSGLUPROC PbufTransfer(uint8_t * Buffer,
+	tPbuf i, uint32_t offset, uint32_t count, blnr IsWrite)
 {
-	void *p = ((ui3p)PbufDat[i]) + offset;
+	void *p = ((uint8_t *)PbufDat[i]) + offset;
 	if (IsWrite) {
 		(void) memcpy(p, Buffer, count);
 	} else {

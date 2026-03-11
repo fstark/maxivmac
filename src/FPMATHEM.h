@@ -92,7 +92,7 @@
 	should avoid 64 bit literals.
 */
 
-typedef ui3r flag; /* 0/1 */
+typedef uint8_t flag; /* 0/1 */
 
 /*
 	To fix: softfloat representation of
@@ -158,7 +158,7 @@ enum {
 | and exception flags.
 *----------------------------------------------------------------------------*/
 
-LOCALVAR si3r float_rounding_mode = float_round_nearest_even;
+LOCALVAR int8_t float_rounding_mode = float_round_nearest_even;
 
 
 /*----------------------------------------------------------------------------
@@ -172,14 +172,14 @@ enum {
 	float_flag_underflow = 16,
 	float_flag_inexact   = 32
 };
-LOCALVAR si3r float_exception_flags = 0;
+LOCALVAR int8_t float_exception_flags = 0;
 
 /*----------------------------------------------------------------------------
 | Software IEC/IEEE extended double-precision rounding precision.  Valid
 | values are 32, 64, and 80.
 *----------------------------------------------------------------------------*/
 
-LOCALVAR si3r floatx80_rounding_precision = 80;
+LOCALVAR int8_t floatx80_rounding_precision = 80;
 
 /*----------------------------------------------------------------------------
 | Primitive arithmetic functions, including multi-word arithmetic, and
@@ -207,9 +207,9 @@ Arithmetic Package, Release 2b.
 | The result is stored in the location pointed to by `zPtr'.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEPROC shift32RightJamming( ui5b a, si4r count, ui5b *zPtr )
+LOCALINLINEPROC shift32RightJamming( uint32_t a, int16_t count, uint32_t *zPtr )
 {
-	ui5b z;
+	uint32_t z;
 
 	if ( count == 0 ) {
 		z = a;
@@ -233,7 +233,7 @@ LOCALINLINEPROC shift32RightJamming( ui5b a, si4r count, ui5b *zPtr )
 | The result is stored in the location pointed to by `zPtr'.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEPROC shift64RightJamming( ui6b a, si4r count, ui6b *zPtr )
+LOCALINLINEPROC shift64RightJamming( ui6b a, int16_t count, ui6b *zPtr )
 {
 	ui6b z;
 
@@ -268,10 +268,10 @@ LOCALINLINEPROC shift64RightJamming( ui6b a, si4r count, ui6b *zPtr )
 *----------------------------------------------------------------------------*/
 
 LOCALINLINEPROC shift64ExtraRightJamming(
-	ui6b a0, ui6b a1, si4r count, ui6b *z0Ptr, ui6b *z1Ptr )
+	ui6b a0, ui6b a1, int16_t count, ui6b *z0Ptr, ui6b *z1Ptr )
 {
 	ui6b z0, z1;
-	si3r negCount = ( - count ) & 63;
+	int8_t negCount = ( - count ) & 63;
 
 	if ( count == 0 ) {
 		z1 = a1;
@@ -304,10 +304,10 @@ LOCALINLINEPROC shift64ExtraRightJamming(
 *----------------------------------------------------------------------------*/
 
 LOCALINLINEPROC shift128Right(
-	ui6b a0, ui6b a1, si4r count, ui6b *z0Ptr, ui6b *z1Ptr )
+	ui6b a0, ui6b a1, int16_t count, ui6b *z0Ptr, ui6b *z1Ptr )
 {
 	ui6b z0, z1;
-	si3r negCount = ( - count ) & 63;
+	int8_t negCount = ( - count ) & 63;
 
 	if ( count == 0 ) {
 		z1 = a1;
@@ -338,10 +338,10 @@ LOCALINLINEPROC shift128Right(
 *----------------------------------------------------------------------------*/
 
 LOCALINLINEPROC shift128RightJamming(
-	ui6b a0, ui6b a1, si4r count, ui6b *z0Ptr, ui6b *z1Ptr )
+	ui6b a0, ui6b a1, int16_t count, ui6b *z0Ptr, ui6b *z1Ptr )
 {
 	ui6b z0, z1;
-	si3r negCount = ( - count ) & 63;
+	int8_t negCount = ( - count ) & 63;
 
 	if ( count == 0 ) {
 		z1 = a1;
@@ -391,13 +391,13 @@ LOCALINLINEPROC shift128ExtraRightJamming(
 	ui6b a0,
 	ui6b a1,
 	ui6b a2,
-	si4r count,
+	int16_t count,
 	ui6b *z0Ptr,
 	ui6b *z1Ptr,
 	ui6b *z2Ptr)
 {
 	ui6b z0, z1, z2;
-	si3r negCount = ( - count ) & 63;
+	int8_t negCount = ( - count ) & 63;
 
 	if ( count == 0 ) {
 		z2 = a2;
@@ -444,7 +444,7 @@ LOCALINLINEPROC shift128ExtraRightJamming(
 *----------------------------------------------------------------------------*/
 
 LOCALINLINEPROC shortShift128Left(
-	ui6b a0, ui6b a1, si4r count, ui6b *z0Ptr, ui6b *z1Ptr )
+	ui6b a0, ui6b a1, int16_t count, ui6b *z0Ptr, ui6b *z1Ptr )
 {
 
 	*z1Ptr = a1<<count;
@@ -490,7 +490,7 @@ LOCALINLINEPROC add192(
 	ui6b *z2Ptr)
 {
 	ui6b z0, z1, z2;
-	si3r carry0, carry1;
+	int8_t carry0, carry1;
 
 	z2 = a2 + b2;
 	carry1 = ( z2 < a2 );
@@ -546,7 +546,7 @@ LOCALINLINEPROC
  )
 {
 	ui6b z0, z1, z2;
-	si3r borrow0, borrow1;
+	int8_t borrow0, borrow1;
 
 	z2 = a2 - b2;
 	borrow1 = ( a2 < b2 );
@@ -574,13 +574,13 @@ LOCALINLINEPROC
 #endif
 
 #if HaveUi5to6Mul
-LOCALINLINEPROC Ui5to6Mul( ui5b src1, ui5b src2, ui6b *z)
+LOCALINLINEPROC Ui5to6Mul( uint32_t src1, uint32_t src2, ui6b *z)
 {
 	*z = ((ui6b) src1) * src2;
 }
 #else
 
-LOCALINLINEPROC Ui6fromHiLo(ui5b hi, ui5b lo, ui6b *z)
+LOCALINLINEPROC Ui6fromHiLo(uint32_t hi, uint32_t lo, ui6b *z)
 {
 	*z = (((ui6b)(hi)) << 32) + lo;
 #if 0
@@ -589,22 +589,22 @@ LOCALINLINEPROC Ui6fromHiLo(ui5b hi, ui5b lo, ui6b *z)
 #endif
 }
 
-LOCALPROC Ui5to6Mul( ui5b src1, ui5b src2, ui6b *z)
+LOCALPROC Ui5to6Mul( uint32_t src1, uint32_t src2, ui6b *z)
 {
-	ui4b src1_lo = ui5b_lo(src1);
-	ui4b src2_lo = ui5b_lo(src2);
-	ui4b src1_hi = ui5b_hi(src1);
-	ui4b src2_hi = ui5b_hi(src2);
+	uint16_t src1_lo = ui5b_lo(src1);
+	uint16_t src2_lo = ui5b_lo(src2);
+	uint16_t src1_hi = ui5b_hi(src1);
+	uint16_t src2_hi = ui5b_hi(src2);
 
-	ui5b r0 = ( (ui6b) src1_lo ) * src2_lo;
-	ui5b r1 = ( (ui6b) src1_hi ) * src2_lo;
-	ui5b r2 = ( (ui6b) src1_lo ) * src2_hi;
-	ui5b r3 = ( (ui6b) src1_hi ) * src2_hi;
+	uint32_t r0 = ( (ui6b) src1_lo ) * src2_lo;
+	uint32_t r1 = ( (ui6b) src1_hi ) * src2_lo;
+	uint32_t r2 = ( (ui6b) src1_lo ) * src2_hi;
+	uint32_t r3 = ( (ui6b) src1_hi ) * src2_hi;
 
-	ui5b ra1 = ui5b_hi(r0) + ui5b_lo(r1) + ui5b_lo(r2);
+	uint32_t ra1 = ui5b_hi(r0) + ui5b_lo(r1) + ui5b_lo(r2);
 
-	ui5b lo = (ui5b_lo(ra1) << 16) | ui5b_lo(r0);
-	ui5b hi = ui5b_hi(ra1) + ui5b_hi(r1) + ui5b_hi(r2) + r3;
+	uint32_t lo = (ui5b_lo(ra1) << 16) | ui5b_lo(r0);
+	uint32_t hi = ui5b_hi(ra1) + ui5b_hi(r1) + ui5b_hi(r2) + r3;
 
 	Ui6fromHiLo(hi, lo, z);
 }
@@ -614,7 +614,7 @@ LOCALPROC Ui5to6Mul( ui5b src1, ui5b src2, ui6b *z)
 
 LOCALINLINEPROC mul64To128( ui6b a, ui6b b, ui6b *z0Ptr, ui6b *z1Ptr )
 {
-	ui5b aHigh, aLow, bHigh, bLow;
+	uint32_t aHigh, aLow, bHigh, bLow;
 	ui6b z0, zMiddleA, zMiddleB, z1;
 
 	aLow = a;
@@ -777,18 +777,18 @@ LOCALFUNC ui6b estimateDiv128To64( ui6b a0, ui6b a1, ui6b b )
 | value.
 *----------------------------------------------------------------------------*/
 
-LOCALFUNC ui5b estimateSqrt32( si4r aExp, ui5b a )
+LOCALFUNC uint32_t estimateSqrt32( int16_t aExp, uint32_t a )
 {
-	static const ui4b sqrtOddAdjustments[] = {
+	static const uint16_t sqrtOddAdjustments[] = {
 		0x0004, 0x0022, 0x005D, 0x00B1, 0x011D, 0x019F, 0x0236, 0x02E0,
 		0x039C, 0x0468, 0x0545, 0x0631, 0x072B, 0x0832, 0x0946, 0x0A67
 	};
-	static const ui4b sqrtEvenAdjustments[] = {
+	static const uint16_t sqrtEvenAdjustments[] = {
 		0x0A2D, 0x08AF, 0x075A, 0x0629, 0x051A, 0x0429, 0x0356, 0x029E,
 		0x0200, 0x0179, 0x0109, 0x00AF, 0x0068, 0x0034, 0x0012, 0x0002
 	};
-	si3r index;
-	ui5b z;
+	int8_t index;
+	uint32_t z;
 
 	index = ( a>>27 ) & 15;
 	if ( aExp & 1 ) {
@@ -800,9 +800,9 @@ LOCALFUNC ui5b estimateSqrt32( si4r aExp, ui5b a )
 		z = 0x8000 + ( a>>17 ) - sqrtEvenAdjustments[ index ];
 		z = a / z + z;
 		z = ( 0x20000 <= z ) ? 0xFFFF8000 : ( z<<15 );
-		if ( z <= a ) return (ui5b) ( ( (si5b) a )>>1 );
+		if ( z <= a ) return (uint32_t) ( ( (int32_t) a )>>1 );
 	}
-	return ( (ui5b) Ui6Div( ( ( (ui6b) a )<<31 ), z ) ) + ( z>>1 );
+	return ( (uint32_t) Ui6Div( ( ( (ui6b) a )<<31 ), z ) ) + ( z>>1 );
 
 }
 
@@ -811,9 +811,9 @@ LOCALFUNC ui5b estimateSqrt32( si4r aExp, ui5b a )
 | `a'.  If `a' is zero, 32 is returned.
 *----------------------------------------------------------------------------*/
 
-LOCALFUNC si3r countLeadingZeros32( ui5b a )
+LOCALFUNC int8_t countLeadingZeros32( uint32_t a )
 {
-	static const si3r countLeadingZerosHigh[] = {
+	static const int8_t countLeadingZerosHigh[] = {
 		8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
 		3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -831,7 +831,7 @@ LOCALFUNC si3r countLeadingZeros32( ui5b a )
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	};
-	si3r shiftCount;
+	int8_t shiftCount;
 
 	shiftCount = 0;
 	if ( a < 0x10000 ) {
@@ -852,9 +852,9 @@ LOCALFUNC si3r countLeadingZeros32( ui5b a )
 | `a'.  If `a' is zero, 64 is returned.
 *----------------------------------------------------------------------------*/
 
-LOCALFUNC si3r countLeadingZeros64( ui6b a )
+LOCALFUNC int8_t countLeadingZeros64( ui6b a )
 {
-	si3r shiftCount;
+	int8_t shiftCount;
 
 	shiftCount = 0;
 	if ( a < ( (ui6b) 1 )<<32 ) {
@@ -954,9 +954,9 @@ enum {
 
 /*----------------------------------------------------------------------------
 | Underflow tininess-detection mode, statically initialized to default value.
-| (The declaration in `softfloat.h' must match the `si3r' type here.)
+| (The declaration in `softfloat.h' must match the `int8_t' type here.)
 *----------------------------------------------------------------------------*/
-LOCALVAR si3r float_detect_tininess = float_tininess_after_rounding;
+LOCALVAR int8_t float_detect_tininess = float_tininess_after_rounding;
 
 /*----------------------------------------------------------------------------
 | Routine to raise any or all of the software IEC/IEEE floating-point
@@ -969,7 +969,7 @@ LOCALVAR si3r float_detect_tininess = float_tininess_after_rounding;
 | should be simply `float_exception_flags |= flags;'.
 *----------------------------------------------------------------------------*/
 
-LOCALFUNC void float_raise( si3r flags )
+LOCALFUNC void float_raise( int8_t flags )
 {
 
 	float_exception_flags |= flags;
@@ -1049,7 +1049,7 @@ LOCALFUNC floatx80 commonNaNToFloatx80( commonNaNT a )
 	floatx80 z;
 
 	z.low = LIT64( 0xC000000000000000 ) | ( a.high>>1 );
-	z.high = ( ( (ui4b) a.sign )<<15 ) | 0x7FFF;
+	z.high = ( ( (uint16_t) a.sign )<<15 ) | 0x7FFF;
 	return z;
 
 }
@@ -1218,12 +1218,12 @@ Package, Release 2b.
 | positive or negative integer is returned.
 *----------------------------------------------------------------------------*/
 
-LOCALFUNC si5r roundAndPackInt32( flag zSign, ui6b absZ )
+LOCALFUNC int32_t roundAndPackInt32( flag zSign, ui6b absZ )
 {
-	si3r roundingMode;
+	int8_t roundingMode;
 	flag roundNearestEven;
-	si3r roundIncrement, roundBits;
-	si5r z;
+	int8_t roundIncrement, roundBits;
+	int32_t z;
 
 	roundingMode = float_rounding_mode;
 	roundNearestEven = ( roundingMode == float_round_nearest_even );
@@ -1249,7 +1249,7 @@ LOCALFUNC si5r roundAndPackInt32( flag zSign, ui6b absZ )
 	if ( zSign ) z = - z;
 	if ( ( absZ>>32 ) || ( z && ( ( z < 0 ) ^ zSign ) ) ) {
 		float_raise( float_flag_invalid );
-		return zSign ? (si5b) 0x80000000 : 0x7FFFFFFF;
+		return zSign ? (int32_t) 0x80000000 : 0x7FFFFFFF;
 	}
 	if ( roundBits ) float_exception_flags |= float_flag_inexact;
 	return z;
@@ -1273,7 +1273,7 @@ LOCALINLINEFUNC ui6b extractFloatx80Frac( floatx80 a )
 | value `a'.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEFUNC si5r extractFloatx80Exp( floatx80 a )
+LOCALINLINEFUNC int32_t extractFloatx80Exp( floatx80 a )
 {
 
 	return a.high & 0x7FFF;
@@ -1300,9 +1300,9 @@ LOCALINLINEFUNC flag extractFloatx80Sign( floatx80 a )
 *----------------------------------------------------------------------------*/
 
 LOCALPROC
- normalizeFloatx80Subnormal( ui6b aSig, si5r *zExpPtr, ui6b *zSigPtr )
+ normalizeFloatx80Subnormal( ui6b aSig, int32_t *zExpPtr, ui6b *zSigPtr )
 {
-	si3r shiftCount;
+	int8_t shiftCount;
 
 	shiftCount = countLeadingZeros64( aSig );
 	*zSigPtr = aSig<<shiftCount;
@@ -1315,12 +1315,12 @@ LOCALPROC
 | extended double-precision floating-point value, returning the result.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEFUNC floatx80 packFloatx80( flag zSign, si5r zExp, ui6b zSig )
+LOCALINLINEFUNC floatx80 packFloatx80( flag zSign, int32_t zExp, ui6b zSig )
 {
 	floatx80 z;
 
 	z.low = zSig;
-	z.high = ( ( (ui4b) zSign )<<15 ) + zExp;
+	z.high = ( ( (uint16_t) zSign )<<15 ) + zExp;
 	return z;
 
 }
@@ -1351,10 +1351,10 @@ LOCALINLINEFUNC floatx80 packFloatx80( flag zSign, si5r zExp, ui6b zSig )
 
 LOCALFUNC floatx80
  roundAndPackFloatx80(
-	 si3r roundingPrecision, flag zSign, si5r zExp, ui6b zSig0, ui6b zSig1
+	 int8_t roundingPrecision, flag zSign, int32_t zExp, ui6b zSig0, ui6b zSig1
  )
 {
-	si3r roundingMode;
+	int8_t roundingMode;
 	flag roundNearestEven, increment, isTiny;
 	si6r roundIncrement, roundMask, roundBits;
 
@@ -1388,7 +1388,7 @@ LOCALFUNC floatx80
 		}
 	}
 	roundBits = zSig0 & roundMask;
-	if ( 0x7FFD <= (ui5b) ( zExp - 1 ) ) {
+	if ( 0x7FFD <= (uint32_t) ( zExp - 1 ) ) {
 		if (    ( 0x7FFE < zExp )
 			 || ( ( zExp == 0x7FFE ) && ( zSig0 + roundIncrement < zSig0 ) )
 		   ) {
@@ -1442,7 +1442,7 @@ LOCALFUNC floatx80
 			}
 		}
 	}
-	if ( 0x7FFD <= (ui5b) ( zExp - 1 ) ) {
+	if ( 0x7FFD <= (uint32_t) ( zExp - 1 ) ) {
 		if (    ( 0x7FFE < zExp )
 			 || (    ( zExp == 0x7FFE )
 				  && ( zSig0 == LIT64( 0xFFFFFFFFFFFFFFFF ) )
@@ -1519,10 +1519,10 @@ LOCALFUNC floatx80
 
 LOCALFUNC floatx80
  normalizeRoundAndPackFloatx80(
-	 si3r roundingPrecision, flag zSign, si5r zExp, ui6b zSig0, ui6b zSig1
+	 int8_t roundingPrecision, flag zSign, int32_t zExp, ui6b zSig0, ui6b zSig1
  )
 {
-	si3r shiftCount;
+	int8_t shiftCount;
 
 	if ( zSig0 == 0 ) {
 		zSig0 = zSig1;
@@ -1568,7 +1568,7 @@ LOCALINLINEFUNC ui6b extractFloat128Frac0( float128 a )
 | `a'.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEFUNC si5r extractFloat128Exp( float128 a )
+LOCALINLINEFUNC int32_t extractFloat128Exp( float128 a )
 {
 
 	return ( a.high>>48 ) & 0x7FFF;
@@ -1600,12 +1600,12 @@ LOCALPROC
  normalizeFloat128Subnormal(
 	 ui6b aSig0,
 	 ui6b aSig1,
-	 si5r *zExpPtr,
+	 int32_t *zExpPtr,
 	 ui6b *zSig0Ptr,
 	 ui6b *zSig1Ptr
  )
 {
-	si3r shiftCount;
+	int8_t shiftCount;
 
 	if ( aSig0 == 0 ) {
 		shiftCount = countLeadingZeros64( aSig1 ) - 15;
@@ -1641,7 +1641,7 @@ LOCALPROC
 *----------------------------------------------------------------------------*/
 
 LOCALINLINEFUNC float128
- packFloat128( flag zSign, si5r zExp, ui6b zSig0, ui6b zSig1 )
+ packFloat128( flag zSign, int32_t zExp, ui6b zSig0, ui6b zSig1 )
 {
 	float128 z;
 
@@ -1674,9 +1674,9 @@ LOCALINLINEFUNC float128
 
 LOCALFUNC float128
  roundAndPackFloat128(
-	 flag zSign, si5r zExp, ui6b zSig0, ui6b zSig1, ui6b zSig2 )
+	 flag zSign, int32_t zExp, ui6b zSig0, ui6b zSig1, ui6b zSig2 )
 {
-	si3r roundingMode;
+	int8_t roundingMode;
 	flag roundNearestEven, increment, isTiny;
 
 	roundingMode = float_rounding_mode;
@@ -1695,7 +1695,7 @@ LOCALFUNC float128
 			}
 		}
 	}
-	if ( 0x7FFD <= (ui5b) zExp ) {
+	if ( 0x7FFD <= (uint32_t) zExp ) {
 		if (    ( 0x7FFD < zExp )
 			 || (    ( zExp == 0x7FFD )
 				  && eq128(
@@ -1774,9 +1774,9 @@ LOCALFUNC float128
 
 LOCALFUNC float128
  normalizeRoundAndPackFloat128(
-	 flag zSign, si5r zExp, ui6b zSig0, ui6b zSig1 )
+	 flag zSign, int32_t zExp, ui6b zSig0, ui6b zSig1 )
 {
-	si3r shiftCount;
+	int8_t shiftCount;
 	ui6b zSig2;
 
 	if ( zSig0 == 0 ) {
@@ -1807,11 +1807,11 @@ LOCALFUNC float128
 | Arithmetic.
 *----------------------------------------------------------------------------*/
 
-LOCALFUNC floatx80 int32_to_floatx80( si5r a )
+LOCALFUNC floatx80 int32_to_floatx80( int32_t a )
 {
 	flag zSign;
-	ui5r absA;
-	si3r shiftCount;
+	uint32_t absA;
+	int8_t shiftCount;
 	ui6b zSig;
 
 	if ( a == 0 ) return packFloatx80( 0, 0, 0 );
@@ -1833,10 +1833,10 @@ LOCALFUNC floatx80 int32_to_floatx80( si5r a )
 | overflows, the largest integer with the same sign as `a' is returned.
 *----------------------------------------------------------------------------*/
 
-LOCALFUNC si5r floatx80_to_int32( floatx80 a )
+LOCALFUNC int32_t floatx80_to_int32( floatx80 a )
 {
 	flag aSign;
-	si5r aExp, shiftCount;
+	int32_t aExp, shiftCount;
 	ui6b aSig;
 
 	aSig = extractFloatx80Frac( a );
@@ -1861,12 +1861,12 @@ LOCALFUNC si5r floatx80_to_int32( floatx80 a )
 *----------------------------------------------------------------------------*/
 
 #if cIncludeFPUUnused
-LOCALFUNC si5r floatx80_to_int32_round_to_zero( floatx80 a )
+LOCALFUNC int32_t floatx80_to_int32_round_to_zero( floatx80 a )
 {
 	flag aSign;
-	si5r aExp, shiftCount;
+	int32_t aExp, shiftCount;
 	ui6b aSig, savedASig;
-	si5r z;
+	int32_t z;
 
 	aSig = extractFloatx80Frac( a );
 	aExp = extractFloatx80Exp( a );
@@ -1887,7 +1887,7 @@ LOCALFUNC si5r floatx80_to_int32_round_to_zero( floatx80 a )
 	if ( ( z < 0 ) ^ aSign ) {
  invalid:
 		float_raise( float_flag_invalid );
-		return aSign ? (si5b) 0x80000000 : 0x7FFFFFFF;
+		return aSign ? (int32_t) 0x80000000 : 0x7FFFFFFF;
 	}
 	if ( ( aSig<<shiftCount ) != savedASig ) {
 		float_exception_flags |= float_flag_inexact;
@@ -1909,7 +1909,7 @@ LOCALFUNC si5r floatx80_to_int32_round_to_zero( floatx80 a )
 LOCALFUNC float128 floatx80_to_float128( floatx80 a )
 {
 	flag aSign;
-	si4r aExp;
+	int16_t aExp;
 	ui6b aSig, zSig0, zSig1;
 
 	aSig = extractFloatx80Frac( a );
@@ -1935,9 +1935,9 @@ LOCALFUNC float128 floatx80_to_float128( floatx80 a )
 LOCALFUNC floatx80 floatx80_round_to_int( floatx80 a )
 {
 	flag aSign;
-	si5r aExp;
+	int32_t aExp;
 	ui6b lastBitMask, roundBitsMask;
-	si3r roundingMode;
+	int8_t roundingMode;
 	floatx80 z;
 
 	aExp = extractFloatx80Exp( a );
@@ -2008,9 +2008,9 @@ LOCALFUNC floatx80 floatx80_round_to_int( floatx80 a )
 
 LOCALFUNC floatx80 addFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
 {
-	si5r aExp, bExp, zExp;
+	int32_t aExp, bExp, zExp;
 	ui6b aSig, bSig, zSig0, zSig1;
-	si5r expDiff;
+	int32_t expDiff;
 
 	aSig = extractFloatx80Frac( a );
 	aExp = extractFloatx80Exp( a );
@@ -2074,9 +2074,9 @@ LOCALFUNC floatx80 addFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
 
 LOCALFUNC floatx80 subFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
 {
-	si5r aExp, bExp, zExp;
+	int32_t aExp, bExp, zExp;
 	ui6b aSig, bSig, zSig0, zSig1;
-	si5r expDiff;
+	int32_t expDiff;
 	floatx80 z;
 
 	aSig = extractFloatx80Frac( a );
@@ -2183,7 +2183,7 @@ LOCALFUNC floatx80 floatx80_sub( floatx80 a, floatx80 b )
 LOCALFUNC floatx80 floatx80_mul( floatx80 a, floatx80 b )
 {
 	flag aSign, bSign, zSign;
-	si5r aExp, bExp, zExp;
+	int32_t aExp, bExp, zExp;
 	ui6b aSig, bSig, zSig0, zSig1;
 	floatx80 z;
 
@@ -2242,7 +2242,7 @@ LOCALFUNC floatx80 floatx80_mul( floatx80 a, floatx80 b )
 LOCALFUNC floatx80 floatx80_div( floatx80 a, floatx80 b )
 {
 	flag aSign, bSign, zSign;
-	si5r aExp, bExp, zExp;
+	int32_t aExp, bExp, zExp;
 	ui6b aSig, bSig, zSig0, zSig1;
 	ui6b rem0, rem1, rem2, term0, term1, term2;
 	floatx80 z;
@@ -2337,7 +2337,7 @@ LOCALFUNC floatx80 floatx80_div( floatx80 a, floatx80 b )
 LOCALFUNC floatx80 floatx80_rem( floatx80 a, floatx80 b )
 {
 	flag aSign, /* bSign, */ zSign;
-	si5r aExp, bExp, expDiff;
+	int32_t aExp, bExp, expDiff;
 	ui6b aSig0, aSig1, bSig;
 	ui6b q, term0, term1, alternateASig0, alternateASig1;
 	floatx80 z;
@@ -2437,7 +2437,7 @@ LOCALFUNC floatx80 floatx80_rem( floatx80 a, floatx80 b )
 LOCALFUNC floatx80 floatx80_sqrt( floatx80 a )
 {
 	flag aSign;
-	si5r aExp, zExp;
+	int32_t aExp, zExp;
 	ui6b aSig0, aSig1, zSig0, zSig1, doubleZSig0;
 	ui6b rem0, rem1, rem2, rem3, term0, term1, term2, term3;
 	floatx80 z;
@@ -2524,7 +2524,7 @@ LOCALFUNC flag floatx80_eq( floatx80 a, floatx80 b )
 		   ( a.low == b.low )
 		&& (    ( a.high == b.high )
 			 || (    ( a.low == 0 )
-				  && ( (ui4b) ( ( a.high | b.high )<<1 ) == 0 ) )
+				  && ( (uint16_t) ( ( a.high | b.high )<<1 ) == 0 ) )
 		   );
 
 }
@@ -2555,7 +2555,7 @@ LOCALFUNC flag floatx80_le( floatx80 a, floatx80 b )
 	if ( aSign != bSign ) {
 		return
 			   aSign
-			|| (    ( ( (ui4b) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
+			|| (    ( ( (uint16_t) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
 				 == 0 );
 	}
 	return
@@ -2590,7 +2590,7 @@ LOCALFUNC flag floatx80_lt( floatx80 a, floatx80 b )
 	if ( aSign != bSign ) {
 		return
 			   aSign
-			&& (    ( ( (ui4b) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
+			&& (    ( ( (uint16_t) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
 				 != 0 );
 	}
 	return
@@ -2623,7 +2623,7 @@ LOCALFUNC flag floatx80_eq_signaling( floatx80 a, floatx80 b )
 		   ( a.low == b.low )
 		&& (    ( a.high == b.high )
 			 || (    ( a.low == 0 )
-				  && ( (ui4b) ( ( a.high | b.high )<<1 ) == 0 ) )
+				  && ( (uint16_t) ( ( a.high | b.high )<<1 ) == 0 ) )
 		   );
 
 }
@@ -2657,7 +2657,7 @@ LOCALFUNC flag floatx80_le_quiet( floatx80 a, floatx80 b )
 	if ( aSign != bSign ) {
 		return
 			   aSign
-			|| (    ( ( (ui4b) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
+			|| (    ( ( (uint16_t) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
 				 == 0 );
 	}
 	return
@@ -2695,7 +2695,7 @@ LOCALFUNC flag floatx80_lt_quiet( floatx80 a, floatx80 b )
 	if ( aSign != bSign ) {
 		return
 			   aSign
-			&& (    ( ( (ui4b) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
+			&& (    ( ( (uint16_t) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
 				 != 0 );
 	}
 	return
@@ -2717,7 +2717,7 @@ LOCALFUNC flag floatx80_lt_quiet( floatx80 a, floatx80 b )
 LOCALFUNC floatx80 float128_to_floatx80( float128 a )
 {
 	flag aSign;
-	si5r aExp;
+	int32_t aExp;
 	ui6b aSig0, aSig1;
 
 	aSig1 = extractFloat128Frac1( a );
@@ -2752,9 +2752,9 @@ LOCALFUNC floatx80 float128_to_floatx80( float128 a )
 
 LOCALFUNC float128 addFloat128Sigs( float128 a, float128 b, flag zSign )
 {
-	si5r aExp, bExp, zExp;
+	int32_t aExp, bExp, zExp;
 	ui6b aSig0, aSig1, bSig0, bSig1, zSig0, zSig1, zSig2;
-	si5r expDiff;
+	int32_t expDiff;
 
 	aSig1 = extractFloat128Frac1( a );
 	aSig0 = extractFloat128Frac0( a );
@@ -2830,9 +2830,9 @@ LOCALFUNC float128 addFloat128Sigs( float128 a, float128 b, flag zSign )
 
 LOCALFUNC float128 subFloat128Sigs( float128 a, float128 b, flag zSign )
 {
-	si5r aExp, bExp, zExp;
+	int32_t aExp, bExp, zExp;
 	ui6b aSig0, aSig1, bSig0, bSig1, zSig0, zSig1;
-	si5r expDiff;
+	int32_t expDiff;
 	float128 z;
 
 	aSig1 = extractFloat128Frac1( a );
@@ -2955,7 +2955,7 @@ LOCALFUNC float128 float128_sub( float128 a, float128 b )
 LOCALFUNC float128 float128_mul( float128 a, float128 b )
 {
 	flag aSign, bSign, zSign;
-	si5r aExp, bExp, zExp;
+	int32_t aExp, bExp, zExp;
 	ui6b aSig0, aSig1, bSig0, bSig1, zSig0, zSig1, zSig2, zSig3;
 	float128 z;
 
@@ -3019,7 +3019,7 @@ LOCALFUNC float128 float128_mul( float128 a, float128 b )
 LOCALFUNC float128 float128_div( float128 a, float128 b )
 {
 	flag aSign, bSign, zSign;
-	si5r aExp, bExp, zExp;
+	int32_t aExp, bExp, zExp;
 	ui6b aSig0, aSig1, bSig0, bSig1, zSig0, zSig1, zSig2;
 	ui6b rem0, rem1, rem2, rem3, term0, term1, term2, term3;
 	float128 z;
@@ -3106,9 +3106,9 @@ typedef unsigned int float32;
 *----------------------------------------------------------------------------*/
 
 LOCALPROC
- normalizeFloat32Subnormal( ui5b aSig, si4r *zExpPtr, ui5b *zSigPtr )
+ normalizeFloat32Subnormal( uint32_t aSig, int16_t *zExpPtr, uint32_t *zSigPtr )
 {
-	si3r shiftCount;
+	int8_t shiftCount;
 
 	shiftCount = countLeadingZeros32( aSig ) - 8;
 	*zSigPtr = aSig<<shiftCount;
@@ -3120,7 +3120,7 @@ LOCALPROC
 | Returns the fraction bits of the single-precision floating-point value `a'.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEFUNC ui5b extractFloat32Frac( float32 a )
+LOCALINLINEFUNC uint32_t extractFloat32Frac( float32 a )
 {
 
 	return a & 0x007FFFFF;
@@ -3131,7 +3131,7 @@ LOCALINLINEFUNC ui5b extractFloat32Frac( float32 a )
 | Returns the exponent bits of the single-precision floating-point value `a'.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEFUNC si4r extractFloat32Exp( float32 a )
+LOCALINLINEFUNC int16_t extractFloat32Exp( float32 a )
 {
 
 	return ( a>>23 ) & 0xFF;
@@ -3189,8 +3189,8 @@ LOCALFUNC commonNaNT float32ToCommonNaN( float32 a )
 LOCALFUNC floatx80 float32_to_floatx80( float32 a )
 {
 	flag aSign;
-	si4r aExp;
-	ui5b aSig;
+	int16_t aExp;
+	uint32_t aSig;
 
 	aSig = extractFloat32Frac( a );
 	aExp = extractFloat32Exp( a );
@@ -3219,10 +3219,10 @@ LOCALFUNC floatx80 float32_to_floatx80( float32 a )
 | significand.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEFUNC float32 packFloat32( flag zSign, si4r zExp, ui5b zSig )
+LOCALINLINEFUNC float32 packFloat32( flag zSign, int16_t zExp, uint32_t zSig )
 {
 
-	return ( ( (ui5b) zSign )<<31 ) + ( ( (ui5b) zExp )<<23 ) + zSig;
+	return ( ( (uint32_t) zSign )<<31 ) + ( ( (uint32_t) zExp )<<23 ) + zSig;
 
 }
 
@@ -3248,11 +3248,11 @@ LOCALINLINEFUNC float32 packFloat32( flag zSign, si4r zExp, ui5b zSig )
 | Binary Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 
-LOCALFUNC float32 roundAndPackFloat32( flag zSign, si4r zExp, ui5b zSig )
+LOCALFUNC float32 roundAndPackFloat32( flag zSign, int16_t zExp, uint32_t zSig )
 {
-	si3r roundingMode;
+	int8_t roundingMode;
 	flag roundNearestEven;
-	si3r roundIncrement, roundBits;
+	int8_t roundIncrement, roundBits;
 	flag isTiny;
 
 	roundingMode = float_rounding_mode;
@@ -3273,10 +3273,10 @@ LOCALFUNC float32 roundAndPackFloat32( flag zSign, si4r zExp, ui5b zSig )
 		}
 	}
 	roundBits = zSig & 0x7F;
-	if ( 0xFD <= (ui4b) zExp ) {
+	if ( 0xFD <= (uint16_t) zExp ) {
 		if (    ( 0xFD < zExp )
 			 || (    ( zExp == 0xFD )
-				  && ( (si5b) ( zSig + roundIncrement ) < 0 ) )
+				  && ( (int32_t) ( zSig + roundIncrement ) < 0 ) )
 		   ) {
 			float_raise( float_flag_overflow | float_flag_inexact );
 			return packFloat32( zSign, 0xFF, 0 ) - ( roundIncrement == 0 );
@@ -3308,7 +3308,7 @@ LOCALFUNC float32 roundAndPackFloat32( flag zSign, si4r zExp, ui5b zSig )
 LOCALFUNC float32 commonNaNToFloat32( commonNaNT a )
 {
 
-	return ( ( (ui5b) a.sign )<<31 ) | 0x7FC00000 | ( a.high>>41 );
+	return ( ( (uint32_t) a.sign )<<31 ) | 0x7FC00000 | ( a.high>>41 );
 
 }
 
@@ -3322,7 +3322,7 @@ LOCALFUNC float32 commonNaNToFloat32( commonNaNT a )
 LOCALFUNC float32 floatx80_to_float32( floatx80 a )
 {
 	flag aSign;
-	si5r aExp;
+	int32_t aExp;
 	ui6b aSig;
 
 	aSig = extractFloatx80Frac( a );
@@ -3358,7 +3358,7 @@ LOCALINLINEFUNC ui6b extractFloat64Frac( float64 a )
 | Returns the exponent bits of the double-precision floating-point value `a'.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEFUNC si4r extractFloat64Exp( float64 a )
+LOCALINLINEFUNC int16_t extractFloat64Exp( float64 a )
 {
 
 	return ( a>>52 ) & 0x7FF;
@@ -3416,9 +3416,9 @@ LOCALFUNC commonNaNT float64ToCommonNaN( float64 a )
 *----------------------------------------------------------------------------*/
 
 LOCALPROC
- normalizeFloat64Subnormal( ui6b aSig, si4r *zExpPtr, ui6b *zSigPtr )
+ normalizeFloat64Subnormal( ui6b aSig, int16_t *zExpPtr, ui6b *zSigPtr )
 {
-	si3r shiftCount;
+	int8_t shiftCount;
 
 	shiftCount = countLeadingZeros64( aSig ) - 11;
 	*zSigPtr = aSig<<shiftCount;
@@ -3436,7 +3436,7 @@ LOCALPROC
 LOCALFUNC floatx80 float64_to_floatx80( float64 a )
 {
 	flag aSign;
-	si4r aExp;
+	int16_t aExp;
 	ui6b aSig;
 
 	aSig = extractFloat64Frac( a );
@@ -3467,7 +3467,7 @@ LOCALFUNC floatx80 float64_to_floatx80( float64 a )
 | significand.
 *----------------------------------------------------------------------------*/
 
-LOCALINLINEFUNC float64 packFloat64( flag zSign, si4r zExp, ui6b zSig )
+LOCALINLINEFUNC float64 packFloat64( flag zSign, int16_t zExp, ui6b zSig )
 {
 
 	return ( ( (ui6b) zSign )<<63 ) + ( ( (ui6b) zExp )<<52 ) + zSig;
@@ -3496,11 +3496,11 @@ LOCALINLINEFUNC float64 packFloat64( flag zSign, si4r zExp, ui6b zSig )
 | Binary Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 
-LOCALFUNC float64 roundAndPackFloat64( flag zSign, si4r zExp, ui6b zSig )
+LOCALFUNC float64 roundAndPackFloat64( flag zSign, int16_t zExp, ui6b zSig )
 {
-	si3r roundingMode;
+	int8_t roundingMode;
 	flag roundNearestEven;
-	si4r roundIncrement, roundBits;
+	int16_t roundIncrement, roundBits;
 	flag isTiny;
 
 	roundingMode = float_rounding_mode;
@@ -3521,7 +3521,7 @@ LOCALFUNC float64 roundAndPackFloat64( flag zSign, si4r zExp, ui6b zSig )
 		}
 	}
 	roundBits = zSig & 0x3FF;
-	if ( 0x7FD <= (ui4b) zExp ) {
+	if ( 0x7FD <= (uint16_t) zExp ) {
 		if (    ( 0x7FD < zExp )
 			 || (    ( zExp == 0x7FD )
 				  && ( (si6b) ( zSig + roundIncrement ) < 0 ) )
@@ -3573,7 +3573,7 @@ LOCALFUNC float64 commonNaNToFloat64( commonNaNT a )
 LOCALFUNC float64 floatx80_to_float64( floatx80 a )
 {
 	flag aSign;
-	si5r aExp;
+	int32_t aExp;
 	ui6b aSig, zSig;
 
 	aSig = extractFloatx80Frac( a );
@@ -3593,11 +3593,11 @@ LOCALFUNC float64 floatx80_to_float64( floatx80 a )
 
 /* ----- end from original file "softfloat.c" ----- */
 
-typedef si4r Bit16s;
-typedef si5r Bit32s;
+typedef int16_t Bit16s;
+typedef int32_t Bit32s;
 typedef si6r Bit64s;
 
-typedef ui5r Bit32u;
+typedef uint32_t Bit32u;
 typedef ui6r Bit64u;
 
 #define int16_indefinite 0x8000
@@ -5638,27 +5638,27 @@ approximation_completed:
 
 typedef floatx80 myfpr;
 
-LOCALPROC myfp_FromExtendedFormat(myfpr *r, ui4r v2, ui5r v1, ui5r v0)
+LOCALPROC myfp_FromExtendedFormat(myfpr *r, uint16_t v2, uint32_t v1, uint32_t v0)
 {
 	r->high = v2;
 	r->low = (((ui6b)v1) << 32) | (v0 & 0xFFFFFFFF);
 }
 
-LOCALPROC myfp_ToExtendedFormat(myfpr *dd, ui4r *v2, ui5r *v1, ui5r *v0)
+LOCALPROC myfp_ToExtendedFormat(myfpr *dd, uint16_t *v2, uint32_t *v1, uint32_t *v0)
 {
 	*v0 = ((ui6b) dd->low) & 0xFFFFFFFF;
 	*v1 = (((ui6b) dd->low) >> 32) & 0xFFFFFFFF;
 	*v2 = dd->high;
 }
 
-LOCALPROC myfp_FromDoubleFormat(myfpr *r, ui5r v1, ui5r v0)
+LOCALPROC myfp_FromDoubleFormat(myfpr *r, uint32_t v1, uint32_t v0)
 {
 	float64 t = (float64)((((ui6b)v1) << 32) | (v0 & 0xFFFFFFFF));
 
 	*r = float64_to_floatx80(t);
 }
 
-LOCALPROC myfp_ToDoubleFormat(myfpr *dd, ui5r *v1, ui5r *v0)
+LOCALPROC myfp_ToDoubleFormat(myfpr *dd, uint32_t *v1, uint32_t *v0)
 {
 	float64 t = floatx80_to_float64(*dd);
 
@@ -5666,22 +5666,22 @@ LOCALPROC myfp_ToDoubleFormat(myfpr *dd, ui5r *v1, ui5r *v0)
 	*v1 = (((ui6b) t) >> 32) & 0xFFFFFFFF;
 }
 
-LOCALPROC myfp_FromSingleFormat(myfpr *r, ui5r x)
+LOCALPROC myfp_FromSingleFormat(myfpr *r, uint32_t x)
 {
 	*r = float32_to_floatx80(x);
 }
 
-LOCALFUNC ui5r myfp_ToSingleFormat(myfpr *ff)
+LOCALFUNC uint32_t myfp_ToSingleFormat(myfpr *ff)
 {
 	return floatx80_to_float32(*ff);
 }
 
-LOCALPROC myfp_FromLong(myfpr *r, ui5r x)
+LOCALPROC myfp_FromLong(myfpr *r, uint32_t x)
 {
 	*r = int32_to_floatx80( x );
 }
 
-LOCALFUNC ui5r myfp_ToLong(myfpr *x)
+LOCALFUNC uint32_t myfp_ToLong(myfpr *x)
 {
 	return floatx80_to_int32( *x );
 }
@@ -5762,7 +5762,7 @@ LOCALPROC myfp_GetExp(myfpr *r, myfpr *x)
 
 LOCALPROC myfp_floor(myfpr *r, myfpr *x)
 {
-	si3r SaveRoundingMode = float_rounding_mode;
+	int8_t SaveRoundingMode = float_rounding_mode;
 
 	float_rounding_mode = float_round_down;
 	*r = floatx80_round_to_int(*x);
@@ -5771,7 +5771,7 @@ LOCALPROC myfp_floor(myfpr *r, myfpr *x)
 
 LOCALPROC myfp_IntRZ(myfpr *r, myfpr *x)
 {
-	si3r SaveRoundingMode = float_rounding_mode;
+	int8_t SaveRoundingMode = float_rounding_mode;
 
 	float_rounding_mode = float_round_to_zero;
 	*r = floatx80_round_to_int(*x);
@@ -6000,7 +6000,7 @@ LOCALPROC myfp_SinCos(myfpr *r_sin, myfpr *r_cos, myfpr *source)
 	(void) fsincos(*source, r_sin, r_cos);
 }
 
-LOCALFUNC blnr myfp_getCR(myfpr *r, ui4b opmode)
+LOCALFUNC blnr myfp_getCR(myfpr *r, uint16_t opmode)
 {
 	switch (opmode) {
 		case 0x00:
@@ -6149,7 +6149,7 @@ LOCALFUNC blnr myfp_getCR(myfpr *r, ui4b opmode)
 
 /* Floating point control register */
 
-LOCALPROC myfp_SetFPCR(ui5r v)
+LOCALPROC myfp_SetFPCR(uint32_t v)
 {
 	switch ((v >> 4) & 0x03) {
 		case 0:
@@ -6187,9 +6187,9 @@ LOCALPROC myfp_SetFPCR(ui5r v)
 	}
 }
 
-LOCALFUNC ui5r myfp_GetFPCR(void)
+LOCALFUNC uint32_t myfp_GetFPCR(void)
 {
-	ui5r v = 0;
+	uint32_t v = 0;
 
 	switch (float_rounding_mode) {
 		case float_round_nearest_even:
@@ -6222,25 +6222,25 @@ LOCALFUNC ui5r myfp_GetFPCR(void)
 
 LOCALVAR struct myfp_envStruct
 {
-	ui5r FPSR;  /* Floating point status register */
+	uint32_t FPSR;  /* Floating point status register */
 } myfp_env;
 
-LOCALPROC myfp_SetFPSR(ui5r v)
+LOCALPROC myfp_SetFPSR(uint32_t v)
 {
 	myfp_env.FPSR = v;
 }
 
-LOCALFUNC ui5r myfp_GetFPSR(void)
+LOCALFUNC uint32_t myfp_GetFPSR(void)
 {
 	return myfp_env.FPSR;
 }
 
-LOCALFUNC ui3r myfp_GetConditionCodeByte(void)
+LOCALFUNC uint8_t myfp_GetConditionCodeByte(void)
 {
 	return (myfp_env.FPSR >> 24) & 0x0F;
 }
 
-LOCALPROC myfp_SetConditionCodeByte(ui3r v)
+LOCALPROC myfp_SetConditionCodeByte(uint8_t v)
 {
 	myfp_env.FPSR = ((myfp_env.FPSR & 0x00FFFFFF)
 		| (v << 24));

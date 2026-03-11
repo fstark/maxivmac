@@ -37,7 +37,7 @@
 #define RAMSafetyMarginFudge 4
 
 #define kRAM_Size (kRAMa_Size + kRAMb_Size)
-EXPORTVAR(ui3p, RAM)
+EXPORTVAR(uint8_t *, RAM)
 	/*
 		allocated by OSGLUxxx to be at least
 			kRAM_Size + RAMSafetyMarginFudge
@@ -46,11 +46,11 @@ EXPORTVAR(ui3p, RAM)
 	*/
 
 #if EmVidCard
-EXPORTVAR(ui3p, VidROM)
+EXPORTVAR(uint8_t *, VidROM)
 #endif
 
 #if IncludeVidMem
-EXPORTVAR(ui3p, VidMem)
+EXPORTVAR(uint8_t *, VidMem)
 #endif
 
 EXPORTPROC MemOverlay_ChangeNtfy(void);
@@ -62,14 +62,14 @@ EXPORTPROC Addr32_ChangeNtfy(void);
 /*
 	representation of pointer into memory of emulated computer.
 */
-typedef ui5b CPTR;
+typedef uint32_t CPTR;
 
 /*
 	mapping of address space to real memory
 */
 
-EXPORTFUNC ui3p get_real_address0(ui5b L, blnr WritableMem, CPTR addr,
-	ui5b *actL);
+EXPORTFUNC uint8_t * get_real_address0(uint32_t L, blnr WritableMem, CPTR addr,
+	uint32_t *actL);
 
 /*
 	memory access routines that can use when have address
@@ -109,13 +109,13 @@ EXPORTFUNC ui3p get_real_address0(ui5b L, blnr WritableMem, CPTR addr,
 EXPORTFUNC blnr AddrSpac_Init(void);
 
 
-#define ui5r_FromSByte(x) ((ui5r)(si5r)(si3b)(ui3b)(x))
-#define ui5r_FromSWord(x) ((ui5r)(si5r)(si4b)(ui4b)(x))
-#define ui5r_FromSLong(x) ((ui5r)(si5r)(si5b)(ui5b)(x))
+#define ui5r_FromSByte(x) ((uint32_t)(int32_t)(int8_t)(uint8_t)(x))
+#define ui5r_FromSWord(x) ((uint32_t)(int32_t)(int16_t)(uint16_t)(x))
+#define ui5r_FromSLong(x) ((uint32_t)(int32_t)(int32_t)(uint32_t)(x))
 
-#define ui5r_FromUByte(x) ((ui5r)(ui3b)(x))
-#define ui5r_FromUWord(x) ((ui5r)(ui4b)(x))
-#define ui5r_FromULong(x) ((ui5r)(ui5b)(x))
+#define ui5r_FromUByte(x) ((uint32_t)(uint8_t)(x))
+#define ui5r_FromUWord(x) ((uint32_t)(uint16_t)(x))
+#define ui5r_FromULong(x) ((uint32_t)(uint32_t)(x))
 
 
 #if WantDisasm
@@ -130,8 +130,8 @@ EXPORTPROC dbglog_WriteMemArrow(blnr WriteMem);
 EXPORTPROC dbglog_WriteNote(char *s);
 EXPORTPROC dbglog_WriteSetBool(char *s, blnr v);
 EXPORTPROC dbglog_AddrAccess(char *s,
-	ui5r Data, blnr WriteMem, ui5r addr);
-EXPORTPROC dbglog_Access(char *s, ui5r Data, blnr WriteMem);
+	uint32_t Data, blnr WriteMem, uint32_t addr);
+EXPORTPROC dbglog_Access(char *s, uint32_t Data, blnr WriteMem);
 #endif
 
 #if ! WantAbnormalReports
@@ -142,7 +142,7 @@ EXPORTPROC dbglog_Access(char *s, ui5r Data, blnr WriteMem);
 #else
 #define ReportAbnormalID(id, s) DoReportAbnormalID(id)
 #endif
-EXPORTPROC DoReportAbnormalID(ui4r id
+EXPORTPROC DoReportAbnormalID(uint16_t id
 #if dbglog_HAVE
 	, char *s
 #endif
@@ -178,17 +178,17 @@ enum {
 	kNumICTs
 };
 
-EXPORTPROC ICT_add(int taskid, ui5b n);
+EXPORTPROC ICT_add(int taskid, uint32_t n);
 
-#define iCountt ui5b
+#define iCountt uint32_t
 EXPORTFUNC iCountt GetCuriCount(void);
 EXPORTPROC ICT_Zap(void);
 
-EXPORTVAR(uimr, ICTactive)
+EXPORTVAR(uint32_t, ICTactive)
 EXPORTVAR(iCountt, ICTwhen[kNumICTs])
 EXPORTVAR(iCountt, NextiCount)
 
-EXPORTVAR(ui3b, Wires[kNumWires])
+EXPORTVAR(uint8_t, Wires[kNumWires])
 
 #define kLn2CycleScale 6
 #define kCycleScale (1 << kLn2CycleScale)
@@ -203,7 +203,7 @@ EXPORTVAR(ui3b, Wires[kNumWires])
 
 #define HaveMasterMyEvtQLock EmClassicKbrd
 #if HaveMasterMyEvtQLock
-EXPORTVAR(ui4r, MasterMyEvtQLock)
+EXPORTVAR(uint16_t, MasterMyEvtQLock)
 #endif
 EXPORTFUNC blnr FindKeyEvent(int *VirtualKey, blnr *KeyDown);
 
@@ -239,7 +239,7 @@ enum {
 
 #define kcom_callcheck 0x5B17
 
-EXPORTVAR(ui5r, my_disk_icon_addr)
+EXPORTVAR(uint32_t, my_disk_icon_addr)
 
 EXPORTPROC Memory_Reset(void);
 
@@ -249,15 +249,15 @@ EXPORTPROC customreset(void);
 
 struct ATTer {
 	struct ATTer *Next;
-	ui5r cmpmask;
-	ui5r cmpvalu;
-	ui5r Access;
-	ui5r usemask; /* Should be one less than a power of two. */
-	ui3p usebase;
-	ui3r MMDV;
-	ui3r Ntfy;
-	ui4r Pad0;
-	ui5r Pad1; /* make 32 byte structure, on 32 bit systems */
+	uint32_t cmpmask;
+	uint32_t cmpvalu;
+	uint32_t Access;
+	uint32_t usemask; /* Should be one less than a power of two. */
+	uint8_t * usebase;
+	uint8_t MMDV;
+	uint8_t Ntfy;
+	uint16_t Pad0;
+	uint32_t Pad1; /* make 32 byte structure, on 32 bit systems */
 };
 typedef struct ATTer ATTer;
 typedef ATTer *ATTep;
@@ -274,6 +274,6 @@ typedef ATTer *ATTep;
 #define kATTA_mmdvmask (1 << kATTA_mmdvbit)
 #define kATTA_ntfymask (1 << kATTA_ntfybit)
 
-EXPORTFUNC ui5b MMDV_Access(ATTep p, ui5b Data,
+EXPORTFUNC uint32_t MMDV_Access(ATTep p, uint32_t Data,
 	blnr WriteMem, blnr ByteSize, CPTR addr);
 EXPORTFUNC blnr MemAccessNtfy(ATTep pT);

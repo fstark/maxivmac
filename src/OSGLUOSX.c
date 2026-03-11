@@ -630,7 +630,7 @@ LOCALFUNC blnr HaveMyCGCursorIsVisible(void)
 
 /* --- some simple utilities --- */
 
-GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, si5b byteCount)
+GLOBALOSGLUPROC MyMoveBytes(anyp srcPtr, anyp destPtr, int32_t byteCount)
 {
 	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
 }
@@ -649,7 +649,7 @@ LOCALPROC PStrFromChar(ps3p r, char x)
 		this is used in
 	*/
 
-#define To_tMacErr(result) ((tMacErr)(ui4b)(result))
+#define To_tMacErr(result) ((tMacErr)(uint16_t)(result))
 
 #define CheckSaveMacErr(result) (CheckSavetMacErr(To_tMacErr(result)))
 
@@ -665,7 +665,7 @@ LOCALPROC UniCharStrFromSubstCStr(int *L, UniChar *x, char *s)
 {
 	int i;
 	int L0;
-	ui3b ps[ClStrMaxLength];
+	uint8_t ps[ClStrMaxLength];
 
 	ClStrFromSubstCStr(&L0, ps, s);
 
@@ -869,7 +869,7 @@ LOCALFUNC blnr dbglog_open0(void)
 	return (mnvm_noErr == err);
 }
 
-LOCALPROC dbglog_write0(char *s, uimr L)
+LOCALPROC dbglog_write0(char *s, uint32_t L)
 {
 	ByteCount actualCount;
 
@@ -910,7 +910,7 @@ LOCALPROC dbglog_close0(void)
 
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
 
-LOCALVAR ui5b TrueEmulatedTime = 0;
+LOCALVAR uint32_t TrueEmulatedTime = 0;
 
 LOCALVAR EventTime NextTickChangeTime;
 
@@ -949,18 +949,18 @@ GLOBALOSGLUFUNC blnr ExtraTimeNotOver(void)
 
 /* LOCALVAR EventTime ETimeBase; */
 LOCALVAR CFAbsoluteTime ATimeBase;
-LOCALVAR ui5b TimeSecBase;
+LOCALVAR uint32_t TimeSecBase;
 
 LOCALFUNC blnr CheckDateTime(void)
 {
-	ui5b NewMacDateInSecond = TimeSecBase
-		+ (ui5b)(CFAbsoluteTimeGetCurrent() - ATimeBase);
+	uint32_t NewMacDateInSecond = TimeSecBase
+		+ (uint32_t)(CFAbsoluteTimeGetCurrent() - ATimeBase);
 	/*
-		ui5b NewMacDateInSecond = TimeSecBase
-			+ (ui5b)(GetCurrentEventTime() - ETimeBase);
+		uint32_t NewMacDateInSecond = TimeSecBase
+			+ (uint32_t)(GetCurrentEventTime() - ETimeBase);
 	*/
 	/*
-		ui5b NewMacDateInSecond = ((ui5b)(CFAbsoluteTimeGetCurrent()))
+		uint32_t NewMacDateInSecond = ((uint32_t)(CFAbsoluteTimeGetCurrent()))
 			+ 3061137600UL;
 	*/
 
@@ -980,9 +980,9 @@ LOCALFUNC blnr CheckDateTime(void)
 
 LOCALVAR SInt16 Drives[NumDrives]; /* open disk image files */
 
-GLOBALOSGLUFUNC tMacErr vSonyTransfer(blnr IsWrite, ui3p Buffer,
-	tDrive Drive_No, ui5r Sony_Start, ui5r Sony_Count,
-	ui5r *Sony_ActCount)
+GLOBALOSGLUFUNC tMacErr vSonyTransfer(blnr IsWrite, uint8_t * Buffer,
+	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
+	uint32_t *Sony_ActCount)
 {
 	ByteCount actualCount;
 	tMacErr result;
@@ -1012,7 +1012,7 @@ GLOBALOSGLUFUNC tMacErr vSonyTransfer(blnr IsWrite, ui3p Buffer,
 	return result;
 }
 
-GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, ui5r *Sony_Count)
+GLOBALOSGLUFUNC tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
 {
 	SInt64 forkSize;
 	tMacErr err = To_tMacErr(
@@ -1182,31 +1182,31 @@ LOCALFUNC blnr EntropyGather(void)
 	{
 		EventTime v = GetCurrentEventTime();
 
-		EntropyPoolAddPtr((ui3p)&v, sizeof(v) / sizeof(ui3b));
+		EntropyPoolAddPtr((uint8_t *)&v, sizeof(v) / sizeof(uint8_t));
 	}
 
 	{
 		CFAbsoluteTime v = CFAbsoluteTimeGetCurrent();
 
-		EntropyPoolAddPtr((ui3p)&v, sizeof(v) / sizeof(ui3b));
+		EntropyPoolAddPtr((uint8_t *)&v, sizeof(v) / sizeof(uint8_t));
 	}
 
 	{
 		Point v;
 
 		GetGlobalMouse(&v);
-		EntropyPoolAddPtr((ui3p)&v, sizeof(v) / sizeof(ui3b));
+		EntropyPoolAddPtr((uint8_t *)&v, sizeof(v) / sizeof(uint8_t));
 	}
 
 	{
 		ProcessSerialNumber v;
 
 		(void) GetFrontProcess(&v);
-		EntropyPoolAddPtr((ui3p)&v, sizeof(v) / sizeof(ui3b));
+		EntropyPoolAddPtr((uint8_t *)&v, sizeof(v) / sizeof(uint8_t));
 	}
 
 	{
-		ui5b dat[2];
+		uint32_t dat[2];
 		int fd;
 
 		if (-1 == (fd = open("/dev/urandom", O_RDONLY))) {
@@ -1314,7 +1314,7 @@ LOCALPROC MyScaleRect(Rect *r)
 #endif
 
 LOCALPROC SetScrnRectFromCoords(Rect *r,
-	si4b top, si4b left, si4b bottom, si4b right)
+	int16_t top, int16_t left, int16_t bottom, int16_t right)
 {
 	r->left = left;
 	r->right = right;
@@ -1346,9 +1346,9 @@ LOCALPROC SetScrnRectFromCoords(Rect *r,
 #endif
 }
 
-LOCALVAR ui3p ScalingBuff = nullpr;
+LOCALVAR uint8_t * ScalingBuff = nullpr;
 
-LOCALVAR ui3p CLUT_final;
+LOCALVAR uint8_t * CLUT_final;
 
 #define CLUT_finalsz1 (256 * 8)
 
@@ -1400,8 +1400,8 @@ LOCALVAR ui3p CLUT_final;
 
 #endif
 
-LOCALPROC UpdateLuminanceCopy(si4b top, si4b left,
-	si4b bottom, si4b right)
+LOCALPROC UpdateLuminanceCopy(int16_t top, int16_t left,
+	int16_t bottom, int16_t right)
 {
 	int i;
 
@@ -1413,9 +1413,9 @@ LOCALPROC UpdateLuminanceCopy(si4b top, si4b left,
 		if (! ColorTransValid) {
 			int j;
 			int k;
-			ui5p p4;
+			uint32_t * p4;
 
-			p4 = (ui5p)CLUT_final;
+			p4 = (uint32_t *)CLUT_final;
 			for (i = 0; i < 256; ++i) {
 				for (k = 1 << (3 - vMacScreenDepth); --k >= 0; ) {
 					j = (i >> (k << vMacScreenDepth)) & (CLUT_size - 1);
@@ -1438,7 +1438,7 @@ LOCALPROC UpdateLuminanceCopy(si4b top, si4b left,
 	{
 		if (! ColorTransValid) {
 			int k;
-			ui3p p4 = (ui3p)CLUT_final;
+			uint8_t * p4 = (uint8_t *)CLUT_final;
 
 			for (i = 0; i < 256; ++i) {
 				for (k = 8; --k >= 0; ) {
@@ -1460,15 +1460,15 @@ LOCALVAR short GLvOffset;
 #define UseAGLdoublebuff 0
 #endif
 
-LOCALPROC MyDrawWithOpenGL(ui4r top, ui4r left, ui4r bottom, ui4r right)
+LOCALPROC MyDrawWithOpenGL(uint16_t top, uint16_t left, uint16_t bottom, uint16_t right)
 {
 	if (NULL == ctx) {
 		/* oops */
 	} else if (GL_TRUE != aglSetCurrentContext(ctx)) {
 		/* err = aglReportError() */
 	} else {
-		si4b top2;
-		si4b left2;
+		int16_t top2;
+		int16_t left2;
 
 #if UseAGLdoublebuff
 		/* redraw all */
@@ -1891,7 +1891,7 @@ LOCALPROC SetCursorArrow(void)
 }
 
 #if EnableMoveMouse
-LOCALFUNC blnr MyMoveMouse(si4b h, si4b v)
+LOCALFUNC blnr MyMoveMouse(int16_t h, int16_t v)
 {
 	Point CurMousePos;
 	Rect r;
@@ -1993,8 +1993,8 @@ LOCALPROC AdjustMouseMotionGrab(void)
 #if EnableFSMouseMotion
 LOCALPROC MyMouseConstrain(void)
 {
-	si4b shiftdh;
-	si4b shiftdv;
+	int16_t shiftdh;
+	int16_t shiftdv;
 
 	if (SavedMouseH < ViewHStart + (ViewHSize / 4)) {
 		shiftdh = ViewHSize / 2;
@@ -2056,11 +2056,11 @@ LOCALFUNC blnr InitLocationDat(void)
 
 	ReadLocation(&loc);
 #if AutoLocation
-	CurMacLatitude = (ui5b)loc.latitude;
-	CurMacLongitude = (ui5b)loc.longitude;
+	CurMacLatitude = (uint32_t)loc.latitude;
+	CurMacLongitude = (uint32_t)loc.longitude;
 #endif
 #if AutoTimeZone
-	CurMacDelta = (ui5b)loc.u.gmtDelta;
+	CurMacDelta = (uint32_t)loc.u.gmtDelta;
 #endif
 #endif
 
@@ -2125,13 +2125,13 @@ LOCALPROC StartUpTimeAdjust(void)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 
 LOCALVAR tpSoundSamp TheSoundBuffer = nullpr;
-volatile static ui4b ThePlayOffset;
-volatile static ui4b TheFillOffset;
-volatile static ui4b MinFilledSoundBuffs;
+volatile static uint16_t ThePlayOffset;
+volatile static uint16_t TheFillOffset;
+volatile static uint16_t MinFilledSoundBuffs;
 #if dbglog_SoundBuffStats
-LOCALVAR ui4b MaxFilledSoundBuffs;
+LOCALVAR uint16_t MaxFilledSoundBuffs;
 #endif
-LOCALVAR ui4b TheWriteOffset;
+LOCALVAR uint16_t TheWriteOffset;
 
 LOCALPROC MySound_Start0(void)
 {
@@ -2145,10 +2145,10 @@ LOCALPROC MySound_Start0(void)
 #endif
 }
 
-GLOBALOSGLUFUNC tpSoundSamp MySound_BeginWrite(ui4r n, ui4r *actL)
+GLOBALOSGLUFUNC tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL)
 {
-	ui4b ToFillLen = kAllBuffLen - (TheWriteOffset - ThePlayOffset);
-	ui4b WriteBuffContig =
+	uint16_t ToFillLen = kAllBuffLen - (TheWriteOffset - ThePlayOffset);
+	uint16_t WriteBuffContig =
 		kOneBuffLen - (TheWriteOffset & kOneBuffMask);
 
 	if (WriteBuffContig < n) {
@@ -2182,7 +2182,7 @@ LOCALPROC ConvertSoundBlockToNative(tpSoundSamp p)
 LOCALPROC MySound_WroteABlock(void)
 {
 #if (4 == kLn2SoundSampSz)
-	ui4b PrevWriteOffset = TheWriteOffset - kOneBuffLen;
+	uint16_t PrevWriteOffset = TheWriteOffset - kOneBuffLen;
 	tpSoundSamp p = TheSoundBuffer + (PrevWriteOffset & kAllBuffMask);
 #endif
 
@@ -2196,9 +2196,9 @@ LOCALPROC MySound_WroteABlock(void)
 
 #if dbglog_SoundBuffStats
 	{
-		ui4b ToPlayLen = TheFillOffset
+		uint16_t ToPlayLen = TheFillOffset
 			- ThePlayOffset;
-		ui4b ToPlayBuffs = ToPlayLen >> kLnOneBuffLen;
+		uint16_t ToPlayBuffs = ToPlayLen >> kLnOneBuffLen;
 
 		if (ToPlayBuffs > MaxFilledSoundBuffs) {
 			MaxFilledSoundBuffs = ToPlayBuffs;
@@ -2207,7 +2207,7 @@ LOCALPROC MySound_WroteABlock(void)
 #endif
 }
 
-LOCALFUNC blnr MySound_EndWrite0(ui4r actL)
+LOCALFUNC blnr MySound_EndWrite0(uint16_t actL)
 {
 	blnr v;
 
@@ -2255,7 +2255,7 @@ LOCALPROC RampSound(tpSoundSamp p,
 	trSoundSamp BeginVal, trSoundSamp EndVal)
 {
 	int i;
-	ui5r v = (((ui5r)BeginVal) << kLnOneBuffLen) + (kLnOneBuffLen >> 1);
+	uint32_t v = (((uint32_t)BeginVal) << kLnOneBuffLen) + (kLnOneBuffLen >> 1);
 
 	for (i = kOneBuffLen; --i >= 0; ) {
 		*p++ = v >> kLnOneBuffLen;
@@ -2271,9 +2271,9 @@ LOCALPROC RampSound(tpSoundSamp p,
 
 struct MySoundR {
 	tpSoundSamp fTheSoundBuffer;
-	volatile ui4b (*fPlayOffset);
-	volatile ui4b (*fFillOffset);
-	volatile ui4b (*fMinFilledSoundBuffs);
+	volatile uint16_t (*fPlayOffset);
+	volatile uint16_t (*fFillOffset);
+	volatile uint16_t (*fMinFilledSoundBuffs);
 
 	volatile blnr PlayingBuffBlock;
 	volatile trSoundSamp lastv;
@@ -2336,9 +2336,9 @@ MySound_CallBack(SndChannelPtr theChannel, SndCommand * theCallBackCmd)
 		tpSoundSamp p;
 		trSoundSamp v1 = v0;
 		blnr WantRamp = falseblnr;
-		ui4b CurPlayOffset = *datp->fPlayOffset;
-		ui4b ToPlayLen = *datp->fFillOffset - CurPlayOffset;
-		ui4b FilledSoundBuffs = ToPlayLen >> kLnOneBuffLen;
+		uint16_t CurPlayOffset = *datp->fPlayOffset;
+		uint16_t ToPlayLen = *datp->fFillOffset - CurPlayOffset;
+		uint16_t FilledSoundBuffs = ToPlayLen >> kLnOneBuffLen;
 
 		if (FilledSoundBuffs < *datp->fMinFilledSoundBuffs) {
 			*datp->fMinFilledSoundBuffs = FilledSoundBuffs;
@@ -2480,7 +2480,7 @@ LOCALPROC MySound_Stop(void)
 #endif
 
 	if (NULL != sndChannel) {
-		ui4r retry_limit = 50; /* half of a second */
+		uint16_t retry_limit = 50; /* half of a second */
 		SCStatus r;
 
 		cur_audio.wantplaying = falseblnr;
@@ -2607,7 +2607,7 @@ LOCALFUNC blnr MySound_Init(void)
 	return falseblnr;
 }
 
-GLOBALOSGLUPROC MySound_EndWrite(ui4r actL)
+GLOBALOSGLUPROC MySound_EndWrite(uint16_t actL)
 {
 	if (MySound_EndWrite0(actL)) {
 	}
@@ -3187,14 +3187,14 @@ LOCALFUNC tMacErr InsertADiskFromNameEtc(FSRef *ParentRef,
 }
 
 #if IncludeSonyNew
-LOCALFUNC tMacErr WriteZero(SInt16 refnum, ui5b L)
+LOCALFUNC tMacErr WriteZero(SInt16 refnum, uint32_t L)
 {
 #define ZeroBufferSize 2048
 	tMacErr err = mnvm_noErr;
-	ui5b i;
-	ui3b buffer[ZeroBufferSize];
+	uint32_t i;
+	uint8_t buffer[ZeroBufferSize];
 	ByteCount actualCount;
-	ui5b offset = 0;
+	uint32_t offset = 0;
 
 	memset(&buffer, 0, ZeroBufferSize);
 
@@ -3246,7 +3246,7 @@ LOCALFUNC tMacErr MyCreateFileCFStringRef(FSRef *saveFileParent,
 
 #if IncludeSonyNew
 LOCALFUNC tMacErr MakeNewDisk0(FSRef *saveFileParent,
-	CFStringRef saveFileName, ui5b L)
+	CFStringRef saveFileName, uint32_t L)
 {
 	tMacErr err;
 	FSRef NewRef;
@@ -3401,7 +3401,7 @@ LOCALPROC InsertADisk0(void)
 }
 
 #if IncludeSonyNew
-LOCALPROC MakeNewDisk(ui5b L, CFStringRef NewDiskName)
+LOCALPROC MakeNewDisk(uint32_t L, CFStringRef NewDiskName)
 {
 #if SaveDialogEnable
 	NavDialogRef theSaveDialog;
@@ -3579,7 +3579,7 @@ LOCALFUNC tMacErr OpenActvCodeFile(SInt16 *refnum)
 	return err;
 }
 
-LOCALFUNC tMacErr ActvCodeFileLoad(ui3p p)
+LOCALFUNC tMacErr ActvCodeFileLoad(uint8_t * p)
 {
 	tMacErr err;
 	SInt16 refnum;
@@ -3594,7 +3594,7 @@ LOCALFUNC tMacErr ActvCodeFileLoad(ui3p p)
 	return err;
 }
 
-LOCALFUNC tMacErr ActvCodeFileSave(ui3p p)
+LOCALFUNC tMacErr ActvCodeFileSave(uint8_t * p)
 {
 	tMacErr err;
 	SInt16 refnum;
@@ -4464,10 +4464,10 @@ struct MyWState {
 #if MayFullScreen
 	short f_hOffset;
 	short f_vOffset;
-	ui4r f_ViewHSize;
-	ui4r f_ViewVSize;
-	ui4r f_ViewHStart;
-	ui4r f_ViewVStart;
+	uint16_t f_ViewHSize;
+	uint16_t f_ViewVSize;
+	uint16_t f_ViewHStart;
+	uint16_t f_ViewVStart;
 #endif
 #if VarFullScreen
 	blnr f_UseFullScreen;
@@ -5320,7 +5320,7 @@ GLOBALOSGLUPROC WaitForNextTick(void)
 {
 	OSStatus err;
 	EventRef theEvent;
-	ui3r NumChecks;
+	uint8_t NumChecks;
 	EventTimeout inTimeout;
 	EventTargetRef theTarget = GetEventDispatcherTarget();
 
@@ -5417,7 +5417,7 @@ LOCALPROC ReserveAllocAll(void)
 		, 5, falseblnr);
 	ReserveAllocOneBlock(&CLUT_final, CLUT_finalsz, 5, falseblnr);
 #if MySoundEnabled
-	ReserveAllocOneBlock((ui3p *)&TheSoundBuffer,
+	ReserveAllocOneBlock((uint8_t * *)&TheSoundBuffer,
 		dbhBufferSize, 5, falseblnr);
 #endif
 
@@ -5426,14 +5426,14 @@ LOCALPROC ReserveAllocAll(void)
 
 LOCALFUNC blnr AllocMyMemory(void)
 {
-	uimr n;
+	uint32_t n;
 	blnr IsOk = falseblnr;
 
 	ReserveAllocOffset = 0;
 	ReserveAllocBigBlock = nullpr;
 	ReserveAllocAll();
 	n = ReserveAllocOffset;
-	ReserveAllocBigBlock = (ui3p)calloc(1, n);
+	ReserveAllocBigBlock = (uint8_t *)calloc(1, n);
 	if (NULL == ReserveAllocBigBlock) {
 		MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, trueblnr);
 	} else {

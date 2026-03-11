@@ -272,7 +272,7 @@ LOCALFUNC int InitLocalTalk(void)
 	*/
 	*((uint32_t*)(&tx_buffer[14])) = htonl(LT_MyStamp /* getpid() */);
 
-	LT_TxBuffer = (ui3p)&tx_buffer[20];
+	LT_TxBuffer = (uint8_t *)&tx_buffer[20];
 
 	MyRxBuffer = malloc(device_buffer_size);
 	if (NULL == MyRxBuffer) {
@@ -370,7 +370,7 @@ label_retry:
 			dbglog_writeReturn();
 #endif
 
-			LT_RxBuffer    = (ui3p)start;
+			LT_RxBuffer    = (uint8_t *)start;
 			LT_RxBuffSz    = llap_length;
 		} else {
 			goto label_retry;
