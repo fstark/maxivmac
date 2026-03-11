@@ -27,7 +27,7 @@
 #include "core/common.h"
 #include "cpu/m68k.h"
 
-#include "SCSIEMDV.h"
+#include "devices/scsi.h"
 
 #define scsiRd   0x00
 #define scsiWr   0x01

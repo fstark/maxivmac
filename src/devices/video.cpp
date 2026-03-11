@@ -32,9 +32,9 @@
 #if EmVidCard
 
 #include "cpu/m68k.h"
-#include "SONYEMDV.h"
+#include "devices/sony.h"
 
-#include "VIDEMDEV.h"
+#include "devices/video.h"
 
 /*
 	ReportAbnormalID unused 0x0A08 - 0x0AFF

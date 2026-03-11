@@ -26,7 +26,7 @@
 
 #include "core/common.h"
 
-#include "SCRNEMDV.h"
+#include "devices/screen.h"
 
 #if ! IncludeVidMem
 #define kMain_Offset      0x5900

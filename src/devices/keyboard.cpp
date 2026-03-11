@@ -26,7 +26,7 @@
 
 #if EmClassicKbrd
 
-#include "KBRDEMDV.h"
+#include "devices/keyboard.h"
 
 #ifdef _VIA_Debug
 #include <stdio.h>

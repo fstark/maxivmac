@@ -22,9 +22,9 @@
 
 #if EmPMU
 
-#include "VIAEMDEV.h"
+#include "devices/via.h"
 
-#include "PMUEMDEV.h"
+#include "devices/pmu.h"
 
 /*
 	ReportAbnormalID unused 0x0E0E - 0x0EFF

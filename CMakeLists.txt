@@ -68,22 +68,22 @@ set(MINIVMAC_SOURCES
     src/core/machine.cpp
     src/cpu/m68k_tables.cpp
     src/cpu/m68k.cpp
-    src/VIAEMDEV.c
-    src/VIA2EMDV.c
-    src/IWMEMDEV.c
-    src/SCCEMDEV.c
-    src/RTCEMDEV.c
-    src/ROMEMDEV.c
-    src/SCSIEMDV.c
-    src/SONYEMDV.c
-    src/SCRNEMDV.c
-    src/VIDEMDEV.c
-    src/MOUSEMDV.c
-    src/ADBEMDEV.c
-    src/ASCEMDEV.c
-    src/SNDEMDEV.c
-    src/KBRDEMDV.c
-    src/PMUEMDEV.c
+    src/devices/via.cpp
+    src/devices/via2.cpp
+    src/devices/iwm.cpp
+    src/devices/scc.cpp
+    src/devices/rtc.cpp
+    src/devices/rom.cpp
+    src/devices/scsi.cpp
+    src/devices/sony.cpp
+    src/devices/screen.cpp
+    src/devices/video.cpp
+    src/devices/mouse.cpp
+    src/devices/adb.cpp
+    src/devices/asc.cpp
+    src/devices/sound.cpp
+    src/devices/keyboard.cpp
+    src/devices/pmu.cpp
     src/cpu/disasm.cpp
     src/core/main.cpp
 )

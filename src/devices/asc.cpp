@@ -22,9 +22,9 @@
 
 #if EmASC
 
-#include "VIAEMDEV.h"
+#include "devices/via.h"
 
-#include "ASCEMDEV.h"
+#include "devices/asc.h"
 
 /*
 	ReportAbnormalID unused 0x0F0E, 0x0F1E - 0x0FFF

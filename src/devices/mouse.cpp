@@ -24,10 +24,10 @@
 */
 
 #include "core/common.h"
-#include "SCCEMDEV.h"
+#include "devices/scc.h"
 #include "cpu/m68k.h"
 
-#include "MOUSEMDV.h"
+#include "devices/mouse.h"
 
 void Mouse_Update(void)
 {

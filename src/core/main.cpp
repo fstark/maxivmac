@@ -21,41 +21,41 @@
 #include "core/common.h"
 #include "cpu/m68k.h"
 #if EmVIA1
-#include "VIAEMDEV.h"
+#include "devices/via.h"
 #endif
 #if EmVIA2
-#include "VIA2EMDV.h"
+#include "devices/via2.h"
 #endif
-#include "IWMEMDEV.h"
-#include "SCCEMDEV.h"
+#include "devices/iwm.h"
+#include "devices/scc.h"
 #if EmRTC
-#include "RTCEMDEV.h"
+#include "devices/rtc.h"
 #endif
-#include "ROMEMDEV.h"
-#include "SCSIEMDV.h"
-#include "SONYEMDV.h"
-#include "SCRNEMDV.h"
+#include "devices/rom.h"
+#include "devices/scsi.h"
+#include "devices/sony.h"
+#include "devices/screen.h"
 
 #if EmVidCard
-#include "VIDEMDEV.h"
+#include "devices/video.h"
 #endif
 
 #if EmClassicKbrd
-#include "KBRDEMDV.h"
+#include "devices/keyboard.h"
 #elif EmPMU
-#include "PMUEMDEV.h"
+#include "devices/pmu.h"
 #else
-#include "ADBEMDEV.h"
+#include "devices/adb.h"
 #endif
 
 #if EmClassicSnd
-#include "SNDEMDEV.h"
+#include "devices/sound.h"
 #endif
 #if EmASC
-#include "ASCEMDEV.h"
+#include "devices/asc.h"
 #endif
 
-#include "MOUSEMDV.h"
+#include "devices/mouse.h"
 
 
 #include "core/main.h"

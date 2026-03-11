@@ -22,7 +22,7 @@
 
 #if EmADB
 
-#include "ADBEMDEV.h"
+#include "devices/adb.h"
 
 #ifdef _VIA_Debug
 #include <stdio.h>
@@ -35,7 +35,7 @@
 extern void ADB_ShiftOutData(uint8_t v);
 extern uint8_t ADB_ShiftInData(void);
 
-#include "ADBSHARE.h"
+#include "devices/adb_shared.h"
 
 static bool ADB_ListenDatBuf;
 static uint8_t ADB_IndexDatBuf;

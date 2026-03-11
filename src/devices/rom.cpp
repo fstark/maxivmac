@@ -27,7 +27,7 @@
 
 #include "core/common.h"
 
-#include "ROMEMDEV.h"
+#include "devices/rom.h"
 
 #define UseSonyPatch \
 	((CurEmMd <= kEmMd_Classic) || (CurEmMd == kEmMd_II) \
@@ -229,7 +229,7 @@ static void Sony_Install(void)
 	{
 		uint8_t * patchp = pto;
 
-#include "SCRNHACK.h"
+#include "devices/screen_hack.h"
 	}
 #endif
 
@@ -246,7 +246,7 @@ static void Sony_Install(void)
 #endif
 
 #ifdef CurAltHappyMac
-#include "HPMCHACK.h"
+#include "devices/hpmac_hack.h"
 #endif
 
 #ifdef ln2mtb

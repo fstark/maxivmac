@@ -26,7 +26,7 @@
 
 #if EmVIA2
 
-#include "VIA2EMDV.h"
+#include "devices/via2.h"
 
 /*
 	ReportAbnormalID unused 0x0510 - 0x05FF

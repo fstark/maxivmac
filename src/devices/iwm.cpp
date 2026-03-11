@@ -31,7 +31,7 @@
 
 #include "core/common.h"
 
-#include "IWMEMDEV.h"
+#include "devices/iwm.h"
 
 #define IWM_dolog (dbglog_HAVE && 0)
 
