@@ -15,7 +15,7 @@
 */
 
 /*
-	DeFaults for CoNFiguration of CoMPiler
+	DeFaults for CoNFiguration of CoMPiler — mostly empty after type cleanup
 */
 
 #ifdef DFCNFCMP_H
@@ -24,24 +24,7 @@
 #define DFCNFCMP_H
 #endif
 
-#define UNUSED(exp) (void)(exp)
-
-#ifndef BigEndianUnaligned
-#define BigEndianUnaligned 0
-#endif
-
-#ifndef LittleEndianUnaligned
-#define LittleEndianUnaligned 0
-#endif
-
+/* Branch prediction hint */
 #ifndef my_cond_rare
 #define my_cond_rare(x) (x)
-#endif
-
-#ifndef Have_ASR
-#define Have_ASR 0
-#endif
-
-#ifndef HaveMySwapUi5r
-#define HaveMySwapUi5r 0
 #endif
