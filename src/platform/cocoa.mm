@@ -446,7 +446,7 @@ void dbglog_close0(void)
 
 #define WantKeyboard_RemapMac 1
 
-#include "platform/common/param_buffers_impl.h"
+#include "platform/common/param_buffers.h"
 
 #include "platform/common/control_mode_impl.h"
 

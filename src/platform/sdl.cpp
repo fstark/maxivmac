@@ -208,7 +208,7 @@ void dbglog_close0(void)
 
 #include "platform/common/osglu_common.h"
 
-#include "platform/common/param_buffers_impl.h"
+#include "platform/common/param_buffers.h"
 
 #include "platform/common/control_mode_impl.h"
 

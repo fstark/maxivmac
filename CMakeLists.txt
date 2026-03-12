@@ -87,6 +87,7 @@ set(MINIVMAC_SOURCES
     src/core/main.cpp
     src/platform/common/osglu_common.cpp
     src/platform/common/intl_chars.cpp
+    src/platform/common/param_buffers.cpp
 )
 
 # ---------------------------------------------------------------------------
@@ -241,6 +242,7 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
     set_source_files_properties(
         src/platform/common/osglu_common.cpp
         src/platform/common/intl_chars.cpp
+        src/platform/common/param_buffers.cpp
         PROPERTIES LANGUAGE OBJCXX)
 
     add_executable(minivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
