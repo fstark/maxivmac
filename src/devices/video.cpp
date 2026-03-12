@@ -29,12 +29,14 @@
 
 #include "core/common.h"
 
+#include "devices/video.h"
+
+VideoDevice* g_video = nullptr;
+
 #if EmVidCard
 
 #include "cpu/m68k.h"
 #include "devices/sony.h"
-
-#include "devices/video.h"
 
 /*
 	ReportAbnormalID unused 0x0A08 - 0x0AFF
@@ -150,7 +152,7 @@ static void PatchAnEndOfLst(void)
 	PatchADatLstEntry(0xFF /* endOfList */, 0x00000000);
 }
 
- bool Vid_Init(void)
+ bool VideoDevice::init()
 {
 	int i;
 	uint32_t UsedSoFar;
@@ -421,7 +423,7 @@ static void PatchAnEndOfLst(void)
 
 extern void Vid_VBLinterrupt_PulseNotify(void);
 
-void Vid_Update(void)
+void VideoDevice::update()
 {
 	if (! Vid_VBLintunenbl) {
 		Vid_VBLinterrupt = 0;
@@ -451,7 +453,7 @@ static tMacErr Vid_SetMode(uint16_t v)
 	return mnvm_noErr;
 }
 
- uint16_t Vid_Reset(void)
+ uint16_t VideoDevice::vidReset()
 {
 #if 0 != vMacScreenDepth
 	UseColorMode = false;
@@ -533,7 +535,12 @@ static void FillScreenWithGrayPattern(void)
 	}
 }
 
-void ExtnVideo_Access(uint32_t p)
+void VideoDevice::reset()
+{
+	vidReset();
+}
+
+void VideoDevice::extnVideoAccess(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -999,5 +1006,11 @@ void ExtnVideo_Access(uint32_t p)
 
 	put_vm_word(p + ExtnDat_result, result);
 }
+
+// Backward-compatible forwarding stubs
+bool Vid_Init(void) { return g_video ? g_video->init() : false; }
+uint16_t Vid_Reset(void) { return g_video ? g_video->vidReset() : 128; }
+void Vid_Update(void) { if (g_video) g_video->update(); }
+void ExtnVideo_Access(uint32_t p) { if (g_video) g_video->extnVideoAccess(p); }
 
 #endif /* EmVidCard */
