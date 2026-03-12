@@ -388,12 +388,7 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 
 /* --- control mode and internationalization --- */
 
-#define NeedCell2UnicodeMap 1
-#define NeedRequestInsertDisk 1
-#define NeedDoMoreCommandsMsg 1
-#define NeedDoAboutMsg 1
-
-#include "platform/common/intl_chars_impl.h"
+#include "platform/common/intl_chars.h"
 
 /* --- sending debugging info to file --- */
 

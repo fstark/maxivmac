@@ -86,6 +86,7 @@ set(MINIVMAC_SOURCES
     src/cpu/disasm.cpp
     src/core/main.cpp
     src/platform/common/osglu_common.cpp
+    src/platform/common/intl_chars.cpp
 )
 
 # ---------------------------------------------------------------------------
@@ -236,8 +237,10 @@ configure_file(
 if(MINIVMAC_BACKEND STREQUAL "cocoa")
     list(APPEND MINIVMAC_SOURCES src/platform/cocoa.mm)
 
-    # osglu_common.cpp includes headers that pull in Cocoa.h (ObjC)
-    set_source_files_properties(src/platform/common/osglu_common.cpp
+    # osglu_common.cpp and intl_chars.cpp include headers that pull in Cocoa.h (ObjC)
+    set_source_files_properties(
+        src/platform/common/osglu_common.cpp
+        src/platform/common/intl_chars.cpp
         PROPERTIES LANGUAGE OBJCXX)
 
     add_executable(minivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
