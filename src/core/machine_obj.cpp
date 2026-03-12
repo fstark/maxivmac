@@ -24,9 +24,7 @@
 #include "devices/rom.h"
 #include "devices/mouse.h"
 #include "devices/keyboard.h"
-#if EmClassicSnd
 #include "devices/sound.h"
-#endif
 #if EmPMU
 #include "devices/pmu.h"
 #endif
@@ -58,9 +56,7 @@ Machine::~Machine()
 	g_asc = nullptr;
 	g_video = nullptr;
 	g_keyboard = nullptr;
-#if EmClassicSnd
 	g_sound = nullptr;
-#endif
 #if EmPMU
 	g_pmu = nullptr;
 #endif
@@ -151,13 +147,11 @@ bool Machine::init()
 		g_keyboard = dev.get();
 		addDevice(std::move(dev));
 	}
-#if EmClassicSnd
 	if (config_.emClassicSnd) {
 		auto dev = std::make_unique<SoundDevice>();
 		g_sound = dev.get();
 		addDevice(std::move(dev));
 	}
-#endif
 #if EmPMU
 	if (config_.emPMU) {
 		auto dev = std::make_unique<PMUDevice>();

@@ -25,10 +25,25 @@
 #include "core/common.h"
 
 #include "devices/sound.h"
+#include "devices/via.h"
+#include "core/wire_bus.h"
+#include "core/wire_ids.h"
+#include "core/machine_obj.h"
 
 SoundDevice* g_sound = nullptr;
 
-#if EmClassicSnd
+VIA1Device* SoundDevice::via1() const
+{
+	return machine_->findDevice<VIA1Device>();
+}
+
+void SoundDevice::reset()
+{
+	soundInvertPhase_ = 0;
+	soundInvertState_ = 0;
+}
+
+#if MySoundEnabled
 
 #include "cpu/m68k.h"
 
@@ -96,11 +111,6 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 	writing offset 0 before it is read.
 */
 
-static uint32_t SoundInvertPhase = 0;
-static uint16_t SoundInvertState = 0;
-
-extern uint16_t GetSoundInvertTime(void);
-
 void SoundDevice::subTick(int SubTick)
 {
 	uint16_t actL;
@@ -118,10 +128,10 @@ void SoundDevice::subTick(int SubTick)
 #else
 	uint32_t addr = addy + (2 * StartOffset);
 #endif
-	uint16_t SoundInvertTime = GetSoundInvertTime();
-	uint8_t SoundVolume = SoundVolb0
-		| (SoundVolb1 << 1)
-		| (SoundVolb2 << 2);
+	uint16_t SoundInvertTime = via1()->getT1InvertTime();
+	uint8_t SoundVolume = g_wires.get(Wire_SoundVolb0)
+		| (g_wires.get(Wire_SoundVolb1) << 1)
+		| (g_wires.get(Wire_SoundVolb2) << 2);
 
 #if dbglog_HAVE && 0
 	dbglog_StartLine();
@@ -135,7 +145,7 @@ void SoundDevice::subTick(int SubTick)
 label_retry:
 	p = MySound_BeginWrite(n, &actL);
 	if (actL > 0) {
-		if (SoundDisable && (SoundInvertTime == 0)) {
+		if (g_wires.get(Wire_SoundDisable) && (SoundInvertTime == 0)) {
 			for (i = 0; i < actL; i++) {
 #if 0
 				*p++ = 0x00; /* this is believed more accurate */
@@ -167,28 +177,28 @@ label_retry:
 				p -= actL;
 
 				for (i = 0; i < actL; i++) {
-					if (SoundInvertPhase < 704) {
+					if (soundInvertPhase_ < 704) {
 						uint32_t OnPortion = 0;
 						uint32_t LastPhase = 0;
 						do {
-							if (! SoundInvertState) {
+							if (! soundInvertState_) {
 								OnPortion +=
-									(SoundInvertPhase - LastPhase);
+									(soundInvertPhase_ - LastPhase);
 							}
-							SoundInvertState = ! SoundInvertState;
-							LastPhase = SoundInvertPhase;
-							SoundInvertPhase += PhaseIncr;
-						} while (SoundInvertPhase < 704);
-						if (! SoundInvertState) {
+							soundInvertState_ = ! soundInvertState_;
+							LastPhase = soundInvertPhase_;
+							soundInvertPhase_ += PhaseIncr;
+						} while (soundInvertPhase_ < 704);
+						if (! soundInvertState_) {
 							OnPortion += 704 - LastPhase;
 						}
 						*p = (*p * OnPortion) / 704;
 					} else {
-						if (SoundInvertState) {
+						if (soundInvertState_) {
 							*p = 0;
 						}
 					}
-					SoundInvertPhase -= 704;
+					soundInvertPhase_ -= 704;
 					p++;
 				}
 			}
@@ -220,8 +230,8 @@ label_retry:
 // Backward-compatible forwarding stubs
 void MacSound_SubTick(int SubTick) { if (g_sound) g_sound->subTick(SubTick); }
 
-#else /* !EmClassicSnd */
+#else /* !MySoundEnabled */
 
 void MacSound_SubTick(int) {}
 
-#endif /* EmClassicSnd */
+#endif /* MySoundEnabled */
