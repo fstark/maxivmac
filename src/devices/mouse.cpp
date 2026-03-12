@@ -25,7 +25,6 @@
 
 #include "core/common.h"
 #include "devices/scc.h"
-#include "cpu/m68k.h"
 
 #include "devices/mouse.h"
 

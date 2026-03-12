@@ -19,7 +19,7 @@
 */
 
 #include "core/common.h"
-#include "cpu/m68k.h"
+
 #if EmVIA1
 #include "devices/via.h"
 #endif
@@ -59,7 +59,9 @@
 
 
 #include "core/main.h"
+#include "core/machine_obj.h"
 #include "core/ict_scheduler.h"
+#include "cpu/cpu.h"
 
 /*
 	ReportAbnormalID unused 0x1002 - 0x10FF
@@ -82,7 +84,7 @@ static void EmulatedHardwareZap(void)
 #endif
 	Sony_Reset();
 	Extn_Reset();
-	m68k_reset();
+	g_cpu.reset();
 }
 
 static void DoMacReset(void)
@@ -236,14 +238,17 @@ void EmulationReserveAlloc(void)
 		kVidMemRAM_Size + RAMSafetyMarginFudge, 5, true);
 #endif
 #if SmallGlobals
-	MINEM68K_ReserveAlloc();
+	g_cpu.reserveAlloc();
 #endif
 }
 
 static bool InitEmulation(void)
 {
 	/* Wire ICT scheduler to CPU cycle counters */
-	g_ict.setCycleAccessors(GetCyclesRemaining, SetCyclesRemaining);
+	g_ict.setCycleAccessors(
+		[]() { return g_cpu.getCyclesRemaining(); },
+		[](int32_t n) { g_cpu.setCyclesRemaining(n); }
+	);
 
 	/* Register ICT task handlers */
 	g_ict.registerTask(kICT_SubTick, SubTickTaskDo);
@@ -299,7 +304,7 @@ static void m68k_go_nCycles_1(uint32_t n)
 		dbglog_writeReturn();
 #endif
 		g_ict.nextCount += n2;
-		m68k_go_nCycles(n2);
+		g_cpu.go_nCycles(n2);
 		n = StopiCount - g_ict.nextCount;
 	} while (n != 0);
 }
@@ -478,6 +483,10 @@ static void MainEventLoop(void)
 
 void ProgramMain(void)
 {
+	MachineConfig config;
+	Machine machine(config);
+	machine.init();
+
 	if (InitEmulation())
 	{
 		MainEventLoop();

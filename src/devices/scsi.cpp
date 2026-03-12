@@ -25,7 +25,6 @@
 /* NCR5380 chip emulation by Yoav Shadmi, 1998 */
 
 #include "core/common.h"
-#include "cpu/m68k.h"
 
 #include "devices/scsi.h"
 
