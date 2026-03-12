@@ -36,6 +36,7 @@
 #include "devices/asc.h"
 #include "core/wire_bus.h"
 #include "cpu/cpu.h"
+#include "core/machine_obj.h"
 
 /*
 	ReportAbnormalID unused 0x111D - 0x11FF
@@ -87,17 +88,17 @@ void customreset(void)
 #endif
 	Sony_Reset();
 	Extn_Reset();
-#if CurEmMd <= kEmMd_Plus
-	WantMacReset = true;
-	/*
-		kludge, code in Finder appears
-		to do RESET and not expect
-		to come back. Maybe asserting
-		the RESET somehow causes
-		other hardware compenents to
-		later reset the 68000.
-	*/
-#endif
+	if (g_machine->config().isCompactMac()) {
+		WantMacReset = true;
+		/*
+			kludge, code in Finder appears
+			to do RESET and not expect
+			to come back. Maybe asserting
+			the RESET somehow causes
+			other hardware compenents to
+			later reset the 68000.
+		*/
+	}
 }
 
 uint8_t * RAM = nullptr;
@@ -218,71 +219,93 @@ void DoReportAbnormalID(uint16_t id
 }
 #endif
 
-/* map of address space */
+/* map of address space — addresses vary per model */
 
 #define kRAM_Base 0x00000000 /* when overlay off */
-#if (CurEmMd == kEmMd_PB100)
-#define kRAM_ln2Spc 23
-#elif (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-#define kRAM_ln2Spc 23
-#else
-#define kRAM_ln2Spc 22
-#endif
+
+static uint32_t addrmap_kRAM_ln2Spc() {
+	auto m = g_machine->config().model;
+	if (m == MacModel::PB100 || g_machine->config().isIIFamily())
+		return 23;
+	return 22;
+}
+#define kRAM_ln2Spc addrmap_kRAM_ln2Spc()
 
 #if IncludeVidMem
-#if CurEmMd == kEmMd_PB100
-#define kVidMem_Base 0x00FA0000
-#define kVidMem_ln2Spc 16
-#else
-#define kVidMem_Base 0x00540000
-#define kVidMem_ln2Spc 18
-#endif
+static uint32_t addrmap_kVidMem_Base() {
+	if (g_machine->config().model == MacModel::PB100) return 0x00FA0000;
+	return 0x00540000;
+}
+static uint32_t addrmap_kVidMem_ln2Spc() {
+	if (g_machine->config().model == MacModel::PB100) return 16;
+	return 18;
+}
+#define kVidMem_Base addrmap_kVidMem_Base()
+#define kVidMem_ln2Spc addrmap_kVidMem_ln2Spc()
 #endif
 
-#if CurEmMd == kEmMd_PB100
-#define kSCSI_Block_Base 0x00F90000
-#define kSCSI_ln2Spc 16
-#else
-#define kSCSI_Block_Base 0x00580000
-#define kSCSI_ln2Spc 19
-#endif
+static uint32_t addrmap_kSCSI_Block_Base() {
+	if (g_machine->config().model == MacModel::PB100) return 0x00F90000;
+	return 0x00580000;
+}
+static uint32_t addrmap_kSCSI_ln2Spc() {
+	if (g_machine->config().model == MacModel::PB100) return 16;
+	return 19;
+}
+#define kSCSI_Block_Base addrmap_kSCSI_Block_Base()
+#define kSCSI_ln2Spc addrmap_kSCSI_ln2Spc()
 
 #define kRAM_Overlay_Base 0x00600000 /* when overlay on */
 #define kRAM_Overlay_Top  0x00800000
 
-#if CurEmMd == kEmMd_PB100
-#define kSCCRd_Block_Base 0x00FD0000
-#define kSCC_ln2Spc 16
-#else
-#define kSCCRd_Block_Base 0x00800000
-#define kSCC_ln2Spc 22
-#endif
+static uint32_t addrmap_kSCCRd_Block_Base() {
+	if (g_machine->config().model == MacModel::PB100) return 0x00FD0000;
+	return 0x00800000;
+}
+static uint32_t addrmap_kSCC_ln2Spc() {
+	if (g_machine->config().model == MacModel::PB100) return 16;
+	return 22;
+}
+#define kSCCRd_Block_Base addrmap_kSCCRd_Block_Base()
+#define kSCC_ln2Spc addrmap_kSCC_ln2Spc()
 
-#if CurEmMd != kEmMd_PB100
+/* SCC write block: not present on PB100 (combined read/write) */
 #define kSCCWr_Block_Base 0x00A00000
 #define kSCCWr_Block_Top  0x00C00000
-#endif
 
-#if CurEmMd == kEmMd_PB100
-#define kIWM_Block_Base 0x00F60000
-#define kIWM_ln2Spc 16
-#else
-#define kIWM_Block_Base 0x00C00000
-#define kIWM_ln2Spc 21
-#endif
+static uint32_t addrmap_kIWM_Block_Base() {
+	if (g_machine->config().model == MacModel::PB100) return 0x00F60000;
+	return 0x00C00000;
+}
+static uint32_t addrmap_kIWM_ln2Spc() {
+	if (g_machine->config().model == MacModel::PB100) return 16;
+	return 21;
+}
+#define kIWM_Block_Base addrmap_kIWM_Block_Base()
+#define kIWM_ln2Spc addrmap_kIWM_ln2Spc()
 
-#if CurEmMd == kEmMd_PB100
-#define kVIA1_Block_Base 0x00F70000
-#define kVIA1_ln2Spc 16
-#else
-#define kVIA1_Block_Base 0x00E80000
-#define kVIA1_ln2Spc 19
-#endif
+static uint32_t addrmap_kVIA1_Block_Base() {
+	if (g_machine->config().model == MacModel::PB100) return 0x00F70000;
+	return 0x00E80000;
+}
+static uint32_t addrmap_kVIA1_ln2Spc() {
+	if (g_machine->config().model == MacModel::PB100) return 16;
+	return 19;
+}
+#define kVIA1_Block_Base addrmap_kVIA1_Block_Base()
+#define kVIA1_ln2Spc addrmap_kVIA1_ln2Spc()
 
-#if CurEmMd == kEmMd_PB100
-#define kASC_Block_Base 0x00FB0000
-#define kASC_ln2Spc 16
-#endif
+/* ASC: on PB100, at a different address; other models use EmASC guard */
+static uint32_t addrmap_kASC_Block_Base() {
+	if (g_machine->config().model == MacModel::PB100) return 0x00FB0000;
+	return 0x50F00000; /* Mac II 32-bit ASC base */
+}
+static uint32_t addrmap_kASC_ln2Spc() {
+	if (g_machine->config().model == MacModel::PB100) return 16;
+	return 26; /* Mac II ASC space */
+}
+#define kASC_Block_Base addrmap_kASC_Block_Base()
+#define kASC_ln2Spc addrmap_kASC_ln2Spc()
 #define kASC_Mask 0x00000FFF
 
 
@@ -636,37 +659,28 @@ void Extn_Reset(void)
 
 #define kIWM_Mask 0x00000F /* Allocated Memory Bandwidth for IWM */
 
-#if CurEmMd <= kEmMd_512Ke
-#define ROM_CmpZeroMask 0
-#elif CurEmMd <= kEmMd_Plus
-#if kROM_Size > 0x00020000
-#define ROM_CmpZeroMask 0 /* For hacks like Mac ROM-inator */
-#else
-#define ROM_CmpZeroMask 0x00020000
-#endif
-#elif CurEmMd <= kEmMd_PB100
-#define ROM_CmpZeroMask 0
-#elif CurEmMd <= kEmMd_IIx
-#define ROM_CmpZeroMask 0
-#else
-#error "ROM_CmpZeroMask not defined"
-#endif
+static uint32_t addrmap_ROM_CmpZeroMask() {
+	auto m = static_cast<int>(g_machine->config().model);
+	if (m <= static_cast<int>(MacModel::Mac512Ke)) return 0;
+	if (m <= static_cast<int>(MacModel::Plus)) {
+		return (kROM_Size > 0x00020000) ? 0 : 0x00020000;
+	}
+	/* SE, Classic, PB100, II, IIx all use 0 */
+	return 0;
+}
+#define ROM_CmpZeroMask addrmap_ROM_CmpZeroMask()
 
 #define kROM_cmpmask (0x00F00000 | ROM_CmpZeroMask)
 
-#if CurEmMd <= kEmMd_512Ke
-#define Overlay_ROM_CmpZeroMask 0x00100000
-#elif CurEmMd <= kEmMd_Plus
-#define Overlay_ROM_CmpZeroMask 0x00020000
-#elif CurEmMd <= kEmMd_Classic
-#define Overlay_ROM_CmpZeroMask 0x00300000
-#elif CurEmMd <= kEmMd_PB100
-#define Overlay_ROM_CmpZeroMask 0
-#elif CurEmMd <= kEmMd_IIx
-#define Overlay_ROM_CmpZeroMask 0
-#else
-#error "Overlay_ROM_CmpZeroMask not defined"
-#endif
+static uint32_t addrmap_Overlay_ROM_CmpZeroMask() {
+	auto m = static_cast<int>(g_machine->config().model);
+	if (m <= static_cast<int>(MacModel::Mac512Ke)) return 0x00100000;
+	if (m <= static_cast<int>(MacModel::Plus))     return 0x00020000;
+	if (m <= static_cast<int>(MacModel::Classic))   return 0x00300000;
+	/* PB100, II, IIx */
+	return 0;
+}
+#define Overlay_ROM_CmpZeroMask addrmap_Overlay_ROM_CmpZeroMask()
 
 enum {
 #if EmVIA1
@@ -687,9 +701,7 @@ enum {
 };
 
 enum {
-#if CurEmMd >= kEmMd_SE
-	kMAN_OverlayOff,
-#endif
+	kMAN_OverlayOff, /* present on SE and later */
 
 	kNumMANs
 };
@@ -765,7 +777,7 @@ static void FinishATTList(void)
 	}
 }
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+/* Mac II/IIx: RAM24 setup with VIA2 bank select */
 static void SetUp_RAM24(void)
 {
 	ATTer r{};
@@ -808,9 +820,8 @@ static void SetUp_RAM24(void)
 		}
 	}
 }
-#endif
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+/* Mac II/IIx: I/O space setup */
 static void SetUp_io(void)
 {
 	ATTer r{};
@@ -923,9 +934,8 @@ static void SetUp_io(void)
 			break;
 #endif
 }
-#endif
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+/* Mac II/IIx: 24-bit address space setup */
 static void SetUp_address24(void)
 {
 	ATTer r{};
@@ -986,9 +996,8 @@ static void SetUp_address24(void)
 
 	SetUp_io();
 }
-#endif
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+/* Mac II/IIx: 32-bit address space setup */
 static void SetUp_address32(void)
 {
 	ATTer r{};
@@ -1105,9 +1114,8 @@ static void SetUp_address32(void)
 	}
 #endif
 }
-#endif
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+/* Mac II/IIx: address space dispatcher */
 static void SetUp_address(void)
 {
 	if (Addr32) {
@@ -1116,7 +1124,6 @@ static void SetUp_address(void)
 		SetUp_address24();
 	}
 }
-#endif
 
 /*
 	unlike in the real Mac Plus, Mini vMac
@@ -1324,34 +1331,29 @@ static void get_fail_realblock(ATTep p)
 #if EmVIA1
 		case kMMDV_VIA1:
 			if (! ByteSize) {
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-				if (WriteMem && (addr == 0xF40006)) {
+				if (g_machine->config().isIIFamily()
+					&& WriteMem && (addr == 0xF40006))
+				{
 					/* for weirdness on shutdown in System 6 */
-#if 0
-					VIA1_Access((Data >> 8) & 0x00FF, WriteMem,
-							(addr >> 9) & kVIA1_Mask);
-					VIA1_Access((Data) & 0x00FF, WriteMem,
-							(addr >> 9) & kVIA1_Mask);
-#endif
 				} else
-#endif
 				{
 					ReportAbnormalID(0x1106, "access VIA1 word");
 				}
 			} else if ((addr & 1) != 0) {
 				ReportAbnormalID(0x1107, "access VIA1 odd");
 			} else {
-#if CurEmMd != kEmMd_PB100
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-				if ((addr & 0x000001FE) != 0x00000000)
-#else
-				if ((addr & 0x000FE1FE) != 0x000FE1FE)
-#endif
-				{
-					ReportAbnormalID(0x1108,
-						"access VIA1 nonstandard address");
+				if (g_machine->config().model != MacModel::PB100) {
+					bool nonStandard;
+					if (g_machine->config().isIIFamily()) {
+						nonStandard = (addr & 0x000001FE) != 0x00000000;
+					} else {
+						nonStandard = (addr & 0x000FE1FE) != 0x000FE1FE;
+					}
+					if (nonStandard) {
+						ReportAbnormalID(0x1108,
+							"access VIA1 nonstandard address");
+					}
 				}
-#endif
 				Data = p->device->access(Data, WriteMem,
 					(addr >> 9) & kVIA1_Mask);
 			}
@@ -1398,52 +1400,50 @@ static void get_fail_realblock(ATTep p)
 #endif /* EmVIA2 */
 		case kMMDV_SCC:
 
-#if (CurEmMd >= kEmMd_SE) \
-	&& ! ((CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx))
-
-			if ((addr & 0x00100000) == 0) {
-				ReportAbnormalID(0x110C,
-					"access SCC unassigned address");
-			} else
-#endif
+			if (g_machine->config().isSEFamily()) {
+				/* SE/Classic only: check for unassigned SCC address */
+				if ((addr & 0x00100000) == 0) {
+					ReportAbnormalID(0x110C,
+						"access SCC unassigned address");
+					break;
+				}
+			}
 			if (! ByteSize) {
 				ReportAbnormalID(0x110D, "Attemped Phase Adjust");
 			} else
-#if ! ((CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx))
-			if (WriteMem != ((addr & 1) != 0)) {
+			if (!g_machine->config().isIIFamily()
+				&& WriteMem != ((addr & 1) != 0))
+			{
 				if (WriteMem) {
-#if CurEmMd >= kEmMd_512Ke
-#if CurEmMd != kEmMd_PB100
-					ReportAbnormalID(0x110E, "access SCC even/odd");
-					/*
-						This happens on boot with 64k ROM.
-					*/
-#endif
-#endif
+					auto m = g_machine->config().model;
+					if (static_cast<int>(m) >= static_cast<int>(MacModel::Mac512Ke)
+						&& m != MacModel::PB100)
+					{
+						ReportAbnormalID(0x110E, "access SCC even/odd");
+					}
 				} else {
 					SCC_Reset();
 				}
 			} else
-#endif
-#if (CurEmMd != kEmMd_PB100) \
-	&& ! ((CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx))
-
-			if (WriteMem != (addr >= kSCCWr_Block_Base)) {
+			if (g_machine->config().model != MacModel::PB100
+				&& !g_machine->config().isIIFamily()
+				&& WriteMem != (addr >= kSCCWr_Block_Base))
+			{
 				ReportAbnormalID(0x110F, "access SCC wr/rd base wrong");
 			} else
-#endif
 			{
-#if CurEmMd != kEmMd_PB100
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-				if ((addr & 0x1FF9) != 0x00000000)
-#else
-				if ((addr & 0x001FFFF8) != 0x001FFFF8)
-#endif
-				{
-					ReportAbnormalID(0x1110,
-						"access SCC nonstandard address");
+				if (g_machine->config().model != MacModel::PB100) {
+					bool nonStandard;
+					if (g_machine->config().isIIFamily()) {
+						nonStandard = (addr & 0x1FF9) != 0x00000000;
+					} else {
+						nonStandard = (addr & 0x001FFFF8) != 0x001FFFF8;
+					}
+					if (nonStandard) {
+						ReportAbnormalID(0x1110,
+							"access SCC nonstandard address");
+					}
 				}
-#endif
 				Data = p->device->access(Data, WriteMem,
 					(addr >> 1) & kSCC_Mask);
 			}
@@ -1462,22 +1462,22 @@ static void get_fail_realblock(ATTep p)
 #if EmASC
 		case kMMDV_ASC:
 			if (! ByteSize) {
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-				if (WriteMem) {
-					(void) p->device->access((Data >> 8) & 0x00FF,
-						WriteMem, addr & kASC_Mask);
-					Data = p->device->access((Data) & 0x00FF,
-						WriteMem, (addr + 1) & kASC_Mask);
-				} else {
-					Data =
-						(p->device->access((Data >> 8) & 0x00FF,
-							WriteMem, addr & kASC_Mask) << 8)
-						| p->device->access((Data) & 0x00FF,
+				if (g_machine->config().isIIFamily()) {
+					if (WriteMem) {
+						(void) p->device->access((Data >> 8) & 0x00FF,
+							WriteMem, addr & kASC_Mask);
+						Data = p->device->access((Data) & 0x00FF,
 							WriteMem, (addr + 1) & kASC_Mask);
+					} else {
+						Data =
+							(p->device->access((Data >> 8) & 0x00FF,
+								WriteMem, addr & kASC_Mask) << 8)
+							| p->device->access((Data) & 0x00FF,
+								WriteMem, (addr + 1) & kASC_Mask);
+					}
+				} else {
+					ReportAbnormalID(0x1114, "access ASC word");
 				}
-#else
-				ReportAbnormalID(0x1114, "access ASC word");
-#endif
 			} else {
 				Data = p->device->access(Data, WriteMem, addr & kASC_Mask);
 			}
@@ -1487,31 +1487,30 @@ static void get_fail_realblock(ATTep p)
 			if (! ByteSize) {
 				ReportAbnormalID(0x1115, "access SCSI word");
 			} else
-#if ! ((CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx))
-			if (WriteMem != ((addr & 1) != 0)) {
+			if (!g_machine->config().isIIFamily()
+				&& WriteMem != ((addr & 1) != 0))
+			{
 				ReportAbnormalID(0x1116, "access SCSI even/odd");
 			} else
-#endif
 			{
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-				if ((addr & 0x1F8F) != 0x00000000) {
-					ReportAbnormalID(0x1117,
-						"access SCSI nonstandard address");
+				if (g_machine->config().isIIFamily()) {
+					if ((addr & 0x1F8F) != 0x00000000) {
+						ReportAbnormalID(0x1117,
+							"access SCSI nonstandard address");
+					}
 				}
-#endif
 				Data = p->device->access(Data, WriteMem, (addr >> 4) & 0x07);
 			}
 
 			break;
 		case kMMDV_IWM:
-#if (CurEmMd >= kEmMd_SE) \
-	&& ! ((CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx))
-
-			if ((addr & 0x00100000) == 0) {
-				ReportAbnormalID(0x1118,
-					"access IWM unassigned address");
-			} else
-#endif
+			if (g_machine->config().isSEFamily()) {
+				if ((addr & 0x00100000) == 0) {
+					ReportAbnormalID(0x1118,
+						"access IWM unassigned address");
+					break;
+				}
+			}
 			if (! ByteSize) {
 #if ExtraAbnormalReports
 				ReportAbnormalID(0x1119, "access IWM word");
@@ -1520,27 +1519,28 @@ static void get_fail_realblock(ATTep p)
 					perhaps a bad handle is being disposed of.
 				*/
 #endif
-			} else
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-			if ((addr & 1) != 0) {
-				ReportAbnormalID(0x111A, "access IWM odd");
-			} else
-#else
-			if ((addr & 1) == 0) {
-				ReportAbnormalID(0x111B, "access IWM even");
-			} else
-#endif
-			{
-#if (CurEmMd != kEmMd_PB100) \
-	&& ! ((CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx))
-
-				if ((addr & 0x001FE1FF) != 0x001FE1FF) {
-					ReportAbnormalID(0x111C,
-						"access IWM nonstandard address");
+			} else if (g_machine->config().isIIFamily()) {
+				if ((addr & 1) != 0) {
+					ReportAbnormalID(0x111A, "access IWM odd");
+				} else {
+					Data = p->device->access(Data, WriteMem,
+						(addr >> 9) & kIWM_Mask);
 				}
-#endif
-				Data = p->device->access(Data, WriteMem,
-					(addr >> 9) & kIWM_Mask);
+			} else {
+				if ((addr & 1) == 0) {
+					ReportAbnormalID(0x111B, "access IWM even");
+				} else {
+					if (g_machine->config().model != MacModel::PB100
+						&& !g_machine->config().isIIFamily())
+					{
+						if ((addr & 0x001FE1FF) != 0x001FE1FF) {
+							ReportAbnormalID(0x111C,
+								"access IWM nonstandard address");
+						}
+					}
+					Data = p->device->access(Data, WriteMem,
+						(addr >> 9) & kIWM_Mask);
+				}
 			}
 
 			break;
@@ -1554,16 +1554,18 @@ static void get_fail_realblock(ATTep p)
 	bool v = false;
 
 	switch (pT->Ntfy) {
-#if CurEmMd >= kEmMd_SE
 		case kMAN_OverlayOff:
-			pT->Access = kATTA_readreadymask;
+			if (static_cast<int>(g_machine->config().model)
+				>= static_cast<int>(MacModel::SE))
+			{
+				pT->Access = kATTA_readreadymask;
 
-			g_wires.set(Wire_VIA1_iA4_MemOverlay, 0);
+				g_wires.set(Wire_VIA1_iA4_MemOverlay, 0);
 
-			v = true;
+				v = true;
+			}
 
 			break;
-#endif
 	}
 
 	return v;
@@ -1571,19 +1573,17 @@ static void get_fail_realblock(ATTep p)
 
 void MemOverlay_ChangeNtfy(void)
 {
-#if CurEmMd <= kEmMd_Plus
+	/* All models rebuild memory banks when overlay changes */
 	SetUpMemBanks();
-#elif (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-	SetUpMemBanks();
-#endif
 }
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 void Addr32_ChangeNtfy(void)
 {
-	SetUpMemBanks();
+	/* Mac II/IIx use 24/32-bit addressing mode switch */
+	if (g_machine->config().isIIFamily()) {
+		SetUpMemBanks();
+	}
 }
-#endif
 
 static ATTep get_address_realblock1(bool WriteMem, uint32_t addr)
 {
@@ -1648,27 +1648,29 @@ static uint8_t CurIPL = 0;
 
 void VIAorSCCinterruptChngNtfy(void)
 {
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 	uint8_t NewIPL;
 
-	if (InterruptButton) {
-		NewIPL = 7;
-	} else if (SCCInterruptRequest) {
-		NewIPL = 4;
-	} else if (VIA2_InterruptRequest) {
-		NewIPL = 2;
-	} else if (VIA1_InterruptRequest) {
-		NewIPL = 1;
+	if (g_machine->config().isIIFamily()) {
+		/* Mac II priority: NMI > SCC > VIA2 > VIA1 */
+		if (InterruptButton) {
+			NewIPL = 7;
+		} else if (SCCInterruptRequest) {
+			NewIPL = 4;
+		} else if (VIA2_InterruptRequest) {
+			NewIPL = 2;
+		} else if (VIA1_InterruptRequest) {
+			NewIPL = 1;
+		} else {
+			NewIPL = 0;
+		}
 	} else {
-		NewIPL = 0;
+		/* Compact Mac priority encoding */
+		uint8_t VIAandNotSCC = VIA1_InterruptRequest
+			& ~ SCCInterruptRequest;
+		NewIPL = VIAandNotSCC
+			| (SCCInterruptRequest << 1)
+			| (InterruptButton << 2);
 	}
-#else
-	uint8_t VIAandNotSCC = VIA1_InterruptRequest
-		& ~ SCCInterruptRequest;
-	uint8_t NewIPL = VIAandNotSCC
-		| (SCCInterruptRequest << 1)
-		| (InterruptButton << 2);
-#endif
 	if (NewIPL != CurIPL) {
 		CurIPL = NewIPL;
 		g_cpu.iplChangeNotify();
@@ -1682,13 +1684,13 @@ void VIAorSCCinterruptChngNtfy(void)
 
 	/* Register wire change callbacks */
 	g_wires.onChange(Wire_VIA1_iA4_MemOverlay, MemOverlay_ChangeNtfy);
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-	extern void PowerOff_ChangeNtfy(void);
-	g_wires.onChange(Wire_VIA2_iA7_unknown, Addr32_ChangeNtfy);
-	g_wires.onChange(Wire_VIA2_iA6_unknown, Addr32_ChangeNtfy);
-	g_wires.onChange(Wire_VIA2_iB3_Addr32, Addr32_ChangeNtfy);
-	g_wires.onChange(Wire_VIA2_iB2_PowerOff, PowerOff_ChangeNtfy);
-#endif
+	if (g_machine->config().isIIFamily()) {
+		extern void PowerOff_ChangeNtfy(void);
+		g_wires.onChange(Wire_VIA2_iA7_unknown, Addr32_ChangeNtfy);
+		g_wires.onChange(Wire_VIA2_iA6_unknown, Addr32_ChangeNtfy);
+		g_wires.onChange(Wire_VIA2_iB3_Addr32, Addr32_ChangeNtfy);
+		g_wires.onChange(Wire_VIA2_iB2_PowerOff, PowerOff_ChangeNtfy);
+	}
 	g_wires.onChange(Wire_VIA1_InterruptRequest, VIAorSCCinterruptChngNtfy);
 	g_wires.onChange(Wire_VIA2_InterruptRequest, VIAorSCCinterruptChngNtfy);
 	g_wires.onChange(Wire_SCCInterruptRequest, VIAorSCCinterruptChngNtfy);
@@ -1719,7 +1721,7 @@ void Memory_Reset(void)
 	SetUpMemBanks();
 }
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+/* PowerOff_ChangeNtfy: only wired on Mac II/IIx (see AddrSpac_Init) */
 extern void PowerOff_ChangeNtfy(void);
 void PowerOff_ChangeNtfy(void)
 {
@@ -1727,7 +1729,6 @@ void PowerOff_ChangeNtfy(void)
 		ForceMacOff = true;
 	}
 }
-#endif
 
 /* user event queue utilities */
 
