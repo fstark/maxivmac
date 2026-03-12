@@ -8,6 +8,8 @@
 
 #include "core/wire_bus.h"
 
+WireBus g_wires;
+
 void WireBus::init(int numWires)
 {
 	numWires_ = numWires;

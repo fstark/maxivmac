@@ -41,6 +41,7 @@
 #include "core/common.h"
 
 #include "devices/scc.h"
+#include "core/wire_bus.h"
 
 /* Global singleton */
 SCCDevice* g_scc = nullptr;
@@ -661,10 +662,7 @@ static void CheckSCCInterruptFlag(void)
 		dbglog_writeHex(SCC.SCC_Interrupt_Type);
 		dbglog_writeReturn();
 #endif
-		SCCInterruptRequest = NewSCCInterruptRequest;
-#ifdef SCCinterruptChngNtfy
-		SCCinterruptChngNtfy();
-#endif
+		g_wires.set(Wire_SCCInterruptRequest, NewSCCInterruptRequest);
 	}
 }
 
@@ -843,11 +841,11 @@ static void SCC_ResetChannel(int chan)
 
 void SCCDevice::reset()
 {
-	SCCwaitrq = 1;
+	g_wires.set(Wire_VIA1_iA7_SCCwaitrq, 1);
 
 	SCC.SCC_Interrupt_Type = 0;
 
-	SCCInterruptRequest = 0;
+	g_wires.set(Wire_SCCInterruptRequest, 0);
 	SCC.PointerBits = 0;
 	SCC.MIE = false;
 	SCC.InterruptVector = 0;
