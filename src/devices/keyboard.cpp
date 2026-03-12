@@ -28,6 +28,9 @@
 
 #include "devices/keyboard.h"
 
+/* Global singleton */
+KeyboardDevice* g_keyboard = nullptr;
+
 #ifdef _VIA_Debug
 #include <stdio.h>
 #endif
@@ -102,7 +105,7 @@ static bool AttemptToFinishInquiry(void)
 
 static int InquiryCommandTimer = 0;
 
-void DoKybd_ReceiveCommand(void)
+void KeyboardDevice::receiveCommand()
 {
 	if (KybdState != kKybdStateRecievingCommand) {
 		ReportAbnormalID(0x0B01,
@@ -144,7 +147,7 @@ void DoKybd_ReceiveCommand(void)
 	}
 }
 
-void DoKybd_ReceiveEndCommand(void)
+void KeyboardDevice::receiveEndCommand()
 {
 	if (KybdState != kKybdStateRecievingEndCommand) {
 		ReportAbnormalID(0x0B02,
@@ -165,7 +168,7 @@ void DoKybd_ReceiveEndCommand(void)
 	}
 }
 
-void Kybd_DataLineChngNtfy(void)
+void KeyboardDevice::dataLineChngNtfy()
 {
 	switch (KybdState) {
 		case kKybdStateIdle:
@@ -196,7 +199,7 @@ void Kybd_DataLineChngNtfy(void)
 	}
 }
 
-void KeyBoard_Update(void)
+void KeyboardDevice::update()
 {
 	if (InquiryCommandTimer != 0) {
 		if (AttemptToFinishInquiry()) {
@@ -209,5 +212,12 @@ void KeyBoard_Update(void)
 		}
 	}
 }
+
+/* ===== Backward-compatible free function API ===== */
+
+void Kybd_DataLineChngNtfy(void) { g_keyboard->dataLineChngNtfy(); }
+void DoKybd_ReceiveEndCommand(void) { g_keyboard->receiveEndCommand(); }
+void DoKybd_ReceiveCommand(void) { g_keyboard->receiveCommand(); }
+void KeyBoard_Update(void) { g_keyboard->update(); }
 
 #endif /* EmClassicKbrd */

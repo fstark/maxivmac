@@ -16,7 +16,26 @@
 
 #pragma once
 
+#include "devices/device.h"
+#include <cstdint>
 
+class KeyboardDevice : public Device {
+public:
+	uint32_t access(uint32_t data, bool writeMem, uint32_t addr) override
+		{ return data; } // Not memory-mapped
+	void zap() override {}
+	void reset() override {}
+	const char* name() const override { return "Keyboard"; }
+
+	void dataLineChngNtfy();
+	void receiveEndCommand();
+	void receiveCommand();
+	void update();
+};
+
+extern KeyboardDevice* g_keyboard;
+
+// Backward-compatible free function API
 extern void Kybd_DataLineChngNtfy(void);
 extern void DoKybd_ReceiveEndCommand(void);
 extern void DoKybd_ReceiveCommand(void);
