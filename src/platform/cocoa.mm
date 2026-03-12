@@ -5291,12 +5291,14 @@ static void UnInitOSGLU(void)
 
 int main(int argc, char **argv)
 {
+	ProgramEarlyInit();
 	ZapOSGLUVars();
 
 	if (InitOSGLU()) {
 		ProgramMain();
 	}
 	UnInitOSGLU();
+	ProgramCleanup();
 
 	return 0;
 }

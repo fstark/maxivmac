@@ -17,5 +17,7 @@
 
 #pragma once
 
+extern void ProgramEarlyInit(void);
 extern void EmulationReserveAlloc(void);
 extern void ProgramMain(void);
+extern void ProgramCleanup(void);
