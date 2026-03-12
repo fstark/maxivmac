@@ -32,6 +32,7 @@
 #include "core/common.h"
 
 #include "devices/iwm.h"
+#include "core/machine_obj.h"
 
 /* Global singleton */
 IWMDevice* g_iwm = nullptr;
@@ -103,11 +104,9 @@ static uint8_t IWM_Read_Reg(void)
 {
 	switch ((IWM.Lines & (kq6 + kq7)) >> 6) {
 		case 0 :
-#if (CurEmMd >= kEmMd_SE) && (CurEmMd <= kEmMd_IIx)
-			/* don't report */
-#else
+		if (!g_machine->config().isSEOrLater()) {
 			ReportAbnormalID(0x0601, "IWM Data Read");
-#endif
+		}
 #if IWM_dolog
 			dbglog_WriteNote("IWM Data Read");
 #endif

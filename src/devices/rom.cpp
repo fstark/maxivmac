@@ -28,6 +28,7 @@
 #include "core/common.h"
 
 #include "devices/rom.h"
+#include "core/machine_obj.h"
 
 ROMDevice* g_rom = nullptr;
 
@@ -182,19 +183,16 @@ static const uint8_t my_disk_icon[] = {
 };
 #endif
 
-#if CurEmMd <= kEmMd_Twig43
-#define Sony_DriverBase 0x1836
-#elif CurEmMd <= kEmMd_Twiggy
-#define Sony_DriverBase 0x16E4
-#elif CurEmMd <= kEmMd_128K
-#define Sony_DriverBase 0x1690
-#elif CurEmMd <= kEmMd_Plus
-#define Sony_DriverBase 0x17D30
-#elif CurEmMd <= kEmMd_Classic
-#define Sony_DriverBase 0x34680
-#elif (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-#define Sony_DriverBase 0x2D72C
-#endif
+static uint32_t getSonyDriverBase() {
+	auto m = g_machine->config().model;
+	if (m == MacModel::Twig43) return 0x1836;
+	if (m == MacModel::Twiggy) return 0x16E4;
+	if (m == MacModel::Mac128K) return 0x1690;
+	if (static_cast<int>(m) <= static_cast<int>(MacModel::Plus)) return 0x17D30;
+	if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) return 0x34680;
+	return 0x2D72C; /* II/IIx */
+}
+#define Sony_DriverBase getSonyDriverBase()
 
 #define kVidMem_Base 0x00540000
 
@@ -204,15 +202,15 @@ static void Sony_Install(void)
 	uint8_t * pto = Sony_DriverBase + ROM;
 
 	MyMoveBytes((uint8_t *)sony_driver, (uint8_t *)pto, sizeof(sony_driver));
-#if CurEmMd <= kEmMd_Twiggy
-	do_put_mem_long(pto + 0x14, 0x4469736B);
-		/* 'Disk' instead of 'Sony' */
-#if CurEmMd <= kEmMd_Twig43
-	do_put_mem_word(pto + 0xEA, 0x0C8A);
-#else
-	do_put_mem_word(pto + 0xEA, 0x0B74);
-#endif
-#endif
+	{
+		auto m = g_machine->config().model;
+		if (static_cast<int>(m) <= static_cast<int>(MacModel::Twiggy)) {
+			do_put_mem_long(pto + 0x14, 0x4469736B);
+				/* 'Disk' instead of 'Sony' */
+			do_put_mem_word(pto + 0xEA,
+				(m == MacModel::Twig43) ? 0x0C8A : 0x0B74);
+		}
+	}
 
 	pto += sizeof(sony_driver);
 
@@ -279,38 +277,45 @@ static void ROMscrambleForMTB(void)
 #if DisableRomCheck
 
 /* skip the rom checksum */
-#if CurEmMd <= kEmMd_Twig43
-	/* no checksum code */
-#elif CurEmMd <= kEmMd_Twiggy
-	do_put_mem_word(0x136 + ROM, 0x6004);
-#elif CurEmMd <= kEmMd_128K
-	do_put_mem_word(0xE2 + ROM, 0x6004);
-#elif CurEmMd <= kEmMd_Plus
-	do_put_mem_word(0xD7A + ROM, 0x6022);
-#elif CurEmMd <= kEmMd_Classic
-	do_put_mem_word(0x1C68 + ROM, 0x6008);
-#elif (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-	do_put_mem_word(0x2AB0 + ROM, 0x6008);
-#endif
+{
+	auto m = g_machine->config().model;
+	if (m == MacModel::Twig43) {
+		/* no checksum code */
+	} else if (m == MacModel::Twiggy) {
+		do_put_mem_word(0x136 + ROM, 0x6004);
+	} else if (m == MacModel::Mac128K) {
+		do_put_mem_word(0xE2 + ROM, 0x6004);
+	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Plus)) {
+		do_put_mem_word(0xD7A + ROM, 0x6022);
+	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) {
+		do_put_mem_word(0x1C68 + ROM, 0x6008);
+	} else { /* II/IIx */
+		do_put_mem_word(0x2AB0 + ROM, 0x6008);
+	}
+}
 
 #endif /* DisableRomCheck */
 
 
 #if DisableRamTest
 
-#if CurEmMd <= kEmMd_128K
-#elif CurEmMd <= kEmMd_Plus
-	do_put_mem_word(3752 + ROM, 0x4E71);
-		/* shorten the ram check read */
-	do_put_mem_word(3728 + ROM, 0x4E71);
-		/* shorten the ram check write */
-#elif CurEmMd <= kEmMd_Classic
-	do_put_mem_word(134 + ROM, 0x6002);
-	do_put_mem_word(286 + ROM, 0x6002);
-#elif (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-	do_put_mem_word(0xEE + ROM, 0x6002);
-	do_put_mem_word(0x1AA + ROM, 0x6002);
-#endif
+{
+	auto m = g_machine->config().model;
+	if (static_cast<int>(m) <= static_cast<int>(MacModel::Mac128K)) {
+		/* nothing */
+	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Plus)) {
+		do_put_mem_word(3752 + ROM, 0x4E71);
+			/* shorten the ram check read */
+		do_put_mem_word(3728 + ROM, 0x4E71);
+			/* shorten the ram check write */
+	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) {
+		do_put_mem_word(134 + ROM, 0x6002);
+		do_put_mem_word(286 + ROM, 0x6002);
+	} else { /* II/IIx */
+		do_put_mem_word(0xEE + ROM, 0x6002);
+		do_put_mem_word(0x1AA + ROM, 0x6002);
+	}
+}
 
 #endif /* DisableRamTest */
 

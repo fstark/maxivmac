@@ -33,6 +33,7 @@
 
 #include "devices/rtc.h"
 #include "core/wire_bus.h"
+#include "core/machine_obj.h"
 
 /* Global singleton */
 RTCDevice* g_rtc = nullptr;
@@ -173,10 +174,10 @@ void DumpRTC(void)
 	RTC.PARAMRAM[2 + Group1Base] = LT_NodeHint;
 		/* set to constant instead for testing collisions */
 #else
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-	RTC.PARAMRAM[2 + Group1Base] = 1;
-		/* node id hint for printer port (AppleTalk) */
-#endif
+	if (g_machine->config().isIIFamily()) {
+		RTC.PARAMRAM[2 + Group1Base] = 1;
+			/* node id hint for printer port (AppleTalk) */
+	}
 #endif
 
 #if EmLocalTalk
@@ -198,13 +199,13 @@ void DumpRTC(void)
 	RTC.PARAMRAM[7 + Group1Base] = 10; /* portB, low */
 	RTC.PARAMRAM[13 + Group1Base] = prb_fontLo;
 	RTC.PARAMRAM[14 + Group1Base] = prb_kbdPrintHi;
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx) || EmLocalTalk
-	RTC.PARAMRAM[15 + Group1Base] = 1;
-		/*
-			printer, if any, connected to modem port
-			because printer port used for appletalk.
-		*/
-#endif
+	if (g_machine->config().isIIFamily() || EmLocalTalk) {
+		RTC.PARAMRAM[15 + Group1Base] = 1;
+			/*
+				printer, if any, connected to modem port
+				because printer port used for appletalk.
+			*/
+	}
 
 #if prb_volClickHi != 0
 	RTC.PARAMRAM[0 + Group2Base] = prb_volClickHi;
@@ -218,91 +219,86 @@ void DumpRTC(void)
 		;
 
 #if HaveXPRAM /* extended parameter ram initialized */
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-	RTC.PARAMRAM[12] = 0x4e;
-	RTC.PARAMRAM[13] = 0x75;
-	RTC.PARAMRAM[14] = 0x4d;
-	RTC.PARAMRAM[15] = 0x63;
-#else
-	RTC.PARAMRAM[12] = 0x42;
-	RTC.PARAMRAM[13] = 0x75;
-	RTC.PARAMRAM[14] = 0x67;
-	RTC.PARAMRAM[15] = 0x73;
-#endif
+	if (g_machine->config().isIIFamily()) {
+		RTC.PARAMRAM[12] = 0x4e;
+		RTC.PARAMRAM[13] = 0x75;
+		RTC.PARAMRAM[14] = 0x4d;
+		RTC.PARAMRAM[15] = 0x63;
+	} else {
+		RTC.PARAMRAM[12] = 0x42;
+		RTC.PARAMRAM[13] = 0x75;
+		RTC.PARAMRAM[14] = 0x67;
+		RTC.PARAMRAM[15] = 0x73;
+	}
 #endif
 
-#if ((CurEmMd >= kEmMd_SE) && (CurEmMd <= kEmMd_Classic)) \
-	|| (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+	if (g_machine->config().isSEFamily() || g_machine->config().isIIFamily()) {
+		RTC.PARAMRAM[0x01] = 0x80;
+		RTC.PARAMRAM[0x02] = 0x4F;
+	}
+	if (g_machine->config().isIIFamily()) {
+		RTC.PARAMRAM[0x03] = 0x48;
 
-	RTC.PARAMRAM[0x01] = 0x80;
-	RTC.PARAMRAM[0x02] = 0x4F;
-#endif
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-	RTC.PARAMRAM[0x03] = 0x48;
-
-	/* video board id */
-	RTC.PARAMRAM[0x46] = /* 0x42 */ 0x76; /* 'v' */
-	RTC.PARAMRAM[0x47] = /* 0x32 */ 0x4D; /* 'M' */
-	/* mode */
+		/* video board id */
+		RTC.PARAMRAM[0x46] = /* 0x42 */ 0x76; /* 'v' */
+		RTC.PARAMRAM[0x47] = /* 0x32 */ 0x4D; /* 'M' */
+		/* mode */
 #if (0 == vMacScreenDepth) || (vMacScreenDepth >= 4)
-	RTC.PARAMRAM[0x48] = 0x80;
+		RTC.PARAMRAM[0x48] = 0x80;
 #else
-	RTC.PARAMRAM[0x48] = 0x81;
-		/* 0x81 doesn't quite work right at boot */
-			/* no, it seems to work now (?) */
-			/* but only if depth <= 3 */
+		RTC.PARAMRAM[0x48] = 0x81;
+			/* 0x81 doesn't quite work right at boot */
+				/* no, it seems to work now (?) */
+				/* but only if depth <= 3 */
 #endif
-#endif
+	}
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-	RTC.PARAMRAM[0x77] = 0x01;
-#endif
+	if (g_machine->config().isIIFamily()) {
+		RTC.PARAMRAM[0x77] = 0x01;
+	}
 
-#if ((CurEmMd >= kEmMd_SE) && (CurEmMd <= kEmMd_Classic)) \
-	|| (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+	if (g_machine->config().isSEFamily() || g_machine->config().isIIFamily()) {
+		/* start up disk (encoded how?) */
+		RTC.PARAMRAM[0x78] = 0x00;
+		RTC.PARAMRAM[0x79] = 0x01;
+		RTC.PARAMRAM[0x7A] = 0xFF;
+		RTC.PARAMRAM[0x7B] = 0xFE;
+	}
 
-	/* start up disk (encoded how?) */
-	RTC.PARAMRAM[0x78] = 0x00;
-	RTC.PARAMRAM[0x79] = 0x01;
-	RTC.PARAMRAM[0x7A] = 0xFF;
-	RTC.PARAMRAM[0x7B] = 0xFE;
-#endif
+	if (g_machine->config().isIIFamily()) {
+		RTC.PARAMRAM[0x80] = 0x09;
+		RTC.PARAMRAM[0x81] = 0x80;
+	}
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-	RTC.PARAMRAM[0x80] = 0x09;
-	RTC.PARAMRAM[0x81] = 0x80;
-#endif
-
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+	if (g_machine->config().isIIFamily()) {
 
 #define pr_HilColRedHi (pr_HilColRed >> 8)
 #if 0 != pr_HilColRedHi
-	RTC.PARAMRAM[0x82] = pr_HilColRedHi;
+		RTC.PARAMRAM[0x82] = pr_HilColRedHi;
 #endif
 #define pr_HilColRedLo (pr_HilColRed & 0xFF)
 #if 0 != pr_HilColRedLo
-	RTC.PARAMRAM[0x83] = pr_HilColRedLo;
+		RTC.PARAMRAM[0x83] = pr_HilColRedLo;
 #endif
 
 #define pr_HilColGreenHi (pr_HilColGreen >> 8)
 #if 0 != pr_HilColGreenHi
-	RTC.PARAMRAM[0x84] = pr_HilColGreenHi;
+		RTC.PARAMRAM[0x84] = pr_HilColGreenHi;
 #endif
 #define pr_HilColGreenLo (pr_HilColGreen & 0xFF)
 #if 0 != pr_HilColGreenLo
-	RTC.PARAMRAM[0x85] = pr_HilColGreenLo;
+		RTC.PARAMRAM[0x85] = pr_HilColGreenLo;
 #endif
 
 #define pr_HilColBlueHi (pr_HilColBlue >> 8)
 #if 0 != pr_HilColBlueHi
-	RTC.PARAMRAM[0x86] = pr_HilColBlueHi;
+		RTC.PARAMRAM[0x86] = pr_HilColBlueHi;
 #endif
 #define pr_HilColBlueLo (pr_HilColBlue & 0xFF)
 #if 0 != pr_HilColBlueLo
-	RTC.PARAMRAM[0x87] = pr_HilColBlueLo;
+		RTC.PARAMRAM[0x87] = pr_HilColBlueLo;
 #endif
-
-#endif /* (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx) */
+	}
 
 #if HaveXPRAM /* extended parameter ram initialized */
 	do_put_mem_long(&RTC.PARAMRAM[0xE4], CurMacLatitude);

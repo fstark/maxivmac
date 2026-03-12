@@ -221,41 +221,35 @@ static const uint8_t my_HappyMac_icon[] = {
 #endif
 };
 
-#if CurEmMd <= kEmMd_Twig43
-#define HappyMacBase 0xA34
-#elif CurEmMd <= kEmMd_Twiggy
-#define HappyMacBase 0x8F4
-#elif CurEmMd <= kEmMd_128K
-#define HappyMacBase 0x8A0
-#elif CurEmMd <= kEmMd_Plus
-#define HappyMacBase 0xFD2
-#elif CurEmMd <= kEmMd_Classic
-#define HappyMacBase 0x125C
-#elif CurEmMd <= kEmMd_PB100
-#define HappyMacBase 0x2BB0
-#elif (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
-#define HappyMacBase 0x1948
-#endif
+static uint32_t getHappyMacBase() {
+	auto m = g_machine->config().model;
+	if (m == MacModel::Twig43) return 0xA34;
+	if (m == MacModel::Twiggy) return 0x8F4;
+	if (m == MacModel::Mac128K) return 0x8A0;
+	if (static_cast<int>(m) <= static_cast<int>(MacModel::Plus)) return 0xFD2;
+	if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) return 0x125C;
+	if (m == MacModel::PB100) return 0x2BB0;
+	return 0x1948; /* II/IIx */
+}
+#define HappyMacBase getHappyMacBase()
 
 static void PatchHappyMac(void)
 {
-#if (CurEmMd == kEmMd_PB100) \
-	|| (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+	auto m = g_machine->config().model;
+	if (m == MacModel::PB100 || m == MacModel::II || m == MacModel::IIx) {
+		int i;
+		uint8_t *dst = HappyMacBase + ROM + 0x18;
+		uint8_t *src = (uint8_t *)my_HappyMac_icon;
 
-	int i;
-	uint8_t *dst = HappyMacBase + ROM + 0x18;
-	uint8_t *src = (uint8_t *)my_HappyMac_icon;
-
-	for (i = 10; --i >= 0; ) {
-		++dst;
-		*dst++ = *src++;
-		*dst++ = *src++;
-		++dst;
+		for (i = 10; --i >= 0; ) {
+			++dst;
+			*dst++ = *src++;
+			*dst++ = *src++;
+			++dst;
+		}
+	} else {
+		MyMoveBytes((uint8_t *)my_HappyMac_icon,
+			(uint8_t *)(HappyMacBase + ROM),
+			sizeof(my_HappyMac_icon));
 	}
-
-#else
-	MyMoveBytes((uint8_t *)my_HappyMac_icon,
-		(uint8_t *)(HappyMacBase + ROM),
-		sizeof(my_HappyMac_icon));
-#endif
 }
