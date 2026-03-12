@@ -32,7 +32,6 @@
 
 #define RAMSafetyMarginFudge 4
 
-#define kRAM_Size (kRAMa_Size + kRAMb_Size)
 extern uint8_t * RAM;
 	/*
 		allocated by OSGLUxxx to be at least

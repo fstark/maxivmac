@@ -33,8 +33,6 @@ ScreenDevice* g_screen = nullptr;
 
 #define kMain_Offset      0x5900
 #define kAlternate_Offset 0xD900
-#define kMain_Buffer      (kRAM_Size - kMain_Offset)
-#define kAlternate_Buffer (kRAM_Size - kAlternate_Offset)
 
 void ScreenDevice::endTickNotify()
 {
@@ -45,7 +43,8 @@ void ScreenDevice::endTickNotify()
 	} else {
 		/* Compact Macs: screen buffer in main RAM
 		   (uses SCRNvPage2 wire for page selection — not yet wired) */
-		screencurrentbuff = get_ram_address(kMain_Buffer);
+		screencurrentbuff = get_ram_address(
+			g_machine->config().ramSize() - kMain_Offset);
 	}
 
 	Screen_OutputFrame(screencurrentbuff);

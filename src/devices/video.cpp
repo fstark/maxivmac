@@ -31,6 +31,7 @@
 
 #include "devices/video.h"
 #include "core/wire_bus.h"
+#include "core/machine_obj.h"
 
 VideoDevice* g_video = nullptr;
 
@@ -91,7 +92,8 @@ static void ChecksumSlotROM(void)
 	uint8_t * p = VidROM;
 	uint32_t crc = 0;
 
-	for (i = kVidROM_Size; --i >= 0; ) {
+	const auto& cfg = g_machine->config();
+	for (i = cfg.vidROMSize; --i >= 0; ) {
 		crc = ((crc << 1) | (crc >> 31)) + *p++;
 	}
 	do_put_mem_long(p - 12, crc);
@@ -297,14 +299,14 @@ static void PatchAnEndOfLst(void)
 	PatchALong(0x00000000);
 
 	PatchAReservedOSLstEntry(pTo_MinorLength, 0x0B /* MinorLength */);
-	PatchALong(kVidMemRAM_Size);
+	PatchALong(g_machine->config().vidMemSize);
 
 #if 0
 	PatchAReservedOSLstEntry(pTo_MajorBase, 0x0C /* MinorBaseOS */);
 	PatchALong(0x00000000);
 
 	PatchAReservedOSLstEntry(pTo_MajorLength, 0x0D /* MinorLength */);
-	PatchALong(kVidMemRAM_Size);
+	PatchALong(g_machine->config().vidMemSize);
 #endif
 
 	PatchAReservedOSLstEntry(pTo_VidDrvrDir, 0x04 /* sRsrcDrvrDir */);
@@ -388,19 +390,20 @@ static void PatchAnEndOfLst(void)
 	}
 #endif
 
+	const auto& vidCfg = g_machine->config();
 	UsedSoFar = (pPatch - VidROM) + 20;
-	if (UsedSoFar > kVidROM_Size) {
-		ReportAbnormalID(0x0A01, "kVidROM_Size too small");
+	if (UsedSoFar > vidCfg.vidROMSize) {
+		ReportAbnormalID(0x0A01, "vidROMSize too small");
 		return false;
 	}
 
-	for (i = kVidROM_Size - UsedSoFar; --i >= 0; ) {
+	for (i = vidCfg.vidROMSize - UsedSoFar; --i >= 0; ) {
 		PatchAByte(0);
 	}
 
-	pPatch = (kVidROM_Size - 20) + VidROM;
+	pPatch = (vidCfg.vidROMSize - 20) + VidROM;
 	PatchALong((pAt_sRsrcDir - pPatch) & 0x00FFFFFF);
-	PatchALong(/* 0x0000041E */ kVidROM_Size);
+	PatchALong(/* 0x0000041E */ vidCfg.vidROMSize);
 	PatchALong(0x00000000);
 	PatchAByte(0x01);
 	PatchAByte(0x01);
