@@ -53,11 +53,9 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 
 /* --- control mode and internationalization --- */
 
-#define NeedCell2PlainAsciiMap 1
-
 #define dbglog_OSGInit (0 && dbglog_HAVE)
 
-#include "platform/common/intl_chars_impl.h"
+#include "platform/common/intl_chars.h"
 
 
 #ifndef SDL_MAJOR_VERSION
