@@ -26,6 +26,15 @@
 
 #include "core/common.h"
 
+/* Device headers for ATT Device* dispatch */
+#include "devices/device.h"
+#include "devices/via.h"
+#include "devices/via2.h"
+#include "devices/scc.h"
+#include "devices/scsi.h"
+#include "devices/iwm.h"
+#include "devices/asc.h"
+
 /*
 	ReportAbnormalID unused 0x111D - 0x11FF
 */
@@ -64,18 +73,7 @@ extern void SetCyclesRemaining(int32_t n);
 extern void SetHeadATTel(ATTep p);
 extern ATTep FindATTel(uint32_t addr);
 
-extern uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-extern uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-extern uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-#if EmVIA1
-extern uint32_t VIA1_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-#endif
-#if EmVIA2
-extern uint32_t VIA2_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-#endif
-#if EmASC
-extern uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-#endif
+/* Device access is now through p->device->access() in MMDV_Access */
 
 extern uint8_t get_vm_byte(uint32_t addr);
 extern uint16_t get_vm_word(uint32_t addr);
@@ -615,6 +613,22 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 	}
 }
 
+/*
+	ExtnDevice: wraps the ROM extension slot mechanism (Sony, Video, etc.)
+	as a Device for ATT dispatch.
+*/
+class ExtnDevice : public Device {
+public:
+	uint32_t access(uint32_t data, bool writeMem, uint32_t addr) override {
+		Extn_Access(data, addr);
+		return data;
+	}
+	void zap() override {}
+	void reset() override {}
+	const char* name() const override { return "Extn"; }
+};
+static ExtnDevice g_extnDevice;
+
 void Extn_Reset(void)
 {
 	ParamAddrHi = (uint16_t) - 1;
@@ -716,7 +730,7 @@ static void FinishATTList(void)
 {
 	{
 		/* add guard */
-		ATTer r;
+		ATTer r{};
 
 		r.cmpmask = 0;
 		r.cmpvalu = 0;
@@ -765,7 +779,7 @@ static void FinishATTList(void)
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 static void SetUp_RAM24(void)
 {
-	ATTer r;
+	ATTer r{};
 	uint32_t bankbit = 0x00100000 << (((VIA2_iA7 << 1) | VIA2_iA6) << 1);
 
 #if kRAMa_Size == kRAMb_Size
@@ -810,7 +824,7 @@ static void SetUp_RAM24(void)
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 static void SetUp_io(void)
 {
-	ATTer r;
+	ATTer r{};
 
 	if (Addr32) {
 		r.cmpmask = 0xFF01E000;
@@ -822,6 +836,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA1;
+	r.device = g_via1;
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -834,6 +849,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA2;
+	r.device = g_via2;
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -846,6 +862,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCC;
+	r.device = g_scc;
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -858,6 +875,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_Extn;
+	r.device = &g_extnDevice;
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -870,6 +888,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCSI;
+	r.device = g_scsi;
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -882,6 +901,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_ASC;
+	r.device = g_asc;
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -894,6 +914,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_IWM;
+	r.device = g_iwm;
 	AddToATTList(&r);
 
 #if 0
@@ -918,7 +939,7 @@ static void SetUp_io(void)
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 static void SetUp_address24(void)
 {
-	ATTer r;
+	ATTer r{};
 
 #if 0
 	if (MemOverlay) {
@@ -981,7 +1002,7 @@ static void SetUp_address24(void)
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 static void SetUp_address32(void)
 {
-	ATTer r;
+	ATTer r{};
 
 	if (MemOverlay) {
 		r.cmpmask = ~ ((1 << 30) - 1);
@@ -1124,7 +1145,7 @@ static void AddToATTListWithMTB(ATTep p)
 	/*
 		Test of memory mapping system.
 	*/
-	ATTer r;
+	ATTer r{};
 
 	r.Access = p->Access;
 	r.cmpmask = p->cmpmask | (1 << ln2mtb);
@@ -1143,7 +1164,7 @@ static void AddToATTListWithMTB(ATTep p)
 #if (CurEmMd != kEmMd_II) && (CurEmMd != kEmMd_IIx)
 static void SetUp_RAM24(void)
 {
-	ATTer r;
+	ATTer r{};
 
 #if (0 == kRAMb_Size) || (kRAMa_Size == kRAMb_Size)
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1);
@@ -1178,7 +1199,7 @@ static void SetUp_RAM24(void)
 #if (CurEmMd != kEmMd_II) && (CurEmMd != kEmMd_IIx)
 static void SetUp_address(void)
 {
-	ATTer r;
+	ATTer r{};
 
 	if (MemOverlay) {
 		r.cmpmask = Overlay_ROM_CmpZeroMask |
@@ -1240,6 +1261,7 @@ static void SetUp_address(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA1;
+	r.device = g_via1;
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kSCC_ln2Spc) - 1);
@@ -1247,6 +1269,7 @@ static void SetUp_address(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCC;
+	r.device = g_scc;
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kExtn_ln2Spc) - 1);
@@ -1254,6 +1277,7 @@ static void SetUp_address(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_Extn;
+	r.device = &g_extnDevice;
 	AddToATTList(&r);
 
 #if CurEmMd == kEmMd_PB100
@@ -1262,6 +1286,7 @@ static void SetUp_address(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_ASC;
+	r.device = g_asc;
 	AddToATTList(&r);
 #endif
 
@@ -1270,6 +1295,7 @@ static void SetUp_address(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCSI;
+	r.device = g_scsi;
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kIWM_ln2Spc) - 1);
@@ -1277,6 +1303,7 @@ static void SetUp_address(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_IWM;
+	r.device = g_iwm;
 	AddToATTList(&r);
 }
 #endif
@@ -1336,7 +1363,7 @@ static void get_fail_realblock(ATTep p)
 						"access VIA1 nonstandard address");
 				}
 #endif
-				Data = VIA1_Access(Data, WriteMem,
+				Data = p->device->access(Data, WriteMem,
 					(addr >> 9) & kVIA1_Mask);
 			}
 
@@ -1351,9 +1378,9 @@ static void get_fail_realblock(ATTep p)
 				{
 					/* for weirdness at offset 0x71E in ROM */
 					Data =
-						(VIA2_Access(Data, WriteMem,
+						(p->device->access(Data, WriteMem,
 							(addr >> 9) & kVIA2_Mask) << 8)
-						| VIA2_Access(Data, WriteMem,
+						| p->device->access(Data, WriteMem,
 							(addr >> 9) & kVIA2_Mask);
 
 				} else {
@@ -1365,7 +1392,7 @@ static void get_fail_realblock(ATTep p)
 						for weirdness at offset 0x7C4 in ROM.
 						looks like bug.
 					*/
-					Data = VIA2_Access(Data, WriteMem,
+					Data = p->device->access(Data, WriteMem,
 						(addr >> 9) & kVIA2_Mask);
 				} else {
 					ReportAbnormalID(0x110A, "access VIA2 odd");
@@ -1375,7 +1402,7 @@ static void get_fail_realblock(ATTep p)
 					ReportAbnormalID(0x110B,
 						"access VIA2 nonstandard address");
 				}
-				Data = VIA2_Access(Data, WriteMem,
+				Data = p->device->access(Data, WriteMem,
 					(addr >> 9) & kVIA2_Mask);
 			}
 			break;
@@ -1428,7 +1455,7 @@ static void get_fail_realblock(ATTep p)
 						"access SCC nonstandard address");
 				}
 #endif
-				Data = SCC_Access(Data, WriteMem,
+				Data = p->device->access(Data, WriteMem,
 					(addr >> 1) & kSCC_Mask);
 			}
 			break;
@@ -1440,7 +1467,7 @@ static void get_fail_realblock(ATTep p)
 			} else if (! WriteMem) {
 				ReportAbnormalID(0x1113, "access Sony read");
 			} else {
-				Extn_Access(Data, (addr >> 1) & 0x0F);
+				p->device->access(Data, WriteMem, (addr >> 1) & 0x0F);
 			}
 			break;
 #if EmASC
@@ -1448,22 +1475,22 @@ static void get_fail_realblock(ATTep p)
 			if (! ByteSize) {
 #if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 				if (WriteMem) {
-					(void) ASC_Access((Data >> 8) & 0x00FF,
+					(void) p->device->access((Data >> 8) & 0x00FF,
 						WriteMem, addr & kASC_Mask);
-					Data = ASC_Access((Data) & 0x00FF,
+					Data = p->device->access((Data) & 0x00FF,
 						WriteMem, (addr + 1) & kASC_Mask);
 				} else {
 					Data =
-						(ASC_Access((Data >> 8) & 0x00FF,
+						(p->device->access((Data >> 8) & 0x00FF,
 							WriteMem, addr & kASC_Mask) << 8)
-						| ASC_Access((Data) & 0x00FF,
+						| p->device->access((Data) & 0x00FF,
 							WriteMem, (addr + 1) & kASC_Mask);
 				}
 #else
 				ReportAbnormalID(0x1114, "access ASC word");
 #endif
 			} else {
-				Data = ASC_Access(Data, WriteMem, addr & kASC_Mask);
+				Data = p->device->access(Data, WriteMem, addr & kASC_Mask);
 			}
 			break;
 #endif
@@ -1483,7 +1510,7 @@ static void get_fail_realblock(ATTep p)
 						"access SCSI nonstandard address");
 				}
 #endif
-				Data = SCSI_Access(Data, WriteMem, (addr >> 4) & 0x07);
+				Data = p->device->access(Data, WriteMem, (addr >> 4) & 0x07);
 			}
 
 			break;
@@ -1523,7 +1550,7 @@ static void get_fail_realblock(ATTep p)
 						"access IWM nonstandard address");
 				}
 #endif
-				Data = IWM_Access(Data, WriteMem,
+				Data = p->device->access(Data, WriteMem,
 					(addr >> 9) & kIWM_Mask);
 			}
 

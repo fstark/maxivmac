@@ -243,6 +243,8 @@ extern void Extn_Reset(void);
 
 extern void customreset(void);
 
+class Device; // forward declaration for ATT Device* dispatch
+
 struct ATTer {
 	struct ATTer *Next;
 	uint32_t cmpmask;
@@ -250,10 +252,10 @@ struct ATTer {
 	uint32_t Access;
 	uint32_t usemask; /* Should be one less than a power of two. */
 	uint8_t * usebase;
+	Device * device;  /* Device for MMDV dispatch (nullptr for RAM/ROM) */
 	uint8_t MMDV;
 	uint8_t Ntfy;
 	uint16_t Pad0;
-	uint32_t Pad1; /* make 32 byte structure, on 32 bit systems */
 };
 typedef struct ATTer ATTer;
 typedef ATTer *ATTep;
