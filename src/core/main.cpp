@@ -40,8 +40,11 @@
 
 #include "core/main.h"
 #include "core/machine_obj.h"
+#include "core/machine_config.h"
 #include "core/ict_scheduler.h"
 #include "cpu/cpu.h"
+
+#include <memory>
 
 /*
 	ReportAbnormalID unused 0x1002 - 0x10FF
@@ -433,12 +436,22 @@ static void MainEventLoop(void)
 	}
 }
 
+static std::unique_ptr<Machine> s_machine;
+
+void ProgramEarlyInit(void)
+{
+	MachineConfig config = MachineConfigForModel(MacModel::II);
+	s_machine = std::make_unique<Machine>(std::move(config));
+	s_machine->init();
+}
+
+void ProgramCleanup(void)
+{
+	s_machine.reset();
+}
+
 void ProgramMain(void)
 {
-	MachineConfig config;
-	Machine machine(config);
-	machine.init();
-
 	if (InitEmulation())
 	{
 		MainEventLoop();
