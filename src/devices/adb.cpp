@@ -20,7 +20,7 @@
 
 #include "core/common.h"
 
-#if EmADB
+
 
 #include "devices/adb.h"
 #include "core/wire_bus.h"
@@ -221,4 +221,3 @@ void ADB_DoNewState(void) { g_adb->doNewState(); }
 void ADB_DataLineChngNtfy(void) { g_adb->dataLineChngNtfy(); }
 void ADB_Update(void) { g_adb->update(); }
 
-#endif /* EmADB */

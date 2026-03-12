@@ -23,8 +23,8 @@
 #include "devices/pmu.h"
 
 PMUDevice* g_pmu = nullptr;
-
 #if EmPMU
+
 
 #include "devices/via.h"
 
@@ -444,5 +444,9 @@ void PMUDevice::doTask()
 // Backward-compatible forwarding stubs
 void PmuToReady_ChangeNtfy(void) { if (g_pmu) g_pmu->toReadyChangeNtfy(); }
 void PMU_DoTask(void) { if (g_pmu) g_pmu->doTask(); }
+
+#else /* !EmPMU */
+
+void PMU_DoTask(void) {}
 
 #endif /* EmPMU */

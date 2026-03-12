@@ -41,9 +41,7 @@ extern uint8_t * RAM;
 		possible for the emulator to write up to 3 bytes past kRAM_Size.
 	*/
 
-#if EmVidCard
 extern uint8_t * VidROM;
-#endif
 
 #if IncludeVidMem
 extern uint8_t * VidMem;
@@ -150,24 +148,14 @@ extern void SetInterruptButton(bool v);
 
 enum {
 	kICT_SubTick,
-#if EmClassicKbrd
 	kICT_Kybd_ReceiveCommand,
 	kICT_Kybd_ReceiveEndCommand,
-#endif
-#if EmADB
 	kICT_ADB_NewState,
-#endif
-#if EmPMU
 	kICT_PMU_Task,
-#endif
-#if EmVIA1
 	kICT_VIA1_Timer1Check,
 	kICT_VIA1_Timer2Check,
-#endif
-#if EmVIA2
 	kICT_VIA2_Timer1Check,
 	kICT_VIA2_Timer2Check,
-#endif
 
 	kNumICTs
 };
@@ -214,9 +202,7 @@ enum {
 
 	kExtnDisk,
 	kExtnSony,
-#if EmVidCard
 	kExtnVideo,
-#endif
 #if IncludeExtnPbufs
 	kExtnParamBuffers,
 #endif

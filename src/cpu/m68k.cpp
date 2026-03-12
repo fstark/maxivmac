@@ -210,9 +210,7 @@ static struct regstruct
 	flagtype v; /* bit 1: oVerflow */
 	flagtype c; /* bit 0: Carry */
 
-#if EmMMU | EmFPU
 	uint32_t ArgKind;
-#endif
 
 	bool TracePending;
 	bool ExternalInterruptPending;
@@ -539,11 +537,8 @@ static void DoMOVES(void);
 static void DoBitField(void);
 #endif
 
-#if EmMMU
 static void DoCodeMMU(void);
-#endif
 
-#if EmFPU
 static void DoCodeFPU_md60(void);
 static void DoCodeFPU_DBcc(void);
 static void DoCodeFPU_Trapcc(void);
@@ -553,7 +548,6 @@ static void DoCodeFPU_FBccL(void);
 static void DoCodeFPU_Save(void);
 static void DoCodeFPU_Restore(void);
 static void DoCodeFPU_dflt(void);
-#endif
 
 typedef void (*func_pointer_t)(void);
 
@@ -722,10 +716,7 @@ static const func_pointer_t OpDispatch[kNumIKinds + 1] = {
 	DoMOVES /* kIKindMoveS */,
 	DoBitField /* kIKindBitField */,
 #endif
-#if EmMMU
 	DoCodeMMU /* kIKindMMU */,
-#endif
-#if EmFPU
 	DoCodeFPU_md60 /* kIKindFPUmd60 */,
 	DoCodeFPU_DBcc /* kIKindFPUDBcc */,
 	DoCodeFPU_Trapcc /* kIKindFPUTrapcc */,
@@ -735,7 +726,6 @@ static const func_pointer_t OpDispatch[kNumIKinds + 1] = {
 	DoCodeFPU_Save /* kIKindFPUSave */,
 	DoCodeFPU_Restore /* kIKindFPURestore */,
 	DoCodeFPU_dflt /* kIKindFPUdflt */,
-#endif
 
 	0
 };
@@ -8208,6 +8198,9 @@ LOCALIPROC DoCodeMMU(void)
 	ReportAbnormalID(0x0121, "MMU op");
 	DoCodeFdefault();
 }
+#else
+/* EMU disabled — stub to satisfy dispatch table */
+LOCALIPROC DoCodeMMU(void) { DoCodeFdefault(); }
 #endif
 
 #if EmFPU
@@ -8215,6 +8208,17 @@ LOCALIPROC DoCodeMMU(void)
 #include "cpu/fpu_math.h"
 #include "cpu/fpu_emdev.h"
 
+#else
+/* FPU disabled — stubs to satisfy dispatch table */
+LOCALIPROC DoCodeFPU_md60(void)   { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_DBcc(void)   { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_Trapcc(void) { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_Scc(void)    { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_FBccW(void)  { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_FBccL(void)  { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_Save(void)   { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_Restore(void){ DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_dflt(void)   { DoCodeFdefault(); }
 #endif
 
 #if HaveGlbReg

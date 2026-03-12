@@ -181,10 +181,7 @@ enum {
 	kIKindMoveS,
 	kIKindBitField,
 #endif
-#if EmMMU
 	kIKindMMU,
-#endif
-#if EmFPU
 	kIKindFPUmd60,
 	kIKindFPUDBcc,
 	kIKindFPUTrapcc,
@@ -194,7 +191,6 @@ enum {
 	kIKindFPUSave,
 	kIKindFPURestore,
 	kIKindFPUdflt,
-#endif
 
 	kNumIKinds
 };

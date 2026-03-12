@@ -34,7 +34,7 @@
 
 VideoDevice* g_video = nullptr;
 
-#if EmVidCard
+
 
 #include "cpu/m68k.h"
 #include "devices/sony.h"
@@ -1014,4 +1014,3 @@ uint16_t Vid_Reset(void) { return g_video ? g_video->vidReset() : 128; }
 void Vid_Update(void) { if (g_video) g_video->update(); }
 void ExtnVideo_Access(uint32_t p) { if (g_video) g_video->extnVideoAccess(p); }
 
-#endif /* EmVidCard */

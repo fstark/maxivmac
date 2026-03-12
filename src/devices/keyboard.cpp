@@ -221,4 +221,10 @@ void DoKybd_ReceiveEndCommand(void) { g_keyboard->receiveEndCommand(); }
 void DoKybd_ReceiveCommand(void) { g_keyboard->receiveCommand(); }
 void KeyBoard_Update(void) { g_keyboard->update(); }
 
+#else /* !EmClassicKbrd */
+
+void DoKybd_ReceiveEndCommand(void) {}
+void DoKybd_ReceiveCommand(void) {}
+void KeyBoard_Update(void) {}
+
 #endif /* EmClassicKbrd */

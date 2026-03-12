@@ -220,4 +220,8 @@ label_retry:
 // Backward-compatible forwarding stubs
 void MacSound_SubTick(int SubTick) { if (g_sound) g_sound->subTick(SubTick); }
 
+#else /* !EmClassicSnd */
+
+void MacSound_SubTick(int) {}
+
 #endif /* EmClassicSnd */

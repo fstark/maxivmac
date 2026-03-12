@@ -24,7 +24,7 @@
 
 #include "core/common.h"
 
-#if EmRTC
+
 
 /* define _RTC_Debug */
 #ifdef _RTC_Debug
@@ -524,4 +524,3 @@ void RTCunEnabled_ChangeNtfy(void) { g_rtc->unEnabledChangeNtfy(); }
 void RTCclock_ChangeNtfy(void) { g_rtc->clockChangeNtfy(); }
 void RTCdataLine_ChangeNtfy(void) { g_rtc->dataLineChangeNtfy(); }
 
-#endif /* EmRTC */

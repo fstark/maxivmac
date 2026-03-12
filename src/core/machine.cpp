@@ -49,19 +49,13 @@
 extern void IWM_Reset(void);
 extern void SCC_Reset(void);
 extern void SCSI_Reset(void);
-#if EmVIA1
 extern void VIA1_Reset(void);
-#endif
-#if EmVIA2
 extern void VIA2_Reset(void);
-#endif
 extern void Sony_Reset(void);
 
 extern void ExtnDisk_Access(uint32_t p);
 extern void ExtnSony_Access(uint32_t p);
-#if EmVidCard
 extern void ExtnVideo_Access(uint32_t p);
-#endif
 
 extern void Sony_SetQuitOnEject(void);
 
@@ -80,12 +74,8 @@ void customreset(void)
 	IWM_Reset();
 	SCC_Reset();
 	SCSI_Reset();
-#if EmVIA1
-	VIA1_Reset();
-#endif
-#if EmVIA2
-	VIA2_Reset();
-#endif
+	if (g_machine->config().emVIA1) VIA1_Reset();
+	if (g_machine->config().emVIA2) VIA2_Reset();
 	Sony_Reset();
 	Extn_Reset();
 	if (g_machine->config().isCompactMac()) {
@@ -102,14 +92,8 @@ void customreset(void)
 }
 
 uint8_t * RAM = nullptr;
-
-#if EmVidCard
 uint8_t * VidROM = nullptr;
-#endif
-
-#if IncludeVidMem
 uint8_t * VidMem = nullptr;
-#endif
 
 uint8_t* Wires = nullptr;
 
@@ -231,7 +215,6 @@ static uint32_t addrmap_kRAM_ln2Spc() {
 }
 #define kRAM_ln2Spc addrmap_kRAM_ln2Spc()
 
-#if IncludeVidMem
 static uint32_t addrmap_kVidMem_Base() {
 	if (g_machine->config().model == MacModel::PB100) return 0x00FA0000;
 	return 0x00540000;
@@ -242,7 +225,6 @@ static uint32_t addrmap_kVidMem_ln2Spc() {
 }
 #define kVidMem_Base addrmap_kVidMem_Base()
 #define kVidMem_ln2Spc addrmap_kVidMem_ln2Spc()
-#endif
 
 static uint32_t addrmap_kSCSI_Block_Base() {
 	if (g_machine->config().model == MacModel::PB100) return 0x00F90000;
@@ -589,11 +571,9 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 						case kExtnFindExtn:
 							ExtnFind_Access(p);
 							break;
-#if EmVidCard
 						case kExtnVideo:
 							ExtnVideo_Access(p);
 							break;
-#endif
 #if IncludeExtnPbufs
 						case kExtnParamBuffers:
 							ExtnParamBuffers_Access(p);
@@ -650,12 +630,8 @@ void Extn_Reset(void)
 
 #define kSCC_Mask 0x03
 
-#if EmVIA1
 #define kVIA1_Mask 0x00000F
-#endif
-#if EmVIA2
 #define kVIA2_Mask 0x00000F
-#endif
 
 #define kIWM_Mask 0x00000F /* Allocated Memory Bandwidth for IWM */
 
@@ -683,17 +659,11 @@ static uint32_t addrmap_Overlay_ROM_CmpZeroMask() {
 #define Overlay_ROM_CmpZeroMask addrmap_Overlay_ROM_CmpZeroMask()
 
 enum {
-#if EmVIA1
 	kMMDV_VIA1,
-#endif
-#if EmVIA2
 	kMMDV_VIA2,
-#endif
 	kMMDV_SCC,
 	kMMDV_Extn,
-#if EmASC
 	kMMDV_ASC,
-#endif
 	kMMDV_SCSI,
 	kMMDV_IWM,
 
@@ -1243,14 +1213,14 @@ static void SetUp_address(void)
 		AddToATTListWithMTB(&r);
 	}
 
-#if IncludeVidMem
-	r.cmpmask = 0x00FFFFFF & ~ ((1 << kVidMem_ln2Spc) - 1);
-	r.cmpvalu = kVidMem_Base;
-	r.usemask = kVidMemRAM_Size - 1;
-	r.usebase = VidMem;
-	r.Access = kATTA_readwritereadymask;
-	AddToATTList(&r);
-#endif
+	if (g_machine->config().includeVidMem) {
+		r.cmpmask = 0x00FFFFFF & ~ ((1 << kVidMem_ln2Spc) - 1);
+		r.cmpvalu = kVidMem_Base;
+		r.usemask = kVidMemRAM_Size - 1;
+		r.usebase = VidMem;
+		r.Access = kATTA_readwritereadymask;
+		AddToATTList(&r);
+	}
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kVIA1_ln2Spc) - 1);
 	r.cmpvalu = kVIA1_Block_Base;
@@ -1328,7 +1298,6 @@ static void get_fail_realblock(ATTep p)
 	bool WriteMem, bool ByteSize, uint32_t addr)
 {
 	switch (p->MMDV) {
-#if EmVIA1
 		case kMMDV_VIA1:
 			if (! ByteSize) {
 				if (g_machine->config().isIIFamily()
@@ -1359,8 +1328,6 @@ static void get_fail_realblock(ATTep p)
 			}
 
 			break;
-#endif /* EmVIA1 */
-#if EmVIA2
 		case kMMDV_VIA2:
 			if (! ByteSize) {
 				if ((! WriteMem)
@@ -1397,7 +1364,6 @@ static void get_fail_realblock(ATTep p)
 					(addr >> 9) & kVIA2_Mask);
 			}
 			break;
-#endif /* EmVIA2 */
 		case kMMDV_SCC:
 
 			if (g_machine->config().isSEFamily()) {
@@ -1459,7 +1425,6 @@ static void get_fail_realblock(ATTep p)
 				p->device->access(Data, WriteMem, (addr >> 1) & 0x0F);
 			}
 			break;
-#if EmASC
 		case kMMDV_ASC:
 			if (! ByteSize) {
 				if (g_machine->config().isIIFamily()) {
@@ -1482,7 +1447,6 @@ static void get_fail_realblock(ATTep p)
 				Data = p->device->access(Data, WriteMem, addr & kASC_Mask);
 			}
 			break;
-#endif
 		case kMMDV_SCSI:
 			if (! ByteSize) {
 				ReportAbnormalID(0x1115, "access SCSI word");
@@ -1694,21 +1658,21 @@ void VIAorSCCinterruptChngNtfy(void)
 	g_wires.onChange(Wire_VIA1_InterruptRequest, VIAorSCCinterruptChngNtfy);
 	g_wires.onChange(Wire_VIA2_InterruptRequest, VIAorSCCinterruptChngNtfy);
 	g_wires.onChange(Wire_SCCInterruptRequest, VIAorSCCinterruptChngNtfy);
-#if EmRTC
-	extern void RTCunEnabled_ChangeNtfy(void);
-	extern void RTCclock_ChangeNtfy(void);
-	extern void RTCdataLine_ChangeNtfy(void);
-	g_wires.onChange(Wire_VIA1_iB0_RTCdataLine, RTCdataLine_ChangeNtfy);
-	g_wires.onChange(Wire_VIA1_iB1_RTCclock, RTCclock_ChangeNtfy);
-	g_wires.onChange(Wire_VIA1_iB2_RTCunEnabled, RTCunEnabled_ChangeNtfy);
-#endif
-#if EmADB
-	extern void ADBstate_ChangeNtfy(void);
-	extern void ADB_DataLineChngNtfy(void);
-	g_wires.onChange(Wire_VIA1_iB4_ADB_st0, ADBstate_ChangeNtfy);
-	g_wires.onChange(Wire_VIA1_iB5_ADB_st1, ADBstate_ChangeNtfy);
-	g_wires.onChange(Wire_VIA1_iCB2_ADB_Data, ADB_DataLineChngNtfy);
-#endif
+	if (g_machine->config().emRTC) {
+		extern void RTCunEnabled_ChangeNtfy(void);
+		extern void RTCclock_ChangeNtfy(void);
+		extern void RTCdataLine_ChangeNtfy(void);
+		g_wires.onChange(Wire_VIA1_iB0_RTCdataLine, RTCdataLine_ChangeNtfy);
+		g_wires.onChange(Wire_VIA1_iB1_RTCclock, RTCclock_ChangeNtfy);
+		g_wires.onChange(Wire_VIA1_iB2_RTCunEnabled, RTCunEnabled_ChangeNtfy);
+	}
+	if (g_machine->config().emADB) {
+		extern void ADBstate_ChangeNtfy(void);
+		extern void ADB_DataLineChngNtfy(void);
+		g_wires.onChange(Wire_VIA1_iB4_ADB_st0, ADBstate_ChangeNtfy);
+		g_wires.onChange(Wire_VIA1_iB5_ADB_st1, ADBstate_ChangeNtfy);
+		g_wires.onChange(Wire_VIA1_iCB2_ADB_Data, ADB_DataLineChngNtfy);
+	}
 
 	g_cpu.init(
 		&CurIPL);
