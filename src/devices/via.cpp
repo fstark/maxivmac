@@ -29,6 +29,7 @@
 
 #include "devices/via.h"
 #include "core/wire_bus.h"
+#include "core/machine_obj.h"
 
 /*
 	ReportAbnormalID unused 0x0410 - 0x04FF
@@ -91,9 +92,6 @@ extern void VIA1_iCB2_ChangeNtfy(void);
 #define Ui3rPowOf2(p) (1 << (p))
 #define Ui3rTestBit(i, p) (((i) & Ui3rPowOf2(p)) != 0)
 
-#define VIA1_ORA_CanInOrOut (VIA1_ORA_CanIn | VIA1_ORA_CanOut)
-#define VIA1_ORB_CanInOrOut (VIA1_ORB_CanIn | VIA1_ORB_CanOut)
-
 #define kIntCA2 0
 #define kIntCA1 1
 #define kIntSR 2
@@ -107,222 +105,119 @@ extern void VIA1_iCB2_ChangeNtfy(void);
 /* Global singleton */
 VIA1Device* g_via1 = nullptr;
 
+const VIAConfig& VIA1Device::viaConfig() const {
+	return machine_->config().via1Config;
+}
+
 /* ===== VIA1Device method implementations ===== */
 
 uint8_t VIA1Device::getORA(uint8_t Selection)
 {
-	uint8_t Value = (~ VIA1_ORA_CanIn) & Selection & VIA1_ORA_FloatVal;
+	const auto& cfg = viaConfig();
+	uint8_t Value = (~ cfg.oraCanIn) & Selection & cfg.oraFloatVal;
 
-#if Ui3rTestBit(VIA1_ORA_CanIn, 7)
-	if (Ui3rTestBit(Selection, 7)) {
-		Value |= (VIA1_iA7 << 7);
+	for (int bit = 0; bit < 8; bit++) {
+		if (Ui3rTestBit(cfg.oraCanIn, bit) && Ui3rTestBit(Selection, bit)) {
+			int wireId = cfg.portAWires[bit];
+			if (wireId >= 0) {
+				Value |= (g_wires.get(wireId) << bit);
+			}
+		}
 	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanIn, 6)
-	if (Ui3rTestBit(Selection, 6)) {
-		Value |= (VIA1_iA6 << 6);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanIn, 5)
-	if (Ui3rTestBit(Selection, 5)) {
-		Value |= (VIA1_iA5 << 5);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanIn, 4)
-	if (Ui3rTestBit(Selection, 4)) {
-		Value |= (VIA1_iA4 << 4);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanIn, 3)
-	if (Ui3rTestBit(Selection, 3)) {
-		Value |= (VIA1_iA3 << 3);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanIn, 2)
-	if (Ui3rTestBit(Selection, 2)) {
-		Value |= (VIA1_iA2 << 2);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanIn, 1)
-	if (Ui3rTestBit(Selection, 1)) {
-		Value |= (VIA1_iA1 << 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanIn, 0)
-	if (Ui3rTestBit(Selection, 0)) {
-		Value |= (VIA1_iA0 << 0);
-	}
-#endif
 
 	return Value;
 }
 
 uint8_t VIA1Device::getORB(uint8_t Selection)
 {
-	uint8_t Value = (~ VIA1_ORB_CanIn) & Selection & VIA1_ORB_FloatVal;
+	const auto& cfg = viaConfig();
+	uint8_t Value = (~ cfg.orbCanIn) & Selection & cfg.orbFloatVal;
 
-#if Ui3rTestBit(VIA1_ORB_CanIn, 7)
-	if (Ui3rTestBit(Selection, 7)) {
-		Value |= (VIA1_iB7 << 7);
+	for (int bit = 0; bit < 8; bit++) {
+		if (Ui3rTestBit(cfg.orbCanIn, bit) && Ui3rTestBit(Selection, bit)) {
+			int wireId = cfg.portBWires[bit];
+			if (wireId >= 0) {
+				Value |= (g_wires.get(wireId) << bit);
+			}
+		}
 	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanIn, 6)
-	if (Ui3rTestBit(Selection, 6)) {
-		Value |= (VIA1_iB6 << 6);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanIn, 5)
-	if (Ui3rTestBit(Selection, 5)) {
-		Value |= (VIA1_iB5 << 5);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanIn, 4)
-	if (Ui3rTestBit(Selection, 4)) {
-		Value |= (VIA1_iB4 << 4);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanIn, 3)
-	if (Ui3rTestBit(Selection, 3)) {
-		Value |= (VIA1_iB3 << 3);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanIn, 2)
-	if (Ui3rTestBit(Selection, 2)) {
-		Value |= (VIA1_iB2 << 2);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanIn, 1)
-	if (Ui3rTestBit(Selection, 1)) {
-		Value |= (VIA1_iB1 << 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanIn, 0)
-	if (Ui3rTestBit(Selection, 0)) {
-		Value |= (VIA1_iB0 << 0);
-	}
-#endif
 
 	return Value;
 }
 
 void VIA1Device::putORA(uint8_t Selection, uint8_t Data)
 {
-#if Ui3rTestBit(VIA1_ORA_CanOut, 7)
-	if (Ui3rTestBit(Selection, 7)) {
-		g_wires.set(Wire_VIA1_iA7_SCCwaitrq, (Data >> 7) & 1);
+	const auto& cfg = viaConfig();
+
+	for (int bit = 0; bit < 8; bit++) {
+		if (Ui3rTestBit(cfg.oraCanOut, bit) && Ui3rTestBit(Selection, bit)) {
+			int wireId = cfg.portAWires[bit];
+			if (wireId >= 0) {
+				g_wires.set(wireId, (Data >> bit) & 1);
+			}
+		}
 	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanOut, 5)
-	if (Ui3rTestBit(Selection, 5)) {
-		g_wires.set(Wire_VIA1_iA5_IWMvSel, (Data >> 5) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanOut, 4)
-	if (Ui3rTestBit(Selection, 4)) {
-		g_wires.set(Wire_VIA1_iA4_MemOverlay, (Data >> 4) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanOut, 3)
-	if (Ui3rTestBit(Selection, 3)) {
-		g_wires.set(Wire_VIA1_iA3_SCCvSync, (Data >> 3) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanOut, 2)
-	if (Ui3rTestBit(Selection, 2)) {
-		g_wires.set(Wire_VIA1_iA2_unknown, (Data >> 2) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanOut, 1)
-	if (Ui3rTestBit(Selection, 1)) {
-		g_wires.set(Wire_VIA1_iA1_unknown, (Data >> 1) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanOut, 0)
-	if (Ui3rTestBit(Selection, 0)) {
-		g_wires.set(Wire_VIA1_iA0_unknown, Data & 1);
-	}
-#endif
 }
 
 void VIA1Device::putORB(uint8_t Selection, uint8_t Data)
 {
-#if Ui3rTestBit(VIA1_ORB_CanOut, 7)
-	if (Ui3rTestBit(Selection, 7)) {
-		g_wires.set(Wire_VIA1_iB7_unknown, (Data >> 7) & 1);
+	const auto& cfg = viaConfig();
+
+	for (int bit = 0; bit < 8; bit++) {
+		if (Ui3rTestBit(cfg.orbCanOut, bit) && Ui3rTestBit(Selection, bit)) {
+			int wireId = cfg.portBWires[bit];
+			if (wireId >= 0) {
+				g_wires.set(wireId, (Data >> bit) & 1);
+			}
+		}
 	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanOut, 5)
-	if (Ui3rTestBit(Selection, 5)) {
-		g_wires.set(Wire_VIA1_iB5_ADB_st1, (Data >> 5) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanOut, 4)
-	if (Ui3rTestBit(Selection, 4)) {
-		g_wires.set(Wire_VIA1_iB4_ADB_st0, (Data >> 4) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanOut, 3)
-	if (Ui3rTestBit(Selection, 3)) {
-		g_wires.set(Wire_VIA1_iB3_ADB_Int, (Data >> 3) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanOut, 2)
-	if (Ui3rTestBit(Selection, 2)) {
-		g_wires.set(Wire_VIA1_iB2_RTCunEnabled, (Data >> 2) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanOut, 1)
-	if (Ui3rTestBit(Selection, 1)) {
-		g_wires.set(Wire_VIA1_iB1_RTCclock, (Data >> 1) & 1);
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanOut, 0)
-	if (Ui3rTestBit(Selection, 0)) {
-		g_wires.set(Wire_VIA1_iB0_RTCdataLine, Data & 1);
-	}
-#endif
 }
 
 void VIA1Device::setDDR_A(uint8_t Data)
 {
+	const auto& cfg = viaConfig();
 	uint8_t floatbits = d_.DDR_A & ~ Data;
 	uint8_t unfloatbits = Data & ~ d_.DDR_A;
 
 	if (floatbits != 0) {
-		putORA(floatbits, VIA1_ORA_FloatVal);
+		putORA(floatbits, cfg.oraFloatVal);
 	}
 	d_.DDR_A = Data;
 	if (unfloatbits != 0) {
 		putORA(unfloatbits, d_.ORA);
 	}
-	if ((Data & ~ VIA1_ORA_CanOut) != 0) {
+	if ((Data & ~ cfg.oraCanOut) != 0) {
 		ReportAbnormalID(0x0401, "Set d_.DDR_A unexpected direction");
 	}
 }
 
 void VIA1Device::setDDR_B(uint8_t Data)
 {
+	const auto& cfg = viaConfig();
 	uint8_t floatbits = d_.DDR_B & ~ Data;
 	uint8_t unfloatbits = Data & ~ d_.DDR_B;
 
 	if (floatbits != 0) {
-		putORB(floatbits, VIA1_ORB_FloatVal);
+		putORB(floatbits, cfg.orbFloatVal);
 	}
 	d_.DDR_B = Data;
 	if (unfloatbits != 0) {
 		putORB(unfloatbits, d_.ORB);
 	}
-	if ((Data & ~ VIA1_ORB_CanOut) != 0) {
+	if ((Data & ~ cfg.orbCanOut) != 0) {
 		ReportAbnormalID(0x0402, "Set d_.DDR_B unexpected direction");
 	}
 }
 
 void VIA1Device::checkInterruptFlag()
 {
+	const auto& cfg = viaConfig();
 	uint8_t NewInterruptRequest =
 		((d_.IFR & d_.IER) != 0) ? 1 : 0;
 
-	g_wires.set(Wire_VIA1_InterruptRequest, NewInterruptRequest);
+	if (cfg.interruptWire >= 0) {
+		g_wires.set(cfg.interruptWire, NewInterruptRequest);
+	}
 }
 
 void VIA1Device::setInterruptFlag(uint8_t VIA_Int)
@@ -353,8 +248,11 @@ void VIA1Device::clear()
 
 void VIA1Device::zap()
 {
+	const auto& cfg = viaConfig();
 	clear();
-	g_wires.set(Wire_VIA1_InterruptRequest, 0);
+	if (cfg.interruptWire >= 0) {
+		g_wires.set(cfg.interruptWire, 0);
+	}
 }
 
 void VIA1Device::reset()
@@ -390,13 +288,16 @@ void VIA1Device::shiftInData(uint8_t v)
 
 uint8_t VIA1Device::shiftOutData()
 {
+	const auto& cfg = viaConfig();
 	if (((d_.ACR & 0x1C) >> 2) != 7) {
 		ReportAbnormalID(0x0404, "VIA Not ready to shift out");
 		return 0;
 	} else {
 		setInterruptFlag(kIntSR);
 		setInterruptFlag(kIntCB1);
-		g_wires.set(Wire_VIA1_iCB2_ADB_Data, d_.SR & 1);
+		if (cfg.cb2Wire >= 0) {
+			g_wires.set(cfg.cb2Wire, d_.SR & 1);
+		}
 		return d_.SR;
 	}
 }
@@ -418,17 +319,21 @@ void VIA1Device::doTimer1Check()
 				|| ((Temp <= deltaTemp) && (Temp != 0)))
 			{
 				if ((d_.ACR & 0x40) != 0) { /* Free Running? */
+					const auto& t1cfg = viaConfig();
 					uint16_t v = (d_.T1L_H << 8) + d_.T1L_L;
 					uint16_t ntrans = 1 + ((v == 0) ? 0 :
 						(((deltaTemp - Temp) / v) >> 16));
 					NewTemp += (((uint32_t)v * ntrans) << 16);
-#if Ui3rTestBit(VIA1_ORB_CanOut, 7)
-					if ((d_.ACR & 0x80) != 0) { /* invert ? */
-						if ((ntrans & 1) != 0) {
-							g_wires.set(Wire_VIA1_iB7_unknown, VIA1_iB7 ^ 1);
+					if (Ui3rTestBit(t1cfg.orbCanOut, 7)) {
+						if ((d_.ACR & 0x80) != 0) { /* invert ? */
+							if ((ntrans & 1) != 0) {
+								int b7Wire = t1cfg.portBWires[7];
+								if (b7Wire >= 0) {
+									g_wires.set(b7Wire, g_wires.get(b7Wire) ^ 1);
+								}
+							}
 						}
 					}
-#endif
 					setInterruptFlag(kIntT1);
 #if VIA1_dolog && 1
 					dbglog_WriteNote("VIA1 Timer 1 Interrupt");
@@ -563,12 +468,14 @@ void VIA1Device::doTimer2Check()
 
 uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
+	const auto& acfg = viaConfig();
 	switch (addr) {
 		case kORB   :
-#if VIA1_CB2modesAllowed != 0x01
-			if ((d_.PCR & 0xE0) == 0)
-#endif
-			{
+			if (acfg.cb2ModesAllowed != 0x01) {
+				if ((d_.PCR & 0xE0) == 0) {
+					clrInterruptFlag(kIntCB2);
+				}
+			} else {
 				clrInterruptFlag(kIntCB2);
 			}
 			clrInterruptFlag(kIntCB1);
@@ -718,7 +625,9 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 #ifdef _VIA_Debug
 						fprintf(stderr, "posting Foo2Task\n");
 #endif
-						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 0);
+						if (acfg.cb2Wire >= 0) {
+						g_wires.set(acfg.cb2Wire, 0);
+					}
 					}
 #if 0
 					setInterruptFlag(kIntSR);
@@ -736,13 +645,13 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			break;
 		case kACR:
 			if (WriteMem) {
-#if 1
 				if ((d_.ACR & 0x10) != ((uint8_t)Data & 0x10)) {
 					if ((Data & 0x10) == 0) {
-						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
+						if (acfg.cb2Wire >= 0) {
+							g_wires.set(acfg.cb2Wire, 1);
+						}
 					}
 				}
-#endif
 				d_.ACR = Data;
 				if ((d_.ACR & 0x20) != 0) {
 					ReportAbnormalID(0x0406,
@@ -784,7 +693,7 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			if (WriteMem) {
 				d_.PCR = Data;
 #define Ui3rSetContains(s, i) (((s) & (1 << (i))) != 0)
-				if (! Ui3rSetContains(VIA1_CB2modesAllowed,
+				if (! Ui3rSetContains(acfg.cb2ModesAllowed,
 					(d_.PCR >> 5) & 0x07))
 				{
 					ReportAbnormalID(0x040A,
@@ -794,7 +703,7 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					ReportAbnormalID(0x040B,
 						"Set d_.PCR CB1 INTERRUPT CONTROL?");
 				}
-				if (! Ui3rSetContains(VIA1_CA2modesAllowed,
+				if (! Ui3rSetContains(acfg.ca2ModesAllowed,
 					(d_.PCR >> 1) & 0x07))
 				{
 					ReportAbnormalID(0x040C,
@@ -830,18 +739,18 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			if (WriteMem) {
 				if ((Data & 0x80) == 0) {
 					d_.IER = d_.IER & ((~ Data) & 0x7F);
-#if 0 != VIA1_IER_Never0
-					if ((Data & VIA1_IER_Never0) != 0) {
-						ReportAbnormalID(0x040E, "IER Never0 clr");
+					if (acfg.ierNever0 != 0) {
+						if ((Data & acfg.ierNever0) != 0) {
+							ReportAbnormalID(0x040E, "IER Never0 clr");
+						}
 					}
-#endif
 				} else {
 					d_.IER = d_.IER | (Data & 0x7F);
-#if 0 != VIA1_IER_Never1
-					if ((d_.IER & VIA1_IER_Never1) != 0) {
-						ReportAbnormalID(0x040F, "IER Never1 set");
+					if (acfg.ierNever1 != 0) {
+						if ((d_.IER & acfg.ierNever1) != 0) {
+							ReportAbnormalID(0x040F, "IER Never1 set");
+						}
 					}
-#endif
 				}
 				checkInterruptFlag();
 			} else {

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "devices/device.h"
+#include "core/machine_config.h"
 #include <cstdint>
 
 // VIA2 Device class wrapping the original VIA2 emulation
@@ -27,6 +28,9 @@ public:
 	void zap() override;
 	void reset() override;
 	const char* name() const override { return "VIA2"; }
+
+	// Access the VIA configuration (port masks, wire mapping)
+	const VIAConfig& viaConfig() const;
 
 	// Timer ICT callbacks
 	void doTimer1Check();

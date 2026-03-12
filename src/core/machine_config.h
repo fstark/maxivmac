@@ -10,6 +10,28 @@
 
 #pragma once
 #include <cstdint>
+#include <array>
+
+// VIA port configuration — replaces compile-time VIA1_ORA_FloatVal etc.
+struct VIAConfig {
+	uint8_t oraFloatVal    = 0xFF;
+	uint8_t orbFloatVal    = 0xFF;
+	uint8_t oraCanIn       = 0x00;
+	uint8_t oraCanOut      = 0x00;
+	uint8_t orbCanIn       = 0x00;
+	uint8_t orbCanOut      = 0x00;
+	uint8_t ierNever0      = 0x00;
+	uint8_t ierNever1      = 0x00;
+	uint8_t cb2ModesAllowed = 0x01;
+	uint8_t ca2ModesAllowed = 0x01;
+
+	// Wire mapping: which WireID is connected to each port bit
+	// -1 means unconnected (no wire)
+	std::array<int, 8> portAWires = {-1, -1, -1, -1, -1, -1, -1, -1};
+	std::array<int, 8> portBWires = {-1, -1, -1, -1, -1, -1, -1, -1};
+	int cb2Wire       = -1;   // WireID for CB2
+	int interruptWire = -1;   // WireID for interrupt request output
+};
 
 // Model IDs — same values as the existing #defines in machine.h
 enum class MacModel : int {
@@ -60,6 +82,10 @@ struct MachineConfig {
 	uint16_t screenWidth  = 640;
 	uint16_t screenHeight = 480;
 	uint8_t  screenDepth  = 3;  // log2 bpp: 0=1bpp, 3=8bpp
+
+	// VIA port configuration (populated by model factory)
+	VIAConfig via1Config;
+	VIAConfig via2Config;
 
 	// Helper predicates
 	bool isIIFamily() const {
