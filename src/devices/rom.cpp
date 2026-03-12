@@ -29,6 +29,8 @@
 
 #include "devices/rom.h"
 
+ROMDevice* g_rom = nullptr;
+
 #define UseSonyPatch \
 	((CurEmMd <= kEmMd_Classic) || (CurEmMd == kEmMd_II) \
 		|| (CurEmMd == kEmMd_IIx))
@@ -272,7 +274,7 @@ static void ROMscrambleForMTB(void)
 }
 #endif
 
- bool ROM_Init(void)
+ bool ROMDevice::init()
 {
 #if DisableRomCheck
 
@@ -328,3 +330,6 @@ static void ROMscrambleForMTB(void)
 
 	return true;
 }
+
+// Backward-compatible forwarding stubs
+bool ROM_Init(void) { return g_rom ? g_rom->init() : false; }

@@ -24,11 +24,13 @@
 
 #include "core/common.h"
 
+#include "devices/sound.h"
+
+SoundDevice* g_sound = nullptr;
+
 #if EmClassicSnd
 
 #include "cpu/m68k.h"
-
-#include "devices/sound.h"
 
 
 #define kSnd_Main_Offset   0x0300
@@ -99,7 +101,7 @@ static uint16_t SoundInvertState = 0;
 
 extern uint16_t GetSoundInvertTime(void);
 
-void MacSound_SubTick(int SubTick)
+void SoundDevice::subTick(int SubTick)
 {
 	uint16_t actL;
 	tpSoundSamp p;
@@ -214,5 +216,8 @@ label_retry:
 		}
 	}
 }
+
+// Backward-compatible forwarding stubs
+void MacSound_SubTick(int SubTick) { if (g_sound) g_sound->subTick(SubTick); }
 
 #endif /* EmClassicSnd */

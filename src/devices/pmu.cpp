@@ -20,11 +20,13 @@
 
 #include "core/common.h"
 
+#include "devices/pmu.h"
+
+PMUDevice* g_pmu = nullptr;
+
 #if EmPMU
 
 #include "devices/via.h"
-
-#include "devices/pmu.h"
 
 /*
 	ReportAbnormalID unused 0x0E0E - 0x0EFF
@@ -334,7 +336,7 @@ static void PmuCheckCommandCompletion(void)
 	}
 }
 
-void PmuToReady_ChangeNtfy(void)
+void PMUDevice::toReadyChangeNtfy()
 {
 	if (PMU_Sending) {
 		PMU_Sending = false;
@@ -430,7 +432,7 @@ void PmuToReady_ChangeNtfy(void)
 	}
 }
 
-void PMU_DoTask(void)
+void PMUDevice::doTask()
 {
 	if (PMU_Sending) {
 		PMU_Sending = false;
@@ -438,5 +440,9 @@ void PMU_DoTask(void)
 		PmuFromReady = 0;
 	}
 }
+
+// Backward-compatible forwarding stubs
+void PmuToReady_ChangeNtfy(void) { if (g_pmu) g_pmu->toReadyChangeNtfy(); }
+void PMU_DoTask(void) { if (g_pmu) g_pmu->doTask(); }
 
 #endif /* EmPMU */

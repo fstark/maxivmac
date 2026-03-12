@@ -28,6 +28,8 @@
 
 #include "devices/screen.h"
 
+ScreenDevice* g_screen = nullptr;
+
 #if ! IncludeVidMem
 #define kMain_Offset      0x5900
 #define kAlternate_Offset 0xD900
@@ -35,7 +37,7 @@
 #define kAlternate_Buffer (kRAM_Size - kAlternate_Offset)
 #endif
 
-void Screen_EndTickNotify(void)
+void ScreenDevice::endTickNotify()
 {
 	uint8_t * screencurrentbuff;
 
@@ -51,3 +53,6 @@ void Screen_EndTickNotify(void)
 
 	Screen_OutputFrame(screencurrentbuff);
 }
+
+// Backward-compatible forwarding stubs
+void Screen_EndTickNotify(void) { if (g_screen) g_screen->endTickNotify(); }

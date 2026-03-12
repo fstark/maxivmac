@@ -33,6 +33,8 @@
 
 #include "devices/sony.h"
 
+SonyDevice* g_sony = nullptr;
+
 /*
 	ReportAbnormalID unused 0x090B - 0x09FF
 */
@@ -496,7 +498,7 @@ static uint16_t DelayUntilNextInsert;
 static uint32_t MountCallBack = 0;
 
 /* This checks to see if a disk (image) has been inserted */
-void Sony_Update (void)
+void SonyDevice::update()
 {
 	if (DelayUntilNextInsert != 0) {
 		--DelayUntilNextInsert;
@@ -571,7 +573,7 @@ static tMacErr Drive_Transfer(bool IsWrite, uint32_t Buffera,
 
 static bool QuitOnEject = false;
 
-void Sony_SetQuitOnEject(void)
+void SonyDevice::setQuitOnEject()
 {
 	QuitOnEject = true;
 }
@@ -616,7 +618,7 @@ static tMacErr Drive_EjectDelete(tDrive Drive_No)
 }
 #endif
 
-void Sony_EjectAllDisks(void)
+void SonyDevice::ejectAllDisks()
 {
 	tDrive i;
 
@@ -631,7 +633,7 @@ void Sony_EjectAllDisks(void)
 	}
 }
 
-void Sony_Reset(void)
+void SonyDevice::reset()
 {
 	DelayUntilNextInsert = 0;
 	QuitOnEject = false;
@@ -676,7 +678,7 @@ void Sony_Reset(void)
 #define kParamDiskBuffer 16
 #define kParamDiskDrive_No 20
 
-void ExtnDisk_Access(uint32_t p)
+void SonyDevice::extnDiskAccess(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
 
@@ -1662,7 +1664,7 @@ static tMacErr Sony_OpenC(uint32_t p)
 #define kCmndSonyOpenC 7
 #define kCmndSonyMount 8
 
-void ExtnSony_Access(uint32_t p)
+void SonyDevice::extnSonyAccess(uint32_t p)
 {
 	tMacErr result;
 
@@ -1702,3 +1704,11 @@ void ExtnSony_Access(uint32_t p)
 
 	put_vm_word(p + ExtnDat_result, result);
 }
+
+// Backward-compatible forwarding stubs
+void ExtnDisk_Access(uint32_t p) { if (g_sony) g_sony->extnDiskAccess(p); }
+void ExtnSony_Access(uint32_t p) { if (g_sony) g_sony->extnSonyAccess(p); }
+void Sony_SetQuitOnEject(void) { if (g_sony) g_sony->setQuitOnEject(); }
+void Sony_EjectAllDisks(void) { if (g_sony) g_sony->ejectAllDisks(); }
+void Sony_Reset(void) { if (g_sony) g_sony->reset(); }
+void Sony_Update(void) { if (g_sony) g_sony->update(); }
