@@ -7,19 +7,18 @@
 	you know what you're doing.
 */
 
+/* Device-enable flags still needed as compile-time guards because
+   pmu.cpp, keyboard.cpp, sound.cpp have cross-subsystem VIA
+   dependencies that prevent always-compiling their bodies.
+   The rest are now runtime via MachineConfig. */
 #define EmClassicKbrd 0
-#define EmADB 1
-#define EmRTC 1
 #define EmPMU 0
-#define EmVIA1 1
-#define EmVIA2 1
+#define EmClassicSnd 0
+
+/* CPU feature flags — must stay compile-time for hot-path performance */
 #define Use68020 1
 #define EmFPU 1
 #define EmMMU 0
-#define EmClassicSnd 0
-#define EmASC 1
-
-#define CurEmMd kEmMd_II
 
 #define kMyClockMult 2
 
@@ -32,10 +31,8 @@
 #define kRAMa_Size 0x00400000
 #define kRAMb_Size 0x00400000
 
-#define IncludeVidMem 1
 #define kVidMemRAM_Size 0x00080000
 
-#define EmVidCard 1
 #define kVidROM_Size 0x000800
 
 #define MaxATTListN 20

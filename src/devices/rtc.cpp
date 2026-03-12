@@ -38,25 +38,11 @@
 /* Global singleton */
 RTCDevice* g_rtc = nullptr;
 
-#define HaveXPRAM (CurEmMd >= kEmMd_Plus)
-
-/*
-	ReportAbnormalID unused 0x0805 - 0x08FF
-*/
-
-#if HaveXPRAM
+/* All supported models (Plus through IIx) have XPRAM */
 #define PARAMRAMSize 256
-#else
-#define PARAMRAMSize 20
-#endif
 
-#if HaveXPRAM
 #define Group1Base 0x10
 #define Group2Base 0x08
-#else
-#define Group1Base 0x00
-#define Group2Base 0x10
-#endif
 
 typedef struct
 {
@@ -70,9 +56,7 @@ typedef struct
 	uint8_t Counter;
 	uint8_t Mode;
 	uint8_t SavedCmd;
-#if HaveXPRAM
 	uint8_t Sector;
-#endif
 
 	/* RTC Registers */
 	uint8_t Seconds_1[4];
@@ -99,11 +83,8 @@ static uint32_t LastRealDate;
 
 #ifndef DiskCacheSz /* in 1,2,3,4,6,8,12 */
 /* actual cache size is DiskCacheSz * 32k */
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 #define DiskCacheSz 1
-#else
-#define DiskCacheSz 4
-#endif
+/* was 4 for compact Macs, 1 for Mac II; using 1 as default */
 #endif
 
 #ifndef StartUpDisk /* in 0..1 */
@@ -218,7 +199,7 @@ void DumpRTC(void)
 #endif
 		;
 
-#if HaveXPRAM /* extended parameter ram initialized */
+	/* XPRAM: extended parameter ram signature */
 	if (g_machine->config().isIIFamily()) {
 		RTC.PARAMRAM[12] = 0x4e;
 		RTC.PARAMRAM[13] = 0x75;
@@ -230,7 +211,6 @@ void DumpRTC(void)
 		RTC.PARAMRAM[14] = 0x67;
 		RTC.PARAMRAM[15] = 0x73;
 	}
-#endif
 
 	if (g_machine->config().isSEFamily() || g_machine->config().isIIFamily()) {
 		RTC.PARAMRAM[0x01] = 0x80;
@@ -300,11 +280,10 @@ void DumpRTC(void)
 #endif
 	}
 
-#if HaveXPRAM /* extended parameter ram initialized */
+	/* XPRAM: location data */
 	do_put_mem_long(&RTC.PARAMRAM[0xE4], CurMacLatitude);
 	do_put_mem_long(&RTC.PARAMRAM[0xE8], CurMacLongitude);
 	do_put_mem_long(&RTC.PARAMRAM[0xEC], CurMacDelta);
-#endif
 
 #endif /* RTCinitPRAM */
 
@@ -393,7 +372,6 @@ static void RTC_DoCmd(void)
 {
 	switch (RTC.Mode) {
 		case 0: /* This Byte is a RTC Command */
-#if HaveXPRAM
 			if ((RTC.ShiftData & 0x78) == 0x38) { /* Extended Command */
 				RTC.SavedCmd = RTC.ShiftData;
 				RTC.Mode = 2;
@@ -401,7 +379,6 @@ static void RTC_DoCmd(void)
 				printf("Extended command %2x\n", RTC.ShiftData);
 #endif
 			} else
-#endif
 			{
 				if ((RTC.ShiftData & 0x80) != 0x00) { /* Read Command */
 					RTC.ShiftData =
@@ -418,7 +395,6 @@ static void RTC_DoCmd(void)
 				true, RTC.SavedCmd);
 			RTC.Mode = 0;
 			break;
-#if HaveXPRAM
 		case 2: /* This Byte is rest of Extended RTC command address */
 #ifdef _RTC_Debug
 			printf("Mode 2 %2x\n", RTC.ShiftData);
@@ -445,7 +421,6 @@ static void RTC_DoCmd(void)
 				true, RTC.Sector);
 			RTC.Mode = 0;
 			break;
-#endif
 	}
 }
 

@@ -25,31 +25,28 @@
 */
 
 #include "core/common.h"
+#include "core/machine_obj.h"
 
 #include "devices/screen.h"
 
 ScreenDevice* g_screen = nullptr;
 
-#if ! IncludeVidMem
 #define kMain_Offset      0x5900
 #define kAlternate_Offset 0xD900
 #define kMain_Buffer      (kRAM_Size - kMain_Offset)
 #define kAlternate_Buffer (kRAM_Size - kAlternate_Offset)
-#endif
 
 void ScreenDevice::endTickNotify()
 {
 	uint8_t * screencurrentbuff;
 
-#if IncludeVidMem
-	screencurrentbuff = VidMem;
-#else
-	if (SCRNvPage2 == 1) {
-		screencurrentbuff = get_ram_address(kMain_Buffer);
+	if (g_machine->config().includeVidMem) {
+		screencurrentbuff = VidMem;
 	} else {
-		screencurrentbuff = get_ram_address(kAlternate_Buffer);
+		/* Compact Macs: screen buffer in main RAM
+		   (uses SCRNvPage2 wire for page selection — not yet wired) */
+		screencurrentbuff = get_ram_address(kMain_Buffer);
 	}
-#endif
 
 	Screen_OutputFrame(screencurrentbuff);
 }
