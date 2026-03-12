@@ -51,9 +51,7 @@ extern uint8_t * VidMem;
 
 extern void MemOverlay_ChangeNtfy(void);
 
-#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
 extern void Addr32_ChangeNtfy(void);
-#endif
 
 /*
 	representation of pointer into memory of emulated computer:

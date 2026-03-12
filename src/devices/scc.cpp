@@ -42,6 +42,7 @@
 
 #include "devices/scc.h"
 #include "core/wire_bus.h"
+#include "core/machine_obj.h"
 
 /* Global singleton */
 SCCDevice* g_scc = nullptr;
@@ -1311,11 +1312,9 @@ static uint8_t SCC_GetRR8(int chan)
 		}
 #else
 		/* Rx Enable */
-#if (CurEmMd >= kEmMd_SE) && (CurEmMd <= kEmMd_IIx)
-		/* don't report */
-#else
-		ReportAbnormalID(0x0707, "read rr8 when RxEnable");
-#endif
+		if (!g_machine->config().isSEOrLater()) {
+			ReportAbnormalID(0x0707, "read rr8 when RxEnable");
+		}
 
 		/* Input 1 byte from Modem Port/Printer into Data */
 #endif
@@ -2333,11 +2332,9 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 #if SCC_dolog
 			dbglog_WriteNote("SCC Force Hardware Reset");
 #endif
-#if (CurEmMd >= kEmMd_SE) && (CurEmMd <= kEmMd_IIx)
-			/* don't report */
-#else
-			ReportAbnormalID(0x0726, "SCC_Reset");
-#endif
+			if (!g_machine->config().isSEOrLater()) {
+				ReportAbnormalID(0x0726, "SCC_Reset");
+			}
 			SCC_Reset();
 			CheckSCCInterruptFlag();
 			break;
@@ -2724,11 +2721,9 @@ static void SCC_PutWR15(uint8_t Data, int chan)
 	SCC.a[chan].DCD_IE = (Data & Bit3) != 0;
 #else
 	if ((Data & Bit3) == 0) { /* DCD_IE */
-#if (CurEmMd >= kEmMd_SE) && (CurEmMd <= kEmMd_IIx)
-		/* don't report */
-#else
-		ReportAbnormalID(0x0741, "not DCD IE");
-#endif
+		if (!g_machine->config().isSEOrLater()) {
+			ReportAbnormalID(0x0741, "not DCD IE");
+		}
 	}
 #endif
 

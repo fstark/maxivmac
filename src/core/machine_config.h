@@ -72,6 +72,9 @@ struct MachineConfig {
 		return model == MacModel::SE || model == MacModel::SEFDHD
 		    || model == MacModel::Classic;
 	}
+	bool isSEOrLater() const {
+		return static_cast<int>(model) >= static_cast<int>(MacModel::SE);
+	}
 	uint32_t ramSize() const { return ramASize + ramBSize; }
 };
 
