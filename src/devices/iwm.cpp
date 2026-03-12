@@ -33,6 +33,9 @@
 
 #include "devices/iwm.h"
 
+/* Global singleton */
+IWMDevice* g_iwm = nullptr;
+
 #define IWM_dolog (dbglog_HAVE && 0)
 
 /*
@@ -79,7 +82,7 @@ typedef struct
 
 IWM_Ty IWM;
 
-void IWM_Reset(void)
+void IWMDevice::reset()
 {
 	IWM.DataIn = IWM.Handshake = IWM.Status = IWM.Mode =
 		IWM.DataOut = IWM.Lines = 0;
@@ -145,7 +148,7 @@ static void IWM_Write_Reg(uint8_t in)
 	}
 }
 
- uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+ uint32_t IWMDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 #if IWM_dolog
 	dbglog_AddrAccess("IWM", Data, WriteMem, addr);
@@ -211,4 +214,16 @@ static void IWM_Write_Reg(uint8_t in)
 	}
 
 	return Data;
+}
+
+/* ===== Backward-compatible free function API ===== */
+
+void IWM_Reset(void)
+{
+	g_iwm->reset();
+}
+
+uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+{
+	return g_iwm->access(Data, WriteMem, addr);
 }

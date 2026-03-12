@@ -26,6 +26,9 @@
 
 #include "devices/asc.h"
 
+/* Global singleton */
+ASCDevice* g_asc = nullptr;
+
 /*
 	ReportAbnormalID unused 0x0F0E, 0x0F1E - 0x0FFF
 */
@@ -96,7 +99,7 @@ static void ASC_ClearFIFO(void)
 	ASC_RecalcStatus();
 }
 
- uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 	if (addr < 0x800) {
 		if (WriteMem) {
@@ -537,7 +540,7 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 	23,  23,  23,  23,  23,  23,  23,  24
 };
 
-void ASC_SubTick(int SubTick)
+void ASCDevice::subTick(int SubTick)
 {
 	uint16_t actL;
 #if MySoundEnabled
@@ -870,6 +873,18 @@ label_retry:
 		}
 	}
 #endif
+}
+
+/* ===== Backward-compatible free function API ===== */
+
+uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+{
+	return g_asc->access(Data, WriteMem, addr);
+}
+
+void ASC_SubTick(int SubTick)
+{
+	g_asc->subTick(SubTick);
 }
 
 #endif /* EmASC */
