@@ -47,75 +47,66 @@ void DrawCell(unsigned int h, unsigned int v, int x)
 		int i;
 		uint8_t * p0 = ((uint8_t *)CellData) + 16 * x;
 
-#if 0 != vMacScreenDepth
-		if (UseColorMode) {
+	if (0 != vMacScreenDepth && UseColorMode) {
 			uint8_t * p = CntrlDisplayBuff
 				+ ((h + 1) << vMacScreenDepth)
 				+ (v * 16 + 11) * vMacScreenByteWidth;
 
 			for (i = 16; --i >= 0; ) {
-#if 1 == vMacScreenDepth
-				int k;
-				uint8_t t0 = *p0;
-				uint8_t * p2 = p;
-				for (k = 2; --k >= 0; ) {
-					*p2++ = (((t0) & 0x80) ? 0xC0 : 0x00)
-						| (((t0) & 0x40) ? 0x30 : 0x00)
-						| (((t0) & 0x20) ? 0x0C : 0x00)
-						| (((t0) & 0x10) ? 0x03 : 0x00);
-						/* black RRGGBBAA, white RRGGBBAA */
-					t0 <<= 4;
+				if (1 == vMacScreenDepth) {
+					int k;
+					uint8_t t0 = *p0;
+					uint8_t * p2 = p;
+					for (k = 2; --k >= 0; ) {
+						*p2++ = (((t0) & 0x80) ? 0xC0 : 0x00)
+							| (((t0) & 0x40) ? 0x30 : 0x00)
+							| (((t0) & 0x20) ? 0x0C : 0x00)
+							| (((t0) & 0x10) ? 0x03 : 0x00);
+						t0 <<= 4;
+					}
+				} else if (2 == vMacScreenDepth) {
+					int k;
+					uint8_t t0 = *p0;
+					uint8_t * p2 = p;
+					for (k = 4; --k >= 0; ) {
+						*p2++ = (((t0) & 0x40) ? 0x0F : 0x00)
+							| (((t0) & 0x80) ? 0xF0 : 0x00);
+						t0 <<= 2;
+					}
+				} else if (3 == vMacScreenDepth) {
+					int k;
+					uint8_t t0 = *p0;
+					uint8_t * p2 = p;
+					for (k = 8; --k >= 0; ) {
+						*p2++ = ((t0 >> k) & 0x01) ? 0xFF : 0x00;
+					}
+				} else if (4 == vMacScreenDepth) {
+					int k;
+					uint16_t v;
+					uint8_t t0 = *p0;
+					uint8_t * p2 = p;
+					for (k = 8; --k >= 0; ) {
+						v = ((t0 >> k) & 0x01) ? 0x0000 : 0x7FFF;
+						*p2++ = v >> 8;
+						*p2++ = v;
+					}
+				} else if (5 == vMacScreenDepth) {
+					int k;
+					uint32_t v;
+					uint8_t t0 = *p0;
+					uint8_t * p2 = p;
+					for (k = 8; --k >= 0; ) {
+						v = ((t0 >> k) & 0x01) ? 0x00000000 : 0x00FFFFFF;
+						*p2++ = v >> 24;
+						*p2++ = v >> 16;
+						*p2++ = v >> 8;
+						*p2++ = v;
+					}
 				}
-#elif 2 == vMacScreenDepth
-				int k;
-				uint8_t t0 = *p0;
-				uint8_t * p2 = p;
-				for (k = 4; --k >= 0; ) {
-					*p2++ = (((t0) & 0x40) ? 0x0F : 0x00)
-						| (((t0) & 0x80) ? 0xF0 : 0x00);
-						/* black RRGGBBAA, white RRGGBBAA */
-					t0 <<= 2;
-				}
-#elif 3 == vMacScreenDepth
-				int k;
-				uint8_t t0 = *p0;
-				uint8_t * p2 = p;
-				for (k = 8; --k >= 0; ) {
-					*p2++ = ((t0 >> k) & 0x01) ? 0xFF : 0x00;
-						/* black RRGGBBAA, white RRGGBBAA */
-				}
-#elif 4 == vMacScreenDepth
-				int k;
-				uint16_t v;
-				uint8_t t0 = *p0;
-				uint8_t * p2 = p;
-				for (k = 8; --k >= 0; ) {
-					v = ((t0 >> k) & 0x01) ? 0x0000 : 0x7FFF;
-						/* black RRGGBBAA, white RRGGBBAA */
-					/* *((uint16_t *)p2)++ = v; need big endian, so : */
-					*p2++ = v >> 8;
-					*p2++ = v;
-				}
-#elif 5 == vMacScreenDepth
-				int k;
-				uint32_t v;
-				uint8_t t0 = *p0;
-				uint8_t * p2 = p;
-				for (k = 8; --k >= 0; ) {
-					v = ((t0 >> k) & 0x01) ? 0x00000000 : 0x00FFFFFF;
-						/* black RRGGBBAA, white RRGGBBAA */
-					/* *((uint32_t *)p2)++ = v; need big endian, so : */
-					*p2++ = v >> 24;
-					*p2++ = v >> 16;
-					*p2++ = v >> 8;
-					*p2++ = v;
-				}
-#endif
 				p += vMacScreenByteWidth;
 				p0 ++;
 			}
 		} else
-#endif
 		{
 			uint8_t * p = CntrlDisplayBuff + (h + 1)
 				+ (v * 16 + 11) * vMacScreenMonoByteWidth;
@@ -1100,9 +1091,7 @@ uint8_t * GetCurDrawBuff(void)
 
 	if (0 != SpecialModes) {
 		MyMoveBytes((uint8_t *)p, (uint8_t *)CntrlDisplayBuff,
-#if 0 != vMacScreenDepth
-			UseColorMode ? vMacScreenNumBytes :
-#endif
+			(0 != vMacScreenDepth && UseColorMode) ? vMacScreenNumBytes :
 				vMacScreenMonoNumBytes
 			);
 		p = CntrlDisplayBuff;

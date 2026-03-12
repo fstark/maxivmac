@@ -176,6 +176,15 @@ extern uint32_t CurMacDelta;
 #endif
 
 
+/* --- Runtime screen dimensions (set from MachineConfig at init) --- */
+extern uint16_t g_screenWidth;
+extern uint16_t g_screenHeight;
+extern uint8_t  g_screenDepth;
+
+#define vMacScreenWidth  ((long)g_screenWidth)
+#define vMacScreenHeight ((long)g_screenHeight)
+#define vMacScreenDepth  ((int)g_screenDepth)
+
 #define vMacScreenNumPixels \
 	((long)vMacScreenHeight * (long)vMacScreenWidth)
 #define vMacScreenNumBits (vMacScreenNumPixels << vMacScreenDepth)
@@ -186,22 +195,16 @@ extern uint32_t CurMacDelta;
 #define vMacScreenMonoNumBytes (vMacScreenNumPixels / 8)
 #define vMacScreenMonoByteWidth ((long)vMacScreenWidth / 8)
 
-#if 0 != vMacScreenDepth
 extern bool UseColorMode;
 extern bool ColorModeWorks;
-#endif
 
-#if 0 != vMacScreenDepth
 extern bool ColorMappingChanged;
-#endif
 
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-#define CLUT_size (1 << (1 << vMacScreenDepth))
+#define CLUT_size 256
 
 extern uint16_t CLUT_reds[CLUT_size];
 extern uint16_t CLUT_greens[CLUT_size];
 extern uint16_t CLUT_blues[CLUT_size];
-#endif
 
 extern bool EmVideoDisable;
 extern int8_t EmLagTime;

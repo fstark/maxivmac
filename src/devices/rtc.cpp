@@ -194,9 +194,7 @@ void DumpRTC(void)
 	RTC.PARAMRAM[1 + Group2Base] = prb_volClickLo;
 	RTC.PARAMRAM[2 + Group2Base] = prb_miscHi;
 	RTC.PARAMRAM[3 + Group2Base] = prb_miscLo
-#if 0 != vMacScreenDepth
-		| 0x80
-#endif
+		| ((0 != vMacScreenDepth) ? 0x80 : 0x00)
 		;
 
 	/* XPRAM: extended parameter ram signature */
@@ -223,14 +221,14 @@ void DumpRTC(void)
 		RTC.PARAMRAM[0x46] = /* 0x42 */ 0x76; /* 'v' */
 		RTC.PARAMRAM[0x47] = /* 0x32 */ 0x4D; /* 'M' */
 		/* mode */
-#if (0 == vMacScreenDepth) || (vMacScreenDepth >= 4)
-		RTC.PARAMRAM[0x48] = 0x80;
-#else
-		RTC.PARAMRAM[0x48] = 0x81;
-			/* 0x81 doesn't quite work right at boot */
-				/* no, it seems to work now (?) */
-				/* but only if depth <= 3 */
-#endif
+		if ((0 == vMacScreenDepth) || (vMacScreenDepth >= 4)) {
+			RTC.PARAMRAM[0x48] = 0x80;
+		} else {
+			RTC.PARAMRAM[0x48] = 0x81;
+				/* 0x81 doesn't quite work right at boot */
+					/* no, it seems to work now (?) */
+					/* but only if depth <= 3 */
+		}
 	}
 
 	if (g_machine->config().isIIFamily()) {

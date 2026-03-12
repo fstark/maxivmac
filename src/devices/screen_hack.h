@@ -88,50 +88,50 @@ if (static_cast<int>(g_machine->config().model)
 	do_put_mem_word(2052 + ROM, vMacScreenWidth / 8 - 2);
 
 	/* cursor handling */
-#if vMacScreenWidth >= 1024
-	pto = 3448 + ROM;
-	do_put_mem_word(pto, 0x4EB9); /* JSR */
-	pto += 2;
-	do_put_mem_long(pto, kROM_Base + (patchp - ROM));
-	pto += 4;
+	if (vMacScreenWidth >= 1024) {
+		pto = 3448 + ROM;
+		do_put_mem_word(pto, 0x4EB9); /* JSR */
+		pto += 2;
+		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		pto += 4;
 
-	do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave),A0 */
-	patchp += 2;
-	do_put_mem_word(patchp, 0x088C);
-	patchp += 2;
-	do_put_mem_word(patchp, 0x203C); /* MOVE.L #$x,D0 */
-	patchp += 2;
-	do_put_mem_long(patchp, (vMacScreenWidth / 8));
-	patchp += 4;
-	do_put_mem_word(patchp, 0x4E75); /* RTS */
-	patchp += 2;
-#else
-	do_put_mem_word(3452 + ROM, 0x7000 + (vMacScreenWidth / 8));
-#endif
+		do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave),A0 */
+		patchp += 2;
+		do_put_mem_word(patchp, 0x088C);
+		patchp += 2;
+		do_put_mem_word(patchp, 0x203C); /* MOVE.L #$x,D0 */
+		patchp += 2;
+		do_put_mem_long(patchp, (vMacScreenWidth / 8));
+		patchp += 4;
+		do_put_mem_word(patchp, 0x4E75); /* RTS */
+		patchp += 2;
+	} else {
+		do_put_mem_word(3452 + ROM, 0x7000 + (vMacScreenWidth / 8));
+	}
 	do_put_mem_word(3572 + ROM, vMacScreenWidth - 32);
 	do_put_mem_word(3578 + ROM, vMacScreenWidth - 32);
 	do_put_mem_word(3610 + ROM, vMacScreenHeight - 16);
 	do_put_mem_word(3616 + ROM, vMacScreenHeight);
-#if vMacScreenWidth >= 1024
-	pto = 3646 + ROM;
-	do_put_mem_word(pto, 0x4EB9); /* JSR */
-	pto += 2;
-	do_put_mem_long(pto, kROM_Base + (patchp - ROM));
-	pto += 4;
+	if (vMacScreenWidth >= 1024) {
+		pto = 3646 + ROM;
+		do_put_mem_word(pto, 0x4EB9); /* JSR */
+		pto += 2;
+		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		pto += 4;
 
-	do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x,D5 */
-	patchp += 2;
-	do_put_mem_long(patchp, (vMacScreenWidth / 8));
-	patchp += 4;
-	do_put_mem_word(patchp, 0xC2C5); /* MulU      D5,D1 */
-	patchp += 2;
-	do_put_mem_word(patchp, 0xD3C1); /* AddA.L    D1,A1 */
-	patchp += 2;
-	do_put_mem_word(patchp, 0x4E75); /* RTS */
-	patchp += 2;
-#else
-	do_put_mem_word(3646 + ROM, 0x7A00 + (vMacScreenWidth / 8));
-#endif
+		do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x,D5 */
+		patchp += 2;
+		do_put_mem_long(patchp, (vMacScreenWidth / 8));
+		patchp += 4;
+		do_put_mem_word(patchp, 0xC2C5); /* MulU      D5,D1 */
+		patchp += 2;
+		do_put_mem_word(patchp, 0xD3C1); /* AddA.L    D1,A1 */
+		patchp += 2;
+		do_put_mem_word(patchp, 0x4E75); /* RTS */
+		patchp += 2;
+	} else {
+		do_put_mem_word(3646 + ROM, 0x7A00 + (vMacScreenWidth / 8));
+	}
 
 	/* set up screen bitmap */
 	do_put_mem_word(3832 + ROM, vMacScreenHeight);
@@ -213,50 +213,50 @@ if (static_cast<int>(g_machine->config().model)
 	do_put_mem_word(3894 + ROM, vMacScreenWidth / 8 - 2);
 
 	/* cursor handling */
-#if vMacScreenWidth >= 1024
-	pto = 7372 + ROM;
-	do_put_mem_word(pto, 0x4EB9); /* JSR */
-	pto += 2;
-	do_put_mem_long(pto, kROM_Base + (patchp - ROM));
-	pto += 4;
+	if (vMacScreenWidth >= 1024) {
+		pto = 7372 + ROM;
+		do_put_mem_word(pto, 0x4EB9); /* JSR */
+		pto += 2;
+		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		pto += 4;
 
-	do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave), A0 */
-	patchp += 2;
-	do_put_mem_word(patchp, 0x088C);
-	patchp += 2;
-	do_put_mem_word(patchp, 0x203C); /* MOVE.L #$x, D0 */
-	patchp += 2;
-	do_put_mem_long(patchp, (vMacScreenWidth / 8));
-	patchp += 4;
-	do_put_mem_word(patchp, 0x4E75); /* RTS */
-	patchp += 2;
-#else
-	do_put_mem_word(7376 + ROM, 0x7000 + (vMacScreenWidth / 8));
-#endif
+		do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave), A0 */
+		patchp += 2;
+		do_put_mem_word(patchp, 0x088C);
+		patchp += 2;
+		do_put_mem_word(patchp, 0x203C); /* MOVE.L #$x, D0 */
+		patchp += 2;
+		do_put_mem_long(patchp, (vMacScreenWidth / 8));
+		patchp += 4;
+		do_put_mem_word(patchp, 0x4E75); /* RTS */
+		patchp += 2;
+	} else {
+		do_put_mem_word(7376 + ROM, 0x7000 + (vMacScreenWidth / 8));
+	}
 	do_put_mem_word(7496 + ROM, vMacScreenWidth - 32);
 	do_put_mem_word(7502 + ROM, vMacScreenWidth - 32);
 	do_put_mem_word(7534 + ROM, vMacScreenHeight - 16);
 	do_put_mem_word(7540 + ROM, vMacScreenHeight);
-#if vMacScreenWidth >= 1024
-	pto = 7570 + ROM;
-	do_put_mem_word(pto, 0x4EB9); /* JSR */
-	pto += 2;
-	do_put_mem_long(pto, kROM_Base + (patchp - ROM));
-	pto += 4;
+	if (vMacScreenWidth >= 1024) {
+		pto = 7570 + ROM;
+		do_put_mem_word(pto, 0x4EB9); /* JSR */
+		pto += 2;
+		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		pto += 4;
 
-	do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x,D5 */
-	patchp += 2;
-	do_put_mem_long(patchp, (vMacScreenWidth / 8));
-	patchp += 4;
-	do_put_mem_word(patchp, 0xC2C5); /* MulU      D5,D1 */
-	patchp += 2;
-	do_put_mem_word(patchp, 0xD3C1); /* AddA.L    D1,A1 */
-	patchp += 2;
-	do_put_mem_word(patchp, 0x4E75); /* RTS */
-	patchp += 2;
-#else
-	do_put_mem_word(7570 + ROM, 0x7A00 + (vMacScreenWidth / 8));
-#endif
+		do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x,D5 */
+		patchp += 2;
+		do_put_mem_long(patchp, (vMacScreenWidth / 8));
+		patchp += 4;
+		do_put_mem_word(patchp, 0xC2C5); /* MulU      D5,D1 */
+		patchp += 2;
+		do_put_mem_word(patchp, 0xD3C1); /* AddA.L    D1,A1 */
+		patchp += 2;
+		do_put_mem_word(patchp, 0x4E75); /* RTS */
+		patchp += 2;
+	} else {
+		do_put_mem_word(7570 + ROM, 0x7A00 + (vMacScreenWidth / 8));
+	}
 
 	/* set up screen bitmap */
 	do_put_mem_word(7784 + ROM, vMacScreenHeight);
@@ -350,50 +350,50 @@ if (static_cast<int>(g_machine->config().model)
 	do_put_mem_word(4586 + ROM, vMacScreenWidth / 8);
 
 	/* cursor handling */
-#if vMacScreenWidth >= 1024
-	pto = 101886 + ROM;
-	do_put_mem_word(pto, 0x4EB9); /* JSR */
-	pto += 2;
-	do_put_mem_long(pto, kROM_Base + (patchp - ROM));
-	pto += 4;
+	if (vMacScreenWidth >= 1024) {
+		pto = 101886 + ROM;
+		do_put_mem_word(pto, 0x4EB9); /* JSR */
+		pto += 2;
+		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		pto += 4;
 
-	do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave),A0 */
-	patchp += 2;
-	do_put_mem_word(patchp, 0x088C);
-	patchp += 2;
-	do_put_mem_word(patchp, 0x203C); /* MOVE.L #$x,D0 */
-	patchp += 2;
-	do_put_mem_long(patchp, (vMacScreenWidth / 8));
-	patchp += 4;
-	do_put_mem_word(patchp, 0x4E75); /* RTS */
-	patchp += 2;
-#else
-	do_put_mem_word(101890 + ROM, 0x7000 + (vMacScreenWidth / 8));
-#endif
+		do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave),A0 */
+		patchp += 2;
+		do_put_mem_word(patchp, 0x088C);
+		patchp += 2;
+		do_put_mem_word(patchp, 0x203C); /* MOVE.L #$x,D0 */
+		patchp += 2;
+		do_put_mem_long(patchp, (vMacScreenWidth / 8));
+		patchp += 4;
+		do_put_mem_word(patchp, 0x4E75); /* RTS */
+		patchp += 2;
+	} else {
+		do_put_mem_word(101890 + ROM, 0x7000 + (vMacScreenWidth / 8));
+	}
 	do_put_mem_word(102010 + ROM, vMacScreenWidth - 32);
 	do_put_mem_word(102016 + ROM, vMacScreenWidth - 32);
 	do_put_mem_word(102048 + ROM, vMacScreenHeight - 16);
 	do_put_mem_word(102054 + ROM, vMacScreenHeight);
-#if vMacScreenWidth >= 1024
-	pto = 102084 + ROM;
-	do_put_mem_word(pto, 0x4EB9); /* JSR */
-	pto += 2;
-	do_put_mem_long(pto, kROM_Base + (patchp - ROM));
-	pto += 4;
+	if (vMacScreenWidth >= 1024) {
+		pto = 102084 + ROM;
+		do_put_mem_word(pto, 0x4EB9); /* JSR */
+		pto += 2;
+		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		pto += 4;
 
-	do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x, D5 */
-	patchp += 2;
-	do_put_mem_long(patchp, (vMacScreenWidth / 8));
-	patchp += 4;
-	do_put_mem_word(patchp, 0xC2C5); /* MulU      D5, D1 */
-	patchp += 2;
-	do_put_mem_word(patchp, 0xD3C1); /* AddA.L    D1, A1 */
-	patchp += 2;
-	do_put_mem_word(patchp, 0x4E75); /* RTS */
-	patchp += 2;
-#else
-	do_put_mem_word(102084 + ROM, 0x7A00 + (vMacScreenWidth / 8));
-#endif
+		do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x, D5 */
+		patchp += 2;
+		do_put_mem_long(patchp, (vMacScreenWidth / 8));
+		patchp += 4;
+		do_put_mem_word(patchp, 0xC2C5); /* MulU      D5, D1 */
+		patchp += 2;
+		do_put_mem_word(patchp, 0xD3C1); /* AddA.L    D1, A1 */
+		patchp += 2;
+		do_put_mem_word(patchp, 0x4E75); /* RTS */
+		patchp += 2;
+	} else {
+		do_put_mem_word(102084 + ROM, 0x7A00 + (vMacScreenWidth / 8));
+	}
 
 	/* set up screen bitmap */
 	do_put_mem_word(102298 + ROM, vMacScreenHeight);
