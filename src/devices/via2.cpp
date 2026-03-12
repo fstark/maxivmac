@@ -25,7 +25,7 @@
 
 #include "core/common.h"
 
-#if EmVIA2
+
 
 #include "devices/via2.h"
 #include "core/wire_bus.h"
@@ -1034,4 +1034,3 @@ void VIA2_iCB1_ASC_interrupt_PulseNtfy(void)
 	g_via2->iCB1_PulseNtfy();
 }
 
-#endif /* EmVIA2 */

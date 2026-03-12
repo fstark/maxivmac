@@ -20,7 +20,7 @@
 
 #include "core/common.h"
 
-#if EmASC
+
 
 #include "devices/via.h"
 
@@ -887,4 +887,3 @@ void ASC_SubTick(int SubTick)
 	g_asc->subTick(SubTick);
 }
 
-#endif /* EmASC */

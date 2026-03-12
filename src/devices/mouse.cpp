@@ -24,6 +24,7 @@
 */
 
 #include "core/common.h"
+#include "core/machine_obj.h"
 #include "devices/scc.h"
 
 #include "devices/mouse.h"
@@ -58,10 +59,10 @@ void MouseDevice::update()
 #endif
 			(nullptr != (p = MyEvtQOutP())))
 		{
-#if EmClassicKbrd
 #if EnableMouseMotion
-			if (MyEvtQElKindMouseDelta == p->kind) {
-
+			if (g_machine->config().emClassicKbrd
+				&& MyEvtQElKindMouseDelta == p->kind)
+			{
 				if ((p->u.pos.h != 0) || (p->u.pos.v != 0)) {
 					put_ram_word(0x0828,
 						get_ram_word(0x0828) + p->u.pos.v);
@@ -73,7 +74,6 @@ void MouseDevice::update()
 				MyEvtQOutDone();
 			} else
 #endif
-#endif
 			if (MyEvtQElKindMousePos == p->kind) {
 				uint32_t NewMouse = (p->u.pos.v << 16) | p->u.pos.h;
 
@@ -81,14 +81,14 @@ void MouseDevice::update()
 					put_ram_long(0x0828, NewMouse);
 						/* Set Mouse Position */
 					put_ram_long(0x082C, NewMouse);
-#if EmClassicKbrd
-					put_ram_byte(0x08CE, get_ram_byte(0x08CF));
-						/* Tell MacOS to redraw the Mouse */
-#else
-					put_ram_long(0x0830, NewMouse);
-					put_ram_byte(0x08CE, 0xFF);
-						/* Tell MacOS to redraw the Mouse */
-#endif
+					if (g_machine->config().emClassicKbrd) {
+						put_ram_byte(0x08CE, get_ram_byte(0x08CF));
+							/* Tell MacOS to redraw the Mouse */
+					} else {
+						put_ram_long(0x0830, NewMouse);
+						put_ram_byte(0x08CE, 0xFF);
+							/* Tell MacOS to redraw the Mouse */
+					}
 				}
 				MyEvtQOutDone();
 			}

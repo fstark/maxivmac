@@ -25,7 +25,7 @@
 
 #include "core/common.h"
 
-#if EmVIA1
+
 
 #include "devices/via.h"
 #include "core/wire_bus.h"
@@ -1000,4 +1000,3 @@ void VIA1_iCA2_RTC_OneSecond_PulseNtfy(void)
 	g_via1->iCA2_PulseNtfy();
 }
 
-#endif /* EmVIA1 */

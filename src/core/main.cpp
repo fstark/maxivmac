@@ -20,41 +20,21 @@
 
 #include "core/common.h"
 
-#if EmVIA1
 #include "devices/via.h"
-#endif
-#if EmVIA2
 #include "devices/via2.h"
-#endif
 #include "devices/iwm.h"
 #include "devices/scc.h"
-#if EmRTC
 #include "devices/rtc.h"
-#endif
 #include "devices/rom.h"
 #include "devices/scsi.h"
 #include "devices/sony.h"
 #include "devices/screen.h"
-
-#if EmVidCard
 #include "devices/video.h"
-#endif
-
-#if EmClassicKbrd
 #include "devices/keyboard.h"
-#elif EmPMU
 #include "devices/pmu.h"
-#else
 #include "devices/adb.h"
-#endif
-
-#if EmClassicSnd
 #include "devices/sound.h"
-#endif
-#if EmASC
 #include "devices/asc.h"
-#endif
-
 #include "devices/mouse.h"
 
 
@@ -76,12 +56,8 @@ static void EmulatedHardwareZap(void)
 	IWM_Reset();
 	SCC_Reset();
 	SCSI_Reset();
-#if EmVIA1
-	VIA1_Zap();
-#endif
-#if EmVIA2
-	VIA2_Zap();
-#endif
+	if (g_machine->config().emVIA1) VIA1_Zap();
+	if (g_machine->config().emVIA2) VIA2_Zap();
 	Sony_Reset();
 	Extn_Reset();
 	g_cpu.reset();
@@ -118,13 +94,12 @@ static void SubTickNotify(int SubTick)
 	dbglog_writeNum(SubTick);
 	dbglog_writeReturn();
 #endif
-#if EmClassicSnd
-	MacSound_SubTick(SubTick);
-#elif EmASC
-	ASC_SubTick(SubTick);
-#else
-	UnusedParam(SubTick);
-#endif
+	if (g_machine->config().emClassicSnd)
+		MacSound_SubTick(SubTick);
+	else if (g_machine->config().emASC)
+		ASC_SubTick(SubTick);
+	else
+		UnusedParam(SubTick);
 }
 
 #define CyclesScaledPerTick (130240UL * kMyClockMult * kCycleScale)
@@ -165,12 +140,8 @@ static void SixtiethSecondNotify(void)
 #endif
 	Mouse_Update();
 	InterruptReset_Update();
-#if EmClassicKbrd
-	KeyBoard_Update();
-#endif
-#if EmADB
-	ADB_Update();
-#endif
+	if (g_machine->config().emClassicKbrd) KeyBoard_Update();
+	if (g_machine->config().emADB) ADB_Update();
 
 	Sixtieth_PulseNtfy(); /* Vertical Blanking Interrupt */
 	Sony_Update();
@@ -178,12 +149,8 @@ static void SixtiethSecondNotify(void)
 #if EmLocalTalk
 	LocalTalkTick();
 #endif
-#if EmRTC
-	RTC_Interrupt();
-#endif
-#if EmVidCard
-	Vid_Update();
-#endif
+	if (g_machine->config().emRTC) RTC_Interrupt();
+	if (g_machine->config().emVidCard) Vid_Update();
 
 	SubTickTaskStart();
 }
@@ -204,22 +171,14 @@ static void ExtraTimeBeginNotify(void)
 	dbglog_writeCStr("begin extra time");
 	dbglog_writeReturn();
 #endif
-#if EmVIA1
-	VIA1_ExtraTimeBegin();
-#endif
-#if EmVIA2
-	VIA2_ExtraTimeBegin();
-#endif
+	if (g_machine->config().emVIA1) VIA1_ExtraTimeBegin();
+	if (g_machine->config().emVIA2) VIA2_ExtraTimeBegin();
 }
 
 static void ExtraTimeEndNotify(void)
 {
-#if EmVIA1
-	VIA1_ExtraTimeEnd();
-#endif
-#if EmVIA2
-	VIA2_ExtraTimeEnd();
-#endif
+	if (g_machine->config().emVIA1) VIA1_ExtraTimeEnd();
+	if (g_machine->config().emVIA2) VIA2_ExtraTimeEnd();
 #if 0
 	dbglog_writeCStr("end extra time");
 	dbglog_writeReturn();
@@ -230,9 +189,8 @@ void EmulationReserveAlloc(void)
 {
 	ReserveAllocOneBlock(&RAM,
 		kRAM_Size + RAMSafetyMarginFudge, 5, false);
-#if EmVidCard
-	ReserveAllocOneBlock(&VidROM, kVidROM_Size, 5, false);
-#endif
+	if (g_machine->config().emVidCard)
+		ReserveAllocOneBlock(&VidROM, kVidROM_Size, 5, false);
 #if IncludeVidMem
 	ReserveAllocOneBlock(&VidMem,
 		kVidMemRAM_Size + RAMSafetyMarginFudge, 5, true);
@@ -252,34 +210,29 @@ static bool InitEmulation(void)
 
 	/* Register ICT task handlers */
 	g_ict.registerTask(kICT_SubTick, SubTickTaskDo);
-#if EmClassicKbrd
-	g_ict.registerTask(kICT_Kybd_ReceiveEndCommand, DoKybd_ReceiveEndCommand);
-	g_ict.registerTask(kICT_Kybd_ReceiveCommand, DoKybd_ReceiveCommand);
-#endif
-#if EmADB
-	g_ict.registerTask(kICT_ADB_NewState, ADB_DoNewState);
-#endif
-#if EmPMU
-	g_ict.registerTask(kICT_PMU_Task, PMU_DoTask);
-#endif
-#if EmVIA1
-	g_ict.registerTask(kICT_VIA1_Timer1Check, VIA1_DoTimer1Check);
-	g_ict.registerTask(kICT_VIA1_Timer2Check, VIA1_DoTimer2Check);
-#endif
-#if EmVIA2
-	g_ict.registerTask(kICT_VIA2_Timer1Check, VIA2_DoTimer1Check);
-	g_ict.registerTask(kICT_VIA2_Timer2Check, VIA2_DoTimer2Check);
-#endif
+	if (g_machine->config().emClassicKbrd) {
+		g_ict.registerTask(kICT_Kybd_ReceiveEndCommand, DoKybd_ReceiveEndCommand);
+		g_ict.registerTask(kICT_Kybd_ReceiveCommand, DoKybd_ReceiveCommand);
+	}
+	if (g_machine->config().emADB)
+		g_ict.registerTask(kICT_ADB_NewState, ADB_DoNewState);
+	if (g_machine->config().emPMU)
+		g_ict.registerTask(kICT_PMU_Task, PMU_DoTask);
+	if (g_machine->config().emVIA1) {
+		g_ict.registerTask(kICT_VIA1_Timer1Check, VIA1_DoTimer1Check);
+		g_ict.registerTask(kICT_VIA1_Timer2Check, VIA1_DoTimer2Check);
+	}
+	if (g_machine->config().emVIA2) {
+		g_ict.registerTask(kICT_VIA2_Timer1Check, VIA2_DoTimer1Check);
+		g_ict.registerTask(kICT_VIA2_Timer2Check, VIA2_DoTimer2Check);
+	}
 
-#if EmRTC
-	if (RTC_Init())
-#endif
-	if (ROM_Init())
-#if EmVidCard
-	if (Vid_Init())
-#endif
-	if (AddrSpac_Init())
-	{
+	bool ok = true;
+	if (ok && g_machine->config().emRTC) ok = RTC_Init();
+	if (ok) ok = ROM_Init();
+	if (ok && g_machine->config().emVidCard) ok = Vid_Init();
+	if (ok) ok = AddrSpac_Init();
+	if (ok) {
 		EmulatedHardwareZap();
 		return true;
 	}
