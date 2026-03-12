@@ -93,7 +93,7 @@ static bool HaveMySHGetSpecialFolderPath(void)
 #define NeedDoMoreCommandsMsg 1
 #define NeedDoAboutMsg 1
 
-#include "platform/common/intl_chars_impl.h"
+#include "platform/common/intl_chars.h" /* was intl_chars_impl.h — now a separate TU */
 
 
 static void NativeStrFromCStr(LPTSTR r, char *s, bool AddEllipsis)
@@ -240,7 +240,7 @@ static void dbglog_close0(void)
 
 #endif
 
-#include "platform/common/osglu_common_impl.h"
+#include "platform/common/osglu_common.h" /* was osglu_common_impl.h — now a separate TU */
 
 #ifndef InstallFileIcons
 #define InstallFileIcons 0
@@ -368,7 +368,7 @@ void PbufTransfer(uint8_t * Buffer,
 
 /* --- control mode and internationalization --- */
 
-#include "platform/common/control_mode_impl.h"
+#include "platform/common/control_mode.h" /* was control_mode_impl.h — now a separate TU */
 
 /* --- main window info --- */
 

@@ -56,7 +56,7 @@ static int Display_bg2_Main = 0;
 
 #define NeedCell2PlainAsciiMap 1
 
-#include "platform/common/intl_chars_impl.h"
+#include "platform/common/intl_chars.h" /* was intl_chars_impl.h — now a separate TU */
 
 /* --- sending debugging info to file --- */
 
@@ -118,8 +118,8 @@ static void WriteExtraErr(char *s)
 
 #define WantColorTransValid 0
 
-#include "platform/common/osglu_common_impl.h"
-#include "platform/common/control_mode_impl.h"
+#include "platform/common/osglu_common.h" /* was osglu_common_impl.h — now a separate TU */
+#include "platform/common/control_mode.h" /* was control_mode_impl.h — now a separate TU */
 
 static void NativeStrFromCStr(char *r, char *s)
 {

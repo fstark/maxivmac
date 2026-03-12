@@ -659,7 +659,7 @@ static void PStrFromChar(uint8_t * r, char x)
 #define NeedDoMoreCommandsMsg 1
 #define NeedDoAboutMsg 1
 
-#include "platform/common/intl_chars_impl.h"
+#include "platform/common/intl_chars.h" /* was intl_chars_impl.h — now a separate TU */
 
 static void UniCharStrFromSubstCStr(int *L, UniChar *x, char *s)
 {
@@ -899,7 +899,7 @@ static void dbglog_close0(void)
 #define WantColorTransValid 1
 #endif
 
-#include "platform/common/osglu_common_impl.h"
+#include "platform/common/osglu_common.h" /* was osglu_common_impl.h — now a separate TU */
 
 /* --- time, date --- */
 
@@ -974,7 +974,7 @@ static bool CheckDateTime(void)
 
 /* --- parameter buffers --- */
 
-#include "platform/common/param_buffers_impl.h"
+#include "platform/common/param_buffers.h" /* was param_buffers_impl.h — now a separate TU */
 
 /* --- drives --- */
 
@@ -1278,7 +1278,7 @@ static bool EntropyGather(void)
 
 #define WantKeyboard_RemapMac 1
 
-#include "platform/common/control_mode_impl.h"
+#include "platform/common/control_mode.h" /* was control_mode_impl.h — now a separate TU */
 
 
 /* --- video out --- */

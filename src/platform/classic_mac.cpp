@@ -729,13 +729,13 @@ static void dbglog_close0(void)
 #define NeedDoMoreCommandsMsg 1
 #define NeedDoAboutMsg 1
 
-#include "platform/common/intl_chars_impl.h"
+#include "platform/common/intl_chars.h" /* was intl_chars_impl.h — now a separate TU */
 
-#include "platform/common/osglu_common_impl.h"
+#include "platform/common/osglu_common.h" /* was osglu_common_impl.h — now a separate TU */
 
 #define WantKeyboard_RemapMac 1
 
-#include "platform/common/control_mode_impl.h"
+#include "platform/common/control_mode.h" /* was control_mode_impl.h — now a separate TU */
 
 /* --- some simple utilities --- */
 
