@@ -32,9 +32,8 @@
 
 ROMDevice* g_rom = nullptr;
 
-#define UseSonyPatch \
-	((CurEmMd <= kEmMd_Classic) || (CurEmMd == kEmMd_II) \
-		|| (CurEmMd == kEmMd_IIx))
+/* Sony driver patch is used for all models except PB100 */
+#define UseSonyPatch 1
 
 #ifndef UseLargeScreenHack
 #define UseLargeScreenHack 0

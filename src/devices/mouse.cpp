@@ -34,11 +34,9 @@ MouseDevice* g_mouse = nullptr;
 
 void MouseDevice::update()
 {
-#if HaveMasterMyEvtQLock
 	if (0 != MasterMyEvtQLock) {
 		--MasterMyEvtQLock;
 	}
-#endif
 
 	/*
 		Check mouse position first. After mouse button or key event,
@@ -54,9 +52,7 @@ void MouseDevice::update()
 		MyEvtQEl *p;
 
 		if (
-#if HaveMasterMyEvtQLock
 			(0 == MasterMyEvtQLock) &&
-#endif
 			(nullptr != (p = MyEvtQOutP())))
 		{
 #if EnableMouseMotion
@@ -100,9 +96,7 @@ void MouseDevice::update()
 		MyEvtQEl *p;
 
 		if (
-#if HaveMasterMyEvtQLock
 			(0 == MasterMyEvtQLock) &&
-#endif
 			(nullptr != (p = MyEvtQOutP())))
 		{
 			if (MyEvtQElKindMouseButton == p->kind) {

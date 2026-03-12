@@ -1086,7 +1086,7 @@ static void SetUp_address32(void)
 }
 
 /* Mac II/IIx: address space dispatcher */
-static void SetUp_address(void)
+static void SetUp_address_II(void)
 {
 	if (Addr32) {
 		SetUp_address32();
@@ -1127,8 +1127,8 @@ static void AddToATTListWithMTB(ATTep p)
 }
 #endif
 
-#if (CurEmMd != kEmMd_II) && (CurEmMd != kEmMd_IIx)
-static void SetUp_RAM24(void)
+/* Compact Mac: simple 24-bit RAM setup (no VIA2 bank select) */
+static void SetUp_RAM24_compact(void)
 {
 	ATTer r{};
 
@@ -1160,10 +1160,9 @@ static void SetUp_RAM24(void)
 	AddToATTListWithMTB(&r);
 #endif
 }
-#endif
 
-#if (CurEmMd != kEmMd_II) && (CurEmMd != kEmMd_IIx)
-static void SetUp_address(void)
+/* Compact Mac: 24-bit address space setup */
+static void SetUp_address_compact(void)
 {
 	ATTer r{};
 
@@ -1176,20 +1175,17 @@ static void SetUp_address(void)
 		r.Access = kATTA_readreadymask;
 		AddToATTListWithMTB(&r);
 	} else {
-		SetUp_RAM24();
+		SetUp_RAM24_compact();
 	}
 
 	r.cmpmask = kROM_cmpmask;
 	r.cmpvalu = kROM_Base;
-#if (CurEmMd >= kEmMd_SE)
-	if (MemOverlay) {
+	if (g_machine->config().isSEOrLater() && MemOverlay) {
 		r.usebase = nullptr;
 		r.Access = kATTA_ntfymask;
 		r.Ntfy = kMAN_OverlayOff;
 		AddToATTList(&r);
-	} else
-#endif
-	{
+	} else {
 		r.usemask = kROM_Size - 1;
 		r.usebase = ROM;
 		r.Access = kATTA_readreadymask;
@@ -1246,15 +1242,15 @@ static void SetUp_address(void)
 	r.device = &g_extnDevice;
 	AddToATTList(&r);
 
-#if CurEmMd == kEmMd_PB100
-	r.cmpmask = 0x00FFFFFF & ~ ((1 << kASC_ln2Spc) - 1);
-	r.cmpvalu = kASC_Block_Base;
-	r.usebase = nullptr;
-	r.Access = kATTA_mmdvmask;
-	r.MMDV = kMMDV_ASC;
-	r.device = g_asc;
-	AddToATTList(&r);
-#endif
+	if (g_machine->config().model == MacModel::PB100) {
+		r.cmpmask = 0x00FFFFFF & ~ ((1 << kASC_ln2Spc) - 1);
+		r.cmpvalu = kASC_Block_Base;
+		r.usebase = nullptr;
+		r.Access = kATTA_mmdvmask;
+		r.MMDV = kMMDV_ASC;
+		r.device = g_asc;
+		AddToATTList(&r);
+	}
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kSCSI_ln2Spc) - 1);
 	r.cmpvalu = kSCSI_Block_Base;
@@ -1272,7 +1268,16 @@ static void SetUp_address(void)
 	r.device = g_iwm;
 	AddToATTList(&r);
 }
-#endif
+
+/* Unified address space setup — dispatches by model family */
+static void SetUp_address(void)
+{
+	if (g_machine->config().isIIFamily()) {
+		SetUp_address_II();
+	} else {
+		SetUp_address_compact();
+	}
+}
 
 static void SetUpMemBanks(void)
 {
@@ -1696,23 +1701,19 @@ void PowerOff_ChangeNtfy(void)
 
 /* user event queue utilities */
 
-#if HaveMasterMyEvtQLock
 uint16_t MasterMyEvtQLock = 0;
 	/*
 		Takes a few ticks to process button event because
 		of debounce code of Mac. So have this mechanism
 		to prevent processing further events meanwhile.
 	*/
-#endif
 
  bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
 {
 	MyEvtQEl *p;
 
 	if (
-#if HaveMasterMyEvtQLock
 		(0 == MasterMyEvtQLock) &&
-#endif
 		(nullptr != (p = MyEvtQOutP())))
 	{
 		if (MyEvtQElKindKey == p->kind) {

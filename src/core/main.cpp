@@ -191,10 +191,9 @@ void EmulationReserveAlloc(void)
 		kRAM_Size + RAMSafetyMarginFudge, 5, false);
 	if (g_machine->config().emVidCard)
 		ReserveAllocOneBlock(&VidROM, kVidROM_Size, 5, false);
-#if IncludeVidMem
-	ReserveAllocOneBlock(&VidMem,
-		kVidMemRAM_Size + RAMSafetyMarginFudge, 5, true);
-#endif
+	if (g_machine->config().includeVidMem)
+		ReserveAllocOneBlock(&VidMem,
+			kVidMemRAM_Size + RAMSafetyMarginFudge, 5, true);
 #if SmallGlobals
 	g_cpu.reserveAlloc();
 #endif

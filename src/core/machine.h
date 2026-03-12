@@ -42,10 +42,7 @@ extern uint8_t * RAM;
 	*/
 
 extern uint8_t * VidROM;
-
-#if IncludeVidMem
 extern uint8_t * VidMem;
-#endif
 
 extern void MemOverlay_ChangeNtfy(void);
 
@@ -179,10 +176,7 @@ extern uint8_t* Wires;
 #define kNumSubTicks 16
 
 
-#define HaveMasterMyEvtQLock EmClassicKbrd
-#if HaveMasterMyEvtQLock
 extern uint16_t MasterMyEvtQLock;
-#endif
 extern bool FindKeyEvent(int *VirtualKey, bool *KeyDown);
 
 
