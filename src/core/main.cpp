@@ -58,7 +58,7 @@ static void EmulatedHardwareZap(void)
 	ICT_Zap();
 	IWM_Reset();
 	SCC_Reset();
-	SCSI_Reset();
+	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
 	if (g_machine->config().emVIA1) VIA1_Zap();
 	if (g_machine->config().emVIA2) VIA2_Zap();
 	Sony_Reset();
@@ -100,7 +100,7 @@ static void SubTickNotify(int SubTick)
 	if (g_machine->config().emClassicSnd)
 		MacSound_SubTick(SubTick);
 	else if (g_machine->config().emASC)
-		ASC_SubTick(SubTick);
+		if (auto* d = g_machine->findDevice<ASCDevice>()) d->subTick(SubTick);
 	else
 		UnusedParam(SubTick);
 }
@@ -220,7 +220,7 @@ static bool InitEmulation(void)
 	if (g_machine->config().emADB)
 		g_ict.registerTask(kICT_ADB_NewState, ADB_DoNewState);
 	if (g_machine->config().emPMU)
-		g_ict.registerTask(kICT_PMU_Task, PMU_DoTask);
+		g_ict.registerTask(kICT_PMU_Task, [](){ if (auto* d = g_machine->findDevice<PMUDevice>()) d->doTask(); });
 	if (g_machine->config().emVIA1) {
 		g_ict.registerTask(kICT_VIA1_Timer1Check, VIA1_DoTimer1Check);
 		g_ict.registerTask(kICT_VIA1_Timer2Check, VIA1_DoTimer2Check);
@@ -232,7 +232,7 @@ static bool InitEmulation(void)
 
 	bool ok = true;
 	if (ok && g_machine->config().emRTC) ok = RTC_Init();
-	if (ok) ok = ROM_Init();
+	if (ok) { auto* rom = g_machine->findDevice<ROMDevice>(); ok = rom ? rom->init() : false; }
 	if (ok && g_machine->config().emVidCard) ok = Vid_Init();
 	if (ok) ok = AddrSpac_Init();
 	if (ok) {

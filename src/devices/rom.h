@@ -30,7 +30,3 @@ public:
 	bool init();
 };
 
-extern ROMDevice* g_rom;
-
-// Backward-compatible free function API
-extern bool ROM_Init(void);

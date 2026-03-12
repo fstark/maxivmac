@@ -48,7 +48,6 @@
 
 extern void IWM_Reset(void);
 extern void SCC_Reset(void);
-extern void SCSI_Reset(void);
 extern void VIA1_Reset(void);
 extern void VIA2_Reset(void);
 extern void Sony_Reset(void);
@@ -73,7 +72,7 @@ void customreset(void)
 {
 	IWM_Reset();
 	SCC_Reset();
-	SCSI_Reset();
+	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
 	if (g_machine->config().emVIA1) VIA1_Reset();
 	if (g_machine->config().emVIA2) VIA2_Reset();
 	Sony_Reset();
@@ -885,7 +884,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCSI;
-	r.device = g_scsi;
+	r.device = g_machine->findDevice<SCSIDevice>();
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -898,7 +897,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_ASC;
-	r.device = g_asc;
+	r.device = g_machine->findDevice<ASCDevice>();
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -1295,7 +1294,7 @@ static void SetUp_address_compact(void)
 		r.usebase = nullptr;
 		r.Access = kATTA_mmdvmask;
 		r.MMDV = kMMDV_ASC;
-		r.device = g_asc;
+		r.device = g_machine->findDevice<ASCDevice>();
 		AddToATTList(&r);
 	}
 
@@ -1304,7 +1303,7 @@ static void SetUp_address_compact(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCSI;
-	r.device = g_scsi;
+	r.device = g_machine->findDevice<SCSIDevice>();
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kIWM_ln2Spc) - 1);

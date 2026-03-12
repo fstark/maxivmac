@@ -27,8 +27,3 @@ public:
 	const char* name() const override { return "SCSI"; }
 };
 
-extern SCSIDevice* g_scsi;
-
-// Backward-compatible free function API
-extern void SCSI_Reset(void);
-extern uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr);

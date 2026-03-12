@@ -30,7 +30,6 @@
 #include "devices/rom.h"
 #include "core/machine_obj.h"
 
-ROMDevice* g_rom = nullptr;
 
 /* Sony driver patch is used for all models except PB100 */
 #define UseSonyPatch 1
@@ -334,6 +333,3 @@ static void ROMscrambleForMTB(void)
 
 	return true;
 }
-
-// Backward-compatible forwarding stubs
-bool ROM_Init(void) { return g_rom ? g_rom->init() : false; }

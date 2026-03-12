@@ -27,7 +27,6 @@
 #include "devices/asc.h"
 
 /* Global singleton */
-ASCDevice* g_asc = nullptr;
 
 /*
 	ReportAbnormalID unused 0x0F0E, 0x0F1E - 0x0FFF
@@ -874,16 +873,3 @@ label_retry:
 	}
 #endif
 }
-
-/* ===== Backward-compatible free function API ===== */
-
-uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
-{
-	return g_asc->access(Data, WriteMem, addr);
-}
-
-void ASC_SubTick(int SubTick)
-{
-	g_asc->subTick(SubTick);
-}
-

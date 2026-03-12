@@ -54,8 +54,3 @@ private:
 	void setPMUbus(uint8_t v);
 };
 
-extern PMUDevice* g_pmu;
-
-// Backward-compatible free function API
-extern void PmuToReady_ChangeNtfy(void);
-extern void PMU_DoTask(void);

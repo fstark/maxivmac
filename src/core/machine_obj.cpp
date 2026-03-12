@@ -42,8 +42,7 @@ Machine::~Machine()
 	// so we must null-out the raw pointers first.
 	g_iwm = nullptr;
 	g_scc = nullptr;
-	g_scsi = nullptr;
-	g_rom = nullptr;
+
 	g_sony = nullptr;
 	g_mouse = nullptr;
 	g_screen = nullptr;
@@ -51,11 +50,11 @@ Machine::~Machine()
 	g_via2 = nullptr;
 	g_rtc = nullptr;
 	g_adb = nullptr;
-	g_asc = nullptr;
+
 	g_video = nullptr;
 	g_keyboard = nullptr;
 	g_sound = nullptr;
-	g_pmu = nullptr;
+
 
 	if (g_machine == this) {
 		g_machine = nullptr;
@@ -89,16 +88,8 @@ bool Machine::init()
 		g_scc = dev.get();
 		addDevice(std::move(dev));
 	}
-	{
-		auto dev = std::make_unique<SCSIDevice>();
-		g_scsi = dev.get();
-		addDevice(std::move(dev));
-	}
-	{
-		auto dev = std::make_unique<ROMDevice>();
-		g_rom = dev.get();
-		addDevice(std::move(dev));
-	}
+	addDevice(std::make_unique<SCSIDevice>());
+	addDevice(std::make_unique<ROMDevice>());
 	{
 		auto dev = std::make_unique<SonyDevice>();
 		g_sony = dev.get();
@@ -137,9 +128,7 @@ bool Machine::init()
 		addDevice(std::move(dev));
 	}
 	if (config_.emASC) {
-		auto dev = std::make_unique<ASCDevice>();
-		g_asc = dev.get();
-		addDevice(std::move(dev));
+		addDevice(std::make_unique<ASCDevice>());
 	}
 	if (config_.emVidCard) {
 		auto dev = std::make_unique<VideoDevice>();
@@ -157,9 +146,7 @@ bool Machine::init()
 		addDevice(std::move(dev));
 	}
 	if (config_.emPMU) {
-		auto dev = std::make_unique<PMUDevice>();
-		g_pmu = dev.get();
-		addDevice(std::move(dev));
+		addDevice(std::make_unique<PMUDevice>());
 	}
 
 	return true;

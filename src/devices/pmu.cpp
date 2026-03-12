@@ -24,7 +24,6 @@
 #include "core/wire_bus.h"
 #include "core/wire_ids.h"
 
-PMUDevice* g_pmu = nullptr;
 
 /*
 	ReportAbnormalID unused 0x0E0E - 0x0EFF
@@ -436,7 +435,3 @@ void PMUDevice::doTask()
 		g_wires.set(Wire_PMU_FromReady, 0);
 	}
 }
-
-// Backward-compatible forwarding stubs
-void PmuToReady_ChangeNtfy(void) { if (g_pmu) g_pmu->toReadyChangeNtfy(); }
-void PMU_DoTask(void) { if (g_pmu) g_pmu->doTask(); }

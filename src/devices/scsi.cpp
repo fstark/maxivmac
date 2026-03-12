@@ -29,7 +29,6 @@
 #include "devices/scsi.h"
 
 /* Global singleton */
-SCSIDevice* g_scsi = nullptr;
 
 #define scsiRd   0x00
 #define scsiWr   0x01
@@ -148,16 +147,4 @@ static void SCSI_Check(void)
 		}
 	}
 	return Data;
-}
-
-/* ===== Backward-compatible free function API ===== */
-
-void SCSI_Reset(void)
-{
-	g_scsi->reset();
-}
-
-uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr)
-{
-	return g_scsi->access(Data, WriteMem, addr);
 }
