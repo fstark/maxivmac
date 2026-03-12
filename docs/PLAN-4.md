@@ -920,123 +920,30 @@ Boot System 7. Verify all functionality.
 
 ---
 
-### Step 4.18 — Model factory and second model validation
+### Step 4.18 — Final cleanup
 
-Implement `MachineConfigForModel()` for at least Mac II and Mac Plus, and validate that both work.
-
-**Changes to `src/core/machine_config.cpp`:**
-```cpp
-MachineConfig MachineConfigForModel(MacModel model) {
-    MachineConfig c;
-    c.model = model;
-
-    switch (model) {
-        case MacModel::Plus:
-            c.use68020   = false;
-            c.emFPU      = false;
-            c.ramASize   = 0x00400000;
-            c.ramBSize   = 0;
-            c.emVIA1     = true;
-            c.emVIA2     = false;
-            c.emADB      = false;
-            c.emClassicKbrd = true;
-            c.emASC      = false;
-            c.emClassicSnd  = true;
-            c.emVidCard  = false;
-            c.includeVidMem = false;
-            c.maxATTListN = 16;
-            break;
-
-        case MacModel::II:
-            // defaults are already Mac II
-            break;
-
-        // ... other models
-    }
-
-    return c;
-}
-```
-
-**Wire topology per model:**
-Create `src/core/wire_ids.h` with per-model wire ID sets:
-```cpp
-namespace MacIIWires {
-    enum {
-        SoundDisable, SoundVolb0, /* ... */
-        VIA1_InterruptRequest, VIA2_InterruptRequest,
-        SCCInterruptRequest,
-        /* ... */
-        kNumWires
-    };
-}
-
-namespace MacPlusWires {
-    enum {
-        SoundDisable, SoundVolb0, /* ... */
-        VIA1_InterruptRequest,
-        SCCInterruptRequest,
-        /* ... (no VIA2 wires) */
-        kNumWires
-    };
-}
-```
-
-**Validation — the acid test:**
-```bash
-# Mac II (default)
-./minivmac.app/Contents/MacOS/minivmac MacII.ROM 608.hfs
-# → boots System 7
-
-# Mac Plus (once we add a Plus ROM)
-./minivmac.app/Contents/MacOS/minivmac --model=Plus MacPlus.ROM system6.img
-# → boots System 6
-```
-
-For now (before Phase 5 runtime config), the model can be selected via a CMake variable or a simple command-line parsing hack. The important thing is that both model configs produce correct emulation.
-
-**Validation checklist for Mac Plus:**
-- [ ] 68000 CPU (no 68020 instructions)
-- [ ] Classic keyboard (not ADB)
-- [ ] No VIA2
-- [ ] Classic sound (not ASC)
-- [ ] 24-bit addressing only
-- [ ] 512×342 1-bit screen
-
-**Commit:** `Implement model factory; validate Mac II and Mac Plus configurations`
-
----
-
-### Step 4.19 — Final cleanup and documentation
-
-1. Remove all backward-compatibility forwarding functions (global `VIA1_Access()`, `SCC_Access()`, etc.) — they should no longer be called by any code path.
-2. Remove global device pointers (`g_via1`, `g_scc`, etc.) if still present.
-3. Remove the global `g_machine` pointer if possible (may need to stay until Phase 5).
-4. Audit for remaining global state that should be on Machine:
-   - `InterruptButton` → `Machine::interruptButton_`
-   - `my_disk_icon_addr` → `Machine::diskIconAddr_`
-   - `GotOneAbnormal` → remove or make method-local
-5. Update `docs/INSIGHTS.md` with the new architecture.
-6. Run clean build + full boot test on macOS Cocoa.
+1. Remove dead code: any backward-compatibility forwarding functions that are now unreachable.
+2. Audit `CNFUDPIC.h` — document what remains and why (VIA cross-deps, CPU hot-path flags, Wire topology).
+3. Run clean build + full boot test on macOS Cocoa.
+4. Update `docs/INSIGHTS.md` with the new architecture.
 
 **Validation:**
 ```bash
-# Full clean build
 rm -rf bld/macos-cocoa && cmake --preset macos-cocoa && cmake --build --preset macos-cocoa
-
-# Verify no old device globals remain
-grep -rn 'g_via1\|g_scc\|g_scsi\|g_iwm\|g_asc' src/ --include='*.cpp' --include='*.h'
-# Should return zero matches (or only in comments)
-
-# Verify no CurEmMd compile-time checks remain in active code
-grep -rn '#if.*CurEmMd' src/core/ src/cpu/ src/devices/ src/platform/cocoa.mm
-# Should return zero matches
-
-# Boot test
 ./bld/macos-cocoa/minivmac.app/Contents/MacOS/minivmac MacII.ROM extras/disks/608.hfs
 ```
 
 **Commit:** `Phase 4 complete: Device interface and Machine object`
+
+---
+
+### Deferred to Phase 5
+
+The following items were originally planned as Phase 4 steps but require architectural work that belongs in the Runtime Configuration phase:
+
+1. **Multi-model validation (Mac Plus)** — requires decoupling `keyboard.cpp`, `sound.cpp`, `pmu.cpp` from VIA internals (they're behind `#if` compile-time guards because they directly reference VIA symbols). Also requires per-model Wire topologies and flexible CPU instruction set selection.
+2. **Removal of remaining compile-time guards** — `EmClassicKbrd`, `EmPMU`, `EmClassicSnd`, `Use68020`, `EmFPU`, `EmMMU` must stay as `#define`s until the VIA cross-dependencies are resolved.
+3. **Removal of global device pointers** — `g_via1`, `g_iwm`, etc. are needed by the backward-compatible free-function API; removing them requires completing the migration to `Machine::findDevice<>()` call sites.
 
 ---
 
@@ -1115,8 +1022,8 @@ None (CNFUDPIC.h is simplified, not deleted).
 | 18 | `Convert CurEmMd checks to runtime in device files` | 4.15b | Medium |
 | 19 | `Convert EmXxx device-enable guards to runtime config checks` | 4.16 | Low |
 | 20 | `Remove compile-time model/device configuration from CNFUDPIC.h` | 4.17 | Medium |
-| 21 | `Implement model factory; validate Mac II and Mac Plus configurations` | 4.18 | **High** — first multi-model test |
-| 22 | `Phase 4 complete: Device interface and Machine object` | 4.19 | Low — cleanup |
+| 21 | `Fix startup crashes: create Machine before platform init, instantiate all devices` | bugfix | Medium |
+| 22 | `Phase 4 complete: cleanup and docs` | 4.18 | Low — cleanup |
 
 ---
 
@@ -1144,9 +1051,8 @@ Zero errors. Warning count should not increase.
 - [ ] Cursor blinks at normal rate (VIA timer 1)
 - [ ] Key repeat works at correct speed (VIA timer)
 
-### Final validation (Step 4.18, multi-model)
+### Final validation (Step 4.18)
 - [ ] Mac II boots System 7 (68020, ADB, VIA2, ASC, 32-bit)
-- [ ] Mac Plus boots System 6 (68000, classic keyboard, no VIA2, classic sound, 24-bit)
 
 ---
 
@@ -1176,13 +1082,12 @@ Zero errors. Warning count should not increase.
 - **Step 4.13 (CPU) depends on 4.11** (ICT scheduler coupling).
 - **Step 4.14 (main loop) depends on 4.10–4.13** (all components migrated).
 - **Steps 4.15–4.17 (CurEmMd removal) depend on 4.14** (Machine wired in).
-- **Step 4.18 (multi-model) depends on 4.17** (all compile-time config removed).
-- **Step 4.19 (cleanup) is the final step.**
+- **Step 4.18 (cleanup) is the final step.**
 
 ```
 4.1 ──┐
 4.2 ──┤
-4.3 ──┼── 4.6 ── 4.7 ── 4.8 ── 4.9 ──┬── 4.10 ──┬── 4.14 ── 4.15 ── 4.16 ── 4.17 ── 4.18 ── 4.19
+4.3 ──┼── 4.6 ── 4.7 ── 4.8 ── 4.9 ──┬── 4.10 ──┬── 4.14 ── 4.15 ── 4.16 ── 4.17 ── 4.18
 4.4 ──┤                                ├── 4.11 ──┤
 4.5 ──┘                                └── 4.12 ──┘
                                                    └── 4.13 ──┘
@@ -1204,9 +1109,8 @@ Zero errors. Warning count should not increase.
 | 4.13 | CPU class extraction | ~6–8 hours |
 | 4.14 | Main loop integration | ~2–3 hours |
 | 4.15–4.17 | CurEmMd/EmXxx → runtime | ~6–8 hours |
-| 4.18 | Multi-model factory + validation | ~4–6 hours |
-| 4.19 | Cleanup + docs | ~2 hours |
-| **Total** | | **~45–60 hours** |
+| 4.18 | Cleanup + docs | ~2 hours |
+| **Total** | | **~40–55 hours** |
 
 ---
 
@@ -1218,8 +1122,15 @@ After this phase:
 - All **16 devices** implement the `Device` interface with their state as class members (not file-scope statics).
 - **Inter-device communication** goes through `WireBus` with runtime-registered callbacks.
 - **ATT dispatches directly** to `Device*` pointers — no enum switch.
-- **CPU variant (68000/68020/FPU)** is a runtime flag, not a compile-time `#if`.
-- **Mac model** is a runtime parameter — one binary can (in principle) emulate any supported model.
-- **Zero `#if CurEmMd`** or `#if Use68020` remains in active code.
+- **`CurEmMd` is gone** — model checks are runtime via `MachineConfig`.
 - The emulator boots System 7 (Mac II) with identical behavior to pre-Phase-4.
-- Foundation is set for **Phase 5** (runtime configuration: TOML/command-line, any model from one binary).
+
+### What remains compile-time (deferred to Phase 5)
+
+- **CPU variant flags**: `Use68020`, `EmFPU`, `EmMMU` — in CPU hot-path decode tables.
+- **Device VIA cross-deps**: `EmClassicKbrd`, `EmPMU`, `EmClassicSnd` — keyboard.cpp, sound.cpp, pmu.cpp directly reference VIA symbols that only exist when enabled.
+- **Wire topology**: the Wire enum in CNFUDPIC.h is Mac II specific.
+- **Global device pointers**: `g_via1`, `g_iwm`, etc. — still used by backward-compatible free-function API.
+- **Memory sizes**: `kRAMa_Size`, `kRAMb_Size`, `kVidMemRAM_Size` — compile-time constants.
+
+These are resolved in Phase 5 as part of multi-model support and runtime configuration.
