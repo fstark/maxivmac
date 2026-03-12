@@ -23,9 +23,7 @@
 #include "devices/sony.h"
 #include "devices/rom.h"
 #include "devices/mouse.h"
-#if EmClassicKbrd
 #include "devices/keyboard.h"
-#endif
 #if EmClassicSnd
 #include "devices/sound.h"
 #endif
@@ -59,9 +57,7 @@ Machine::~Machine()
 	g_adb = nullptr;
 	g_asc = nullptr;
 	g_video = nullptr;
-#if EmClassicKbrd
 	g_keyboard = nullptr;
-#endif
 #if EmClassicSnd
 	g_sound = nullptr;
 #endif
@@ -150,13 +146,11 @@ bool Machine::init()
 		g_video = dev.get();
 		addDevice(std::move(dev));
 	}
-#if EmClassicKbrd
 	if (config_.emClassicKbrd) {
 		auto dev = std::make_unique<KeyboardDevice>();
 		g_keyboard = dev.get();
 		addDevice(std::move(dev));
 	}
-#endif
 #if EmClassicSnd
 	if (config_.emClassicSnd) {
 		auto dev = std::make_unique<SoundDevice>();

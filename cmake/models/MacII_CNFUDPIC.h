@@ -56,157 +56,85 @@
 #define pr_HilColGreen 0x0000
 #define pr_HilColBlue 0x0000
 
+
 /* the Wire variables are 1/0, not true/false */
 
-enum
-{
+/* Wire IDs now come from the superset enum in wire_ids.h.
+   The #define aliases below provide backward compatibility. */
+#include "core/wire_ids.h"
 
-	Wire_unknown_SoundDisable,
-#define SoundDisable (Wires[Wire_unknown_SoundDisable])
+#define SoundDisable (Wires[Wire_SoundDisable])
+#define SoundVolb0 (Wires[Wire_SoundVolb0])
+#define SoundVolb1 (Wires[Wire_SoundVolb1])
+#define SoundVolb2 (Wires[Wire_SoundVolb2])
 
-	Wire_unknown_SoundVolb0,
-#define SoundVolb0 (Wires[Wire_unknown_SoundVolb0])
+#define VIA1_iA0 (Wires[Wire_VIA1_iA0])
+#define VIA1_iA1 (Wires[Wire_VIA1_iA1])
+#define VIA1_iA2 (Wires[Wire_VIA1_iA2])
+#define VIA1_iA3 (Wires[Wire_VIA1_iA3])
+#define VIA1_iA4 (Wires[Wire_VIA1_iA4])
+#define VIA1_iA5 (Wires[Wire_VIA1_iA5])
+#define VIA1_iA6 (Wires[Wire_VIA1_iA6])
+#define VIA1_iA7 (Wires[Wire_VIA1_iA7])
 
-	Wire_unknown_SoundVolb1,
-#define SoundVolb1 (Wires[Wire_unknown_SoundVolb1])
+#define VIA1_iB0 (Wires[Wire_VIA1_iB0])
+#define VIA1_iB1 (Wires[Wire_VIA1_iB1])
+#define VIA1_iB2 (Wires[Wire_VIA1_iB2])
+#define VIA1_iB3 (Wires[Wire_VIA1_iB3])
+#define VIA1_iB4 (Wires[Wire_VIA1_iB4])
+#define VIA1_iB5 (Wires[Wire_VIA1_iB5])
+#define VIA1_iB6 (Wires[Wire_VIA1_iB6])
+#define VIA1_iB7 (Wires[Wire_VIA1_iB7])
 
-	Wire_unknown_SoundVolb2,
-#define SoundVolb2 (Wires[Wire_unknown_SoundVolb2])
+#define VIA1_iCB2 (Wires[Wire_VIA1_iCB2])
 
-	Wire_VIA1_iA0_unknown,
-#define VIA1_iA0 (Wires[Wire_VIA1_iA0_unknown])
+/* Named signal aliases */
+#define MemOverlay (Wires[Wire_VIA1_iA4])
+#define IWMvSel (Wires[Wire_VIA1_iA5])
+#define SCCwaitrq (Wires[Wire_VIA1_iA7])
+#define RTCdataLine (Wires[Wire_VIA1_iB0])
+#define RTCclock (Wires[Wire_VIA1_iB1])
+#define RTCunEnabled (Wires[Wire_VIA1_iB2])
+#define ADB_Int (Wires[Wire_VIA1_iB3])
+#define ADB_st0 (Wires[Wire_VIA1_iB4])
+#define ADB_st1 (Wires[Wire_VIA1_iB5])
+#define ADB_Data (Wires[Wire_VIA1_iCB2])
+#define Addr32 (Wires[Wire_VIA2_iB3])
 
-	Wire_VIA1_iA1_unknown,
-#define VIA1_iA1 (Wires[Wire_VIA1_iA1_unknown])
+/* VIA2 aliases */
+#define VIA2_iA0 (Wires[Wire_VIA2_iA0])
+#define VIA2_iA6 (Wires[Wire_VIA2_iA6])
+#define VIA2_iA7 (Wires[Wire_VIA2_iA7])
+#define VIA2_iB2 (Wires[Wire_VIA2_iB2])
+#define VIA2_iB3 (Wires[Wire_VIA2_iB3])
+#define VIA2_iB7 (Wires[Wire_VIA2_iB7])
+#define VIA2_iCB2 (Wires[Wire_VIA2_iCB2])
 
-	Wire_VIA1_iA2_unknown,
-#define VIA1_iA2 (Wires[Wire_VIA1_iA2_unknown])
-
-	Wire_VIA1_iB7_unknown, /* for compatibility with SoundDisable */
-#define VIA1_iB7 (Wires[Wire_VIA1_iB7_unknown])
-
-	Wire_VIA2_InterruptRequest,
 #define VIA2_InterruptRequest (Wires[Wire_VIA2_InterruptRequest])
-#define VIA2_interruptChngNtfy VIAorSCCinterruptChngNtfy
-
-	Wire_VIA2_iA7_unknown,
-#define VIA2_iA7 (Wires[Wire_VIA2_iA7_unknown])
-#define VIA2_iA7_ChangeNtfy Addr32_ChangeNtfy
-
-	Wire_VIA2_iA6_unknown,
-#define VIA2_iA6 (Wires[Wire_VIA2_iA6_unknown])
-#define VIA2_iA6_ChangeNtfy Addr32_ChangeNtfy
-
-	Wire_VIA2_iB7_unknown,
-#define VIA2_iB7 (Wires[Wire_VIA2_iB7_unknown])
-
-	Wire_VIA2_iCB2_unknown,
-#define VIA2_iCB2 (Wires[Wire_VIA2_iCB2_unknown])
-
-	Wire_VIA2_iB2_PowerOff,
-#define VIA2_iB2 (Wires[Wire_VIA2_iB2_PowerOff])
-#define VIA2_iB2_ChangeNtfy PowerOff_ChangeNtfy
-
-	Wire_VIA2_iB3_Addr32,
-#define VIA2_iB3 (Wires[Wire_VIA2_iB3_Addr32])
-#define Addr32 (Wires[Wire_VIA2_iB3_Addr32])
-#define VIA2_iB3_ChangeNtfy Addr32_ChangeNtfy
-
-	Wire_VIA1_iA4_MemOverlay,
-#define MemOverlay (Wires[Wire_VIA1_iA4_MemOverlay])
-#define VIA1_iA4 (Wires[Wire_VIA1_iA4_MemOverlay])
-#define VIA1_iA4_ChangeNtfy MemOverlay_ChangeNtfy
-
-	Wire_VIA1_iA5_IWMvSel,
-#define IWMvSel (Wires[Wire_VIA1_iA5_IWMvSel])
-#define VIA1_iA5 (Wires[Wire_VIA1_iA5_IWMvSel])
-
-	Wire_VIA1_iA7_SCCwaitrq,
-#define SCCwaitrq (Wires[Wire_VIA1_iA7_SCCwaitrq])
-#define VIA1_iA7 (Wires[Wire_VIA1_iA7_SCCwaitrq])
-
-	Wire_VIA1_iB0_RTCdataLine,
-#define RTCdataLine (Wires[Wire_VIA1_iB0_RTCdataLine])
-#define VIA1_iB0 (Wires[Wire_VIA1_iB0_RTCdataLine])
-#define VIA1_iB0_ChangeNtfy RTCdataLine_ChangeNtfy
-
-	Wire_VIA1_iB1_RTCclock,
-#define RTCclock (Wires[Wire_VIA1_iB1_RTCclock])
-#define VIA1_iB1 (Wires[Wire_VIA1_iB1_RTCclock])
-#define VIA1_iB1_ChangeNtfy RTCclock_ChangeNtfy
-
-	Wire_VIA1_iB2_RTCunEnabled,
-#define RTCunEnabled (Wires[Wire_VIA1_iB2_RTCunEnabled])
-#define VIA1_iB2 (Wires[Wire_VIA1_iB2_RTCunEnabled])
-#define VIA1_iB2_ChangeNtfy RTCunEnabled_ChangeNtfy
-
-	Wire_VIA1_iA3_SCCvSync,
-#define VIA1_iA3 (Wires[Wire_VIA1_iA3_SCCvSync])
-
-	Wire_VIA1_iB3_ADB_Int,
-#define ADB_Int (Wires[Wire_VIA1_iB3_ADB_Int])
-#define VIA1_iB3 (Wires[Wire_VIA1_iB3_ADB_Int])
-
-	Wire_VIA1_iB4_ADB_st0,
-#define ADB_st0 (Wires[Wire_VIA1_iB4_ADB_st0])
-#define VIA1_iB4 (Wires[Wire_VIA1_iB4_ADB_st0])
-#define VIA1_iB4_ChangeNtfy ADBstate_ChangeNtfy
-
-	Wire_VIA1_iB5_ADB_st1,
-#define ADB_st1 (Wires[Wire_VIA1_iB5_ADB_st1])
-#define VIA1_iB5 (Wires[Wire_VIA1_iB5_ADB_st1])
-#define VIA1_iB5_ChangeNtfy ADBstate_ChangeNtfy
-
-	Wire_VIA1_iCB2_ADB_Data,
-#define ADB_Data (Wires[Wire_VIA1_iCB2_ADB_Data])
-#define VIA1_iCB2 (Wires[Wire_VIA1_iCB2_ADB_Data])
-#define VIA1_iCB2_ChangeNtfy ADB_DataLineChngNtfy
-
-	Wire_VIA1_InterruptRequest,
 #define VIA1_InterruptRequest (Wires[Wire_VIA1_InterruptRequest])
-#define VIA1_interruptChngNtfy VIAorSCCinterruptChngNtfy
-
-	Wire_SCCInterruptRequest,
 #define SCCInterruptRequest (Wires[Wire_SCCInterruptRequest])
-#define SCCinterruptChngNtfy VIAorSCCinterruptChngNtfy
-
-	Wire_ADBMouseDisabled,
 #define ADBMouseDisabled (Wires[Wire_ADBMouseDisabled])
-
-	Wire_VBLinterrupt,
 #define Vid_VBLinterrupt (Wires[Wire_VBLinterrupt])
-#define VIA2_iA0 (Wires[Wire_VBLinterrupt])
-
-	Wire_VBLintunenbl,
 #define Vid_VBLintunenbl (Wires[Wire_VBLintunenbl])
 
-	kNumWires
-};
+/* ChangeNtfy aliases — map wire names to callback function names */
+#define VIA1_iA4_ChangeNtfy MemOverlay_ChangeNtfy
+#define VIA1_iB0_ChangeNtfy RTCdataLine_ChangeNtfy
+#define VIA1_iB1_ChangeNtfy RTCclock_ChangeNtfy
+#define VIA1_iB2_ChangeNtfy RTCunEnabled_ChangeNtfy
+#define VIA1_iB4_ChangeNtfy ADBstate_ChangeNtfy
+#define VIA1_iB5_ChangeNtfy ADBstate_ChangeNtfy
+#define VIA1_iCB2_ChangeNtfy ADB_DataLineChngNtfy
+#define VIA2_iA7_ChangeNtfy Addr32_ChangeNtfy
+#define VIA2_iA6_ChangeNtfy Addr32_ChangeNtfy
+#define VIA2_iB2_ChangeNtfy PowerOff_ChangeNtfy
+#define VIA2_iB3_ChangeNtfy Addr32_ChangeNtfy
+#define VIA2_interruptChngNtfy VIAorSCCinterruptChngNtfy
+#define VIA1_interruptChngNtfy VIAorSCCinterruptChngNtfy
+#define SCCinterruptChngNtfy VIAorSCCinterruptChngNtfy
 
-/* VIA configuration */
-#define VIA1_ORA_FloatVal 0xBF
-/* bit 6 used to check version of hardware */
-#define VIA1_ORB_FloatVal 0xFF
-#define VIA1_ORA_CanIn 0x80
-#define VIA1_ORA_CanOut 0x3F
-#define VIA1_ORB_CanIn 0x09
-#define VIA1_ORB_CanOut 0xB7
-#define VIA1_IER_Never0 0x00
-#define VIA1_IER_Never1 0x58
-#define VIA1_CB2modesAllowed 0x01
-#define VIA1_CA2modesAllowed 0x01
 
-/* VIA 2 configuration */
-#define VIA2_ORA_FloatVal 0xFF
-#define VIA2_ORB_FloatVal 0xFF
-#define VIA2_ORA_CanIn 0x01
-#define VIA2_ORA_CanOut 0xC0
-#define VIA2_ORB_CanIn 0x00
-#define VIA2_ORB_CanOut 0x8C
-#define VIA2_IER_Never0 0x00
-#define VIA2_IER_Never1 0xED
-#define VIA2_CB2modesAllowed 0x01
-#define VIA2_CA2modesAllowed 0x01
+/* VIA configuration now in VIAConfig (machine_config.h) */
 
 #define Mouse_Enabled() (!ADBMouseDisabled)
 

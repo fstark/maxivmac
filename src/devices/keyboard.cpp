@@ -24,10 +24,11 @@
 
 #include "core/common.h"
 
-#if EmClassicKbrd
-
 #include "devices/keyboard.h"
+#include "devices/via.h"
 #include "core/wire_bus.h"
+#include "core/wire_ids.h"
+#include "core/machine_obj.h"
 
 /* Global singleton */
 KeyboardDevice* g_keyboard = nullptr;
@@ -40,37 +41,32 @@ KeyboardDevice* g_keyboard = nullptr;
 	ReportAbnormalID unused 0x0B03 - 0x0BFF
 */
 
-extern void KYBD_ShiftOutData(uint8_t v);
-extern uint8_t KYBD_ShiftInData(void);
-
-enum {
-	kKybdStateIdle,
-	kKybdStateRecievingCommand,
-	kKybdStateRecievedCommand,
-	kKybdStateRecievingEndCommand,
-
-	kKybdStates
-};
-
-static int KybdState = kKybdStateIdle;
-
-static bool HaveKeyBoardResult = false;
-static uint8_t KeyBoardResult;
-
-static void GotKeyBoardData(uint8_t v)
+VIA1Device* KeyboardDevice::via1() const
 {
-	if (KybdState != kKybdStateIdle) {
-		HaveKeyBoardResult = true;
-		KeyBoardResult = v;
+	return machine_->findDevice<VIA1Device>();
+}
+
+void KeyboardDevice::reset()
+{
+	kybdState_ = kKybdStateIdle;
+	haveKeyBoardResult_ = false;
+	keyBoardResult_ = 0;
+	instantCommandData_ = 0x7B;
+	inquiryCommandTimer_ = 0;
+}
+
+void KeyboardDevice::gotKeyBoardData(uint8_t v)
+{
+	if (kybdState_ != kKybdStateIdle) {
+		haveKeyBoardResult_ = true;
+		keyBoardResult_ = v;
 	} else {
-		KYBD_ShiftOutData(v);
-		g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
+		via1()->shiftInData(v);
+		g_wires.set(Wire_VIA1_iCB2, 1);
 	}
 }
 
-static uint8_t InstantCommandData = 0x7B;
-
-static bool AttemptToFinishInquiry(void)
+bool KeyboardDevice::attemptToFinishInquiry()
 {
 	int i;
 	bool KeyDown;
@@ -84,12 +80,12 @@ static bool AttemptToFinishInquiry(void)
 			}
 		} else {
 			Keyboard_Data = 121;
-			InstantCommandData = (i - 64) << 1;
+			instantCommandData_ = (i - 64) << 1;
 			if (! KeyDown) {
-				InstantCommandData += 128;
+				instantCommandData_ += 128;
 			}
 		}
-		GotKeyBoardData(Keyboard_Data);
+		gotKeyBoardData(Keyboard_Data);
 		return true;
 	} else {
 		return false;
@@ -104,30 +100,28 @@ static bool AttemptToFinishInquiry(void)
 		to keep connection.
 	*/
 
-static int InquiryCommandTimer = 0;
-
 void KeyboardDevice::receiveCommand()
 {
-	if (KybdState != kKybdStateRecievingCommand) {
+	if (kybdState_ != kKybdStateRecievingCommand) {
 		ReportAbnormalID(0x0B01,
 			"KybdState != kKybdStateRecievingCommand");
 	} else {
-		uint8_t in = KYBD_ShiftInData();
+		uint8_t in = via1()->shiftOutData();
 
-		KybdState = kKybdStateRecievedCommand;
+		kybdState_ = kKybdStateRecievedCommand;
 
 		switch (in) {
 			case 0x10 : /* Inquiry Command */
-				if (! AttemptToFinishInquiry()) {
-					InquiryCommandTimer = MaxKeyboardWait;
+				if (! attemptToFinishInquiry()) {
+					inquiryCommandTimer_ = MaxKeyboardWait;
 				}
 				break;
 			case 0x14 : /* Instant Command */
-				GotKeyBoardData(InstantCommandData);
-				InstantCommandData = 0x7B;
+				gotKeyBoardData(instantCommandData_);
+				instantCommandData_ = 0x7B;
 				break;
 			case 0x16 : /* Model Command */
-				GotKeyBoardData(0x0b /* 0x01 */);
+				gotKeyBoardData(0x0b /* 0x01 */);
 					/* Test value, means Model 0, no extra devices */
 				/*
 					Fixed by Hoshi Takanori -
@@ -135,14 +129,14 @@ void KeyboardDevice::receiveCommand()
 				*/
 				break;
 			case 0x36 : /* Test Command */
-				GotKeyBoardData(0x7D);
+				gotKeyBoardData(0x7D);
 				break;
 			case 0x00:
-				GotKeyBoardData(0);
+				gotKeyBoardData(0);
 				break;
 			default :
 				/* Debugger(); */
-				GotKeyBoardData(0);
+				gotKeyBoardData(0);
 				break;
 		}
 	}
@@ -150,45 +144,45 @@ void KeyboardDevice::receiveCommand()
 
 void KeyboardDevice::receiveEndCommand()
 {
-	if (KybdState != kKybdStateRecievingEndCommand) {
+	if (kybdState_ != kKybdStateRecievingEndCommand) {
 		ReportAbnormalID(0x0B02,
 			"KybdState != kKybdStateRecievingEndCommand");
 	} else {
-		KybdState = kKybdStateIdle;
+		kybdState_ = kKybdStateIdle;
 #ifdef _VIA_Debug
 		fprintf(stderr, "enter DoKybd_ReceiveEndCommand\n");
 #endif
-		if (HaveKeyBoardResult) {
+		if (haveKeyBoardResult_) {
 #ifdef _VIA_Debug
-			fprintf(stderr, "HaveKeyBoardResult: %d\n", KeyBoardResult);
+			fprintf(stderr, "HaveKeyBoardResult: %d\n", keyBoardResult_);
 #endif
-			HaveKeyBoardResult = false;
-			KYBD_ShiftOutData(KeyBoardResult);
-			g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
+			haveKeyBoardResult_ = false;
+			via1()->shiftInData(keyBoardResult_);
+			g_wires.set(Wire_VIA1_iCB2, 1);
 		}
 	}
 }
 
 void KeyboardDevice::dataLineChngNtfy()
 {
-	switch (KybdState) {
+	switch (kybdState_) {
 		case kKybdStateIdle:
-			if (VIA1_iCB2 == 0) {
-				KybdState = kKybdStateRecievingCommand;
+			if (g_wires.get(Wire_VIA1_iCB2) == 0) {
+				kybdState_ = kKybdStateRecievingCommand;
 #ifdef _VIA_Debug
 				fprintf(stderr, "posting kICT_Kybd_ReceiveCommand\n");
 #endif
 				ICT_add(kICT_Kybd_ReceiveCommand,
 					6800UL * kCycleScale / 64 * kMyClockMult);
 
-				if (InquiryCommandTimer != 0) {
-					InquiryCommandTimer = 0; /* abort Inquiry */
+				if (inquiryCommandTimer_ != 0) {
+					inquiryCommandTimer_ = 0; /* abort Inquiry */
 				}
 			}
 			break;
 		case kKybdStateRecievedCommand:
-			if (VIA1_iCB2 == 1) {
-				KybdState = kKybdStateRecievingEndCommand;
+			if (g_wires.get(Wire_VIA1_iCB2) == 1) {
+				kybdState_ = kKybdStateRecievingEndCommand;
 #ifdef _VIA_Debug
 				fprintf(stderr,
 					"posting kICT_Kybd_ReceiveEndCommand\n");
@@ -197,18 +191,20 @@ void KeyboardDevice::dataLineChngNtfy()
 					6800UL * kCycleScale / 64 * kMyClockMult);
 			}
 			break;
+		default:
+			break;
 	}
 }
 
 void KeyboardDevice::update()
 {
-	if (InquiryCommandTimer != 0) {
-		if (AttemptToFinishInquiry()) {
-			InquiryCommandTimer = 0;
+	if (inquiryCommandTimer_ != 0) {
+		if (attemptToFinishInquiry()) {
+			inquiryCommandTimer_ = 0;
 		} else {
-			--InquiryCommandTimer;
-			if (InquiryCommandTimer == 0) {
-				GotKeyBoardData(0x7B);
+			--inquiryCommandTimer_;
+			if (inquiryCommandTimer_ == 0) {
+				gotKeyBoardData(0x7B);
 			}
 		}
 	}
@@ -216,15 +212,22 @@ void KeyboardDevice::update()
 
 /* ===== Backward-compatible free function API ===== */
 
-void Kybd_DataLineChngNtfy(void) { g_keyboard->dataLineChngNtfy(); }
-void DoKybd_ReceiveEndCommand(void) { g_keyboard->receiveEndCommand(); }
-void DoKybd_ReceiveCommand(void) { g_keyboard->receiveCommand(); }
-void KeyBoard_Update(void) { g_keyboard->update(); }
+void Kybd_DataLineChngNtfy(void)
+{
+	if (g_keyboard) g_keyboard->dataLineChngNtfy();
+}
 
-#else /* !EmClassicKbrd */
+void DoKybd_ReceiveEndCommand(void)
+{
+	if (g_keyboard) g_keyboard->receiveEndCommand();
+}
 
-void DoKybd_ReceiveEndCommand(void) {}
-void DoKybd_ReceiveCommand(void) {}
-void KeyBoard_Update(void) {}
+void DoKybd_ReceiveCommand(void)
+{
+	if (g_keyboard) g_keyboard->receiveCommand();
+}
 
-#endif /* EmClassicKbrd */
+void KeyBoard_Update(void)
+{
+	if (g_keyboard) g_keyboard->update();
+}
