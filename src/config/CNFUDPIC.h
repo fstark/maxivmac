@@ -22,14 +22,6 @@
 #define kAutoSlowSubTicks 16384
 #define kAutoSlowTime 60
 
-#define kRAMa_Size 0x00400000
-#define kRAMb_Size 0x00400000
-
-#define kVidMemRAM_Size 0x00080000
-
-#define kVidROM_Size 0x000800
-
-#define MaxATTListN 20
 #define IncludeExtnPbufs 1
 #define IncludeExtnHostTextClipExchange 1
 

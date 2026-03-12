@@ -677,15 +677,17 @@ enum {
 };
 
 
-static ATTer ATTListA[MaxATTListN];
+/* Max ATT entries — generous fixed size, checked at runtime */
+#define kATTListMax 64
+static ATTer ATTListA[kATTListMax];
 static uint16_t LastATTel;
 
 
 static void AddToATTList(ATTep p)
 {
 	uint16_t NewLast = LastATTel + 1;
-	if (NewLast >= MaxATTListN) {
-		ReportAbnormalID(0x1101, "MaxATTListN not big enough");
+	if (NewLast >= kATTListMax) {
+		ReportAbnormalID(0x1101, "ATT list not big enough");
 	} else {
 		ATTListA[LastATTel] = *p;
 		LastATTel = NewLast;
@@ -750,40 +752,65 @@ static void FinishATTList(void)
 /* Mac II/IIx: RAM24 setup with VIA2 bank select */
 static void SetUp_RAM24(void)
 {
+	const auto& cfg = g_machine->config();
 	ATTer r{};
 	uint32_t bankbit = 0x00100000 << (((VIA2_iA7 << 1) | VIA2_iA6) << 1);
 
-#if kRAMa_Size == kRAMb_Size
-	if (kRAMa_Size == bankbit) {
-		/* properly set up balanced RAM */
-		r.cmpmask = 0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1);
-		r.cmpvalu = 0;
-		r.usemask = ((1 << kRAM_ln2Spc) - 1) & (kRAM_Size - 1);
-		r.usebase = RAM;
-		r.Access = kATTA_readwritereadymask;
-		AddToATTList(&r);
-	} else
-#endif
-	{
-		bankbit &= 0x00FFFFFF; /* if too large, always use RAMa */
-
-		if (0 != bankbit) {
-#if kRAMb_Size != 0
-			r.cmpmask = bankbit
-				| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
-			r.cmpvalu = bankbit;
-			r.usemask = ((1 << kRAM_ln2Spc) - 1) & (kRAMb_Size - 1);
-			r.usebase = kRAMa_Size + RAM;
+	if (cfg.ramASize == cfg.ramBSize) {
+		if (cfg.ramASize == bankbit) {
+			/* properly set up balanced RAM */
+			r.cmpmask = 0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1);
+			r.cmpvalu = 0;
+			r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramSize() - 1);
+			r.usebase = RAM;
 			r.Access = kATTA_readwritereadymask;
 			AddToATTList(&r);
-#endif
+		} else
+		{
+			bankbit &= 0x00FFFFFF; /* if too large, always use RAMa */
+
+			if (0 != bankbit) {
+				if (cfg.ramBSize != 0) {
+					r.cmpmask = bankbit
+						| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
+					r.cmpvalu = bankbit;
+					r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramBSize - 1);
+					r.usebase = cfg.ramASize + RAM;
+					r.Access = kATTA_readwritereadymask;
+					AddToATTList(&r);
+				}
+			}
+
+			{
+				r.cmpmask = bankbit
+					| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
+				r.cmpvalu = 0;
+				r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramASize - 1);
+				r.usebase = RAM;
+				r.Access = kATTA_readwritereadymask;
+				AddToATTList(&r);
+			}
+		}
+	} else {
+		bankbit &= 0x00FFFFFF;
+
+		if (0 != bankbit) {
+			if (cfg.ramBSize != 0) {
+				r.cmpmask = bankbit
+					| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
+				r.cmpvalu = bankbit;
+				r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramBSize - 1);
+				r.usebase = cfg.ramASize + RAM;
+				r.Access = kATTA_readwritereadymask;
+				AddToATTList(&r);
+			}
 		}
 
 		{
 			r.cmpmask = bankbit
 				| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
 			r.cmpvalu = 0;
-			r.usemask = ((1 << kRAM_ln2Spc) - 1) & (kRAMa_Size - 1);
+			r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramASize - 1);
 			r.usebase = RAM;
 			r.Access = kATTA_readwritereadymask;
 			AddToATTList(&r);
@@ -908,6 +935,7 @@ static void SetUp_io(void)
 /* Mac II/IIx: 24-bit address space setup */
 static void SetUp_address24(void)
 {
+	const auto& cfg = g_machine->config();
 	ATTer r{};
 
 #if 0
@@ -937,32 +965,32 @@ static void SetUp_address24(void)
 
 	r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
 	r.cmpvalu = 0x900000;
-	r.usemask = (kVidMemRAM_Size - 1) & (0x100000 - 1);
+	r.usemask = (cfg.vidMemSize - 1) & (0x100000 - 1);
 	r.usebase = VidMem;
 	r.Access = kATTA_readwritereadymask;
 	AddToATTList(&r);
-#if kVidMemRAM_Size >= 0x00200000
-	r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
-	r.cmpvalu = 0xA00000;
-	r.usemask = (0x100000 - 1);
-	r.usebase = VidMem + (1 << 20);
-	r.Access = kATTA_readwritereadymask;
-	AddToATTList(&r);
-#endif
-#if kVidMemRAM_Size >= 0x00400000
-	r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
-	r.cmpvalu = 0xB00000;
-	r.usemask = (0x100000 - 1);
-	r.usebase = VidMem + (2 << 20);
-	r.Access = kATTA_readwritereadymask;
-	AddToATTList(&r);
-	r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
-	r.cmpvalu = 0xC00000;
-	r.usemask = (0x100000 - 1);
-	r.usebase = VidMem + (3 << 20);
-	r.Access = kATTA_readwritereadymask;
-	AddToATTList(&r);
-#endif
+	if (cfg.vidMemSize >= 0x00200000) {
+		r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
+		r.cmpvalu = 0xA00000;
+		r.usemask = (0x100000 - 1);
+		r.usebase = VidMem + (1 << 20);
+		r.Access = kATTA_readwritereadymask;
+		AddToATTList(&r);
+	}
+	if (cfg.vidMemSize >= 0x00400000) {
+		r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
+		r.cmpvalu = 0xB00000;
+		r.usemask = (0x100000 - 1);
+		r.usebase = VidMem + (2 << 20);
+		r.Access = kATTA_readwritereadymask;
+		AddToATTList(&r);
+		r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
+		r.cmpvalu = 0xC00000;
+		r.usemask = (0x100000 - 1);
+		r.usebase = VidMem + (3 << 20);
+		r.Access = kATTA_readwritereadymask;
+		AddToATTList(&r);
+	}
 
 	SetUp_io();
 }
@@ -970,6 +998,7 @@ static void SetUp_address24(void)
 /* Mac II/IIx: 32-bit address space setup */
 static void SetUp_address32(void)
 {
+	const auto& cfg = g_machine->config();
 	ATTer r{};
 
 	if (MemOverlay) {
@@ -982,30 +1011,46 @@ static void SetUp_address32(void)
 	} else {
 		uint32_t bankbit =
 			0x00100000 << (((VIA2_iA7 << 1) | VIA2_iA6) << 1);
-#if kRAMa_Size == kRAMb_Size
-		if (kRAMa_Size == bankbit) {
-			/* properly set up balanced RAM */
-			r.cmpmask = ~ ((1 << 30) - 1);
-			r.cmpvalu = 0;
-			r.usemask = kRAM_Size - 1;
-			r.usebase = RAM;
-			r.Access = kATTA_readwritereadymask;
-			AddToATTList(&r);
-		} else
-#endif
-		{
-#if kRAMb_Size != 0
-			r.cmpmask = bankbit | ~ ((1 << 30) - 1);
-			r.cmpvalu = bankbit;
-			r.usemask = kRAMb_Size - 1;
-			r.usebase = kRAMa_Size + RAM;
-			r.Access = kATTA_readwritereadymask;
-			AddToATTList(&r);
-#endif
+		if (cfg.ramASize == cfg.ramBSize) {
+			if (cfg.ramASize == bankbit) {
+				/* properly set up balanced RAM */
+				r.cmpmask = ~ ((1 << 30) - 1);
+				r.cmpvalu = 0;
+				r.usemask = cfg.ramSize() - 1;
+				r.usebase = RAM;
+				r.Access = kATTA_readwritereadymask;
+				AddToATTList(&r);
+			} else
+			{
+				if (cfg.ramBSize != 0) {
+					r.cmpmask = bankbit | ~ ((1 << 30) - 1);
+					r.cmpvalu = bankbit;
+					r.usemask = cfg.ramBSize - 1;
+					r.usebase = cfg.ramASize + RAM;
+					r.Access = kATTA_readwritereadymask;
+					AddToATTList(&r);
+				}
+
+				r.cmpmask = bankbit | ~ ((1 << 30) - 1);
+				r.cmpvalu = 0;
+				r.usemask = cfg.ramASize - 1;
+				r.usebase = RAM;
+				r.Access = kATTA_readwritereadymask;
+				AddToATTList(&r);
+			}
+		} else {
+			if (cfg.ramBSize != 0) {
+				r.cmpmask = bankbit | ~ ((1 << 30) - 1);
+				r.cmpvalu = bankbit;
+				r.usemask = cfg.ramBSize - 1;
+				r.usebase = cfg.ramASize + RAM;
+				r.Access = kATTA_readwritereadymask;
+				AddToATTList(&r);
+			}
 
 			r.cmpmask = bankbit | ~ ((1 << 30) - 1);
 			r.cmpvalu = 0;
-			r.usemask = kRAMa_Size - 1;
+			r.usemask = cfg.ramASize - 1;
 			r.usebase = RAM;
 			r.Access = kATTA_readwritereadymask;
 			AddToATTList(&r);
@@ -1024,7 +1069,7 @@ static void SetUp_address32(void)
 	/* NuBus super space */
 	r.cmpmask = ~ ((1 << 28) - 1);
 	r.cmpvalu = 0x90000000;
-	r.usemask = kVidMemRAM_Size - 1;
+	r.usemask = cfg.vidMemSize - 1;
 	r.usebase = VidMem;
 	r.Access = kATTA_readwritereadymask;
 	AddToATTList(&r);
@@ -1033,14 +1078,14 @@ static void SetUp_address32(void)
 	/* Standard NuBus space */
 	r.cmpmask = ~ ((1 << 20) - 1);
 	r.cmpvalu = 0xF9F00000;
-	r.usemask = kVidROM_Size - 1;
+	r.usemask = cfg.vidROMSize - 1;
 	r.usebase = VidROM;
 	r.Access = kATTA_readreadymask;
 	AddToATTList(&r);
 #if 0
 	r.cmpmask = ~ 0x007FFFFF;
 	r.cmpvalu = 0xF9000000;
-	r.usemask = 0x007FFFFF & (kVidMemRAM_Size - 1);
+	r.usemask = 0x007FFFFF & (cfg.vidMemSize - 1);
 	r.usebase = VidMem;
 	r.Access = kATTA_readwritereadymask;
 	AddToATTList(&r);
@@ -1048,33 +1093,33 @@ static void SetUp_address32(void)
 
 	r.cmpmask = ~ 0x000FFFFF;
 	r.cmpvalu = 0xF9900000;
-	r.usemask = 0x000FFFFF & (kVidMemRAM_Size - 1);
+	r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
 	r.usebase = VidMem;
 	r.Access = kATTA_readwritereadymask;
 	AddToATTList(&r);
 /* kludge to allow more than 1M of Video Memory */
-#if kVidMemRAM_Size >= 0x00200000
-	r.cmpmask = ~ 0x000FFFFF;
-	r.cmpvalu = 0xF9A00000;
-	r.usemask = 0x000FFFFF & (kVidMemRAM_Size - 1);
-	r.usebase = VidMem + (1 << 20);
-	r.Access = kATTA_readwritereadymask;
-	AddToATTList(&r);
-#endif
-#if kVidMemRAM_Size >= 0x00400000
-	r.cmpmask = ~ 0x000FFFFF;
-	r.cmpvalu = 0xF9B00000;
-	r.usemask = 0x000FFFFF & (kVidMemRAM_Size - 1);
-	r.usebase = VidMem + (2 << 20);
-	r.Access = kATTA_readwritereadymask;
-	AddToATTList(&r);
-	r.cmpmask = ~ 0x000FFFFF;
-	r.cmpvalu = 0xF9C00000;
-	r.usemask = 0x000FFFFF & (kVidMemRAM_Size - 1);
-	r.usebase = VidMem + (3 << 20);
-	r.Access = kATTA_readwritereadymask;
-	AddToATTList(&r);
-#endif
+	if (cfg.vidMemSize >= 0x00200000) {
+		r.cmpmask = ~ 0x000FFFFF;
+		r.cmpvalu = 0xF9A00000;
+		r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
+		r.usebase = VidMem + (1 << 20);
+		r.Access = kATTA_readwritereadymask;
+		AddToATTList(&r);
+	}
+	if (cfg.vidMemSize >= 0x00400000) {
+		r.cmpmask = ~ 0x000FFFFF;
+		r.cmpvalu = 0xF9B00000;
+		r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
+		r.usebase = VidMem + (2 << 20);
+		r.Access = kATTA_readwritereadymask;
+		AddToATTList(&r);
+		r.cmpmask = ~ 0x000FFFFF;
+		r.cmpvalu = 0xF9C00000;
+		r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
+		r.usebase = VidMem + (3 << 20);
+		r.Access = kATTA_readwritereadymask;
+		AddToATTList(&r);
+	}
 
 	SetUp_io();
 
@@ -1130,35 +1175,36 @@ static void AddToATTListWithMTB(ATTep p)
 /* Compact Mac: simple 24-bit RAM setup (no VIA2 bank select) */
 static void SetUp_RAM24_compact(void)
 {
+	const auto& cfg = g_machine->config();
 	ATTer r{};
 
-#if (0 == kRAMb_Size) || (kRAMa_Size == kRAMb_Size)
-	r.cmpmask = 0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1);
-	r.cmpvalu = kRAM_Base;
-	r.usemask = kRAM_Size - 1;
-	r.usebase = RAM;
-	r.Access = kATTA_readwritereadymask;
-	AddToATTListWithMTB(&r);
-#else
-	/* unbalanced memory */
+	if (cfg.ramBSize == 0 || cfg.ramASize == cfg.ramBSize) {
+		r.cmpmask = 0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1);
+		r.cmpvalu = kRAM_Base;
+		r.usemask = cfg.ramSize() - 1;
+		r.usebase = RAM;
+		r.Access = kATTA_readwritereadymask;
+		AddToATTListWithMTB(&r);
+	} else {
+		/* unbalanced memory */
 
-#if 0 != (0x00FFFFFF & kRAMa_Size)
-	/* condition should always be true if configuration file right */
-	r.cmpmask = 0x00FFFFFF & (kRAMa_Size | ~ ((1 << kRAM_ln2Spc) - 1));
-	r.cmpvalu = kRAM_Base + kRAMa_Size;
-	r.usemask = kRAMb_Size - 1;
-	r.usebase = kRAMa_Size + RAM;
-	r.Access = kATTA_readwritereadymask;
-	AddToATTListWithMTB(&r);
-#endif
+		if (0 != (0x00FFFFFF & cfg.ramASize)) {
+			/* condition should always be true if configuration file right */
+			r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~ ((1 << kRAM_ln2Spc) - 1));
+			r.cmpvalu = kRAM_Base + cfg.ramASize;
+			r.usemask = cfg.ramBSize - 1;
+			r.usebase = cfg.ramASize + RAM;
+			r.Access = kATTA_readwritereadymask;
+			AddToATTListWithMTB(&r);
+		}
 
-	r.cmpmask = 0x00FFFFFF & (kRAMa_Size | ~ ((1 << kRAM_ln2Spc) - 1));
-	r.cmpvalu = kRAM_Base;
-	r.usemask = kRAMa_Size - 1;
-	r.usebase = RAM;
-	r.Access = kATTA_readwritereadymask;
-	AddToATTListWithMTB(&r);
-#endif
+		r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~ ((1 << kRAM_ln2Spc) - 1));
+		r.cmpvalu = kRAM_Base;
+		r.usemask = cfg.ramASize - 1;
+		r.usebase = RAM;
+		r.Access = kATTA_readwritereadymask;
+		AddToATTListWithMTB(&r);
+	}
 }
 
 /* Compact Mac: 24-bit address space setup */
@@ -1193,26 +1239,27 @@ static void SetUp_address_compact(void)
 	}
 
 	if (MemOverlay) {
+		const auto& cfg = g_machine->config();
 		r.cmpmask = 0x00E00000;
 		r.cmpvalu = kRAM_Overlay_Base;
-#if (0 == kRAMb_Size) || (kRAMa_Size == kRAMb_Size)
-		r.usemask = kRAM_Size - 1;
-			/* note that cmpmask and usemask overlap for 4M */
-		r.usebase = RAM;
-		r.Access = kATTA_readwritereadymask;
-#else
-		/* unbalanced memory */
-		r.usemask = kRAMb_Size - 1;
-		r.usebase = kRAMa_Size + RAM;
-		r.Access = kATTA_readwritereadymask;
-#endif
+		if (cfg.ramBSize == 0 || cfg.ramASize == cfg.ramBSize) {
+			r.usemask = cfg.ramSize() - 1;
+				/* note that cmpmask and usemask overlap for 4M */
+			r.usebase = RAM;
+			r.Access = kATTA_readwritereadymask;
+		} else {
+			/* unbalanced memory */
+			r.usemask = cfg.ramBSize - 1;
+			r.usebase = cfg.ramASize + RAM;
+			r.Access = kATTA_readwritereadymask;
+		}
 		AddToATTListWithMTB(&r);
 	}
 
 	if (g_machine->config().includeVidMem) {
 		r.cmpmask = 0x00FFFFFF & ~ ((1 << kVidMem_ln2Spc) - 1);
 		r.cmpvalu = kVidMem_Base;
-		r.usemask = kVidMemRAM_Size - 1;
+		r.usemask = g_machine->config().vidMemSize - 1;
 		r.usebase = VidMem;
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);

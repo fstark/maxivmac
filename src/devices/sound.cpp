@@ -51,9 +51,6 @@ void SoundDevice::reset()
 #define kSnd_Main_Offset   0x0300
 #define kSnd_Alt_Offset    0x5F00
 
-#define kSnd_Main_Buffer (kRAM_Size - kSnd_Main_Offset)
-#define kSnd_Alt_Buffer (kRAM_Size - kSnd_Alt_Offset)
-
 /*
 	approximate volume levels of vMac, so:
 
@@ -118,11 +115,12 @@ void SoundDevice::subTick(int SubTick)
 	uint16_t i;
 	uint32_t StartOffset = SubTick_offset[SubTick];
 	uint16_t n = SubTick_n[SubTick];
+	uint32_t ramSz = g_machine->config().ramSize();
 	unsigned long addy =
 #ifdef SoundBuffer
-		(SoundBuffer == 0) ? kSnd_Alt_Buffer :
+		(SoundBuffer == 0) ? (ramSz - kSnd_Alt_Offset) :
 #endif
-		kSnd_Main_Buffer;
+		(ramSz - kSnd_Main_Offset);
 #ifndef ln2mtb
 	uint8_t * addr = addy + (2 * StartOffset) + RAM;
 #else

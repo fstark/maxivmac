@@ -190,13 +190,14 @@ static void ExtraTimeEndNotify(void)
 
 void EmulationReserveAlloc(void)
 {
+	const auto& cfg = g_machine->config();
 	ReserveAllocOneBlock(&RAM,
-		kRAM_Size + RAMSafetyMarginFudge, 5, false);
-	if (g_machine->config().emVidCard)
-		ReserveAllocOneBlock(&VidROM, kVidROM_Size, 5, false);
-	if (g_machine->config().includeVidMem)
+		cfg.ramSize() + RAMSafetyMarginFudge, 5, false);
+	if (cfg.emVidCard)
+		ReserveAllocOneBlock(&VidROM, cfg.vidROMSize, 5, false);
+	if (cfg.includeVidMem)
 		ReserveAllocOneBlock(&VidMem,
-			kVidMemRAM_Size + RAMSafetyMarginFudge, 5, true);
+			cfg.vidMemSize + RAMSafetyMarginFudge, 5, true);
 #if SmallGlobals
 	g_cpu.reserveAlloc();
 #endif
