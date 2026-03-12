@@ -16,6 +16,19 @@
 
 #pragma once
 
-extern void IWM_Reset(void);
+#include "devices/device.h"
+#include <cstdint>
 
+class IWMDevice : public Device {
+public:
+	uint32_t access(uint32_t data, bool writeMem, uint32_t addr) override;
+	void zap() override {}
+	void reset() override;
+	const char* name() const override { return "IWM"; }
+};
+
+extern IWMDevice* g_iwm;
+
+// Backward-compatible free function API
+extern void IWM_Reset(void);
 extern uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr);

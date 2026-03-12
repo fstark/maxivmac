@@ -29,6 +29,9 @@
 
 #include "devices/scsi.h"
 
+/* Global singleton */
+SCSIDevice* g_scsi = nullptr;
+
 #define scsiRd   0x00
 #define scsiWr   0x01
 
@@ -50,7 +53,7 @@
 
 static uint8_t SCSI[kSCSI_Size];
 
-void SCSI_Reset(void)
+void SCSIDevice::reset()
 {
 	int i;
 
@@ -134,7 +137,7 @@ static void SCSI_Check(void)
 	}
 }
 
- uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+ uint32_t SCSIDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 	if (addr < (kSCSI_Size / 2)) {
 		addr *= 2;
@@ -146,4 +149,16 @@ static void SCSI_Check(void)
 		}
 	}
 	return Data;
+}
+
+/* ===== Backward-compatible free function API ===== */
+
+void SCSI_Reset(void)
+{
+	g_scsi->reset();
+}
+
+uint32_t SCSI_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+{
+	return g_scsi->access(Data, WriteMem, addr);
 }
