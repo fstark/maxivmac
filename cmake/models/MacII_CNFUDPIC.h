@@ -7,16 +7,13 @@
 	you know what you're doing.
 */
 
-#define EmClassicKbrd 0
 #define EmADB 1
 #define EmRTC 1
-#define EmPMU 0
 #define EmVIA1 1
 #define EmVIA2 1
 #define Use68020 1
 #define EmFPU 1
-#define EmMMU 0
-#define EmClassicSnd 0
+#define EmMMU 1
 #define EmASC 1
 
 #define CurEmMd kEmMd_II

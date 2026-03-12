@@ -19,6 +19,7 @@
 */
 
 #include "core/common.h"
+#include "core/machine_config.h"
 
 #include "cpu/m68k_tables.h"
 
@@ -3052,7 +3053,60 @@ static void DeCodeOneOp(WorkR *p)
 #endif
 }
 
-void M68KITAB_setup(DecOpR *p)
+static bool is68020OnlyKind(uint8_t kind)
+{
+	switch (kind) {
+		case kIKindCallMorRtm:
+		case kIKindBraL:
+		case kIKindBccL:
+		case kIKindBsrL:
+		case kIKindEXTBL:
+		case kIKindTRAPcc:
+		case kIKindChkL:
+		case kIKindBkpt:
+		case kIKindDivL:
+		case kIKindMulL:
+		case kIKindRtd:
+		case kIKindMoveCCREa:
+		case kIKindMoveCEa:
+		case kIKindMoveEaC:
+		case kIKindLinkL:
+		case kIKindPack:
+		case kIKindUnpk:
+		case kIKindCHK2orCMP2:
+		case kIKindCAS2:
+		case kIKindCAS:
+		case kIKindMoveS:
+		case kIKindBitField:
+			return true;
+		default:
+			return false;
+	}
+}
+
+static bool isMMUKind(uint8_t kind)
+{
+	return kind == kIKindMMU;
+}
+
+static bool isFPUKind(uint8_t kind)
+{
+	switch (kind) {
+		case kIKindFPUmd60:
+		case kIKindFPUDBcc:
+		case kIKindFPUTrapcc:
+		case kIKindFPUScc:
+		case kIKindFPUFBccW:
+		case kIKindFPUFBccL:
+		case kIKindFPUSave:
+		case kIKindFPURestore:
+			return true;
+		default:
+			return false;
+	}
+}
+
+void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 {
 	uint32_t i;
 	WorkR r;
@@ -3072,5 +3126,24 @@ void M68KITAB_setup(DecOpR *p)
 		DeCodeOneOp(&r);
 
 		p[i] = r.DecOp;
+	}
+
+	/* Runtime fixup: disable instruction kinds not supported by the
+	   configured CPU. The table was built with all features enabled
+	   (Use68020=1, EmFPU=1, EmMMU=1). Now patch out unsupported ones. */
+	if (config) {
+		for (i = 0; i < (uint32_t)256 * 256; ++i) {
+			uint8_t kind = p[i].x.MainClas;
+			bool demote = false;
+			if (!config->use68020 && is68020OnlyKind(kind))
+				demote = true;
+			if (!config->emFPU && isFPUKind(kind))
+				demote = true;
+			if (!config->emMMU && isMMUKind(kind))
+				demote = true;
+			if (demote) {
+				SetDcoMainClas(&p[i], kIKindIllegal);
+			}
+		}
 	}
 }

@@ -268,4 +268,5 @@ typedef struct DecOpR DecOpR;
 #define SetDcoMainClas(p, xx) ((p)->x.MainClas = (xx))
 #define SetDcoCycles(p, xx) ((p)->x.Cycles = (xx))
 
-extern void M68KITAB_setup(DecOpR *p);
+struct MachineConfig;
+extern void M68KITAB_setup(DecOpR *p, const MachineConfig *config);

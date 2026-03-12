@@ -31,6 +31,7 @@
 */
 
 #include "core/common.h"
+#include "core/machine_config.h"
 
 #include "cpu/m68k_tables.h"
 
@@ -246,6 +247,10 @@ static struct regstruct
 	DecOpR disp_table[disp_table_sz];
 #endif
 } regs;
+
+/* Cached pointer to MachineConfig for runtime CPU-feature checks.
+   Set once in MINEM68K_Init(). */
+static const MachineConfig *s_cpuConfig = nullptr;
 
 #define ui5r_MSBisSet(x) (((int32_t)(x)) < 0)
 
@@ -977,106 +982,104 @@ static uint32_t get_disp_ea(uint32_t base)
 	if ((dp & 0x0800) == 0) {
 		regd = (int32_t)(int16_t)regd;
 	}
-#if Use68020
-	regd <<= (dp >> 9) & 3;
+	if (s_cpuConfig->use68020) {
+		regd <<= (dp >> 9) & 3;
 #if ExtraAbnormalReports
-	if (((dp >> 9) & 3) != 0) {
-		/* ReportAbnormal("Have scale in Extension Word"); */
-		/* apparently can happen in Sys 7.5.5 boot on 68000 */
-	}
+		if (((dp >> 9) & 3) != 0) {
+			/* ReportAbnormal("Have scale in Extension Word"); */
+			/* apparently can happen in Sys 7.5.5 boot on 68000 */
+		}
 #endif
-	if (dp & 0x0100) {
-		if ((dp & 0x80) != 0) {
-			base = 0;
-			/* ReportAbnormal("Extension Word: suppress base"); */
-			/* used by Sys 7.5.5 boot */
-		}
-		if ((dp & 0x40) != 0) {
-			regd = 0;
-			/* ReportAbnormal("Extension Word: suppress regd"); */
-			/* used by Mac II boot */
-		}
-
-		switch ((dp >> 4) & 0x03) {
-			case 0:
-				/* reserved */
-				ReportAbnormalID(0x0101, "Extension Word: dp reserved");
-				break;
-			case 1:
-				/* no displacement */
-				/* ReportAbnormal("Extension Word: no displacement"); */
-				/* used by Sys 7.5.5 boot */
-				break;
-			case 2:
-				base += nextiSWord();
-				/*
-					ReportAbnormal("Extension Word: word displacement");
-				*/
-				/* used by Sys 7.5.5 boot */
-				break;
-			case 3:
-				base += nextilong();
-				/*
-					ReportAbnormal("Extension Word: long displacement");
-				*/
-				/* used by Mac II boot from system 6.0.8? */
-				break;
-		}
-
-		if ((dp & 0x03) == 0) {
-			base += regd;
-			if ((dp & 0x04) != 0) {
-				ReportAbnormalID(0x0102,
-					"Extension Word: reserved dp form");
-			}
-			/* ReportAbnormal("Extension Word: noindex"); */
-			/* used by Sys 7.5.5 boot */
-		} else {
-			if ((dp & 0x04) != 0) {
-				base = get_long(base);
-				base += regd;
-				/* ReportAbnormal("Extension Word: postindex"); */
-				/* used by Sys 7.5.5 boot */
-			} else {
-				base += regd;
-				base = get_long(base);
-				/* ReportAbnormal("Extension Word: preindex"); */
+		if (dp & 0x0100) {
+			if ((dp & 0x80) != 0) {
+				base = 0;
+				/* ReportAbnormal("Extension Word: suppress base"); */
 				/* used by Sys 7.5.5 boot */
 			}
-			switch (dp & 0x03) {
+			if ((dp & 0x40) != 0) {
+				regd = 0;
+				/* ReportAbnormal("Extension Word: suppress regd"); */
+				/* used by Mac II boot */
+			}
+
+			switch ((dp >> 4) & 0x03) {
+				case 0:
+					/* reserved */
+					ReportAbnormalID(0x0101, "Extension Word: dp reserved");
+					break;
 				case 1:
-					/* null outer displacement */
-					/*
-						ReportAbnormal(
-							"Extension Word: null outer displacement");
-					*/
+					/* no displacement */
+					/* ReportAbnormal("Extension Word: no displacement"); */
 					/* used by Sys 7.5.5 boot */
 					break;
 				case 2:
 					base += nextiSWord();
 					/*
-						ReportAbnormal(
-							"Extension Word: word outer displacement");
+						ReportAbnormal("Extension Word: word displacement");
 					*/
-					/* used by Mac II boot from system 6.0.8? */
+					/* used by Sys 7.5.5 boot */
 					break;
 				case 3:
 					base += nextilong();
 					/*
-						ReportAbnormal(
-							"Extension Word: long outer displacement");
+						ReportAbnormal("Extension Word: long displacement");
 					*/
 					/* used by Mac II boot from system 6.0.8? */
 					break;
 			}
-		}
 
-		return base;
-	} else
-#endif
-	{
-		return base + (int8_t)(dp) + regd;
+			if ((dp & 0x03) == 0) {
+				base += regd;
+				if ((dp & 0x04) != 0) {
+					ReportAbnormalID(0x0102,
+						"Extension Word: reserved dp form");
+				}
+				/* ReportAbnormal("Extension Word: noindex"); */
+				/* used by Sys 7.5.5 boot */
+			} else {
+				if ((dp & 0x04) != 0) {
+					base = get_long(base);
+					base += regd;
+					/* ReportAbnormal("Extension Word: postindex"); */
+					/* used by Sys 7.5.5 boot */
+				} else {
+					base += regd;
+					base = get_long(base);
+					/* ReportAbnormal("Extension Word: preindex"); */
+					/* used by Sys 7.5.5 boot */
+				}
+				switch (dp & 0x03) {
+					case 1:
+						/* null outer displacement */
+						/*
+							ReportAbnormal(
+								"Extension Word: null outer displacement");
+						*/
+						/* used by Sys 7.5.5 boot */
+						break;
+					case 2:
+						base += nextiSWord();
+						/*
+							ReportAbnormal(
+								"Extension Word: word outer displacement");
+						*/
+						/* used by Mac II boot from system 6.0.8? */
+						break;
+					case 3:
+						base += nextilong();
+						/*
+							ReportAbnormal(
+								"Extension Word: long outer displacement");
+						*/
+						/* used by Mac II boot from system 6.0.8? */
+						break;
+				}
+			}
+
+			return base;
+		}
 	}
+	return base + (int8_t)(dp) + regd;
 }
 
 static uint32_t DecodeAddr_Indirect(uint8_t ArgDat)
@@ -4489,16 +4492,15 @@ static void m68k_setCR(uint16_t newcr)
 
 static uint16_t m68k_getSR(void)
 {
-	return m68k_getCR()
+	uint16_t sr = m68k_getCR()
 			| (V_regs.t1 << 15)
-#if Use68020
-			| (V_regs.t0 << 14)
-#endif
 			| (V_regs.s << 13)
-#if Use68020
-			| (V_regs.m << 12)
-#endif
 			| (V_regs.intmask << 8);
+	if (s_cpuConfig->use68020) {
+		sr |= (V_regs.t0 << 14)
+			| (V_regs.m << 12);
+	}
+	return sr;
 }
 
 static void NeedToGetOut(void)
@@ -4526,32 +4528,28 @@ static void m68k_setSR(uint16_t newsr)
 {
 	uint32_t *pnewstk;
 	uint32_t *poldstk = (V_regs.s != 0) ? (
-#if Use68020
-		(V_regs.m != 0) ? &V_regs.msp :
-#endif
+		(s_cpuConfig->use68020 && V_regs.m != 0) ? &V_regs.msp :
 		&V_regs.isp) : &V_regs.usp;
 	uint32_t oldintmask = V_regs.intmask;
 
 	V_regs.t1 = (newsr >> 15) & 1;
-#if Use68020
-	V_regs.t0 = (newsr >> 14) & 1;
-	if (V_regs.t0 != 0) {
-		ReportAbnormalID(0x0105, "t0 flag set in m68k_setSR");
+	if (s_cpuConfig->use68020) {
+		V_regs.t0 = (newsr >> 14) & 1;
+		if (V_regs.t0 != 0) {
+			ReportAbnormalID(0x0105, "t0 flag set in m68k_setSR");
+		}
 	}
-#endif
 	V_regs.s = (newsr >> 13) & 1;
-#if Use68020
-	V_regs.m = (newsr >> 12) & 1;
-	if (V_regs.m != 0) {
-		ReportAbnormalID(0x0106, "m flag set in m68k_setSR");
+	if (s_cpuConfig->use68020) {
+		V_regs.m = (newsr >> 12) & 1;
+		if (V_regs.m != 0) {
+			ReportAbnormalID(0x0106, "m flag set in m68k_setSR");
+		}
 	}
-#endif
 	V_regs.intmask = (newsr >> 8) & 7;
 
 	pnewstk = (V_regs.s != 0) ? (
-#if Use68020
-		(V_regs.m != 0) ? &V_regs.msp :
-#endif
+		(s_cpuConfig->use68020 && V_regs.m != 0) ? &V_regs.msp :
 		&V_regs.isp) : &V_regs.usp;
 
 	if (poldstk != pnewstk) {
@@ -4572,65 +4570,55 @@ static void m68k_setSR(uint16_t newsr)
 	m68k_setCR(newsr);
 }
 
-static void ExceptionTo(uint32_t newpc
-#if Use68020
-	, int nr
-#endif
-	)
+static void ExceptionTo(uint32_t newpc, int nr)
 {
 	uint16_t saveSR = m68k_getSR();
 
 	if (0 == V_regs.s) {
 		V_regs.usp = m68k_areg(7);
 		m68k_areg(7) =
-#if Use68020
-			(V_regs.m != 0) ? V_regs.msp :
-#endif
+			(s_cpuConfig->use68020 && V_regs.m != 0) ? V_regs.msp :
 			V_regs.isp;
 		V_regs.s = 1;
 	}
-#if Use68020
-	switch (nr) {
-		case 5: /* Zero Divide */
-		case 6: /* CHK, CHK2 */
-		case 7: /* cpTRAPcc, TRAPCcc, TRAPv */
-		case 9: /* Trace */
-			m68k_areg(7) -= 4;
-			put_long(m68k_areg(7), m68k_getpc());
-			m68k_areg(7) -= 2;
-			put_word(m68k_areg(7), 0x2000 + nr * 4);
-			break;
-		default:
-			m68k_areg(7) -= 2;
-			put_word(m68k_areg(7), nr * 4);
-			break;
+	if (s_cpuConfig->use68020) {
+		switch (nr) {
+			case 5: /* Zero Divide */
+			case 6: /* CHK, CHK2 */
+			case 7: /* cpTRAPcc, TRAPCcc, TRAPv */
+			case 9: /* Trace */
+				m68k_areg(7) -= 4;
+				put_long(m68k_areg(7), m68k_getpc());
+				m68k_areg(7) -= 2;
+				put_word(m68k_areg(7), 0x2000 + nr * 4);
+				break;
+			default:
+				m68k_areg(7) -= 2;
+				put_word(m68k_areg(7), nr * 4);
+				break;
+		}
+		/* if V_regs.m should make throw away stack frame */
 	}
-	/* if V_regs.m should make throw away stack frame */
-#endif
 	m68k_areg(7) -= 4;
 	put_long(m68k_areg(7), m68k_getpc());
 	m68k_areg(7) -= 2;
 	put_word(m68k_areg(7), saveSR);
 	m68k_setpc(newpc);
 	V_regs.t1 = 0;
-#if Use68020
-	V_regs.t0 = 0;
-	V_regs.m = 0;
-#endif
+	if (s_cpuConfig->use68020) {
+		V_regs.t0 = 0;
+		V_regs.m = 0;
+	}
 	V_regs.TracePending = false;
 }
 
 static void Exception(int nr)
 {
-	ExceptionTo(get_long(4 * nr
-#if Use68020
-		+ V_regs.vbr
-#endif
-		)
-#if Use68020
-		, nr
-#endif
-		);
+	uint32_t vectorAddr = 4 * nr;
+	if (s_cpuConfig->use68020) {
+		vectorAddr += V_regs.vbr;
+	}
+	ExceptionTo(get_long(vectorAddr), nr);
 }
 
 
@@ -4655,8 +4643,7 @@ LOCALIPROC DoCodeMOVEMRmML(void)
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t p = *dstp;
 
-#if Use68020
-	{
+	if (s_cpuConfig->use68020) {
 		int n = 0;
 
 		for (z = 0; z < 16; ++z) {
@@ -4666,7 +4653,6 @@ LOCALIPROC DoCodeMOVEMRmML(void)
 		}
 		*dstp = p - n * 4;
 	}
-#endif
 	for (z = 16; --z >= 0; ) {
 		if ((regmask & (1 << (15 - z))) != 0) {
 #if WantCloserCyc
@@ -4676,9 +4662,9 @@ LOCALIPROC DoCodeMOVEMRmML(void)
 			put_long(p, V_regs.regs[z]);
 		}
 	}
-#if ! Use68020
-	*dstp = p;
-#endif
+	if (! s_cpuConfig->use68020) {
+		*dstp = p;
+	}
 }
 
 LOCALIPROC DoCodeMOVEMApRL(void)
@@ -6268,11 +6254,9 @@ static void DoPrivilegeViolation(void)
 LOCALIPROC DoCodeMoveSREa(void)
 {
 	/* Move from SR 0100000011mmmrrr */
-#if Use68020
-	if (0 == V_regs.s) {
+	if (s_cpuConfig->use68020 && 0 == V_regs.s) {
 		DoPrivilegeViolation();
 	} else
-#endif
 	{
 		DecodeSetDstValue(m68k_getSR());
 	}
@@ -6372,8 +6356,7 @@ LOCALIPROC DoCodeMOVEMRmMW(void)
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t p = *dstp;
 
-#if Use68020
-	{
+	if (s_cpuConfig->use68020) {
 		int n = 0;
 
 		for (z = 0; z < 16; ++z) {
@@ -6383,7 +6366,6 @@ LOCALIPROC DoCodeMOVEMRmMW(void)
 		}
 		*dstp = p - n * 2;
 	}
-#endif
 	for (z = 16; --z >= 0; ) {
 		if ((regmask & (1 << (15 - z))) != 0) {
 #if WantCloserCyc
@@ -6596,8 +6578,7 @@ LOCALIPROC DoCodeRte(void)
 		NewPC = get_long(stackp);
 		stackp += 4;
 
-#if Use68020
-		{
+		if (s_cpuConfig->use68020) {
 			uint16_t format = get_word(stackp);
 			stackp += 2;
 
@@ -6639,7 +6620,6 @@ LOCALIPROC DoCodeRte(void)
 					break;
 			}
 		}
-#endif
 		m68k_areg(7) = stackp;
 		m68k_setSR(NewSR);
 		m68k_setpc(NewPC);
@@ -8812,11 +8792,7 @@ void SetHeadATTel(ATTep p)
 void DiskInsertedPsuedoException(uint32_t newpc, uint32_t data)
 {
 	Em_Enter();
-	ExceptionTo(newpc
-#if Use68020
-		, 0
-#endif
-		);
+	ExceptionTo(newpc, 0);
 	m68k_areg(7) -= 4;
 	put_long(m68k_areg(7), data);
 	Em_Exit();
@@ -8890,10 +8866,10 @@ void m68k_reset(void)
 	m68k_areg(7) = get_long(0x00000000);
 
 	V_regs.s = 1;
-#if Use68020
-	V_regs.m = 0;
-	V_regs.t0 = 0;
-#endif
+	if (s_cpuConfig->use68020) {
+		V_regs.m = 0;
+		V_regs.t0 = 0;
+	}
 	V_regs.t1 = 0;
 	ZFLG = CFLG = NFLG = VFLG = 0;
 
@@ -8904,13 +8880,13 @@ void m68k_reset(void)
 	V_regs.TracePending = false;
 	V_regs.intmask = 7;
 
-#if Use68020
-	V_regs.sfc = 0;
-	V_regs.dfc = 0;
-	V_regs.vbr = 0;
-	V_regs.cacr = 0;
-	V_regs.caar = 0;
-#endif
+	if (s_cpuConfig->use68020) {
+		V_regs.sfc = 0;
+		V_regs.dfc = 0;
+		V_regs.vbr = 0;
+		V_regs.cacr = 0;
+		V_regs.caar = 0;
+	}
 #endif
 
 	Em_Exit();
@@ -8925,12 +8901,13 @@ void MINEM68K_ReserveAlloc(void)
 #endif
 
 void MINEM68K_Init(
-	uint8_t *fIPL)
+	uint8_t *fIPL, const MachineConfig *config)
 {
+	s_cpuConfig = config;
 	regs.fIPL = fIPL;
 #ifdef r_regs
 	regs.save_regs = &regs;
 #endif
 
-	M68KITAB_setup(regs.disp_table);
+	M68KITAB_setup(regs.disp_table, config);
 }

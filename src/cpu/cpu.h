@@ -15,10 +15,12 @@
 // so this header can be parsed standalone.
 struct ATTer;
 
+struct MachineConfig;
+
 class CPU {
 public:
 	// Initialization
-	void init(uint8_t* iplPtr);
+	void init(uint8_t* iplPtr, const MachineConfig* config);
 	void reset();
 
 #if SmallGlobals

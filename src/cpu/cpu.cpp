@@ -13,9 +13,9 @@
 
 CPU g_cpu;
 
-void CPU::init(uint8_t* iplPtr)
+void CPU::init(uint8_t* iplPtr, const MachineConfig* config)
 {
-	MINEM68K_Init(iplPtr);
+	MINEM68K_Init(iplPtr, config);
 }
 
 void CPU::reset()

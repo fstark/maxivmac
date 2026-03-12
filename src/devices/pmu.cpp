@@ -21,12 +21,10 @@
 #include "core/common.h"
 
 #include "devices/pmu.h"
+#include "core/wire_bus.h"
+#include "core/wire_ids.h"
 
 PMUDevice* g_pmu = nullptr;
-#if EmPMU
-
-
-#include "devices/via.h"
 
 /*
 	ReportAbnormalID unused 0x0E0E - 0x0EFF
@@ -43,48 +41,48 @@ enum {
 	kPMUStates
 };
 
-#define PMU_BuffSz 8
-static uint8_t PMU_BuffA[PMU_BuffSz];
-static uint8_t * PMU_p;
-static uint8_t PMU_rem;
-static uint8_t PMU_i;
-
-static int PMUState = kPMUStateReadyForCommand;
-
-static uint8_t PMU_CurCommand;
-static uint8_t PMU_SendNext;
-static uint8_t PMU_BuffL;
-
-static void PmuStartSendResult(uint8_t ResultCode, uint8_t L)
+void PMUDevice::reset()
 {
-	PMU_SendNext = ResultCode;
-	PMU_BuffL = L;
-	PMUState = kPMUStateSendLength;
+	std::memset(buffA_, 0, sizeof(buffA_));
+	p_ = nullptr;
+	rem_ = 0;
+	i_ = 0;
+	state_ = kPMUStateReadyForCommand;
+	curCommand_ = 0;
+	sendNext_ = 0;
+	buffL_ = 0;
+	sending_ = false;
+	std::memset(paramRAM_, 0, sizeof(paramRAM_));
 }
 
-static uint8_t PARAMRAM[128];
-
-static void PmuCheckCommandOp(void)
+void PMUDevice::startSendResult(uint8_t resultCode, uint8_t len)
 {
-	switch (PMU_CurCommand) {
+	sendNext_ = resultCode;
+	buffL_ = len;
+	state_ = kPMUStateSendLength;
+}
+
+void PMUDevice::checkCommandOp()
+{
+	switch (curCommand_) {
 		case 0x10: /* kPMUpowerCntl - power plane/clock control */
 			break;
 		case 0x32: /* kPMUxPramWrite - write extended PRAM byte(s) */
-			if (kPMUStateRecievingBuffer == PMUState) {
-				if (0 == PMU_i) {
-					if (PMU_BuffL >= 2) {
-						PMU_p = PMU_BuffA;
-						PMU_rem = 2;
+			if (kPMUStateRecievingBuffer == state_) {
+				if (0 == i_) {
+					if (buffL_ >= 2) {
+						p_ = buffA_;
+						rem_ = 2;
 					} else {
 						ReportAbnormalID(0x0E01,
 							"PMU_BuffL too small for kPMUxPramWrite");
 					}
-				} else if (2 == PMU_i) {
-					if ((PMU_BuffA[1] + 2 == PMU_BuffL)
-						&& (PMU_BuffA[0] + PMU_BuffA[1] <= 0x80))
+				} else if (2 == i_) {
+					if ((buffA_[1] + 2 == buffL_)
+						&& (buffA_[0] + buffA_[1] <= 0x80))
 					{
-						PMU_p = &PARAMRAM[PMU_BuffA[0]];
-						PMU_rem = PMU_BuffA[1];
+						p_ = &paramRAM_[buffA_[0]];
+						rem_ = buffA_[1];
 					} else {
 						ReportAbnormalID(0x0E02,
 							"bad range for kPMUxPramWrite");
@@ -93,7 +91,7 @@ static void PmuCheckCommandOp(void)
 					ReportAbnormalID(0x0E03,
 						"Wrong PMU_i for kPMUpramWrite");
 				}
-			} else if (kPMUStateRecievedCommand == PMUState) {
+			} else if (kPMUStateRecievedCommand == state_) {
 				/* already done */
 			}
 			break;
@@ -104,16 +102,16 @@ static void PmuCheckCommandOp(void)
 		case 0xE0: /* kPMUwritePmgrRAM - write to internal PMGR RAM */
 			break;
 		case 0x21: /* kPMUpMgrADBoff - turn ADB auto-poll off */
-			if (kPMUStateRecievedCommand == PMUState) {
-				if (0 != PMU_BuffL) {
+			if (kPMUStateRecievedCommand == state_) {
+				if (0 != buffL_) {
 					ReportAbnormalID(0x0E04,
 						"kPMUpMgrADBoff nonzero length");
 				}
 			}
 			break;
 		case 0xEC: /* kPMUPmgrSelfTest - run the PMGR selftest */
-			if (kPMUStateRecievedCommand == PMUState) {
-				PmuStartSendResult(0, 0);
+			if (kPMUStateRecievedCommand == state_) {
+				startSendResult(0, 0);
 			}
 			break;
 		case 0x78:
@@ -126,35 +124,35 @@ static void PmuCheckCommandOp(void)
 			/*
 				kPMUsleepReq - put the system to sleep (sleepSig='MATT')
 			*/
-			if (kPMUStateRecievedCommand == PMUState) {
-				PMU_BuffA[0] = 0;
-				PmuStartSendResult(0, 1);
+			if (kPMUStateRecievedCommand == state_) {
+				buffA_[0] = 0;
+				startSendResult(0, 1);
 			}
 			break;
 		case 0xE8: /* kPMUreadPmgrRAM - read from internal PMGR RAM */
-			if (kPMUStateRecievedCommand == PMUState) {
-				if ((3 == PMU_BuffL)
-					&& (0 == PMU_BuffA[0])
-					&& (0xEE == PMU_BuffA[1])
-					&& (1 == PMU_BuffA[2]))
+			if (kPMUStateRecievedCommand == state_) {
+				if ((3 == buffL_)
+					&& (0 == buffA_[0])
+					&& (0xEE == buffA_[1])
+					&& (1 == buffA_[2]))
 				{
-					PMU_BuffA[0] = 1 << 5;
-					PmuStartSendResult(0, 1);
+					buffA_[0] = 1 << 5;
+					startSendResult(0, 1);
 				} else {
-					PMU_BuffA[0] = 0;
-					PmuStartSendResult(0, 1);
+					buffA_[0] = 0;
+					startSendResult(0, 1);
 					/* ReportAbnormal("Unknown kPMUreadPmgrRAM op"); */
 				}
 			}
 			break;
 		case 0x3A: /* kPMUxPramRead - read extended PRAM byte(s) */
-			if (kPMUStateRecievedCommand == PMUState) {
-				if ((2 == PMU_BuffL)
-					&& (PMU_BuffA[0] + PMU_BuffA[1] <= 0x80))
+			if (kPMUStateRecievedCommand == state_) {
+				if ((2 == buffL_)
+					&& (buffA_[0] + buffA_[1] <= 0x80))
 				{
-					PMU_p = &PARAMRAM[PMU_BuffA[0]];
-					PMU_rem = PMU_BuffA[1];
-					PmuStartSendResult(0, PMU_rem);
+					p_ = &paramRAM_[buffA_[0]];
+					rem_ = buffA_[1];
+					startSendResult(0, rem_);
 				} else {
 					ReportAbnormalID(0x0E05,
 						"Unknown kPMUxPramRead op");
@@ -163,13 +161,13 @@ static void PmuCheckCommandOp(void)
 			break;
 		case 0x38:
 			/* kPMUtimeRead - read the time from the clock chip */
-			if (kPMUStateRecievedCommand == PMUState) {
-				if (0 == PMU_BuffL) {
-					PMU_BuffA[0] = 0;
-					PMU_BuffA[1] = 0;
-					PMU_BuffA[2] = 0;
-					PMU_BuffA[3] = 0;
-					PmuStartSendResult(0, 4);
+			if (kPMUStateRecievedCommand == state_) {
+				if (0 == buffL_) {
+					buffA_[0] = 0;
+					buffA_[1] = 0;
+					buffA_[2] = 0;
+					buffA_[3] = 0;
+					startSendResult(0, 4);
 				} else {
 					ReportAbnormalID(0x0E06, "Unknown kPMUtimeRead op");
 				}
@@ -180,21 +178,21 @@ static void PmuCheckCommandOp(void)
 				kPMUpramWrite - write the original 20 bytes of PRAM
 				(Portable only)
 			*/
-			if (kPMUStateRecievedCommand == PMUState) {
-				if (20 == PMU_BuffL) {
+			if (kPMUStateRecievedCommand == state_) {
+				if (20 == buffL_) {
 					/* done */
 				} else {
 					ReportAbnormalID(0x0E07,
 						"Unknown kPMUpramWrite op");
 				}
-			} else if (kPMUStateRecievingBuffer == PMUState) {
-				if (20 == PMU_BuffL) {
-					if (0 == PMU_i) {
-						PMU_p = &PARAMRAM[16];
-						PMU_rem = 16;
-					} else if (16 == PMU_i) {
-						PMU_p = &PARAMRAM[8];
-						PMU_rem = 4;
+			} else if (kPMUStateRecievingBuffer == state_) {
+				if (20 == buffL_) {
+					if (0 == i_) {
+						p_ = &paramRAM_[16];
+						rem_ = 16;
+					} else if (16 == i_) {
+						p_ = &paramRAM_[8];
+						rem_ = 4;
 					} else {
 						ReportAbnormalID(0x0E08,
 							"Wrong PMU_i for kPMUpramWrite");
@@ -207,28 +205,28 @@ static void PmuCheckCommandOp(void)
 				kPMUpramRead - read the original 20 bytes of PRAM
 				(Portable only)
 			*/
-			if (kPMUStateRecievedCommand == PMUState) {
-				if (0 == PMU_BuffL) {
-					PmuStartSendResult(0, 20);
+			if (kPMUStateRecievedCommand == state_) {
+				if (0 == buffL_) {
+					startSendResult(0, 20);
 				} else {
 					ReportAbnormalID(0x0E09, "Unknown kPMUpramRead op");
 				}
-			} else if (kPMUStateSendBuffer == PMUState) {
+			} else if (kPMUStateSendBuffer == state_) {
 #if 0
 				{
 					int i;
 
-					for (i = 0; i < PMU_BuffSz; ++i) {
-						PMU_BuffA[i] = 0;
+					for (i = 0; i < kBuffSz; ++i) {
+						buffA_[i] = 0;
 					}
 				}
 #endif
-				if (0 == PMU_i) {
-					PMU_p = &PARAMRAM[16];
-					PMU_rem = 16;
-				} else if (16 == PMU_i) {
-					PMU_p = &PARAMRAM[8];
-					PMU_rem = 4;
+				if (0 == i_) {
+					p_ = &paramRAM_[16];
+					rem_ = 16;
+				} else if (16 == i_) {
+					p_ = &paramRAM_[8];
+					rem_ = 4;
 				} else {
 					ReportAbnormalID(0x0E0A,
 						"Wrong PMU_i for kPMUpramRead");
@@ -236,23 +234,23 @@ static void PmuCheckCommandOp(void)
 			}
 			break;
 		default:
-			if (kPMUStateRecievedCommand == PMUState) {
+			if (kPMUStateRecievedCommand == state_) {
 				ReportAbnormalID(0x0E0B, "Unknown PMU op");
 #if dbglog_HAVE
 				dbglog_writeCStr("Unknown PMU op ");
-				dbglog_writeHex(PMU_CurCommand);
+				dbglog_writeHex(curCommand_);
 				dbglog_writeReturn();
 				dbglog_writeCStr("PMU_BuffL = ");
-				dbglog_writeHex(PMU_BuffL);
+				dbglog_writeHex(buffL_);
 				dbglog_writeReturn();
-				if (PMU_BuffL <= PMU_BuffSz) {
+				if (buffL_ <= kBuffSz) {
 					int i;
 
-					for (i = 0; i < PMU_BuffL; ++i) {
+					for (i = 0; i < buffL_; ++i) {
 						dbglog_writeCStr("PMU_BuffA[");
 						dbglog_writeNum(i);
 						dbglog_writeCStr("] = ");
-						dbglog_writeHex(PMU_BuffA[i]);
+						dbglog_writeHex(buffA_[i]);
 						dbglog_writeReturn();
 					}
 				}
@@ -262,74 +260,72 @@ static void PmuCheckCommandOp(void)
 	}
 }
 
-static void LocBuffSetUpNextChunk(void)
+void PMUDevice::locBuffSetUpNextChunk()
 {
-	PMU_p = PMU_BuffA;
-	PMU_rem = PMU_BuffL - PMU_i;
-	if (PMU_rem >= PMU_BuffSz) {
-		PMU_rem = PMU_BuffSz;
+	p_ = buffA_;
+	rem_ = buffL_ - i_;
+	if (rem_ >= kBuffSz) {
+		rem_ = kBuffSz;
 	}
 }
 
-static uint8_t GetPMUbus(void)
+uint8_t PMUDevice::getPMUbus() const
 {
 	uint8_t v;
 
-	v = VIA1_iA7;
+	v = g_wires.get(Wire_VIA1_iA7);
 	v <<= 1;
-	v |= VIA1_iA6;
+	v |= g_wires.get(Wire_VIA1_iA6);
 	v <<= 1;
-	v |= VIA1_iA5;
+	v |= g_wires.get(Wire_VIA1_iA5);
 	v <<= 1;
-	v |= VIA1_iA4;
+	v |= g_wires.get(Wire_VIA1_iA4);
 	v <<= 1;
-	v |= VIA1_iA3;
+	v |= g_wires.get(Wire_VIA1_iA3);
 	v <<= 1;
-	v |= VIA1_iA2;
+	v |= g_wires.get(Wire_VIA1_iA2);
 	v <<= 1;
-	v |= VIA1_iA1;
+	v |= g_wires.get(Wire_VIA1_iA1);
 	v <<= 1;
-	v |= VIA1_iA0;
+	v |= g_wires.get(Wire_VIA1_iA0);
 
 	return v;
 }
 
-static void SetPMUbus(uint8_t v)
+void PMUDevice::setPMUbus(uint8_t v)
 {
-	VIA1_iA0 = v & 0x01;
+	g_wires.set(Wire_VIA1_iA0, v & 0x01);
 	v >>= 1;
-	VIA1_iA1 = v & 0x01;
+	g_wires.set(Wire_VIA1_iA1, v & 0x01);
 	v >>= 1;
-	VIA1_iA2 = v & 0x01;
+	g_wires.set(Wire_VIA1_iA2, v & 0x01);
 	v >>= 1;
-	VIA1_iA3 = v & 0x01;
+	g_wires.set(Wire_VIA1_iA3, v & 0x01);
 	v >>= 1;
-	VIA1_iA4 = v & 0x01;
+	g_wires.set(Wire_VIA1_iA4, v & 0x01);
 	v >>= 1;
-	VIA1_iA5 = v & 0x01;
+	g_wires.set(Wire_VIA1_iA5, v & 0x01);
 	v >>= 1;
-	VIA1_iA6 = v & 0x01;
+	g_wires.set(Wire_VIA1_iA6, v & 0x01);
 	v >>= 1;
-	VIA1_iA7 = v & 0x01;
+	g_wires.set(Wire_VIA1_iA7, v & 0x01);
 }
 
-static bool PMU_Sending = false;
-
-static void PmuCheckCommandCompletion(void)
+void PMUDevice::checkCommandCompletion()
 {
-	if (PMU_i == PMU_BuffL) {
-		PMUState = kPMUStateRecievedCommand;
-		PmuCheckCommandOp();
-		if ((PMU_CurCommand & 0x08) == 0) {
-			PMUState = kPMUStateReadyForCommand;
-			SetPMUbus(0xFF);
+	if (i_ == buffL_) {
+		state_ = kPMUStateRecievedCommand;
+		checkCommandOp();
+		if ((curCommand_ & 0x08) == 0) {
+			state_ = kPMUStateReadyForCommand;
+			setPMUbus(0xFF);
 		} else {
-			if (PMUState != kPMUStateSendLength) {
-				PmuStartSendResult(0xFF, 0);
-				PMUState = kPMUStateSendLength;
+			if (state_ != kPMUStateSendLength) {
+				startSendResult(0xFF, 0);
+				state_ = kPMUStateSendLength;
 			}
-			PMU_i = 0;
-			PMU_Sending = true;
+			i_ = 0;
+			sending_ = true;
 			ICT_add(kICT_PMU_Task,
 				20400UL * kCycleScale / 64 * kMyClockMult);
 		}
@@ -338,92 +334,92 @@ static void PmuCheckCommandCompletion(void)
 
 void PMUDevice::toReadyChangeNtfy()
 {
-	if (PMU_Sending) {
-		PMU_Sending = false;
+	if (sending_) {
+		sending_ = false;
 		ReportAbnormalID(0x0E0C,
 			"PmuToReady_ChangeNtfy while PMU_Sending");
-		PmuFromReady = 0;
+		g_wires.set(Wire_PMU_FromReady, 0);
 	}
-	switch (PMUState) {
+	switch (state_) {
 		case kPMUStateReadyForCommand:
-			if (! PmuToReady) {
-				PmuFromReady = 0;
+			if (! g_wires.get(Wire_PMU_ToReady)) {
+				g_wires.set(Wire_PMU_FromReady, 0);
 			} else {
-				PMU_CurCommand = GetPMUbus();
-				PMUState = kPMUStateRecievingLength;
-				PmuFromReady = 1;
+				curCommand_ = getPMUbus();
+				state_ = kPMUStateRecievingLength;
+				g_wires.set(Wire_PMU_FromReady, 1);
 			}
 			break;
 		case kPMUStateRecievingLength:
-			if (! PmuToReady) {
-				PmuFromReady = 0;
+			if (! g_wires.get(Wire_PMU_ToReady)) {
+				g_wires.set(Wire_PMU_FromReady, 0);
 			} else {
-				PMU_BuffL = GetPMUbus();
-				PMU_i = 0;
-				PMU_rem = 0;
-				PMUState = kPMUStateRecievingBuffer;
-				PmuCheckCommandCompletion();
-				PmuFromReady = 1;
+				buffL_ = getPMUbus();
+				i_ = 0;
+				rem_ = 0;
+				state_ = kPMUStateRecievingBuffer;
+				checkCommandCompletion();
+				g_wires.set(Wire_PMU_FromReady, 1);
 			}
 			break;
 		case kPMUStateRecievingBuffer:
-			if (! PmuToReady) {
-				PmuFromReady = 0;
+			if (! g_wires.get(Wire_PMU_ToReady)) {
+				g_wires.set(Wire_PMU_FromReady, 0);
 			} else {
-				uint8_t v = GetPMUbus();
-				if (0 == PMU_rem) {
-					PMU_p = nullptr;
-					PmuCheckCommandOp();
-					if (nullptr == PMU_p) {
+				uint8_t v = getPMUbus();
+				if (0 == rem_) {
+					p_ = nullptr;
+					checkCommandOp();
+					if (nullptr == p_) {
 						/* default handler */
-						LocBuffSetUpNextChunk();
+						locBuffSetUpNextChunk();
 					}
 				}
-				if (nullptr == PMU_p) {
+				if (nullptr == p_) {
 					/* mini vmac bug if ever happens */
 					ReportAbnormalID(0x0E0D,
 						"PMU_p null while kPMUStateRecievingBuffer");
 				}
-				*PMU_p++ = v;
-				--PMU_rem;
-				++PMU_i;
-				PmuCheckCommandCompletion();
-				PmuFromReady = 1;
+				*p_++ = v;
+				--rem_;
+				++i_;
+				checkCommandCompletion();
+				g_wires.set(Wire_PMU_FromReady, 1);
 			}
 			break;
 		case kPMUStateSendLength:
-			if (! PmuToReady) {
+			if (! g_wires.get(Wire_PMU_ToReady)) {
 				/* receiving */
-				PmuFromReady = 1;
+				g_wires.set(Wire_PMU_FromReady, 1);
 			} else {
-				PMU_SendNext = PMU_BuffL;
-				PMUState = kPMUStateSendBuffer;
-				PMU_Sending = true;
+				sendNext_ = buffL_;
+				state_ = kPMUStateSendBuffer;
+				sending_ = true;
 				ICT_add(kICT_PMU_Task,
 					20400UL * kCycleScale / 64 * kMyClockMult);
 			}
 			break;
 		case kPMUStateSendBuffer:
-			if (! PmuToReady) {
+			if (! g_wires.get(Wire_PMU_ToReady)) {
 				/* receiving */
-				PmuFromReady = 1;
+				g_wires.set(Wire_PMU_FromReady, 1);
 			} else {
-				if (PMU_i == PMU_BuffL) {
-					PMUState = kPMUStateReadyForCommand;
-					SetPMUbus(0xFF);
+				if (i_ == buffL_) {
+					state_ = kPMUStateReadyForCommand;
+					setPMUbus(0xFF);
 				} else {
-					if (0 == PMU_rem) {
-						PMU_p = nullptr;
-						PmuCheckCommandOp();
-						if (nullptr == PMU_p) {
+					if (0 == rem_) {
+						p_ = nullptr;
+						checkCommandOp();
+						if (nullptr == p_) {
 							/* default handler */
-							LocBuffSetUpNextChunk();
+							locBuffSetUpNextChunk();
 						}
 					}
-					PMU_SendNext = *PMU_p++;
-					--PMU_rem;
-					++PMU_i;
-					PMU_Sending = true;
+					sendNext_ = *p_++;
+					--rem_;
+					++i_;
+					sending_ = true;
 					ICT_add(kICT_PMU_Task,
 						20400UL * kCycleScale / 64 * kMyClockMult);
 				}
@@ -434,19 +430,13 @@ void PMUDevice::toReadyChangeNtfy()
 
 void PMUDevice::doTask()
 {
-	if (PMU_Sending) {
-		PMU_Sending = false;
-		SetPMUbus(PMU_SendNext);
-		PmuFromReady = 0;
+	if (sending_) {
+		sending_ = false;
+		setPMUbus(sendNext_);
+		g_wires.set(Wire_PMU_FromReady, 0);
 	}
 }
 
 // Backward-compatible forwarding stubs
 void PmuToReady_ChangeNtfy(void) { if (g_pmu) g_pmu->toReadyChangeNtfy(); }
 void PMU_DoTask(void) { if (g_pmu) g_pmu->doTask(); }
-
-#else /* !EmPMU */
-
-void PMU_DoTask(void) {}
-
-#endif /* EmPMU */
