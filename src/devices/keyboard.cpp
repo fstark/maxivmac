@@ -27,6 +27,7 @@
 #if EmClassicKbrd
 
 #include "devices/keyboard.h"
+#include "core/wire_bus.h"
 
 /* Global singleton */
 KeyboardDevice* g_keyboard = nullptr;
@@ -63,7 +64,7 @@ static void GotKeyBoardData(uint8_t v)
 		KeyBoardResult = v;
 	} else {
 		KYBD_ShiftOutData(v);
-		VIA1_iCB2 = 1;
+		g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 	}
 }
 
@@ -163,7 +164,7 @@ void KeyboardDevice::receiveEndCommand()
 #endif
 			HaveKeyBoardResult = false;
 			KYBD_ShiftOutData(KeyBoardResult);
-			VIA1_iCB2 = 1;
+			g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 		}
 	}
 }

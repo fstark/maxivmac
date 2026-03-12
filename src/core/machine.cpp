@@ -34,6 +34,7 @@
 #include "devices/scsi.h"
 #include "devices/iwm.h"
 #include "devices/asc.h"
+#include "core/wire_bus.h"
 
 /*
 	ReportAbnormalID unused 0x111D - 0x11FF
@@ -121,7 +122,7 @@ uint8_t * VidROM = nullptr;
 uint8_t * VidMem = nullptr;
 #endif
 
-uint8_t Wires[kNumWires];
+uint8_t* Wires = nullptr;
 
 
 #if WantDisasm
@@ -1569,8 +1570,7 @@ static void get_fail_realblock(ATTep p)
 		case kMAN_OverlayOff:
 			pT->Access = kATTA_readreadymask;
 
-			MemOverlay = 0;
-			SetUpMemBanks();
+			g_wires.set(Wire_VIA1_iA4_MemOverlay, 0);
 
 			v = true;
 
@@ -1689,11 +1689,36 @@ void VIAorSCCinterruptChngNtfy(void)
 
  bool AddrSpac_Init(void)
 {
-	int i;
+	g_wires.init(kNumWires);
+	Wires = g_wires.data();
 
-	for (i = 0; i < kNumWires; i++) {
-		Wires[i] = 1;
-	}
+	/* Register wire change callbacks */
+	g_wires.onChange(Wire_VIA1_iA4_MemOverlay, MemOverlay_ChangeNtfy);
+#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+	extern void PowerOff_ChangeNtfy(void);
+	g_wires.onChange(Wire_VIA2_iA7_unknown, Addr32_ChangeNtfy);
+	g_wires.onChange(Wire_VIA2_iA6_unknown, Addr32_ChangeNtfy);
+	g_wires.onChange(Wire_VIA2_iB3_Addr32, Addr32_ChangeNtfy);
+	g_wires.onChange(Wire_VIA2_iB2_PowerOff, PowerOff_ChangeNtfy);
+#endif
+	g_wires.onChange(Wire_VIA1_InterruptRequest, VIAorSCCinterruptChngNtfy);
+	g_wires.onChange(Wire_VIA2_InterruptRequest, VIAorSCCinterruptChngNtfy);
+	g_wires.onChange(Wire_SCCInterruptRequest, VIAorSCCinterruptChngNtfy);
+#if EmRTC
+	extern void RTCunEnabled_ChangeNtfy(void);
+	extern void RTCclock_ChangeNtfy(void);
+	extern void RTCdataLine_ChangeNtfy(void);
+	g_wires.onChange(Wire_VIA1_iB0_RTCdataLine, RTCdataLine_ChangeNtfy);
+	g_wires.onChange(Wire_VIA1_iB1_RTCclock, RTCclock_ChangeNtfy);
+	g_wires.onChange(Wire_VIA1_iB2_RTCunEnabled, RTCunEnabled_ChangeNtfy);
+#endif
+#if EmADB
+	extern void ADBstate_ChangeNtfy(void);
+	extern void ADB_DataLineChngNtfy(void);
+	g_wires.onChange(Wire_VIA1_iB4_ADB_st0, ADBstate_ChangeNtfy);
+	g_wires.onChange(Wire_VIA1_iB5_ADB_st1, ADBstate_ChangeNtfy);
+	g_wires.onChange(Wire_VIA1_iCB2_ADB_Data, ADB_DataLineChngNtfy);
+#endif
 
 	MINEM68K_Init(
 		&CurIPL);
@@ -1702,7 +1727,7 @@ void VIAorSCCinterruptChngNtfy(void)
 
 void Memory_Reset(void)
 {
-	MemOverlay = 1;
+	g_wires.set(Wire_VIA1_iA4_MemOverlay, 1);
 	SetUpMemBanks();
 }
 

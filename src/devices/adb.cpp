@@ -23,6 +23,7 @@
 #if EmADB
 
 #include "devices/adb.h"
+#include "core/wire_bus.h"
 
 /* Global singleton */
 ADBDevice* g_adb = nullptr;
@@ -50,7 +51,7 @@ void ADBDevice::doNewState()
 	fprintf(stderr, "ADB_DoNewState: %d\n", state);
 #endif
 	{
-		ADB_Int = 1;
+		g_wires.set(Wire_VIA1_iB3_ADB_Int, 1);
 		switch (state) {
 			case 0: /* Start a new command */
 				if (ADB_ListenDatBuf) {
@@ -109,14 +110,14 @@ void ADBDevice::doNewState()
 						|| (ADB_IndexDatBuf >= ADB_SzDatBuf))
 					{
 						ADB_ShiftOutData(0xFF);
-						ADB_Data = 1;
-						ADB_Int = 0;
+					g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
+					g_wires.set(Wire_VIA1_iB3_ADB_Int, 0);
 					} else {
 #ifdef _VIA_Debug
 						fprintf(stderr, "*** talk one\n");
 #endif
 						ADB_ShiftOutData(ADB_DatBuf[ADB_IndexDatBuf]);
-						ADB_Data = 1;
+					g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 						ADB_IndexDatBuf += 1;
 					}
 				} else {

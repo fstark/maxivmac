@@ -180,7 +180,7 @@ using iCountt = uint32_t;
 extern iCountt GetCuriCount(void);
 extern void ICT_Zap(void);
 
-extern uint8_t Wires[kNumWires];
+extern uint8_t* Wires;
 
 #define kLn2CycleScale 6
 #define kCycleScale (1 << kLn2CycleScale)

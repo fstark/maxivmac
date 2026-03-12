@@ -28,6 +28,7 @@
 #if EmVIA2
 
 #include "devices/via2.h"
+#include "core/wire_bus.h"
 
 /*
 	ReportAbnormalID unused 0x0510 - 0x05FF
@@ -286,150 +287,40 @@ uint8_t VIA2Device::getORB(uint8_t Selection)
 	return Value;
 }
 
-#define ViaORcheckBit(p, x) \
-	(Ui3rTestBit(Selection, p) && \
-	((v = (Data >> p) & 1) != x))
-
 void VIA2Device::putORA(uint8_t Selection, uint8_t Data)
 {
-#if 0 != VIA2_ORA_CanOut
-	uint8_t v;
-#endif
-
 #if Ui3rTestBit(VIA2_ORA_CanOut, 7)
-	if (ViaORcheckBit(7, VIA2_iA7)) {
-		VIA2_iA7 = v;
-#ifdef VIA2_iA7_ChangeNtfy
-		VIA2_iA7_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 7)) {
+		g_wires.set(Wire_VIA2_iA7_unknown, (Data >> 7) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA2_ORA_CanOut, 6)
-	if (ViaORcheckBit(6, VIA2_iA6)) {
-		VIA2_iA6 = v;
-#ifdef VIA2_iA6_ChangeNtfy
-		VIA2_iA6_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORA_CanOut, 5)
-	if (ViaORcheckBit(5, VIA2_iA5)) {
-		VIA2_iA5 = v;
-#ifdef VIA2_iA5_ChangeNtfy
-		VIA2_iA5_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORA_CanOut, 4)
-	if (ViaORcheckBit(4, VIA2_iA4)) {
-		VIA2_iA4 = v;
-#ifdef VIA2_iA4_ChangeNtfy
-		VIA2_iA4_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORA_CanOut, 3)
-	if (ViaORcheckBit(3, VIA2_iA3)) {
-		VIA2_iA3 = v;
-#ifdef VIA2_iA3_ChangeNtfy
-		VIA2_iA3_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORA_CanOut, 2)
-	if (ViaORcheckBit(2, VIA2_iA2)) {
-		VIA2_iA2 = v;
-#ifdef VIA2_iA2_ChangeNtfy
-		VIA2_iA2_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORA_CanOut, 1)
-	if (ViaORcheckBit(1, VIA2_iA1)) {
-		VIA2_iA1 = v;
-#ifdef VIA2_iA1_ChangeNtfy
-		VIA2_iA1_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 6)) {
+		g_wires.set(Wire_VIA2_iA6_unknown, (Data >> 6) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA2_ORA_CanOut, 0)
-	if (ViaORcheckBit(0, VIA2_iA0)) {
-		VIA2_iA0 = v;
-#ifdef VIA2_iA0_ChangeNtfy
-		VIA2_iA0_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 0)) {
+		g_wires.set(Wire_VBLinterrupt, Data & 1);
 	}
 #endif
 }
 
 void VIA2Device::putORB(uint8_t Selection, uint8_t Data)
 {
-#if 0 != VIA2_ORB_CanOut
-	uint8_t v;
-#endif
-
 #if Ui3rTestBit(VIA2_ORB_CanOut, 7)
-	if (ViaORcheckBit(7, VIA2_iB7)) {
-		VIA2_iB7 = v;
-#ifdef VIA2_iB7_ChangeNtfy
-		VIA2_iB7_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORB_CanOut, 6)
-	if (ViaORcheckBit(6, VIA2_iB6)) {
-		VIA2_iB6 = v;
-#ifdef VIA2_iB6_ChangeNtfy
-		VIA2_iB6_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORB_CanOut, 5)
-	if (ViaORcheckBit(5, VIA2_iB5)) {
-		VIA2_iB5 = v;
-#ifdef VIA2_iB5_ChangeNtfy
-		VIA2_iB5_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORB_CanOut, 4)
-	if (ViaORcheckBit(4, VIA2_iB4)) {
-		VIA2_iB4 = v;
-#ifdef VIA2_iB4_ChangeNtfy
-		VIA2_iB4_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 7)) {
+		g_wires.set(Wire_VIA2_iB7_unknown, (Data >> 7) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA2_ORB_CanOut, 3)
-	if (ViaORcheckBit(3, VIA2_iB3)) {
-		VIA2_iB3 = v;
-#ifdef VIA2_iB3_ChangeNtfy
-		VIA2_iB3_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 3)) {
+		g_wires.set(Wire_VIA2_iB3_Addr32, (Data >> 3) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA2_ORB_CanOut, 2)
-	if (ViaORcheckBit(2, VIA2_iB2)) {
-		VIA2_iB2 = v;
-#ifdef VIA2_iB2_ChangeNtfy
-		VIA2_iB2_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORB_CanOut, 1)
-	if (ViaORcheckBit(1, VIA2_iB1)) {
-		VIA2_iB1 = v;
-#ifdef VIA2_iB1_ChangeNtfy
-		VIA2_iB1_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA2_ORB_CanOut, 0)
-	if (ViaORcheckBit(0, VIA2_iB0)) {
-		VIA2_iB0 = v;
-#ifdef VIA2_iB0_ChangeNtfy
-		VIA2_iB0_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 2)) {
+		g_wires.set(Wire_VIA2_iB2_PowerOff, (Data >> 2) & 1);
 	}
 #endif
 }
@@ -475,12 +366,7 @@ void VIA2Device::checkInterruptFlag()
 	uint8_t NewInterruptRequest =
 		((d_.IFR & d_.IER) != 0) ? 1 : 0;
 
-	if (NewInterruptRequest != VIA2_InterruptRequest) {
-		VIA2_InterruptRequest = NewInterruptRequest;
-#ifdef VIA2_interruptChngNtfy
-		VIA2_interruptChngNtfy();
-#endif
-	}
+	g_wires.set(Wire_VIA2_InterruptRequest, NewInterruptRequest);
 }
 
 void VIA2Device::setInterruptFlag(uint8_t VIA_Int)
@@ -512,7 +398,7 @@ void VIA2Device::clear()
 void VIA2Device::zap()
 {
 	clear();
-	VIA2_InterruptRequest = 0;
+	g_wires.set(Wire_VIA2_InterruptRequest, 0);
 }
 
 void VIA2Device::reset()
@@ -552,7 +438,7 @@ uint8_t VIA2Device::shiftOutData()
 	} else {
 		setInterruptFlag(kIntSR);
 		setInterruptFlag(kIntCB1);
-		VIA2_iCB2 = (d_.SR & 1);
+		g_wires.set(Wire_VIA2_iCB2_unknown, d_.SR & 1);
 		return d_.SR;
 	}
 }
@@ -581,10 +467,7 @@ void VIA2Device::doTimer1Check()
 #if Ui3rTestBit(VIA2_ORB_CanOut, 7)
 					if ((d_.ACR & 0x80) != 0) { /* invert ? */
 						if ((ntrans & 1) != 0) {
-							VIA2_iB7 ^= 1;
-#ifdef VIA2_iB7_ChangeNtfy
-							VIA2_iB7_ChangeNtfy();
-#endif
+							g_wires.set(Wire_VIA2_iB7_unknown, VIA2_iB7 ^ 1);
 						}
 					}
 #endif
@@ -877,12 +760,7 @@ uint32_t VIA2Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 #ifdef _VIA_Debug
 						fprintf(stderr, "posting Foo2Task\n");
 #endif
-						if (VIA2_iCB2 != 0) {
-							VIA2_iCB2 = 0;
-#ifdef VIA2_iCB2_ChangeNtfy
-							VIA2_iCB2_ChangeNtfy();
-#endif
-						}
+						g_wires.set(Wire_VIA2_iCB2_unknown, 0);
 					}
 #if 0 /* possibly should do this. seems not to affect anything. */
 					setInterruptFlag(kIntSR); /* don't wait */
@@ -903,12 +781,7 @@ uint32_t VIA2Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 #if 1
 				if ((d_.ACR & 0x10) != ((uint8_t)Data & 0x10)) {
 					if ((Data & 0x10) == 0) {
-						if (VIA2_iCB2 == 0) {
-							VIA2_iCB2 = 1;
-#ifdef VIA2_iCB2_ChangeNtfy
-							VIA2_iCB2_ChangeNtfy();
-#endif
-						}
+						g_wires.set(Wire_VIA2_iCB2_unknown, 1);
 					}
 				}
 #endif

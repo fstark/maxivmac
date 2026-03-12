@@ -21,8 +21,9 @@ public:
 
 	void init(int numWires);
 
-	uint8_t get(int wireId) const        { return wires_[wireId]; }
-	void    set(int wireId, uint8_t val);  // sets value + fires callback if changed
+	uint8_t  get(int wireId) const        { return wires_[wireId]; }
+	void     set(int wireId, uint8_t val);  // sets value + fires callback if changed
+	uint8_t* data()                       { return wires_.data(); } // compat with Wires pointer
 
 	// Register a callback for when a wire changes value.
 	// Multiple callbacks per wire are supported (appended).
@@ -40,3 +41,6 @@ private:
 	std::array<std::vector<ChangeCallback>, kMaxWires> changeCallbacks_{};
 	std::array<std::vector<ChangeCallback>, kMaxWires> pulseCallbacks_{};
 };
+
+// Global wire bus instance (will move to Machine in a later step)
+extern WireBus g_wires;

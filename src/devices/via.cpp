@@ -28,6 +28,7 @@
 #if EmVIA1
 
 #include "devices/via.h"
+#include "core/wire_bus.h"
 
 /*
 	ReportAbnormalID unused 0x0410 - 0x04FF
@@ -204,150 +205,80 @@ uint8_t VIA1Device::getORB(uint8_t Selection)
 	return Value;
 }
 
-#define ViaORcheckBit(p, x) \
-	(Ui3rTestBit(Selection, p) && \
-	((v = (Data >> p) & 1) != x))
-
 void VIA1Device::putORA(uint8_t Selection, uint8_t Data)
 {
-#if 0 != VIA1_ORA_CanOut
-	uint8_t v;
-#endif
-
 #if Ui3rTestBit(VIA1_ORA_CanOut, 7)
-	if (ViaORcheckBit(7, VIA1_iA7)) {
-		VIA1_iA7 = v;
-#ifdef VIA1_iA7_ChangeNtfy
-		VIA1_iA7_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORA_CanOut, 6)
-	if (ViaORcheckBit(6, VIA1_iA6)) {
-		VIA1_iA6 = v;
-#ifdef VIA1_iA6_ChangeNtfy
-		VIA1_iA6_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 7)) {
+		g_wires.set(Wire_VIA1_iA7_SCCwaitrq, (Data >> 7) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORA_CanOut, 5)
-	if (ViaORcheckBit(5, VIA1_iA5)) {
-		VIA1_iA5 = v;
-#ifdef VIA1_iA5_ChangeNtfy
-		VIA1_iA5_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 5)) {
+		g_wires.set(Wire_VIA1_iA5_IWMvSel, (Data >> 5) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORA_CanOut, 4)
-	if (ViaORcheckBit(4, VIA1_iA4)) {
-		VIA1_iA4 = v;
-#ifdef VIA1_iA4_ChangeNtfy
-		VIA1_iA4_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 4)) {
+		g_wires.set(Wire_VIA1_iA4_MemOverlay, (Data >> 4) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORA_CanOut, 3)
-	if (ViaORcheckBit(3, VIA1_iA3)) {
-		VIA1_iA3 = v;
-#ifdef VIA1_iA3_ChangeNtfy
-		VIA1_iA3_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 3)) {
+		g_wires.set(Wire_VIA1_iA3_SCCvSync, (Data >> 3) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORA_CanOut, 2)
-	if (ViaORcheckBit(2, VIA1_iA2)) {
-		VIA1_iA2 = v;
-#ifdef VIA1_iA2_ChangeNtfy
-		VIA1_iA2_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 2)) {
+		g_wires.set(Wire_VIA1_iA2_unknown, (Data >> 2) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORA_CanOut, 1)
-	if (ViaORcheckBit(1, VIA1_iA1)) {
-		VIA1_iA1 = v;
-#ifdef VIA1_iA1_ChangeNtfy
-		VIA1_iA1_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 1)) {
+		g_wires.set(Wire_VIA1_iA1_unknown, (Data >> 1) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORA_CanOut, 0)
-	if (ViaORcheckBit(0, VIA1_iA0)) {
-		VIA1_iA0 = v;
-#ifdef VIA1_iA0_ChangeNtfy
-		VIA1_iA0_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 0)) {
+		g_wires.set(Wire_VIA1_iA0_unknown, Data & 1);
 	}
 #endif
 }
 
 void VIA1Device::putORB(uint8_t Selection, uint8_t Data)
 {
-#if 0 != VIA1_ORB_CanOut
-	uint8_t v;
-#endif
-
 #if Ui3rTestBit(VIA1_ORB_CanOut, 7)
-	if (ViaORcheckBit(7, VIA1_iB7)) {
-		VIA1_iB7 = v;
-#ifdef VIA1_iB7_ChangeNtfy
-		VIA1_iB7_ChangeNtfy();
-#endif
-	}
-#endif
-#if Ui3rTestBit(VIA1_ORB_CanOut, 6)
-	if (ViaORcheckBit(6, VIA1_iB6)) {
-		VIA1_iB6 = v;
-#ifdef VIA1_iB6_ChangeNtfy
-		VIA1_iB6_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 7)) {
+		g_wires.set(Wire_VIA1_iB7_unknown, (Data >> 7) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORB_CanOut, 5)
-	if (ViaORcheckBit(5, VIA1_iB5)) {
-		VIA1_iB5 = v;
-#ifdef VIA1_iB5_ChangeNtfy
-		VIA1_iB5_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 5)) {
+		g_wires.set(Wire_VIA1_iB5_ADB_st1, (Data >> 5) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORB_CanOut, 4)
-	if (ViaORcheckBit(4, VIA1_iB4)) {
-		VIA1_iB4 = v;
-#ifdef VIA1_iB4_ChangeNtfy
-		VIA1_iB4_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 4)) {
+		g_wires.set(Wire_VIA1_iB4_ADB_st0, (Data >> 4) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORB_CanOut, 3)
-	if (ViaORcheckBit(3, VIA1_iB3)) {
-		VIA1_iB3 = v;
-#ifdef VIA1_iB3_ChangeNtfy
-		VIA1_iB3_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 3)) {
+		g_wires.set(Wire_VIA1_iB3_ADB_Int, (Data >> 3) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORB_CanOut, 2)
-	if (ViaORcheckBit(2, VIA1_iB2)) {
-		VIA1_iB2 = v;
-#ifdef VIA1_iB2_ChangeNtfy
-		VIA1_iB2_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 2)) {
+		g_wires.set(Wire_VIA1_iB2_RTCunEnabled, (Data >> 2) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORB_CanOut, 1)
-	if (ViaORcheckBit(1, VIA1_iB1)) {
-		VIA1_iB1 = v;
-#ifdef VIA1_iB1_ChangeNtfy
-		VIA1_iB1_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 1)) {
+		g_wires.set(Wire_VIA1_iB1_RTCclock, (Data >> 1) & 1);
 	}
 #endif
 #if Ui3rTestBit(VIA1_ORB_CanOut, 0)
-	if (ViaORcheckBit(0, VIA1_iB0)) {
-		VIA1_iB0 = v;
-#ifdef VIA1_iB0_ChangeNtfy
-		VIA1_iB0_ChangeNtfy();
-#endif
+	if (Ui3rTestBit(Selection, 0)) {
+		g_wires.set(Wire_VIA1_iB0_RTCdataLine, Data & 1);
 	}
 #endif
 }
@@ -391,12 +322,7 @@ void VIA1Device::checkInterruptFlag()
 	uint8_t NewInterruptRequest =
 		((d_.IFR & d_.IER) != 0) ? 1 : 0;
 
-	if (NewInterruptRequest != VIA1_InterruptRequest) {
-		VIA1_InterruptRequest = NewInterruptRequest;
-#ifdef VIA1_interruptChngNtfy
-		VIA1_interruptChngNtfy();
-#endif
-	}
+	g_wires.set(Wire_VIA1_InterruptRequest, NewInterruptRequest);
 }
 
 void VIA1Device::setInterruptFlag(uint8_t VIA_Int)
@@ -428,7 +354,7 @@ void VIA1Device::clear()
 void VIA1Device::zap()
 {
 	clear();
-	VIA1_InterruptRequest = 0;
+	g_wires.set(Wire_VIA1_InterruptRequest, 0);
 }
 
 void VIA1Device::reset()
@@ -470,7 +396,7 @@ uint8_t VIA1Device::shiftOutData()
 	} else {
 		setInterruptFlag(kIntSR);
 		setInterruptFlag(kIntCB1);
-		VIA1_iCB2 = (d_.SR & 1);
+		g_wires.set(Wire_VIA1_iCB2_ADB_Data, d_.SR & 1);
 		return d_.SR;
 	}
 }
@@ -499,10 +425,7 @@ void VIA1Device::doTimer1Check()
 #if Ui3rTestBit(VIA1_ORB_CanOut, 7)
 					if ((d_.ACR & 0x80) != 0) { /* invert ? */
 						if ((ntrans & 1) != 0) {
-							VIA1_iB7 ^= 1;
-#ifdef VIA1_iB7_ChangeNtfy
-							VIA1_iB7_ChangeNtfy();
-#endif
+							g_wires.set(Wire_VIA1_iB7_unknown, VIA1_iB7 ^ 1);
 						}
 					}
 #endif
@@ -795,12 +718,7 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 #ifdef _VIA_Debug
 						fprintf(stderr, "posting Foo2Task\n");
 #endif
-						if (VIA1_iCB2 != 0) {
-							VIA1_iCB2 = 0;
-#ifdef VIA1_iCB2_ChangeNtfy
-							VIA1_iCB2_ChangeNtfy();
-#endif
-						}
+						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 0);
 					}
 #if 0
 					setInterruptFlag(kIntSR);
@@ -821,12 +739,7 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 #if 1
 				if ((d_.ACR & 0x10) != ((uint8_t)Data & 0x10)) {
 					if ((Data & 0x10) == 0) {
-						if (VIA1_iCB2 == 0) {
-							VIA1_iCB2 = 1;
-#ifdef VIA1_iCB2_ChangeNtfy
-							VIA1_iCB2_ChangeNtfy();
-#endif
-						}
+						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 					}
 				}
 #endif

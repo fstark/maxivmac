@@ -30,6 +30,7 @@
 #include "core/common.h"
 
 #include "devices/video.h"
+#include "core/wire_bus.h"
 
 VideoDevice* g_video = nullptr;
 
@@ -426,7 +427,7 @@ extern void Vid_VBLinterrupt_PulseNotify(void);
 void VideoDevice::update()
 {
 	if (! Vid_VBLintunenbl) {
-		Vid_VBLinterrupt = 0;
+		g_wires.set(Wire_VBLinterrupt, 0);
 		Vid_VBLinterrupt_PulseNotify();
 	}
 }
@@ -564,16 +565,16 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #if VID_dolog
 			dbglog_WriteNote("Video_Access kCmndVideoSetIntEnbl");
 #endif
-			Vid_VBLintunenbl =
+			g_wires.set(Wire_VBLintunenbl,
 				(0 == get_vm_word(p + 8))
-					? 1 : 0;
+					? 1 : 0);
 			result = mnvm_noErr;
 			break;
 		case kCmndVideoClearInt:
 #if VID_dolog && 0 /* frequent */
 			dbglog_WriteNote("Video_Access kCmndVideoClearInt");
 #endif
-			Vid_VBLinterrupt = 1;
+			g_wires.set(Wire_VBLinterrupt, 1);
 			result = mnvm_noErr;
 			break;
 		case kCmndVideoControl:

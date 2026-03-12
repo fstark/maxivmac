@@ -32,6 +32,7 @@
 #endif
 
 #include "devices/rtc.h"
+#include "core/wire_bus.h"
 
 /* Global singleton */
 RTCDevice* g_rtc = nullptr;
@@ -477,7 +478,8 @@ void RTCDevice::clockChangeNtfy()
 			RTC.DataOut = RTC.DataNextOut;
 			RTC.Counter = (RTC.Counter - 1) & 0x07;
 			if (RTC.DataOut) {
-				RTCdataLine = ((RTC.ShiftData >> RTC.Counter) & 0x01);
+				g_wires.set(Wire_VIA1_iB0_RTCdataLine,
+					(RTC.ShiftData >> RTC.Counter) & 0x01);
 				/*
 					should notify VIA if changed, so can check
 					data direction
