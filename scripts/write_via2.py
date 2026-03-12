@@ -1,4 +1,132 @@
-/*
+#!/usr/bin/env python3
+"""Write via2.h and via2.cpp with VIA2Device class wrapper."""
+import os
+
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+via2_h = r"""/*
+	VIA2EMDV.h
+
+	Copyright (C) 2004 Philip Cummins, Paul C. Pratt
+
+	You can redistribute this file and/or modify it under the terms
+	of version 2 of the GNU General Public License as published by
+	the Free Software Foundation.  You should have received a copy
+	of the license along with this file; see the file COPYING.
+
+	This file is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	license for more details.
+*/
+
+#pragma once
+
+#include "devices/device.h"
+#include <cstdint>
+
+// VIA2 Device class wrapping the original VIA2 emulation
+class VIA2Device : public Device {
+public:
+	// Device interface
+	uint32_t access(uint32_t data, bool writeMem, uint32_t addr) override;
+	void zap() override;
+	void reset() override;
+	const char* name() const override { return "VIA2"; }
+
+	// Timer ICT callbacks
+	void doTimer1Check();
+	void doTimer2Check();
+
+	// Extra time (pause/resume timers during extra emulation cycles)
+	void extraTimeBegin();
+	void extraTimeEnd();
+
+	// Pulse notifications (interrupt sources)
+	void iCA1_PulseNtfy();
+	void iCA2_PulseNtfy();
+	void iCB1_PulseNtfy();
+	void iCB2_PulseNtfy();
+
+	// Shift register
+	void shiftInData(uint8_t v);
+	uint8_t shiftOutData();
+
+	// Timer invert time
+	uint16_t getT1InvertTime();
+
+	// Internal state - public for backward compatibility during migration
+	struct VIA_Ty {
+		uint32_t T1C_F;  /* Timer 1 Counter Fixed Point */
+		uint32_t T2C_F;  /* Timer 2 Counter Fixed Point */
+		uint8_t ORB;     /* Buffer B */
+		uint8_t DDR_B;   /* Data Direction Register B */
+		uint8_t DDR_A;   /* Data Direction Register A */
+		uint8_t T1L_L;   /* Timer 1 Latch Low */
+		uint8_t T1L_H;   /* Timer 1 Latch High */
+		uint8_t T2L_L;   /* Timer 2 Latch Low */
+		uint8_t SR;      /* Shift Register */
+		uint8_t ACR;     /* Auxiliary Control Register */
+		uint8_t PCR;     /* Peripheral Control Register */
+		uint8_t IFR;     /* Interrupt Flag Register */
+		uint8_t IER;     /* Interrupt Enable Register */
+		uint8_t ORA;     /* Buffer A */
+	};
+
+	VIA_Ty d_{};
+
+	uint8_t T1_Active = 0;
+	uint8_t T2_Active = 0;
+	bool T1IntReady = false;
+	bool T1Running = true;
+	uint32_t T1LastTime = 0;
+	bool T2Running = true;
+	bool T2C_ShortTime = false;
+	uint32_t T2LastTime = 0;
+
+private:
+	uint8_t getORA(uint8_t selection);
+	uint8_t getORB(uint8_t selection);
+	void putORA(uint8_t selection, uint8_t data);
+	void putORB(uint8_t selection, uint8_t data);
+	void setDDR_A(uint8_t data);
+	void setDDR_B(uint8_t data);
+	void checkInterruptFlag();
+	void setInterruptFlag(uint8_t viaInt);
+	void clrInterruptFlag(uint8_t viaInt);
+	void clear();
+	void checkT1IntReady();
+};
+
+// Global singleton pointer (for backward compatibility during migration)
+extern VIA2Device* g_via2;
+
+// Backward-compatible free function API (forwards to g_via2)
+extern void VIA2_Zap(void);
+extern void VIA2_Reset(void);
+extern uint32_t VIA2_Access(uint32_t Data, bool WriteMem, uint32_t addr);
+extern void VIA2_ExtraTimeBegin(void);
+extern void VIA2_ExtraTimeEnd(void);
+#ifdef VIA2_iCA1_PulseNtfy
+extern void VIA2_iCA1_PulseNtfy(void);
+#endif
+#ifdef VIA2_iCA2_PulseNtfy
+extern void VIA2_iCA2_PulseNtfy(void);
+#endif
+#ifdef VIA2_iCB1_PulseNtfy
+extern void VIA2_iCB1_PulseNtfy(void);
+#endif
+#ifdef VIA2_iCB2_PulseNtfy
+extern void VIA2_iCB2_PulseNtfy(void);
+#endif
+extern void VIA2_DoTimer1Check(void);
+extern void VIA2_DoTimer2Check(void);
+extern uint16_t VIA2_GetT1InvertTime(void);
+extern void VIA2_ShiftInData(uint8_t v);
+extern uint8_t VIA2_ShiftOutData(void);
+"""
+
+via2_cpp = r"""/*
 	VIA2EMDV.c
 
 	Copyright (C) 2008 Philip Cummins, Paul C. Pratt
@@ -1162,3 +1290,14 @@ void VIA2_iCB1_ASC_interrupt_PulseNtfy(void)
 }
 
 #endif /* EmVIA2 */
+"""
+
+with open(os.path.join(BASE, "src", "devices", "via2.h"), "w") as f:
+    f.write(via2_h.lstrip("\n"))
+
+print("via2.h written")
+
+with open(os.path.join(BASE, "src", "devices", "via2.cpp"), "w") as f:
+    f.write(via2_cpp.lstrip("\n"))
+
+print("via2.cpp written")
