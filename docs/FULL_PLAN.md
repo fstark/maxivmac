@@ -47,52 +47,47 @@ Make the source tree navigable.
 
 ---
 
-## Phase 4 — Device Interface & Machine Object
+## Phase 4 — Device Interface & Machine Object ✅
 
-This is the architectural pivot that enables everything downstream.
+The architectural pivot that enables everything downstream. **Completed.**
 
-1. Define a C++ `Device` interface:
-   ```cpp
-   class Device {
-       virtual void reset() = 0;
-       virtual uint8_t read(uint32_t addr) = 0;
-       virtual void write(uint32_t addr, uint8_t data) = 0;
-       virtual void tick() = 0;  // called per emulated tick if needed
-   };
-   ```
-2. Wrap each emulated device (VIA, SCC, SCSI, IWM, RTC, ASC, ADB, Video, etc.) in a class implementing `Device`. Move their static/global state into member variables. The current per-device pattern (`XXX_Access(Data, WriteMem, addr)`) maps cleanly to `read()`/`write()`.
-3. Create a `Machine` class that owns:
-   - A `MachineConfig` struct (model, CPU type, RAM sizes, screen dimensions, device enables, wire topology) — replacing the compile-time `#define`s in `cfg/CNFUDPIC.h`
-   - All device instances (via `std::unique_ptr<Device>`)
-   - RAM/ROM/VRAM buffers
-   - The Address Translation Table (currently the `ATTer` linked list in `src/GLOBGLUE.c`)
-   - The Wires array (currently `ui3b Wires[kNumWires]` — global in GLOBGLUE.c)
-   - The ICT task scheduler
-   - The CPU instance
-4. Rework the ATT and `MMDV_Access()` dispatch (`GLOBGLUE.c` lines 1304+) to use the device registry on `Machine` instead of a `switch` statement. Each ATT entry stores a `Device*` pointer instead of a `kMMDV_xxx` enum index.
-5. Convert the CPU from static globals (`regstruct` at `MINEM68K.c` line 199) to a `CPU` class. The `Use68020`/`EmFPU`/`EmMMU` flags become runtime booleans on the CPU, gating instruction handlers via `if` rather than `#if`. The ~50 `#if Use68020` blocks in MINEM68K.c become `if (config.use68020)` — the compiler will optimize these since `config` is const for the lifetime of a session.
-6. Convert `CurEmMd` comparisons (currently `#if CurEmMd <= kEmMd_Plus` etc., used in ~30 places across GLOBGLUE.c, IWMEMDEV.c, ROMEMDEV.c, SCRNHACK.h) to runtime checks on `MachineConfig::model`.
+1. Defined a `Device` abstract interface with `access()`, `reset()`, `zap()`, and `name()` methods.
+2. Wrapped all 16 emulated devices (VIA1, VIA2, SCC, SCSI, IWM, ASC, ADB, Video, Screen, Sony, RTC, Keyboard, Mouse, PMU, Sound, ROM) in Device subclasses.
+3. Created a `Machine` class owning:
+   - `MachineConfig` struct (model, CPU type, RAM sizes, screen dimensions, device enables)
+   - All device instances (via `std::unique_ptr<Device>`, created in `Machine::init()`)
+   - `WireBus` for runtime inter-device signal routing
+   - `ICTScheduler` for cycle-based task scheduling
+4. Reworked ATT to store `Device*` pointers — MMDV enum switch eliminated.
+5. Extracted CPU into a `CPU` class (from `regstruct` global).
+6. Converted all `CurEmMd` compile-time checks to runtime `MachineConfig::model` checks.
+7. Converted most `EmXxx` device-enable guards to runtime config checks.
 
-**Result:** A `Machine` object encapsulates all emulator state. You can instantiate multiple machines, configure them differently, and pass them to tests.
+**What remains compile-time** (deferred to Phase 5): CPU variant flags (`Use68020`, `EmFPU`, `EmMMU`), device VIA cross-dependencies (`EmClassicKbrd`, `EmPMU`, `EmClassicSnd`), Wire topology enum, memory size constants.
+
+**Result:** A `Machine` object encapsulates all emulator state. Mac II boots System 7 identically to pre-Phase-4. See `docs/PLAN-4.md` for full details.
 
 ---
 
-## Phase 5 — Runtime Configuration
+## Phase 5 — Multi-Model Support & Runtime Configuration
 
-With `Machine` owning config, make key parameters runtime-settable.
+With the `Machine`/`Device`/`MachineConfig` infrastructure from Phase 4, complete the remaining compile-time → runtime conversions and make the emulator a true multi-model binary.
 
-1. Create a `MachineConfig` that can be loaded from a TOML/JSON file or command-line args:
-   - Mac model (Plus, SE, II, IIx, etc.)
-   - CPU type (68000 / 68020+FPU)
-   - RAM size
-   - Screen resolution and color depth
-   - ROM file path
-   - Disk image paths
-   - Speed multiplier
-   - Sound enable, magnification, full-screen
-2. Replace the compile-time screen constants — `vMacScreenWidth` (640), `vMacScreenHeight` (480), `vMacScreenDepth` (3) from `cfg/CNFUDALL.h` — with `MachineConfig` fields. Allocate the screen buffer dynamically based on config. Update the platform layer to query `Machine` for screen dimensions.
-3. Wire topology (the signal routing in `cfg/CNFUDPIC.h`) becomes a function of the model: `MachineConfig::model` → a factory that creates the correct device set and wiring. This replaces the ~30 `kWire_xxx` `#define`s with a model-specific initialization function.
-4. Remove the need for multiple binaries: a single binary can emulate any supported Mac model.
+### 5a — Resolve remaining compile-time dependencies
+1. **Decouple VIA cross-dependencies**: `keyboard.cpp`, `sound.cpp`, `pmu.cpp` directly reference VIA symbols (`VIA1_ShiftInData`, etc.) which are only available when `EmClassicKbrd`/`EmClassicSnd`/`EmPMU` are 1. Abstract these through WireBus or device method calls so all three files always compile.
+2. **Per-model Wire topology**: Replace the single Wire enum in `CNFUDPIC.h` with a model-specific wire set created by `MachineConfigForModel()`. Mac Plus needs different wiring (no VIA2, no ADB, different VIA1 port assignments).
+3. **CPU instruction set selection**: Make `Use68020`/`EmFPU`/`EmMMU` runtime booleans. The 55 `#if Use68020` blocks in m68k.cpp become `if (config.use68020)` — branch predictor handles this at zero cost.
+4. **Dynamic memory sizes**: `kRAMa_Size`, `kRAMb_Size`, `kVidMemRAM_Size` → `MachineConfig` fields, allocated dynamically.
+5. **Remove remaining `#define` guards** from `CNFUDPIC.h`. The file should become nearly empty or be folded into `machine_config.h`.
+
+### 5b — Multi-model validation
+6. Validate Mac Plus (68000, classic keyboard, no VIA2, classic sound, 24-bit, 512×342 1-bit screen) alongside Mac II.
+7. Remove global device pointers (`g_via1`, `g_iwm`, etc.) and backward-compatible free-function API — all access goes through `Machine`.
+
+### 5c — Runtime configuration interface
+8. Load `MachineConfig` from TOML/JSON file or command-line args (model, CPU, RAM, screen, ROM path, disk images, speed, sound).
+9. Replace compile-time screen constants (`vMacScreenWidth`, `vMacScreenHeight`, `vMacScreenDepth`) with `MachineConfig` fields. Allocate screen buffer dynamically.
+10. Remove the need for multiple binaries: a single binary can emulate any supported Mac model.
 
 **Result:** `./minivmac --model=MacII --ram=8M --screen=800x600x8 --rom=MacII.ROM disk1.img`
 
@@ -162,6 +157,7 @@ Reduce 9 backends to 2.
 
 - After each phase: `cmake --build build && ./minivmac MacII.ROM` boots System 7 successfully
 - Phase 2: Compile with `-Wall -Wextra -Wpedantic` under C++17 — zero warnings
+- Phase 4: ✅ `Machine` object owns all state; Mac II boots System 7
 - Phase 5: Boot the same ROM+disk with `--model=Plus` and `--model=II` from one binary
 - Phase 7: `ctest` passes all CPU instruction tests and device unit tests
 - Phase 8: `./minivmac --debug` can set a breakpoint, hit it, and inspect registers
