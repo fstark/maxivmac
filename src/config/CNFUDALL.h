@@ -22,9 +22,7 @@
 #define IncludeSonyNew 1
 #define IncludeSonyNameNew 1
 
-#define vMacScreenHeight 480
-#define vMacScreenWidth 640
-#define vMacScreenDepth 3
+/* vMacScreenWidth/Height/Depth are now runtime — see platform.h */
 
 #define kROM_Size 0x00040000
 

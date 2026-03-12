@@ -1867,17 +1867,8 @@ static uint8_t * ScalingBuff = nullptr;
 static uint8_t * CLUT_final;
 
 #define CLUT_finalsz1 (256 * 8)
-
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-
-#define CLUT_finalClrSz (256 << (5 - vMacScreenDepth))
-
-#define CLUT_finalsz ((CLUT_finalClrSz > CLUT_finalsz1) \
-	? CLUT_finalClrSz : CLUT_finalsz1)
-
-#else
-#define CLUT_finalsz CLUT_finalsz1
-#endif
+/* Max CLUT final size across all depths */
+#define CLUT_finalsz (256 * 32)
 
 
 #define ScrnMapr_DoMap UpdateBWLuminanceCopy
@@ -1890,68 +1881,88 @@ static uint8_t * CLUT_final;
 #include "platform/common/screen_map.h"
 
 
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-
-#define ScrnMapr_DoMap UpdateMappedColorCopy
+/* Mapped color copy for all CLUT depths (1-3) */
+#define ScrnMapr_DoMap UpdateMappedColorCopy_1
 #define ScrnMapr_Src GetCurDrawBuff()
 #define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth vMacScreenDepth
+#define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
-
 #include "platform/common/screen_map.h"
 
-#endif
+#define ScrnMapr_DoMap UpdateMappedColorCopy_2
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 2
+#define ScrnMapr_DstDepth 5
+#define ScrnMapr_Map CLUT_final
+#include "platform/common/screen_map.h"
 
-#if vMacScreenDepth >= 4
+#define ScrnMapr_DoMap UpdateMappedColorCopy_3
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 3
+#define ScrnMapr_DstDepth 5
+#define ScrnMapr_Map CLUT_final
+#include "platform/common/screen_map.h"
 
-#define ScrnTrns_DoTrans UpdateTransColorCopy
+/* Direct color translation for depths 4 and 5 */
+#define ScrnTrns_DoTrans UpdateTransColorCopy_4
 #define ScrnTrns_Src GetCurDrawBuff()
 #define ScrnTrns_Dst ScalingBuff
-#define ScrnTrns_SrcDepth vMacScreenDepth
+#define ScrnTrns_SrcDepth 4
 #define ScrnTrns_DstDepth 5
 #define ScrnTrns_DstZLo 1
-
 #include "platform/common/screen_translate.h"
 
-#endif
+#define ScrnTrns_DoTrans UpdateTransColorCopy_5
+#define ScrnTrns_Src GetCurDrawBuff()
+#define ScrnTrns_Dst ScalingBuff
+#define ScrnTrns_SrcDepth 5
+#define ScrnTrns_DstDepth 5
+#define ScrnTrns_DstZLo 1
+#include "platform/common/screen_translate.h"
 
 static void UpdateLuminanceCopy(int16_t top, int16_t left,
 	int16_t bottom, int16_t right)
 {
 	int i;
 
-#if 0 != vMacScreenDepth
-	if (UseColorMode) {
+	if (0 != vMacScreenDepth && UseColorMode) {
 
-#if vMacScreenDepth < 4
+		if (vMacScreenDepth < 4) {
 
-		if (! ColorTransValid) {
-			int j;
-			int k;
-			uint32_t * p4;
+			if (! ColorTransValid) {
+				int j;
+				int k;
+				uint32_t * p4;
 
-			p4 = (uint32_t *)CLUT_final;
-			for (i = 0; i < 256; ++i) {
-				for (k = 1 << (3 - vMacScreenDepth); --k >= 0; ) {
-					j = (i >> (k << vMacScreenDepth)) & (CLUT_size - 1);
-					*p4++ = (((long)CLUT_reds[j] & 0xFF00) << 16)
-						| (((long)CLUT_greens[j] & 0xFF00) << 8)
-						| ((long)CLUT_blues[j] & 0xFF00);
+				p4 = (uint32_t *)CLUT_final;
+				for (i = 0; i < 256; ++i) {
+					for (k = 1 << (3 - vMacScreenDepth); --k >= 0; ) {
+						j = (i >> (k << vMacScreenDepth)) & (CLUT_size - 1);
+						*p4++ = (((long)CLUT_reds[j] & 0xFF00) << 16)
+							| (((long)CLUT_greens[j] & 0xFF00) << 8)
+							| ((long)CLUT_blues[j] & 0xFF00);
+					}
 				}
+				ColorTransValid = true;
 			}
-			ColorTransValid = true;
+
+			switch (vMacScreenDepth) {
+				case 1: UpdateMappedColorCopy_1(top, left, bottom, right); break;
+				case 2: UpdateMappedColorCopy_2(top, left, bottom, right); break;
+				case 3: UpdateMappedColorCopy_3(top, left, bottom, right); break;
+			}
+
+		} else {
+			switch (vMacScreenDepth) {
+				case 4: UpdateTransColorCopy_4(top, left, bottom, right); break;
+				case 5: UpdateTransColorCopy_5(top, left, bottom, right); break;
+			}
 		}
 
-		UpdateMappedColorCopy(top, left, bottom, right);
-
-#else
-		UpdateTransColorCopy(top, left, bottom, right);
-#endif
-
-	} else
-#endif
-	{
+	} else {
 		if (! ColorTransValid) {
 			int k;
 			uint8_t * p4 = (uint8_t *)CLUT_final;
@@ -2024,17 +2035,14 @@ static void MyDrawWithOpenGL(uint16_t top, uint16_t left, uint16_t bottom, uint1
 
 		UpdateLuminanceCopy(top, left, bottom, right);
 		glRasterPos2i(GLhOffset + left2, GLvOffset - top2);
-#if 0 != vMacScreenDepth
-		if (UseColorMode) {
+		if (0 != vMacScreenDepth && UseColorMode) {
 			glDrawPixels(right - left,
 				bottom - top,
 				GL_RGBA,
 				GL_UNSIGNED_INT_8_8_8_8,
 				ScalingBuff + (left + top * vMacScreenWidth) * 4
 				);
-		} else
-#endif
-		{
+		} else {
 			glDrawPixels(right - left,
 				bottom - top,
 				GL_LUMINANCE,
@@ -3485,9 +3493,9 @@ static bool GetOpnGLCntxt(void)
 		MyAdjustGLforSize(NewWinRect.size.width,
 			NewWinRect.size.height);
 
-#if 0 != vMacScreenDepth
-		ColorModeWorks = true;
-#endif
+		if (0 != vMacScreenDepth) {
+			ColorModeWorks = true;
+		}
 	}
 	v = true;
 
@@ -5140,9 +5148,7 @@ static void ReserveAllocAll(void)
 #endif
 
 	ReserveAllocOneBlock(&ScalingBuff, vMacScreenNumPixels
-#if 0 != vMacScreenDepth
-		* 4
-#endif
+		* (0 != vMacScreenDepth ? 4 : 1)
 		, 5, false);
 	ReserveAllocOneBlock(&CLUT_final, CLUT_finalsz, 5, false);
 

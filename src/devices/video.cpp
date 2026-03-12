@@ -181,10 +181,8 @@ static void PatchAnEndOfLst(void)
 	uint8_t * pTo_sMacOS68020;
 	uint8_t * pTo_OneBitMode;
 	uint8_t * pTo_OneVidParams;
-#if 0 != vMacScreenDepth
 	uint8_t * pTo_ColorBitMode = nullptr;
-	uint8_t * pTo_ColorVidParams;
-#endif
+	uint8_t * pTo_ColorVidParams = nullptr;
 
 	pPatch = VidROM;
 
@@ -268,11 +266,11 @@ static void PatchAnEndOfLst(void)
 	pTo_MajorLength = ReservePatchOSLstEntry();
 #endif
 	pTo_OneBitMode = ReservePatchOSLstEntry();
-#if 0 != vMacScreenDepth
-	if (ColorModeWorks) {
-		pTo_ColorBitMode = ReservePatchOSLstEntry();
+	if (0 != vMacScreenDepth) {
+		if (ColorModeWorks) {
+			pTo_ColorBitMode = ReservePatchOSLstEntry();
+		}
 	}
-#endif
 	PatchAnEndOfLst();
 
 	PatchAReservedOSLstEntry(pTo_VideoType, 0x01 /* sRsrcType */);
@@ -349,46 +347,46 @@ static void PatchAnEndOfLst(void)
 	PatchAWord(0x0001); /* bmCmpSize */
 	PatchALong(0x00000000); /* bmPlaneBytes */
 
-#if 0 != vMacScreenDepth
-	if (ColorModeWorks) {
+	if (0 != vMacScreenDepth) {
+		if (ColorModeWorks) {
 
-		PatchAReservedOSLstEntry(pTo_ColorBitMode, 0x81);
-		pTo_ColorVidParams = ReservePatchOSLstEntry();
-		PatchADatLstEntry(0x03 /* mVidParams */, 0x00000001);
-		PatchADatLstEntry(0x04 /* mDevType */,
-			(vMacScreenDepth < 4) ? 0x00000000 : 0x00000002);
-			/* 2 for direct devices, according to Basilisk II */
-		PatchAnEndOfLst();
+			PatchAReservedOSLstEntry(pTo_ColorBitMode, 0x81);
+			pTo_ColorVidParams = ReservePatchOSLstEntry();
+			PatchADatLstEntry(0x03 /* mVidParams */, 0x00000001);
+			PatchADatLstEntry(0x04 /* mDevType */,
+				(vMacScreenDepth < 4) ? 0x00000000 : 0x00000002);
+				/* 2 for direct devices, according to Basilisk II */
+			PatchAnEndOfLst();
 
-		PatchAReservedOSLstEntry(pTo_ColorVidParams, 0x01);
-		PatchALong(0x0000002E); /* physical Block Size */
-		PatchALong(0x00000000); /* defmBaseOffset */
-		PatchAWord(vMacScreenByteWidth);
-		PatchAWord(0x0000); /* Bounds.T */
-		PatchAWord(0x0000); /* Bounds.L */
-		PatchAWord(vMacScreenHeight); /* Bounds.B */
-		PatchAWord(vMacScreenWidth); /* Bounds.R */
-		PatchAWord(0x0000); /* bmVersion */
-		PatchAWord(0x0000); /* packType not used */
-		PatchALong(0x00000000); /* packSize not used */
-		PatchALong(0x00480000); /* bmHRes */
-		PatchALong(0x00480000); /* bmVRes */
-		PatchAWord((vMacScreenDepth < 4) ? 0x0000 : 0x0010);
-			/* bmPixelType */
-		PatchAWord(1 << vMacScreenDepth); /* bmPixelSize */
-		PatchAWord((vMacScreenDepth < 4) ? 0x0001 : 0x0003);
-			/* bmCmpCount */
-#if 4 == vMacScreenDepth
-		PatchAWord(0x0005); /* bmCmpSize */
-#elif 5 == vMacScreenDepth
-		PatchAWord(0x0008); /* bmCmpSize */
-#else
-		PatchAWord(1 << vMacScreenDepth); /* bmCmpSize */
-#endif
-		PatchALong(0x00000000); /* bmPlaneBytes */
+			PatchAReservedOSLstEntry(pTo_ColorVidParams, 0x01);
+			PatchALong(0x0000002E); /* physical Block Size */
+			PatchALong(0x00000000); /* defmBaseOffset */
+			PatchAWord(vMacScreenByteWidth);
+			PatchAWord(0x0000); /* Bounds.T */
+			PatchAWord(0x0000); /* Bounds.L */
+			PatchAWord(vMacScreenHeight); /* Bounds.B */
+			PatchAWord(vMacScreenWidth); /* Bounds.R */
+			PatchAWord(0x0000); /* bmVersion */
+			PatchAWord(0x0000); /* packType not used */
+			PatchALong(0x00000000); /* packSize not used */
+			PatchALong(0x00480000); /* bmHRes */
+			PatchALong(0x00480000); /* bmVRes */
+			PatchAWord((vMacScreenDepth < 4) ? 0x0000 : 0x0010);
+				/* bmPixelType */
+			PatchAWord(1 << vMacScreenDepth); /* bmPixelSize */
+			PatchAWord((vMacScreenDepth < 4) ? 0x0001 : 0x0003);
+				/* bmCmpCount */
+			if (4 == vMacScreenDepth) {
+				PatchAWord(0x0005); /* bmCmpSize */
+			} else if (5 == vMacScreenDepth) {
+				PatchAWord(0x0008); /* bmCmpSize */
+			} else {
+				PatchAWord(1 << vMacScreenDepth); /* bmCmpSize */
+			}
+			PatchALong(0x00000000); /* bmPlaneBytes */
 
+		}
 	}
-#endif
 
 	const auto& vidCfg = g_machine->config();
 	UsedSoFar = (pPatch - VidROM) + 20;
@@ -413,14 +411,14 @@ static void PatchAnEndOfLst(void)
 
 	ChecksumSlotROM();
 
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-	CLUT_reds[0] = 0xFFFF;
-	CLUT_greens[0] = 0xFFFF;
-	CLUT_blues[0] = 0xFFFF;
-	CLUT_reds[CLUT_size - 1] = 0;
-	CLUT_greens[CLUT_size - 1] = 0;
-	CLUT_blues[CLUT_size - 1] = 0;
-#endif
+	if ((0 != vMacScreenDepth) && (vMacScreenDepth < 4)) {
+		CLUT_reds[0] = 0xFFFF;
+		CLUT_greens[0] = 0xFFFF;
+		CLUT_blues[0] = 0xFFFF;
+		CLUT_reds[CLUT_size - 1] = 0;
+		CLUT_greens[CLUT_size - 1] = 0;
+		CLUT_blues[CLUT_size - 1] = 0;
+	}
 
 	return true;
 }
@@ -437,31 +435,27 @@ void VideoDevice::update()
 
 static uint16_t Vid_GetMode(void)
 {
-	return
-#if 0 != vMacScreenDepth
-		UseColorMode ? 129 :
-#endif
-		128;
+	return (0 != vMacScreenDepth && UseColorMode) ? 129 : 128;
 }
 
 static tMacErr Vid_SetMode(uint16_t v)
 {
-#if 0 == vMacScreenDepth
-	UnusedParam(v);
-#else
-	if (UseColorMode != ((v != 128) && ColorModeWorks)) {
-		UseColorMode = ! UseColorMode;
-		ColorMappingChanged = true;
+	if (0 == vMacScreenDepth) {
+		UnusedParam(v);
+	} else {
+		if (UseColorMode != ((v != 128) && ColorModeWorks)) {
+			UseColorMode = ! UseColorMode;
+			ColorMappingChanged = true;
+		}
 	}
-#endif
 	return mnvm_noErr;
 }
 
  uint16_t VideoDevice::vidReset()
 {
-#if 0 != vMacScreenDepth
-	UseColorMode = false;
-#endif
+	if (0 != vMacScreenDepth) {
+		UseColorMode = false;
+	}
 	return 128;
 }
 
@@ -497,37 +491,28 @@ static void FillScreenWithGrayPattern(void)
 	int j;
 	uint32_t *p1 = (uint32_t *)VidMem;
 
-#if 0 != vMacScreenDepth
-	if (UseColorMode) {
-#if 1 == vMacScreenDepth
-		uint32_t pat = 0xCCCCCCCC;
-#elif 2 == vMacScreenDepth
-		uint32_t pat = 0xF0F0F0F0;
-#elif 3 == vMacScreenDepth
-		uint32_t pat = 0xFF00FF00;
-#elif 4 == vMacScreenDepth
-		uint32_t pat = 0x00007FFF;
-#elif 5 == vMacScreenDepth
-		uint32_t pat = 0x00000000;
-#endif
+	if (0 != vMacScreenDepth && UseColorMode) {
+		uint32_t pat;
+		switch (vMacScreenDepth) {
+			case 1: pat = 0xCCCCCCCC; break;
+			case 2: pat = 0xF0F0F0F0; break;
+			case 3: pat = 0xFF00FF00; break;
+			case 4: pat = 0x00007FFF; break;
+			case 5: pat = 0x00000000; break;
+			default: pat = 0xAAAAAAAA; break;
+		}
 		for (i = vMacScreenHeight; --i >= 0; ) {
 			for (j = vMacScreenByteWidth >> 2; --j >= 0; ) {
 				*p1++ = pat;
-#if 5 == vMacScreenDepth
-				pat = (~ pat) & 0x00FFFFFF;
-#endif
+				if (vMacScreenDepth == 5) {
+					pat = (~ pat) & 0x00FFFFFF;
+				}
 			}
-			pat = (~ pat)
-#if 4 == vMacScreenDepth
-				& 0x7FFF7FFF
-#elif 5 == vMacScreenDepth
-				& 0x00FFFFFF
-#endif
-				;
+			pat = (~ pat);
+			if (vMacScreenDepth == 4) pat &= 0x7FFF7FFF;
+			else if (vMacScreenDepth == 5) pat &= 0x00FFFFFF;
 		}
-	} else
-#endif
-	{
+	} else {
 		uint32_t pat = 0xAAAAAAAA;
 
 		for (i = vMacScreenHeight; --i >= 0; ) {
@@ -635,8 +620,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoControl, "
 							"SetEntries");
 #endif
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-						if (UseColorMode) {
+						if ((0 != vMacScreenDepth) && (vMacScreenDepth < 4) && UseColorMode) {
 							uint32_t csTable = get_vm_long(
 								csParam + VDSetEntryRecord_csTable);
 							uint16_t csStart = get_vm_word(
@@ -710,9 +694,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 								ColorMappingChanged = true;
 								result = mnvm_noErr;
 							}
-						} else
-#endif
-						{
+						} else {
 							/* not implemented */
 						}
 						break;

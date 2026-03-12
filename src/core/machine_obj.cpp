@@ -67,6 +67,14 @@ bool Machine::init()
 	// Set global pointer for backward compatibility.
 	g_machine = this;
 
+	// Set runtime screen globals from config (used by platform layer macros).
+	extern uint16_t g_screenWidth;
+	extern uint16_t g_screenHeight;
+	extern uint8_t  g_screenDepth;
+	g_screenWidth  = config_.screenWidth;
+	g_screenHeight = config_.screenHeight;
+	g_screenDepth  = config_.screenDepth;
+
 	// Create device instances and set backward-compatible global pointers.
 	// The order doesn't matter for construction, but we group by subsystem.
 
