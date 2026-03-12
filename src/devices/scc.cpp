@@ -42,6 +42,9 @@
 
 #include "devices/scc.h"
 
+/* Global singleton */
+SCCDevice* g_scc = nullptr;
+
 /*
 	ReportAbnormalID unused 0x074D - 0x07FF
 */
@@ -521,7 +524,7 @@ static int rx_data_offset = 0;
 	/* when data pending, this is used */
 #endif
 
-extern bool SCC_InterruptsEnabled(void)
+bool SCCDevice::interruptsEnabled()
 {
 	return SCC.MIE;
 }
@@ -838,7 +841,7 @@ static void SCC_ResetChannel(int chan)
 #endif
 }
 
-void SCC_Reset(void)
+void SCCDevice::reset()
 {
 	SCCwaitrq = 1;
 
@@ -933,7 +936,7 @@ static void SCC_RxBuffAdvance(void)
 	External function, called periodically, to poll for any new LTOE
 	packets. Any new packets are queued into the packet receipt queue.
 */
-void LocalTalkTick(void)
+void SCCDevice::localTalkTick()
 {
 	if (SCC.a[1].RxEnable
 		&& (! SCC.a[1].RxChrAvail))
@@ -2937,7 +2940,7 @@ static void SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 #endif
 }
 
- uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+ uint32_t SCCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 #if EmLocalTalk
 	/*
@@ -2973,3 +2976,27 @@ static void SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 
 	return Data;
 }
+
+/* ===== Backward-compatible free function API ===== */
+
+void SCC_Reset(void)
+{
+	g_scc->reset();
+}
+
+uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
+{
+	return g_scc->access(Data, WriteMem, addr);
+}
+
+bool SCC_InterruptsEnabled(void)
+{
+	return g_scc->interruptsEnabled();
+}
+
+#if EmLocalTalk
+void LocalTalkTick(void)
+{
+	g_scc->localTalkTick();
+}
+#endif
