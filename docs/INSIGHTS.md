@@ -2,6 +2,12 @@
 
 Collected during deep analysis of the codebase. Reference for future work.
 
+> **Note:** This document was written during initial analysis when files had their
+> original names (e.g. `GLOBGLUE.c`, `MINEM68K.c`, `OSGLUAAA.h`). The codebase
+> has since been restructured — see `docs/PLAN-3.md` for the complete file mapping
+> from old names to new names. The new layout lives under `src/core/`, `src/cpu/`,
+> `src/devices/`, `src/platform/`, and `src/config/`.
+
 ---
 
 ## Build System — 3-Stage Pipeline

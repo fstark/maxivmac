@@ -1,5 +1,18 @@
 # Building Mini vMac
 
+## Source Layout
+
+```
+src/core/        — Core emulation (machine glue, main loop, endian helpers)
+src/cpu/         — 68000/68020 CPU emulator and instruction decode tables
+src/devices/     — Hardware device emulation (VIA, SCC, IWM, SCSI, ADB, etc.)
+src/platform/    — Platform backends (cocoa.mm, sdl.cpp, win32.cpp, etc.)
+  common/        — Shared platform code compiled as separate translation units:
+                   osglu_common, intl_chars, param_buffers, control_mode
+src/config/      — Build configuration headers and language strings
+src/resources/   — Application icon resources
+```
+
 ## Quick Start (macOS)
 
 Clean:
