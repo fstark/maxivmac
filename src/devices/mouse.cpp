@@ -25,6 +25,8 @@
 
 #include "core/common.h"
 #include "core/machine_obj.h"
+#include "core/wire_bus.h"
+#include "core/wire_ids.h"
 #include "devices/scc.h"
 
 #include "devices/mouse.h"
@@ -91,7 +93,7 @@ void MouseDevice::update()
 		}
 	}
 
-#if EmClassicKbrd
+	if (machine_->config().emClassicKbrd)
 	{
 		MyEvtQEl *p;
 
@@ -100,13 +102,12 @@ void MouseDevice::update()
 			(nullptr != (p = MyEvtQOutP())))
 		{
 			if (MyEvtQElKindMouseButton == p->kind) {
-				MouseBtnUp = p->u.press.down ? 0 : 1;
+				g_wires.set(Wire_VIA1_iB3, p->u.press.down ? 0 : 1);
 				MyEvtQOutDone();
 				MasterMyEvtQLock = 4;
 			}
 		}
 	}
-#endif
 }
 
 void MouseDevice::endTickNotify()

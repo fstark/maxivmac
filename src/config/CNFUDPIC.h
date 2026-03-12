@@ -7,18 +7,12 @@
 	you know what you're doing.
 */
 
-/* Device-enable flags still needed as compile-time guards because
-   pmu.cpp, keyboard.cpp, sound.cpp have cross-subsystem VIA
-   dependencies that prevent always-compiling their bodies.
-   The rest are now runtime via MachineConfig. */
-#define EmClassicKbrd 0
-#define EmPMU 0
-#define EmClassicSnd 0
-
-/* CPU feature flags — must stay compile-time for hot-path performance */
+/* CPU feature flags — always 1 so all instruction code compiles.
+   Runtime selection via MachineConfig::use68020/emFPU/emMMU +
+   dispatch table fixup in M68KITAB_setup(). */
 #define Use68020 1
 #define EmFPU 1
-#define EmMMU 0
+#define EmMMU 1
 
 #define kMyClockMult 2
 

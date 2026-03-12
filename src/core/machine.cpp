@@ -1680,7 +1680,7 @@ void VIAorSCCinterruptChngNtfy(void)
 	}
 
 	g_cpu.init(
-		&CurIPL);
+		&CurIPL, &g_machine->config());
 	return true;
 }
 

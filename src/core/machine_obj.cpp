@@ -25,9 +25,7 @@
 #include "devices/mouse.h"
 #include "devices/keyboard.h"
 #include "devices/sound.h"
-#if EmPMU
 #include "devices/pmu.h"
-#endif
 
 // Global Machine pointer for backward compatibility during migration
 Machine* g_machine = nullptr;
@@ -57,9 +55,7 @@ Machine::~Machine()
 	g_video = nullptr;
 	g_keyboard = nullptr;
 	g_sound = nullptr;
-#if EmPMU
 	g_pmu = nullptr;
-#endif
 
 	if (g_machine == this) {
 		g_machine = nullptr;
@@ -152,13 +148,11 @@ bool Machine::init()
 		g_sound = dev.get();
 		addDevice(std::move(dev));
 	}
-#if EmPMU
 	if (config_.emPMU) {
 		auto dev = std::make_unique<PMUDevice>();
 		g_pmu = dev.get();
 		addDevice(std::move(dev));
 	}
-#endif
 
 	return true;
 }
