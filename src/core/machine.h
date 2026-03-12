@@ -180,10 +180,6 @@ using iCountt = uint32_t;
 extern iCountt GetCuriCount(void);
 extern void ICT_Zap(void);
 
-extern uint32_t ICTactive;
-extern iCountt ICTwhen[kNumICTs];
-extern iCountt NextiCount;
-
 extern uint8_t Wires[kNumWires];
 
 #define kLn2CycleScale 6

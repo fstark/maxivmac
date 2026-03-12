@@ -1748,46 +1748,21 @@ uint16_t MasterMyEvtQLock = 0;
 	return false;
 }
 
-/* task management */
+/* task management — forwarding stubs to g_ict */
 
-#ifdef _VIA_Debug
-#include <stdio.h>
-#endif
-
-uint32_t ICTactive;
-iCountt ICTwhen[kNumICTs];
+#include "core/ict_scheduler.h"
 
 void ICT_Zap(void)
 {
-	ICTactive = 0;
+	g_ict.zap();
 }
 
-static void InsertICT(int taskid, iCountt when)
+iCountt GetCuriCount(void)
 {
-	ICTwhen[taskid] = when;
-	ICTactive |= (1 << taskid);
-}
-
-iCountt NextiCount = 0;
-
- iCountt GetCuriCount(void)
-{
-	return NextiCount - GetCyclesRemaining();
+	return g_ict.getCurrent();
 }
 
 void ICT_add(int taskid, uint32_t n)
 {
-	/* n must be > 0 */
-	int32_t x = GetCyclesRemaining();
-	uint32_t when = NextiCount - x + n;
-
-#ifdef _VIA_Debug
-	fprintf(stderr, "ICT_add: %d, %d, %d\n", when, taskid, n);
-#endif
-	InsertICT(taskid, when);
-
-	if (x > (int32_t)n) {
-		SetCyclesRemaining(n);
-		NextiCount = when;
-	}
+	g_ict.add(taskid, n);
 }

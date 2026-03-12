@@ -45,3 +45,6 @@ private:
 	std::function<int32_t()>      getCyclesRemaining_;
 	std::function<void(int32_t)>  setCyclesRemaining_;
 };
+
+// Global ICT scheduler instance (will move to Machine in a later step)
+extern ICTScheduler g_ict;

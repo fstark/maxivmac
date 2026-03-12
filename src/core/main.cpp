@@ -59,10 +59,13 @@
 
 
 #include "core/main.h"
+#include "core/ict_scheduler.h"
 
 /*
 	ReportAbnormalID unused 0x1002 - 0x10FF
 */
+
+ICTScheduler g_ict;
 
 static void EmulatedHardwareZap(void)
 {
@@ -239,6 +242,30 @@ void EmulationReserveAlloc(void)
 
 static bool InitEmulation(void)
 {
+	/* Wire ICT scheduler to CPU cycle counters */
+	g_ict.setCycleAccessors(GetCyclesRemaining, SetCyclesRemaining);
+
+	/* Register ICT task handlers */
+	g_ict.registerTask(kICT_SubTick, SubTickTaskDo);
+#if EmClassicKbrd
+	g_ict.registerTask(kICT_Kybd_ReceiveEndCommand, DoKybd_ReceiveEndCommand);
+	g_ict.registerTask(kICT_Kybd_ReceiveCommand, DoKybd_ReceiveCommand);
+#endif
+#if EmADB
+	g_ict.registerTask(kICT_ADB_NewState, ADB_DoNewState);
+#endif
+#if EmPMU
+	g_ict.registerTask(kICT_PMU_Task, PMU_DoTask);
+#endif
+#if EmVIA1
+	g_ict.registerTask(kICT_VIA1_Timer1Check, VIA1_DoTimer1Check);
+	g_ict.registerTask(kICT_VIA1_Timer2Check, VIA1_DoTimer2Check);
+#endif
+#if EmVIA2
+	g_ict.registerTask(kICT_VIA2_Timer1Check, VIA2_DoTimer1Check);
+	g_ict.registerTask(kICT_VIA2_Timer2Check, VIA2_DoTimer2Check);
+#endif
+
 #if EmRTC
 	if (RTC_Init())
 #endif
@@ -254,134 +281,26 @@ static bool InitEmulation(void)
 	return false;
 }
 
-static void ICT_DoTask(int taskid)
-{
-	switch (taskid) {
-		case kICT_SubTick:
-			SubTickTaskDo();
-			break;
-#if EmClassicKbrd
-		case kICT_Kybd_ReceiveEndCommand:
-			DoKybd_ReceiveEndCommand();
-			break;
-		case kICT_Kybd_ReceiveCommand:
-			DoKybd_ReceiveCommand();
-			break;
-#endif
-#if EmADB
-		case kICT_ADB_NewState:
-			ADB_DoNewState();
-			break;
-#endif
-#if EmPMU
-		case kICT_PMU_Task:
-			PMU_DoTask();
-			break;
-#endif
-#if EmVIA1
-		case kICT_VIA1_Timer1Check:
-			VIA1_DoTimer1Check();
-			break;
-		case kICT_VIA1_Timer2Check:
-			VIA1_DoTimer2Check();
-			break;
-#endif
-#if EmVIA2
-		case kICT_VIA2_Timer1Check:
-			VIA2_DoTimer1Check();
-			break;
-		case kICT_VIA2_Timer2Check:
-			VIA2_DoTimer2Check();
-			break;
-#endif
-		default:
-			ReportAbnormalID(0x1001, "unknown taskid in ICT_DoTask");
-			break;
-	}
-}
-
-static void ICT_DoCurrentTasks(void)
-{
-	int i = 0;
-	uint32_t m = ICTactive;
-
-	while (0 != m) {
-		if (0 != (m & 1)) {
-			if (i >= kNumICTs) {
-				/* shouldn't happen */
-				ICTactive &= ((1 << kNumICTs) - 1);
-				m = 0;
-			} else if (ICTwhen[i] == NextiCount) {
-				ICTactive &= ~ (1 << i);
-#ifdef _VIA_Debug
-				fprintf(stderr, "doing task %d, %d\n", NextiCount, i);
-#endif
-				ICT_DoTask(i);
-
-				/*
-					A Task may set the time of
-					any task, including itself.
-					But it cannot set any task
-					to execute immediately, so
-					one pass is sufficient.
-				*/
-			}
-		}
-		++i;
-		m >>= 1;
-	}
-}
-
-static uint32_t ICT_DoGetNext(uint32_t maxn)
-{
-	int i = 0;
-	uint32_t m = ICTactive;
-	uint32_t v = maxn;
-
-	while (0 != m) {
-		if (0 != (m & 1)) {
-			if (i >= kNumICTs) {
-				/* shouldn't happen */
-				m = 0;
-			} else {
-				uint32_t d = ICTwhen[i] - NextiCount;
-				/* at this point d must be > 0 */
-				if (d < v) {
-#ifdef _VIA_Debug
-					fprintf(stderr, "coming task %d, %d, %d\n",
-						NextiCount, i, d);
-#endif
-					v = d;
-				}
-			}
-		}
-		++i;
-		m >>= 1;
-	}
-
-	return v;
-}
-
 static void m68k_go_nCycles_1(uint32_t n)
 {
 	uint32_t n2;
-	uint32_t StopiCount = NextiCount + n;
+	uint32_t StopiCount = g_ict.nextCount + n;
 	do {
-		ICT_DoCurrentTasks();
-		n2 = ICT_DoGetNext(n);
+		g_ict.doCurrentTasks();
+		n2 = g_ict.doGetNext(n);
 #if dbglog_HAVE && 0
 		dbglog_StartLine();
-		dbglog_writeCStr("before m68k_go_nCycles, NextiCount:");
-		dbglog_writeHex(NextiCount);
+		dbglog_writeCStr("before m68k_go_nCycles, nextCount:");
+		dbglog_writeHex(g_ict.nextCount);
 		dbglog_writeCStr(", n2:");
 		dbglog_writeHex(n2);
 		dbglog_writeCStr(", n:");
 		dbglog_writeHex(n);
 		dbglog_writeReturn();
 #endif
-		NextiCount += n2;
+		g_ict.nextCount += n2;
 		m68k_go_nCycles(n2);
-		n = StopiCount - NextiCount;
+		n = StopiCount - g_ict.nextCount;
 	} while (n != 0);
 }
 
