@@ -35,7 +35,7 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount) {
 
 #define NeedCell2PlainAsciiMap 1
 
-#include "platform/common/intl_chars_impl.h"
+#include "platform/common/intl_chars.h" /* was intl_chars_impl.h — now a separate TU */
 
 /* --- sending debugging info to file --- */
 
@@ -109,11 +109,11 @@ static void WriteDbgAtom(char *s, Atom x) {
 
 /* --- information about the environment --- */
 
-#include "platform/common/osglu_common_impl.h"
+#include "platform/common/osglu_common.h" /* was osglu_common_impl.h — now a separate TU */
 
-#include "platform/common/param_buffers_impl.h"
+#include "platform/common/param_buffers.h" /* was param_buffers_impl.h — now a separate TU */
 
-#include "platform/common/control_mode_impl.h"
+#include "platform/common/control_mode.h" /* was control_mode_impl.h — now a separate TU */
 
 /* --- text translation --- */
 
