@@ -24,6 +24,9 @@
 
 #include "devices/adb.h"
 
+/* Global singleton */
+ADBDevice* g_adb = nullptr;
+
 #ifdef _VIA_Debug
 #include <stdio.h>
 #endif
@@ -40,7 +43,7 @@ extern uint8_t ADB_ShiftInData(void);
 static bool ADB_ListenDatBuf;
 static uint8_t ADB_IndexDatBuf;
 
-void ADB_DoNewState(void)
+void ADBDevice::doNewState()
 {
 	uint8_t state = ADB_st1 * 2 + ADB_st0;
 #ifdef _VIA_Debug
@@ -154,7 +157,7 @@ void ADB_DoNewState(void)
 	}
 }
 
-void ADBstate_ChangeNtfy(void)
+void ADBDevice::stateChangeNtfy()
 {
 #ifdef _VIA_Debug
 	fprintf(stderr, "ADBstate_ChangeNtfy: %d, %d, %d\n",
@@ -176,14 +179,14 @@ void ADBstate_ChangeNtfy(void)
 		*/
 }
 
-void ADB_DataLineChngNtfy(void)
+void ADBDevice::dataLineChngNtfy()
 {
 #ifdef _VIA_Debug
 	fprintf(stderr, "ADB_DataLineChngNtfy: %d\n", ADB_Data);
 #endif
 }
 
-void ADB_Update(void)
+void ADBDevice::update()
 {
 	uint8_t state = ADB_st1 * 2 + ADB_st0;
 
@@ -209,5 +212,12 @@ void ADB_Update(void)
 		}
 	}
 }
+
+/* ===== Backward-compatible free function API ===== */
+
+void ADBstate_ChangeNtfy(void) { g_adb->stateChangeNtfy(); }
+void ADB_DoNewState(void) { g_adb->doNewState(); }
+void ADB_DataLineChngNtfy(void) { g_adb->dataLineChngNtfy(); }
+void ADB_Update(void) { g_adb->update(); }
 
 #endif /* EmADB */

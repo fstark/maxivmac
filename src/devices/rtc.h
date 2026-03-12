@@ -16,9 +16,29 @@
 
 #pragma once
 
+#include "devices/device.h"
+#include <cstdint>
+
+class RTCDevice : public Device {
+public:
+	uint32_t access(uint32_t data, bool writeMem, uint32_t addr) override
+		{ return data; } // Not memory-mapped
+	void zap() override {}
+	void reset() override {}
+	const char* name() const override { return "RTC"; }
+
+	bool init();
+	void interrupt();
+	void unEnabledChangeNtfy();
+	void clockChangeNtfy();
+	void dataLineChangeNtfy();
+};
+
+extern RTCDevice* g_rtc;
+
+// Backward-compatible free function API
 extern bool RTC_Init(void);
 extern void RTC_Interrupt(void);
-
 extern void RTCunEnabled_ChangeNtfy(void);
 extern void RTCclock_ChangeNtfy(void);
 extern void RTCdataLine_ChangeNtfy(void);

@@ -33,6 +33,9 @@
 
 #include "devices/rtc.h"
 
+/* Global singleton */
+RTCDevice* g_rtc = nullptr;
+
 #define HaveXPRAM (CurEmMd >= kEmMd_Plus)
 
 /*
@@ -141,7 +144,7 @@ void DumpRTC(void)
 }
 #endif
 
- bool RTC_Init(void)
+ bool RTCDevice::init()
 {
 	int Counter;
 	uint32_t secs;
@@ -315,7 +318,7 @@ void DumpRTC(void)
 extern void RTC_OneSecond_PulseNtfy(void);
 #endif
 
-void RTC_Interrupt(void)
+void RTCDevice::interrupt()
 {
 	uint32_t Seconds = 0;
 	uint32_t NewRealDate = CurMacDateInSeconds;
@@ -449,7 +452,7 @@ static void RTC_DoCmd(void)
 	}
 }
 
-void RTCunEnabled_ChangeNtfy(void)
+void RTCDevice::unEnabledChangeNtfy()
 {
 	if (RTCunEnabled) {
 		/* abort anything going on */
@@ -467,7 +470,7 @@ void RTCunEnabled_ChangeNtfy(void)
 	}
 }
 
-void RTCclock_ChangeNtfy(void)
+void RTCDevice::clockChangeNtfy()
 {
 	if (! RTCunEnabled) {
 		if (RTCclock) {
@@ -492,7 +495,7 @@ void RTCclock_ChangeNtfy(void)
 	}
 }
 
-void RTCdataLine_ChangeNtfy(void)
+void RTCDevice::dataLineChangeNtfy()
 {
 #if dbglog_HAVE
 	if (RTC.DataOut) {
@@ -514,5 +517,13 @@ void RTCdataLine_ChangeNtfy(void)
 	}
 #endif
 }
+
+/* ===== Backward-compatible free function API ===== */
+
+bool RTC_Init(void) { return g_rtc->init(); }
+void RTC_Interrupt(void) { g_rtc->interrupt(); }
+void RTCunEnabled_ChangeNtfy(void) { g_rtc->unEnabledChangeNtfy(); }
+void RTCclock_ChangeNtfy(void) { g_rtc->clockChangeNtfy(); }
+void RTCdataLine_ChangeNtfy(void) { g_rtc->dataLineChangeNtfy(); }
 
 #endif /* EmRTC */

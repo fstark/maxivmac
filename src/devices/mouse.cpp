@@ -29,7 +29,10 @@
 
 #include "devices/mouse.h"
 
-void Mouse_Update(void)
+/* Global singleton */
+MouseDevice* g_mouse = nullptr;
+
+void MouseDevice::update()
 {
 #if HaveMasterMyEvtQLock
 	if (0 != MasterMyEvtQLock) {
@@ -113,7 +116,7 @@ void Mouse_Update(void)
 #endif
 }
 
-void Mouse_EndTickNotify(void)
+void MouseDevice::endTickNotify()
 {
 	if (Mouse_Enabled()) {
 		/* tell platform specific code where the mouse went */
@@ -121,3 +124,8 @@ void Mouse_EndTickNotify(void)
 		CurMouseH = get_ram_word(0x082E);
 	}
 }
+
+/* ===== Backward-compatible free function API ===== */
+
+void Mouse_Update(void) { g_mouse->update(); }
+void Mouse_EndTickNotify(void) { g_mouse->endTickNotify(); }
