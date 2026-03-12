@@ -146,7 +146,7 @@ static void MyMayFree(char *p)
 static FILE *dbglog_File = NULL;
 #endif
 
-static bool dbglog_open0(void)
+bool dbglog_open0(void)
 {
 #if dbglog_ToStdErr || dbglog_ToSDL_Log
 	return true;
@@ -173,7 +173,7 @@ static bool dbglog_open0(void)
 #endif
 }
 
-static void dbglog_write0(char *s, uint32_t L)
+void dbglog_write0(char *s, uint32_t L)
 {
 #if dbglog_ToStdErr
 	(void) fwrite(s, 1, L, stderr);
@@ -194,7 +194,7 @@ static void dbglog_write0(char *s, uint32_t L)
 #endif
 }
 
-static void dbglog_close0(void)
+void dbglog_close0(void)
 {
 #if ! dbglog_ToStdErr
 	if (dbglog_File != NULL) {
@@ -208,9 +208,7 @@ static void dbglog_close0(void)
 
 /* --- information about the environment --- */
 
-#define WantColorTransValid 0
-
-#include "platform/common/osglu_common_impl.h"
+#include "platform/common/osglu_common.h"
 
 #include "platform/common/param_buffers_impl.h"
 
