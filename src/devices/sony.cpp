@@ -29,6 +29,7 @@
 */
 
 #include "core/common.h"
+#include "cpu/cpu.h"
 #include "cpu/m68k.h"
 
 #include "devices/sony.h"
@@ -513,7 +514,7 @@ void SonyDevice::update()
 					data |= ((uint32_t)0x00FF) << 16;
 				}
 
-				DiskInsertedPsuedoException(MountCallBack, data);
+				g_cpu.diskInsertedPseudoException(MountCallBack, data);
 
 #if IncludeSonyRawMode
 				if (! vSonyRawMode)

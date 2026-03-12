@@ -35,6 +35,7 @@
 #include "devices/iwm.h"
 #include "devices/asc.h"
 #include "core/wire_bus.h"
+#include "cpu/cpu.h"
 
 /*
 	ReportAbnormalID unused 0x111D - 0x11FF
@@ -44,7 +45,6 @@
 	ReportAbnormalID ranges unused 0x12xx - 0xFFxx
 */
 
-extern void m68k_reset(void);
 extern void IWM_Reset(void);
 extern void SCC_Reset(void);
 extern void SCSI_Reset(void);
@@ -63,18 +63,6 @@ extern void ExtnVideo_Access(uint32_t p);
 #endif
 
 extern void Sony_SetQuitOnEject(void);
-
-extern void m68k_IPLchangeNtfy(void);
-extern void MINEM68K_Init(
-	uint8_t *fIPL);
-
-extern uint32_t GetCyclesRemaining(void);
-extern void SetCyclesRemaining(int32_t n);
-
-extern void SetHeadATTel(ATTep p);
-extern ATTep FindATTel(uint32_t addr);
-
-/* Device access is now through p->device->access() in MMDV_Access */
 
 extern uint8_t get_vm_byte(uint32_t addr);
 extern uint16_t get_vm_word(uint32_t addr);
@@ -773,7 +761,7 @@ static void FinishATTList(void)
 		}
 #endif
 
-		SetHeadATTel(h);
+		g_cpu.setHeadATTel(h);
 	}
 }
 
@@ -1602,7 +1590,7 @@ static ATTep get_address_realblock1(bool WriteMem, uint32_t addr)
 	ATTep p;
 
 Label_Retry:
-	p = FindATTel(addr);
+	p = g_cpu.findATTel(addr);
 	if (0 != (p->Access &
 		(WriteMem ? kATTA_writereadymask : kATTA_readreadymask)))
 	{
@@ -1683,7 +1671,7 @@ void VIAorSCCinterruptChngNtfy(void)
 #endif
 	if (NewIPL != CurIPL) {
 		CurIPL = NewIPL;
-		m68k_IPLchangeNtfy();
+		g_cpu.iplChangeNotify();
 	}
 }
 
@@ -1720,7 +1708,7 @@ void VIAorSCCinterruptChngNtfy(void)
 	g_wires.onChange(Wire_VIA1_iCB2_ADB_Data, ADB_DataLineChngNtfy);
 #endif
 
-	MINEM68K_Init(
+	g_cpu.init(
 		&CurIPL);
 	return true;
 }

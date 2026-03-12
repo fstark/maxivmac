@@ -8,12 +8,9 @@
 
 #include "core/machine_obj.h"
 #include "devices/device.h"
-#include <cstring>
 
 // Global Machine pointer for backward compatibility during migration
 Machine* g_machine = nullptr;
-
-static constexpr uint32_t RAMSafetyMarginFudge = 4;
 
 Machine::Machine(MachineConfig config)
 	: config_(std::move(config))
@@ -29,29 +26,9 @@ Machine::~Machine()
 
 bool Machine::init()
 {
-	// Allocate RAM
-	uint32_t totalRam = config_.ramSize() + RAMSafetyMarginFudge;
-	ram_ = std::make_unique<uint8_t[]>(totalRam);
-	std::memset(ram_.get(), 0, totalRam);
-
-	// Allocate video ROM if enabled
-	if (config_.emVidCard && config_.vidROMSize > 0) {
-		vidROM_ = std::make_unique<uint8_t[]>(config_.vidROMSize);
-		std::memset(vidROM_.get(), 0, config_.vidROMSize);
-	}
-
-	// Allocate video memory if enabled
-	if (config_.includeVidMem && config_.vidMemSize > 0) {
-		uint32_t totalVidMem = config_.vidMemSize + RAMSafetyMarginFudge;
-		vidMem_ = std::make_unique<uint8_t[]>(totalVidMem);
-		std::memset(vidMem_.get(), 0, totalVidMem);
-	}
-
-	// Initialize WireBus
-	// For now, use the wire count for current model configuration
-	wireBus_.init(kMaxWires);
-
-	// Set global pointer
+	// Set global pointer for backward compatibility.
+	// Memory allocation is handled by EmulationReserveAlloc() called
+	// from platform code — we don't duplicate that here.
 	g_machine = this;
 
 	return true;
