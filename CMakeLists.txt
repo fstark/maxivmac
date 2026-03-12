@@ -67,6 +67,7 @@ set(MINIVMAC_SOURCES
     src/core/machine_config.cpp
     src/core/wire_bus.cpp
     src/core/ict_scheduler.cpp
+    src/core/machine_obj.cpp
     src/core/machine.cpp
     src/devices/device.cpp
     src/cpu/m68k_tables.cpp
