@@ -29,8 +29,3 @@ public:
 	void subTick(int subTick);
 };
 
-extern ASCDevice* g_asc;
-
-// Backward-compatible free function API
-extern uint32_t ASC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-extern void ASC_SubTick(int SubTick);
