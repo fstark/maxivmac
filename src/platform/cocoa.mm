@@ -444,11 +444,9 @@ void dbglog_close0(void)
 
 #include "platform/common/osglu_common.h"
 
-#define WantKeyboard_RemapMac 1
-
 #include "platform/common/param_buffers.h"
 
-#include "platform/common/control_mode_impl.h"
+#include "platform/common/control_mode.h"
 
 /* --- text translation --- */
 
@@ -4245,7 +4243,7 @@ static void ZapWinStateVars(void)
 }
 
 #if VarFullScreen
-static void ToggleWantFullScreen(void)
+void ToggleWantFullScreen(void)
 {
 	WantFullScreen = ! WantFullScreen;
 
