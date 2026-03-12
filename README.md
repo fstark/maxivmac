@@ -15,6 +15,21 @@ The [recently discovered](https://web.archive.org/web/20250518175439/https://www
 	./setuptool -n "minivmac-37.03-kanji" \  
 	  -m Kanji -t mcar -lt -lto udp -sgn 0 > setup.sh
 
+## Source Tree
+
+```
+src/
+├── core/           Core emulation: machine glue, main loop, endian, defaults
+├── cpu/            Motorola 68000/68020 emulator and instruction tables
+├── devices/        Hardware device emulation (VIA, SCC, IWM, SCSI, ADB, etc.)
+├── platform/       Platform backends (Cocoa, SDL, Win32, X11, etc.)
+│   └── common/     Shared platform code: OS glue, control mode, intl chars, etc.
+├── config/         Build configuration headers, language strings, Info.plist
+└── resources/      Application resources (icons)
+```
+
+For detailed build instructions, see [docs/BUILDING.md](docs/BUILDING.md).
+
 ## Contributing
 
 If you find any bugs and/or implement new features, please feel free to create a pull request. I will be more than happy to merge in any changes of general interest to keep Mini vMac alive and thriving.
