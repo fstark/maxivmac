@@ -7,14 +7,20 @@
 */
 
 #include "core/wire_bus.h"
+#include "core/wire_ids.h"
 
 WireBus g_wires;
 
 void WireBus::init(int numWires)
 {
 	numWires_ = numWires;
-	// Initialize all wires to 1 (matching AddrSpac_Init behavior)
+	// Initialize all wires to 1 (active-high default for most signals).
 	wires_.fill(1);
+	// ADBMouseDisabled must start at 0 (mouse enabled).  On ADB models the
+	// ADB manager will set it to 0 again when it polls the mouse, but on
+	// non-ADB models (Plus, 128K, etc.) there is no ADB to ever clear it,
+	// so the mouse would stay permanently disabled.
+	wires_[Wire_ADBMouseDisabled] = 0;
 	for (auto& cbs : changeCallbacks_) cbs.clear();
 	for (auto& cbs : pulseCallbacks_)  cbs.clear();
 }
