@@ -27,6 +27,7 @@
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
 #include "core/config_loader.h"
+#include "core/machine_obj.h"
 
 // Forward declaration - defined in main.cpp, declared in main.h
 const LaunchConfig& GetLaunchConfig();
@@ -1076,11 +1077,12 @@ static tMacErr LoadMacRomPath(NSString *RomPath)
 	int File_Size;
 	tMacErr err = mnvm_fnfErr;
 	const char *path = [RomPath fileSystemRepresentation];
+	const uint32_t romSize = g_machine->config().romSize;
 
 	ROM_File = fopen(path, "rb");
 	if (NULL != ROM_File) {
-		File_Size = fread(ROM, 1, kROM_Size, ROM_File);
-		if (kROM_Size != File_Size) {
+		File_Size = fread(ROM, 1, romSize, ROM_File);
+		if ((uint32_t)File_Size != romSize) {
 			if (feof(ROM_File)) {
 				MacMsgOverride(kStrShortROMTitle,
 					kStrShortROMMessage);
@@ -1204,8 +1206,9 @@ static tMacErr LoadMacRomFrom(NSString *parentPath)
 {
 	NSString *RomPath;
 	tMacErr err = mnvm_fnfErr;
+	const char* romName = g_machine->config().romFileName;
 
-	if (FindNamedChildFilePath(parentPath, RomFileName, &RomPath)) {
+	if (FindNamedChildFilePath(parentPath, (char*)romName, &RomPath)) {
 		err = LoadMacRomPath(RomPath);
 	}
 
@@ -5154,7 +5157,7 @@ static void ReserveAllocAll(void)
 #if dbglog_HAVE
 	dbglog_ReserveAlloc();
 #endif
-	ReserveAllocOneBlock(&ROM, kROM_Size, 5, false);
+	ReserveAllocOneBlock(&ROM, g_machine->config().romSize, 5, false);
 
 	ReserveAllocOneBlock(&screencomparebuff,
 		vMacScreenNumBytes, 5, true);

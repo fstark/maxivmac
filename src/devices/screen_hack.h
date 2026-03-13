@@ -46,7 +46,7 @@ if (static_cast<int>(g_machine->config().model)
 		pto = 862 + ROM;
 		do_put_mem_word(pto, 0x4EB9); /* JSR */
 		pto += 2;
-		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		do_put_mem_long(pto, g_machine->config().romBase + (patchp - ROM));
 		pto += 4;
 
 		do_put_mem_word(patchp, 0x21FC); /* MOVE.L */
@@ -92,7 +92,7 @@ if (static_cast<int>(g_machine->config().model)
 		pto = 3448 + ROM;
 		do_put_mem_word(pto, 0x4EB9); /* JSR */
 		pto += 2;
-		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		do_put_mem_long(pto, g_machine->config().romBase + (patchp - ROM));
 		pto += 4;
 
 		do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave),A0 */
@@ -116,7 +116,7 @@ if (static_cast<int>(g_machine->config().model)
 		pto = 3646 + ROM;
 		do_put_mem_word(pto, 0x4EB9); /* JSR */
 		pto += 2;
-		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		do_put_mem_long(pto, g_machine->config().romBase + (patchp - ROM));
 		pto += 4;
 
 		do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x,D5 */
@@ -167,7 +167,7 @@ if (static_cast<int>(g_machine->config().model)
 		pto = 1132 + ROM;
 		do_put_mem_word(pto, 0x4EB9); /* JSR */
 		pto += 2;
-		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		do_put_mem_long(pto, g_machine->config().romBase + (patchp - ROM));
 		pto += 4;
 
 		do_put_mem_word(patchp, 0x21FC); /* MOVE.L */
@@ -217,7 +217,7 @@ if (static_cast<int>(g_machine->config().model)
 		pto = 7372 + ROM;
 		do_put_mem_word(pto, 0x4EB9); /* JSR */
 		pto += 2;
-		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		do_put_mem_long(pto, g_machine->config().romBase + (patchp - ROM));
 		pto += 4;
 
 		do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave), A0 */
@@ -241,7 +241,7 @@ if (static_cast<int>(g_machine->config().model)
 		pto = 7570 + ROM;
 		do_put_mem_word(pto, 0x4EB9); /* JSR */
 		pto += 2;
-		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		do_put_mem_long(pto, g_machine->config().romBase + (patchp - ROM));
 		pto += 4;
 
 		do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x,D5 */
@@ -298,7 +298,7 @@ if (static_cast<int>(g_machine->config().model)
 		pto = 1482 + ROM;
 		do_put_mem_word(pto, 0x4EB9); /* JSR */
 		pto += 2;
-		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		do_put_mem_long(pto, g_machine->config().romBase + (patchp - ROM));
 		pto += 4;
 
 		do_put_mem_word(patchp, 0x21FC); /* MOVE.L */
@@ -354,7 +354,7 @@ if (static_cast<int>(g_machine->config().model)
 		pto = 101886 + ROM;
 		do_put_mem_word(pto, 0x4EB9); /* JSR */
 		pto += 2;
-		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		do_put_mem_long(pto, g_machine->config().romBase + (patchp - ROM));
 		pto += 4;
 
 		do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave),A0 */
@@ -378,7 +378,7 @@ if (static_cast<int>(g_machine->config().model)
 		pto = 102084 + ROM;
 		do_put_mem_word(pto, 0x4EB9); /* JSR */
 		pto += 2;
-		do_put_mem_long(pto, kROM_Base + (patchp - ROM));
+		do_put_mem_long(pto, g_machine->config().romBase + (patchp - ROM));
 		pto += 4;
 
 		do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x, D5 */

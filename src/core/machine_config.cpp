@@ -154,6 +154,9 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.emMMU       = false;
 			c.ramASize    = 0x00020000; // 128K
 			c.ramBSize    = 0;
+			c.romSize     = 0x00010000; // 64 KB
+			c.romBase     = 0x00400000;
+			c.romFileName = "Twiggy.ROM";
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
@@ -177,6 +180,9 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.emMMU       = false;
 			c.ramASize    = 0x00020000; // 128K
 			c.ramBSize    = 0;
+			c.romSize     = 0x00010000; // 64 KB
+			c.romBase     = 0x00400000;
+			c.romFileName = "Mac128K.ROM";
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
@@ -200,6 +206,9 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.emMMU       = false;
 			c.ramASize    = 0x00080000; // 512K
 			c.ramBSize    = 0;
+			c.romSize     = 0x00020000; // 128 KB
+			c.romBase     = 0x00400000;
+			c.romFileName = "vMac.ROM";
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
@@ -224,6 +233,9 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.emMMU       = false;
 			c.ramASize    = 0x00400000; // 4 MB
 			c.ramBSize    = 0;
+			c.romSize     = 0x00020000; // 128 KB
+			c.romBase     = 0x00400000;
+			c.romFileName = "vMac.ROM";
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
@@ -249,6 +261,9 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.emMMU       = false;
 			c.ramASize    = 0x00400000; // 4 MB
 			c.ramBSize    = 0;
+			c.romSize     = 0x00040000; // 256 KB
+			c.romBase     = 0x00400000;
+			c.romFileName = "MacSE.ROM";
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = true;
@@ -272,6 +287,9 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.emMMU       = false;
 			c.ramASize    = 0x00400000; // 4 MB
 			c.ramBSize    = 0;
+			c.romSize     = 0x00040000; // 256 KB
+			c.romBase     = 0x00400000;
+			c.romFileName = "PB100.ROM";
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
@@ -291,7 +309,8 @@ MachineConfig MachineConfigForModel(MacModel model)
 			break;
 
 		case MacModel::II:
-			// defaults are already Mac II
+			// defaults are already Mac II (romSize=256KB, romBase=0x800000)
+			c.romFileName = "MacII.ROM";
 			c.via1Config  = MakeVIA1Config_MacII();
 			c.via2Config  = MakeVIA2Config_MacII();
 			break;
@@ -303,6 +322,9 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.emMMU       = false;
 			c.ramASize    = 0x00400000;
 			c.ramBSize    = 0x00400000;
+			c.romSize     = 0x00040000; // 256 KB
+			c.romBase     = 0x00800000;
+			c.romFileName = "MacIIx.ROM";
 			c.emVIA1      = true;
 			c.emVIA2      = true;
 			c.emADB       = true;
