@@ -481,8 +481,117 @@ Sub-tick processing fires `ASC_SubTick()` or `MacSound_SubTick()` for sound timi
 
 - **No tests** — no test files, directories, or framework references anywhere
 - **No CI** — no GitHub Actions, Travis, or other CI config
-- **No runtime configuration** — all hardware selection is compile-time
-- **No machine state encapsulation** — all state is global variables
-- **No device abstraction** — devices are wired via `#if` and global `switch` dispatch
 - **No debugger** — only `ReportAbnormalID` assertions and `dbglog_*` debug logging
 - **No external control API** — no sockets, no IPC, no scripting
+
+---
+
+## Post-Phase-5 Architecture (Current State)
+
+After Phases 3-5, the codebase has been restructured and the emulator is now a single-binary multi-model build.
+
+### Key Architectural Changes
+
+| Before (Phase 1-2) | After (Phase 4-5) |
+|--------------------|--------------------|
+| All state in global variables | `Machine` object owns all devices |
+| Devices wired via `#if` and global `switch` | `WireBus` for inter-device signals, `findDevice<T>()` for cross-refs |
+| Model selected at compile time (`CurEmMd`) | Model selected at runtime (`--model=` flag) |
+| One binary = one Mac model | One binary emulates 12 Mac models |
+| `CNFUDPIC.h` with ~200 lines of `#define`s | `MachineConfig` struct with runtime fields |
+| ICT scheduling via global arrays | `ICTScheduler` class with cycle-based task dispatch |
+| 17 global device pointers (`g_via1`, etc.) | All access through `Machine::findDevice<>()` |
+| CPU features via `#if Use68020` | Dispatch table fixup + runtime checks |
+| Memory sizes as compile-time constants | `MachineConfig` fields allocated dynamically |
+| Screen size as compile-time constants | Global variables set from `MachineConfig` at init |
+
+### Source Layout
+
+```
+src/
+  config/       — CNFUDPIC.h, CNFUDALL.h, CNFUIALL.h, etc. (mostly legacy, thinned out)
+  core/         — Machine, MachineConfig, WireBus, ICTScheduler, main loop, config_loader
+  cpu/          — m68k.cpp (68000/68020), m68k_tables.cpp, disasm.cpp, fpu_math.h
+  devices/      — VIA, SCC, SCSI, IWM, RTC, ROM, ADB, Keyboard, Mouse, Sound, ASC, PMU,
+                  Sony, Screen, Video — each a Device subclass
+  platform/     — cocoa.mm (macOS), sdl.cpp, win32.cpp, x11.cpp, etc.
+  lang/         — Localized string headers
+  resources/    — App icons and resources
+```
+
+### Runtime Configuration Flow
+
+```
+main(argc, argv)
+  → ProgramEarlyInit(argc, argv)         // parse CLI args into LaunchConfig
+  → BuildMachineConfig(LaunchConfig)      // merge CLI overrides with model defaults
+  → Machine::init(MachineConfig)          // create devices, set up WireBus, init CPU
+  → LoadMacRom()                          // load ROM file (size from config)
+  → MainEventLoop()                       // 60 Hz tick loop
+```
+
+### CLI Interface
+
+```
+./minivmac --model=II --rom=MacII.ROM --ram=8M --screen=640x480x8 disk.img
+./minivmac --model=Plus --rom=vMac.ROM --ram=4M disk.img
+./minivmac --model=SE --rom=MacSE.ROM disk.img
+./minivmac --model=PB100 --rom=PB100.ROM disk.img
+./minivmac -h   # show help
+```
+
+### Supported Models
+
+| Model | CPU | ROM Size | Screen | Sound | Keyboard |
+|-------|-----|---------|--------|-------|----------|
+| Twig43 | 68000 | 64 KB | 512×342×1 | Classic | Classic serial |
+| Twiggy | 68000 | 64 KB | 512×342×1 | Classic | Classic serial |
+| 128K | 68000 | 64 KB | 512×342×1 | Classic | Classic serial |
+| 512Ke | 68000 | 128 KB | 512×342×1 | Classic | Classic serial |
+| Kanji | 68000 | 256 KB | 512×342×1 | Classic | Classic serial |
+| Plus | 68000 | 128 KB | 512×342×1 | Classic | Classic serial |
+| SE | 68000 | 256 KB | 512×342×1 | Classic | ADB |
+| SEFDHD | 68000 | 256 KB | 512×342×1 | Classic | ADB |
+| Classic | 68000 | 512 KB | 512×342×1 | Classic | ADB |
+| PB100 | 68000 | 256 KB | 640×400×1 | ASC | PMU |
+| II | 68020+FPU | 256 KB | 640×480×8 | ASC | ADB |
+| IIx | 68030+FPU | 256 KB | 640×480×8 | ASC | ADB |
+
+### MachineConfig Key Fields
+
+```cpp
+struct MachineConfig {
+    MacModel model;
+    bool use68020, emFPU, emMMU;                  // CPU features
+    uint32_t ramASize, ramBSize;                   // memory banks
+    uint32_t romSize, romBase;                     // ROM geometry
+    const char* romFileName;                       // ROM file to load
+    uint32_t extnBlockBase;                        // extension block (24-bit or 32-bit)
+    uint8_t extnLn2Spc;
+    bool emVIA1, emVIA2, emADB, emClassicKbrd;    // device enables
+    bool emPMU, emASC, emClassicSnd, emRTC;
+    bool emVidCard, includeVidMem;
+    uint32_t vidMemSize, vidROMSize;
+    uint32_t maxATTListN;                          // address translation table size
+    uint32_t screenWidth, screenHeight, screenDepth;
+    uint32_t clockMult;                            // clock speed multiplier
+    uint32_t autoSlowSubTicks, autoSlowTime;
+    VIAConfig via1Config, via2Config;              // VIA port wiring
+};
+```
+
+### Remaining Compile-Time Defines
+
+These are still in `CNFUDPIC.h` / `CNFUDALL.h` but do not vary per model in the current build:
+
+| Define | Value | Purpose |
+|--------|-------|---------|
+| `Use68020` | 1 | Always 1; runtime dispatch handles 68000 vs 68020 |
+| `EmFPU` | 1 | Always 1; runtime check skips FPU for 68000 models |
+| `EmMMU` | 0 | Always 0; MMU not emulated |
+| `WantCycByPriOp` | 1 | Cycle-accurate per primary op |
+| `WantCloserCyc` | 1 | More accurate cycle counting |
+| `MySoundEnabled` | 1 | Sound support enabled |
+| `NumDrives` | 6 | Max simultaneous disk drives |
+| `Sony_SupportDC42` | 1 | DC42 disk image format support |
+| `WantDisasm` | 0 | Disassembly support (debug) |
