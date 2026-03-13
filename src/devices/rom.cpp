@@ -192,8 +192,6 @@ static uint32_t getSonyDriverBase() {
 }
 #define Sony_DriverBase getSonyDriverBase()
 
-#define kVidMem_Base 0x00540000
-
 #if UseSonyPatch
 static void Sony_Install(void)
 {
