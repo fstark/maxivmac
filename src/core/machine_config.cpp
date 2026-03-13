@@ -70,19 +70,24 @@ static VIAConfig MakeVIA1Config_Plus() {
 	v.orbFloatVal      = 0xFF;
 	v.oraCanIn         = 0x80;
 	v.oraCanOut        = 0x7F;
-	v.orbCanIn         = 0x00;
-	v.orbCanOut        = 0xFF;
-	v.ierNever0        = 0x00;
-	v.ierNever1        = 0x00;
+	v.orbCanIn         = 0x79;  // bits 0,3,4,5,6: RTC data, MouseBtnUp, MouseX2, MouseY2, H4
+	v.orbCanOut        = 0x87;  // bits 0,1,2,7: RTC data, RTC clock, RTC enable, Sound
+	v.ierNever0        = 0x02;  // bit 1 always 0
+	v.ierNever1        = 0x18;  // bits 3,4 always 1
 	v.cb2ModesAllowed  = 0x01;
 	v.ca2ModesAllowed  = 0x01;
+	/* On Plus, VIA1 port A bits 0-2 are sound volume, bit 3 is sound buffer select.
+	   These wires are aliased to the functional Wire_SoundVolbX / SoundBuffer IDs
+	   so that writes from VIA1 putORB/putORA reach the sound subsystem. */
 	v.portAWires = {
-		Wire_VIA1_iA0, Wire_VIA1_iA1, Wire_VIA1_iA2, Wire_VIA1_iA3,
+		Wire_SoundVolb0, Wire_SoundVolb1, Wire_SoundVolb2, Wire_VIA1_iA3,
 		Wire_VIA1_iA4, Wire_VIA1_iA5, Wire_VIA1_iA6, Wire_VIA1_iA7
 	};
+	/* On Plus, VIA1 port B bit 3 is mouse button, bits 4-5 are mouse quadrature,
+	   bit 7 is SoundDisable.  Route these to functional wire IDs. */
 	v.portBWires = {
 		Wire_VIA1_iB0, Wire_VIA1_iB1, Wire_VIA1_iB2, Wire_VIA1_iB3,
-		Wire_VIA1_iB4, Wire_VIA1_iB5, Wire_VIA1_iB6, Wire_VIA1_iB7
+		Wire_VIA1_iB4, Wire_VIA1_iB5, Wire_VIA1_iB6, Wire_SoundDisable
 	};
 	v.cb2Wire       = Wire_VIA1_iCB2;
 	v.interruptWire = Wire_VIA1_InterruptRequest;
@@ -96,19 +101,22 @@ static VIAConfig MakeVIA1Config_SE() {
 	v.orbFloatVal      = 0xFF;
 	v.oraCanIn         = 0x80;
 	v.oraCanOut        = 0x7F;
-	v.orbCanIn         = 0x08;
-	v.orbCanOut        = 0xB7;
+	v.orbCanIn         = 0x09;  // bits 0,3: RTC data, ADB_Int
+	v.orbCanOut        = 0xF7;  // bits 0-2,4-5,7: RTC, ADB_st0, ADB_st1, Sound
 	v.ierNever0        = 0x00;
-	v.ierNever1        = 0x00;
+	v.ierNever1        = 0x18;  // bits 3,4 always 1
 	v.cb2ModesAllowed  = 0x01;
 	v.ca2ModesAllowed  = 0x01;
+	/* SE/Classic: port A bits 0-2 are sound volume (same as Plus) */
 	v.portAWires = {
-		Wire_VIA1_iA0, Wire_VIA1_iA1, Wire_VIA1_iA2, Wire_VIA1_iA3,
+		Wire_SoundVolb0, Wire_SoundVolb1, Wire_SoundVolb2, Wire_VIA1_iA3,
 		Wire_VIA1_iA4, Wire_VIA1_iA5, Wire_VIA1_iA6, Wire_VIA1_iA7
 	};
+	/* SE/Classic: port B bit 7 is SoundDisable (same as Plus).
+	   Bits 3-5 are ADB (ADB_Int, ADB_st0, ADB_st1), not mouse quadrature. */
 	v.portBWires = {
 		Wire_VIA1_iB0, Wire_VIA1_iB1, Wire_VIA1_iB2, Wire_VIA1_iB3,
-		Wire_VIA1_iB4, Wire_VIA1_iB5, Wire_VIA1_iB6, Wire_VIA1_iB7
+		Wire_VIA1_iB4, Wire_VIA1_iB5, Wire_VIA1_iB6, Wire_SoundDisable
 	};
 	v.cb2Wire       = Wire_VIA1_iCB2;
 	v.interruptWire = Wire_VIA1_InterruptRequest;
@@ -122,8 +130,8 @@ static VIAConfig MakeVIA1Config_PB100() {
 	v.orbFloatVal      = 0xFF;
 	v.oraCanIn         = 0xFF;  // all of port A readable (PMU bus)
 	v.oraCanOut        = 0xFF;  // all of port A writable (PMU bus)
-	v.orbCanIn         = 0x00;
-	v.orbCanOut        = 0xFF;
+	v.orbCanIn         = 0x02;  // bit 1: PMU interrupt
+	v.orbCanOut        = 0xFD;  // all except bit 1
 	v.ierNever0        = 0x00;
 	v.ierNever1        = 0x00;
 	v.cb2ModesAllowed  = 0x01;

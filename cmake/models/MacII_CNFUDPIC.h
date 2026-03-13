@@ -118,7 +118,8 @@
 
 /* VIA configuration now in VIAConfig (machine_config.h) */
 
-#define Mouse_Enabled() (!ADBMouseDisabled)
+/* Mouse_Enabled() is now a function in mouse.cpp — model-dependent */
+bool Mouse_Enabled(void);
 
 /* kExtn_Block_Base/kExtn_ln2Spc are now runtime — see MachineConfig */
 

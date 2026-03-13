@@ -37,6 +37,7 @@
 #include "devices/sony.h"
 #include "devices/video.h"
 #include "devices/adb.h"
+#include "devices/keyboard.h"
 #include "devices/rtc.h"
 #include "core/wire_bus.h"
 #include "cpu/cpu.h"
@@ -1711,6 +1712,9 @@ void VIAorSCCinterruptChngNtfy(void)
 		g_wires.onChange(Wire_VIA1_iB4_ADB_st0, [](){ if (auto* d = g_machine->findDevice<ADBDevice>()) d->stateChangeNtfy(); });
 		g_wires.onChange(Wire_VIA1_iB5_ADB_st1, [](){ if (auto* d = g_machine->findDevice<ADBDevice>()) d->stateChangeNtfy(); });
 		g_wires.onChange(Wire_VIA1_iCB2_ADB_Data, [](){ if (auto* d = g_machine->findDevice<ADBDevice>()) d->dataLineChngNtfy(); });
+	}
+	if (g_machine->config().emClassicKbrd) {
+		g_wires.onChange(Wire_VIA1_iCB2, [](){ if (auto* d = g_machine->findDevice<KeyboardDevice>()) d->dataLineChngNtfy(); });
 	}
 
 	g_cpu.init(
