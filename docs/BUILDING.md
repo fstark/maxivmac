@@ -26,16 +26,39 @@ cmake --build --preset macos-cocoa
 cp -R bld/macos-cocoa/minivmac.app ./
 ```
 
+The app bundle is at `bld/macos-cocoa/minivmac.app`. Drop a Mac ROM file next to the app and a System disk image onto the window to boot.
+
+## Runtime Model Selection
+
+The emulator is a single binary supporting multiple Mac models. Use command-line
+flags to select the model at launch:
+
 ```bash
-cmake --preset macos-cocoa \
-    -DMINIVMAC_SCREEN_WIDTH=1280 \
-    -DMINIVMAC_SCREEN_HEIGHT=1024 \
-    -DMINIVMAC_MAGNIFY_ENABLE=0 \
-    -DMINIVMAC_MAGNIFY_INIT=0
-cmake --build --preset macos-cocoa
+# Mac II (default)
+./minivmac.app/Contents/MacOS/minivmac --rom=MacII.ROM disk.hfs
+
+# Mac Plus
+./minivmac.app/Contents/MacOS/minivmac --model=Plus --rom=vMac.ROM disk.dsk
+
+# Mac SE
+./minivmac.app/Contents/MacOS/minivmac --model=SE --rom=MacSE.ROM disk.hfs
+
+# Custom RAM and screen
+./minivmac.app/Contents/MacOS/minivmac --model=II --ram=8M --screen=1024x768x8
 ```
 
-The app bundle is at `bld/macos-cocoa/minivmac.app`. Drop a Mac II ROM file (`MacII.ROM`) next to the app and a System 7 disk image onto the window to boot.
+### Command-Line Options
+
+| Flag | Description |
+|------|-------------|
+| `--model=MODEL` | Mac model: `Plus`, `SE`, `SEFDHD`, `Classic`, `PB100`, `II`, `IIx`, `128K`, `512Ke` |
+| `--rom=PATH` | Path to ROM file (overrides model default) |
+| `--ram=SIZE` | RAM size: `1M`, `2M`, `4M`, `8M`, etc. |
+| `--screen=WxHxD` | Screen: `512x342x1`, `640x480x8`, etc. (D = log2 bpp) |
+| `--speed=N` | Speed multiplier (1 = 1×, 4 = 4×, 0 = all-out) |
+| `--fullscreen` | Start in fullscreen mode |
+| `-h`, `--help` | Show help |
+| positional args | Disk image paths |
 
 ## Requirements
 
@@ -79,21 +102,19 @@ cmake --build bld
 | Option | Default | Description |
 |--------|---------|-------------|
 | `MINIVMAC_BACKEND` | `auto` | `cocoa`, `sdl`, or `auto` (Cocoa on macOS, SDL elsewhere) |
-| `MINIVMAC_MODEL` | `II` | Mac model. Currently: `II` |
 
-### Display
+### Display (build-time window defaults)
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `MINIVMAC_SCREEN_WIDTH` | `640` | Screen width in pixels |
-| `MINIVMAC_SCREEN_HEIGHT` | `480` | Screen height in pixels |
-| `MINIVMAC_SCREEN_DEPTH` | `3` | Bit depth (log2): 0=1bpp, 3=8bpp |
 | `MINIVMAC_MAGNIFY_ENABLE` | `1` | Allow window magnification |
 | `MINIVMAC_MAGNIFY_INIT` | `1` | Start magnified |
 | `MINIVMAC_WINDOW_SCALE` | `2` | Window scale factor |
 | `MINIVMAC_FULLSCREEN_VAR` | `1` | Variable fullscreen |
 | `MINIVMAC_FULLSCREEN_INIT` | `0` | Start in fullscreen |
 | `MINIVMAC_SPEED` | `4` | Speed (0–5, where 4 = 8×) |
+
+Note: Screen resolution, bit depth, and RAM size are now runtime — use `--screen` and `--ram` flags.
 
 ### Audio & Drives
 

@@ -23,14 +23,10 @@ set_property(CACHE MINIVMAC_BACKEND PROPERTY STRINGS auto cocoa sdl)
 set(MINIVMAC_MAINTAINER "egon.rath@gmail.com" CACHE STRING "Maintainer contact")
 set(MINIVMAC_HOMEPAGE "https://github.com/egrath" CACHE STRING "Project homepage")
 
-# Model selection — determines CPU, wire config, VIA layout
-set(MINIVMAC_MODEL "II" CACHE STRING "Mac model: II")
-set_property(CACHE MINIVMAC_MODEL PROPERTY STRINGS II)
+# Model selection — now runtime via --model flag.
+# MINIVMAC_MODEL is retained only as a hint for CNFUDOSG.h defaults.
 
-# Display
-set(MINIVMAC_SCREEN_WIDTH  "640" CACHE STRING "Screen width in pixels")
-set(MINIVMAC_SCREEN_HEIGHT "480" CACHE STRING "Screen height in pixels")
-set(MINIVMAC_SCREEN_DEPTH  "3"   CACHE STRING "Screen depth (log2 bits per pixel: 0=1bpp, 3=8bpp)")
+# Screen dimensions are now runtime — see MachineConfig.
 
 # Sound
 set(MINIVMAC_SOUND "1" CACHE STRING "Enable sound (1/0)")
@@ -156,33 +152,13 @@ configure_file(
 )
 
 # ---------------------------------------------------------------------------
-# Model-specific settings (ROM file, checksums, CNFUDPIC.h)
+# ROM / model defaults for CNFUDOSG.h template (compile-time fallbacks).
+# Actual ROM file, size, and base address are runtime — see MachineConfig.
 # ---------------------------------------------------------------------------
-if(MINIVMAC_MODEL STREQUAL "II")
-    set(MINIVMAC_ROM_FILE "MacII.ROM")
-    set(MINIVMAC_ROM_SIZE "0x00040000")
-    set(MINIVMAC_ROM_CHECKSUM1 "0x9779D2C4")
-    set(MINIVMAC_ROM_CHECKSUM2 "0x97221136")
-    set(MINIVMAC_CHECK_ROM_CHECKSUM "0")
-    set(MINIVMAC_MODEL_CNFUDPIC "${CMAKE_SOURCE_DIR}/cmake/models/MacII_CNFUDPIC.h")
-else()
-    message(FATAL_ERROR "Unknown model: ${MINIVMAC_MODEL}. Currently supported: II")
-endif()
-
-# Compute video RAM size: width * height * bytes_per_pixel, rounded up to
-# next power of two. Prevents VRAM overflow at non-standard resolutions.
-math(EXPR _pixels "${MINIVMAC_SCREEN_WIDTH} * ${MINIVMAC_SCREEN_HEIGHT}")
-math(EXPR _bpp "1 << ${MINIVMAC_SCREEN_DEPTH}")  # depth is log2(bpp)
-math(EXPR _vram_bytes "${_pixels} * ${_bpp} / 8")
-# Round up to next power of 2
-set(_pow2 65536)  # minimum 64KB
-while(_pow2 LESS _vram_bytes)
-    math(EXPR _pow2 "${_pow2} * 2")
-endwhile()
-# Format as hex for the C header
-math(EXPR _pow2_hex "${_pow2}" OUTPUT_FORMAT HEXADECIMAL)
-set(MINIVMAC_VIDMEM_SIZE "${_pow2_hex}")
-message(STATUS "Video RAM: ${MINIVMAC_SCREEN_WIDTH}x${MINIVMAC_SCREEN_HEIGHT}@${_bpp}bpp -> ${MINIVMAC_VIDMEM_SIZE}")
+set(MINIVMAC_ROM_FILE "MacII.ROM")
+set(MINIVMAC_ROM_CHECKSUM1 "0x9779D2C4")
+set(MINIVMAC_ROM_CHECKSUM2 "0x97221136")
+set(MINIVMAC_CHECK_ROM_CHECKSUM "0")
 
 # ---------------------------------------------------------------------------
 # Language → header mapping
@@ -223,11 +199,11 @@ configure_file(
     @ONLY
 )
 
-# Model-specific CNFUDPIC.h — uses @ONLY to substitute VRAM size
+# CNFUDPIC.h — now model-independent (all model-specific config is runtime).
 configure_file(
-    "${MINIVMAC_MODEL_CNFUDPIC}"
+    "${CMAKE_SOURCE_DIR}/src/config/CNFUDPIC.h"
     "${MINIVMAC_GENERATED_CFG_DIR}/CNFUDPIC.h"
-    @ONLY
+    COPYONLY
 )
 
 # CNFUIALL.h and CNFUIPIC.h are compiler/platform detection — copy as-is
