@@ -71,25 +71,46 @@ The architectural pivot that enables everything downstream. **Completed.**
 
 ## Phase 5 — Multi-Model Support & Runtime Configuration
 
-With the `Machine`/`Device`/`MachineConfig` infrastructure from Phase 4, complete the remaining compile-time → runtime conversions and make the emulator a true multi-model binary.
+**Completed.** A single binary now emulates any supported Mac model via `--model` flag.
 
-### 5a — Resolve remaining compile-time dependencies
-1. **Decouple VIA cross-dependencies**: `keyboard.cpp`, `sound.cpp`, `pmu.cpp` directly reference VIA symbols (`VIA1_ShiftInData`, etc.) which are only available when `EmClassicKbrd`/`EmClassicSnd`/`EmPMU` are 1. Abstract these through WireBus or device method calls so all three files always compile.
-2. **Per-model Wire topology**: Replace the single Wire enum in `CNFUDPIC.h` with a model-specific wire set created by `MachineConfigForModel()`. Mac Plus needs different wiring (no VIA2, no ADB, different VIA1 port assignments).
-3. **CPU instruction set selection**: Make `Use68020`/`EmFPU`/`EmMMU` runtime booleans. The 55 `#if Use68020` blocks in m68k.cpp become `if (config.use68020)` — branch predictor handles this at zero cost.
-4. **Dynamic memory sizes**: `kRAMa_Size`, `kRAMb_Size`, `kVidMemRAM_Size` → `MachineConfig` fields, allocated dynamically.
-5. **Remove remaining `#define` guards** from `CNFUDPIC.h`. The file should become nearly empty or be folded into `machine_config.h`.
+### What was done
 
-### 5b — Multi-model validation
-6. Validate Mac Plus (68000, classic keyboard, no VIA2, classic sound, 24-bit, 512×342 1-bit screen) alongside Mac II.
-7. Remove global device pointers (`g_via1`, `g_iwm`, etc.) and backward-compatible free-function API — all access goes through `Machine`.
+1. **Superset WireID enum + per-model topology factory** — replaced model-specific Wire enum with a single superset; per-model wire callbacks registered at init.
+2. **Device decoupling** — `keyboard.cpp`, `sound.cpp`, `pmu.cpp` always compile; VIA cross-dependencies resolved through WireBus + `findDevice<>()`.
+3. **CPU instruction set → runtime** — `Use68020`/`EmFPU`/`EmMMU` converted to runtime booleans via dispatch table fixup. 68000 and 68020 instruction sets selectable per-model.
+4. **Memory sizes → runtime** — `kRAMa_Size`, `kRAMb_Size`, `kVidMemRAM_Size` replaced by `MachineConfig` fields.
+5. **Screen sizes → runtime** — `vMacScreenWidth`/`Height`/`Depth` replaced by global variables set from `MachineConfig` at init.
+6. **Global device pointers removed** — all 17 `g_xxx` pointers eliminated; device access through `Machine::findDevice<>()`.
+7. **CLI argument parser** — `--model=`, `--rom=`, `--ram=`, `--screen=WxHxD`, `--speed=`, `--fullscreen`, positional disk paths.
+8. **Dynamic ROM loading** — ROM size, base address, and filename from `MachineConfig`; each of 12 models has correct ROM config.
+9. **CMake cleanup** — removed MINIVMAC_MODEL, screen dimension options; CNFUDPIC.h is now model-independent.
+10. **Multi-model validation** — fixed extnBlockBase for 24-bit compact Macs, corrected ROM filenames and sizes for Twig43/Kanji/SEFDHD/Classic.
 
-### 5c — Runtime configuration interface
-8. Load `MachineConfig` from TOML/JSON file or command-line args (model, CPU, RAM, screen, ROM path, disk images, speed, sound).
-9. Replace compile-time screen constants (`vMacScreenWidth`, `vMacScreenHeight`, `vMacScreenDepth`) with `MachineConfig` fields. Allocate screen buffer dynamically.
-10. Remove the need for multiple binaries: a single binary can emulate any supported Mac model.
+### What remains compile-time
 
-**Result:** `./minivmac --model=MacII --ram=8M --screen=800x600x8 --rom=MacII.ROM disk1.img`
+- `Use68020`/`EmFPU`/`EmMMU` in `CNFUDPIC.h` (always 1; runtime dispatch handles variation)
+- `WantCycByPriOp`/`WantCloserCyc` (cycle accuracy flags)
+- `IncludeExtnPbufs`/`IncludeExtnHostTextClipExchange` (extension features)
+- `Sony_SupportDC42`/`Sony_SupportTags` (floppy format support)
+- `MySoundEnabled` and sound constants
+- `NumDrives` (max disk drives)
+- Wire aliases and ChangeNtfy aliases (VIA callback wiring)
+- PRAM defaults (`CaretBlinkTime`, etc.)
+- `WantDisasm`/`ExtraAbnormalReports` (debug features)
+- Some device-internal static state (`SCC`, `ASC_ChanA`, `RTC`) — file-scoped, not blocking multi-model; deferred to Phase 7 (multi-instance).
+
+### Remaining globals (file-scoped statics)
+
+| Location | State | Purpose |
+|----------|-------|---------|
+| `scc.cpp:SCC` | `SCC_Ty` struct | SCC chip state |
+| `asc.cpp:ASC_ChanA[4]` | `ASC_ChanR[4]` | ASC channel registers |
+| `rtc.cpp:RTC` | `RTC_Ty` struct | RTC chip state |
+| `machine.cpp:g_extnDevice` | `ExtnDevice` | Extension mechanism |
+| `main.cpp:s_machine` | `unique_ptr<Machine>` | Main machine instance (intentional) |
+| `main.cpp:s_launchConfig` | `LaunchConfig` | Parsed CLI config (intentional) |
+
+**Result:** `./minivmac --model=II --rom=MacII.ROM disk.img` or `./minivmac --model=Plus --rom=vMac.ROM --ram=4M disk.img`
 
 ---
 
