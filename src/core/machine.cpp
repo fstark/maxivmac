@@ -34,6 +34,8 @@
 #include "devices/scsi.h"
 #include "devices/iwm.h"
 #include "devices/asc.h"
+#include "devices/sony.h"
+#include "devices/video.h"
 #include "core/wire_bus.h"
 #include "cpu/cpu.h"
 #include "core/machine_obj.h"
@@ -46,17 +48,9 @@
 	ReportAbnormalID ranges unused 0x12xx - 0xFFxx
 */
 
-extern void IWM_Reset(void);
 extern void SCC_Reset(void);
 extern void VIA1_Reset(void);
 extern void VIA2_Reset(void);
-extern void Sony_Reset(void);
-
-extern void ExtnDisk_Access(uint32_t p);
-extern void ExtnSony_Access(uint32_t p);
-extern void ExtnVideo_Access(uint32_t p);
-
-extern void Sony_SetQuitOnEject(void);
 
 extern uint8_t get_vm_byte(uint32_t addr);
 extern uint16_t get_vm_word(uint32_t addr);
@@ -70,12 +64,12 @@ uint32_t my_disk_icon_addr;
 
 void customreset(void)
 {
-	IWM_Reset();
+	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
 	SCC_Reset();
 	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
 	if (g_machine->config().emVIA1) VIA1_Reset();
 	if (g_machine->config().emVIA2) VIA2_Reset();
-	Sony_Reset();
+	if (auto* d = g_machine->findDevice<SonyDevice>()) d->reset();
 	Extn_Reset();
 	if (g_machine->config().isCompactMac()) {
 		WantMacReset = true;
@@ -571,7 +565,7 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 							ExtnFind_Access(p);
 							break;
 						case kExtnVideo:
-							ExtnVideo_Access(p);
+							if (auto* d = g_machine->findDevice<VideoDevice>()) d->extnVideoAccess(p);
 							break;
 #if IncludeExtnPbufs
 						case kExtnParamBuffers:
@@ -584,10 +578,10 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 							break;
 #endif
 						case kExtnDisk:
-							ExtnDisk_Access(p);
+							if (auto* d = g_machine->findDevice<SonyDevice>()) d->extnDiskAccess(p);
 							break;
 						case kExtnSony:
-							ExtnSony_Access(p);
+							if (auto* d = g_machine->findDevice<SonyDevice>()) d->extnSonyAccess(p);
 							break;
 						default:
 							put_vm_word(p + ExtnDat_result,
@@ -599,7 +593,7 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 			break;
 		case kDSK_QuitOnEject:
 			/* obsolete, kept for compatibility */
-			Sony_SetQuitOnEject();
+			if (auto* d = g_machine->findDevice<SonyDevice>()) d->setQuitOnEject();
 			break;
 	}
 }
@@ -910,7 +904,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_IWM;
-	r.device = g_iwm;
+	r.device = g_machine->findDevice<IWMDevice>();
 	AddToATTList(&r);
 
 #if 0
@@ -1311,7 +1305,7 @@ static void SetUp_address_compact(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_IWM;
-	r.device = g_iwm;
+	r.device = g_machine->findDevice<IWMDevice>();
 	AddToATTList(&r);
 }
 

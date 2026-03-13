@@ -35,12 +35,3 @@ public:
 	void update();
 };
 
-extern SonyDevice* g_sony;
-
-// Backward-compatible free function API
-extern void ExtnDisk_Access(uint32_t p);
-extern void ExtnSony_Access(uint32_t p);
-extern void Sony_SetQuitOnEject(void);
-extern void Sony_EjectAllDisks(void);
-extern void Sony_Reset(void);
-extern void Sony_Update(void);

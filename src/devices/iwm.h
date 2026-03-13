@@ -27,8 +27,3 @@ public:
 	const char* name() const override { return "IWM"; }
 };
 
-extern IWMDevice* g_iwm;
-
-// Backward-compatible free function API
-extern void IWM_Reset(void);
-extern uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr);

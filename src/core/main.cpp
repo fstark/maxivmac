@@ -56,19 +56,19 @@ static void EmulatedHardwareZap(void)
 {
 	Memory_Reset();
 	ICT_Zap();
-	IWM_Reset();
+	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
 	SCC_Reset();
 	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
 	if (g_machine->config().emVIA1) VIA1_Zap();
 	if (g_machine->config().emVIA2) VIA2_Zap();
-	Sony_Reset();
+	if (auto* d = g_machine->findDevice<SonyDevice>()) d->reset();
 	Extn_Reset();
 	g_cpu.reset();
 }
 
 static void DoMacReset(void)
 {
-	Sony_EjectAllDisks();
+	if (auto* d = g_machine->findDevice<SonyDevice>()) d->ejectAllDisks();
 	EmulatedHardwareZap();
 }
 
@@ -141,19 +141,20 @@ static void SixtiethSecondNotify(void)
 #if dbglog_HAVE && 0
 	dbglog_WriteNote("begin new Sixtieth");
 #endif
-	Mouse_Update();
+	if (auto* d = g_machine->findDevice<MouseDevice>()) d->update();
 	InterruptReset_Update();
 	if (g_machine->config().emClassicKbrd) KeyBoard_Update();
 	if (g_machine->config().emADB) ADB_Update();
 
 	Sixtieth_PulseNtfy(); /* Vertical Blanking Interrupt */
-	Sony_Update();
+	if (auto* d = g_machine->findDevice<SonyDevice>()) d->update();
 
 #if EmLocalTalk
 	LocalTalkTick();
 #endif
 	if (g_machine->config().emRTC) RTC_Interrupt();
-	if (g_machine->config().emVidCard) Vid_Update();
+	if (g_machine->config().emVidCard)
+		if (auto* d = g_machine->findDevice<VideoDevice>()) d->update();
 
 	SubTickTaskStart();
 }
@@ -161,7 +162,7 @@ static void SixtiethSecondNotify(void)
 static void SixtiethEndNotify(void)
 {
 	SubTickTaskEnd();
-	Mouse_EndTickNotify();
+	if (auto* d = g_machine->findDevice<MouseDevice>()) d->endTickNotify();
 	Screen_EndTickNotify();
 #if dbglog_HAVE && 0
 	dbglog_WriteNote("end Sixtieth");
@@ -233,7 +234,10 @@ static bool InitEmulation(void)
 	bool ok = true;
 	if (ok && g_machine->config().emRTC) ok = RTC_Init();
 	if (ok) { auto* rom = g_machine->findDevice<ROMDevice>(); ok = rom ? rom->init() : false; }
-	if (ok && g_machine->config().emVidCard) ok = Vid_Init();
+	if (ok && g_machine->config().emVidCard) {
+		auto* vid = g_machine->findDevice<VideoDevice>();
+		ok = vid ? vid->init() : false;
+	}
 	if (ok) ok = AddrSpac_Init();
 	if (ok) {
 		EmulatedHardwareZap();

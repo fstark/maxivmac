@@ -31,8 +31,3 @@ public:
 	void endTickNotify();
 };
 
-extern MouseDevice* g_mouse;
-
-// Backward-compatible free function API
-extern void Mouse_Update(void);
-extern void Mouse_EndTickNotify(void);
