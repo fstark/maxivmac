@@ -39,6 +39,7 @@
 
 
 #include "core/main.h"
+#include "core/config_loader.h"
 #include "core/machine_obj.h"
 #include "core/machine_config.h"
 #include "core/ict_scheduler.h"
@@ -447,10 +448,23 @@ static void MainEventLoop(void)
 }
 
 static std::unique_ptr<Machine> s_machine;
+static LaunchConfig s_launchConfig;
 
-void ProgramEarlyInit(void)
+const LaunchConfig& GetLaunchConfig(void)
 {
-	MachineConfig config = MachineConfigForModel(MacModel::II);
+	return s_launchConfig;
+}
+
+void ProgramEarlyInit(int argc, char* argv[])
+{
+	s_launchConfig = ParseCommandLine(argc, argv);
+
+	if (s_launchConfig.help) {
+		PrintUsage(argv[0]);
+		// Help flag will be checked by caller to exit early
+	}
+
+	MachineConfig config = BuildMachineConfig(s_launchConfig);
 	s_machine = std::make_unique<Machine>(std::move(config));
 	s_machine->init();
 }
