@@ -45,7 +45,6 @@
 #include "core/machine_obj.h"
 
 /* Global singleton */
-SCCDevice* g_scc = nullptr;
 
 /*
 	ReportAbnormalID unused 0x074D - 0x07FF
@@ -1889,7 +1888,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 			} else {
 				/* look for a packet */
 				if (0 != chan) {
-					LocalTalkTick();
+					g_machine->findDevice<SCCDevice>()->localTalkTick();
 				}
 			}
 #endif
@@ -2335,7 +2334,7 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 			if (!g_machine->config().isSEOrLater()) {
 				ReportAbnormalID(0x0726, "SCC_Reset");
 			}
-			SCC_Reset();
+			g_machine->findDevice<SCCDevice>()->reset();
 			CheckSCCInterruptFlag();
 			break;
 		case 0: /* No Reset */
@@ -2969,27 +2968,3 @@ static void SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 
 	return Data;
 }
-
-/* ===== Backward-compatible free function API ===== */
-
-void SCC_Reset(void)
-{
-	g_scc->reset();
-}
-
-uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr)
-{
-	return g_scc->access(Data, WriteMem, addr);
-}
-
-bool SCC_InterruptsEnabled(void)
-{
-	return g_scc->interruptsEnabled();
-}
-
-#if EmLocalTalk
-void LocalTalkTick(void)
-{
-	g_scc->localTalkTick();
-}
-#endif

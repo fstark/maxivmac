@@ -55,10 +55,3 @@ private:
 	int inquiryCommandTimer_ = 0;
 };
 
-extern KeyboardDevice* g_keyboard;
-
-// Backward-compatible free function API
-extern void Kybd_DataLineChngNtfy(void);
-extern void DoKybd_ReceiveEndCommand(void);
-extern void DoKybd_ReceiveCommand(void);
-extern void KeyBoard_Update(void);

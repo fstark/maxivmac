@@ -33,10 +33,3 @@ public:
 	void update();
 };
 
-extern ADBDevice* g_adb;
-
-// Backward-compatible free function API
-extern void ADBstate_ChangeNtfy(void);
-extern void ADB_DoNewState(void);
-extern void ADB_DataLineChngNtfy(void);
-extern void ADB_Update(void);

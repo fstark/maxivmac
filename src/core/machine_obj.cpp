@@ -40,17 +40,10 @@ Machine::~Machine()
 	// Clear all global device pointers before devices are destroyed.
 	// The unique_ptrs in devices_ will be destroyed after this runs,
 	// so we must null-out the raw pointers first.
-	g_scc = nullptr;
-
 	g_screen = nullptr;
 	g_via1 = nullptr;
 	g_via2 = nullptr;
 	g_rtc = nullptr;
-	g_adb = nullptr;
-
-	g_keyboard = nullptr;
-	g_sound = nullptr;
-
 
 	if (g_machine == this) {
 		g_machine = nullptr;
@@ -75,11 +68,7 @@ bool Machine::init()
 
 	// Always-present devices
 	addDevice(std::make_unique<IWMDevice>());
-	{
-		auto dev = std::make_unique<SCCDevice>();
-		g_scc = dev.get();
-		addDevice(std::move(dev));
-	}
+	addDevice(std::make_unique<SCCDevice>());
 	addDevice(std::make_unique<SCSIDevice>());
 	addDevice(std::make_unique<ROMDevice>());
 	addDevice(std::make_unique<SonyDevice>());
@@ -107,9 +96,7 @@ bool Machine::init()
 		addDevice(std::move(dev));
 	}
 	if (config_.emADB) {
-		auto dev = std::make_unique<ADBDevice>();
-		g_adb = dev.get();
-		addDevice(std::move(dev));
+		addDevice(std::make_unique<ADBDevice>());
 	}
 	if (config_.emASC) {
 		addDevice(std::make_unique<ASCDevice>());
@@ -118,14 +105,10 @@ bool Machine::init()
 		addDevice(std::make_unique<VideoDevice>());
 	}
 	if (config_.emClassicKbrd) {
-		auto dev = std::make_unique<KeyboardDevice>();
-		g_keyboard = dev.get();
-		addDevice(std::move(dev));
+		addDevice(std::make_unique<KeyboardDevice>());
 	}
 	if (config_.emClassicSnd) {
-		auto dev = std::make_unique<SoundDevice>();
-		g_sound = dev.get();
-		addDevice(std::move(dev));
+		addDevice(std::make_unique<SoundDevice>());
 	}
 	if (config_.emPMU) {
 		addDevice(std::make_unique<PMUDevice>());

@@ -40,14 +40,3 @@ public:
 #endif
 };
 
-// Global singleton pointer (for backward compatibility during migration)
-extern SCCDevice* g_scc;
-
-// Backward-compatible free function API (forwards to g_scc)
-extern void SCC_Reset(void);
-extern uint32_t SCC_Access(uint32_t Data, bool WriteMem, uint32_t addr);
-extern bool SCC_InterruptsEnabled(void);
-
-#if EmLocalTalk
-extern void LocalTalkTick(void);
-#endif
