@@ -21,6 +21,7 @@
 #include "core/common.h"
 
 #include "devices/pmu.h"
+#include "core/machine_obj.h"
 #include "core/wire_bus.h"
 #include "core/wire_ids.h"
 
@@ -326,7 +327,7 @@ void PMUDevice::checkCommandCompletion()
 			i_ = 0;
 			sending_ = true;
 			ICT_add(kICT_PMU_Task,
-				20400UL * kCycleScale / 64 * kMyClockMult);
+				20400UL * kCycleScale / 64 * machine_->config().clockMult);
 		}
 	}
 }
@@ -395,7 +396,7 @@ void PMUDevice::toReadyChangeNtfy()
 				state_ = kPMUStateSendBuffer;
 				sending_ = true;
 				ICT_add(kICT_PMU_Task,
-					20400UL * kCycleScale / 64 * kMyClockMult);
+					20400UL * kCycleScale / 64 * machine_->config().clockMult);
 			}
 			break;
 		case kPMUStateSendBuffer:
@@ -420,7 +421,7 @@ void PMUDevice::toReadyChangeNtfy()
 					++i_;
 					sending_ = true;
 					ICT_add(kICT_PMU_Task,
-						20400UL * kCycleScale / 64 * kMyClockMult);
+						20400UL * kCycleScale / 64 * machine_->config().clockMult);
 				}
 			}
 			break;

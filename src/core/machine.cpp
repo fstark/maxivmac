@@ -1273,8 +1273,8 @@ static void SetUp_address_compact(void)
 	r.device = g_machine->findDevice<SCCDevice>();
 	AddToATTList(&r);
 
-	r.cmpmask = 0x00FFFFFF & ~ ((1 << kExtn_ln2Spc) - 1);
-	r.cmpvalu = kExtn_Block_Base;
+	r.cmpmask = 0x00FFFFFF & ~ ((1 << g_machine->config().extnLn2Spc) - 1);
+	r.cmpvalu = g_machine->config().extnBlockBase;
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_Extn;

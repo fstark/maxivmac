@@ -172,7 +172,7 @@ void KeyboardDevice::dataLineChngNtfy()
 				fprintf(stderr, "posting kICT_Kybd_ReceiveCommand\n");
 #endif
 				ICT_add(kICT_Kybd_ReceiveCommand,
-					6800UL * kCycleScale / 64 * kMyClockMult);
+					6800UL * kCycleScale / 64 * machine_->config().clockMult);
 
 				if (inquiryCommandTimer_ != 0) {
 					inquiryCommandTimer_ = 0; /* abort Inquiry */
@@ -187,7 +187,7 @@ void KeyboardDevice::dataLineChngNtfy()
 					"posting kICT_Kybd_ReceiveEndCommand\n");
 #endif
 				ICT_add(kICT_Kybd_ReceiveEndCommand,
-					6800UL * kCycleScale / 64 * kMyClockMult);
+					6800UL * kCycleScale / 64 * machine_->config().clockMult);
 			}
 			break;
 		default:

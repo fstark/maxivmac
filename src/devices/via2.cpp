@@ -277,7 +277,7 @@ uint8_t VIA2Device::shiftOutData()
 	}
 }
 
-#define CyclesPerViaTime (10 * kMyClockMult)
+#define CyclesPerViaTime (10 * machine_->config().clockMult)
 #define CyclesScaledPerViaTime (kCycleScale * CyclesPerViaTime)
 
 void VIA2Device::doTimer1Check()
