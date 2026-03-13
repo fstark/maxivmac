@@ -6,9 +6,10 @@
 */
 
 #define RomFileName "@MINIVMAC_ROM_FILE@"
-#define kCheckSumRom_Size @MINIVMAC_ROM_SIZE@
-#define kRomCheckSum1 @MINIVMAC_ROM_CHECKSUM1 @
-#define kRomCheckSum2 @MINIVMAC_ROM_CHECKSUM2 @
+/* kCheckSumRom_Size is now runtime — see MachineConfig::romSize */
+#define kCheckSumRom_Size 0x00040000
+#define kRomCheckSum1 @MINIVMAC_ROM_CHECKSUM1@
+#define kRomCheckSum2 @MINIVMAC_ROM_CHECKSUM2@
 #define CheckRomCheckSum @MINIVMAC_CHECK_ROM_CHECKSUM@
 #define RomStartCheckSum 1
 #define SaveDialogEnable 1
