@@ -35,7 +35,6 @@
 #include "core/machine_obj.h"
 
 /* Global singleton */
-IWMDevice* g_iwm = nullptr;
 
 #define IWM_dolog (dbglog_HAVE && 0)
 
@@ -213,16 +212,4 @@ static void IWM_Write_Reg(uint8_t in)
 	}
 
 	return Data;
-}
-
-/* ===== Backward-compatible free function API ===== */
-
-void IWM_Reset(void)
-{
-	g_iwm->reset();
-}
-
-uint32_t IWM_Access(uint32_t Data, bool WriteMem, uint32_t addr)
-{
-	return g_iwm->access(Data, WriteMem, addr);
 }

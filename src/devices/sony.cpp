@@ -35,7 +35,6 @@
 #include "devices/sony.h"
 #include "core/machine_obj.h"
 
-SonyDevice* g_sony = nullptr;
 
 /*
 	ReportAbnormalID unused 0x090B - 0x09FF
@@ -1699,11 +1698,3 @@ void SonyDevice::extnSonyAccess(uint32_t p)
 
 	put_vm_word(p + ExtnDat_result, result);
 }
-
-// Backward-compatible forwarding stubs
-void ExtnDisk_Access(uint32_t p) { if (g_sony) g_sony->extnDiskAccess(p); }
-void ExtnSony_Access(uint32_t p) { if (g_sony) g_sony->extnSonyAccess(p); }
-void Sony_SetQuitOnEject(void) { if (g_sony) g_sony->setQuitOnEject(); }
-void Sony_EjectAllDisks(void) { if (g_sony) g_sony->ejectAllDisks(); }
-void Sony_Reset(void) { if (g_sony) g_sony->reset(); }
-void Sony_Update(void) { if (g_sony) g_sony->update(); }

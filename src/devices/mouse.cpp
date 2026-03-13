@@ -32,7 +32,6 @@
 #include "devices/mouse.h"
 
 /* Global singleton */
-MouseDevice* g_mouse = nullptr;
 
 void MouseDevice::update()
 {
@@ -118,8 +117,3 @@ void MouseDevice::endTickNotify()
 		CurMouseH = get_ram_word(0x082E);
 	}
 }
-
-/* ===== Backward-compatible free function API ===== */
-
-void Mouse_Update(void) { g_mouse->update(); }
-void Mouse_EndTickNotify(void) { g_mouse->endTickNotify(); }

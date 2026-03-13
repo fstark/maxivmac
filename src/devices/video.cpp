@@ -33,7 +33,6 @@
 #include "core/wire_bus.h"
 #include "core/machine_obj.h"
 
-VideoDevice* g_video = nullptr;
 
 
 
@@ -992,10 +991,3 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 
 	put_vm_word(p + ExtnDat_result, result);
 }
-
-// Backward-compatible forwarding stubs
-bool Vid_Init(void) { return g_video ? g_video->init() : false; }
-uint16_t Vid_Reset(void) { return g_video ? g_video->vidReset() : 128; }
-void Vid_Update(void) { if (g_video) g_video->update(); }
-void ExtnVideo_Access(uint32_t p) { if (g_video) g_video->extnVideoAccess(p); }
-

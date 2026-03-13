@@ -40,18 +40,14 @@ Machine::~Machine()
 	// Clear all global device pointers before devices are destroyed.
 	// The unique_ptrs in devices_ will be destroyed after this runs,
 	// so we must null-out the raw pointers first.
-	g_iwm = nullptr;
 	g_scc = nullptr;
 
-	g_sony = nullptr;
-	g_mouse = nullptr;
 	g_screen = nullptr;
 	g_via1 = nullptr;
 	g_via2 = nullptr;
 	g_rtc = nullptr;
 	g_adb = nullptr;
 
-	g_video = nullptr;
 	g_keyboard = nullptr;
 	g_sound = nullptr;
 
@@ -78,11 +74,7 @@ bool Machine::init()
 	// The order doesn't matter for construction, but we group by subsystem.
 
 	// Always-present devices
-	{
-		auto dev = std::make_unique<IWMDevice>();
-		g_iwm = dev.get();
-		addDevice(std::move(dev));
-	}
+	addDevice(std::make_unique<IWMDevice>());
 	{
 		auto dev = std::make_unique<SCCDevice>();
 		g_scc = dev.get();
@@ -90,16 +82,8 @@ bool Machine::init()
 	}
 	addDevice(std::make_unique<SCSIDevice>());
 	addDevice(std::make_unique<ROMDevice>());
-	{
-		auto dev = std::make_unique<SonyDevice>();
-		g_sony = dev.get();
-		addDevice(std::move(dev));
-	}
-	{
-		auto dev = std::make_unique<MouseDevice>();
-		g_mouse = dev.get();
-		addDevice(std::move(dev));
-	}
+	addDevice(std::make_unique<SonyDevice>());
+	addDevice(std::make_unique<MouseDevice>());
 	{
 		auto dev = std::make_unique<ScreenDevice>();
 		g_screen = dev.get();
@@ -131,9 +115,7 @@ bool Machine::init()
 		addDevice(std::make_unique<ASCDevice>());
 	}
 	if (config_.emVidCard) {
-		auto dev = std::make_unique<VideoDevice>();
-		g_video = dev.get();
-		addDevice(std::move(dev));
+		addDevice(std::make_unique<VideoDevice>());
 	}
 	if (config_.emClassicKbrd) {
 		auto dev = std::make_unique<KeyboardDevice>();

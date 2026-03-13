@@ -33,10 +33,3 @@ public:
 	void extnVideoAccess(uint32_t p);
 };
 
-extern VideoDevice* g_video;
-
-// Backward-compatible free function API
-extern bool Vid_Init(void);
-extern uint16_t Vid_Reset(void);
-extern void Vid_Update(void);
-extern void ExtnVideo_Access(uint32_t p);
