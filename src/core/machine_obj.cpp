@@ -37,14 +37,6 @@ Machine::Machine(MachineConfig config)
 
 Machine::~Machine()
 {
-	// Clear all global device pointers before devices are destroyed.
-	// The unique_ptrs in devices_ will be destroyed after this runs,
-	// so we must null-out the raw pointers first.
-	g_screen = nullptr;
-	g_via1 = nullptr;
-	g_via2 = nullptr;
-	g_rtc = nullptr;
-
 	if (g_machine == this) {
 		g_machine = nullptr;
 	}
@@ -73,27 +65,17 @@ bool Machine::init()
 	addDevice(std::make_unique<ROMDevice>());
 	addDevice(std::make_unique<SonyDevice>());
 	addDevice(std::make_unique<MouseDevice>());
-	{
-		auto dev = std::make_unique<ScreenDevice>();
-		g_screen = dev.get();
-		addDevice(std::move(dev));
-	}
+	addDevice(std::make_unique<ScreenDevice>());
 
 	// Conditional devices based on config
 	if (config_.emVIA1) {
-		auto dev = std::make_unique<VIA1Device>();
-		g_via1 = dev.get();
-		addDevice(std::move(dev));
+		addDevice(std::make_unique<VIA1Device>());
 	}
 	if (config_.emVIA2) {
-		auto dev = std::make_unique<VIA2Device>();
-		g_via2 = dev.get();
-		addDevice(std::move(dev));
+		addDevice(std::make_unique<VIA2Device>());
 	}
 	if (config_.emRTC) {
-		auto dev = std::make_unique<RTCDevice>();
-		g_rtc = dev.get();
-		addDevice(std::move(dev));
+		addDevice(std::make_unique<RTCDevice>());
 	}
 	if (config_.emADB) {
 		addDevice(std::make_unique<ADBDevice>());

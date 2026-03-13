@@ -31,7 +31,3 @@ public:
 	void endTickNotify();
 };
 
-extern ScreenDevice* g_screen;
-
-// Backward-compatible free function API
-extern void Screen_EndTickNotify(void);

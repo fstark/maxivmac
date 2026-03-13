@@ -29,7 +29,6 @@
 
 #include "devices/screen.h"
 
-ScreenDevice* g_screen = nullptr;
 
 #define kMain_Offset      0x5900
 #define kAlternate_Offset 0xD900
@@ -49,6 +48,3 @@ void ScreenDevice::endTickNotify()
 
 	Screen_OutputFrame(screencurrentbuff);
 }
-
-// Backward-compatible forwarding stubs
-void Screen_EndTickNotify(void) { if (g_screen) g_screen->endTickNotify(); }

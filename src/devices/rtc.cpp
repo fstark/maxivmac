@@ -24,7 +24,7 @@
 
 #include "core/common.h"
 
-
+#include "devices/via.h"
 
 /* define _RTC_Debug */
 #ifdef _RTC_Debug
@@ -36,7 +36,6 @@
 #include "core/machine_obj.h"
 
 /* Global singleton */
-RTCDevice* g_rtc = nullptr;
 
 /* All supported models (Plus through IIx) have XPRAM */
 #define PARAMRAMSize 256
@@ -288,10 +287,6 @@ void DumpRTC(void)
 	return true;
 }
 
-#ifdef RTC_OneSecond_PulseNtfy
-extern void RTC_OneSecond_PulseNtfy(void);
-#endif
-
 void RTCDevice::interrupt()
 {
 	uint32_t Seconds = 0;
@@ -309,9 +304,8 @@ void RTCDevice::interrupt()
 
 		LastRealDate = NewRealDate;
 
-#ifdef RTC_OneSecond_PulseNtfy
-		RTC_OneSecond_PulseNtfy();
-#endif
+		if (auto* via1 = machine_->findDevice<VIA1Device>())
+			via1->iCA2_PulseNtfy();
 	}
 }
 
@@ -489,11 +483,4 @@ void RTCDevice::dataLineChangeNtfy()
 #endif
 }
 
-/* ===== Backward-compatible free function API ===== */
-
-bool RTC_Init(void) { return g_rtc->init(); }
-void RTC_Interrupt(void) { g_rtc->interrupt(); }
-void RTCunEnabled_ChangeNtfy(void) { g_rtc->unEnabledChangeNtfy(); }
-void RTCclock_ChangeNtfy(void) { g_rtc->clockChangeNtfy(); }
-void RTCdataLine_ChangeNtfy(void) { g_rtc->dataLineChangeNtfy(); }
 

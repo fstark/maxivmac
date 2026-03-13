@@ -59,8 +59,8 @@ static void EmulatedHardwareZap(void)
 	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<SCCDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
-	if (g_machine->config().emVIA1) VIA1_Zap();
-	if (g_machine->config().emVIA2) VIA2_Zap();
+	if (auto* d = g_machine->findDevice<VIA1Device>()) d->zap();
+	if (auto* d = g_machine->findDevice<VIA2Device>()) d->zap();
 	if (auto* d = g_machine->findDevice<SonyDevice>()) d->reset();
 	Extn_Reset();
 	g_cpu.reset();
@@ -148,13 +148,13 @@ static void SixtiethSecondNotify(void)
 	if (g_machine->config().emADB)
 		if (auto* d = g_machine->findDevice<ADBDevice>()) d->update();
 
-	Sixtieth_PulseNtfy(); /* Vertical Blanking Interrupt */
+	if (auto* d = g_machine->findDevice<VIA1Device>()) d->iCA1_PulseNtfy(); /* Vertical Blanking Interrupt */
 	if (auto* d = g_machine->findDevice<SonyDevice>()) d->update();
 
 #if EmLocalTalk
 	if (auto* d = g_machine->findDevice<SCCDevice>()) d->localTalkTick();
 #endif
-	if (g_machine->config().emRTC) RTC_Interrupt();
+	if (auto* d = g_machine->findDevice<RTCDevice>()) d->interrupt();
 	if (g_machine->config().emVidCard)
 		if (auto* d = g_machine->findDevice<VideoDevice>()) d->update();
 
@@ -165,7 +165,7 @@ static void SixtiethEndNotify(void)
 {
 	SubTickTaskEnd();
 	if (auto* d = g_machine->findDevice<MouseDevice>()) d->endTickNotify();
-	Screen_EndTickNotify();
+	if (auto* d = g_machine->findDevice<ScreenDevice>()) d->endTickNotify();
 #if dbglog_HAVE && 0
 	dbglog_WriteNote("end Sixtieth");
 #endif
@@ -177,14 +177,14 @@ static void ExtraTimeBeginNotify(void)
 	dbglog_writeCStr("begin extra time");
 	dbglog_writeReturn();
 #endif
-	if (g_machine->config().emVIA1) VIA1_ExtraTimeBegin();
-	if (g_machine->config().emVIA2) VIA2_ExtraTimeBegin();
+	if (auto* d = g_machine->findDevice<VIA1Device>()) d->extraTimeBegin();
+	if (auto* d = g_machine->findDevice<VIA2Device>()) d->extraTimeBegin();
 }
 
 static void ExtraTimeEndNotify(void)
 {
-	if (g_machine->config().emVIA1) VIA1_ExtraTimeEnd();
-	if (g_machine->config().emVIA2) VIA2_ExtraTimeEnd();
+	if (auto* d = g_machine->findDevice<VIA1Device>()) d->extraTimeEnd();
+	if (auto* d = g_machine->findDevice<VIA2Device>()) d->extraTimeEnd();
 #if 0
 	dbglog_writeCStr("end extra time");
 	dbglog_writeReturn();
@@ -225,16 +225,19 @@ static bool InitEmulation(void)
 	if (g_machine->config().emPMU)
 		g_ict.registerTask(kICT_PMU_Task, [](){ if (auto* d = g_machine->findDevice<PMUDevice>()) d->doTask(); });
 	if (g_machine->config().emVIA1) {
-		g_ict.registerTask(kICT_VIA1_Timer1Check, VIA1_DoTimer1Check);
-		g_ict.registerTask(kICT_VIA1_Timer2Check, VIA1_DoTimer2Check);
+		g_ict.registerTask(kICT_VIA1_Timer1Check, [](){ if (auto* d = g_machine->findDevice<VIA1Device>()) d->doTimer1Check(); });
+		g_ict.registerTask(kICT_VIA1_Timer2Check, [](){ if (auto* d = g_machine->findDevice<VIA1Device>()) d->doTimer2Check(); });
 	}
 	if (g_machine->config().emVIA2) {
-		g_ict.registerTask(kICT_VIA2_Timer1Check, VIA2_DoTimer1Check);
-		g_ict.registerTask(kICT_VIA2_Timer2Check, VIA2_DoTimer2Check);
+		g_ict.registerTask(kICT_VIA2_Timer1Check, [](){ if (auto* d = g_machine->findDevice<VIA2Device>()) d->doTimer1Check(); });
+		g_ict.registerTask(kICT_VIA2_Timer2Check, [](){ if (auto* d = g_machine->findDevice<VIA2Device>()) d->doTimer2Check(); });
 	}
 
 	bool ok = true;
-	if (ok && g_machine->config().emRTC) ok = RTC_Init();
+	if (ok && g_machine->config().emRTC) {
+		auto* rtc = g_machine->findDevice<RTCDevice>();
+		ok = rtc ? rtc->init() : false;
+	}
 	if (ok) { auto* rom = g_machine->findDevice<ROMDevice>(); ok = rom ? rom->init() : false; }
 	if (ok && g_machine->config().emVidCard) {
 		auto* vid = g_machine->findDevice<VideoDevice>();

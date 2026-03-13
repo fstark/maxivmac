@@ -34,11 +34,3 @@ public:
 	void dataLineChangeNtfy();
 };
 
-extern RTCDevice* g_rtc;
-
-// Backward-compatible free function API
-extern bool RTC_Init(void);
-extern void RTC_Interrupt(void);
-extern void RTCunEnabled_ChangeNtfy(void);
-extern void RTCclock_ChangeNtfy(void);
-extern void RTCdataLine_ChangeNtfy(void);

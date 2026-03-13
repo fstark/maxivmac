@@ -32,6 +32,7 @@
 #include "devices/video.h"
 #include "core/wire_bus.h"
 #include "core/machine_obj.h"
+#include "devices/via2.h"
 
 
 
@@ -422,13 +423,12 @@ static void PatchAnEndOfLst(void)
 	return true;
 }
 
-extern void Vid_VBLinterrupt_PulseNotify(void);
-
 void VideoDevice::update()
 {
 	if (! Vid_VBLintunenbl) {
 		g_wires.set(Wire_VBLinterrupt, 0);
-		Vid_VBLinterrupt_PulseNotify();
+		if (auto* via2 = machine_->findDevice<VIA2Device>())
+			via2->iCA1_PulseNtfy();
 	}
 }
 

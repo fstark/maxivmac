@@ -23,7 +23,9 @@
 
 
 #include "devices/adb.h"
+#include "devices/via.h"
 #include "core/wire_bus.h"
+#include "core/machine_obj.h"
 
 /* Global singleton */
 
@@ -34,9 +36,6 @@
 /*
 	ReportAbnormalID unused 0x0C06 - 0x0CFF
 */
-
-extern void ADB_ShiftOutData(uint8_t v);
-extern uint8_t ADB_ShiftInData(void);
 
 #include "devices/adb_shared.h"
 
@@ -60,7 +59,7 @@ void ADBDevice::doNewState()
 				}
 				ADB_TalkDatBuf = false;
 				ADB_IndexDatBuf = 0;
-				ADB_CurCmd = ADB_ShiftInData();
+				ADB_CurCmd = machine_->findDevice<VIA1Device>()->shiftOutData();
 					/* which sets interrupt, acknowleding command */
 #ifdef _VIA_Debug
 				fprintf(stderr, "in: %d\n", ADB_CurCmd);
@@ -108,14 +107,14 @@ void ADBDevice::doNewState()
 					if ((! ADB_TalkDatBuf)
 						|| (ADB_IndexDatBuf >= ADB_SzDatBuf))
 					{
-						ADB_ShiftOutData(0xFF);
+						machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
 					g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 					g_wires.set(Wire_VIA1_iB3_ADB_Int, 0);
 					} else {
 #ifdef _VIA_Debug
 						fprintf(stderr, "*** talk one\n");
 #endif
-						ADB_ShiftOutData(ADB_DatBuf[ADB_IndexDatBuf]);
+						machine_->findDevice<VIA1Device>()->shiftInData(ADB_DatBuf[ADB_IndexDatBuf]);
 					g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 						ADB_IndexDatBuf += 1;
 					}
@@ -123,12 +122,12 @@ void ADBDevice::doNewState()
 					if (ADB_IndexDatBuf >= ADB_MaxSzDatBuf) {
 						ReportAbnormalID(0x0C03, "ADB listen too much");
 							/* ADB_MaxSzDatBuf isn't big enough */
-						(void) ADB_ShiftInData();
+						(void) machine_->findDevice<VIA1Device>()->shiftOutData();
 					} else {
 #ifdef _VIA_Debug
 						fprintf(stderr, "*** listen one\n");
 #endif
-						ADB_DatBuf[ADB_IndexDatBuf] = ADB_ShiftInData();
+						ADB_DatBuf[ADB_IndexDatBuf] = machine_->findDevice<VIA1Device>()->shiftOutData();
 						ADB_IndexDatBuf += 1;
 					}
 				}
@@ -143,13 +142,13 @@ void ADBDevice::doNewState()
 						ReportAbnormalID(0x0C05,
 							"idle when not done talking");
 					}
-					ADB_ShiftOutData(0xFF);
+					machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
 					/* ADB_Int = 0; */
 				} else if (CheckForADBanyEvt()) {
 					if (((ADB_CurCmd >> 2) & 3) == 3) {
 						ADB_DoTalk();
 					}
-					ADB_ShiftOutData(0xFF);
+					machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
 					/* ADB_Int = 0; */
 				}
 				break;
@@ -198,7 +197,7 @@ void ADBDevice::update()
 			if (((ADB_CurCmd >> 2) & 3) == 3) {
 				ADB_DoTalk();
 			}
-			ADB_ShiftOutData(0xFF);
+			machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
 				/*
 					Wouldn't expect this would be needed unless
 					there is actually talk data. But without it,

@@ -110,12 +110,6 @@
 
 /* ChangeNtfy aliases — map wire names to callback function names */
 #define VIA1_iA4_ChangeNtfy MemOverlay_ChangeNtfy
-#define VIA1_iB0_ChangeNtfy RTCdataLine_ChangeNtfy
-#define VIA1_iB1_ChangeNtfy RTCclock_ChangeNtfy
-#define VIA1_iB2_ChangeNtfy RTCunEnabled_ChangeNtfy
-#define VIA1_iB4_ChangeNtfy ADBstate_ChangeNtfy
-#define VIA1_iB5_ChangeNtfy ADBstate_ChangeNtfy
-#define VIA1_iCB2_ChangeNtfy ADB_DataLineChngNtfy
 #define VIA2_iA7_ChangeNtfy Addr32_ChangeNtfy
 #define VIA2_iA6_ChangeNtfy Addr32_ChangeNtfy
 #define VIA2_iB2_ChangeNtfy PowerOff_ChangeNtfy
@@ -128,23 +122,6 @@
 /* VIA configuration now in VIAConfig (machine_config.h) */
 
 #define Mouse_Enabled() (!ADBMouseDisabled)
-
-#define VIA1_iCA1_PulseNtfy VIA1_iCA1_Sixtieth_PulseNtfy
-#define Sixtieth_PulseNtfy VIA1_iCA1_Sixtieth_PulseNtfy
-
-#define VIA1_iCA2_PulseNtfy VIA1_iCA2_RTC_OneSecond_PulseNtfy
-#define RTC_OneSecond_PulseNtfy VIA1_iCA2_RTC_OneSecond_PulseNtfy
-
-#define VIA2_iCA1_PulseNtfy VIA2_iCA1_Vid_VBLinterrupt_PulseNtfy
-#define Vid_VBLinterrupt_PulseNotify VIA2_iCA1_Vid_VBLinterrupt_PulseNtfy
-
-#define VIA2_iCB1_PulseNtfy VIA2_iCB1_ASC_interrupt_PulseNtfy
-#define ASC_interrupt_PulseNtfy VIA2_iCB1_ASC_interrupt_PulseNtfy
-
-#define GetSoundInvertTime VIA1_GetT1InvertTime
-
-#define ADB_ShiftInData VIA1_ShiftOutData
-#define ADB_ShiftOutData VIA1_ShiftInData
 
 #define kExtn_Block_Base 0x50F0C000
 #define kExtn_ln2Spc 5
