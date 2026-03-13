@@ -148,6 +148,32 @@ MachineConfig MachineConfigForModel(MacModel model)
 
 	switch (model) {
 		case MacModel::Twig43:
+			c.use68020    = false;
+			c.emFPU       = false;
+			c.emMMU       = false;
+			c.ramASize    = 0x00020000; // 128K
+			c.ramBSize    = 0;
+			c.romSize     = 0x00010000; // 64 KB
+			c.romBase     = 0x00400000;
+			c.romFileName = "Twig43.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
+			c.emVIA1      = true;
+			c.emVIA2      = false;
+			c.emADB       = false;
+			c.emClassicKbrd = true;
+			c.emASC       = false;
+			c.emClassicSnd  = true;
+			c.emVidCard   = false;
+			c.includeVidMem = false;
+			c.vidMemSize  = 0;
+			c.vidROMSize  = 0;
+			c.maxATTListN = 16;
+			c.screenWidth  = 512;
+			c.screenHeight = 342;
+			c.screenDepth  = 0;
+			c.via1Config  = MakeVIA1Config_Plus();
+			break;
+
 		case MacModel::Twiggy:
 			c.use68020    = false;
 			c.emFPU       = false;
@@ -157,6 +183,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.romSize     = 0x00010000; // 64 KB
 			c.romBase     = 0x00400000;
 			c.romFileName = "Twiggy.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
@@ -183,6 +210,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.romSize     = 0x00010000; // 64 KB
 			c.romBase     = 0x00400000;
 			c.romFileName = "Mac128K.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
@@ -209,6 +237,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.romSize     = 0x00020000; // 128 KB
 			c.romBase     = 0x00400000;
 			c.romFileName = "vMac.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
@@ -227,6 +256,32 @@ MachineConfig MachineConfigForModel(MacModel model)
 			break;
 
 		case MacModel::Kanji:
+			c.use68020    = false;
+			c.emFPU       = false;
+			c.emMMU       = false;
+			c.ramASize    = 0x00400000; // 4 MB
+			c.ramBSize    = 0;
+			c.romSize     = 0x00040000; // 256 KB (Kanji ROM is larger)
+			c.romBase     = 0x00400000;
+			c.romFileName = "MacPlusKanji.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
+			c.emVIA1      = true;
+			c.emVIA2      = false;
+			c.emADB       = false;
+			c.emClassicKbrd = true;
+			c.emASC       = false;
+			c.emClassicSnd  = true;
+			c.emVidCard   = false;
+			c.includeVidMem = false;
+			c.vidMemSize  = 0;
+			c.vidROMSize  = 0;
+			c.maxATTListN = 16;
+			c.screenWidth  = 512;
+			c.screenHeight = 342;
+			c.screenDepth  = 0;
+			c.via1Config  = MakeVIA1Config_Plus();
+			break;
+
 		case MacModel::Plus:
 			c.use68020    = false;
 			c.emFPU       = false;
@@ -236,6 +291,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.romSize     = 0x00020000; // 128 KB
 			c.romBase     = 0x00400000;
 			c.romFileName = "vMac.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
@@ -254,8 +310,6 @@ MachineConfig MachineConfigForModel(MacModel model)
 			break;
 
 		case MacModel::SE:
-		case MacModel::SEFDHD:
-		case MacModel::Classic:
 			c.use68020    = false;
 			c.emFPU       = false;
 			c.emMMU       = false;
@@ -264,6 +318,61 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.romSize     = 0x00040000; // 256 KB
 			c.romBase     = 0x00400000;
 			c.romFileName = "MacSE.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
+			c.emVIA1      = true;
+			c.emVIA2      = false;
+			c.emADB       = true;
+			c.emClassicKbrd = false;
+			c.emASC       = false;
+			c.emClassicSnd  = true;
+			c.emVidCard   = false;
+			c.includeVidMem = false;
+			c.vidMemSize  = 0;
+			c.vidROMSize  = 0;
+			c.maxATTListN = 16;
+			c.screenWidth  = 512;
+			c.screenHeight = 342;
+			c.screenDepth  = 0;
+			c.via1Config  = MakeVIA1Config_SE();
+			break;
+
+		case MacModel::SEFDHD:
+			c.use68020    = false;
+			c.emFPU       = false;
+			c.emMMU       = false;
+			c.ramASize    = 0x00400000; // 4 MB
+			c.ramBSize    = 0;
+			c.romSize     = 0x00040000; // 256 KB
+			c.romBase     = 0x00400000;
+			c.romFileName = "SEFDHD.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
+			c.emVIA1      = true;
+			c.emVIA2      = false;
+			c.emADB       = true;
+			c.emClassicKbrd = false;
+			c.emASC       = false;
+			c.emClassicSnd  = true;
+			c.emVidCard   = false;
+			c.includeVidMem = false;
+			c.vidMemSize  = 0;
+			c.vidROMSize  = 0;
+			c.maxATTListN = 16;
+			c.screenWidth  = 512;
+			c.screenHeight = 342;
+			c.screenDepth  = 0;
+			c.via1Config  = MakeVIA1Config_SE();
+			break;
+
+		case MacModel::Classic:
+			c.use68020    = false;
+			c.emFPU       = false;
+			c.emMMU       = false;
+			c.ramASize    = 0x00400000; // 4 MB
+			c.ramBSize    = 0;
+			c.romSize     = 0x00080000; // 512 KB (Classic has System 6 in ROM)
+			c.romBase     = 0x00400000;
+			c.romFileName = "Classic.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = true;
@@ -290,6 +399,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.romSize     = 0x00040000; // 256 KB
 			c.romBase     = 0x00400000;
 			c.romFileName = "PB100.ROM";
+			c.extnBlockBase = 0x00F0C000; // 24-bit address space
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;
