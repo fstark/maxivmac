@@ -60,6 +60,11 @@ struct MachineConfig {
 	uint32_t vidMemSize  = 0x00080000;  // 512 KB
 	uint32_t vidROMSize  = 0x000800;
 
+	// ROM configuration (set by model factory)
+	uint32_t    romSize     = 0x00040000;  // 256 KB default (Mac II)
+	uint32_t    romBase     = 0x00800000;  // Mac II ROM base
+	const char* romFileName = "MacII.ROM";
+
 	// Derived feature flags (set by model factory)
 	bool emVIA1         = true;
 	bool emVIA2         = true;

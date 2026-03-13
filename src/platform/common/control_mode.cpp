@@ -24,6 +24,7 @@
 #include "platform/common/intl_chars.h"
 #include "platform/common/param_buffers.h"
 #include "platform/common/control_mode.h"
+#include "core/machine_obj.h"
 
 /* SpclMode enum provided by control_mode.h */
 
@@ -1282,8 +1283,9 @@ static uint32_t Calc_Checksum(void)
 	long int i;
 	uint32_t CheckSum = 0;
 	uint8_t * p = 4 + ROM;
+	uint32_t checkSumSize = g_machine ? g_machine->config().romSize : kCheckSumRom_Size;
 
-	for (i = (kCheckSumRom_Size - 4) >> 1; --i >= 0; ) {
+	for (i = (checkSumSize - 4) >> 1; --i >= 0; ) {
 		CheckSum += do_get_mem_word(p);
 		p += 2;
 	}

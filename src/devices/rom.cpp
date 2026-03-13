@@ -219,7 +219,7 @@ static void Sony_Install(void)
 	do_put_mem_long(pto, kExtn_Block_Base); /* pokeaddr */
 	pto += 4;
 
-	my_disk_icon_addr = (pto - ROM) + kROM_Base;
+	my_disk_icon_addr = (pto - ROM) + g_machine->config().romBase;
 	MyMoveBytes((uint8_t *)my_disk_icon, (uint8_t *)pto, sizeof(my_disk_icon));
 	pto += sizeof(my_disk_icon);
 
@@ -254,7 +254,7 @@ static void ROMscrambleForMTB(void)
 	uint8_t * p = ROM;
 	uint8_t * p2 = ROM + (1 << ln2mtb);
 
-	for (j = kROM_Size / (1 << ln2mtb) / 2; --j >= 0; ) {
+	for (j = g_machine->config().romSize / (1 << ln2mtb) / 2; --j >= 0; ) {
 		int32_t i;
 
 		for (i = (1 << ln2mtb); --i >= 0; ) {

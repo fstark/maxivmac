@@ -627,10 +627,11 @@ void Extn_Reset(void)
 #define kIWM_Mask 0x00000F /* Allocated Memory Bandwidth for IWM */
 
 static uint32_t addrmap_ROM_CmpZeroMask() {
-	auto m = static_cast<int>(g_machine->config().model);
+	const auto& cfg = g_machine->config();
+	auto m = static_cast<int>(cfg.model);
 	if (m <= static_cast<int>(MacModel::Mac512Ke)) return 0;
 	if (m <= static_cast<int>(MacModel::Plus)) {
-		return (kROM_Size > 0x00020000) ? 0 : 0x00020000;
+		return (cfg.romSize > 0x00020000) ? 0 : 0x00020000;
 	}
 	/* SE, Classic, PB100, II, IIx all use 0 */
 	return 0;
@@ -939,7 +940,7 @@ static void SetUp_address24(void)
 		r.cmpmask = Overlay_ROM_CmpZeroMask |
 			(0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
 		r.cmpvalu = kRAM_Base;
-		r.usemask = kROM_Size - 1;
+		r.usemask = cfg.romSize - 1;
 		r.usebase = ROM;
 		r.Access = kATTA_readreadymask;
 		AddToATTList(&r);
@@ -948,8 +949,8 @@ static void SetUp_address24(void)
 	}
 
 	r.cmpmask = kROM_cmpmask;
-	r.cmpvalu = kROM_Base;
-	r.usemask = kROM_Size - 1;
+	r.cmpvalu = cfg.romBase;
+	r.usemask = cfg.romSize - 1;
 	r.usebase = ROM;
 	r.Access = kATTA_readreadymask;
 	AddToATTList(&r);
@@ -995,7 +996,7 @@ static void SetUp_address32(void)
 	if (MemOverlay) {
 		r.cmpmask = ~ ((1 << 30) - 1);
 		r.cmpvalu = 0;
-		r.usemask = kROM_Size - 1;
+		r.usemask = cfg.romSize - 1;
 		r.usebase = ROM;
 		r.Access = kATTA_readreadymask;
 		AddToATTList(&r);
@@ -1050,7 +1051,7 @@ static void SetUp_address32(void)
 
 	r.cmpmask = ~ ((1 << 28) - 1);
 	r.cmpvalu = 0x40000000;
-	r.usemask = kROM_Size - 1;
+	r.usemask = cfg.romSize - 1;
 	r.usebase = ROM;
 	r.Access = kATTA_readreadymask;
 	AddToATTList(&r);
@@ -1201,13 +1202,14 @@ static void SetUp_RAM24_compact(void)
 /* Compact Mac: 24-bit address space setup */
 static void SetUp_address_compact(void)
 {
+	const auto& cfg = g_machine->config();
 	ATTer r{};
 
 	if (MemOverlay) {
 		r.cmpmask = Overlay_ROM_CmpZeroMask |
 			(0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
 		r.cmpvalu = kRAM_Base;
-		r.usemask = kROM_Size - 1;
+		r.usemask = cfg.romSize - 1;
 		r.usebase = ROM;
 		r.Access = kATTA_readreadymask;
 		AddToATTListWithMTB(&r);
@@ -1216,21 +1218,20 @@ static void SetUp_address_compact(void)
 	}
 
 	r.cmpmask = kROM_cmpmask;
-	r.cmpvalu = kROM_Base;
-	if (g_machine->config().isSEOrLater() && MemOverlay) {
+	r.cmpvalu = cfg.romBase;
+	if (cfg.isSEOrLater() && MemOverlay) {
 		r.usebase = nullptr;
 		r.Access = kATTA_ntfymask;
 		r.Ntfy = kMAN_OverlayOff;
 		AddToATTList(&r);
 	} else {
-		r.usemask = kROM_Size - 1;
+		r.usemask = cfg.romSize - 1;
 		r.usebase = ROM;
 		r.Access = kATTA_readreadymask;
 		AddToATTListWithMTB(&r);
 	}
 
 	if (MemOverlay) {
-		const auto& cfg = g_machine->config();
 		r.cmpmask = 0x00E00000;
 		r.cmpvalu = kRAM_Overlay_Base;
 		if (cfg.ramBSize == 0 || cfg.ramASize == cfg.ramBSize) {

@@ -126,8 +126,7 @@
 #define kExtn_Block_Base 0x50F0C000
 #define kExtn_ln2Spc 5
 
-#define kROM_Base 0x00800000
-#define kROM_ln2Spc 20
+/* kROM_Base/kROM_ln2Spc are now runtime — see MachineConfig::romBase */
 
 #define WantDisasm 0
 #define ExtraAbnormalReports 0

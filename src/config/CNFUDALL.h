@@ -23,8 +23,7 @@
 #define IncludeSonyNameNew 1
 
 /* vMacScreenWidth/Height/Depth are now runtime — see platform.h */
-
-#define kROM_Size 0x00040000
+/* kROM_Size is now runtime — see MachineConfig::romSize */
 
 #define IncludePbufs 1
 #define NumPbufs 4
