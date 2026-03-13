@@ -65,6 +65,7 @@ set(MINIVMAC_LOCALTALK "0" CACHE STRING "Enable LocalTalk (1/0)")
 # ---------------------------------------------------------------------------
 set(MINIVMAC_SOURCES
     src/core/machine_config.cpp
+    src/core/config_loader.cpp
     src/core/wire_bus.cpp
     src/core/ict_scheduler.cpp
     src/core/machine_obj.cpp

@@ -17,7 +17,12 @@
 
 #pragma once
 
-extern void ProgramEarlyInit(void);
+#include "core/config_loader.h"
+
+extern void ProgramEarlyInit(int argc, char* argv[]);
 extern void EmulationReserveAlloc(void);
 extern void ProgramMain(void);
 extern void ProgramCleanup(void);
+
+// Access the parsed launch config (available after ProgramEarlyInit).
+extern const LaunchConfig& GetLaunchConfig(void);

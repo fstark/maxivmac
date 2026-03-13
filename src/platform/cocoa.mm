@@ -26,6 +26,10 @@
 
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
+#include "core/config_loader.h"
+
+// Forward declaration - defined in main.cpp, declared in main.h
+const LaunchConfig& GetLaunchConfig();
 
 #ifdef WantOSGLUCCO
 
@@ -1258,6 +1262,18 @@ static tMacErr LoadMacRomFromGlobalDir(void)
 static bool LoadMacRom(void)
 {
 	tMacErr err;
+
+	/* Check for explicit --rom path from command line */
+	const LaunchConfig& lc = GetLaunchConfig();
+	if (!lc.romPath.empty()) {
+		NSString *romNSPath = [NSString stringWithUTF8String:lc.romPath.c_str()];
+		err = LoadMacRomPath(romNSPath);
+		if (err == mnvm_noErr) {
+			return true;
+		}
+		fprintf(stderr, "Warning: failed to load ROM from '%s', searching default locations\n",
+			lc.romPath.c_str());
+	}
 
 	if (mnvm_fnfErr == (err = LoadMacRomFromAppDir()))
 	if (mnvm_fnfErr == (err = LoadMacRomFromPrefDir()))
@@ -5297,10 +5313,22 @@ static void UnInitOSGLU(void)
 
 int main(int argc, char **argv)
 {
-	ProgramEarlyInit();
+	ProgramEarlyInit(argc, argv);
+
+	const LaunchConfig& lc = GetLaunchConfig();
+	if (lc.help) {
+		// Help was already printed by ProgramEarlyInit
+		return 0;
+	}
+
 	ZapOSGLUVars();
 
 	if (InitOSGLU()) {
+		// Insert disk images from command line
+		for (const auto& diskPath : lc.diskPaths) {
+			NSString *nsPath = [NSString stringWithUTF8String:diskPath.c_str()];
+			(void) Sony_Insert1(nsPath, false);
+		}
 		ProgramMain();
 	}
 	UnInitOSGLU();
