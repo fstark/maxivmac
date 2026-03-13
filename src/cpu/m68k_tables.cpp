@@ -3130,19 +3130,24 @@ void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 
 	/* Runtime fixup: disable instruction kinds not supported by the
 	   configured CPU. The table was built with all features enabled
-	   (Use68020=1, EmFPU=1, EmMMU=1). Now patch out unsupported ones. */
+	   (Use68020=1, EmFPU=1, EmMMU=1). Now patch out unsupported ones.
+
+	   68020-only instructions → kIKindIllegal (Exception 4).
+	   Coprocessor (FPU/MMU) instructions → kIKindFdflt (Exception 0xB,
+	   F-line). The ROM's F-line handler deals with unimplemented
+	   coprocessor instructions gracefully; an Illegal Instruction
+	   exception would crash the boot. */
 	if (config) {
 		for (i = 0; i < (uint32_t)256 * 256; ++i) {
 			uint8_t kind = p[i].x.MainClas;
-			bool demote = false;
-			if (!config->use68020 && is68020OnlyKind(kind))
-				demote = true;
-			if (!config->emFPU && isFPUKind(kind))
-				demote = true;
-			if (!config->emMMU && isMMUKind(kind))
-				demote = true;
-			if (demote) {
+			if (!config->use68020 && is68020OnlyKind(kind)) {
 				SetDcoMainClas(&p[i], kIKindIllegal);
+			}
+			if (!config->emFPU && isFPUKind(kind)) {
+				SetDcoMainClas(&p[i], kIKindFdflt);
+			}
+			if (!config->emMMU && isMMUKind(kind)) {
+				SetDcoMainClas(&p[i], kIKindFdflt);
 			}
 		}
 	}
