@@ -1472,6 +1472,7 @@ static uint8_t MyBytesPerPixel;
 #endif
 
 static NSOpenGLContext *MyNSOpnGLCntxt = nil;
+static bool OGL_contentFresh = false;
 static short GLhOffset;
 static short GLvOffset;
 	/* OpenGL coordinates of upper left point of drawing area */
@@ -3051,15 +3052,18 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 #if 0
 		[MyNSview unlockFocus];
 #endif
-	}
 
-/*
-	would make sense to instead call:
-		[MyNSview setNeedsDisplayInRect:rectangle];
-	but that doesn't work either when
-		compiled with XCode 11.4.1. drawRect
-		seems to think entire view is dirty.
-*/
+		/*
+			On macOS 10.14+, views are layer-backed by default.
+			OpenGL content drawn into a layer-backed view's context
+			is NOT composited by the window server until the view
+			is told it needs display.  Mark content as fresh so
+			the drawRect: triggered below skips the redundant
+			full-screen redraw — only the compositor pass matters.
+		*/
+		OGL_contentFresh = true;
+		[MyNSview setNeedsDisplay:YES];
+	}
 }
 #else
 static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
@@ -3692,7 +3696,18 @@ typedef NSUInteger (*modifierFlagsProcPtr)
 		be drawn initially, resulting in flicker.
 	*/
 	if (GetOpnGLCntxt()) {
-		MyDrawWithOpenGL(0, 0, vMacScreenHeight, vMacScreenWidth);
+		if (! OGL_contentFresh) {
+			/*
+				First call, or system-triggered redraw (window
+				expose, resize, etc.) — draw the full screen.
+				When the emulation tick already drew the partial
+				update (OGL_contentFresh == true), skip the
+				redundant full-screen redraw; the compositor
+				picks up the GL content just by running drawRect.
+			*/
+			MyDrawWithOpenGL(0, 0, vMacScreenHeight, vMacScreenWidth);
+		}
+		OGL_contentFresh = false;
 
 		/*
 			since drawRect is called very rarely, didn't
