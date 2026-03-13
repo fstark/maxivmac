@@ -31,6 +31,27 @@
 
 #include "devices/mouse.h"
 
+/*
+	Mouse_Enabled() — model-dependent mouse gate.
+
+	On Mac Plus/SE/128K (emClassicKbrd): the original code used
+	SCC_InterruptsEnabled (SCC.MIE) to prevent mouse updates from
+	corrupting the boot-time memory test.
+
+	On Mac II (emADB, !emClassicKbrd): the original code used
+	!ADBMouseDisabled.  ADBMouseDisabled starts at 1 (wire default)
+	and is cleared to 0 when the ADB manager first polls the mouse.
+*/
+bool Mouse_Enabled(void)
+{
+	if (g_machine->config().emClassicKbrd) {
+		if (auto* scc = g_machine->findDevice<SCCDevice>())
+			return scc->interruptsEnabled();
+		return false;
+	}
+	return !ADBMouseDisabled;
+}
+
 /* Global singleton */
 
 void MouseDevice::update()

@@ -31,7 +31,7 @@ enum WireID {
 	Wire_VIA1_iB0,     // RTCdataLine
 	Wire_VIA1_iB1,     // RTCclock
 	Wire_VIA1_iB2,     // RTCunEnabled
-	Wire_VIA1_iB3,     // II: ADB_Int. Plus: unused.
+	Wire_VIA1_iB3,     // II: ADB_Int. Plus: MouseBtnUp.
 	Wire_VIA1_iB4,     // II: ADB_st0. Plus: unused.
 	Wire_VIA1_iB5,     // II: ADB_st1. Plus: unused.
 	Wire_VIA1_iB6,     // PB100: PMU

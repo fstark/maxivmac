@@ -14,13 +14,27 @@ WireBus g_wires;
 void WireBus::init(int numWires)
 {
 	numWires_ = numWires;
-	// Initialize all wires to 1 (active-high default for most signals).
+	/*
+		Initialize all wires to 1.  This matches the original AddrSpac_Init
+		behavior and the idle state of most bus signals:
+		  - ADBMouseDisabled=1: mouse disabled until ADB polls (Mac II), or
+		    until Mouse_Enabled() uses SCC path (Plus/SE/128K)
+		  - VBLintunenbl=1: VBL interrupts disabled until ROM video driver
+		    calls kCmndVideoSetIntEnbl
+		  - VBLinterrupt=1: no VBL interrupt pending (goes to 0 to fire)
+		  - SoundDisable=1: sound disabled until ROM configures VIA port B
+
+		The VIA/SCC Zap/Reset routines clear the interrupt request wires
+		to 0, so we pre-set those here to match post-Zap state.
+	*/
 	wires_.fill(1);
-	// ADBMouseDisabled must start at 0 (mouse enabled).  On ADB models the
-	// ADB manager will set it to 0 again when it polls the mouse, but on
-	// non-ADB models (Plus, 128K, etc.) there is no ADB to ever clear it,
-	// so the mouse would stay permanently disabled.
-	wires_[Wire_ADBMouseDisabled] = 0;
+
+	/* Interrupt request lines: 0 = no interrupt pending.
+	   These match what VIA1_Zap, VIA2_Zap, SCC_Reset set. */
+	wires_[Wire_VIA1_InterruptRequest] = 0;
+	wires_[Wire_VIA2_InterruptRequest] = 0;
+	wires_[Wire_SCCInterruptRequest] = 0;
+
 	for (auto& cbs : changeCallbacks_) cbs.clear();
 	for (auto& cbs : pulseCallbacks_)  cbs.clear();
 }
