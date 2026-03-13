@@ -57,7 +57,7 @@ static void EmulatedHardwareZap(void)
 	Memory_Reset();
 	ICT_Zap();
 	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
-	SCC_Reset();
+	if (auto* d = g_machine->findDevice<SCCDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
 	if (g_machine->config().emVIA1) VIA1_Zap();
 	if (g_machine->config().emVIA2) VIA2_Zap();
@@ -98,7 +98,7 @@ static void SubTickNotify(int SubTick)
 	dbglog_writeReturn();
 #endif
 	if (g_machine->config().emClassicSnd)
-		MacSound_SubTick(SubTick);
+		if (auto* d = g_machine->findDevice<SoundDevice>()) d->subTick(SubTick);
 	else if (g_machine->config().emASC)
 		if (auto* d = g_machine->findDevice<ASCDevice>()) d->subTick(SubTick);
 	else
@@ -143,14 +143,16 @@ static void SixtiethSecondNotify(void)
 #endif
 	if (auto* d = g_machine->findDevice<MouseDevice>()) d->update();
 	InterruptReset_Update();
-	if (g_machine->config().emClassicKbrd) KeyBoard_Update();
-	if (g_machine->config().emADB) ADB_Update();
+	if (g_machine->config().emClassicKbrd)
+		if (auto* d = g_machine->findDevice<KeyboardDevice>()) d->update();
+	if (g_machine->config().emADB)
+		if (auto* d = g_machine->findDevice<ADBDevice>()) d->update();
 
 	Sixtieth_PulseNtfy(); /* Vertical Blanking Interrupt */
 	if (auto* d = g_machine->findDevice<SonyDevice>()) d->update();
 
 #if EmLocalTalk
-	LocalTalkTick();
+	if (auto* d = g_machine->findDevice<SCCDevice>()) d->localTalkTick();
 #endif
 	if (g_machine->config().emRTC) RTC_Interrupt();
 	if (g_machine->config().emVidCard)
@@ -215,11 +217,11 @@ static bool InitEmulation(void)
 	/* Register ICT task handlers */
 	g_ict.registerTask(kICT_SubTick, SubTickTaskDo);
 	if (g_machine->config().emClassicKbrd) {
-		g_ict.registerTask(kICT_Kybd_ReceiveEndCommand, DoKybd_ReceiveEndCommand);
-		g_ict.registerTask(kICT_Kybd_ReceiveCommand, DoKybd_ReceiveCommand);
+		g_ict.registerTask(kICT_Kybd_ReceiveEndCommand, [](){ if (auto* d = g_machine->findDevice<KeyboardDevice>()) d->receiveEndCommand(); });
+		g_ict.registerTask(kICT_Kybd_ReceiveCommand, [](){ if (auto* d = g_machine->findDevice<KeyboardDevice>()) d->receiveCommand(); });
 	}
 	if (g_machine->config().emADB)
-		g_ict.registerTask(kICT_ADB_NewState, ADB_DoNewState);
+		g_ict.registerTask(kICT_ADB_NewState, [](){ if (auto* d = g_machine->findDevice<ADBDevice>()) d->doNewState(); });
 	if (g_machine->config().emPMU)
 		g_ict.registerTask(kICT_PMU_Task, [](){ if (auto* d = g_machine->findDevice<PMUDevice>()) d->doTask(); });
 	if (g_machine->config().emVIA1) {

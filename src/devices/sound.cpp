@@ -30,7 +30,6 @@
 #include "core/wire_ids.h"
 #include "core/machine_obj.h"
 
-SoundDevice* g_sound = nullptr;
 
 VIA1Device* SoundDevice::via1() const
 {
@@ -224,12 +223,5 @@ label_retry:
 		}
 	}
 }
-
-// Backward-compatible forwarding stubs
-void MacSound_SubTick(int SubTick) { if (g_sound) g_sound->subTick(SubTick); }
-
-#else /* !MySoundEnabled */
-
-void MacSound_SubTick(int) {}
 
 #endif /* MySoundEnabled */

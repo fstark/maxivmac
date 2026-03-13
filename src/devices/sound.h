@@ -40,9 +40,3 @@ private:
 	uint16_t soundInvertState_ = 0;
 };
 
-extern SoundDevice* g_sound;
-
-// Backward-compatible free function API
-#if MySoundEnabled
-extern void MacSound_SubTick(int SubTick);
-#endif

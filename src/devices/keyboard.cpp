@@ -31,7 +31,6 @@
 #include "core/machine_obj.h"
 
 /* Global singleton */
-KeyboardDevice* g_keyboard = nullptr;
 
 #ifdef _VIA_Debug
 #include <stdio.h>
@@ -208,26 +207,4 @@ void KeyboardDevice::update()
 			}
 		}
 	}
-}
-
-/* ===== Backward-compatible free function API ===== */
-
-void Kybd_DataLineChngNtfy(void)
-{
-	if (g_keyboard) g_keyboard->dataLineChngNtfy();
-}
-
-void DoKybd_ReceiveEndCommand(void)
-{
-	if (g_keyboard) g_keyboard->receiveEndCommand();
-}
-
-void DoKybd_ReceiveCommand(void)
-{
-	if (g_keyboard) g_keyboard->receiveCommand();
-}
-
-void KeyBoard_Update(void)
-{
-	if (g_keyboard) g_keyboard->update();
 }

@@ -36,6 +36,7 @@
 #include "devices/asc.h"
 #include "devices/sony.h"
 #include "devices/video.h"
+#include "devices/adb.h"
 #include "core/wire_bus.h"
 #include "cpu/cpu.h"
 #include "core/machine_obj.h"
@@ -48,7 +49,6 @@
 	ReportAbnormalID ranges unused 0x12xx - 0xFFxx
 */
 
-extern void SCC_Reset(void);
 extern void VIA1_Reset(void);
 extern void VIA2_Reset(void);
 
@@ -65,7 +65,7 @@ uint32_t my_disk_icon_addr;
 void customreset(void)
 {
 	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
-	SCC_Reset();
+	if (auto* d = g_machine->findDevice<SCCDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
 	if (g_machine->config().emVIA1) VIA1_Reset();
 	if (g_machine->config().emVIA2) VIA2_Reset();
@@ -852,7 +852,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCC;
-	r.device = g_scc;
+	r.device = g_machine->findDevice<SCCDevice>();
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -1271,7 +1271,7 @@ static void SetUp_address_compact(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCC;
-	r.device = g_scc;
+	r.device = g_machine->findDevice<SCCDevice>();
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kExtn_ln2Spc) - 1);
@@ -1433,7 +1433,7 @@ static void get_fail_realblock(ATTep p)
 						ReportAbnormalID(0x110E, "access SCC even/odd");
 					}
 				} else {
-					SCC_Reset();
+					if (auto* d = g_machine->findDevice<SCCDevice>()) d->reset();
 				}
 			} else
 			if (g_machine->config().model != MacModel::PB100
@@ -1712,11 +1712,9 @@ void VIAorSCCinterruptChngNtfy(void)
 		g_wires.onChange(Wire_VIA1_iB2_RTCunEnabled, RTCunEnabled_ChangeNtfy);
 	}
 	if (g_machine->config().emADB) {
-		extern void ADBstate_ChangeNtfy(void);
-		extern void ADB_DataLineChngNtfy(void);
-		g_wires.onChange(Wire_VIA1_iB4_ADB_st0, ADBstate_ChangeNtfy);
-		g_wires.onChange(Wire_VIA1_iB5_ADB_st1, ADBstate_ChangeNtfy);
-		g_wires.onChange(Wire_VIA1_iCB2_ADB_Data, ADB_DataLineChngNtfy);
+		g_wires.onChange(Wire_VIA1_iB4_ADB_st0, [](){ if (auto* d = g_machine->findDevice<ADBDevice>()) d->stateChangeNtfy(); });
+		g_wires.onChange(Wire_VIA1_iB5_ADB_st1, [](){ if (auto* d = g_machine->findDevice<ADBDevice>()) d->stateChangeNtfy(); });
+		g_wires.onChange(Wire_VIA1_iCB2_ADB_Data, [](){ if (auto* d = g_machine->findDevice<ADBDevice>()) d->dataLineChngNtfy(); });
 	}
 
 	g_cpu.init(

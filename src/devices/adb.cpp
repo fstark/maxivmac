@@ -26,7 +26,6 @@
 #include "core/wire_bus.h"
 
 /* Global singleton */
-ADBDevice* g_adb = nullptr;
 
 #ifdef _VIA_Debug
 #include <stdio.h>
@@ -213,11 +212,3 @@ void ADBDevice::update()
 		}
 	}
 }
-
-/* ===== Backward-compatible free function API ===== */
-
-void ADBstate_ChangeNtfy(void) { g_adb->stateChangeNtfy(); }
-void ADB_DoNewState(void) { g_adb->doNewState(); }
-void ADB_DataLineChngNtfy(void) { g_adb->dataLineChngNtfy(); }
-void ADB_Update(void) { g_adb->update(); }
-
