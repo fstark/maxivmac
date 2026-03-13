@@ -23,6 +23,8 @@
 
 
 #include "devices/via.h"
+#include "devices/via2.h"
+#include "core/machine_obj.h"
 
 #include "devices/asc.h"
 
@@ -56,10 +58,6 @@ static uint16_t ASC_FIFO_InB = 0;
 static bool ASC_Playing = false;
 
 #define ASC_dolog (dbglog_HAVE && 0)
-
-#ifdef ASC_interrupt_PulseNtfy
-extern void ASC_interrupt_PulseNtfy(void);
-#endif
 
 static void ASC_RecalcStatus(void)
 {
@@ -329,9 +327,8 @@ static void ASC_ClearFIFO(void)
 #endif
 					SoundReg804 = Data;
 					if (0 != SoundReg804) {
-#ifdef ASC_interrupt_PulseNtfy
-						ASC_interrupt_PulseNtfy();
-#endif
+					if (auto* via2 = machine_->findDevice<VIA2Device>())
+						via2->iCB1_PulseNtfy();
 						/*
 							Generating this interrupt seems
 							to be the point of writing to
@@ -818,9 +815,8 @@ label_retry:
 #if ASC_dolog
 				dbglog_WriteNote("setting half flag A");
 #endif
-#ifdef ASC_interrupt_PulseNtfy
-				ASC_interrupt_PulseNtfy();
-#endif
+				if (auto* via2 = machine_->findDevice<VIA2Device>())
+					via2->iCB1_PulseNtfy();
 				SoundReg804 |= 0x01;
 			}
 		}
@@ -849,9 +845,8 @@ label_retry:
 #if ASC_dolog
 					dbglog_WriteNote("setting half flag B");
 #endif
-#ifdef ASC_interrupt_PulseNtfy
-					ASC_interrupt_PulseNtfy();
-#endif
+					if (auto* via2 = machine_->findDevice<VIA2Device>())
+						via2->iCB1_PulseNtfy();
 					SoundReg804 |= 0x04;
 				}
 			}

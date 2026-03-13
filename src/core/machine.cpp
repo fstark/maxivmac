@@ -37,6 +37,7 @@
 #include "devices/sony.h"
 #include "devices/video.h"
 #include "devices/adb.h"
+#include "devices/rtc.h"
 #include "core/wire_bus.h"
 #include "cpu/cpu.h"
 #include "core/machine_obj.h"
@@ -48,9 +49,6 @@
 /*
 	ReportAbnormalID ranges unused 0x12xx - 0xFFxx
 */
-
-extern void VIA1_Reset(void);
-extern void VIA2_Reset(void);
 
 extern uint8_t get_vm_byte(uint32_t addr);
 extern uint16_t get_vm_word(uint32_t addr);
@@ -67,8 +65,8 @@ void customreset(void)
 	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<SCCDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
-	if (g_machine->config().emVIA1) VIA1_Reset();
-	if (g_machine->config().emVIA2) VIA2_Reset();
+	if (auto* d = g_machine->findDevice<VIA1Device>()) d->reset();
+	if (auto* d = g_machine->findDevice<VIA2Device>()) d->reset();
 	if (auto* d = g_machine->findDevice<SonyDevice>()) d->reset();
 	Extn_Reset();
 	if (g_machine->config().isCompactMac()) {
@@ -826,7 +824,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA1;
-	r.device = g_via1;
+	r.device = g_machine->findDevice<VIA1Device>();
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -839,7 +837,7 @@ static void SetUp_io(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA2;
-	r.device = g_via2;
+	r.device = g_machine->findDevice<VIA2Device>();
 	AddToATTList(&r);
 
 	if (Addr32) {
@@ -1263,7 +1261,7 @@ static void SetUp_address_compact(void)
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA1;
-	r.device = g_via1;
+	r.device = g_machine->findDevice<VIA1Device>();
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ ((1 << kSCC_ln2Spc) - 1);
@@ -1704,12 +1702,9 @@ void VIAorSCCinterruptChngNtfy(void)
 	g_wires.onChange(Wire_VIA2_InterruptRequest, VIAorSCCinterruptChngNtfy);
 	g_wires.onChange(Wire_SCCInterruptRequest, VIAorSCCinterruptChngNtfy);
 	if (g_machine->config().emRTC) {
-		extern void RTCunEnabled_ChangeNtfy(void);
-		extern void RTCclock_ChangeNtfy(void);
-		extern void RTCdataLine_ChangeNtfy(void);
-		g_wires.onChange(Wire_VIA1_iB0_RTCdataLine, RTCdataLine_ChangeNtfy);
-		g_wires.onChange(Wire_VIA1_iB1_RTCclock, RTCclock_ChangeNtfy);
-		g_wires.onChange(Wire_VIA1_iB2_RTCunEnabled, RTCunEnabled_ChangeNtfy);
+		g_wires.onChange(Wire_VIA1_iB0_RTCdataLine, [](){ if (auto* d = g_machine->findDevice<RTCDevice>()) d->dataLineChangeNtfy(); });
+		g_wires.onChange(Wire_VIA1_iB1_RTCclock, [](){ if (auto* d = g_machine->findDevice<RTCDevice>()) d->clockChangeNtfy(); });
+		g_wires.onChange(Wire_VIA1_iB2_RTCunEnabled, [](){ if (auto* d = g_machine->findDevice<RTCDevice>()) d->unEnabledChangeNtfy(); });
 	}
 	if (g_machine->config().emADB) {
 		g_wires.onChange(Wire_VIA1_iB4_ADB_st0, [](){ if (auto* d = g_machine->findDevice<ADBDevice>()) d->stateChangeNtfy(); });

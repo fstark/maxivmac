@@ -67,28 +67,6 @@ extern void VIA1_iB0_ChangeNtfy(void);
 #ifdef VIA1_iB1_ChangeNtfy
 extern void VIA1_iB1_ChangeNtfy(void);
 #endif
-#ifdef VIA1_iB2_ChangeNtfy
-extern void VIA1_iB2_ChangeNtfy(void);
-#endif
-#ifdef VIA1_iB3_ChangeNtfy
-extern void VIA1_iB3_ChangeNtfy(void);
-#endif
-#ifdef VIA1_iB4_ChangeNtfy
-extern void VIA1_iB4_ChangeNtfy(void);
-#endif
-#ifdef VIA1_iB5_ChangeNtfy
-extern void VIA1_iB5_ChangeNtfy(void);
-#endif
-#ifdef VIA1_iB6_ChangeNtfy
-extern void VIA1_iB6_ChangeNtfy(void);
-#endif
-#ifdef VIA1_iB7_ChangeNtfy
-extern void VIA1_iB7_ChangeNtfy(void);
-#endif
-#ifdef VIA1_iCB2_ChangeNtfy
-extern void VIA1_iCB2_ChangeNtfy(void);
-#endif
-
 #define Ui3rPowOf2(p) (1 << (p))
 #define Ui3rTestBit(i, p) (((i) & Ui3rPowOf2(p)) != 0)
 
@@ -101,9 +79,6 @@ extern void VIA1_iCB2_ChangeNtfy(void);
 #define kIntT1 6
 
 #define VIA1_dolog (dbglog_HAVE && 0)
-
-/* Global singleton */
-VIA1Device* g_via1 = nullptr;
 
 const VIAConfig& VIA1Device::viaConfig() const {
 	return machine_->config().via1Config;
@@ -834,78 +809,3 @@ void VIA1Device::iCB2_PulseNtfy()
 {
 	setInterruptFlag(kIntCB2);
 }
-
-
-/* ===== Backward-compatible forwarding functions ===== */
-
-static VIA1Device& ensureVIA1()
-{
-	if (!g_via1) {
-		static VIA1Device instance;
-		g_via1 = &instance;
-	}
-	return *g_via1;
-}
-
-void VIA1_Zap(void)
-{
-	ensureVIA1().zap();
-}
-
-void VIA1_Reset(void)
-{
-	ensureVIA1().reset();
-}
-
-uint32_t VIA1_Access(uint32_t Data, bool WriteMem, uint32_t addr)
-{
-	return g_via1->access(Data, WriteMem, addr);
-}
-
-void VIA1_ExtraTimeBegin(void)
-{
-	g_via1->extraTimeBegin();
-}
-
-void VIA1_ExtraTimeEnd(void)
-{
-	g_via1->extraTimeEnd();
-}
-
-void VIA1_DoTimer1Check(void)
-{
-	g_via1->doTimer1Check();
-}
-
-void VIA1_DoTimer2Check(void)
-{
-	g_via1->doTimer2Check();
-}
-
-uint16_t VIA1_GetT1InvertTime(void)
-{
-	return g_via1->getT1InvertTime();
-}
-
-void VIA1_ShiftInData(uint8_t v)
-{
-	g_via1->shiftInData(v);
-}
-
-uint8_t VIA1_ShiftOutData(void)
-{
-	return g_via1->shiftOutData();
-}
-
-/* Pulse notifications - called through #define aliases in CNFUDPIC.h */
-
-void VIA1_iCA1_Sixtieth_PulseNtfy(void)
-{
-	g_via1->iCA1_PulseNtfy();
-}
-
-void VIA1_iCA2_RTC_OneSecond_PulseNtfy(void)
-{
-	g_via1->iCA2_PulseNtfy();
-}
-

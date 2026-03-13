@@ -67,28 +67,6 @@ extern void VIA2_iB0_ChangeNtfy(void);
 #ifdef VIA2_iB1_ChangeNtfy
 extern void VIA2_iB1_ChangeNtfy(void);
 #endif
-#ifdef VIA2_iB2_ChangeNtfy
-extern void VIA2_iB2_ChangeNtfy(void);
-#endif
-#ifdef VIA2_iB3_ChangeNtfy
-extern void VIA2_iB3_ChangeNtfy(void);
-#endif
-#ifdef VIA2_iB4_ChangeNtfy
-extern void VIA2_iB4_ChangeNtfy(void);
-#endif
-#ifdef VIA2_iB5_ChangeNtfy
-extern void VIA2_iB5_ChangeNtfy(void);
-#endif
-#ifdef VIA2_iB6_ChangeNtfy
-extern void VIA2_iB6_ChangeNtfy(void);
-#endif
-#ifdef VIA2_iB7_ChangeNtfy
-extern void VIA2_iB7_ChangeNtfy(void);
-#endif
-#ifdef VIA2_iCB2_ChangeNtfy
-extern void VIA2_iCB2_ChangeNtfy(void);
-#endif
-
 #define Ui3rPowOf2(p) (1 << (p))
 #define Ui3rTestBit(i, p) (((i) & Ui3rPowOf2(p)) != 0)
 
@@ -101,9 +79,6 @@ extern void VIA2_iCB2_ChangeNtfy(void);
 #define kIntT1 6 /* Timer_1 */
 
 #define VIA2_dolog (dbglog_HAVE && 0)
-
-/* Global singleton */
-VIA2Device* g_via2 = nullptr;
 
 const VIAConfig& VIA2Device::viaConfig() const {
 	return machine_->config().via2Config;
@@ -836,68 +811,3 @@ void VIA2Device::iCB2_PulseNtfy()
 {
 	setInterruptFlag(kIntCB2);
 }
-
-/* ===== Backward-compatible free function API ===== */
-
-void VIA2_Zap(void)
-{
-	g_via2->zap();
-}
-
-void VIA2_Reset(void)
-{
-	g_via2->reset();
-}
-
-uint32_t VIA2_Access(uint32_t Data, bool WriteMem, uint32_t addr)
-{
-	return g_via2->access(Data, WriteMem, addr);
-}
-
-void VIA2_ExtraTimeBegin(void)
-{
-	g_via2->extraTimeBegin();
-}
-
-void VIA2_ExtraTimeEnd(void)
-{
-	g_via2->extraTimeEnd();
-}
-
-void VIA2_DoTimer1Check(void)
-{
-	g_via2->doTimer1Check();
-}
-
-void VIA2_DoTimer2Check(void)
-{
-	g_via2->doTimer2Check();
-}
-
-uint16_t VIA2_GetT1InvertTime(void)
-{
-	return g_via2->getT1InvertTime();
-}
-
-void VIA2_ShiftInData(uint8_t v)
-{
-	g_via2->shiftInData(v);
-}
-
-uint8_t VIA2_ShiftOutData(void)
-{
-	return g_via2->shiftOutData();
-}
-
-/* Pulse notifications - called through #define aliases in CNFUDPIC.h */
-
-void VIA2_iCA1_Vid_VBLinterrupt_PulseNtfy(void)
-{
-	g_via2->iCA1_PulseNtfy();
-}
-
-void VIA2_iCB1_ASC_interrupt_PulseNtfy(void)
-{
-	g_via2->iCB1_PulseNtfy();
-}
-
