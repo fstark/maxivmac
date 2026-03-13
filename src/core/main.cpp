@@ -106,7 +106,7 @@ static void SubTickNotify(int SubTick)
 		UnusedParam(SubTick);
 }
 
-#define CyclesScaledPerTick (130240UL * kMyClockMult * kCycleScale)
+#define CyclesScaledPerTick (130240UL * g_machine->config().clockMult * kCycleScale)
 #define CyclesScaledPerSubTick (CyclesScaledPerTick / kNumSubTicks)
 
 static uint16_t SubTickCounter;
@@ -325,8 +325,8 @@ static bool MoreSubTicksToDo(void)
 
 	if (ExtraTimeNotOver() && (ExtraSubTicksToDo > 0)) {
 #if EnableAutoSlow
-		if ((QuietSubTicks >= kAutoSlowSubTicks)
-			&& (QuietTime >= kAutoSlowTime)
+		if ((QuietSubTicks >= (uint32_t)g_machine->config().autoSlowSubTicks)
+			&& (QuietTime >= g_machine->config().autoSlowTime)
 			&& ! WantNotAutoSlow)
 		{
 			ExtraSubTicksToDo = 0;

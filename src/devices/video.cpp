@@ -319,7 +319,7 @@ static void PatchAnEndOfLst(void)
 	pPatch += sizeof(VidDrvr_contents);
 	PatchAWord(kcom_callcheck);
 	PatchAWord(kExtnVideo);
-	PatchALong(kExtn_Block_Base);
+	PatchALong(g_machine->config().extnBlockBase);
 
 	PatchAReservedOSLstEntry(pTo_OneBitMode, 0x80 /* oneBitMode */);
 	pTo_OneVidParams = ReservePatchOSLstEntry();

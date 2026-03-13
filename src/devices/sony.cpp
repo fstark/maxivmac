@@ -1577,7 +1577,7 @@ static tMacErr Sony_OpenB(uint32_t p)
 	}
 
 	put_vm_long(SonyVars + 16 /* checkval */, kcom_checkval);
-	put_vm_long(SonyVars + 20 /* pokeaddr */, kExtn_Block_Base);
+	put_vm_long(SonyVars + 20 /* pokeaddr */, g_machine->config().extnBlockBase);
 	put_vm_word(SonyVars + 24 /* NumDrives */, NumDrives);
 	put_vm_word(SonyVars + 26 /* DiskExtn */, kExtnDisk);
 

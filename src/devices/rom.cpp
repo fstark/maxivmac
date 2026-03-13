@@ -216,7 +216,7 @@ static void Sony_Install(void)
 	pto += 2;
 	do_put_mem_word(pto, kExtnSony);
 	pto += 2;
-	do_put_mem_long(pto, kExtn_Block_Base); /* pokeaddr */
+	do_put_mem_long(pto, g_machine->config().extnBlockBase); /* pokeaddr */
 	pto += 4;
 
 	my_disk_icon_addr = (pto - ROM) + g_machine->config().romBase;

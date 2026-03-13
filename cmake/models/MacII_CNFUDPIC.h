@@ -7,28 +7,25 @@
 	you know what you're doing.
 */
 
-#define EmADB 1
-#define EmRTC 1
-#define EmVIA1 1
-#define EmVIA2 1
+/* Device flags (EmADB, EmVIA1, etc.) are now runtime — see MachineConfig */
+
+/* CPU feature flags — always 1 so all instruction code compiles.
+   Runtime selection via MachineConfig::use68020/emFPU/emMMU +
+   dispatch table fixup in M68KITAB_setup(). */
 #define Use68020 1
 #define EmFPU 1
 #define EmMMU 1
-#define EmASC 1
 
-#define CurEmMd kEmMd_II
+/* CurEmMd is now runtime — see MachineConfig::model */
 
-#define kMyClockMult 2
+/* kMyClockMult is now runtime — see MachineConfig::clockMult */
 
 #define WantCycByPriOp 1
 #define WantCloserCyc 1
 
-#define kAutoSlowSubTicks 16384
-#define kAutoSlowTime 60
+/* kAutoSlowSubTicks/kAutoSlowTime are now runtime — see MachineConfig */
 
-#define IncludeVidMem 1
-
-#define EmVidCard 1
+/* IncludeVidMem/EmVidCard are now runtime — see MachineConfig */
 
 #define IncludeExtnPbufs 1
 #define IncludeExtnHostTextClipExchange 1
@@ -123,8 +120,7 @@
 
 #define Mouse_Enabled() (!ADBMouseDisabled)
 
-#define kExtn_Block_Base 0x50F0C000
-#define kExtn_ln2Spc 5
+/* kExtn_Block_Base/kExtn_ln2Spc are now runtime — see MachineConfig */
 
 /* kROM_Base/kROM_ln2Spc are now runtime — see MachineConfig::romBase */
 

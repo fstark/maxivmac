@@ -14,13 +14,12 @@
 #define EmFPU 1
 #define EmMMU 1
 
-#define kMyClockMult 2
+/* kMyClockMult is now runtime — see MachineConfig::clockMult */
 
 #define WantCycByPriOp 1
 #define WantCloserCyc 1
 
-#define kAutoSlowSubTicks 16384
-#define kAutoSlowTime 60
+/* kAutoSlowSubTicks/kAutoSlowTime are now runtime — see MachineConfig */
 
 #define IncludeExtnPbufs 1
 #define IncludeExtnHostTextClipExchange 1
@@ -115,8 +114,7 @@
 
 #define Mouse_Enabled() (! ADBMouseDisabled)
 
-#define kExtn_Block_Base 0x50F0C000
-#define kExtn_ln2Spc 5
+/* kExtn_Block_Base/kExtn_ln2Spc are now runtime — see MachineConfig */
 
 /* kROM_Base/kROM_ln2Spc are now runtime — see MachineConfig::romBase */
 

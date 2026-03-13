@@ -65,6 +65,10 @@ struct MachineConfig {
 	uint32_t    romBase     = 0x00800000;  // Mac II ROM base
 	const char* romFileName = "MacII.ROM";
 
+	// Extension / NuBus space
+	uint32_t extnBlockBase = 0x50F0C000;  // Mac II/IIx default
+	uint8_t  extnLn2Spc    = 5;
+
 	// Derived feature flags (set by model factory)
 	bool emVIA1         = true;
 	bool emVIA2         = true;
