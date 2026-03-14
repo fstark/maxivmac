@@ -1,4 +1,6 @@
-Goal:
+NOTE: never use "!" in Terminal commands, as it triggers a weird and confusing "dquote" mecanism.
+
+# Goal
 
 Have the new maxivmac emulator (top-level source code) run identically to the original minivmac emulator (in reference/)
 
@@ -12,7 +14,74 @@ A "run-debug.sh" script runs the new emulator on a clean disk
 A "build-reference.sh" script builds the reference emulator for emulating a Plus
 A "run-reference.sh" script runs the old emulator on a clean disk
 
+The run-debug.sh crashes with the message:
 
+```
+Abnormal Situation
+
+The emulated computer is attemting an operation that wasn't
+expected to happen in normal use
+
+0803
+```
+
+The reference implementation prints all execution. A file run.txt with the first 100000 instruction has already been created.
+
+The goal of the debug is to find the divergence point and investigate the reason.
+
+# Findings:
+
+## Current Issue: Polling Loop Iteration Variance (0.012%)
+
+**Test Setup:**
+- Both main and reference versions configured for Mac Plus with `vMac.ROM` and `disk.hfs`
+- Instruction trace logging: PC address + opcode for first 100,000 instructions
+- Both versions use `clockMult = 1` and `WantCloserCyc = 0`
+
+**Results:**
+
+| Metric | Value |
+|--------|-------|
+| Total instructions logged | 100,000 each |
+| Instructions matching | 99,988 (99.988%) |
+| Differing lines | **12 (0.012%)** |
+| Divergence pattern | Periodic ±1 iteration variance |
+
+**Divergence Pattern:**
+
+At 6 locations throughout the trace (lines ~16176, ~20206, ~28364, ~36522, ~44680, ~93629), the versions differ by exactly one iteration of a polling loop:
+
+```
+Code sequence (both versions):
+0040031A: 70FF    (MOVEQ #-1, D0)
+0040031C: 4A45    (TST.W D5)
+0040031E: 660C    (BNE +12 bytes → 0x40032C)
+0040032C: 082D    (BTST - test bit in memory)
+00400332: 56C8    (DBNE D0, -10 bytes → back to 0x40032C)
+```
+
+At each divergence point, one version executes `0040032C: 082D / 00400332: 56C8` exactly **once more** than the other before the bit test succeeds and the loop exits. Sometimes the main version has the extra iteration, sometimes the reference version does.
+
+**Analysis:**
+
+The `BTST` instruction at `0x40032C` reads a hardware status bit (likely a VIA timer or interrupt flag). The `DBNE` at `0x400332` decrements D0 and branches back if not zero and the Z flag is clear. Both versions test the **same bit** and exit the loop when it becomes set, but they disagree by exactly one iteration on whether the bit was set **this iteration** or **next iteration**.
+
+This indicates a sub-cycle timing difference in when the peripheral register state (VIA IFR or similar) is updated relative to the CPU's memory read. The bit transitions from 0→1 at nearly the same time as the BTST reads it, and tiny differences in update scheduling cause one version to see the old value (0) and loop once more, while the other sees the new value (1) and exits immediately.
+
+**Likely Causes:**
+
+1. **ICT (interrupt/timer task) scheduling granularity** — VIA timer updates may fire at slightly different sub-cycle offsets in the two implementations
+2. **Cycle accounting rounding** — With `kCycleScale = 64`, cycle costs are represented as `cycles * 64`, but rounding/truncation may differ
+3. **Interrupt check timing** — One version may check for timer expiry before the memory read, the other after
+4. **Random seeding or uninitialized state** — Unlikely given the deterministic pattern, but possible if PRAM or RTC initial state differs
+
+**Status:** ⚠️ **NON-DETERMINISTIC** — 12 instructions differ out of 100,000. Requires investigation of VIA timer update scheduling and cycle accounting to achieve perfect determinism.
+
+**Files:**
+- Main version log: `main_run_fixed.txt` (100,000 lines, 1.4MB)
+- Reference version log: `reference/run.txt` (100,000 lines, 1.4MB)
+
+---
 
 # Crash Investigation: Illegal Instruction at $000000FF (Mac Plus)
 
