@@ -17,7 +17,7 @@
 /* kMyClockMult is now runtime — see MachineConfig::clockMult */
 
 #define WantCycByPriOp 1
-#define WantCloserCyc 1
+#define WantCloserCyc 0
 
 /* kAutoSlowSubTicks/kAutoSlowTime are now runtime — see MachineConfig */
 
