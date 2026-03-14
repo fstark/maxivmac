@@ -32,6 +32,8 @@
 
 #include "PICOMMON.h"
 
+#include <stdio.h>
+
 #include "M68KITAB.h"
 
 #if WantDisasm
@@ -248,6 +250,10 @@ LOCALVAR struct regstruct
 	DecOpR disp_table[disp_table_sz];
 #endif
 } regs;
+
+/* Global instruction counter for logging first 100,000 instructions */
+LOCALVAR ui5b g_InstructionCount = 0;
+#define MAX_LOG_INSTRUCTIONS 100000
 
 #define ui5r_MSBisSet(x) (((si5r)(x)) < 0)
 
@@ -824,6 +830,15 @@ LOCALPROC m68k_go_MaxCycles(void)
 #if WantDisasm || WantBreakPoint
 		{
 			CPTR pc = m68k_getpc() - 2;
+			
+			/* Log first 100,000 instructions to stdout */
+			if (g_InstructionCount < MAX_LOG_INSTRUCTIONS) {
+				ui4r opcode = do_get_mem_word(V_pc_p - 2);
+				fprintf(stdout, "%08X: %04X\n", (unsigned int)pc, (unsigned int)opcode);
+				g_InstructionCount++;
+				fflush(stdout);
+			}
+			
 #if WantDisasm
 			DisasmOneOrSave(pc);
 #endif
