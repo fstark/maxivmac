@@ -179,6 +179,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 512;
 			c.screenHeight = 342;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_Plus();
 			break;
 
@@ -206,6 +207,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 512;
 			c.screenHeight = 342;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_Plus();
 			break;
 
@@ -233,6 +235,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 512;
 			c.screenHeight = 342;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_Plus();
 			break;
 
@@ -260,6 +263,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 512;
 			c.screenHeight = 342;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_Plus();
 			break;
 
@@ -287,6 +291,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 512;
 			c.screenHeight = 342;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_Plus();
 			break;
 
@@ -314,6 +319,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 512;
 			c.screenHeight = 342;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_Plus();
 			break;
 
@@ -341,6 +347,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 512;
 			c.screenHeight = 342;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_SE();
 			break;
 
@@ -368,6 +375,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 512;
 			c.screenHeight = 342;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_SE();
 			break;
 
@@ -395,6 +403,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 512;
 			c.screenHeight = 342;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_SE();
 			break;
 
@@ -423,12 +432,14 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.screenWidth  = 640;
 			c.screenHeight = 400;
 			c.screenDepth  = 0;
+			c.clockMult   = 1;
 			c.via1Config  = MakeVIA1Config_PB100();
 			break;
 
 		case MacModel::II:
 			// defaults are already Mac II (romSize=256KB, romBase=0x800000)
 			c.romFileName = "MacII.ROM";
+			c.clockMult   = 2;
 			c.via1Config  = MakeVIA1Config_MacII();
 			c.via2Config  = MakeVIA2Config_MacII();
 			break;
@@ -454,6 +465,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.vidMemSize  = 0x00080000;
 			c.vidROMSize  = 0x000800;
 			c.maxATTListN = 20;
+			c.clockMult   = 2;
 			c.via1Config  = MakeVIA1Config_MacII();
 			c.via2Config  = MakeVIA2Config_MacII();
 			break;

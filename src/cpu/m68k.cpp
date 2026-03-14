@@ -33,6 +33,8 @@
 #include "core/common.h"
 #include "core/machine_config.h"
 
+#include <cstdio>
+
 #include "cpu/m68k_tables.h"
 
 #if WantDisasm
@@ -251,6 +253,10 @@ static struct regstruct
 /* Cached pointer to MachineConfig for runtime CPU-feature checks.
    Set once in MINEM68K_Init(). */
 static const MachineConfig *s_cpuConfig = nullptr;
+
+/* Global instruction counter for logging first 100,000 instructions */
+static uint32_t g_InstructionCount = 0;
+#define MAX_LOG_INSTRUCTIONS 100000
 
 #define ui5r_MSBisSet(x) (((int32_t)(x)) < 0)
 
@@ -815,6 +821,17 @@ static void m68k_go_MaxCycles(void)
 
 	do {
 		V_regs.CurDecOpY = y;
+
+		/* Log first 100,000 instructions to stdout */
+		{
+			uint32_t pc = m68k_getpc() - 2;
+			if (g_InstructionCount < MAX_LOG_INSTRUCTIONS) {
+				uint16_t opcode = do_get_mem_word(V_pc_p - 2);
+				std::fprintf(stdout, "%08X: %04X\n", (unsigned int)pc, (unsigned int)opcode);
+				g_InstructionCount++;
+				std::fflush(stdout);
+			}
+		}
 
 #if WantDisasm || WantBreakPoint
 		{
