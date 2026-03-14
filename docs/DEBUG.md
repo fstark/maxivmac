@@ -1,3 +1,19 @@
+Goal:
+
+Have the new maxivmac emulator (top-level source code) run identically to the original minivmac emulator (in reference/)
+
+Current status:
+
+At the root level:
+
+A "build-debug.sh" script builds the new emulator
+A "run-debug.sh" script runs the new emulator on a clean disk
+
+A "build-reference.sh" script builds the reference emulator for emulating a Plus
+A "run-reference.sh" script runs the old emulator on a clean disk
+
+
+
 # Crash Investigation: Illegal Instruction at $000000FF (Mac Plus)
 
 ## Symptom
