@@ -106,6 +106,14 @@ extern bool AddrSpac_Init(void);
 #define ui5r_FromULong(x) ((uint32_t)(uint32_t)(x))
 
 
+/* Global instruction counter – defined in m68k.cpp */
+extern uint32_t g_InstructionCount;
+
+/* Logging range [g_LogStart, g_LogEnd).  Set from --log-start / --log-count.
+   Default 0,0 = no logging.  exit(0) when g_InstructionCount reaches g_LogEnd. */
+extern uint32_t g_LogStart;
+extern uint32_t g_LogEnd;
+
 #if WantDisasm
 extern void dbglog_StartLine(void);
 #else

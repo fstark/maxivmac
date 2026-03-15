@@ -7,6 +7,7 @@
 #include "core/config_loader.h"
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <cctype>
 
@@ -137,6 +138,14 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			lc.speed = atoi(arg + 8);
 			continue;
 		}
+		if (strncmp(arg, "--log-start=", 12) == 0) {
+			lc.logStart = (uint32_t)strtoul(arg + 12, NULL, 10);
+			continue;
+		}
+		if (strncmp(arg, "--log-count=", 12) == 0) {
+			lc.logCount = (uint32_t)strtoul(arg + 12, NULL, 10);
+			continue;
+		}
 
 		// --key value (separate token) style
 		if (strcmp(arg, "--model") == 0 && i + 1 < argc) {
@@ -172,6 +181,14 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 		}
 		if (strcmp(arg, "--speed") == 0 && i + 1 < argc) {
 			lc.speed = atoi(argv[++i]);
+			continue;
+		}
+		if (strcmp(arg, "--log-start") == 0 && i + 1 < argc) {
+			lc.logStart = (uint32_t)strtoul(argv[++i], NULL, 10);
+			continue;
+		}
+		if (strcmp(arg, "--log-count") == 0 && i + 1 < argc) {
+			lc.logCount = (uint32_t)strtoul(argv[++i], NULL, 10);
 			continue;
 		}
 

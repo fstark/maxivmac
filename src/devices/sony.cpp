@@ -1450,6 +1450,14 @@ static tMacErr Sony_Control(uint32_t p)
 						}
 						put_vm_long(ParamBlk + kcsParam, v);
 						result = mnvm_noErr; /* No error (0) */
+					} else {
+						result = mnvm_controlErr;
+							/*
+								Pre-SE models don't support
+								kDriveInfo — matches reference
+								where case is #if'd out and
+								default returns controlErr
+							*/
 					}
 					break;
 				default :

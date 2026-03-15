@@ -14,3 +14,4 @@ CMakeUserPresets.json
 .DS_Store
 disk.hfs
 reference/
+tmp/

@@ -25,6 +25,7 @@ fi
     -chr 0 -drc 1 -sss 4 \
     -fullscreen 0 \
     -var-fullscreen 1 \
+    -dis 1 \
     -api cco \
     > setup.sh
 

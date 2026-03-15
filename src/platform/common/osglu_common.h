@@ -183,6 +183,13 @@ void MacMsg(char *briefMsg, char *longMsg, bool fatal);
 
 #if dbglog_HAVE
 void dbglog_ReserveAlloc(void);
+
+#ifndef dbglog_buflnsz
+/* unbuffered mode — map directly to the platform _open0/_close0/_write0 */
+#define dbglog_close dbglog_close0
+#define dbglog_open  dbglog_open0
+#define dbglog_write dbglog_write0
+#endif
 #endif
 
 #if EmLocalTalk

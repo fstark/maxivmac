@@ -124,5 +124,5 @@ bool Mouse_Enabled(void);
 
 /* kROM_Base/kROM_ln2Spc are now runtime — see MachineConfig::romBase */
 
-#define WantDisasm 0
+#define WantDisasm 1
 #define ExtraAbnormalReports 0
