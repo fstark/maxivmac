@@ -82,8 +82,8 @@ static uint32_t LastRealDate;
 
 #ifndef DiskCacheSz /* in 1,2,3,4,6,8,12 */
 /* actual cache size is DiskCacheSz * 32k */
-#define DiskCacheSz 1
-/* was 4 for compact Macs, 1 for Mac II; using 1 as default */
+/* 4 for compact Macs, 1 for Mac II (matches reference) */
+#define DiskCacheSz (g_machine->config().isIIFamily() ? 1 : 4)
 #endif
 
 #ifndef StartUpDisk /* in 0..1 */
@@ -109,7 +109,7 @@ static uint32_t LastRealDate;
 	((MenuBlink << 2) + (StartUpDisk << 4) \
 		+ (DiskCacheOn << 5) + (MouseScalingOn << 6))
 
-#if dbglog_HAVE && 0
+#if dbglog_HAVE
 extern void DumpRTC(void);
 
 void DumpRTC(void)
@@ -123,6 +123,9 @@ void DumpRTC(void)
 		dbglog_writeHex(RTC.PARAMRAM[Counter]);
 		dbglog_writeReturn();
 	}
+	dbglog_writeCStr("RTC Seconds: ");
+	dbglog_writeHex((RTC.Seconds_1[3] << 24) | (RTC.Seconds_1[2] << 16) | (RTC.Seconds_1[1] << 8) | RTC.Seconds_1[0]);
+	dbglog_writeReturn();
 }
 #endif
 
@@ -283,6 +286,21 @@ void DumpRTC(void)
 	do_put_mem_long(&RTC.PARAMRAM[0xEC], CurMacDelta);
 
 #endif /* RTCinitPRAM */
+
+#if dbglog_HAVE
+	DumpRTC();
+#endif
+	/* Dump PRAM to stderr for comparison */
+	{
+		int i;
+		fprintf(stderr, "PRAM_DUMP ");
+		for (i = 0; i < PARAMRAMSize; i++) {
+			fprintf(stderr, "%02X", RTC.PARAMRAM[i]);
+		}
+		fprintf(stderr, " SEC=%02X%02X%02X%02X\n",
+			RTC.Seconds_1[3], RTC.Seconds_1[2],
+			RTC.Seconds_1[1], RTC.Seconds_1[0]);
+	}
 
 	return true;
 }

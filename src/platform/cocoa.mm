@@ -2211,7 +2211,8 @@ static bool InitLocationDat(void)
 
 	MyDateDelta = TzOffSet - 1233815296;
 	LatestTime = [NSDate timeIntervalSinceReferenceDate];
-	NewMacDateInSeconds = ((uint32_t)LatestTime) + MyDateDelta;
+	/* Fixed date: 14 March 1990 12:00:00 UTC (Mac epoch seconds) */
+	NewMacDateInSeconds = UINT32_C(0xA223E2C0);
 	CurMacDateInSeconds = NewMacDateInSeconds;
 #if AutoTimeZone
 	CurMacDelta = (TzOffSet & 0x00FFFFFF)
@@ -4928,7 +4929,10 @@ label_retry:
 #endif
 	}
 
-	OnTrueTime = TrueEmulatedTime;
+	/* Always advance exactly one tick so the emulated tick count
+	   is deterministic regardless of host speed.  Wall clock time
+	   is used only for throttling (the nanosleep above). */
+	++OnTrueTime;
 
 #if dbglog_TimeStuff
 	dbglog_writelnNum("WaitForNextTick, OnTrueTime", OnTrueTime);

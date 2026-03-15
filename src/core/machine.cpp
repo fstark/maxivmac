@@ -535,7 +535,16 @@ static void ExtnFind_Access(uint32_t p)
 			}
 			break;
 		case kCmndFindExtnCount:
-			put_vm_word(p + kParamFindExtnTheId, kNumExtns);
+			{
+				/* Report the number of extensions visible to the guest.
+				   kExtnVideo is always in the enum for stable IDs,
+				   but only counts when the model has a video card. */
+				uint16_t n = kNumExtns;
+				if (!g_machine->config().emVidCard) {
+					--n;  /* don't count kExtnVideo */
+				}
+				put_vm_word(p + kParamFindExtnTheId, n);
+			}
 			result = mnvm_noErr;
 			break;
 	}

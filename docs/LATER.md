@@ -228,3 +228,24 @@ fred's note: I do think the way the emulator manage speed is wrong. Need to chec
 | 7 | Missing T2C_ShortTime comment | Low | No | No |
 | 8 | VIA CB2 `#if 1` guard removed | None | No | No |
 | 9 | AutoSlow disabled by determinism patch | Low | Cosmetic | Cosmetic |
+| 10 | LeaPeaEACalcCyc return type | Medium | Yes (cycle timing) | No |
+
+---
+
+## 10. LeaPeaEACalcCyc return type bug (inherited from reference)
+
+**File:** `src/cpu/m68k_tables.cpp`, line ~491
+
+The reference declares `LeaPeaEACalcCyc` as returning `blnr` (`uint8_t`),
+but uses `ui4r` (`uint16_t`) values internally. Values above 255 silently
+wrap — e.g. mode 7 reg 2 (PC+d16) computes `4*64+80 = 336` which wraps to
+`80`. The C++ port initially used `bool`, clamping any non-zero to `1`,
+which was even worse.
+
+**Current fix:** Changed return type to `uint8_t` to match the reference's
+truncation behavior and achieve cycle-exact parity.
+
+**Proper fix:** Change both the reference and debug return types to
+`uint16_t` and accept the (correct) larger cycle costs. This would improve
+timing accuracy for LEA/PEA instructions but would intentionally break
+parity with the original minivmac 3.7.

@@ -830,7 +830,12 @@ static void m68k_go_MaxCycles(void)
 			if (g_LogEnd > 0) {
 				if (g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd) {
 					uint16_t opcode = do_get_mem_word(V_pc_p - 2);
-					std::fprintf(stderr, "%u %08X: %04X\n", (unsigned)g_InstructionCount, (unsigned int)pc, (unsigned int)opcode);
+					std::fprintf(stderr, "%u %08X: %04X c=%d D=%08X %08X %08X %08X %08X %08X %08X %08X A=%08X %08X %08X %08X %08X %08X %08X %08X\n",
+						(unsigned)g_InstructionCount, (unsigned int)pc, (unsigned int)opcode, (int)V_MaxCyclesToGo,
+						(unsigned)m68k_dreg(0), (unsigned)m68k_dreg(1), (unsigned)m68k_dreg(2), (unsigned)m68k_dreg(3),
+						(unsigned)m68k_dreg(4), (unsigned)m68k_dreg(5), (unsigned)m68k_dreg(6), (unsigned)m68k_dreg(7),
+						(unsigned)m68k_areg(0), (unsigned)m68k_areg(1), (unsigned)m68k_areg(2), (unsigned)m68k_areg(3),
+						(unsigned)m68k_areg(4), (unsigned)m68k_areg(5), (unsigned)m68k_areg(6), (unsigned)m68k_areg(7));
 					std::fflush(stderr);
 				}
 				if (g_InstructionCount == g_LogEnd) {
@@ -6399,9 +6404,9 @@ LOCALIPROC DoCodeMOVEMRmMW(void)
 			put_word(p, V_regs.regs[z]);
 		}
 	}
-#if ! Use68020
-	*dstp = p;
-#endif
+	if (! s_cpuConfig->use68020) {
+		*dstp = p;
+	}
 }
 
 LOCALIPROC DoCodeMOVEMrmW(void)
