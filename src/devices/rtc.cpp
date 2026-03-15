@@ -98,6 +98,16 @@ static uint32_t LastRealDate;
 #define MouseScalingOn 0
 #endif
 
+/* CaretBlinkTime: 8 for Mac II family, 3 for compact Macs (matches reference) */
+#ifndef CaretBlinkTime
+#define CaretBlinkTime (g_machine->config().isIIFamily() ? 0x08 : 0x03)
+#endif
+
+/* DoubleClickTime: 8 for Mac II family, 5 for compact Macs (matches reference) */
+#ifndef DoubleClickTime
+#define DoubleClickTime (g_machine->config().isIIFamily() ? 0x08 : 0x05)
+#endif
+
 #define prb_fontHi 0
 #define prb_fontLo 2
 #define prb_kbdPrintHi (AutoKeyRate + (AutoKeyThresh << 4))
