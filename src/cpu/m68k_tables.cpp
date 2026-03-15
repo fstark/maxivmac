@@ -488,7 +488,7 @@ static bool CheckValidAddrMode(WorkR *p,
 }
 
 #if WantCycByPriOp
-static bool LeaPeaEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
+static uint8_t LeaPeaEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
 	uint16_t v;
 
@@ -3136,18 +3136,39 @@ void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 	   Coprocessor (FPU/MMU) instructions → kIKindFdflt (Exception 0xB,
 	   F-line). The ROM's F-line handler deals with unimplemented
 	   coprocessor instructions gracefully; an Illegal Instruction
-	   exception would crash the boot. */
+	   exception would crash the boot.
+
+	   IMPORTANT: we must also patch the Cycles field.  The table was
+	   built with cycle costs for the *real* handler (e.g. MOVEC costs).
+	   After re-classifying to kIKindIllegal / kIKindFdflt the cycle
+	   cost must match what DeCodeOneOp would have assigned for that
+	   kind originally, otherwise timing diverges from a build where the
+	   instruction was never decoded at all. */
 	if (config) {
+#if WantCycByPriOp
+		const uint16_t illegalCycles = (uint16_t)(34 * kCycleScale
+			+ 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		const uint16_t fdfltCycles = kMyAvgCycPerInstr;
+#endif
 		for (i = 0; i < (uint32_t)256 * 256; ++i) {
 			uint8_t kind = p[i].x.MainClas;
 			if (!config->use68020 && is68020OnlyKind(kind)) {
 				SetDcoMainClas(&p[i], kIKindIllegal);
+#if WantCycByPriOp
+				SetDcoCycles(&p[i], illegalCycles);
+#endif
 			}
 			if (!config->emFPU && isFPUKind(kind)) {
 				SetDcoMainClas(&p[i], kIKindFdflt);
+#if WantCycByPriOp
+				SetDcoCycles(&p[i], fdfltCycles);
+#endif
 			}
 			if (!config->emMMU && isMMUKind(kind)) {
 				SetDcoMainClas(&p[i], kIKindFdflt);
+#if WantCycByPriOp
+				SetDcoCycles(&p[i], fdfltCycles);
+#endif
 			}
 		}
 	}

@@ -124,7 +124,8 @@ void VIA2Device::putORA(uint8_t Selection, uint8_t Data)
 {
 	const auto& cfg = viaConfig();
 
-	for (int bit = 0; bit < 8; bit++) {
+	/* Iterate bits 7→0 to match the reference build's callback ordering */
+	for (int bit = 7; bit >= 0; bit--) {
 		if (Ui3rTestBit(cfg.oraCanOut, bit) && Ui3rTestBit(Selection, bit)) {
 			int wireId = cfg.portAWires[bit];
 			if (wireId >= 0) {
@@ -138,7 +139,8 @@ void VIA2Device::putORB(uint8_t Selection, uint8_t Data)
 {
 	const auto& cfg = viaConfig();
 
-	for (int bit = 0; bit < 8; bit++) {
+	/* Iterate bits 7→0 to match the reference build's callback ordering */
+	for (int bit = 7; bit >= 0; bit--) {
 		if (Ui3rTestBit(cfg.orbCanOut, bit) && Ui3rTestBit(Selection, bit)) {
 			int wireId = cfg.portBWires[bit];
 			if (wireId >= 0) {

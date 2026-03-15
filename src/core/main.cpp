@@ -384,24 +384,15 @@ static uint32_t CurEmulatedTime = 0;
 static void RunEmulatedTicksToTrueTime(void)
 {
 	/*
-		The general idea is to call DoEmulateOneTick
-		once per tick.
-
-		But if emulation is lagging, we'll try to
-		catch up by calling DoEmulateOneTick multiple
-		times, unless we're too far behind, in
-		which case we forget it.
-
-		If emulating one tick takes longer than
-		a tick we don't want to sit here
-		forever. So the maximum number of calls
-		to DoEmulateOneTick is determined at
-		the beginning, rather than just
-		calling DoEmulateOneTick until
-		CurEmulatedTime >= TrueEmulatedTime.
+		Always emulate exactly the number of ticks
+		that TrueEmulatedTime says are due, without
+		any cap or wall-clock gating.  This ensures
+		the emulated tick count (and therefore the
+		entire instruction stream) is deterministic
+		regardless of host speed.
 	*/
 
-	int8_t n = OnTrueTime - CurEmulatedTime;
+	int16_t n = (int16_t)(OnTrueTime - CurEmulatedTime);
 
 	if (n > 0) {
 		DoEmulateOneTick();
@@ -409,27 +400,18 @@ static void RunEmulatedTicksToTrueTime(void)
 
 		DoneWithDrawingForTick();
 
-		if (n > 8) {
-			/* emulation not fast enough */
-			n = 8;
-			CurEmulatedTime = OnTrueTime - n;
-		}
-
-		if (ExtraTimeNotOver() && (--n > 0)) {
-			/* lagging, catch up */
-
+		if (--n > 0) {
 			EmVideoDisable = true;
 
 			do {
 				DoEmulateOneTick();
 				++CurEmulatedTime;
-			} while (ExtraTimeNotOver()
-				&& (--n > 0));
+			} while (--n > 0);
 
 			EmVideoDisable = false;
 		}
 
-		EmLagTime = n;
+		EmLagTime = 0;
 	}
 }
 

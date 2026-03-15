@@ -17,7 +17,7 @@
 /* kMyClockMult is now runtime — see MachineConfig::clockMult */
 
 #define WantCycByPriOp 1
-#define WantCloserCyc 0
+#define WantCloserCyc 1
 
 /* kAutoSlowSubTicks/kAutoSlowTime are now runtime — see MachineConfig */
 
@@ -28,9 +28,9 @@
 #define Sony_SupportTags 1
 #define Sony_WantChecksumsUpdated 1
 #define Sony_VerifyChecksums 0
-#define CaretBlinkTime 0x08
+#define CaretBlinkTime 0x03
 #define SpeakerVol 0x07
-#define DoubleClickTime 0x08
+#define DoubleClickTime 0x05
 #define MenuBlink 0x03
 #define AutoKeyThresh 0x06
 #define AutoKeyRate 0x03
