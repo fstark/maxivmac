@@ -1320,7 +1320,7 @@ LOCALPROC get_fail_realblock(ATTep p)
 #endif
 
 #if MMDV_IO_LOG
-static const char* mmdv_name_ref(ui3r mmdv) {
+static const char* mmdv_name_ref(ui3r mmdv, CPTR addr) {
 	switch (mmdv) {
 		case kMMDV_VIA1: return "VIA1";
 #if EmVIA2
@@ -1333,7 +1333,19 @@ static const char* mmdv_name_ref(ui3r mmdv) {
 #endif
 		case kMMDV_SCSI: return "SCSI";
 		case kMMDV_IWM:  return "IWM";
-		default:         return "???";
+		default: {
+#if (CurEmMd == kEmMd_II) || (CurEmMd == kEmMd_IIx)
+			ui5b masked = addr & 0x00F1E000;
+			if (masked == 0x00F00000) return "VIA1";
+			if (masked == 0x00F02000) return "VIA2";
+			if (masked == 0x00F04000) return "SCC";
+			if (masked == 0x00F0C000) return "EXTN";
+			if (masked == 0x00F10000) return "SCSI";
+			if (masked == 0x00F14000) return "ASC";
+			if (masked == 0x00F16000) return "IWM";
+#endif
+			return "???";
+		}
 	}
 }
 #endif
@@ -1573,9 +1585,9 @@ GLOBALFUNC ui5b MMDV_Access(ATTep p, ui5b Data,
 #if MMDV_IO_LOG
 	if (g_LogEnd > 0 && g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd) {
 		if (WriteMem) {
-			fprintf(stderr, "%u IOW %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name_ref(p->MMDV), (unsigned)addr, (unsigned)(origData & 0xFF));
+			fprintf(stderr, "%u IOW %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name_ref(p->MMDV, addr), (unsigned)addr, (unsigned)(origData & 0xFF));
 		} else {
-			fprintf(stderr, "%u IOR %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name_ref(p->MMDV), (unsigned)addr, (unsigned)(Data & 0xFF));
+			fprintf(stderr, "%u IOR %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name_ref(p->MMDV, addr), (unsigned)addr, (unsigned)(Data & 0xFF));
 		}
 	}
 #endif
