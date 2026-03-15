@@ -1,4 +1,37 @@
-# Mini vMac
+# Maxi vMac
+
+Maxi vMac is a fork of Mini vMac that fixes my two major issues with it:
+
+* Get rid of the byzantine build system
+* Supports all models in a single binary
+
+```
+maxivmac % ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --help
+Usage: ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac [options] [disk1.img] [disk2.img] ...
+
+Options:
+  --model=MODEL    Mac model: Plus, SE, II, IIx, Classic, PB100, 128K, 512Ke
+                   (default: II)
+  --rom=PATH       Path to ROM file
+  --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)
+  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.
+  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)
+  --fullscreen     Start in fullscreen mode
+  -r PATH          ROM path (short form)
+  -h, --help       Show this help
+
+Examples:
+  ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --model=II --rom=MacII.ROM system7.img
+  ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --model=Plus --rom=vMac.ROM --ram=4M disk.img
+maxivmac % 
+```
+
+While it builds and runs for both Mac Plus and Mac II emulation under a Cocoa OSX frontend, it is **far** from finished.
+Now that the bases are here, I will clean-up the code and remove old supported platform and esoteric front ends.
+
+The long-term direction of the project (apart from the idea of playing with AI to modernize complex software) is to give me a tool for automatic testing and easier development of [MacFlim](https://github.com/fstark/macflim)
+
+# ORIGINAL Mini vMac READ ME. MAY OR MAY NOT APPLY TO THE CONTENT OF THE REPO
 
 Mini vMac is a miniature Macintosh 68K emulator.  
 The original version of this software was written by Paul C. Pratt.
