@@ -2184,13 +2184,15 @@ static uint32_t MyDateDelta;
 
 static bool CheckDateTime(void)
 {
-	NewMacDateInSeconds = ((uint32_t)LatestTime) + MyDateDelta;
-	if (CurMacDateInSeconds != NewMacDateInSeconds) {
-		CurMacDateInSeconds = NewMacDateInSeconds;
+	/* CurMacDateInSeconds is now driven by tick counter in
+	   SixtiethSecondNotify (60 ticks = 1 second), not wall clock.
+	   Just detect transitions for sound/demo notifications. */
+	static uint32_t lastSeenDate = 0;
+	if (CurMacDateInSeconds != lastSeenDate) {
+		lastSeenDate = CurMacDateInSeconds;
 		return true;
-	} else {
-		return false;
 	}
+	return false;
 }
 
 static void StartUpTimeAdjust(void)

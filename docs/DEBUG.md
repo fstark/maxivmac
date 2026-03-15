@@ -1,5 +1,10 @@
 NOTE: never use "!" in Terminal commands, as it triggers a weird and confusing "dquote" mecanism.
 
+Codebase
+
+In reference/ there is an old version of the codebase, that is very tricky to build, but works correctly. It generates a different binary for every type of option.
+At the root, there is what we call the "debug" version, which is a modernized CMake version, that generates a single binary that can run all the versions. We want to limit the use of #define in this build.
+
 # Goal
 
 Have the new maxivmac emulator (top-level source code) run identically to the original minivmac emulator (in reference/)
@@ -25,61 +30,63 @@ expected to happen in normal use
 0803
 ```
 
-The reference implementation prints all execution. A file run.txt with the first 100000 instruction has already been created.
+# HOW TO DEBUG
 
-The goal of the debug is to find the divergence point and investigate the reason.
+## Deterministic Instruction Logging
 
-# Findings:
+Both builds support `--log-start=N --log-count=M` CLI arguments that log
+instructions and IO operations to stderr for the instruction range [N, N+M).
+The emulator calls `exit(0)` when it reaches instruction N+M, enabling
+unattended comparison runs.
 
-## Current Issue: Polling Loop Iteration Variance (0.012%)
-
-**Test Setup:**
-- Both main and reference versions configured for Mac Plus with `vMac.ROM` and `disk.hfs`
-- Instruction trace logging: PC address + opcode for first 100,000 instructions
-- Both versions use `clockMult = 1` and `WantCloserCyc = 0`
-
-**Results:**
-
-| Metric | Value |
-|--------|-------|
-| Total instructions logged | 100,000 each |
-| Instructions matching | 99,988 (99.988%) |
-| Differing lines | **12 (0.012%)** |
-| Divergence pattern | Periodic ±1 iteration variance |
-
-**Divergence Pattern:**
-
-At 6 locations throughout the trace (lines ~16176, ~20206, ~28364, ~36522, ~44680, ~93629), the versions differ by exactly one iteration of a polling loop:
-
+Log format (stderr):
 ```
-Code sequence (both versions):
-0040031A: 70FF    (MOVEQ #-1, D0)
-0040031C: 4A45    (TST.W D5)
-0040031E: 660C    (BNE +12 bytes → 0x40032C)
-0040032C: 082D    (BTST - test bit in memory)
-00400332: 56C8    (DBNE D0, -10 bytes → back to 0x40032C)
+12345 004002B4: 56C8          # instruction: {insn#} {PC}: {opcode}
+12345 IOR VIA1 00EFFBFE 82    # IO read:     {insn#} IOR {device} {addr} {value}
+12345 IOW VIA1 00EFFBFE 02    # IO write:    {insn#} IOW {device} {addr} {value}
+DISK_INSERT drive=0 locked=0  # disk insertion event
 ```
 
-At each divergence point, one version executes `0040032C: 082D / 00400332: 56C8` exactly **once more** than the other before the bit test succeeds and the loop exits. Sometimes the main version has the extra iteration, sometimes the reference version does.
+## Comparison Scripts
 
-**Analysis:**
+### selftest.sh — Self-consistency (single build)
 
-The `BTST` instruction at `0x40032C` reads a hardware status bit (likely a VIA timer or interrupt flag). The `DBNE` at `0x400332` decrements D0 and branches back if not zero and the Z flag is clear. Both versions test the **same bit** and exit the loop when it becomes set, but they disagree by exactly one iteration on whether the bit was set **this iteration** or **next iteration**.
+Tests whether a single build produces identical output across multiple runs:
+```bash
+./selftest.sh ref 0 300000 5      # reference build, first 300K insns, 5 runs
+./selftest.sh debug 0 300000 5    # debug build, first 300K insns, 5 runs
+./selftest.sh debug 50000 10000 3 # debug build, insns 50000-60000, 3 runs
+```
+Reports `ALL IDENTICAL` or `NON-DETERMINISM DETECTED` with the first diff.
 
-This indicates a sub-cycle timing difference in when the peripheral register state (VIA IFR or similar) is updated relative to the CPU's memory read. The bit transitions from 0→1 at nearly the same time as the BTST reads it, and tiny differences in update scheduling cause one version to see the old value (0) and loop once more, while the other sees the new value (1) and exits immediately.
+### compare.sh — Cross-build comparison (ref vs debug)
 
-**Likely Causes:**
+Runs reference and debug builds with the same parameters and diffs the output:
+```bash
+./compare.sh 0 10000     # compare first 10K instructions
+./compare.sh 0 300000    # compare first 300K instructions
+./compare.sh 50000 5000  # compare instructions 50000-55000
+```
+Reports `IDENTICAL` or shows the diff. Output files are saved in `tmp/`.
 
-1. **ICT (interrupt/timer task) scheduling granularity** — VIA timer updates may fire at slightly different sub-cycle offsets in the two implementations
-2. **Cycle accounting rounding** — With `kCycleScale = 64`, cycle costs are represented as `cycles * 64`, but rounding/truncation may differ
-3. **Interrupt check timing** — One version may check for timer expiry before the memory read, the other after
-4. **Random seeding or uninitialized state** — Unlikely given the deterministic pattern, but possible if PRAM or RTC initial state differs
+### Workflow
 
-**Status:** ⚠️ **NON-DETERMINISTIC** — 12 instructions differ out of 100,000. Requires investigation of VIA timer update scheduling and cycle accounting to achieve perfect determinism.
+1. **Verify determinism first** — run `selftest.sh` for both builds. If a build
+   is not self-consistent, fix that before cross-comparing.
+2. **Compare builds** — run `compare.sh` with increasing ranges to find the
+   first divergence point.
+3. **Narrow down** — use binary search on the start/count parameters to isolate
+   the exact instruction where behavior diverges.
 
-**Files:**
-- Main version log: `main_run_fixed.txt` (100,000 lines, 1.4MB)
-- Reference version log: `reference/run.txt` (100,000 lines, 1.4MB)
+### Build Scripts
+
+```bash
+./build-debug.sh       # builds debug (cmake) version
+./build-reference.sh   # builds reference (setup tool) version
+```
+
+Both scripts set the speed to 16x (`-speed 4`). The emulator is deterministic
+at any speed setting thanks to tick-based RTC (60 ticks = 1 emulated second).
 
 ---
 
@@ -186,3 +193,62 @@ The crash follows this exact sequence:
    driver. Either: (a) the original minivmac never reaches this code
    path due to a timing or behavioral difference, or (b) it also
    crashes with this specific disk (untested).
+
+---
+
+# Root Cause Analysis: Configuration Differences Found
+
+## BUG 1 (HIGH): Uninitialized `result` in `Sony_Control(kDriveInfo)` for Mac Plus
+
+**File:** `src/devices/sony.cpp`, line ~1429
+
+In the reference, the `case kDriveInfo:` is inside `#if CurEmMd >= kEmMd_SE`,
+so on a Plus it doesn't exist — the `default:` case returns `mnvm_controlErr`.
+
+In the current version, the case always exists but the body is guarded by
+`if (g_machine->config().isSEOrLater())`. On Plus, this condition is false,
+so `result` is never assigned and an uninitialized value is returned.
+
+**Impact:** Large (non-floppy) disk images like the 14MB MacFlim disk get
+`kQType = 1`, which triggers a `kDriveInfo` control call. On Plus, the
+current version returns garbage instead of `-17 (controlErr)`. This may
+confuse the driver state machine and is a likely contributor to the crash.
+
+**Fix:** Added `else { result = mnvm_controlErr; }` to match the reference
+behavior where pre-SE models fall through to `default:` returning controlErr.
+
+## ~~BUG 2~~ (RETRACTED): `Sony_SupportTags` / `Sony_WantChecksumsUpdated`
+
+Initially appeared to differ between versions. After verifying the *actual*
+reference build output (which is regenerated by `build-reference.sh` via
+`setup.sh`), the reference cfg/CNFUDPIC.h **does** have
+`Sony_SupportTags 1` and `Sony_WantChecksumsUpdated 1` — matching the
+current version. The checked-in `reference/cfg/CNFUDPIC.h` was stale. 
+**No fix needed.**
+
+---
+
+# Peripheral I/O Logging Infrastructure
+
+Added `MMDV_IO_LOG` to both versions for differential debugging:
+
+- **Current:** `src/core/machine.cpp` — `#define MMDV_IO_LOG 0`
+- **Reference:** `reference/src/GLOBGLUE.c` — `#define MMDV_IO_LOG 0`
+
+When set to `1`, both produce identical format on stderr:
+```
+IOR VIA1 00EFE1FF 7E
+IOW SCC  009FFFF9 09
+IOR IWM  00DFE1FF 00
+```
+
+To use:
+```bash
+# Current version - add -DMMDV_IO_LOG=1 to CXXFLAGS or edit machine.cpp
+# Reference version - edit GLOBGLUE.c
+
+# Then capture:
+./path/to/minivmac ... 2>/tmp/io_trace.log
+# Compare:
+diff <(grep '^IO' /tmp/trace_main.log) <(grep '^IO' /tmp/trace_ref.log)
+```

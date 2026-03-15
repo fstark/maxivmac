@@ -43,6 +43,7 @@
 #include "cpu/cpu.h"
 #include "core/machine_obj.h"
 
+#include <cstdio>
 /*
 	ReportAbnormalID unused 0x111D - 0x11FF
 */
@@ -117,6 +118,7 @@ void dbglog_WriteMemArrow(bool WriteMem)
 void dbglog_AddrAccess(char *s, uint32_t Data,
 	bool WriteMem, uint32_t addr)
 {
+	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
 	dbglog_writeCStr("[");
@@ -131,6 +133,7 @@ void dbglog_AddrAccess(char *s, uint32_t Data,
 #if dbglog_HAVE
 void dbglog_Access(char *s, uint32_t Data, bool WriteMem)
 {
+	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
 	dbglog_WriteMemArrow(WriteMem);
@@ -142,6 +145,7 @@ void dbglog_Access(char *s, uint32_t Data, bool WriteMem)
 #if dbglog_HAVE
 void dbglog_WriteNote(char *s)
 {
+	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
 	dbglog_writeReturn();
@@ -151,6 +155,7 @@ void dbglog_WriteNote(char *s)
 #if dbglog_HAVE
 void dbglog_WriteSetBool(char *s, bool v)
 {
+	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
 	dbglog_writeCStr(" <- ");
@@ -662,6 +667,19 @@ enum {
 
 	kNumMMDVs
 };
+
+static const char* mmdv_name(uint8_t mmdv) {
+	switch (mmdv) {
+		case kMMDV_VIA1: return "VIA1";
+		case kMMDV_VIA2: return "VIA2";
+		case kMMDV_SCC:  return "SCC";
+		case kMMDV_Extn: return "EXTN";
+		case kMMDV_ASC:  return "ASC";
+		case kMMDV_SCSI: return "SCSI";
+		case kMMDV_IWM:  return "IWM";
+		default:         return "???";
+	}
+}
 
 enum {
 	kMAN_OverlayOff, /* present on SE and later */
@@ -1342,6 +1360,7 @@ static void get_fail_realblock(ATTep p)
  uint32_t MMDV_Access(ATTep p, uint32_t Data,
 	bool WriteMem, bool ByteSize, uint32_t addr)
 {
+	uint32_t origData = Data;
 	switch (p->MMDV) {
 		case kMMDV_VIA1:
 			if (! ByteSize) {
@@ -1553,6 +1572,14 @@ static void get_fail_realblock(ATTep p)
 			}
 
 			break;
+	}
+
+	if (g_LogEnd > 0 && g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd) {
+		if (WriteMem) {
+			fprintf(stderr, "%u IOW %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name(p->MMDV), addr, origData & 0xFF);
+		} else {
+			fprintf(stderr, "%u IOR %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name(p->MMDV), addr, Data & 0xFF);
+		}
 	}
 
 	return Data;

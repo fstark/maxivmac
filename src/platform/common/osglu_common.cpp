@@ -220,6 +220,7 @@ void DiskRevokeWritable(tDrive Drive_No)
 
 void DiskInsertNotify(tDrive Drive_No, bool locked)
 {
+	fprintf(stderr, "DISK_INSERT drive=%d locked=%d\n", (int)Drive_No, (int)locked);
 	vSonyInsertedMask |= ((uint32_t)1 << Drive_No);
 	if (! locked) {
 		vSonyWritableMask |= ((uint32_t)1 << Drive_No);
@@ -796,9 +797,7 @@ void dbglog_ReserveAlloc(void)
 	/* nothing to do in unbuffered mode */
 }
 
-#define dbglog_close dbglog_close0
-#define dbglog_open dbglog_open0
-#define dbglog_write dbglog_write0
+/* dbglog_close/open/write macros already in osglu_common.h */
 
 #else
 

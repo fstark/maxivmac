@@ -50,7 +50,7 @@ set_property(CACHE MINIVMAC_LANGUAGE PROPERTY STRINGS
     English French German Italian Spanish Dutch PortugueseBrazilian Polish Czech Serbian)
 
 # Debug
-set(MINIVMAC_DBGLOG "0" CACHE STRING "Enable debug log (1/0)")
+set(MINIVMAC_DBGLOG "1" CACHE STRING "Enable debug log (1/0)")
 set(MINIVMAC_ABNORMAL_REPORTS "0" CACHE STRING "Enable abnormal reports (1/0)")
 set(MINIVMAC_LOCALTALK "0" CACHE STRING "Enable LocalTalk (1/0)")
 
@@ -327,7 +327,7 @@ target_include_directories(minivmac PRIVATE
 target_compile_options(minivmac PRIVATE
     -Wall
     -Wundef
-    -Wno-uninitialized
+    -Wconditional-uninitialized
     -Wno-write-strings
 )
 

@@ -137,11 +137,17 @@ static void SubTickTaskEnd(void)
 	SubTickNotify(kNumSubTicks - 1);
 }
 
+static int ticksSinceSecond = 0;
+
 static void SixtiethSecondNotify(void)
 {
 #if dbglog_HAVE && 0
 	dbglog_WriteNote("begin new Sixtieth");
 #endif
+	if (++ticksSinceSecond >= 60) {
+		ticksSinceSecond = 0;
+		CurMacDateInSeconds++;
+	}
 	if (auto* d = g_machine->findDevice<MouseDevice>()) d->update();
 	InterruptReset_Update();
 	if (g_machine->config().emClassicKbrd)
@@ -321,20 +327,14 @@ static void DoEmulateOneTick(void)
 
 static bool MoreSubTicksToDo(void)
 {
+	/* Always complete all extra sub-ticks regardless of wall clock,
+	   so the emulated cycle count per tick is deterministic.
+	   Original code gated this on ExtraTimeNotOver() which made
+	   the number of sub-ticks vary with host speed. */
 	bool v = false;
 
-	if (ExtraTimeNotOver() && (ExtraSubTicksToDo > 0)) {
-#if EnableAutoSlow
-		if ((QuietSubTicks >= (uint32_t)g_machine->config().autoSlowSubTicks)
-			&& (QuietTime >= g_machine->config().autoSlowTime)
-			&& ! WantNotAutoSlow)
-		{
-			ExtraSubTicksToDo = 0;
-		} else
-#endif
-		{
-			v = true;
-		}
+	if (ExtraSubTicksToDo > 0) {
+		v = true;
 	}
 
 	return v;
@@ -462,6 +462,12 @@ void ProgramEarlyInit(int argc, char* argv[])
 	if (s_launchConfig.help) {
 		PrintUsage(argv[0]);
 		// Help flag will be checked by caller to exit early
+	}
+
+	/* Set up instruction-logging window from CLI args */
+	if (s_launchConfig.logCount > 0) {
+		g_LogStart = s_launchConfig.logStart;
+		g_LogEnd   = s_launchConfig.logStart + s_launchConfig.logCount;
 	}
 
 	MachineConfig config = BuildMachineConfig(s_launchConfig);
