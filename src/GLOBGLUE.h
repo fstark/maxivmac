@@ -124,6 +124,14 @@ EXPORTPROC dbglog_StartLine(void);
 #define dbglog_StartLine()
 #endif
 
+/* Global instruction counter – defined in MINEM68K.c */
+EXPORTVAR(ui5b, g_InstructionCount)
+
+/* Logging range [g_LogStart, g_LogEnd).  Set from --log-start / --log-count.
+   Default 0,0 = no logging.  exit(0) when g_InstructionCount reaches g_LogEnd. */
+EXPORTVAR(ui5b, g_LogStart)
+EXPORTVAR(ui5b, g_LogEnd)
+
 #if dbglog_HAVE
 EXPORTPROC dbglog_WriteMemArrow(blnr WriteMem);
 

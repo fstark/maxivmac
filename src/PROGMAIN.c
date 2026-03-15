@@ -153,11 +153,17 @@ LOCALPROC SubTickTaskEnd(void)
 	SubTickNotify(kNumSubTicks - 1);
 }
 
+LOCALVAR int ticksSinceSecond = 0;
+
 LOCALPROC SixtiethSecondNotify(void)
 {
 #if dbglog_HAVE && 0
 	dbglog_WriteNote("begin new Sixtieth");
 #endif
+	if (++ticksSinceSecond >= 60) {
+		ticksSinceSecond = 0;
+		CurMacDateInSeconds++;
+	}
 	Mouse_Update();
 	InterruptReset_Update();
 #if EmClassicKbrd
@@ -431,20 +437,12 @@ LOCALPROC DoEmulateOneTick(void)
 
 LOCALFUNC blnr MoreSubTicksToDo(void)
 {
+	/* Always complete all extra sub-ticks regardless of wall clock,
+	   so the emulated cycle count per tick is deterministic. */
 	blnr v = falseblnr;
 
-	if (ExtraTimeNotOver() && (ExtraSubTicksToDo > 0)) {
-#if EnableAutoSlow
-		if ((QuietSubTicks >= kAutoSlowSubTicks)
-			&& (QuietTime >= kAutoSlowTime)
-			&& ! WantNotAutoSlow)
-		{
-			ExtraSubTicksToDo = 0;
-		} else
-#endif
-		{
-			v = trueblnr;
-		}
+	if (ExtraSubTicksToDo > 0) {
+		v = trueblnr;
 	}
 
 	return v;

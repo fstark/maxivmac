@@ -2165,13 +2165,15 @@ LOCALVAR ui5b MyDateDelta;
 
 LOCALFUNC blnr CheckDateTime(void)
 {
-	NewMacDateInSeconds = ((ui5b)LatestTime) + MyDateDelta;
-	if (CurMacDateInSeconds != NewMacDateInSeconds) {
-		CurMacDateInSeconds = NewMacDateInSeconds;
+	/* CurMacDateInSeconds is now driven by tick counter in
+	   SixtiethSecondNotify (60 ticks = 1 second), not wall clock.
+	   Just detect transitions for sound/demo notifications. */
+	LOCALVAR ui5b lastSeenDate = 0;
+	if (CurMacDateInSeconds != lastSeenDate) {
+		lastSeenDate = CurMacDateInSeconds;
 		return trueblnr;
-	} else {
-		return falseblnr;
 	}
+	return falseblnr;
 }
 
 LOCALPROC StartUpTimeAdjust(void)
@@ -5300,6 +5302,44 @@ LOCALPROC UnInitOSGLU(void)
 
 int main(int argc, char **argv)
 {
+	/* Parse and strip --log-start=N and --log-count=N from argv
+	   so Cocoa doesn't try to open them as files. */
+	{
+		extern ui5b g_LogStart;
+		extern ui5b g_LogEnd;
+		int i, j;
+		ui5b logStart = 0;
+		ui5b logCount = 0;
+		for (i = 1; i < argc; ++i) {
+			if (strncmp(argv[i], "--log-start=", 12) == 0) {
+				logStart = (ui5b)strtoul(argv[i] + 12, NULL, 10);
+				argv[i] = NULL;
+			} else if (strncmp(argv[i], "--log-count=", 12) == 0) {
+				logCount = (ui5b)strtoul(argv[i] + 12, NULL, 10);
+				argv[i] = NULL;
+			} else if (strcmp(argv[i], "--log-start") == 0 && i + 1 < argc) {
+				logStart = (ui5b)strtoul(argv[i + 1], NULL, 10);
+				argv[i] = NULL; argv[i + 1] = NULL; ++i;
+			} else if (strcmp(argv[i], "--log-count") == 0 && i + 1 < argc) {
+				logCount = (ui5b)strtoul(argv[i + 1], NULL, 10);
+				argv[i] = NULL; argv[i + 1] = NULL; ++i;
+			}
+		}
+		if (logCount > 0) {
+			g_LogStart = logStart;
+			g_LogEnd   = logStart + logCount;
+		}
+		/* Compact argv, removing NULLed entries */
+		j = 1;
+		for (i = 1; i < argc; ++i) {
+			if (argv[i] != NULL) {
+				argv[j++] = argv[i];
+			}
+		}
+		argc = j;
+		argv[argc] = NULL;
+	}
+
 	ZapOSGLUVars();
 
 	if (InitOSGLU()) {

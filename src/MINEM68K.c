@@ -33,6 +33,7 @@
 #include "PICOMMON.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "M68KITAB.h"
 
@@ -251,9 +252,10 @@ LOCALVAR struct regstruct
 #endif
 } regs;
 
-/* Global instruction counter for logging first 100,000 instructions */
-LOCALVAR ui5b g_InstructionCount = 0;
-#define MAX_LOG_INSTRUCTIONS 100000
+/* Global instruction counter, and logging window [g_LogStart, g_LogEnd). */
+GLOBALVAR ui5b g_InstructionCount = 0;
+GLOBALVAR ui5b g_LogStart = 0;
+GLOBALVAR ui5b g_LogEnd   = 0;
 
 #define ui5r_MSBisSet(x) (((si5r)(x)) < 0)
 
@@ -831,13 +833,18 @@ LOCALPROC m68k_go_MaxCycles(void)
 		{
 			CPTR pc = m68k_getpc() - 2;
 			
-			/* Log first 100,000 instructions to stdout */
-			if (g_InstructionCount < MAX_LOG_INSTRUCTIONS) {
-				ui4r opcode = do_get_mem_word(V_pc_p - 2);
-				fprintf(stdout, "%08X: %04X\n", (unsigned int)pc, (unsigned int)opcode);
-				g_InstructionCount++;
-				fflush(stdout);
+			/* Log instructions in [g_LogStart, g_LogEnd) to stderr */
+			if (g_LogEnd > 0) {
+				if (g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd) {
+					ui4r opcode = do_get_mem_word(V_pc_p - 2);
+					fprintf(stderr, "%u %08X: %04X\n", (unsigned)g_InstructionCount, (unsigned int)pc, (unsigned int)opcode);
+					fflush(stderr);
+				}
+				if (g_InstructionCount == g_LogEnd) {
+					exit(0);
+				}
 			}
+			g_InstructionCount++;
 			
 #if WantDisasm
 			DisasmOneOrSave(pc);

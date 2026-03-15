@@ -240,6 +240,7 @@ GLOBALOSGLUPROC DiskRevokeWritable(tDrive Drive_No)
 
 LOCALPROC DiskInsertNotify(tDrive Drive_No, blnr locked)
 {
+	fprintf(stderr, "DISK_INSERT drive=%d locked=%d\n", (int)Drive_No, (int)locked);
 	vSonyInsertedMask |= ((ui5b)1 << Drive_No);
 	if (! locked) {
 		vSonyWritableMask |= ((ui5b)1 << Drive_No);

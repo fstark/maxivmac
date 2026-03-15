@@ -26,6 +26,20 @@
 
 #include "PICOMMON.h"
 
+/* Peripheral I/O logging: automatically enabled when WantDisasm is on,
+   or can be forced via -DMMDV_IO_LOG=1. */
+#ifndef MMDV_IO_LOG
+#if WantDisasm
+#define MMDV_IO_LOG 1
+#else
+#define MMDV_IO_LOG 0
+#endif
+#endif
+
+#if MMDV_IO_LOG
+#include <stdio.h>
+#endif
+
 /*
 	ReportAbnormalID unused 0x111D - 0x11FF
 */
@@ -153,6 +167,7 @@ GLOBALPROC dbglog_WriteMemArrow(blnr WriteMem)
 GLOBALPROC dbglog_AddrAccess(char *s, ui5r Data,
 	blnr WriteMem, ui5r addr)
 {
+	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
 	dbglog_writeCStr("[");
@@ -167,6 +182,7 @@ GLOBALPROC dbglog_AddrAccess(char *s, ui5r Data,
 #if dbglog_HAVE
 GLOBALPROC dbglog_Access(char *s, ui5r Data, blnr WriteMem)
 {
+	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
 	dbglog_WriteMemArrow(WriteMem);
@@ -178,6 +194,7 @@ GLOBALPROC dbglog_Access(char *s, ui5r Data, blnr WriteMem)
 #if dbglog_HAVE
 GLOBALPROC dbglog_WriteNote(char *s)
 {
+	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
 	dbglog_writeReturn();
@@ -187,6 +204,7 @@ GLOBALPROC dbglog_WriteNote(char *s)
 #if dbglog_HAVE
 GLOBALPROC dbglog_WriteSetBool(char *s, blnr v)
 {
+	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
 	dbglog_writeCStr(" <- ");
@@ -1301,9 +1319,31 @@ LOCALPROC get_fail_realblock(ATTep p)
 }
 #endif
 
+#if MMDV_IO_LOG
+static const char* mmdv_name_ref(ui3r mmdv) {
+	switch (mmdv) {
+		case kMMDV_VIA1: return "VIA1";
+#if EmVIA2
+		case kMMDV_VIA2: return "VIA2";
+#endif
+		case kMMDV_SCC:  return "SCC";
+		case kMMDV_Extn: return "EXTN";
+#if EmASC
+		case kMMDV_ASC:  return "ASC";
+#endif
+		case kMMDV_SCSI: return "SCSI";
+		case kMMDV_IWM:  return "IWM";
+		default:         return "???";
+	}
+}
+#endif
+
 GLOBALFUNC ui5b MMDV_Access(ATTep p, ui5b Data,
 	blnr WriteMem, blnr ByteSize, CPTR addr)
 {
+#if MMDV_IO_LOG
+	ui5b origData = Data;
+#endif
 	switch (p->MMDV) {
 #if EmVIA1
 		case kMMDV_VIA1:
@@ -1529,6 +1569,16 @@ GLOBALFUNC ui5b MMDV_Access(ATTep p, ui5b Data,
 
 			break;
 	}
+
+#if MMDV_IO_LOG
+	if (g_LogEnd > 0 && g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd) {
+		if (WriteMem) {
+			fprintf(stderr, "%u IOW %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name_ref(p->MMDV), (unsigned)addr, (unsigned)(origData & 0xFF));
+		} else {
+			fprintf(stderr, "%u IOR %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name_ref(p->MMDV), (unsigned)addr, (unsigned)(Data & 0xFF));
+		}
+	}
+#endif
 
 	return Data;
 }
