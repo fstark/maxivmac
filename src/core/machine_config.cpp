@@ -51,7 +51,7 @@ static VIAConfig MakeVIA2Config_MacII() {
 	v.cb2ModesAllowed  = 0x01;
 	v.ca2ModesAllowed  = 0x01;
 	v.portAWires = {
-		Wire_VIA2_iA0, Wire_VIA2_iA1, Wire_VIA2_iA2, Wire_VIA2_iA3,
+		Wire_VBLinterrupt, Wire_VIA2_iA1, Wire_VIA2_iA2, Wire_VIA2_iA3,
 		Wire_VIA2_iA4, Wire_VIA2_iA5, Wire_VIA2_iA6, Wire_VIA2_iA7
 	};
 	v.portBWires = {

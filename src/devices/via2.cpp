@@ -739,7 +739,11 @@ uint32_t VIA2Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			break;
 		case kORA   :
 		case kORA_H :
-			if ((d_.PCR & 0xE) == 0) {
+			if (acfg.ca2ModesAllowed != 0x01) {
+				if ((d_.PCR & 0x0E) == 0) {
+					clrInterruptFlag(kIntCA2);
+				}
+			} else {
 				clrInterruptFlag(kIntCA2);
 			}
 			clrInterruptFlag(kIntCA1);
