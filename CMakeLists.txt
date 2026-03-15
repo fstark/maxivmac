@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.20)
 
 # Enable OBJC only on Apple — other platforms don't need it.
 if(APPLE)
-    project(minivmac VERSION 37.03 LANGUAGES C CXX OBJC OBJCXX)
+    project(maxivmac VERSION 37.03 LANGUAGES C CXX OBJC OBJCXX)
 else()
-    project(minivmac VERSION 37.03 LANGUAGES C CXX)
+    project(maxivmac VERSION 37.03 LANGUAGES C CXX)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -105,7 +105,7 @@ if(MINIVMAC_BACKEND STREQUAL "auto")
     endif()
 endif()
 
-message(STATUS "minivmac backend: ${MINIVMAC_BACKEND}")
+message(STATUS "maxivmac backend: ${MINIVMAC_BACKEND}")
 
 # ---------------------------------------------------------------------------
 # Generate CNFUIOSG.h from template — selects backend + system includes
@@ -230,12 +230,12 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
         src/platform/common/control_mode.cpp
         PROPERTIES LANGUAGE OBJCXX)
 
-    add_executable(minivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
+    add_executable(maxivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
 
-    set_target_properties(minivmac PROPERTIES
+    set_target_properties(maxivmac PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/src/config/Info.plist"
-        MACOSX_BUNDLE_BUNDLE_NAME "Mini vMac"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "com.gryphel.minivmac"
+        MACOSX_BUNDLE_BUNDLE_NAME "Maxi vMac"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.gryphel.maxivmac"
     )
 
     # Bundle resources
@@ -247,7 +247,7 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
         src/config/English.lproj/dummy.txt
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources/English.lproj
     )
-    target_sources(minivmac PRIVATE
+    target_sources(maxivmac PRIVATE
         src/resources/ICONAPPO.icns
         src/config/English.lproj/dummy.txt
     )
@@ -257,7 +257,7 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
     find_library(AUDIOUNIT_FRAMEWORK AudioUnit REQUIRED)
     find_library(COREAUDIO_FRAMEWORK CoreAudio REQUIRED)
     find_library(OPENGL_FRAMEWORK OpenGL REQUIRED)
-    target_link_libraries(minivmac PRIVATE
+    target_link_libraries(maxivmac PRIVATE
         ${APPKIT_FRAMEWORK}
         ${AUDIOUNIT_FRAMEWORK}
         ${COREAUDIO_FRAMEWORK}
@@ -274,38 +274,38 @@ elseif(MINIVMAC_BACKEND STREQUAL "sdl")
     list(APPEND MINIVMAC_SOURCES src/platform/sdl.cpp)
 
     if(APPLE)
-        add_executable(minivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
-        set_target_properties(minivmac PROPERTIES
+        add_executable(maxivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
+        set_target_properties(maxivmac PROPERTIES
             MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/src/config/Info.plist"
-            MACOSX_BUNDLE_BUNDLE_NAME "Mini vMac"
-            MACOSX_BUNDLE_GUI_IDENTIFIER "com.gryphel.minivmac"
+            MACOSX_BUNDLE_BUNDLE_NAME "Maxi vMac"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "com.gryphel.maxivmac"
         )
     else()
-        add_executable(minivmac ${MINIVMAC_SOURCES})
+        add_executable(maxivmac ${MINIVMAC_SOURCES})
     endif()
 
     # Try SDL3 first, fall back to SDL2
     find_package(SDL3 QUIET)
     if(SDL3_FOUND)
         message(STATUS "Found SDL3")
-        target_link_libraries(minivmac PRIVATE SDL3::SDL3)
+        target_link_libraries(maxivmac PRIVATE SDL3::SDL3)
     else()
         find_package(SDL2 REQUIRED)
         message(STATUS "Found SDL2")
-        target_link_libraries(minivmac PRIVATE SDL2::SDL2)
+        target_link_libraries(maxivmac PRIVATE SDL2::SDL2)
     endif()
 
     # On Linux, we may need X11
     if(UNIX AND NOT APPLE)
         find_package(X11)
         if(X11_FOUND)
-            target_link_libraries(minivmac PRIVATE X11::X11)
+            target_link_libraries(maxivmac PRIVATE X11::X11)
         endif()
     endif()
 
     # On Windows, link winsock etc. if needed
     if(WIN32)
-        target_link_libraries(minivmac PRIVATE winmm)
+        target_link_libraries(maxivmac PRIVATE winmm)
     endif()
 endif()
 
@@ -315,7 +315,7 @@ endif()
 
 # Include paths: generated cfg dir has all 7 config headers (generated or
 # copied). src/config/ for static fallback configs. src/ for source headers.
-target_include_directories(minivmac PRIVATE
+target_include_directories(maxivmac PRIVATE
     "${MINIVMAC_GENERATED_CFG_DIR}"
     "${CMAKE_SOURCE_DIR}/src/config"
     "${CMAKE_SOURCE_DIR}/src"
@@ -324,7 +324,7 @@ target_include_directories(minivmac PRIVATE
 # All sources are now .cpp or .mm — no LANGUAGE overrides needed.
 
 # Compiler flags matching the original Xcode project
-target_compile_options(minivmac PRIVATE
+target_compile_options(maxivmac PRIVATE
     -Wall
     -Wundef
     -Wconditional-uninitialized

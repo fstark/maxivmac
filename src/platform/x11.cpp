@@ -4550,8 +4550,8 @@ static bool CreateMainWindow(void)
 		{
 			XClassHint *hints = XAllocClassHint();
 			if (hints) {
-				hints->res_name = "minivmac";
-				hints->res_class = "minivmac";
+			hints->res_name = "maxivmac";
+				hints->res_class = "maxivmac";
 				XSetClassHint(x_display, my_main_wind, hints);
 				XFree(hints);
 			}

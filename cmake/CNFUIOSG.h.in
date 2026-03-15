@@ -11,8 +11,8 @@
 #define MyAppIsBundle @MINIVMAC_IS_BUNDLE@
 #define WantOSGLU@MINIVMAC_BACKEND_TAG@ 1
 
-#define kStrAppName "Mini vMac"
-#define kAppVariationStr "minivmac-cmake-@MINIVMAC_BACKEND@"
+#define kStrAppName "Maxi vMac"
+#define kAppVariationStr "maxivmac-cmake-@MINIVMAC_BACKEND@"
 #define kStrCopyrightYear "2026"
 #define kMaintainerName "@MINIVMAC_MAINTAINER@"
 #define kStrHomePage "@MINIVMAC_HOMEPAGE@"

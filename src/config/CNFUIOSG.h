@@ -21,8 +21,8 @@
 #define MyAppIsBundle 1
 #define WantOSGLUCCO 1
 
-#define kStrAppName "Mini vMac"
-#define kAppVariationStr "minivmac-3.7-test"
+#define kStrAppName "Maxi vMac"
+#define kAppVariationStr "maxivmac"
 #define kStrCopyrightYear "2020"
 #define kMaintainerName "egon.rath@gmail.com"
 #define kStrHomePage "https://github.com/egrath"

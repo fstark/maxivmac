@@ -5147,7 +5147,7 @@ static bool InitWhereAmI(void)
 {
 	app_parent = (char *)SDL_GetBasePath();
 
-	pref_dir = SDL_GetPrefPath("gryphel", "minivmac");
+	pref_dir = SDL_GetPrefPath("gryphel", "maxivmac");
 
 	return true; /* keep going regardless */
 }
