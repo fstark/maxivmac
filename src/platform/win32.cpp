@@ -2793,7 +2793,7 @@ static HDC MainWndDC = NULL;
 static int32_t CmdShow;
 
 static TCHAR WndTitle[_MAX_PATH];
-static const TCHAR WndClassName[] = TEXT("minivmac");
+static const TCHAR WndClassName[] = TEXT("maxivmac");
 
 static bool gBackgroundFlag = false;
 static bool gTrueBackgroundFlag = false;
@@ -5276,10 +5276,10 @@ static bool RegisterInRegistry(void)
 	GetShortPathName(AppPath, AppPath, _MAX_PATH);
 #endif
 
-	RegisterShellFileType(AppPath, TEXT(".rom"), TEXT("minivmac.rom"),
-		TEXT("Mini vMac ROM Image"), TEXT("1"), false);
-	RegisterShellFileType(AppPath, TEXT(".dsk"), TEXT("minivmac.dsk"),
-		TEXT("Mini vMac Disk Image"), TEXT("2"), true);
+	RegisterShellFileType(AppPath, TEXT(".rom"), TEXT("maxivmac.rom"),
+		TEXT("Maxi vMac ROM Image"), TEXT("1"), false);
+	RegisterShellFileType(AppPath, TEXT(".dsk"), TEXT("maxivmac.dsk"),
+		TEXT("Maxi vMac Disk Image"), TEXT("2"), true);
 
 	return true;
 }

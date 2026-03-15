@@ -187,7 +187,7 @@ extern uint16_t MasterMyEvtQLock;
 extern bool FindKeyEvent(int *VirtualKey, bool *KeyDown);
 
 
-/* minivmac extensions */
+/* maxivmac extensions */
 
 #define ExtnDat_checkval 0
 #define ExtnDat_extension 2
