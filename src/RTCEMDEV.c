@@ -14,6 +14,8 @@
 	license for more details.
 */
 
+#include <stdio.h>
+
 /*
 	Real Time Clock EMulated DEVice
 
@@ -124,7 +126,7 @@ LOCALVAR ui5b LastRealDate;
 	((MenuBlink << 2) + (StartUpDisk << 4) \
 		+ (DiskCacheOn << 5) + (MouseScalingOn << 6))
 
-#if dbglog_HAVE && 0
+#if dbglog_HAVE
 EXPORTPROC DumpRTC(void);
 
 GLOBALPROC DumpRTC(void)
@@ -138,6 +140,9 @@ GLOBALPROC DumpRTC(void)
 		dbglog_writeHex(RTC.PARAMRAM[Counter]);
 		dbglog_writeReturn();
 	}
+	dbglog_writeCStr("RTC Seconds: ");
+	dbglog_writeHex((RTC.Seconds_1[3] << 24) | (RTC.Seconds_1[2] << 16) | (RTC.Seconds_1[1] << 8) | RTC.Seconds_1[0]);
+	dbglog_writeReturn();
 }
 #endif
 
@@ -307,6 +312,21 @@ GLOBALFUNC blnr RTC_Init(void)
 #endif
 
 #endif /* RTCinitPRAM */
+
+#if dbglog_HAVE
+	DumpRTC();
+#endif
+	/* Dump PRAM to stderr for comparison */
+	{
+		int i;
+		fprintf(stderr, "PRAM_DUMP ");
+		for (i = 0; i < PARAMRAMSize; i++) {
+			fprintf(stderr, "%02X", RTC.PARAMRAM[i]);
+		}
+		fprintf(stderr, " SEC=%02X%02X%02X%02X\n",
+			RTC.Seconds_1[3], RTC.Seconds_1[2],
+			RTC.Seconds_1[1], RTC.Seconds_1[0]);
+	}
 
 	return trueblnr;
 }

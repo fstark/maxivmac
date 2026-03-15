@@ -2192,7 +2192,8 @@ LOCALFUNC blnr InitLocationDat(void)
 
 	MyDateDelta = TzOffSet - 1233815296;
 	LatestTime = [NSDate timeIntervalSinceReferenceDate];
-	NewMacDateInSeconds = ((ui5b)LatestTime) + MyDateDelta;
+	/* Fixed date: 14 March 1990 12:00:00 UTC (Mac epoch seconds) */
+	NewMacDateInSeconds = ((ui5b)0xA223E2C0);
 	CurMacDateInSeconds = NewMacDateInSeconds;
 #if AutoTimeZone
 	CurMacDelta = (TzOffSet & 0x00FFFFFF)
@@ -4895,7 +4896,9 @@ label_retry:
 #endif
 	}
 
-	OnTrueTime = TrueEmulatedTime;
+	/* Always advance exactly one tick so the emulated tick count
+	   is deterministic regardless of host speed. */
+	++OnTrueTime;
 
 #if dbglog_TimeStuff
 	dbglog_writelnNum("WaitForNextTick, OnTrueTime", OnTrueTime);
