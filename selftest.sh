@@ -21,18 +21,18 @@ TMP="$DIR/tmp"
 mkdir -p "$TMP"
 
 run_ref() {
-    cp "$DIR/reference/mf2.hfs.reference" "$DIR/reference/disk.hfs"
+    # No disk for Mac II testing
     "$DIR/reference/minivmac.app/Contents/MacOS/minivmac" \
         --log-start="$LOG_START" --log-count="$LOG_COUNT" \
-        "$DIR/reference/disk.hfs" 2>"$1"
+        2>"$1"
 }
 
 run_debug() {
-    cp "$DIR/reference/mf2.hfs.reference" "$DIR/disk.hfs"
+    # No disk for Mac II testing
     "$DIR/bld/macos-cocoa/minivmac.app/Contents/MacOS/minivmac" \
-        --model plus --rom="$DIR/extras/roms/vMac.ROM" \
+        --model II --rom="$DIR/extras/roms/MacII.ROM" \
         --log-start="$LOG_START" --log-count="$LOG_COUNT" \
-        "$DIR/disk.hfs" 2>"$1"
+        2>"$1"
 }
 
 echo "=== Self-test: $BUILD  start=$LOG_START count=$LOG_COUNT runs=$RUNS ==="

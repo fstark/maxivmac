@@ -20,18 +20,18 @@ REF_OUT="$TMP/compare_ref.txt"
 DBG_OUT="$TMP/compare_dbg.txt"
 
 echo "=== Reference build: --log-start=$LOG_START --log-count=$LOG_COUNT ==="
-cp "$DIR/reference/mf2.hfs.reference" "$DIR/reference/disk.hfs"
+# No disk for Mac II testing
 "$DIR/reference/minivmac.app/Contents/MacOS/minivmac" \
     --log-start="$LOG_START" --log-count="$LOG_COUNT" \
-    "$DIR/reference/disk.hfs" 2>"$REF_OUT"
+    2>"$REF_OUT"
 echo "  $(wc -l < "$REF_OUT") lines"
 
 echo "=== Debug build: --log-start=$LOG_START --log-count=$LOG_COUNT ==="
-cp "$DIR/reference/mf2.hfs.reference" "$DIR/disk.hfs"
+# No disk for Mac II testing
 "$DIR/bld/macos-cocoa/minivmac.app/Contents/MacOS/minivmac" \
-    --model plus --rom="$DIR/extras/roms/vMac.ROM" \
+    --model II --rom="$DIR/extras/roms/MacII.ROM" \
     --log-start="$LOG_START" --log-count="$LOG_COUNT" \
-    "$DIR/disk.hfs" 2>"$DBG_OUT"
+    2>"$DBG_OUT"
 echo "  $(wc -l < "$DBG_OUT") lines"
 
 echo "=== Diff ==="
