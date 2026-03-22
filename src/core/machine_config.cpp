@@ -247,7 +247,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.ramBSize    = 0;
 			c.romSize     = 0x00020000; // 128 KB
 			c.romBase     = 0x00400000;
-			c.romFileName = "vMac.ROM";
+			c.romFileName = "Mac512Ke.ROM";
 			c.extnBlockBase = 0x00F0C000; // 24-bit address space
 			c.emVIA1      = true;
 			c.emVIA2      = false;
@@ -303,7 +303,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.ramBSize    = 0;
 			c.romSize     = 0x00020000; // 128 KB
 			c.romBase     = 0x00400000;
-			c.romFileName = "vMac.ROM";
+			c.romFileName = "MacPlus.ROM";
 			c.extnBlockBase = 0x00F40000; // 24-bit address space (matches reference)
 			c.emVIA1      = true;
 			c.emVIA2      = false;

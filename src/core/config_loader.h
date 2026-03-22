@@ -24,6 +24,14 @@ struct LaunchConfig {
 	uint32_t logCount   = 0;   // how many instructions to log (0 = no logging)
 	bool     fullscreen = false;
 	bool     help       = false;
+
+	// StateRecorder options
+	std::string recordPath;       // --record=<path>
+	std::string verifyPath;       // --verify=<path>
+	std::string tracePath;        // --trace=<path> (CPU+IO text)
+	std::string traceCpuPath;     // --trace-cpu=<path> (CPU-only text)
+	uint32_t    snapshotInterval = 0; // --snapshot-interval=N (0=default 100K)
+	uint64_t    maxInstructions  = 0; // --max-instructions=N (0=default 50M)
 };
 
 // Parse command-line arguments into a LaunchConfig.
@@ -38,3 +46,11 @@ void PrintUsage(const char* progname);
 // Parse a model name string (case-insensitive) to MacModel enum.
 // Returns true on success.
 bool ParseModelName(const std::string& name, MacModel& out);
+
+// Return the default ROM filename for a model (e.g. "MacPlus.ROM").
+const char* DefaultRomFileName(MacModel model);
+
+// Resolve ROM path: if romPath is set, return it; otherwise search
+// CWD and CWD/roms/ for the model's default ROM filename.
+// Returns empty string if not found.
+std::string ResolveRomPath(const std::string& romPath, MacModel model);

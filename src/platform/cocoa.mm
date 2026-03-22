@@ -1266,16 +1266,17 @@ static bool LoadMacRom(void)
 {
 	tMacErr err;
 
-	/* Check for explicit --rom path from command line */
+	/* Resolve ROM path: explicit --rom, or auto-detect from model */
 	const LaunchConfig& lc = GetLaunchConfig();
-	if (!lc.romPath.empty()) {
-		NSString *romNSPath = [NSString stringWithUTF8String:lc.romPath.c_str()];
+	std::string resolved = ResolveRomPath(lc.romPath, lc.model);
+	if (!resolved.empty()) {
+		NSString *romNSPath = [NSString stringWithUTF8String:resolved.c_str()];
 		err = LoadMacRomPath(romNSPath);
 		if (err == mnvm_noErr) {
 			return true;
 		}
 		fprintf(stderr, "Warning: failed to load ROM from '%s', searching default locations\n",
-			lc.romPath.c_str());
+			resolved.c_str());
 	}
 
 	if (mnvm_fnfErr == (err = LoadMacRomFromAppDir()))
@@ -2205,9 +2206,6 @@ static bool InitLocationDat(void)
 {
 	NSTimeZone *MyZone = [NSTimeZone localTimeZone];
 	uint32_t TzOffSet = (uint32_t)[MyZone secondsFromGMT];
-#if AutoTimeZone
-	BOOL isdst = [MyZone isDaylightSavingTime];
-#endif
 
 	MyDateDelta = TzOffSet - 1233815296;
 	LatestTime = [NSDate timeIntervalSinceReferenceDate];
@@ -2215,8 +2213,8 @@ static bool InitLocationDat(void)
 	NewMacDateInSeconds = UINT32_C(0xA223E2C0);
 	CurMacDateInSeconds = NewMacDateInSeconds;
 #if AutoTimeZone
-	CurMacDelta = (TzOffSet & 0x00FFFFFF)
-		| ((isdst ? 0x80 : 0) << 24);
+	/* Hardcoded for deterministic emulation: UTC+0, no DST */
+	CurMacDelta = 0;
 #endif
 
 	return true;
@@ -4839,6 +4837,27 @@ static void ProcessOneSystemEvent(NSEvent *event)
 
 void WaitForNextTick(void)
 {
+	/* Unthrottled path: drain events (keep window responsive) but
+	   don't feed mouse/keyboard into the emulator, and skip the
+	   nanosleep wait.  Drawing still happens via DoneWithDrawingForTick. */
+	if (g_SkipThrottle) {
+		NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+		NSEvent *event;
+		int i = 32;
+		while ((--i >= 0) && (nil != (event =
+			[NSApp nextEventMatchingMask: MyNSAnyEventMask
+				untilDate: [NSDate distantPast]
+				inMode: NSDefaultRunLoopMode
+				dequeue: YES])))
+		{
+			[NSApp sendEvent: event];  /* window management only */
+		}
+		DoneWithDrawingForTick();
+		++OnTrueTime;
+		[pool release];
+		return;
+	}
+
 	NSDate *TheUntil;
 	int i;
 	NSEvent *event;

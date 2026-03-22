@@ -43,6 +43,8 @@
 #include "core/machine_obj.h"
 #include "core/machine_config.h"
 #include "core/ict_scheduler.h"
+#include "core/state_recorder.hpp"
+#include "core/md5.h"
 #include "cpu/cpu.h"
 
 #include <memory>
@@ -431,6 +433,7 @@ static void MainEventLoop(void)
 
 static std::unique_ptr<Machine> s_machine;
 static LaunchConfig s_launchConfig;
+static MachineConfig s_machineConfig;
 
 const LaunchConfig& GetLaunchConfig(void)
 {
@@ -452,8 +455,85 @@ void ProgramEarlyInit(int argc, char* argv[])
 		g_LogEnd   = s_launchConfig.logStart + s_launchConfig.logCount;
 	}
 
-	MachineConfig config = BuildMachineConfig(s_launchConfig);
-	s_machine = std::make_unique<Machine>(std::move(config));
+	/* When verifying, source emulation params from the golden file */
+	StateRecorder::HeaderInfo goldenHdr;
+	bool haveGoldenHdr = false;
+	if (!s_launchConfig.verifyPath.empty()) {
+		if (!StateRecorder::readHeader(s_launchConfig.verifyPath, goldenHdr)) {
+			std::fprintf(stderr, "Cannot read golden file header, aborting.\n");
+			std::exit(1);
+		}
+		haveGoldenHdr = true;
+		s_launchConfig.model = static_cast<MacModel>(goldenHdr.modelId);
+		SpeedValue = goldenHdr.speedValue;
+		g_SkipThrottle = true;
+	}
+
+	/* Set up StateRecorder from CLI args */
+	s_machineConfig = BuildMachineConfig(s_launchConfig);
+
+	/* Override MachineConfig with exact values from golden header */
+	if (haveGoldenHdr) {
+		uint32_t ram = goldenHdr.ramSize;
+		if (s_machineConfig.ramBSize > 0) {
+			s_machineConfig.ramASize = ram / 2;
+			s_machineConfig.ramBSize = ram / 2;
+		} else {
+			s_machineConfig.ramASize = ram;
+		}
+		s_machineConfig.screenWidth  = goldenHdr.screenWidth;
+		s_machineConfig.screenHeight = goldenHdr.screenHeight;
+		s_machineConfig.screenDepth  = goldenHdr.screenDepth;
+	}
+
+	{
+		StateRecorder::Config rc;
+
+		if (!s_launchConfig.recordPath.empty()) {
+			rc.mode = RecorderMode::Record;
+			rc.goldenPath = s_launchConfig.recordPath;
+		} else if (!s_launchConfig.verifyPath.empty()) {
+			rc.mode = RecorderMode::Verify;
+			rc.goldenPath = s_launchConfig.verifyPath;
+		}
+
+		if (!s_launchConfig.tracePath.empty()) {
+			rc.textLog = TextLog::CpuAndIo;
+			rc.textPath = s_launchConfig.tracePath;
+		} else if (!s_launchConfig.traceCpuPath.empty()) {
+			rc.textLog = TextLog::CpuOnly;
+			rc.textPath = s_launchConfig.traceCpuPath;
+		}
+
+		if (s_launchConfig.snapshotInterval > 0)
+			rc.snapshotInterval = s_launchConfig.snapshotInterval;
+		if (s_launchConfig.maxInstructions > 0)
+			rc.maxInstructions = s_launchConfig.maxInstructions;
+
+		rc.modelId = static_cast<uint32_t>(s_launchConfig.model);
+		rc.speedValue = SpeedValue;
+		rc.ramSize = s_machineConfig.ramSize();
+		rc.screenWidth = s_machineConfig.screenWidth;
+		rc.screenHeight = s_machineConfig.screenHeight;
+		rc.screenDepth = s_machineConfig.screenDepth;
+
+		// Hash ROM file
+		std::string resolvedRom = ResolveRomPath(s_launchConfig.romPath, s_launchConfig.model);
+		if (!resolvedRom.empty())
+			md5_file(resolvedRom.c_str(), rc.romHash);
+		// Hash first disk
+		if (!s_launchConfig.diskPaths.empty())
+			md5_file(s_launchConfig.diskPaths[0].c_str(), rc.diskHash);
+
+		if (rc.mode != RecorderMode::Off || rc.textLog != TextLog::None) {
+			if (!g_recorder.init(rc)) {
+				std::fprintf(stderr, "StateRecorder init failed, aborting.\n");
+				std::exit(1);
+			}
+		}
+	}
+
+	s_machine = std::make_unique<Machine>(std::move(s_machineConfig));
 	s_machine->init();
 }
 

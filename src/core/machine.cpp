@@ -25,6 +25,7 @@
 */
 
 #include "core/common.h"
+#include "core/state_recorder.hpp"
 
 /* Device headers for ATT Device* dispatch */
 #include "devices/device.h"
@@ -1589,6 +1590,13 @@ static void get_fail_realblock(ATTep p)
 		} else {
 			fprintf(stderr, "%u IOR %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name(p->MMDV), addr, Data & 0xFF);
 		}
+	}
+
+	/* StateRecorder I/O hook */
+	if (g_recorder.active()) {
+		g_recorder.io(g_InstructionCount, addr,
+			WriteMem ? origData : Data,
+			WriteMem, ByteSize, mmdv_name(p->MMDV));
 	}
 
 	return Data;

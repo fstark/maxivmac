@@ -222,6 +222,8 @@ extern bool ExtraTimeNotOver(void);
 
 extern uint8_t SpeedValue;
 
+extern bool g_SkipThrottle;
+
 #if EnableAutoSlow
 extern bool WantNotAutoSlow;
 #endif

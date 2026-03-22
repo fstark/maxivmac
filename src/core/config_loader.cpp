@@ -146,6 +146,30 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			lc.logCount = (uint32_t)strtoul(arg + 12, NULL, 10);
 			continue;
 		}
+		if (strncmp(arg, "--record=", 9) == 0) {
+			lc.recordPath = arg + 9;
+			continue;
+		}
+		if (strncmp(arg, "--verify=", 9) == 0) {
+			lc.verifyPath = arg + 9;
+			continue;
+		}
+		if (strncmp(arg, "--trace=", 8) == 0) {
+			lc.tracePath = arg + 8;
+			continue;
+		}
+		if (strncmp(arg, "--trace-cpu=", 12) == 0) {
+			lc.traceCpuPath = arg + 12;
+			continue;
+		}
+		if (strncmp(arg, "--snapshot-interval=", 20) == 0) {
+			lc.snapshotInterval = (uint32_t)strtoul(arg + 20, NULL, 10);
+			continue;
+		}
+		if (strncmp(arg, "--max-instructions=", 19) == 0) {
+			lc.maxInstructions = (uint64_t)strtoull(arg + 19, NULL, 10);
+			continue;
+		}
 
 		// --key value (separate token) style
 		if (strcmp(arg, "--model") == 0 && i + 1 < argc) {
@@ -246,16 +270,70 @@ void PrintUsage(const char* progname)
 		"Options:\n"
 		"  --model=MODEL    Mac model: Plus, SE, II, IIx, Classic, PB100, 128K, 512Ke\n"
 		"                   (default: II)\n"
-		"  --rom=PATH       Path to ROM file\n"
+		"  --rom=PATH       Path to ROM file (auto-detected from model if omitted)\n"
 		"  --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)\n"
 		"  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.\n"
 		"  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)\n"
 		"  --fullscreen     Start in fullscreen mode\n"
+		"  --record=PATH    Record golden file for non-regression testing\n"
+		"  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)\n"
+		"  --trace=PATH     Write CPU+IO text trace to file\n"
+		"  --trace-cpu=PATH Write CPU-only text trace to file\n"
+		"  --snapshot-interval=N  Instructions between snapshots (default: 100000)\n"
+		"  --max-instructions=N   Instruction budget (default: 50000000)\n"
 		"  -r PATH          ROM path (short form)\n"
 		"  -h, --help       Show this help\n"
 		"\n"
+		"ROM auto-detection searches: ./<MODEL>.ROM, roms/<MODEL>.ROM\n"
+		"\n"
 		"Examples:\n"
-		"  %s --model=II --rom=MacII.ROM system7.img\n"
-		"  %s --model=Plus --rom=vMac.ROM --ram=4M disk.img\n",
+		"  %s --model=II system7.img\n"
+		"  %s --model=Plus disk.img\n",
 		progname, progname, progname);
+}
+
+const char* DefaultRomFileName(MacModel model)
+{
+	switch (model) {
+		case MacModel::Twig43:   return "Twig43.ROM";
+		case MacModel::Twiggy:   return "Twiggy.ROM";
+		case MacModel::Mac128K:  return "Mac128K.ROM";
+		case MacModel::Mac512Ke: return "Mac512Ke.ROM";
+		case MacModel::Kanji:    return "MacPlusKanji.ROM";
+		case MacModel::Plus:     return "MacPlus.ROM";
+		case MacModel::SE:       return "MacSE.ROM";
+		case MacModel::SEFDHD:   return "SEFDHD.ROM";
+		case MacModel::Classic:  return "Classic.ROM";
+		case MacModel::PB100:    return "PB100.ROM";
+		case MacModel::II:       return "MacII.ROM";
+		case MacModel::IIx:      return "MacIIx.ROM";
+	}
+	return "MacII.ROM";
+}
+
+static bool fileExists(const std::string& path)
+{
+	FILE* f = fopen(path.c_str(), "rb");
+	if (f) { fclose(f); return true; }
+	return false;
+}
+
+std::string ResolveRomPath(const std::string& romPath, MacModel model)
+{
+	if (!romPath.empty())
+		return romPath;
+
+	const char* name = DefaultRomFileName(model);
+
+	// Try CWD/<name>
+	std::string p = name;
+	if (fileExists(p))
+		return p;
+
+	// Try roms/<name>
+	p = std::string("roms/") + name;
+	if (fileExists(p))
+		return p;
+
+	return {};
 }

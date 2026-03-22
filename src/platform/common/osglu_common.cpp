@@ -84,6 +84,8 @@ bool WantMacReset = false;
 
 uint8_t SpeedValue = WantInitSpeedValue;
 
+bool g_SkipThrottle = false;
+
 #if EnableAutoSlow
 bool WantNotAutoSlow = (WantInitNotAutoSlow != 0);
 #endif

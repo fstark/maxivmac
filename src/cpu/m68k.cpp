@@ -32,6 +32,7 @@
 
 #include "core/common.h"
 #include "core/machine_config.h"
+#include "core/state_recorder.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -393,6 +394,8 @@ static inline uint32_t m68k_getpc(void)
 	return V_regs.pc + (V_pc_p - V_regs.pc_pLo);
 }
 
+/* Forward declaration — defined later but needed by the StateRecorder hook in the main loop */
+static uint16_t m68k_getSR(void);
 
 static void DoCodeTst(void);
 static void DoCodeCmpB(void);
@@ -842,6 +845,21 @@ static void m68k_go_MaxCycles(void)
 					std::exit(0);
 				}
 			}
+
+			/* StateRecorder hook */
+			if (g_recorder.active()) {
+				uint16_t sr = m68k_getSR();
+				uint32_t dregs[8] = {
+					m68k_dreg(0), m68k_dreg(1), m68k_dreg(2), m68k_dreg(3),
+					m68k_dreg(4), m68k_dreg(5), m68k_dreg(6), m68k_dreg(7)
+				};
+				uint32_t aregs[8] = {
+					m68k_areg(0), m68k_areg(1), m68k_areg(2), m68k_areg(3),
+					m68k_areg(4), m68k_areg(5), m68k_areg(6), m68k_areg(7)
+				};
+				g_recorder.cpu(g_InstructionCount, pc, sr, dregs, aregs);
+			}
+
 			g_InstructionCount++;
 		}
 
