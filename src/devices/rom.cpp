@@ -285,7 +285,7 @@ static void ROMscrambleForMTB(void)
 		do_put_mem_word(0xD7A + ROM, 0x6022);
 	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) {
 		do_put_mem_word(0x1C68 + ROM, 0x6008);
-	} else { /* II/IIx */
+	} else if (g_machine->config().isIIFamily()) {
 		do_put_mem_word(0x2AB0 + ROM, 0x6008);
 	}
 }
@@ -307,7 +307,7 @@ static void ROMscrambleForMTB(void)
 	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) {
 		do_put_mem_word(134 + ROM, 0x6002);
 		do_put_mem_word(286 + ROM, 0x6002);
-	} else { /* II/IIx */
+	} else if (g_machine->config().isIIFamily()) {
 		do_put_mem_word(0xEE + ROM, 0x6002);
 		do_put_mem_word(0x1AA + ROM, 0x6002);
 	}
@@ -322,7 +322,12 @@ static void ROMscrambleForMTB(void)
 	/* do_put_mem_word(862 + ROM, 0x4E71); */ /* shorten set memory */
 
 #if UseSonyPatch
-	Sony_Install();
+	{
+		auto m = g_machine->config().model;
+		if (m != MacModel::PB100) {
+			Sony_Install();
+		}
+	}
 #endif
 
 #ifdef ln2mtb

@@ -140,8 +140,11 @@ static VIAConfig MakeVIA1Config_PB100() {
 		Wire_VIA1_iA0, Wire_VIA1_iA1, Wire_VIA1_iA2, Wire_VIA1_iA3,
 		Wire_VIA1_iA4, Wire_VIA1_iA5, Wire_VIA1_iA6, Wire_VIA1_iA7
 	};
+	/* PB100 uses Port B bit 0 for PmuToReady and bit 1 for
+	   PmuFromReady — wire them directly to the PMU signals so
+	   VIA reads/writes hit the same wire the PMU uses. */
 	v.portBWires = {
-		Wire_VIA1_iB0, Wire_VIA1_iB1, Wire_VIA1_iB2, Wire_VIA1_iB3,
+		Wire_PMU_ToReady, Wire_PMU_FromReady, Wire_VIA1_iB2, Wire_VIA1_iB3,
 		Wire_VIA1_iB4, Wire_VIA1_iB5, Wire_VIA1_iB6, Wire_VIA1_iB7
 	};
 	v.cb2Wire       = Wire_VIA1_iCB2;
@@ -421,6 +424,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.emVIA2      = false;
 			c.emADB       = false;
 			c.emClassicKbrd = false;
+			c.emRTC       = false;
 			c.emPMU       = true;
 			c.emASC       = true;
 			c.emClassicSnd  = false;

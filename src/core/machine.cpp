@@ -40,6 +40,7 @@
 #include "devices/adb.h"
 #include "devices/keyboard.h"
 #include "devices/rtc.h"
+#include "devices/pmu.h"
 #include "core/wire_bus.h"
 #include "cpu/cpu.h"
 #include "core/machine_obj.h"
@@ -1782,6 +1783,9 @@ void VIAorSCCinterruptChngNtfy(void)
 	}
 	if (g_machine->config().emClassicKbrd) {
 		g_wires.onChange(Wire_VIA1_iCB2, [](){ if (auto* d = g_machine->findDevice<KeyboardDevice>()) d->dataLineChngNtfy(); });
+	}
+	if (g_machine->config().emPMU) {
+		g_wires.onChange(Wire_PMU_ToReady, [](){ if (auto* d = g_machine->findDevice<PMUDevice>()) d->toReadyChangeNtfy(); });
 	}
 
 	g_cpu.init(
