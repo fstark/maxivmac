@@ -105,7 +105,7 @@ public:
         TextLog       textLog         = TextLog::None;
         OnMismatch    onMismatch      = OnMismatch::ExitNonZero;
         uint32_t      snapshotInterval = 100'000;
-        uint32_t      maxInstructions  = 50'000'000;
+        uint32_t      maxInstructions  = 20'000'000;
 
         // Filled in by the caller (main.cpp) from the running config:
         uint32_t      modelId         = 0;
@@ -157,7 +157,7 @@ private:
     OnMismatch    onMismatch_       = OnMismatch::ExitNonZero;
     TextLog       textLog_          = TextLog::None;
     uint32_t      snapshotInterval_ = 100'000;
-    uint32_t      maxInstructions_  = 50'000'000;
+    uint32_t      maxInstructions_  = 20'000'000;
     uint32_t      nextSnapshot_     = 0;   // next instructionCount to snapshot
     uint32_t      snapshotIndex_    = 0;   // current index into golden records
     uint32_t      snapshotCount_    = 0;   // total records (from header or accumulated)

@@ -23,7 +23,7 @@ rm -rf bld/
 ```bash
 cmake --preset macos-cocoa
 cmake --build --preset macos-cocoa
-cp -R bld/macos-cocoa/minivmac.app ./
+cp -R bld/macos-cocoa/maxivmac.app ./
 ```
 
 The app bundle is at `bld/macos-cocoa/minivmac.app`. Drop a Mac ROM file next to the app and a System disk image onto the window to boot.
@@ -38,20 +38,20 @@ flags to select the model at launch:
 ./minivmac.app/Contents/MacOS/minivmac --rom=MacII.ROM disk.hfs
 
 # Mac Plus
-./minivmac.app/Contents/MacOS/minivmac --model=Plus --rom=vMac.ROM disk.dsk
+./minivmac.app/Contents/MacOS/minivmac --model=MacPlus --rom=MacPlus.ROM disk.dsk
 
 # Mac SE
-./minivmac.app/Contents/MacOS/minivmac --model=SE --rom=MacSE.ROM disk.hfs
+./minivmac.app/Contents/MacOS/minivmac --model=MacSE --rom=MacSE.ROM disk.hfs
 
 # Custom RAM and screen
-./minivmac.app/Contents/MacOS/minivmac --model=II --ram=8M --screen=1024x768x8
+./minivmac.app/Contents/MacOS/minivmac --model=MacII --ram=8M --screen=1024x768x8
 ```
 
 ### Command-Line Options
 
 | Flag | Description |
 |------|-------------|
-| `--model=MODEL` | Mac model: `Plus`, `SE`, `SEFDHD`, `Classic`, `PB100`, `II`, `IIx`, `128K`, `512Ke` |
+| `--model=MODEL` | Mac model (= ROM base name): `MacPlus`, `MacSE`, `MacII`, `MacIIx`, `Classic`, `PB100`, `SEFDHD`, `Mac128K`, `Mac512Ke` |
 | `--rom=PATH` | Path to ROM file (overrides model default) |
 | `--ram=SIZE` | RAM size: `1M`, `2M`, `4M`, `8M`, etc. |
 | `--screen=WxHxD` | Screen: `512x342x1`, `640x480x8`, etc. (D = log2 bpp) |

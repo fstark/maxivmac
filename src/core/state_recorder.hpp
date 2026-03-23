@@ -51,8 +51,8 @@ public:
 		std::string   textPath;         // "" → stderr when textLog != None
 		TextLog       textLog          = TextLog::None;
 		OnMismatch    onMismatch       = OnMismatch::ExitNonZero;
-		uint32_t      snapshotInterval = 100'000;
-		uint64_t      maxInstructions  = 50'000'000;
+		uint32_t      snapshotInterval = 10'000;
+		uint64_t      maxInstructions  = 30'000'000;
 
 		uint32_t      modelId          = 0;
 		uint8_t       speedValue       = 0;
@@ -109,7 +109,7 @@ private:
 	OnMismatch    onMismatch_        = OnMismatch::ExitNonZero;
 	TextLog       textLog_           = TextLog::None;
 	uint32_t      snapshotInterval_  = 100'000;
-	uint64_t      maxInstructions_   = 50'000'000;
+	uint64_t      maxInstructions_   = 20'000'000;
 	uint32_t      nextSnapshot_      = 0;
 	uint32_t      snapshotIndex_     = 0;
 	uint32_t      snapshotCount_     = 0;

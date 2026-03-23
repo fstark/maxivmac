@@ -23,18 +23,29 @@ bool ParseModelName(const std::string& name, MacModel& out)
 {
 	std::string lower = toLower(name);
 
-	if (lower == "plus" || lower == "macplus")       { out = MacModel::Plus; return true; }
-	if (lower == "se")                               { out = MacModel::SE; return true; }
-	if (lower == "sefdhd")                           { out = MacModel::SEFDHD; return true; }
-	if (lower == "classic")                          { out = MacModel::Classic; return true; }
-	if (lower == "pb100" || lower == "powerbook100") { out = MacModel::PB100; return true; }
-	if (lower == "ii" || lower == "macii")           { out = MacModel::II; return true; }
-	if (lower == "iix" || lower == "maciix")         { out = MacModel::IIx; return true; }
-	if (lower == "128k" || lower == "mac128k")       { out = MacModel::Mac128K; return true; }
-	if (lower == "512ke" || lower == "mac512ke")     { out = MacModel::Mac512Ke; return true; }
+	// Canonical names (= ROM base names, case-insensitive)
 	if (lower == "twig43")                           { out = MacModel::Twig43; return true; }
 	if (lower == "twiggy")                           { out = MacModel::Twiggy; return true; }
+	if (lower == "mac128k")                          { out = MacModel::Mac128K; return true; }
+	if (lower == "mac512ke")                         { out = MacModel::Mac512Ke; return true; }
+	if (lower == "macpluskanji")                     { out = MacModel::Kanji; return true; }
+	if (lower == "macplus")                          { out = MacModel::Plus; return true; }
+	if (lower == "macse")                            { out = MacModel::SE; return true; }
+	if (lower == "sefdhd")                           { out = MacModel::SEFDHD; return true; }
+	if (lower == "classic")                          { out = MacModel::Classic; return true; }
+	if (lower == "pb100")                            { out = MacModel::PB100; return true; }
+	if (lower == "macii")                            { out = MacModel::II; return true; }
+	if (lower == "maciix")                           { out = MacModel::IIx; return true; }
+
+	// Legacy aliases
+	if (lower == "plus")                             { out = MacModel::Plus; return true; }
+	if (lower == "se")                               { out = MacModel::SE; return true; }
+	if (lower == "ii")                               { out = MacModel::II; return true; }
+	if (lower == "iix")                              { out = MacModel::IIx; return true; }
+	if (lower == "128k")                             { out = MacModel::Mac128K; return true; }
+	if (lower == "512ke")                            { out = MacModel::Mac512Ke; return true; }
 	if (lower == "kanji")                            { out = MacModel::Kanji; return true; }
+	if (lower == "powerbook100")                     { out = MacModel::PB100; return true; }
 
 	return false;
 }
@@ -108,7 +119,7 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			if (ParseModelName(arg + 8, m)) {
 				lc.model = m;
 			} else {
-				fprintf(stderr, "Warning: unknown model '%s', using default (II)\n", arg + 8);
+				fprintf(stderr, "Warning: unknown model '%s', using default (MacII)\n", arg + 8);
 			}
 			continue;
 		}
@@ -177,7 +188,7 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			if (ParseModelName(argv[++i], m)) {
 				lc.model = m;
 			} else {
-				fprintf(stderr, "Warning: unknown model '%s', using default (II)\n", argv[i]);
+				fprintf(stderr, "Warning: unknown model '%s', using default (MacII)\n", argv[i]);
 			}
 			continue;
 		}
@@ -268,8 +279,9 @@ void PrintUsage(const char* progname)
 		"Usage: %s [options] [disk1.img] [disk2.img] ...\n"
 		"\n"
 		"Options:\n"
-		"  --model=MODEL    Mac model: Plus, SE, II, IIx, Classic, PB100, 128K, 512Ke\n"
-		"                   (default: II)\n"
+		"  --model=MODEL    Mac model (= ROM base name): MacPlus, MacSE, MacII, MacIIx,\n"
+		"                   Classic, PB100, SEFDHD, Mac128K, Mac512Ke, MacPlusKanji,\n"
+		"                   Twig43, Twiggy  (default: MacII)\n"
 		"  --rom=PATH       Path to ROM file (auto-detected from model if omitted)\n"
 		"  --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)\n"
 		"  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.\n"
@@ -280,35 +292,42 @@ void PrintUsage(const char* progname)
 		"  --trace=PATH     Write CPU+IO text trace to file\n"
 		"  --trace-cpu=PATH Write CPU-only text trace to file\n"
 		"  --snapshot-interval=N  Instructions between snapshots (default: 100000)\n"
-		"  --max-instructions=N   Instruction budget (default: 50000000)\n"
+		"  --max-instructions=N   Instruction budget (default: 20000000)\n"
 		"  -r PATH          ROM path (short form)\n"
 		"  -h, --help       Show this help\n"
 		"\n"
 		"ROM auto-detection searches: ./<MODEL>.ROM, roms/<MODEL>.ROM\n"
 		"\n"
 		"Examples:\n"
-		"  %s --model=II system7.img\n"
-		"  %s --model=Plus disk.img\n",
+		"  %s --model=MacII system7.img\n"
+		"  %s --model=MacPlus disk.img\n",
 		progname, progname, progname);
+}
+
+const char* ModelToString(MacModel model)
+{
+	switch (model) {
+		case MacModel::Twig43:   return "Twig43";
+		case MacModel::Twiggy:   return "Twiggy";
+		case MacModel::Mac128K:  return "Mac128K";
+		case MacModel::Mac512Ke: return "Mac512Ke";
+		case MacModel::Kanji:    return "MacPlusKanji";
+		case MacModel::Plus:     return "MacPlus";
+		case MacModel::SE:       return "MacSE";
+		case MacModel::SEFDHD:   return "SEFDHD";
+		case MacModel::Classic:  return "Classic";
+		case MacModel::PB100:    return "PB100";
+		case MacModel::II:       return "MacII";
+		case MacModel::IIx:      return "MacIIx";
+	}
+	return "MacII";
 }
 
 const char* DefaultRomFileName(MacModel model)
 {
-	switch (model) {
-		case MacModel::Twig43:   return "Twig43.ROM";
-		case MacModel::Twiggy:   return "Twiggy.ROM";
-		case MacModel::Mac128K:  return "Mac128K.ROM";
-		case MacModel::Mac512Ke: return "Mac512Ke.ROM";
-		case MacModel::Kanji:    return "MacPlusKanji.ROM";
-		case MacModel::Plus:     return "MacPlus.ROM";
-		case MacModel::SE:       return "MacSE.ROM";
-		case MacModel::SEFDHD:   return "SEFDHD.ROM";
-		case MacModel::Classic:  return "Classic.ROM";
-		case MacModel::PB100:    return "PB100.ROM";
-		case MacModel::II:       return "MacII.ROM";
-		case MacModel::IIx:      return "MacIIx.ROM";
-	}
-	return "MacII.ROM";
+	static char buf[64];
+	snprintf(buf, sizeof(buf), "%s.ROM", ModelToString(model));
+	return buf;
 }
 
 static bool fileExists(const std::string& path)

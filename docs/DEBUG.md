@@ -7,28 +7,11 @@ At the root, there is what we call the "debug" version, which is a modernized CM
 
 # Goal
 
-Have the new maxivmac emulator (top-level source code) run identically to the original minivmac emulator (in reference/)
+Have the new maxivmac emulator (top-level source code) run identically to the original minivmac emulator (in reference/).
 
-Current status:
-
-At the root level:
-
-A "build-debug.sh" script builds the new emulator
-A "run-debug.sh" script runs the new emulator on a clean disk
-
-A "build-reference.sh" script builds the reference emulator for emulating a Plus
-A "run-reference.sh" script runs the old emulator on a clean disk
-
-The run-debug.sh crashes with the message:
-
-```
-Abnormal Situation
-
-The emulated computer is attemting an operation that wasn't
-expected to happen in normal use
-
-0803
-```
+Both builds produce matching output for Plus and Mac II models.  The golden-file
+regression harness (`--record` / `--verify`) provides automated pass/fail checks
+— see `docs/CLEANUP.md` Step 1.
 
 # HOW TO DEBUG
 

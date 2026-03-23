@@ -31,7 +31,7 @@ struct LaunchConfig {
 	std::string tracePath;        // --trace=<path> (CPU+IO text)
 	std::string traceCpuPath;     // --trace-cpu=<path> (CPU-only text)
 	uint32_t    snapshotInterval = 0; // --snapshot-interval=N (0=default 100K)
-	uint64_t    maxInstructions  = 0; // --max-instructions=N (0=default 50M)
+	uint64_t    maxInstructions  = 0; // --max-instructions=N (0=default 20M)
 };
 
 // Parse command-line arguments into a LaunchConfig.
@@ -46,6 +46,10 @@ void PrintUsage(const char* progname);
 // Parse a model name string (case-insensitive) to MacModel enum.
 // Returns true on success.
 bool ParseModelName(const std::string& name, MacModel& out);
+
+// Return the canonical string name for a model (e.g. "MacPlus").
+// This is also the ROM base name: DefaultRomFileName = ModelToString + ".ROM".
+const char* ModelToString(MacModel model);
 
 // Return the default ROM filename for a model (e.g. "MacPlus.ROM").
 const char* DefaultRomFileName(MacModel model);

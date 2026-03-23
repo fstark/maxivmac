@@ -10,8 +10,9 @@ maxivmac % ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --help
 Usage: ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac [options] [disk1.img] [disk2.img] ...
 
 Options:
-  --model=MODEL    Mac model: Plus, SE, II, IIx, Classic, PB100, 128K, 512Ke
-                   (default: II)
+  --model=MODEL    Mac model (= ROM base name): MacPlus, MacSE, MacII, MacIIx,
+                   Classic, PB100, SEFDHD, Mac128K, Mac512Ke
+                   (default: MacII)
   --rom=PATH       Path to ROM file
   --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)
   --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.
@@ -21,8 +22,8 @@ Options:
   -h, --help       Show this help
 
 Examples:
-  ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --model=II --rom=MacII.ROM system7.img
-  ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --model=Plus --rom=vMac.ROM --ram=4M disk.img
+  ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --model=MacII --rom=MacII.ROM system7.img
+  ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --model=MacPlus --rom=MacPlus.ROM --ram=4M disk.img
 maxivmac % 
 ```
 
