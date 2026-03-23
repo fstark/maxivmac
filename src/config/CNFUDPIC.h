@@ -70,7 +70,7 @@
 #define VIA1_iCB2 (Wires[Wire_VIA1_iCB2])
 
 /* Named signal aliases */
-#define MemOverlay (Wires[Wire_VIA1_iA4])
+#define MemOverlay (Wires[Wire_MemOverlay])
 #define IWMvSel (Wires[Wire_VIA1_iA5])
 #define SCCwaitrq (Wires[Wire_VIA1_iA7])
 #define RTCdataLine (Wires[Wire_VIA1_iB0])

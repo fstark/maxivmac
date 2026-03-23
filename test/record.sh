@@ -18,7 +18,8 @@ DISK_TMP="$TESTDIR/.608_record.hfs"
 
 # ── Models to record ──────────────────────────────────
 # Add new models here as they become bootable.
-ALL_MODELS="MacPlus MacII"
+ALL_MODELS="MacPlus MacSE MacII MacIIx Classic Mac512Ke"
+# PB100 Mac128K
 
 if [ $# -gt 0 ]; then
     MODELS="$*"

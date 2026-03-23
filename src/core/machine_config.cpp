@@ -133,9 +133,9 @@ static VIAConfig MakeVIA1Config_PB100() {
 	v.orbCanIn         = 0x02;  // bit 1: PMU interrupt
 	v.orbCanOut        = 0xFD;  // all except bit 1
 	v.ierNever0        = 0x00;
-	v.ierNever1        = 0x00;
-	v.cb2ModesAllowed  = 0x01;
-	v.ca2ModesAllowed  = 0x01;
+	v.ierNever1        = 0x0C;
+	v.cb2ModesAllowed  = 0x03;
+	v.ca2ModesAllowed  = 0x03;
 	v.portAWires = {
 		Wire_VIA1_iA0, Wire_VIA1_iA1, Wire_VIA1_iA2, Wire_VIA1_iA3,
 		Wire_VIA1_iA4, Wire_VIA1_iA5, Wire_VIA1_iA6, Wire_VIA1_iA7
@@ -414,9 +414,9 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.ramASize    = 0x00400000; // 4 MB
 			c.ramBSize    = 0;
 			c.romSize     = 0x00040000; // 256 KB
-			c.romBase     = 0x00400000;
+			c.romBase     = 0x00900000;
 			c.romFileName = "PB100.ROM";
-			c.extnBlockBase = 0x00F0C000; // 24-bit address space
+			c.extnBlockBase = 0x00F40000; // 24-bit address space
 			c.emVIA1      = true;
 			c.emVIA2      = false;
 			c.emADB       = false;

@@ -1613,7 +1613,7 @@ static void get_fail_realblock(ATTep p)
 			{
 				pT->Access = kATTA_readreadymask;
 
-				g_wires.set(Wire_VIA1_iA4_MemOverlay, 0);
+				g_wires.set(Wire_MemOverlay, 0);
 
 				v = true;
 			}
@@ -1736,7 +1736,30 @@ void VIAorSCCinterruptChngNtfy(void)
 	Wires = g_wires.data();
 
 	/* Register wire change callbacks */
-	g_wires.onChange(Wire_VIA1_iA4_MemOverlay, MemOverlay_ChangeNtfy);
+	g_wires.onChange(Wire_MemOverlay, MemOverlay_ChangeNtfy);
+
+	/* Wire_MemOverlay is a separate wire from Wire_VIA1_iA4 so that
+	   models like Classic (SCSIOvIRQ) and PB100 (PMU bus bit 4) can
+	   use VIA1 Port A bit 4 for something other than the overlay.
+
+	   For all other models (Plus, 512Ke, 128K, SE, SEFDHD, MacII,
+	   MacIIx) the two must stay in bi-directional sync — just as they
+	   were when they shared the same wire index.  No recursion guard
+	   is needed because WireBus::set() only fires callbacks on actual
+	   value changes. */
+	{
+		auto m = g_machine->config().model;
+		bool needsSync = (m != MacModel::Classic && m != MacModel::PB100);
+		if (needsSync) {
+			g_wires.onChange(Wire_VIA1_iA4, [](){
+				g_wires.set(Wire_MemOverlay, g_wires.get(Wire_VIA1_iA4));
+			});
+			g_wires.onChange(Wire_MemOverlay, [](){
+				g_wires.set(Wire_VIA1_iA4, g_wires.get(Wire_MemOverlay));
+			});
+		}
+	}
+
 	if (g_machine->config().isIIFamily()) {
 		extern void PowerOff_ChangeNtfy(void);
 		g_wires.onChange(Wire_VIA2_iA7_unknown, Addr32_ChangeNtfy);
@@ -1768,7 +1791,7 @@ void VIAorSCCinterruptChngNtfy(void)
 
 void Memory_Reset(void)
 {
-	g_wires.set(Wire_VIA1_iA4_MemOverlay, 1);
+	g_wires.set(Wire_MemOverlay, 1);
 	SetUpMemBanks();
 }
 

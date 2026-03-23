@@ -77,6 +77,11 @@ enum WireID {
 	Wire_PMU_FromReady,
 	Wire_PMU_ToReady,
 
+	// Memory overlay — separate wire for SE/PB100/Classic where
+	// VIA1 Port A bit 4 is NOT the overlay (it's DriveSel or PMU bus).
+	// For Plus, overlay is driven through VIA1_iA4 directly.
+	Wire_MemOverlay,
+
 	kNumWires
 };
 
@@ -86,7 +91,8 @@ enum WireID {
 // are just for readability and to ease the migration.
 
 // Wire ID aliases for common signal names (used in machine.cpp, adb.cpp, etc.)
-static constexpr int Wire_VIA1_iA4_MemOverlay    = Wire_VIA1_iA4;
+// On Plus, overlay IS VIA1_iA4.  On SE/Classic/PB100 it's a separate wire.
+// Code that manipulates the overlay should use Wire_MemOverlay directly.
 static constexpr int Wire_VIA1_iA5_IWMvSel       = Wire_VIA1_iA5;
 static constexpr int Wire_VIA1_iA7_SCCwaitrq     = Wire_VIA1_iA7;
 static constexpr int Wire_VIA1_iA3_SCCvSync      = Wire_VIA1_iA3;
