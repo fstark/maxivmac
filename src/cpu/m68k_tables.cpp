@@ -3148,7 +3148,11 @@ void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 #if WantCycByPriOp
 		const uint16_t illegalCycles = (uint16_t)(34 * kCycleScale
 			+ 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
-		const uint16_t fdfltCycles = kMyAvgCycPerInstr;
+		/* Must match DeCodeF's cycle cost so that a runtime-disabled
+		   FPU/MMU instruction costs the same as when the feature was
+		   compile-time disabled (i.e. the opcode fell through to
+		   kIKindFdflt in DeCodeF and inherited its Cycles). */
+		const uint16_t fdfltCycles = illegalCycles;
 #endif
 		for (i = 0; i < (uint32_t)256 * 256; ++i) {
 			uint8_t kind = p[i].x.MainClas;
