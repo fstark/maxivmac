@@ -543,7 +543,8 @@ static void ExtnFind_Access(uint32_t p)
 				   but only counts when the model has a video card. */
 				uint16_t n = kNumExtns;
 				if (!g_machine->config().emVidCard) {
-					--n;  /* don't count kExtnVideo */
+					--n;  /* don't count kExtnVideo (it's still
+					         present in the enum for stable values) */
 				}
 				put_vm_word(p + kParamFindExtnTheId, n);
 			}
