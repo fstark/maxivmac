@@ -19,10 +19,6 @@
 struct MachineConfig;
 extern void MINEM68K_Init(
 	uint8_t *fIPL, const MachineConfig *config);
-#if SmallGlobals
-extern void MINEM68K_ReserveAlloc();
-#endif
-
 extern void m68k_IPLchangeNtfy();
 extern void DiskInsertedPsuedoException(uint32_t newpc, uint32_t data);
 extern void m68k_reset();

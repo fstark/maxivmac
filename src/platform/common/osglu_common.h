@@ -102,9 +102,6 @@ extern int16_t SavedMouseV;
 extern bool HaveMouseMotion;
 #endif
 
-extern uint32_t ReserveAllocOffset;
-extern uint8_t * ReserveAllocBigBlock;
-
 #if IncludePbufs
 extern uint32_t PbufAllocatedMask;
 extern uint32_t PbufSize[NumPbufs];
@@ -182,7 +179,7 @@ MyEvtQEl * MyEvtQElAlloc();
 void MacMsg(char *briefMsg, char *longMsg, bool fatal);
 
 #if dbglog_HAVE
-void dbglog_ReserveAlloc();
+bool dbglog_ReserveAlloc();
 
 #ifndef dbglog_buflnsz
 /* unbuffered mode — map directly to the platform _open0/_close0/_write0 */

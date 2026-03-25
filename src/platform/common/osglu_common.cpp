@@ -770,22 +770,16 @@ static void SetLongs(uint32_t *p, long n)
 	}
 }
 
-uint32_t ReserveAllocOffset;
-uint8_t * ReserveAllocBigBlock = nullptr;
-
-void ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
-	uint8_t align, bool FillOnes)
+bool AllocBlock(uint8_t **p, uint32_t n, bool FillOnes)
 {
-	ReserveAllocOffset = CeilPow2Mult(ReserveAllocOffset, align);
-	if (nullptr == ReserveAllocBigBlock) {
-		*p = nullptr;
-	} else {
-		*p = ReserveAllocBigBlock + ReserveAllocOffset;
-		if (FillOnes) {
-			SetLongs((uint32_t *)*p, n / 4);
-		}
+	*p = (uint8_t *)calloc(1, n);
+	if (*p == nullptr) {
+		return false;
 	}
-	ReserveAllocOffset += n;
+	if (FillOnes) {
+		SetLongs((uint32_t *)*p, n / 4);
+	}
+	return true;
 }
 
 /* --- sending debugging info to file --- */
@@ -794,9 +788,10 @@ void ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
 
 #ifndef dbglog_buflnsz
 
-void dbglog_ReserveAlloc()
+bool dbglog_ReserveAlloc()
 {
 	/* nothing to do in unbuffered mode */
+	return true;
 }
 
 /* dbglog_close/open/write macros already in osglu_common.h */
@@ -808,10 +803,10 @@ static uint32_t dbglog_bufpos = 0;
 
 static char *dbglog_bufp = nullptr;
 
-void dbglog_ReserveAlloc()
+bool dbglog_ReserveAlloc()
 {
-	ReserveAllocOneBlock((uint8_t * *)&dbglog_bufp, dbglog_bufsz,
-		5, false);
+	return AllocBlock((uint8_t * *)&dbglog_bufp, dbglog_bufsz,
+		false);
 }
 
 #define dbglog_open dbglog_open0

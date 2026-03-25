@@ -53,11 +53,9 @@ extern void dbglog_writelnNum(char *s, int32_t v);
 extern void MacMsgDebugAlert(char *s);
 #endif
 
-extern void ReserveAllocOneBlock(uint8_t * *p, uint32_t n, uint8_t align,
-	bool FillOnes);
-
 extern void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
 
+extern bool AllocBlock(uint8_t **p, uint32_t n, bool FillOnes);
 
 extern uint8_t * ROM;
 

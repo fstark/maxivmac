@@ -23,10 +23,6 @@ public:
 	void init(uint8_t* iplPtr, const MachineConfig* config);
 	void reset();
 
-#if SmallGlobals
-	void reserveAlloc();
-#endif
-
 	// Execution
 	void go_nCycles(uint32_t n);
 

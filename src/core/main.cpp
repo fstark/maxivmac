@@ -200,19 +200,27 @@ static void ExtraTimeEndNotify()
 #endif
 }
 
-void EmulationReserveAlloc()
+bool EmulationReserveAlloc()
 {
 	const auto& cfg = g_machine->config();
-	ReserveAllocOneBlock(&RAM,
-		cfg.ramSize() + RAMSafetyMarginFudge, 5, false);
+	if (!AllocBlock(&RAM,
+		cfg.ramSize() + RAMSafetyMarginFudge, false))
+		return false;
 	if (cfg.emVidCard)
-		ReserveAllocOneBlock(&VidROM, cfg.vidROMSize, 5, false);
+		if (!AllocBlock(&VidROM, cfg.vidROMSize, false))
+			return false;
 	if (cfg.includeVidMem)
-		ReserveAllocOneBlock(&VidMem,
-			cfg.vidMemSize + RAMSafetyMarginFudge, 5, true);
-#if SmallGlobals
-	g_cpu.reserveAlloc();
-#endif
+		if (!AllocBlock(&VidMem,
+			cfg.vidMemSize + RAMSafetyMarginFudge, true))
+			return false;
+	return true;
+}
+
+void EmulationFreeAlloc()
+{
+	free(RAM); RAM = nullptr;
+	free(VidROM); VidROM = nullptr;
+	free(VidMem); VidMem = nullptr;
 }
 
 static bool InitEmulation()

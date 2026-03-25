@@ -9,7 +9,7 @@
 #include <cstddef>
 
 /* Optimization hints — compiler may override */
-#define SmallGlobals 0
+
 #define cIncludeUnused 0
 #define UNUSED(p) (void)(p)
 #define UnusedParam(p) (void)(p)

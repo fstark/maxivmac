@@ -20,7 +20,8 @@
 #include "core/config_loader.h"
 
 extern void ProgramEarlyInit(int argc, char* argv[]);
-extern void EmulationReserveAlloc();
+extern bool EmulationReserveAlloc();
+extern void EmulationFreeAlloc();
 extern void ProgramMain();
 extern void ProgramCleanup();
 

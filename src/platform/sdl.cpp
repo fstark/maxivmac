@@ -5035,59 +5035,47 @@ static void ZapOSGLUVars()
 	ZapWinStateVars();
 }
 
-static void ReserveAllocAll()
-{
-#if dbglog_HAVE
-	dbglog_ReserveAlloc();
-#endif
-	ReserveAllocOneBlock(&ROM, g_machine->config().romSize, 5, false);
-
-	ReserveAllocOneBlock(&screencomparebuff,
-		vMacScreenNumBytes, 5, true);
-#if UseControlKeys
-	ReserveAllocOneBlock(&CntrlDisplayBuff,
-		vMacScreenNumBytes, 5, false);
-#endif
-
-	ReserveAllocOneBlock(&CLUT_final, CLUT_finalsz, 5, false);
-#if MySoundEnabled
-	ReserveAllocOneBlock((uint8_t * *)&TheSoundBuffer,
-		dbhBufferSize, 5, false);
-#endif
-
-	EmulationReserveAlloc();
-}
-
 static bool AllocMyMemory()
 {
-	uint32_t n;
-	bool IsOk = false;
+#if dbglog_HAVE
+	if (!dbglog_ReserveAlloc())
+		goto fail;
+#endif
+	if (!AllocBlock(&ROM, g_machine->config().romSize, false))
+		goto fail;
+	if (!AllocBlock(&screencomparebuff, vMacScreenNumBytes, true))
+		goto fail;
+#if UseControlKeys
+	if (!AllocBlock(&CntrlDisplayBuff, vMacScreenNumBytes, false))
+		goto fail;
+#endif
+	if (!AllocBlock(&CLUT_final, CLUT_finalsz, false))
+		goto fail;
+#if MySoundEnabled
+	if (!AllocBlock((uint8_t **)&TheSoundBuffer, dbhBufferSize, false))
+		goto fail;
+#endif
+	if (!EmulationReserveAlloc())
+		goto fail;
 
-	ReserveAllocOffset = 0;
-	ReserveAllocBigBlock = nullptr;
-	ReserveAllocAll();
-	n = ReserveAllocOffset;
-	ReserveAllocBigBlock = (uint8_t *)calloc(1, n);
-	if (nullptr == ReserveAllocBigBlock) {
-		MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, true);
-	} else {
-		ReserveAllocOffset = 0;
-		ReserveAllocAll();
-		if (n != ReserveAllocOffset) {
-			/* oops, program error */
-		} else {
-			IsOk = true;
-		}
-	}
-
-	return IsOk;
+	return true;
+fail:
+	MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, true);
+	return false;
 }
 
 static void UnallocMyMemory()
 {
-	if (nullptr != ReserveAllocBigBlock) {
-		free((char *)ReserveAllocBigBlock);
-	}
+	free(ROM); ROM = nullptr;
+	free(screencomparebuff); screencomparebuff = nullptr;
+#if UseControlKeys
+	free(CntrlDisplayBuff); CntrlDisplayBuff = nullptr;
+#endif
+	free(CLUT_final); CLUT_final = nullptr;
+#if MySoundEnabled
+	free(TheSoundBuffer); TheSoundBuffer = nullptr;
+#endif
+	EmulationFreeAlloc();
 }
 
 #if CanGetAppPath

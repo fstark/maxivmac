@@ -245,11 +245,7 @@ static struct regstruct
 #endif
 
 #define disp_table_sz (256 * 256)
-#if SmallGlobals
-	DecOpR *disp_table;
-#else
 	DecOpR disp_table[disp_table_sz];
-#endif
 } regs;
 
 /* Cached pointer to MachineConfig for runtime CPU-feature checks.
@@ -8939,13 +8935,7 @@ void m68k_reset()
 	Em_Exit();
 }
 
-#if SmallGlobals
-void MINEM68K_ReserveAlloc()
-{
-	ReserveAllocOneBlock((uint8_t * *)&regs.disp_table,
-		disp_table_sz * 8, 6, false);
-}
-#endif
+
 
 void MINEM68K_Init(
 	uint8_t *fIPL, const MachineConfig *config)

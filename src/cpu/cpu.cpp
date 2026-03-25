@@ -23,12 +23,6 @@ void CPU::reset()
 	m68k_reset();
 }
 
-#if SmallGlobals
-void CPU::reserveAlloc()
-{
-	MINEM68K_ReserveAlloc();
-}
-#endif
 
 void CPU::go_nCycles(uint32_t n)
 {
