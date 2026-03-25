@@ -1,14 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Enable OBJC only on Apple — other platforms don't need it.
-if(APPLE)
-    project(maxivmac VERSION 37.03 LANGUAGES C CXX OBJC OBJCXX)
-else()
-    project(maxivmac VERSION 37.03 LANGUAGES C CXX)
-endif()
+project(maxivmac VERSION 37.03 LANGUAGES C CXX)
 
 # ---------------------------------------------------------------------------
-# C++17 — all sources are .cpp or .mm (ObjC++).
+# C++17
 # ---------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,9 +12,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # ---------------------------------------------------------------------------
 # Options
 # ---------------------------------------------------------------------------
-set(MINIVMAC_BACKEND "auto" CACHE STRING "Platform backend: auto, cocoa, sdl")
-set_property(CACHE MINIVMAC_BACKEND PROPERTY STRINGS auto cocoa sdl)
-
 set(MINIVMAC_MAINTAINER "egon.rath@gmail.com" CACHE STRING "Maintainer contact")
 set(MINIVMAC_HOMEPAGE "https://github.com/egrath" CACHE STRING "Project homepage")
 
@@ -96,51 +88,21 @@ set(MINIVMAC_SOURCES
 )
 
 # ---------------------------------------------------------------------------
-# Resolve "auto" backend
+# Generate CNFUIOSG.h from template (SDL backend)
 # ---------------------------------------------------------------------------
-if(MINIVMAC_BACKEND STREQUAL "auto")
-    if(APPLE)
-        set(MINIVMAC_BACKEND "cocoa")
-    else()
-        set(MINIVMAC_BACKEND "sdl")
-    endif()
-endif()
-
-message(STATUS "maxivmac backend: ${MINIVMAC_BACKEND}")
-
-# ---------------------------------------------------------------------------
-# Generate CNFUIOSG.h from template — selects backend + system includes
-# ---------------------------------------------------------------------------
-# The generated header lands in the build tree and is found before cfg/
 set(MINIVMAC_GENERATED_CFG_DIR "${CMAKE_BINARY_DIR}/cfg_generated")
 file(MAKE_DIRECTORY "${MINIVMAC_GENERATED_CFG_DIR}")
 
-if(MINIVMAC_BACKEND STREQUAL "cocoa")
-    set(MINIVMAC_BACKEND_TAG "CCO")
-    set(MINIVMAC_IS_BUNDLE 1)
-    set(CNFUIOSG_SYSTEM_INCLUDES
-"#import <Cocoa/Cocoa.h>
-#include <CoreAudio/CoreAudio.h>
-#include <AudioUnit/AudioUnit.h>
-#include <OpenGL/gl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/param.h>
-#include <sys/time.h>")
-elseif(MINIVMAC_BACKEND STREQUAL "sdl")
-    set(MINIVMAC_BACKEND_TAG "SDL")
-    set(MINIVMAC_IS_BUNDLE 0)
-    set(CNFUIOSG_SYSTEM_INCLUDES
+set(MINIVMAC_BACKEND "sdl")
+set(MINIVMAC_BACKEND_TAG "SDL")
+set(MINIVMAC_IS_BUNDLE 0)
+set(CNFUIOSG_SYSTEM_INCLUDES
 "#include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
 #include <sys/time.h>")
-else()
-    message(FATAL_ERROR "Unknown backend: ${MINIVMAC_BACKEND}. Use cocoa or sdl.")
-endif()
 
 configure_file(
     "${CMAKE_SOURCE_DIR}/cmake/CNFUIOSG.h.in"
@@ -214,87 +176,35 @@ configure_file(
     "${MINIVMAC_GENERATED_CFG_DIR}/CNFUIPIC.h"
     COPYONLY
 )
-# Cocoa backend (macOS)
 # ---------------------------------------------------------------------------
-if(MINIVMAC_BACKEND STREQUAL "cocoa")
-    list(APPEND MINIVMAC_SOURCES src/platform/cocoa.mm)
-
-    # osglu_common.cpp and intl_chars.cpp include headers that pull in Cocoa.h (ObjC)
-    set_source_files_properties(
-        src/platform/common/osglu_common.cpp
-        src/platform/common/intl_chars.cpp
-        src/platform/common/param_buffers.cpp
-        src/platform/common/control_mode.cpp
-        PROPERTIES LANGUAGE OBJCXX)
-
-    add_executable(maxivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
-
-    set_target_properties(maxivmac PROPERTIES
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/src/config/Info.plist"
-        MACOSX_BUNDLE_BUNDLE_NAME "Maxi vMac"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "com.gryphel.maxivmac"
-    )
-
-    # Bundle resources
-    set_source_files_properties(
-        src/resources/ICONAPPO.icns
-        PROPERTIES MACOSX_PACKAGE_LOCATION Resources
-    )
-    set_source_files_properties(
-        src/config/English.lproj/dummy.txt
-        PROPERTIES MACOSX_PACKAGE_LOCATION Resources/English.lproj
-    )
-    target_sources(maxivmac PRIVATE
-        src/resources/ICONAPPO.icns
-        src/config/English.lproj/dummy.txt
-    )
-
-    # macOS frameworks
-    find_library(APPKIT_FRAMEWORK AppKit REQUIRED)
-    find_library(AUDIOUNIT_FRAMEWORK AudioUnit REQUIRED)
-    find_library(COREAUDIO_FRAMEWORK CoreAudio REQUIRED)
-    find_library(OPENGL_FRAMEWORK OpenGL REQUIRED)
-    target_link_libraries(maxivmac PRIVATE
-        ${APPKIT_FRAMEWORK}
-        ${AUDIOUNIT_FRAMEWORK}
-        ${COREAUDIO_FRAMEWORK}
-        ${OPENGL_FRAMEWORK}
-    )
-
-    # Deployment target
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "macOS deployment target")
-
+# SDL target (Linux / Windows / macOS)
 # ---------------------------------------------------------------------------
-# SDL backend (Linux / Windows / macOS-SDL)
-# ---------------------------------------------------------------------------
-elseif(MINIVMAC_BACKEND STREQUAL "sdl")
-    list(APPEND MINIVMAC_SOURCES src/platform/sdl.cpp)
+list(APPEND MINIVMAC_SOURCES src/platform/sdl.cpp)
 
-    add_executable(maxivmac ${MINIVMAC_SOURCES})
+add_executable(maxivmac ${MINIVMAC_SOURCES})
 
-    # Try SDL3 first, fall back to SDL2
-    find_package(SDL3 QUIET)
-    if(SDL3_FOUND)
-        message(STATUS "Found SDL3")
-        target_link_libraries(maxivmac PRIVATE SDL3::SDL3)
-    else()
-        find_package(SDL2 REQUIRED)
-        message(STATUS "Found SDL2")
-        target_link_libraries(maxivmac PRIVATE SDL2::SDL2)
+# Try SDL3 first, fall back to SDL2
+find_package(SDL3 QUIET)
+if(SDL3_FOUND)
+    message(STATUS "Found SDL3")
+    target_link_libraries(maxivmac PRIVATE SDL3::SDL3)
+else()
+    find_package(SDL2 REQUIRED)
+    message(STATUS "Found SDL2")
+    target_link_libraries(maxivmac PRIVATE SDL2::SDL2)
+endif()
+
+# On Linux, we may need X11
+if(UNIX AND NOT APPLE)
+    find_package(X11)
+    if(X11_FOUND)
+        target_link_libraries(maxivmac PRIVATE X11::X11)
     endif()
+endif()
 
-    # On Linux, we may need X11
-    if(UNIX AND NOT APPLE)
-        find_package(X11)
-        if(X11_FOUND)
-            target_link_libraries(maxivmac PRIVATE X11::X11)
-        endif()
-    endif()
-
-    # On Windows, link winsock etc. if needed
-    if(WIN32)
-        target_link_libraries(maxivmac PRIVATE winmm)
-    endif()
+# On Windows, link winsock etc. if needed
+if(WIN32)
+    target_link_libraries(maxivmac PRIVATE winmm)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -308,8 +218,6 @@ target_include_directories(maxivmac PRIVATE
     "${CMAKE_SOURCE_DIR}/src/config"
     "${CMAKE_SOURCE_DIR}/src"
 )
-
-# All sources are now .cpp or .mm — no LANGUAGE overrides needed.
 
 # Compiler flags matching the original Xcode project
 target_compile_options(maxivmac PRIVATE
@@ -326,5 +234,3 @@ endif()
 
 set(CMAKE_C_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)
-set(CMAKE_OBJC_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)
-set(CMAKE_OBJCXX_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)

@@ -29,7 +29,7 @@ run_ref() {
 
 run_debug() {
     # No disk for Mac II testing
-    "$DIR/bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac" \
+    "$DIR/bld/macos/maxivmac" \
         --model MacII --rom="$DIR/extras/roms/MacII.ROM" \
         --log-start="$LOG_START" --log-count="$LOG_COUNT" \
         2>"$1"

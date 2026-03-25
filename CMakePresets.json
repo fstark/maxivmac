@@ -7,29 +7,12 @@
     },
     "configurePresets": [
         {
-            "name": "macos-cocoa",
-            "displayName": "macOS (Cocoa)",
-            "description": "Native macOS Cocoa backend — default for macOS",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/bld/${presetName}",
-            "cacheVariables": {
-                "MINIVMAC_BACKEND": "cocoa",
-                "CMAKE_BUILD_TYPE": "Release"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Darwin"
-            }
-        },
-        {
-            "name": "macos-sdl",
+            "name": "macos",
             "displayName": "macOS (SDL)",
-            "description": "SDL backend on macOS — for testing or cross-platform parity",
+            "description": "SDL backend on macOS",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/bld/${presetName}",
             "cacheVariables": {
-                "MINIVMAC_BACKEND": "sdl",
                 "CMAKE_BUILD_TYPE": "Release"
             },
             "condition": {
@@ -39,13 +22,12 @@
             }
         },
         {
-            "name": "linux-sdl",
+            "name": "linux",
             "displayName": "Linux (SDL)",
-            "description": "SDL backend on Linux — default for Linux",
+            "description": "SDL backend on Linux",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/bld/${presetName}",
             "cacheVariables": {
-                "MINIVMAC_BACKEND": "sdl",
                 "CMAKE_BUILD_TYPE": "Release"
             },
             "condition": {
@@ -55,13 +37,12 @@
             }
         },
         {
-            "name": "windows-sdl",
+            "name": "windows",
             "displayName": "Windows (SDL)",
-            "description": "SDL backend on Windows — default for Windows",
+            "description": "SDL backend on Windows",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/bld/${presetName}",
             "cacheVariables": {
-                "MINIVMAC_BACKEND": "sdl",
                 "CMAKE_BUILD_TYPE": "Release"
             },
             "condition": {
@@ -73,20 +54,16 @@
     ],
     "buildPresets": [
         {
-            "name": "macos-cocoa",
-            "configurePreset": "macos-cocoa"
+            "name": "macos",
+            "configurePreset": "macos"
         },
         {
-            "name": "macos-sdl",
-            "configurePreset": "macos-sdl"
+            "name": "linux",
+            "configurePreset": "linux"
         },
         {
-            "name": "linux-sdl",
-            "configurePreset": "linux-sdl"
-        },
-        {
-            "name": "windows-sdl",
-            "configurePreset": "windows-sdl"
+            "name": "windows",
+            "configurePreset": "windows"
         }
     ]
 }
