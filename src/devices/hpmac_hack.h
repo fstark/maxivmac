@@ -233,7 +233,7 @@ static uint32_t getHappyMacBase() {
 }
 #define HappyMacBase getHappyMacBase()
 
-static void PatchHappyMac(void)
+static void PatchHappyMac()
 {
 	auto m = g_machine->config().model;
 	if (m == MacModel::PB100 || m == MacModel::II || m == MacModel::IIx) {

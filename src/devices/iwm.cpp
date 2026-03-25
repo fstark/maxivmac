@@ -99,7 +99,7 @@ static void IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
 	}
 }
 
-static uint8_t IWM_Read_Reg(void)
+static uint8_t IWM_Read_Reg()
 {
 	switch ((IWM.Lines & (kq6 + kq7)) >> 6) {
 		case 0 :

@@ -43,9 +43,9 @@ extern uint8_t * RAM;
 extern uint8_t * VidROM;
 extern uint8_t * VidMem;
 
-extern void MemOverlay_ChangeNtfy(void);
+extern void MemOverlay_ChangeNtfy();
 
-extern void Addr32_ChangeNtfy(void);
+extern void Addr32_ChangeNtfy();
 
 /*
 	representation of pointer into memory of emulated computer:
@@ -94,7 +94,7 @@ extern uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
 	real memory, i.e. memory mapped devices
 */
 
-extern bool AddrSpac_Init(void);
+extern bool AddrSpac_Init();
 
 
 #define ui5r_FromSByte(x) ((uint32_t)(int32_t)(int8_t)(uint8_t)(x))
@@ -115,7 +115,7 @@ extern uint32_t g_LogStart;
 extern uint32_t g_LogEnd;
 
 #if WantDisasm
-extern void dbglog_StartLine(void);
+extern void dbglog_StartLine();
 #else
 #define dbglog_StartLine()
 #endif
@@ -145,7 +145,7 @@ extern void DoReportAbnormalID(uint16_t id
 	);
 #endif /* WantAbnormalReports */
 
-extern void VIAorSCCinterruptChngNtfy(void);
+extern void VIAorSCCinterruptChngNtfy();
 
 extern bool InterruptButton;
 extern void SetInterruptButton(bool v);
@@ -167,8 +167,8 @@ enum {
 extern void ICT_add(int taskid, uint32_t n);
 
 using iCountt = uint32_t;
-extern iCountt GetCuriCount(void);
-extern void ICT_Zap(void);
+extern iCountt GetCuriCount();
+extern void ICT_Zap();
 
 extern uint8_t* Wires;
 
@@ -218,11 +218,11 @@ enum {
 
 extern uint32_t my_disk_icon_addr;
 
-extern void Memory_Reset(void);
+extern void Memory_Reset();
 
-extern void Extn_Reset(void);
+extern void Extn_Reset();
 
-extern void customreset(void);
+extern void customreset();
 
 class Device; // forward declaration for ATT Device* dispatch
 

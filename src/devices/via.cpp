@@ -38,34 +38,34 @@
 /* ChangeNtfy externs - these are #define aliases in CNFUDPIC.h */
 
 #ifdef VIA1_iA0_ChangeNtfy
-extern void VIA1_iA0_ChangeNtfy(void);
+extern void VIA1_iA0_ChangeNtfy();
 #endif
 #ifdef VIA1_iA1_ChangeNtfy
-extern void VIA1_iA1_ChangeNtfy(void);
+extern void VIA1_iA1_ChangeNtfy();
 #endif
 #ifdef VIA1_iA2_ChangeNtfy
-extern void VIA1_iA2_ChangeNtfy(void);
+extern void VIA1_iA2_ChangeNtfy();
 #endif
 #ifdef VIA1_iA3_ChangeNtfy
-extern void VIA1_iA3_ChangeNtfy(void);
+extern void VIA1_iA3_ChangeNtfy();
 #endif
 #ifdef VIA1_iA4_ChangeNtfy
-extern void VIA1_iA4_ChangeNtfy(void);
+extern void VIA1_iA4_ChangeNtfy();
 #endif
 #ifdef VIA1_iA5_ChangeNtfy
-extern void VIA1_iA5_ChangeNtfy(void);
+extern void VIA1_iA5_ChangeNtfy();
 #endif
 #ifdef VIA1_iA6_ChangeNtfy
-extern void VIA1_iA6_ChangeNtfy(void);
+extern void VIA1_iA6_ChangeNtfy();
 #endif
 #ifdef VIA1_iA7_ChangeNtfy
-extern void VIA1_iA7_ChangeNtfy(void);
+extern void VIA1_iA7_ChangeNtfy();
 #endif
 #ifdef VIA1_iB0_ChangeNtfy
-extern void VIA1_iB0_ChangeNtfy(void);
+extern void VIA1_iB0_ChangeNtfy();
 #endif
 #ifdef VIA1_iB1_ChangeNtfy
-extern void VIA1_iB1_ChangeNtfy(void);
+extern void VIA1_iB1_ChangeNtfy();
 #endif
 #define Ui3rPowOf2(p) (1 << (p))
 #define Ui3rTestBit(i, p) (((i) & Ui3rPowOf2(p)) != 0)

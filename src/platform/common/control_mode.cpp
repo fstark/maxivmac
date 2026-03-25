@@ -132,13 +132,13 @@ void DrawCell(unsigned int h, unsigned int v, int x)
 static int CurCellh0;
 static int CurCellv0;
 
-void DrawCellsBeginLine(void)
+void DrawCellsBeginLine()
 {
 	DrawCell(ControlBoxh0, CurCellv0, kCellMiddleLeft);
 	CurCellh0 = hStart;
 }
 
-void DrawCellsEndLine(void)
+void DrawCellsEndLine()
 {
 	int i;
 
@@ -149,7 +149,7 @@ void DrawCellsEndLine(void)
 	CurCellv0++;
 }
 
-void DrawCellsBottomLine(void)
+void DrawCellsBottomLine()
 {
 	int i;
 
@@ -166,7 +166,7 @@ void DrawCellAdvance(int x)
 	CurCellh0++;
 }
 
-void DrawCellsBlankLine(void)
+void DrawCellsBlankLine()
 {
 	DrawCellsBeginLine();
 	DrawCellsEndLine();
@@ -340,7 +340,7 @@ void DrawCellsOneLineHexWord(uint16_t v)
 }
 #endif
 
-void DrawCellsMessageModeBody(void)
+void DrawCellsMessageModeBody()
 {
 	DrawCellsOneLineStr(SavedBriefMsg);
 	DrawCellsBlankLine();
@@ -353,12 +353,12 @@ void DrawCellsMessageModeBody(void)
 #endif
 }
 
-void DrawMessageMode(void)
+void DrawMessageMode()
 {
 	DrawSpclMode0(kStrModeMessage, DrawCellsMessageModeBody);
 }
 
-void MacMsgDisplayOff(void)
+void MacMsgDisplayOff()
 {
 	SpecialModeClr(SpclModeMessage);
 	SavedBriefMsg = nullptr;
@@ -368,7 +368,7 @@ void MacMsgDisplayOff(void)
 	NeedWholeScreenDraw = true;
 }
 
-void MacMsgDisplayOn(void)
+void MacMsgDisplayOn()
 {
 	NeedWholeScreenDraw = true;
 	DisconnectKeyCodes1(kKeepMaskControl | kKeepMaskCapsLock);
@@ -400,7 +400,7 @@ void MacMsgDebugAlert(char *s)
 #endif
 
 #if NeedDoMoreCommandsMsg
-void DoMoreCommandsMsg(void)
+void DoMoreCommandsMsg()
 {
 	MacMsgOverride(kStrMoreCommandsTitle,
 		kStrMoreCommandsMessage);
@@ -408,31 +408,31 @@ void DoMoreCommandsMsg(void)
 #endif
 
 #if NeedDoAboutMsg
-void DoAboutMsg(void)
+void DoAboutMsg()
 {
 	MacMsgOverride(kStrAboutTitle,
 		kStrAboutMessage);
 }
 #endif
 
-void NoRomMsgDisplayOff(void)
+void NoRomMsgDisplayOff()
 {
 	SpecialModeClr(SpclModeNoRom);
 	NeedWholeScreenDraw = true;
 }
 
-void NoRomMsgDisplayOn(void)
+void NoRomMsgDisplayOn()
 {
 	NeedWholeScreenDraw = true;
 	SpecialModeSet(SpclModeNoRom);
 }
 
-void DrawCellsNoRomModeBody(void)
+void DrawCellsNoRomModeBody()
 {
 	DrawCellsOneLineStr(kStrNoROMMessage);
 }
 
-void DrawNoRomMode(void)
+void DrawNoRomMode()
 {
 	DrawSpclMode0(kStrNoROMTitle, DrawCellsNoRomModeBody);
 }
@@ -497,7 +497,7 @@ enum {
 	kNumCntrlMsgs
 };
 
-void DoEnterControlMode(void)
+void DoEnterControlMode()
 {
 	CurControlMode = kCntrlModeBase;
 	ControlMessage = kCntrlMsgBaseStart;
@@ -506,7 +506,7 @@ void DoEnterControlMode(void)
 	SpecialModeSet(SpclModeControl);
 }
 
-void DoLeaveControlMode(void)
+void DoLeaveControlMode()
 {
 	SpecialModeClr(SpclModeControl);
 	CurControlMode = kCntrlModeOff;
@@ -585,7 +585,7 @@ void HTCEexportSubstCStr(char *s)
 #endif
 
 #if IncludeHostTextClipExchange
-void CopyOptionsStr(void)
+void CopyOptionsStr()
 {
 	HTCEexportSubstCStr(kBldOpts);
 }
@@ -802,7 +802,7 @@ void DoControlModeKey(uint8_t key)
 	NeedWholeScreenDraw = true;
 }
 
-static char * ControlMode2TitleStr(void)
+static char * ControlMode2TitleStr()
 {
 	char *s;
 
@@ -836,7 +836,7 @@ static char * ControlMode2TitleStr(void)
 	return s;
 }
 
-void DrawCellsControlModeBody(void)
+void DrawCellsControlModeBody()
 {
 	switch (ControlMessage) {
 		case kCntrlMsgAbout:
@@ -982,14 +982,14 @@ void DrawCellsControlModeBody(void)
 	}
 }
 
-void DrawControlMode(void)
+void DrawControlMode()
 {
 	DrawSpclMode0(ControlMode2TitleStr(), DrawCellsControlModeBody);
 }
 
 #endif /* UseControlKeys */
 
-void DrawSpclMode(void)
+void DrawSpclMode()
 {
 #if UseControlKeys
 	if (SpecialModeTst(SpclModeControl)) {
@@ -1012,7 +1012,7 @@ void DrawSpclMode(void)
 	}
 }
 
-uint8_t * GetCurDrawBuff(void)
+uint8_t * GetCurDrawBuff()
 {
 	uint8_t * p = screencomparebuff;
 
@@ -1181,7 +1181,7 @@ void Keyboard_UpdateKeyMap2(uint8_t key, bool down)
 	}
 }
 
-void DisconnectKeyCodes2(void)
+void DisconnectKeyCodes2()
 {
 	DisconnectKeyCodes1(kKeepMaskControl | kKeepMaskCapsLock);
 #if UseControlKeys
@@ -1194,7 +1194,7 @@ void DisconnectKeyCodes2(void)
 #endif
 
 #if CheckRomCheckSum
-static uint32_t Calc_Checksum(void)
+static uint32_t Calc_Checksum()
 {
 	long int i;
 	uint32_t CheckSum = 0;
@@ -1211,21 +1211,21 @@ static uint32_t Calc_Checksum(void)
 #endif
 
 #if CheckRomCheckSum && RomStartCheckSum
-void WarnMsgCorruptedROM(void)
+void WarnMsgCorruptedROM()
 {
 	MacMsgOverride(kStrCorruptedROMTitle, kStrCorruptedROMMessage);
 }
 #endif
 
 #if CheckRomCheckSum
-void WarnMsgUnsupportedROM(void)
+void WarnMsgUnsupportedROM()
 {
 	MacMsgOverride(kStrUnsupportedROMTitle,
 		kStrUnsupportedROMMessage);
 }
 #endif
 
-tMacErr ROM_IsValid(void)
+tMacErr ROM_IsValid()
 {
 #if CheckRomCheckSum
 	uint32_t CheckSum =
@@ -1278,7 +1278,7 @@ tMacErr ROM_IsValid(void)
 }
 
 #if NonDiskProtect
-void WarnMsgUnsupportedDisk(void)
+void WarnMsgUnsupportedDisk()
 {
 	MacMsgOverride("Unsupported Disk Image",
 		"I do not recognize the format of the Disk Image,"
@@ -1286,7 +1286,7 @@ void WarnMsgUnsupportedDisk(void)
 }
 #endif
 
-bool WaitForRom(void)
+bool WaitForRom()
 {
 	if (! ROM_loaded) {
 		NoRomMsgDisplayOn();

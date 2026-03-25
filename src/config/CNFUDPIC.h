@@ -117,7 +117,7 @@
 	  - ADB models (Mac II family): !ADBMouseDisabled
 	Declared as a function in mouse.h, implemented in mouse.cpp.
 */
-bool Mouse_Enabled(void);
+bool Mouse_Enabled();
 
 /* kExtn_Block_Base/kExtn_ln2Spc are now runtime — see MachineConfig */
 

@@ -55,7 +55,7 @@
 
 ICTScheduler g_ict;
 
-static void EmulatedHardwareZap(void)
+static void EmulatedHardwareZap()
 {
 	Memory_Reset();
 	ICT_Zap();
@@ -69,13 +69,13 @@ static void EmulatedHardwareZap(void)
 	g_cpu.reset();
 }
 
-static void DoMacReset(void)
+static void DoMacReset()
 {
 	if (auto* d = g_machine->findDevice<SonyDevice>()) d->ejectAllDisks();
 	EmulatedHardwareZap();
 }
 
-static void InterruptReset_Update(void)
+static void InterruptReset_Update()
 {
 	SetInterruptButton(false);
 		/*
@@ -113,7 +113,7 @@ static void SubTickNotify(int SubTick)
 
 static uint16_t SubTickCounter;
 
-static void SubTickTaskDo(void)
+static void SubTickTaskDo()
 {
 	SubTickNotify(SubTickCounter);
 	++SubTickCounter;
@@ -128,20 +128,20 @@ static void SubTickTaskDo(void)
 	}
 }
 
-static void SubTickTaskStart(void)
+static void SubTickTaskStart()
 {
 	SubTickCounter = 0;
 	ICT_add(kICT_SubTick, CyclesScaledPerSubTick);
 }
 
-static void SubTickTaskEnd(void)
+static void SubTickTaskEnd()
 {
 	SubTickNotify(kNumSubTicks - 1);
 }
 
 static int ticksSinceSecond = 0;
 
-static void SixtiethSecondNotify(void)
+static void SixtiethSecondNotify()
 {
 #if dbglog_HAVE && 0
 	dbglog_WriteNote("begin new Sixtieth");
@@ -170,7 +170,7 @@ static void SixtiethSecondNotify(void)
 	SubTickTaskStart();
 }
 
-static void SixtiethEndNotify(void)
+static void SixtiethEndNotify()
 {
 	SubTickTaskEnd();
 	if (auto* d = g_machine->findDevice<MouseDevice>()) d->endTickNotify();
@@ -180,7 +180,7 @@ static void SixtiethEndNotify(void)
 #endif
 }
 
-static void ExtraTimeBeginNotify(void)
+static void ExtraTimeBeginNotify()
 {
 #if 0
 	dbglog_writeCStr("begin extra time");
@@ -190,7 +190,7 @@ static void ExtraTimeBeginNotify(void)
 	if (auto* d = g_machine->findDevice<VIA2Device>()) d->extraTimeBegin();
 }
 
-static void ExtraTimeEndNotify(void)
+static void ExtraTimeEndNotify()
 {
 	if (auto* d = g_machine->findDevice<VIA1Device>()) d->extraTimeEnd();
 	if (auto* d = g_machine->findDevice<VIA2Device>()) d->extraTimeEnd();
@@ -200,7 +200,7 @@ static void ExtraTimeEndNotify(void)
 #endif
 }
 
-void EmulationReserveAlloc(void)
+void EmulationReserveAlloc()
 {
 	const auto& cfg = g_machine->config();
 	ReserveAllocOneBlock(&RAM,
@@ -215,7 +215,7 @@ void EmulationReserveAlloc(void)
 #endif
 }
 
-static bool InitEmulation(void)
+static bool InitEmulation()
 {
 	/* Wire ICT scheduler to CPU cycle counters */
 	g_ict.setCycleAccessors(
@@ -285,7 +285,7 @@ static void m68k_go_nCycles_1(uint32_t n)
 
 static uint32_t ExtraSubTicksToDo = 0;
 
-static void DoEmulateOneTick(void)
+static void DoEmulateOneTick()
 {
 #if EnableAutoSlow
 	{
@@ -327,7 +327,7 @@ static void DoEmulateOneTick(void)
 	}
 }
 
-static bool MoreSubTicksToDo(void)
+static bool MoreSubTicksToDo()
 {
 	/* Always complete all extra sub-ticks regardless of wall clock,
 	   so the emulated cycle count per tick is deterministic.
@@ -342,7 +342,7 @@ static bool MoreSubTicksToDo(void)
 	return v;
 }
 
-static void DoEmulateExtraTime(void)
+static void DoEmulateExtraTime()
 {
 	/*
 		DoEmulateExtraTime is used for
@@ -383,7 +383,7 @@ static uint32_t CurEmulatedTime = 0;
 		"DoEmulateOneTick" has been called.
 	*/
 
-static void RunEmulatedTicksToTrueTime(void)
+static void RunEmulatedTicksToTrueTime()
 {
 	/*
 		Always emulate exactly the number of ticks
@@ -417,7 +417,7 @@ static void RunEmulatedTicksToTrueTime(void)
 	}
 }
 
-static void MainEventLoop(void)
+static void MainEventLoop()
 {
 	for (; ; ) {
 		WaitForNextTick();
@@ -435,7 +435,7 @@ static std::unique_ptr<Machine> s_machine;
 static LaunchConfig s_launchConfig;
 static MachineConfig s_machineConfig;
 
-const LaunchConfig& GetLaunchConfig(void)
+const LaunchConfig& GetLaunchConfig()
 {
 	return s_launchConfig;
 }
@@ -537,12 +537,12 @@ void ProgramEarlyInit(int argc, char* argv[])
 	s_machine->init();
 }
 
-void ProgramCleanup(void)
+void ProgramCleanup()
 {
 	s_machine.reset();
 }
 
-void ProgramMain(void)
+void ProgramMain()
 {
 	if (InitEmulation())
 	{

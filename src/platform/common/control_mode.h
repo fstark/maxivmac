@@ -62,22 +62,22 @@ extern uint8_t * CntrlDisplayBuff;
 
 /* --- Function prototypes --- */
 
-uint8_t * GetCurDrawBuff(void);
+uint8_t * GetCurDrawBuff();
 uint8_t Keyboard_RemapMac(uint8_t key);
 void Keyboard_UpdateKeyMap2(uint8_t key, bool down);
-void DisconnectKeyCodes2(void);
+void DisconnectKeyCodes2();
 void MacMsgOverride(char *briefMsg, char *longMsg);
-void MacMsgDisplayOn(void);
-void MacMsgDisplayOff(void);
-tMacErr ROM_IsValid(void);
-bool WaitForRom(void);
+void MacMsgDisplayOn();
+void MacMsgDisplayOff();
+tMacErr ROM_IsValid();
+bool WaitForRom();
 
 #if NeedDoMoreCommandsMsg
-void DoMoreCommandsMsg(void);
+void DoMoreCommandsMsg();
 #endif
 
 #if NeedDoAboutMsg
-void DoAboutMsg(void);
+void DoAboutMsg();
 #endif
 
 #if dbglog_HAVE
@@ -85,12 +85,12 @@ void MacMsgDebugAlert(char *s);
 #endif
 
 #if NonDiskProtect
-void WarnMsgUnsupportedDisk(void);
+void WarnMsgUnsupportedDisk();
 #endif
 
 /* --- Backend-provided functions --- */
 /* These must be defined by each platform backend */
 
 #if VarFullScreen
-extern void ToggleWantFullScreen(void);
+extern void ToggleWantFullScreen();
 #endif

@@ -39,7 +39,7 @@ static bool SavedCurMouseButton = false;
 static uint16_t MouseADBDeltaH = 0;
 static uint16_t MouseADBDeltaV = 0;
 
-static void ADB_DoMouseTalk(void)
+static void ADB_DoMouseTalk()
 {
 	switch (ADB_CurCmd & 3) {
 		case 0:
@@ -114,7 +114,7 @@ static void ADB_DoMouseTalk(void)
 	}
 }
 
-static void ADB_DoMouseListen(void)
+static void ADB_DoMouseListen()
 {
 	switch (ADB_CurCmd & 3) {
 		case 3:
@@ -173,7 +173,7 @@ static bool CheckForADBkeyEvt(uint8_t *NextADBkeyevt)
 	}
 }
 
-static void ADB_DoKeyboardTalk(void)
+static void ADB_DoKeyboardTalk()
 {
 	switch (ADB_CurCmd & 3) {
 		case 0:
@@ -206,7 +206,7 @@ static void ADB_DoKeyboardTalk(void)
 	}
 }
 
-static void ADB_DoKeyboardListen(void)
+static void ADB_DoKeyboardListen()
 {
 	switch (ADB_CurCmd & 3) {
 		case 3:
@@ -225,7 +225,7 @@ static void ADB_DoKeyboardListen(void)
 	}
 }
 
-static bool CheckForADBanyEvt(void)
+static bool CheckForADBanyEvt()
 {
 	MyEvtQEl *p = MyEvtQOutP();
 	if (nullptr != p) {
@@ -243,7 +243,7 @@ static bool CheckForADBanyEvt(void)
 	return (0 != MouseADBDeltaH) && (0 != MouseADBDeltaV);
 }
 
-static void ADB_DoTalk(void)
+static void ADB_DoTalk()
 {
 	uint8_t Address = ADB_CurCmd >> 4;
 	if (Address == MouseADBAddress) {
@@ -253,7 +253,7 @@ static void ADB_DoTalk(void)
 	}
 }
 
-static void ADB_EndListen(void)
+static void ADB_EndListen()
 {
 	uint8_t Address = ADB_CurCmd >> 4;
 	if (Address == MouseADBAddress) {
@@ -263,13 +263,13 @@ static void ADB_EndListen(void)
 	}
 }
 
-static void ADB_DoReset(void)
+static void ADB_DoReset()
 {
 	MouseADBAddress = 3;
 	KeyboardADBAddress = 2;
 }
 
-static void ADB_Flush(void)
+static void ADB_Flush()
 {
 	uint8_t Address = ADB_CurCmd >> 4;
 

@@ -120,9 +120,9 @@ static uint32_t LastRealDate;
 		+ (DiskCacheOn << 5) + (MouseScalingOn << 6))
 
 #if dbglog_HAVE
-extern void DumpRTC(void);
+extern void DumpRTC();
 
-void DumpRTC(void)
+void DumpRTC()
 {
 	int Counter;
 
@@ -388,7 +388,7 @@ static uint8_t RTC_Access_Reg(uint8_t Data, bool WriteReg, uint8_t TheCmd)
 	return Data;
 }
 
-static void RTC_DoCmd(void)
+static void RTC_DoCmd()
 {
 	switch (RTC.Mode) {
 		case 0: /* This Byte is a RTC Command */

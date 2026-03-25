@@ -20,9 +20,9 @@
 #include "core/config_loader.h"
 
 extern void ProgramEarlyInit(int argc, char* argv[]);
-extern void EmulationReserveAlloc(void);
-extern void ProgramMain(void);
-extern void ProgramCleanup(void);
+extern void EmulationReserveAlloc();
+extern void ProgramMain();
+extern void ProgramCleanup();
 
 // Access the parsed launch config (available after ProgramEarlyInit).
-extern const LaunchConfig& GetLaunchConfig(void);
+extern const LaunchConfig& GetLaunchConfig();

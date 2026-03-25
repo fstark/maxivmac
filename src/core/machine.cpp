@@ -64,7 +64,7 @@ extern void put_vm_long(uint32_t addr, uint32_t l);
 
 uint32_t my_disk_icon_addr;
 
-void customreset(void)
+void customreset()
 {
 	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<SCCDevice>()) d->reset();
@@ -94,11 +94,11 @@ uint8_t* Wires = nullptr;
 
 
 #if WantDisasm
-extern void m68k_WantDisasmContext(void);
+extern void m68k_WantDisasmContext();
 #endif
 
 #if WantDisasm
-void dbglog_StartLine(void)
+void dbglog_StartLine()
 {
 	m68k_WantDisasmContext();
 	dbglog_writeCStr(" ");
@@ -630,7 +630,7 @@ public:
 };
 static ExtnDevice g_extnDevice;
 
-void Extn_Reset(void)
+void Extn_Reset()
 {
 	ParamAddrHi = (uint16_t) - 1;
 }
@@ -717,12 +717,12 @@ static void AddToATTList(ATTep p)
 	}
 }
 
-static void InitATTList(void)
+static void InitATTList()
 {
 	LastATTel = 0;
 }
 
-static void FinishATTList(void)
+static void FinishATTList()
 {
 	{
 		/* add guard */
@@ -773,7 +773,7 @@ static void FinishATTList(void)
 }
 
 /* Mac II/IIx: RAM24 setup with VIA2 bank select */
-static void SetUp_RAM24(void)
+static void SetUp_RAM24()
 {
 	const auto& cfg = g_machine->config();
 	ATTer r{};
@@ -842,7 +842,7 @@ static void SetUp_RAM24(void)
 }
 
 /* Mac II/IIx: I/O space setup */
-static void SetUp_io(void)
+static void SetUp_io()
 {
 	ATTer r{};
 
@@ -956,7 +956,7 @@ static void SetUp_io(void)
 }
 
 /* Mac II/IIx: 24-bit address space setup */
-static void SetUp_address24(void)
+static void SetUp_address24()
 {
 	const auto& cfg = g_machine->config();
 	ATTer r{};
@@ -1019,7 +1019,7 @@ static void SetUp_address24(void)
 }
 
 /* Mac II/IIx: 32-bit address space setup */
-static void SetUp_address32(void)
+static void SetUp_address32()
 {
 	const auto& cfg = g_machine->config();
 	ATTer r{};
@@ -1154,7 +1154,7 @@ static void SetUp_address32(void)
 }
 
 /* Mac II/IIx: address space dispatcher */
-static void SetUp_address_II(void)
+static void SetUp_address_II()
 {
 	if (Addr32) {
 		SetUp_address32();
@@ -1196,7 +1196,7 @@ static void AddToATTListWithMTB(ATTep p)
 #endif
 
 /* Compact Mac: simple 24-bit RAM setup (no VIA2 bank select) */
-static void SetUp_RAM24_compact(void)
+static void SetUp_RAM24_compact()
 {
 	const auto& cfg = g_machine->config();
 	ATTer r{};
@@ -1231,7 +1231,7 @@ static void SetUp_RAM24_compact(void)
 }
 
 /* Compact Mac: 24-bit address space setup */
-static void SetUp_address_compact(void)
+static void SetUp_address_compact()
 {
 	const auto& cfg = g_machine->config();
 	ATTer r{};
@@ -1340,7 +1340,7 @@ static void SetUp_address_compact(void)
 }
 
 /* Unified address space setup — dispatches by model family */
-static void SetUp_address(void)
+static void SetUp_address()
 {
 	if (g_machine->config().isIIFamily()) {
 		SetUp_address_II();
@@ -1349,7 +1349,7 @@ static void SetUp_address(void)
 	}
 }
 
-static void SetUpMemBanks(void)
+static void SetUpMemBanks()
 {
 	InitATTList();
 
@@ -1626,13 +1626,13 @@ static void get_fail_realblock(ATTep p)
 	return v;
 }
 
-void MemOverlay_ChangeNtfy(void)
+void MemOverlay_ChangeNtfy()
 {
 	/* All models rebuild memory banks when overlay changes */
 	SetUpMemBanks();
 }
 
-void Addr32_ChangeNtfy(void)
+void Addr32_ChangeNtfy()
 {
 	/* Mac II/IIx use 24/32-bit addressing mode switch */
 	if (g_machine->config().isIIFamily()) {
@@ -1701,7 +1701,7 @@ void SetInterruptButton(bool v)
 
 static uint8_t CurIPL = 0;
 
-void VIAorSCCinterruptChngNtfy(void)
+void VIAorSCCinterruptChngNtfy()
 {
 	uint8_t NewIPL;
 
@@ -1732,7 +1732,7 @@ void VIAorSCCinterruptChngNtfy(void)
 	}
 }
 
- bool AddrSpac_Init(void)
+ bool AddrSpac_Init()
 {
 	g_wires.init(kNumWires);
 	Wires = g_wires.data();
@@ -1763,7 +1763,7 @@ void VIAorSCCinterruptChngNtfy(void)
 	}
 
 	if (g_machine->config().isIIFamily()) {
-		extern void PowerOff_ChangeNtfy(void);
+		extern void PowerOff_ChangeNtfy();
 		g_wires.onChange(Wire_VIA2_iA7_unknown, Addr32_ChangeNtfy);
 		g_wires.onChange(Wire_VIA2_iA6_unknown, Addr32_ChangeNtfy);
 		g_wires.onChange(Wire_VIA2_iB3_Addr32, Addr32_ChangeNtfy);
@@ -1794,15 +1794,15 @@ void VIAorSCCinterruptChngNtfy(void)
 	return true;
 }
 
-void Memory_Reset(void)
+void Memory_Reset()
 {
 	g_wires.set(Wire_MemOverlay, 1);
 	SetUpMemBanks();
 }
 
 /* PowerOff_ChangeNtfy: only wired on Mac II/IIx (see AddrSpac_Init) */
-extern void PowerOff_ChangeNtfy(void);
-void PowerOff_ChangeNtfy(void)
+extern void PowerOff_ChangeNtfy();
+void PowerOff_ChangeNtfy()
 {
 	if (! VIA2_iB2) {
 		ForceMacOff = true;
@@ -1841,12 +1841,12 @@ uint16_t MasterMyEvtQLock = 0;
 
 #include "core/ict_scheduler.h"
 
-void ICT_Zap(void)
+void ICT_Zap()
 {
 	g_ict.zap();
 }
 
-iCountt GetCuriCount(void)
+iCountt GetCuriCount()
 {
 	return g_ict.getCurrent();
 }

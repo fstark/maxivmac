@@ -20,14 +20,14 @@ struct MachineConfig;
 extern void MINEM68K_Init(
 	uint8_t *fIPL, const MachineConfig *config);
 #if SmallGlobals
-extern void MINEM68K_ReserveAlloc(void);
+extern void MINEM68K_ReserveAlloc();
 #endif
 
-extern void m68k_IPLchangeNtfy(void);
+extern void m68k_IPLchangeNtfy();
 extern void DiskInsertedPsuedoException(uint32_t newpc, uint32_t data);
-extern void m68k_reset(void);
+extern void m68k_reset();
 
-extern int32_t GetCyclesRemaining(void);
+extern int32_t GetCyclesRemaining();
 extern void SetCyclesRemaining(int32_t n);
 
 extern void m68k_go_nCycles(uint32_t n);

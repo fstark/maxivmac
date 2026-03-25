@@ -60,7 +60,7 @@ void SCSIDevice::reset()
 	}
 }
 
-static void SCSI_BusReset(void)
+static void SCSI_BusReset()
 {
 	SCSI[scsiRd + sCDR] = 0;
 	SCSI[scsiWr + sODR] = 0;
@@ -87,7 +87,7 @@ static void SCSI_BusReset(void)
 	put_ram_word(0xb22, get_ram_word(0xb22) | 0x8000);
 }
 
-static void SCSI_Check(void)
+static void SCSI_Check()
 {
 	/*
 		The arbitration select/reselect scenario

@@ -313,11 +313,11 @@ static uint32_t DumpTable[kNumIKinds];
 #endif
 
 #if USE_PCLIMIT
-static void Recalc_PC_Block(void);
+static void Recalc_PC_Block();
 static uint32_t Recalc_PC_BlockReturnUi5r(uint32_t v);
 #endif
 
-static inline uint16_t nextiword(void)
+static inline uint16_t nextiword()
 /* NOT sign extended */
 {
 	uint16_t r = do_get_mem_word(V_pc_p);
@@ -332,7 +332,7 @@ static inline uint16_t nextiword(void)
 	return r;
 }
 
-static inline uint32_t nextiSByte(void)
+static inline uint32_t nextiSByte()
 {
 	uint32_t r = ui5r_FromSByte(do_get_mem_byte(V_pc_p + 1));
 	V_pc_p += 2;
@@ -346,7 +346,7 @@ static inline uint32_t nextiSByte(void)
 	return r;
 }
 
-static inline uint32_t nextiSWord(void)
+static inline uint32_t nextiSWord()
 /* NOT sign extended */
 {
 	uint32_t r = ui5r_FromSWord(do_get_mem_word(V_pc_p));
@@ -361,9 +361,9 @@ static inline uint32_t nextiSWord(void)
 	return r;
 }
 
-static uint32_t nextilong_ext(void);
+static uint32_t nextilong_ext();
 
-static inline uint32_t nextilong(void)
+static inline uint32_t nextilong()
 {
 	uint32_t r = do_get_mem_long(V_pc_p);
 	V_pc_p += 4;
@@ -378,7 +378,7 @@ static inline uint32_t nextilong(void)
 	return r;
 }
 
-static inline void BackupPC(void)
+static inline void BackupPC()
 {
 	V_pc_p -= 2;
 
@@ -389,181 +389,181 @@ static inline void BackupPC(void)
 #endif
 }
 
-static inline uint32_t m68k_getpc(void)
+static inline uint32_t m68k_getpc()
 {
 	return V_regs.pc + (V_pc_p - V_regs.pc_pLo);
 }
 
 /* Forward declaration — defined later but needed by the StateRecorder hook in the main loop */
-static uint16_t m68k_getSR(void);
+static uint16_t m68k_getSR();
 
-static void DoCodeTst(void);
-static void DoCodeCmpB(void);
-static void DoCodeCmpW(void);
-static void DoCodeCmpL(void);
-static void DoCodeBccB(void);
-static void DoCodeBccW(void);
-static void DoCodeBraB(void);
-static void DoCodeBraW(void);
-static void DoCodeDBcc(void);
-static void DoCodeDBF(void);
-static void DoCodeSwap(void);
-static void DoCodeMoveL(void);
-static void DoCodeMoveW(void);
-static void DoCodeMoveB(void);
-static void DoCodeMoveA(void);
-static void DoCodeMoveQ(void);
-static void DoCodeAddB(void);
-static void DoCodeAddW(void);
-static void DoCodeAddL(void);
-static void DoCodeSubB(void);
-static void DoCodeSubW(void);
-static void DoCodeSubL(void);
-static void DoCodeLea(void);
-static void DoCodePEA(void);
-static void DoCodeA(void);
-static void DoCodeBsrB(void);
-static void DoCodeBsrW(void);
-static void DoCodeJsr(void);
-static void DoCodeLinkA6(void);
-static void DoCodeMOVEMRmML(void);
-static void DoCodeMOVEMApRL(void);
-static void DoCodeUnlkA6(void);
-static void DoCodeRts(void);
-static void DoCodeJmp(void);
-static void DoCodeClr(void);
-static void DoCodeAddA(void);
-static void DoCodeSubA(void);
-static void DoCodeCmpA(void);
-static void DoCodeAddXB(void);
-static void DoCodeAddXW(void);
-static void DoCodeAddXL(void);
-static void DoCodeSubXB(void);
-static void DoCodeSubXW(void);
-static void DoCodeSubXL(void);
-static void DoCodeAslB(void);
-static void DoCodeAslW(void);
-static void DoCodeAslL(void);
-static void DoCodeAsrB(void);
-static void DoCodeAsrW(void);
-static void DoCodeAsrL(void);
-static void DoCodeLslB(void);
-static void DoCodeLslW(void);
-static void DoCodeLslL(void);
-static void DoCodeLsrB(void);
-static void DoCodeLsrW(void);
-static void DoCodeLsrL(void);
-static void DoCodeRxlB(void);
-static void DoCodeRxlW(void);
-static void DoCodeRxlL(void);
-static void DoCodeRxrB(void);
-static void DoCodeRxrW(void);
-static void DoCodeRxrL(void);
-static void DoCodeRolB(void);
-static void DoCodeRolW(void);
-static void DoCodeRolL(void);
-static void DoCodeRorB(void);
-static void DoCodeRorW(void);
-static void DoCodeRorL(void);
-static void DoCodeBTstB(void);
-static void DoCodeBChgB(void);
-static void DoCodeBClrB(void);
-static void DoCodeBSetB(void);
-static void DoCodeBTstL(void);
-static void DoCodeBChgL(void);
-static void DoCodeBClrL(void);
-static void DoCodeBSetL(void);
-static void DoCodeAnd(void);
-static void DoCodeOr(void);
-static void DoCodeEor(void);
-static void DoCodeNot(void);
-static void DoCodeScc(void);
-static void DoCodeNegXB(void);
-static void DoCodeNegXW(void);
-static void DoCodeNegXL(void);
-static void DoCodeNegB(void);
-static void DoCodeNegW(void);
-static void DoCodeNegL(void);
-static void DoCodeEXTW(void);
-static void DoCodeEXTL(void);
-static void DoCodeMulU(void);
-static void DoCodeMulS(void);
-static void DoCodeDivU(void);
-static void DoCodeDivS(void);
-static void DoCodeExg(void);
-static void DoCodeMoveEaCR(void);
-static void DoCodeMoveSREa(void);
-static void DoCodeMoveEaSR(void);
-static void DoCodeOrISR(void);
-static void DoCodeAndISR(void);
-static void DoCodeEorISR(void);
-static void DoCodeOrICCR(void);
-static void DoCodeAndICCR(void);
-static void DoCodeEorICCR(void);
-static void DoCodeMOVEMApRW(void);
-static void DoCodeMOVEMRmMW(void);
-static void DoCodeMOVEMrmW(void);
-static void DoCodeMOVEMrmL(void);
-static void DoCodeMOVEMmrW(void);
-static void DoCodeMOVEMmrL(void);
-static void DoCodeAbcd(void);
-static void DoCodeSbcd(void);
-static void DoCodeNbcd(void);
-static void DoCodeRte(void);
-static void DoCodeNop(void);
-static void DoCodeMoveP0(void);
-static void DoCodeMoveP1(void);
-static void DoCodeMoveP2(void);
-static void DoCodeMoveP3(void);
-static void op_illg(void);
-static void DoCodeChk(void);
-static void DoCodeTrap(void);
-static void DoCodeTrapV(void);
-static void DoCodeRtr(void);
-static void DoCodeLink(void);
-static void DoCodeUnlk(void);
-static void DoCodeMoveRUSP(void);
-static void DoCodeMoveUSPR(void);
-static void DoCodeTas(void);
-static void DoCodeFdefault(void);
-static void DoCodeStop(void);
-static void DoCodeReset(void);
+static void DoCodeTst();
+static void DoCodeCmpB();
+static void DoCodeCmpW();
+static void DoCodeCmpL();
+static void DoCodeBccB();
+static void DoCodeBccW();
+static void DoCodeBraB();
+static void DoCodeBraW();
+static void DoCodeDBcc();
+static void DoCodeDBF();
+static void DoCodeSwap();
+static void DoCodeMoveL();
+static void DoCodeMoveW();
+static void DoCodeMoveB();
+static void DoCodeMoveA();
+static void DoCodeMoveQ();
+static void DoCodeAddB();
+static void DoCodeAddW();
+static void DoCodeAddL();
+static void DoCodeSubB();
+static void DoCodeSubW();
+static void DoCodeSubL();
+static void DoCodeLea();
+static void DoCodePEA();
+static void DoCodeA();
+static void DoCodeBsrB();
+static void DoCodeBsrW();
+static void DoCodeJsr();
+static void DoCodeLinkA6();
+static void DoCodeMOVEMRmML();
+static void DoCodeMOVEMApRL();
+static void DoCodeUnlkA6();
+static void DoCodeRts();
+static void DoCodeJmp();
+static void DoCodeClr();
+static void DoCodeAddA();
+static void DoCodeSubA();
+static void DoCodeCmpA();
+static void DoCodeAddXB();
+static void DoCodeAddXW();
+static void DoCodeAddXL();
+static void DoCodeSubXB();
+static void DoCodeSubXW();
+static void DoCodeSubXL();
+static void DoCodeAslB();
+static void DoCodeAslW();
+static void DoCodeAslL();
+static void DoCodeAsrB();
+static void DoCodeAsrW();
+static void DoCodeAsrL();
+static void DoCodeLslB();
+static void DoCodeLslW();
+static void DoCodeLslL();
+static void DoCodeLsrB();
+static void DoCodeLsrW();
+static void DoCodeLsrL();
+static void DoCodeRxlB();
+static void DoCodeRxlW();
+static void DoCodeRxlL();
+static void DoCodeRxrB();
+static void DoCodeRxrW();
+static void DoCodeRxrL();
+static void DoCodeRolB();
+static void DoCodeRolW();
+static void DoCodeRolL();
+static void DoCodeRorB();
+static void DoCodeRorW();
+static void DoCodeRorL();
+static void DoCodeBTstB();
+static void DoCodeBChgB();
+static void DoCodeBClrB();
+static void DoCodeBSetB();
+static void DoCodeBTstL();
+static void DoCodeBChgL();
+static void DoCodeBClrL();
+static void DoCodeBSetL();
+static void DoCodeAnd();
+static void DoCodeOr();
+static void DoCodeEor();
+static void DoCodeNot();
+static void DoCodeScc();
+static void DoCodeNegXB();
+static void DoCodeNegXW();
+static void DoCodeNegXL();
+static void DoCodeNegB();
+static void DoCodeNegW();
+static void DoCodeNegL();
+static void DoCodeEXTW();
+static void DoCodeEXTL();
+static void DoCodeMulU();
+static void DoCodeMulS();
+static void DoCodeDivU();
+static void DoCodeDivS();
+static void DoCodeExg();
+static void DoCodeMoveEaCR();
+static void DoCodeMoveSREa();
+static void DoCodeMoveEaSR();
+static void DoCodeOrISR();
+static void DoCodeAndISR();
+static void DoCodeEorISR();
+static void DoCodeOrICCR();
+static void DoCodeAndICCR();
+static void DoCodeEorICCR();
+static void DoCodeMOVEMApRW();
+static void DoCodeMOVEMRmMW();
+static void DoCodeMOVEMrmW();
+static void DoCodeMOVEMrmL();
+static void DoCodeMOVEMmrW();
+static void DoCodeMOVEMmrL();
+static void DoCodeAbcd();
+static void DoCodeSbcd();
+static void DoCodeNbcd();
+static void DoCodeRte();
+static void DoCodeNop();
+static void DoCodeMoveP0();
+static void DoCodeMoveP1();
+static void DoCodeMoveP2();
+static void DoCodeMoveP3();
+static void op_illg();
+static void DoCodeChk();
+static void DoCodeTrap();
+static void DoCodeTrapV();
+static void DoCodeRtr();
+static void DoCodeLink();
+static void DoCodeUnlk();
+static void DoCodeMoveRUSP();
+static void DoCodeMoveUSPR();
+static void DoCodeTas();
+static void DoCodeFdefault();
+static void DoCodeStop();
+static void DoCodeReset();
 
 #if Use68020
-static void DoCodeCallMorRtm(void);
-static void DoCodeBraL(void);
-static void DoCodeBccL(void);
-static void DoCodeBsrL(void);
-static void DoCodeEXTBL(void);
-static void DoCodeTRAPcc(void);
-static void DoCodeBkpt(void);
-static void DoCodeDivL(void);
-static void DoCodeMulL(void);
-static void DoCodeRtd(void);
-static void DoCodeMoveCCREa(void);
-static void DoMoveFromControl(void);
-static void DoMoveToControl(void);
-static void DoCodeLinkL(void);
-static void DoCodePack(void);
-static void DoCodeUnpk(void);
-static void DoCHK2orCMP2(void);
-static void DoCAS2(void);
-static void DoCAS(void);
-static void DoMOVES(void);
-static void DoBitField(void);
+static void DoCodeCallMorRtm();
+static void DoCodeBraL();
+static void DoCodeBccL();
+static void DoCodeBsrL();
+static void DoCodeEXTBL();
+static void DoCodeTRAPcc();
+static void DoCodeBkpt();
+static void DoCodeDivL();
+static void DoCodeMulL();
+static void DoCodeRtd();
+static void DoCodeMoveCCREa();
+static void DoMoveFromControl();
+static void DoMoveToControl();
+static void DoCodeLinkL();
+static void DoCodePack();
+static void DoCodeUnpk();
+static void DoCHK2orCMP2();
+static void DoCAS2();
+static void DoCAS();
+static void DoMOVES();
+static void DoBitField();
 #endif
 
-static void DoCodeMMU(void);
+static void DoCodeMMU();
 
-static void DoCodeFPU_md60(void);
-static void DoCodeFPU_DBcc(void);
-static void DoCodeFPU_Trapcc(void);
-static void DoCodeFPU_Scc(void);
-static void DoCodeFPU_FBccW(void);
-static void DoCodeFPU_FBccL(void);
-static void DoCodeFPU_Save(void);
-static void DoCodeFPU_Restore(void);
-static void DoCodeFPU_dflt(void);
+static void DoCodeFPU_md60();
+static void DoCodeFPU_DBcc();
+static void DoCodeFPU_Trapcc();
+static void DoCodeFPU_Scc();
+static void DoCodeFPU_FBccW();
+static void DoCodeFPU_FBccL();
+static void DoCodeFPU_Save();
+static void DoCodeFPU_Restore();
+static void DoCodeFPU_dflt();
 
 typedef void (*func_pointer_t)(void);
 
@@ -754,7 +754,7 @@ static const func_pointer_t OpDispatch[kNumIKinds + 1] = {
 
 #define BreakPointAddress 0xD198
 
-static void BreakPointAction(void)
+static void BreakPointAction()
 {
 	dbglog_StartLine();
 	dbglog_writeCStr("breakpoint A0=");
@@ -806,7 +806,7 @@ static inline void UnDecodeNextInstruction(uint16_t Cycles)
 #endif
 }
 
-static void m68k_go_MaxCycles(void)
+static void m68k_go_MaxCycles()
 {
 	uint16_t Cycles;
 	DecOpYR y;
@@ -2141,12 +2141,12 @@ static inline uint32_t DecodeGetSetSrcDst(DecArgR *f)
 }
 
 
-static inline uint32_t DecodeDst(void)
+static inline uint32_t DecodeDst()
 {
 	return DecodeAddrSrcDst(&V_regs.CurDecOpY.v[1]);
 }
 
-static inline uint32_t DecodeGetSetDstValue(void)
+static inline uint32_t DecodeGetSetDstValue()
 {
 	return DecodeGetSetSrcDst(&V_regs.CurDecOpY.v[1]);
 }
@@ -2161,24 +2161,24 @@ static inline void DecodeSetDstValue(uint32_t v)
 	DecodeSetSrcDst(v, &V_regs.CurDecOpY.v[1]);
 }
 
-static inline uint32_t DecodeGetSrcValue(void)
+static inline uint32_t DecodeGetSrcValue()
 {
 	return DecodeGetSrcDst(&V_regs.CurDecOpY.v[0]);
 }
 
-static inline uint32_t DecodeGetDstValue(void)
+static inline uint32_t DecodeGetDstValue()
 {
 	return DecodeGetSrcDst(&V_regs.CurDecOpY.v[1]);
 }
 
-static inline uint32_t DecodeGetSrcSetDstValue(void)
+static inline uint32_t DecodeGetSrcSetDstValue()
 {
 	V_regs.SrcVal = DecodeGetSrcValue();
 
 	return DecodeGetSetDstValue();
 }
 
-static inline uint32_t DecodeGetSrcGetDstValue(void)
+static inline uint32_t DecodeGetSrcGetDstValue()
 {
 	V_regs.SrcVal = DecodeGetSrcValue();
 
@@ -3380,28 +3380,28 @@ static inline void cctrue(cond_actP t_act, cond_actP f_act)
 #endif
 
 
-static void NeedDefaultLazyXFlagSubB(void)
+static void NeedDefaultLazyXFlagSubB()
 {
 	XFLG = Bool2Bit(((uint8_t)V_regs.LazyXFlagArgDst)
 		< ((uint8_t)V_regs.LazyXFlagArgSrc));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagSubW(void)
+static void NeedDefaultLazyXFlagSubW()
 {
 	XFLG = Bool2Bit(((uint16_t)V_regs.LazyXFlagArgDst)
 		< ((uint16_t)V_regs.LazyXFlagArgSrc));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagSubL(void)
+static void NeedDefaultLazyXFlagSubL()
 {
 	XFLG = Bool2Bit(((uint32_t)V_regs.LazyXFlagArgDst)
 		< ((uint32_t)V_regs.LazyXFlagArgSrc));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagAddB(void)
+static void NeedDefaultLazyXFlagAddB()
 {
 	uint8_t src = (uint8_t)V_regs.LazyXFlagArgSrc;
 	uint8_t dst = (uint8_t)V_regs.LazyXFlagArgDst;
@@ -3411,7 +3411,7 @@ static void NeedDefaultLazyXFlagAddB(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagAddW(void)
+static void NeedDefaultLazyXFlagAddW()
 {
 	uint16_t src = (uint16_t)V_regs.LazyXFlagArgSrc;
 	uint16_t dst = (uint16_t)V_regs.LazyXFlagArgDst;
@@ -3421,7 +3421,7 @@ static void NeedDefaultLazyXFlagAddW(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagAddL(void)
+static void NeedDefaultLazyXFlagAddL()
 {
 	uint32_t src = (uint32_t)V_regs.LazyXFlagArgSrc;
 	uint32_t dst = (uint32_t)V_regs.LazyXFlagArgDst;
@@ -3431,28 +3431,28 @@ static void NeedDefaultLazyXFlagAddL(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagNegB(void)
+static void NeedDefaultLazyXFlagNegB()
 {
 	XFLG = Bool2Bit(((uint8_t)0)
 		< ((uint8_t)V_regs.LazyXFlagArgDst));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagNegW(void)
+static void NeedDefaultLazyXFlagNegW()
 {
 	XFLG = Bool2Bit(((uint16_t)0)
 		< ((uint16_t)V_regs.LazyXFlagArgDst));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagNegL(void)
+static void NeedDefaultLazyXFlagNegL()
 {
 	XFLG = Bool2Bit(((uint32_t)0)
 		< ((uint32_t)V_regs.LazyXFlagArgDst));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagAsr(void)
+static void NeedDefaultLazyXFlagAsr()
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3462,28 +3462,28 @@ static void NeedDefaultLazyXFlagAsr(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagAslB(void)
+static void NeedDefaultLazyXFlagAslB()
 {
 	XFLG = (V_regs.LazyFlagArgDst >> (8 - V_regs.LazyFlagArgSrc)) & 1;
 
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagAslW(void)
+static void NeedDefaultLazyXFlagAslW()
 {
 	XFLG = (V_regs.LazyFlagArgDst >> (16 - V_regs.LazyFlagArgSrc)) & 1;
 
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagAslL(void)
+static void NeedDefaultLazyXFlagAslL()
 {
 	XFLG = (V_regs.LazyFlagArgDst >> (32 - V_regs.LazyFlagArgSrc)) & 1;
 
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagDefault(void)
+static void NeedDefaultLazyXFlagDefault()
 {
 }
 
@@ -3521,7 +3521,7 @@ static const NeedLazyFlagP
 	0
 };
 
-static void NeedDefaultLazyXFlag(void)
+static void NeedDefaultLazyXFlag()
 {
 #if ForceFlagsEval
 	if (kLazyFlagsDefault != V_regs.LazyXFlagKind) {
@@ -3533,7 +3533,7 @@ static void NeedDefaultLazyXFlag(void)
 #endif
 }
 
-static void NeedDefaultLazyFlagsTstL(void)
+static void NeedDefaultLazyFlagsTstL()
 {
 	uint32_t dst = V_regs.LazyFlagArgDst;
 
@@ -3545,7 +3545,7 @@ static void NeedDefaultLazyFlagsTstL(void)
 	NeedDefaultLazyXFlag();
 }
 
-static void NeedDefaultLazyFlagsCmpB(void)
+static void NeedDefaultLazyFlagsCmpB()
 {
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3563,7 +3563,7 @@ static void NeedDefaultLazyFlagsCmpB(void)
 	NeedDefaultLazyXFlag();
 }
 
-static void NeedDefaultLazyFlagsCmpW(void)
+static void NeedDefaultLazyFlagsCmpW()
 {
 	uint32_t result0 = V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc;
 	uint32_t result = ui5r_FromSWord(result0);
@@ -3583,7 +3583,7 @@ static void NeedDefaultLazyFlagsCmpW(void)
 	NeedDefaultLazyXFlag();
 }
 
-static void NeedDefaultLazyFlagsCmpL(void)
+static void NeedDefaultLazyFlagsCmpL()
 {
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3607,7 +3607,7 @@ static void NeedDefaultLazyFlagsCmpL(void)
 	NeedDefaultLazyXFlag();
 }
 
-static void NeedDefaultLazyFlagsSubB(void)
+static void NeedDefaultLazyFlagsSubB()
 {
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3626,7 +3626,7 @@ static void NeedDefaultLazyFlagsSubB(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyFlagsSubW(void)
+static void NeedDefaultLazyFlagsSubW()
 {
 	uint32_t result0 = V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc;
 	uint32_t result = ui5r_FromSWord(result0);
@@ -3647,7 +3647,7 @@ static void NeedDefaultLazyFlagsSubW(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyFlagsSubL(void)
+static void NeedDefaultLazyFlagsSubL()
 {
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3672,7 +3672,7 @@ static void NeedDefaultLazyFlagsSubL(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyFlagsAddB(void)
+static void NeedDefaultLazyFlagsAddB()
 {
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3691,7 +3691,7 @@ static void NeedDefaultLazyFlagsAddB(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyFlagsAddW(void)
+static void NeedDefaultLazyFlagsAddW()
 {
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3733,7 +3733,7 @@ static void NeedDefaultLazyFlagsAddCommon(uint32_t result)
 }
 #endif
 
-static void NeedDefaultLazyFlagsAddL(void)
+static void NeedDefaultLazyFlagsAddL()
 {
 #if 1
 	uint32_t src = V_regs.LazyFlagArgSrc;
@@ -3788,7 +3788,7 @@ static void NeedDefaultLazyFlagsNegCommon(uint32_t dstvalue, uint32_t result)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyFlagsNegB(void)
+static void NeedDefaultLazyFlagsNegB()
 {
 	uint32_t dstvalue = V_regs.LazyFlagArgDst;
 	uint32_t result = ui5r_FromSByte(0 - dstvalue);
@@ -3796,7 +3796,7 @@ static void NeedDefaultLazyFlagsNegB(void)
 	NeedDefaultLazyFlagsNegCommon(dstvalue, result);
 }
 
-static void NeedDefaultLazyFlagsNegW(void)
+static void NeedDefaultLazyFlagsNegW()
 {
 	uint32_t dstvalue = V_regs.LazyFlagArgDst;
 	uint32_t result = ui5r_FromSWord(0 - dstvalue);
@@ -3804,7 +3804,7 @@ static void NeedDefaultLazyFlagsNegW(void)
 	NeedDefaultLazyFlagsNegCommon(dstvalue, result);
 }
 
-static void NeedDefaultLazyFlagsNegL(void)
+static void NeedDefaultLazyFlagsNegL()
 {
 	uint32_t dstvalue = V_regs.LazyFlagArgDst;
 	uint32_t result = ui5r_FromSLong(0 - dstvalue);
@@ -3812,7 +3812,7 @@ static void NeedDefaultLazyFlagsNegL(void)
 	NeedDefaultLazyFlagsNegCommon(dstvalue, result);
 }
 
-static void NeedDefaultLazyFlagsAsr(void)
+static void NeedDefaultLazyFlagsAsr()
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3829,7 +3829,7 @@ static void NeedDefaultLazyFlagsAsr(void)
 	V_regs.LazyFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyFlagsAslB(void)
+static void NeedDefaultLazyFlagsAslB()
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3851,7 +3851,7 @@ static void NeedDefaultLazyFlagsAslB(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyFlagsAslW(void)
+static void NeedDefaultLazyFlagsAslW()
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3873,7 +3873,7 @@ static void NeedDefaultLazyFlagsAslW(void)
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyFlagsAslL(void)
+static void NeedDefaultLazyFlagsAslL()
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
@@ -3896,7 +3896,7 @@ static void NeedDefaultLazyFlagsAslL(void)
 }
 
 #if UseLazyZ
-static void NeedDefaultLazyFlagsZSet(void);
+static void NeedDefaultLazyFlagsZSet();
 #endif
 
 static const NeedLazyFlagP
@@ -3931,13 +3931,13 @@ static const NeedLazyFlagP
 	0
 };
 
-static void NeedDefaultLazyAllFlags0(void)
+static void NeedDefaultLazyAllFlags0()
 {
 	(NeedLazyFlagDispatch[V_regs.LazyFlagKind])();
 }
 
 #if ForceFlagsEval
-static void NeedDefaultLazyAllFlags(void)
+static void NeedDefaultLazyAllFlags()
 {
 	if (kLazyFlagsDefault != V_regs.LazyFlagKind) {
 		ReportAbnormalID(0x0104,
@@ -3958,7 +3958,7 @@ static void NeedDefaultLazyAllFlags(void)
 #endif
 
 #if UseLazyZ
-static void NeedDefaultLazyFlagsZSet(void)
+static void NeedDefaultLazyFlagsZSet()
 {
 	flagtype SaveZFLG = ZFLG;
 
@@ -3988,7 +3988,7 @@ static inline void cctrue(cond_actP t_act, cond_actP f_act)
 
 #define LOCALIPROC static void /* static inline void */
 
-LOCALIPROC DoCodeCmpB(void)
+LOCALIPROC DoCodeCmpB()
 {
 	uint32_t dstvalue = DecodeGetSrcGetDstValue();
 
@@ -3999,7 +3999,7 @@ LOCALIPROC DoCodeCmpB(void)
 	HaveSetUpFlags();
 }
 
-LOCALIPROC DoCodeCmpW(void)
+LOCALIPROC DoCodeCmpW()
 {
 	uint32_t dstvalue = DecodeGetSrcGetDstValue();
 
@@ -4010,7 +4010,7 @@ LOCALIPROC DoCodeCmpW(void)
 	HaveSetUpFlags();
 }
 
-LOCALIPROC DoCodeCmpL(void)
+LOCALIPROC DoCodeCmpL()
 {
 	uint32_t dstvalue = DecodeGetSrcGetDstValue();
 
@@ -4021,7 +4021,7 @@ LOCALIPROC DoCodeCmpL(void)
 	HaveSetUpFlags();
 }
 
-LOCALIPROC DoCodeMoveL(void)
+LOCALIPROC DoCodeMoveL()
 {
 	uint32_t src = DecodeGetSrcValue();
 
@@ -4033,7 +4033,7 @@ LOCALIPROC DoCodeMoveL(void)
 	DecodeSetDstValue(src);
 }
 
-LOCALIPROC DoCodeMoveW(void)
+LOCALIPROC DoCodeMoveW()
 {
 	uint32_t src = DecodeGetSrcValue();
 
@@ -4045,7 +4045,7 @@ LOCALIPROC DoCodeMoveW(void)
 	DecodeSetDstValue(src);
 }
 
-LOCALIPROC DoCodeMoveB(void)
+LOCALIPROC DoCodeMoveB()
 {
 	uint32_t src = DecodeGetSrcValue();
 
@@ -4057,7 +4057,7 @@ LOCALIPROC DoCodeMoveB(void)
 	DecodeSetDstValue(src);
 }
 
-LOCALIPROC DoCodeTst(void)
+LOCALIPROC DoCodeTst()
 {
 	/* Tst 01001010ssmmmrrr */
 
@@ -4069,7 +4069,7 @@ LOCALIPROC DoCodeTst(void)
 	HaveSetUpFlags();
 }
 
-LOCALIPROC DoCodeBraB(void)
+LOCALIPROC DoCodeBraB()
 {
 	int32_t offset = (int32_t)(int8_t)(uint8_t)(V_regs.CurDecOpY.v[1].ArgDat);
 	uint8_t * s = V_pc_p + offset;
@@ -4085,7 +4085,7 @@ LOCALIPROC DoCodeBraB(void)
 #endif
 }
 
-LOCALIPROC DoCodeBraW(void)
+LOCALIPROC DoCodeBraW()
 {
 	int32_t offset = (int32_t)(int16_t)(uint16_t)do_get_mem_word(V_pc_p);
 		/* note that pc not incremented here */
@@ -4103,7 +4103,7 @@ LOCALIPROC DoCodeBraW(void)
 }
 
 #if WantCloserCyc
-static void DoCodeBccB_t(void)
+static void DoCodeBccB_t()
 {
 	V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RdAvgXtraCyc);
 	DoCodeBraB();
@@ -4112,7 +4112,7 @@ static void DoCodeBccB_t(void)
 #define DoCodeBccB_t DoCodeBraB
 #endif
 
-static void DoCodeBccB_f(void)
+static void DoCodeBccB_f()
 {
 #if WantCloserCyc
 	V_MaxCyclesToGo -= (8 * kCycleScale + RdAvgXtraCyc);
@@ -4120,13 +4120,13 @@ static void DoCodeBccB_f(void)
 		/* do nothing */
 }
 
-LOCALIPROC DoCodeBccB(void)
+LOCALIPROC DoCodeBccB()
 {
 	/* Bcc 0110ccccnnnnnnnn */
 	cctrue(DoCodeBccB_t, DoCodeBccB_f);
 }
 
-static void SkipiWord(void)
+static void SkipiWord()
 {
 	V_pc_p += 2;
 
@@ -4138,7 +4138,7 @@ static void SkipiWord(void)
 }
 
 #if WantCloserCyc
-static void DoCodeBccW_t(void)
+static void DoCodeBccW_t()
 {
 	V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RdAvgXtraCyc);
 	DoCodeBraW();
@@ -4148,7 +4148,7 @@ static void DoCodeBccW_t(void)
 #endif
 
 #if WantCloserCyc
-static void DoCodeBccW_f(void)
+static void DoCodeBccW_f()
 {
 	V_MaxCyclesToGo -= (12 * kCycleScale + 2 * RdAvgXtraCyc);
 	SkipiWord();
@@ -4157,14 +4157,14 @@ static void DoCodeBccW_f(void)
 #define DoCodeBccW_f SkipiWord
 #endif
 
-LOCALIPROC DoCodeBccW(void)
+LOCALIPROC DoCodeBccW()
 {
 	/* Bcc 0110ccccnnnnnnnn */
 	cctrue(DoCodeBccW_t, DoCodeBccW_f);
 }
 
 
-LOCALIPROC DoCodeDBF(void)
+LOCALIPROC DoCodeDBF()
 {
 	/* DBcc 0101cccc11001ddd */
 
@@ -4193,7 +4193,7 @@ LOCALIPROC DoCodeDBF(void)
 }
 
 #if WantCloserCyc
-static void DoCodeDBcc_t(void)
+static void DoCodeDBcc_t()
 {
 	V_MaxCyclesToGo -= (12 * kCycleScale + 2 * RdAvgXtraCyc);
 	SkipiWord();
@@ -4202,14 +4202,14 @@ static void DoCodeDBcc_t(void)
 #define DoCodeDBcc_t SkipiWord
 #endif
 
-LOCALIPROC DoCodeDBcc(void)
+LOCALIPROC DoCodeDBcc()
 {
 	/* DBcc 0101cccc11001ddd */
 
 	cctrue(DoCodeDBcc_t, DoCodeDBF);
 }
 
-LOCALIPROC DoCodeSwap(void)
+LOCALIPROC DoCodeSwap()
 {
 	/* Swap 0100100001000rrr */
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
@@ -4226,7 +4226,7 @@ LOCALIPROC DoCodeSwap(void)
 	*dstp = dst;
 }
 
-LOCALIPROC DoCodeMoveA(void) /* MOVE */
+LOCALIPROC DoCodeMoveA() /* MOVE */
 {
 	uint32_t src = DecodeGetSrcValue();
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
@@ -4234,7 +4234,7 @@ LOCALIPROC DoCodeMoveA(void) /* MOVE */
 	m68k_areg(dstreg) = src;
 }
 
-LOCALIPROC DoCodeMoveQ(void)
+LOCALIPROC DoCodeMoveQ()
 {
 	/* MoveQ 0111ddd0nnnnnnnn */
 	uint32_t src = ui5r_FromSByte(V_regs.CurDecOpY.v[0].ArgDat);
@@ -4248,7 +4248,7 @@ LOCALIPROC DoCodeMoveQ(void)
 	m68k_dreg(dstreg) = src;
 }
 
-LOCALIPROC DoCodeAddB(void)
+LOCALIPROC DoCodeAddB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
@@ -4267,7 +4267,7 @@ LOCALIPROC DoCodeAddB(void)
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeAddW(void)
+LOCALIPROC DoCodeAddW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
@@ -4286,7 +4286,7 @@ LOCALIPROC DoCodeAddW(void)
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeAddL(void)
+LOCALIPROC DoCodeAddL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
@@ -4305,7 +4305,7 @@ LOCALIPROC DoCodeAddL(void)
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeSubB(void)
+LOCALIPROC DoCodeSubB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
@@ -4324,7 +4324,7 @@ LOCALIPROC DoCodeSubB(void)
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeSubW(void)
+LOCALIPROC DoCodeSubW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
@@ -4343,7 +4343,7 @@ LOCALIPROC DoCodeSubW(void)
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeSubL(void)
+LOCALIPROC DoCodeSubL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
@@ -4362,7 +4362,7 @@ LOCALIPROC DoCodeSubL(void)
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeLea(void)
+LOCALIPROC DoCodeLea()
 {
 	/* Lea 0100aaa111mmmrrr */
 	uint32_t DstAddr = DecodeDst();
@@ -4371,7 +4371,7 @@ LOCALIPROC DoCodeLea(void)
 	m68k_areg(dstreg) = DstAddr;
 }
 
-LOCALIPROC DoCodePEA(void)
+LOCALIPROC DoCodePEA()
 {
 	/* PEA 0100100001mmmrrr */
 	uint32_t DstAddr = DecodeDst();
@@ -4380,14 +4380,14 @@ LOCALIPROC DoCodePEA(void)
 	put_long(m68k_areg(7), DstAddr);
 }
 
-LOCALIPROC DoCodeBsrB(void)
+LOCALIPROC DoCodeBsrB()
 {
 	m68k_areg(7) -= 4;
 	put_long(m68k_areg(7), m68k_getpc());
 	DoCodeBraB();
 }
 
-LOCALIPROC DoCodeBsrW(void)
+LOCALIPROC DoCodeBsrW()
 {
 	m68k_areg(7) -= 4;
 	put_long(m68k_areg(7), m68k_getpc() + 2);
@@ -4436,7 +4436,7 @@ static void m68k_setpc(uint32_t newpc)
 	}
 }
 
-LOCALIPROC DoCodeJsr(void)
+LOCALIPROC DoCodeJsr()
 {
 	/* Jsr 0100111010mmmrrr */
 	uint32_t DstAddr = DecodeDst();
@@ -4446,7 +4446,7 @@ LOCALIPROC DoCodeJsr(void)
 	m68k_setpc(DstAddr);
 }
 
-LOCALIPROC DoCodeLinkA6(void)
+LOCALIPROC DoCodeLinkA6()
 {
 	uint32_t stackp = m68k_areg(7);
 	stackp -= 4;
@@ -4455,14 +4455,14 @@ LOCALIPROC DoCodeLinkA6(void)
 	m68k_areg(7) = stackp + nextiSWord();
 }
 
-LOCALIPROC DoCodeUnlkA6(void)
+LOCALIPROC DoCodeUnlkA6()
 {
 	uint32_t src = m68k_areg(6);
 	m68k_areg(6) = get_long(src);
 	m68k_areg(7) = src + 4;
 }
 
-LOCALIPROC DoCodeRts(void)
+LOCALIPROC DoCodeRts()
 {
 	/* Rts 0100111001110101 */
 	uint32_t NewPC = get_long(m68k_areg(7));
@@ -4470,7 +4470,7 @@ LOCALIPROC DoCodeRts(void)
 	m68k_setpc(NewPC);
 }
 
-LOCALIPROC DoCodeJmp(void)
+LOCALIPROC DoCodeJmp()
 {
 	/* JMP 0100111011mmmrrr */
 	uint32_t DstAddr = DecodeDst();
@@ -4478,7 +4478,7 @@ LOCALIPROC DoCodeJmp(void)
 	m68k_setpc(DstAddr);
 }
 
-LOCALIPROC DoCodeClr(void)
+LOCALIPROC DoCodeClr()
 {
 	/* Clr 01000010ssmmmrrr */
 
@@ -4490,7 +4490,7 @@ LOCALIPROC DoCodeClr(void)
 	DecodeSetDstValue(0);
 }
 
-LOCALIPROC DoCodeAddA(void)
+LOCALIPROC DoCodeAddA()
 {
 	/* ADDA 1101dddm11mmmrrr */
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
@@ -4498,14 +4498,14 @@ LOCALIPROC DoCodeAddA(void)
 	ArgSetDstValue(dstvalue + V_regs.SrcVal);
 }
 
-LOCALIPROC DoCodeSubA(void)
+LOCALIPROC DoCodeSubA()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 
 	ArgSetDstValue(dstvalue - V_regs.SrcVal);
 }
 
-LOCALIPROC DoCodeCmpA(void)
+LOCALIPROC DoCodeCmpA()
 {
 	uint32_t dstvalue = DecodeGetSrcGetDstValue();
 
@@ -4516,7 +4516,7 @@ LOCALIPROC DoCodeCmpA(void)
 	HaveSetUpFlags();
 }
 
-static uint16_t m68k_getCR(void)
+static uint16_t m68k_getCR()
 {
 	NeedDefaultLazyAllFlags();
 
@@ -4537,7 +4537,7 @@ static void m68k_setCR(uint16_t newcr)
 }
 
 
-static uint16_t m68k_getSR(void)
+static uint16_t m68k_getSR()
 {
 	uint16_t sr = m68k_getCR()
 			| (V_regs.t1 << 15)
@@ -4550,7 +4550,7 @@ static uint16_t m68k_getSR(void)
 	return sr;
 }
 
-static void NeedToGetOut(void)
+static void NeedToGetOut()
 {
 	if (V_MaxCyclesToGo <= 0) {
 		/*
@@ -4565,7 +4565,7 @@ static void NeedToGetOut(void)
 	}
 }
 
-static void SetExternalInterruptPending(void)
+static void SetExternalInterruptPending()
 {
 	V_regs.ExternalInterruptPending = true;
 	NeedToGetOut();
@@ -4669,19 +4669,19 @@ static void Exception(int nr)
 }
 
 
-LOCALIPROC DoCodeA(void)
+LOCALIPROC DoCodeA()
 {
 	BackupPC();
 	Exception(0xA);
 }
 
-static uint16_t nextiword_nm(void)
+static uint16_t nextiword_nm()
 /* NOT sign extended */
 {
 	return nextiword();
 }
 
-LOCALIPROC DoCodeMOVEMRmML(void)
+LOCALIPROC DoCodeMOVEMRmML()
 {
 	/* MOVEM reg to mem 01001000111100rrr */
 	int16_t z;
@@ -4714,7 +4714,7 @@ LOCALIPROC DoCodeMOVEMRmML(void)
 	}
 }
 
-LOCALIPROC DoCodeMOVEMApRL(void)
+LOCALIPROC DoCodeMOVEMApRL()
 {
 	/* MOVEM mem to reg 01001100111011rrr */
 	int16_t z;
@@ -4756,7 +4756,7 @@ static void SetCCRforAddX(uint32_t dstvalue, uint32_t srcvalue,
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeAddXB(void)
+LOCALIPROC DoCodeAddXB()
 {
 	NeedDefaultLazyAllFlags();
 
@@ -4769,7 +4769,7 @@ LOCALIPROC DoCodeAddXB(void)
 	}
 }
 
-LOCALIPROC DoCodeAddXW(void)
+LOCALIPROC DoCodeAddXW()
 {
 	if ((kLazyFlagsDefault != V_regs.LazyFlagKind)
 		|| (kLazyFlagsDefault != V_regs.LazyXFlagKind))
@@ -4786,7 +4786,7 @@ LOCALIPROC DoCodeAddXW(void)
 	}
 }
 
-LOCALIPROC DoCodeAddXL(void)
+LOCALIPROC DoCodeAddXL()
 {
 	if (kLazyFlagsAddL == V_regs.LazyFlagKind) {
 		uint32_t src = V_regs.LazyFlagArgSrc;
@@ -4837,7 +4837,7 @@ static void SetCCRforSubX(uint32_t dstvalue, uint32_t srcvalue,
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeSubXB(void)
+LOCALIPROC DoCodeSubXB()
 {
 	NeedDefaultLazyAllFlags();
 
@@ -4850,7 +4850,7 @@ LOCALIPROC DoCodeSubXB(void)
 	}
 }
 
-LOCALIPROC DoCodeSubXW(void)
+LOCALIPROC DoCodeSubXW()
 {
 	if ((kLazyFlagsDefault != V_regs.LazyFlagKind)
 		|| (kLazyFlagsDefault != V_regs.LazyXFlagKind))
@@ -4867,7 +4867,7 @@ LOCALIPROC DoCodeSubXW(void)
 	}
 }
 
-LOCALIPROC DoCodeSubXL(void)
+LOCALIPROC DoCodeSubXL()
 {
 	if (kLazyFlagsSubL == V_regs.LazyFlagKind) {
 		uint32_t src = V_regs.LazyFlagArgSrc;
@@ -4934,7 +4934,7 @@ static void DoCodeMaxAsr(uint32_t dstvalue)
 	ArgSetDstValue(0);
 }
 
-LOCALIPROC DoCodeAslB(void)
+LOCALIPROC DoCodeAslB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -4970,7 +4970,7 @@ LOCALIPROC DoCodeAslB(void)
 	}
 }
 
-LOCALIPROC DoCodeAslW(void)
+LOCALIPROC DoCodeAslW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5006,7 +5006,7 @@ LOCALIPROC DoCodeAslW(void)
 	}
 }
 
-LOCALIPROC DoCodeAslL(void)
+LOCALIPROC DoCodeAslL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5042,7 +5042,7 @@ LOCALIPROC DoCodeAslL(void)
 	}
 }
 
-static void DoCodeOverShift(void)
+static void DoCodeOverShift()
 {
 	XFLG = CFLG = 0;
 	ZFLG = 1;
@@ -5055,7 +5055,7 @@ static void DoCodeOverShift(void)
 	ArgSetDstValue(0);
 }
 
-static void DoCodeOverShiftN(void)
+static void DoCodeOverShiftN()
 {
 	NFLG = 1;
 	VFLG = 0;
@@ -5078,7 +5078,7 @@ static void DoCodeOverAShift(uint32_t dstvalue)
 	}
 }
 
-LOCALIPROC DoCodeAsrB(void)
+LOCALIPROC DoCodeAsrB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5110,7 +5110,7 @@ LOCALIPROC DoCodeAsrB(void)
 	}
 }
 
-LOCALIPROC DoCodeAsrW(void)
+LOCALIPROC DoCodeAsrW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5142,7 +5142,7 @@ LOCALIPROC DoCodeAsrW(void)
 	}
 }
 
-LOCALIPROC DoCodeAsrL(void)
+LOCALIPROC DoCodeAsrL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5187,7 +5187,7 @@ static void DoCodeMaxLslShift(uint32_t dstvalue)
 	ArgSetDstValue(0);
 }
 
-LOCALIPROC DoCodeLslB(void)
+LOCALIPROC DoCodeLslB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5222,7 +5222,7 @@ LOCALIPROC DoCodeLslB(void)
 	}
 }
 
-LOCALIPROC DoCodeLslW(void)
+LOCALIPROC DoCodeLslW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5257,7 +5257,7 @@ LOCALIPROC DoCodeLslW(void)
 	}
 }
 
-LOCALIPROC DoCodeLslL(void)
+LOCALIPROC DoCodeLslL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5292,7 +5292,7 @@ LOCALIPROC DoCodeLslL(void)
 	}
 }
 
-LOCALIPROC DoCodeLsrB(void)
+LOCALIPROC DoCodeLsrB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5321,7 +5321,7 @@ LOCALIPROC DoCodeLsrB(void)
 	}
 }
 
-LOCALIPROC DoCodeLsrW(void)
+LOCALIPROC DoCodeLsrW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5350,7 +5350,7 @@ LOCALIPROC DoCodeLsrW(void)
 	}
 }
 
-LOCALIPROC DoCodeLsrL(void)
+LOCALIPROC DoCodeLsrL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5379,7 +5379,7 @@ LOCALIPROC DoCodeLsrL(void)
 	}
 }
 
-static uint32_t DecodeGetSrcSetDstValueDfltFlags_nm(void)
+static uint32_t DecodeGetSrcSetDstValueDfltFlags_nm()
 {
 	NeedDefaultLazyAllFlags();
 
@@ -5397,7 +5397,7 @@ static void DoCodeNullXShift(uint32_t dstvalue)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeRxlB(void)
+LOCALIPROC DoCodeRxlB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5424,7 +5424,7 @@ LOCALIPROC DoCodeRxlB(void)
 	}
 }
 
-LOCALIPROC DoCodeRxlW(void)
+LOCALIPROC DoCodeRxlW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5451,7 +5451,7 @@ LOCALIPROC DoCodeRxlW(void)
 	}
 }
 
-LOCALIPROC DoCodeRxlL(void)
+LOCALIPROC DoCodeRxlL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5478,7 +5478,7 @@ LOCALIPROC DoCodeRxlL(void)
 	}
 }
 
-LOCALIPROC DoCodeRxrB(void)
+LOCALIPROC DoCodeRxrB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5506,7 +5506,7 @@ LOCALIPROC DoCodeRxrB(void)
 	}
 }
 
-LOCALIPROC DoCodeRxrW(void)
+LOCALIPROC DoCodeRxrW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5534,7 +5534,7 @@ LOCALIPROC DoCodeRxrW(void)
 	}
 }
 
-LOCALIPROC DoCodeRxrL(void)
+LOCALIPROC DoCodeRxrL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5562,7 +5562,7 @@ LOCALIPROC DoCodeRxrL(void)
 	}
 }
 
-LOCALIPROC DoCodeRolB(void)
+LOCALIPROC DoCodeRolB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5594,7 +5594,7 @@ LOCALIPROC DoCodeRolB(void)
 	}
 }
 
-LOCALIPROC DoCodeRolW(void)
+LOCALIPROC DoCodeRolW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5626,7 +5626,7 @@ LOCALIPROC DoCodeRolW(void)
 	}
 }
 
-LOCALIPROC DoCodeRolL(void)
+LOCALIPROC DoCodeRolL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5658,7 +5658,7 @@ LOCALIPROC DoCodeRolL(void)
 	}
 }
 
-LOCALIPROC DoCodeRorB(void)
+LOCALIPROC DoCodeRorB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5691,7 +5691,7 @@ LOCALIPROC DoCodeRorB(void)
 	}
 }
 
-LOCALIPROC DoCodeRorW(void)
+LOCALIPROC DoCodeRorW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5724,7 +5724,7 @@ LOCALIPROC DoCodeRorW(void)
 	}
 }
 
-LOCALIPROC DoCodeRorL(void)
+LOCALIPROC DoCodeRorL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
@@ -5759,7 +5759,7 @@ LOCALIPROC DoCodeRorL(void)
 
 
 #if UseLazyZ
-static void WillSetZFLG(void)
+static void WillSetZFLG()
 {
 	if (kLazyFlagsZSet == V_regs.LazyFlagKind) {
 		/* ok */
@@ -5774,14 +5774,14 @@ static void WillSetZFLG(void)
 #define WillSetZFLG NeedDefaultLazyAllFlags
 #endif
 
-static inline uint32_t DecodeGetSrcGetDstValueSetZ(void)
+static inline uint32_t DecodeGetSrcGetDstValueSetZ()
 {
 	WillSetZFLG();
 
 	return DecodeGetSrcSetDstValue();
 }
 
-LOCALIPROC DoCodeBTstB(void)
+LOCALIPROC DoCodeBTstB()
 {
 	uint32_t dstvalue = DecodeGetSrcGetDstValueSetZ();
 	uint32_t srcvalue = V_regs.SrcVal & 7;
@@ -5789,7 +5789,7 @@ LOCALIPROC DoCodeBTstB(void)
 	ZFLG = ((dstvalue >> srcvalue) ^ 1) & 1;
 }
 
-LOCALIPROC DoCodeBTstL(void)
+LOCALIPROC DoCodeBTstL()
 {
 	uint32_t dstvalue = DecodeGetSrcGetDstValueSetZ();
 	uint32_t srcvalue = V_regs.SrcVal & 31;
@@ -5797,14 +5797,14 @@ LOCALIPROC DoCodeBTstL(void)
 	ZFLG = ((dstvalue >> srcvalue) ^ 1) & 1;
 }
 
-static inline uint32_t DecodeGetSrcSetDstValueSetZ(void)
+static inline uint32_t DecodeGetSrcSetDstValueSetZ()
 {
 	WillSetZFLG();
 
 	return DecodeGetSrcSetDstValue();
 }
 
-LOCALIPROC DoCodeBChgB(void)
+LOCALIPROC DoCodeBChgB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueSetZ();
 	uint32_t srcvalue = V_regs.SrcVal & 7;
@@ -5815,7 +5815,7 @@ LOCALIPROC DoCodeBChgB(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeBChgL(void)
+LOCALIPROC DoCodeBChgL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueSetZ();
 	uint32_t srcvalue = V_regs.SrcVal & 31;
@@ -5826,7 +5826,7 @@ LOCALIPROC DoCodeBChgL(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeBClrB(void)
+LOCALIPROC DoCodeBClrB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueSetZ();
 	uint32_t srcvalue = V_regs.SrcVal & 7;
@@ -5837,7 +5837,7 @@ LOCALIPROC DoCodeBClrB(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeBClrL(void)
+LOCALIPROC DoCodeBClrL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueSetZ();
 	uint32_t srcvalue = V_regs.SrcVal & 31;
@@ -5848,7 +5848,7 @@ LOCALIPROC DoCodeBClrL(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeBSetB(void)
+LOCALIPROC DoCodeBSetB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueSetZ();
 	uint32_t srcvalue = V_regs.SrcVal & 7;
@@ -5859,7 +5859,7 @@ LOCALIPROC DoCodeBSetB(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeBSetL(void)
+LOCALIPROC DoCodeBSetL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueSetZ();
 	uint32_t srcvalue = V_regs.SrcVal & 31;
@@ -5870,7 +5870,7 @@ LOCALIPROC DoCodeBSetL(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeAnd(void)
+LOCALIPROC DoCodeAnd()
 {
 	/* DoBinOpAnd(DecodeI_xxxxxxxxssmmmrrr()); */
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
@@ -5889,7 +5889,7 @@ LOCALIPROC DoCodeAnd(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeOr(void)
+LOCALIPROC DoCodeOr()
 {
 	/* DoBinOr(DecodeI_xxxxxxxxssmmmrrr()); */
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
@@ -5908,7 +5908,7 @@ LOCALIPROC DoCodeOr(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeEor(void)
+LOCALIPROC DoCodeEor()
 {
 	/* Eor 1011ddd1ssmmmrrr */
 	/* DoBinOpEor(DecodeDEa_xxxxdddxssmmmrrr()); */
@@ -5928,7 +5928,7 @@ LOCALIPROC DoCodeEor(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeNot(void)
+LOCALIPROC DoCodeNot()
 {
 	/* Not 01000110ssmmmrrr */
 	uint32_t dstvalue = DecodeGetSetDstValue();
@@ -5943,7 +5943,7 @@ LOCALIPROC DoCodeNot(void)
 	ArgSetDstValue(dstvalue);
 }
 
-static void DoCodeScc_t(void)
+static void DoCodeScc_t()
 {
 #if WantCloserCyc
 	if (kAMdRegB == V_regs.CurDecOpY.v[1].AMd) {
@@ -5953,18 +5953,18 @@ static void DoCodeScc_t(void)
 	DecodeSetDstValue(0xff);
 }
 
-static void DoCodeScc_f(void)
+static void DoCodeScc_f()
 {
 	DecodeSetDstValue(0);
 }
 
-LOCALIPROC DoCodeScc(void)
+LOCALIPROC DoCodeScc()
 {
 	/* Scc 0101cccc11mmmrrr */
 	cctrue(DoCodeScc_t, DoCodeScc_f);
 }
 
-LOCALIPROC DoCodeEXTL(void)
+LOCALIPROC DoCodeEXTL()
 {
 	/* EXT.L */
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
@@ -5979,7 +5979,7 @@ LOCALIPROC DoCodeEXTL(void)
 	*dstp = dstvalue;
 }
 
-LOCALIPROC DoCodeEXTW(void)
+LOCALIPROC DoCodeEXTW()
 {
 	/* EXT.W */
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
@@ -5998,7 +5998,7 @@ LOCALIPROC DoCodeEXTW(void)
 #endif
 }
 
-LOCALIPROC DoCodeNegB(void)
+LOCALIPROC DoCodeNegB()
 {
 	uint32_t dstvalue = DecodeGetSetDstValue();
 	uint32_t result = ui5r_FromSByte(0 - dstvalue);
@@ -6013,7 +6013,7 @@ LOCALIPROC DoCodeNegB(void)
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeNegW(void)
+LOCALIPROC DoCodeNegW()
 {
 	uint32_t dstvalue = DecodeGetSetDstValue();
 	uint32_t result = ui5r_FromSWord(0 - dstvalue);
@@ -6028,7 +6028,7 @@ LOCALIPROC DoCodeNegW(void)
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeNegL(void)
+LOCALIPROC DoCodeNegL()
 {
 	uint32_t dstvalue = DecodeGetSetDstValue();
 	uint32_t result = ui5r_FromSLong(0 - dstvalue);
@@ -6059,7 +6059,7 @@ static void SetCCRforNegX(uint32_t dstvalue, uint32_t result)
 	ArgSetDstValue(result);
 }
 
-LOCALIPROC DoCodeNegXB(void)
+LOCALIPROC DoCodeNegXB()
 {
 	NeedDefaultLazyAllFlags();
 
@@ -6071,7 +6071,7 @@ LOCALIPROC DoCodeNegXB(void)
 	}
 }
 
-LOCALIPROC DoCodeNegXW(void)
+LOCALIPROC DoCodeNegXW()
 {
 	if ((kLazyFlagsDefault != V_regs.LazyFlagKind)
 		|| (kLazyFlagsDefault != V_regs.LazyXFlagKind))
@@ -6087,7 +6087,7 @@ LOCALIPROC DoCodeNegXW(void)
 	}
 }
 
-LOCALIPROC DoCodeNegXL(void)
+LOCALIPROC DoCodeNegXL()
 {
 	if (kLazyFlagsNegL == V_regs.LazyFlagKind) {
 		NeedDefaultLazyFlagsNegL();
@@ -6109,7 +6109,7 @@ LOCALIPROC DoCodeNegXL(void)
 	}
 }
 
-LOCALIPROC DoCodeMulU(void)
+LOCALIPROC DoCodeMulU()
 {
 	/* MulU 1100ddd011mmmrrr */
 	uint32_t srcvalue = DecodeGetSrcValue();
@@ -6140,7 +6140,7 @@ LOCALIPROC DoCodeMulU(void)
 	*dstp = dstvalue;
 }
 
-LOCALIPROC DoCodeMulS(void)
+LOCALIPROC DoCodeMulS()
 {
 	/* MulS 1100ddd111mmmrrr */
 	uint32_t srcvalue = DecodeGetSrcValue();
@@ -6171,7 +6171,7 @@ LOCALIPROC DoCodeMulS(void)
 	*dstp = dstvalue;
 }
 
-LOCALIPROC DoCodeDivU(void)
+LOCALIPROC DoCodeDivU()
 {
 	/* DivU 1000ddd011mmmrrr */
 	uint32_t srcvalue = DecodeGetSrcValue();
@@ -6214,7 +6214,7 @@ LOCALIPROC DoCodeDivU(void)
 	*dstp = dstvalue;
 }
 
-LOCALIPROC DoCodeDivS(void)
+LOCALIPROC DoCodeDivS()
 {
 	/* DivS 1000ddd111mmmrrr */
 	uint32_t srcvalue = DecodeGetSrcValue();
@@ -6262,7 +6262,7 @@ LOCALIPROC DoCodeDivS(void)
 	*dstp = dstvalue;
 }
 
-LOCALIPROC DoCodeExg(void)
+LOCALIPROC DoCodeExg()
 {
 	/* Exg dd 1100ddd101000rrr, opsize = 4 */
 	/* Exg aa 1100ddd101001rrr, opsize = 4 */
@@ -6278,13 +6278,13 @@ LOCALIPROC DoCodeExg(void)
 	*dstp = srcvalue;
 }
 
-LOCALIPROC DoCodeMoveEaCR(void)
+LOCALIPROC DoCodeMoveEaCR()
 {
 	/* 0100010011mmmrrr */
 	m68k_setCR(DecodeGetDstValue());
 }
 
-static void DoPrivilegeViolation(void)
+static void DoPrivilegeViolation()
 {
 #if WantCloserCyc
 	V_MaxCyclesToGo += GetDcoCycles(V_regs.CurDecOp);
@@ -6298,7 +6298,7 @@ static void DoPrivilegeViolation(void)
 #endif
 }
 
-LOCALIPROC DoCodeMoveSREa(void)
+LOCALIPROC DoCodeMoveSREa()
 {
 	/* Move from SR 0100000011mmmrrr */
 	if (s_cpuConfig->use68020 && 0 == V_regs.s) {
@@ -6309,7 +6309,7 @@ LOCALIPROC DoCodeMoveSREa(void)
 	}
 }
 
-LOCALIPROC DoCodeMoveEaSR(void)
+LOCALIPROC DoCodeMoveEaSR()
 {
 	/* 0100011011mmmrrr */
 	if (0 == V_regs.s) {
@@ -6319,7 +6319,7 @@ LOCALIPROC DoCodeMoveEaSR(void)
 	}
 }
 
-LOCALIPROC DoCodeOrISR(void)
+LOCALIPROC DoCodeOrISR()
 {
 	if (0 == V_regs.s) {
 		DoPrivilegeViolation();
@@ -6330,7 +6330,7 @@ LOCALIPROC DoCodeOrISR(void)
 	}
 }
 
-LOCALIPROC DoCodeAndISR(void)
+LOCALIPROC DoCodeAndISR()
 {
 	if (0 == V_regs.s) {
 		DoPrivilegeViolation();
@@ -6341,7 +6341,7 @@ LOCALIPROC DoCodeAndISR(void)
 	}
 }
 
-LOCALIPROC DoCodeEorISR(void)
+LOCALIPROC DoCodeEorISR()
 {
 	if (0 == V_regs.s) {
 		DoPrivilegeViolation();
@@ -6352,28 +6352,28 @@ LOCALIPROC DoCodeEorISR(void)
 	}
 }
 
-LOCALIPROC DoCodeOrICCR(void)
+LOCALIPROC DoCodeOrICCR()
 {
 	V_regs.SrcVal = nextiword_nm();
 
 	m68k_setCR(m68k_getCR() | V_regs.SrcVal);
 }
 
-LOCALIPROC DoCodeAndICCR(void)
+LOCALIPROC DoCodeAndICCR()
 {
 	V_regs.SrcVal = nextiword_nm();
 
 	m68k_setCR(m68k_getCR() & V_regs.SrcVal);
 }
 
-LOCALIPROC DoCodeEorICCR(void)
+LOCALIPROC DoCodeEorICCR()
 {
 	V_regs.SrcVal = nextiword_nm();
 
 	m68k_setCR(m68k_getCR() ^ V_regs.SrcVal);
 }
 
-LOCALIPROC DoCodeMOVEMApRW(void)
+LOCALIPROC DoCodeMOVEMApRW()
 {
 	/* MOVEM mem to reg 01001100110011rrr */
 	int16_t z;
@@ -6394,7 +6394,7 @@ LOCALIPROC DoCodeMOVEMApRW(void)
 	*dstp = p;
 }
 
-LOCALIPROC DoCodeMOVEMRmMW(void)
+LOCALIPROC DoCodeMOVEMRmMW()
 {
 	/* MOVEM reg to mem 01001000110100rrr */
 	int16_t z;
@@ -6427,7 +6427,7 @@ LOCALIPROC DoCodeMOVEMRmMW(void)
 	}
 }
 
-LOCALIPROC DoCodeMOVEMrmW(void)
+LOCALIPROC DoCodeMOVEMrmW()
 {
 	/* MOVEM reg to mem 010010001ssmmmrrr */
 	int16_t z;
@@ -6446,7 +6446,7 @@ LOCALIPROC DoCodeMOVEMrmW(void)
 	}
 }
 
-LOCALIPROC DoCodeMOVEMrmL(void)
+LOCALIPROC DoCodeMOVEMrmL()
 {
 	/* MOVEM reg to mem 010010001ssmmmrrr */
 	int16_t z;
@@ -6465,7 +6465,7 @@ LOCALIPROC DoCodeMOVEMrmL(void)
 	}
 }
 
-LOCALIPROC DoCodeMOVEMmrW(void)
+LOCALIPROC DoCodeMOVEMmrW()
 {
 	/* MOVEM mem to reg 0100110011smmmrrr */
 	int16_t z;
@@ -6484,7 +6484,7 @@ LOCALIPROC DoCodeMOVEMmrW(void)
 	}
 }
 
-LOCALIPROC DoCodeMOVEMmrL(void)
+LOCALIPROC DoCodeMOVEMmrL()
 {
 	/* MOVEM mem to reg 0100110011smmmrrr */
 	int16_t z;
@@ -6503,7 +6503,7 @@ LOCALIPROC DoCodeMOVEMmrL(void)
 	}
 }
 
-LOCALIPROC DoCodeAbcd(void)
+LOCALIPROC DoCodeAbcd()
 {
 	/* ABCD r 1100ddd100000rrr */
 	/* ABCD m 1100ddd100001rrr */
@@ -6543,7 +6543,7 @@ LOCALIPROC DoCodeAbcd(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeSbcd(void)
+LOCALIPROC DoCodeSbcd()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t srcvalue = V_regs.SrcVal;
@@ -6580,7 +6580,7 @@ LOCALIPROC DoCodeSbcd(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeNbcd(void)
+LOCALIPROC DoCodeNbcd()
 {
 	/* Nbcd 0100100000mmmrrr */
 	uint32_t dstvalue = DecodeGetSetDstValue();
@@ -6612,7 +6612,7 @@ LOCALIPROC DoCodeNbcd(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeRte(void)
+LOCALIPROC DoCodeRte()
 {
 	/* Rte 0100111001110011 */
 	if (0 == V_regs.s) {
@@ -6673,12 +6673,12 @@ LOCALIPROC DoCodeRte(void)
 	}
 }
 
-LOCALIPROC DoCodeNop(void)
+LOCALIPROC DoCodeNop()
 {
 	/* Nop 0100111001110001 */
 }
 
-LOCALIPROC DoCodeMoveP0(void)
+LOCALIPROC DoCodeMoveP0()
 {
 	/* MoveP 0000ddd1mm001aaa */
 	uint32_t srcreg = V_regs.CurDecOpY.v[0].ArgDat;
@@ -6705,7 +6705,7 @@ LOCALIPROC DoCodeMoveP0(void)
 #endif
 }
 
-LOCALIPROC DoCodeMoveP1(void)
+LOCALIPROC DoCodeMoveP1()
 {
 	/* MoveP 0000ddd1mm001aaa */
 	uint32_t srcreg = V_regs.CurDecOpY.v[0].ArgDat;
@@ -6725,7 +6725,7 @@ LOCALIPROC DoCodeMoveP1(void)
 	*dstp = val;
 }
 
-LOCALIPROC DoCodeMoveP2(void)
+LOCALIPROC DoCodeMoveP2()
 {
 	/* MoveP 0000ddd1mm001aaa */
 	uint32_t srcreg = V_regs.CurDecOpY.v[0].ArgDat;
@@ -6743,7 +6743,7 @@ LOCALIPROC DoCodeMoveP2(void)
 	put_byte(memp + 2, val);
 }
 
-LOCALIPROC DoCodeMoveP3(void)
+LOCALIPROC DoCodeMoveP3()
 {
 	/* MoveP 0000ddd1mm001aaa */
 	uint32_t srcreg = V_regs.CurDecOpY.v[0].ArgDat;
@@ -6763,7 +6763,7 @@ LOCALIPROC DoCodeMoveP3(void)
 	put_byte(memp + 6, val);
 }
 
-static void op_illg(void)
+static void op_illg()
 {
 	BackupPC();
 	Exception(4);
@@ -6772,7 +6772,7 @@ static void op_illg(void)
 #endif
 }
 
-LOCALIPROC DoCodeChk(void)
+LOCALIPROC DoCodeChk()
 {
 	uint32_t dstvalue = DecodeGetSrcGetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
@@ -6798,13 +6798,13 @@ LOCALIPROC DoCodeChk(void)
 	}
 }
 
-LOCALIPROC DoCodeTrap(void)
+LOCALIPROC DoCodeTrap()
 {
 	/* Trap 010011100100vvvv */
 	Exception(V_regs.CurDecOpY.v[1].ArgDat);
 }
 
-LOCALIPROC DoCodeTrapV(void)
+LOCALIPROC DoCodeTrapV()
 {
 	/* TrapV 0100111001110110 */
 	NeedDefaultLazyAllFlags();
@@ -6819,7 +6819,7 @@ LOCALIPROC DoCodeTrapV(void)
 	}
 }
 
-LOCALIPROC DoCodeRtr(void)
+LOCALIPROC DoCodeRtr()
 {
 	/* Rtr 0100111001110111 */
 	uint32_t NewPC;
@@ -6833,7 +6833,7 @@ LOCALIPROC DoCodeRtr(void)
 	m68k_setpc(NewPC);
 }
 
-LOCALIPROC DoCodeLink(void)
+LOCALIPROC DoCodeLink()
 {
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
@@ -6846,7 +6846,7 @@ LOCALIPROC DoCodeLink(void)
 	m68k_areg(7) += ui5r_FromSWord(nextiword_nm());
 }
 
-LOCALIPROC DoCodeUnlk(void)
+LOCALIPROC DoCodeUnlk()
 {
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
@@ -6861,7 +6861,7 @@ LOCALIPROC DoCodeUnlk(void)
 	}
 }
 
-LOCALIPROC DoCodeMoveRUSP(void)
+LOCALIPROC DoCodeMoveRUSP()
 {
 	/* MOVE USP 0100111001100aaa */
 	if (0 == V_regs.s) {
@@ -6874,7 +6874,7 @@ LOCALIPROC DoCodeMoveRUSP(void)
 	}
 }
 
-LOCALIPROC DoCodeMoveUSPR(void)
+LOCALIPROC DoCodeMoveUSPR()
 {
 	/* MOVE USP 0100111001101aaa */
 	if (0 == V_regs.s) {
@@ -6887,7 +6887,7 @@ LOCALIPROC DoCodeMoveUSPR(void)
 	}
 }
 
-LOCALIPROC DoCodeTas(void)
+LOCALIPROC DoCodeTas()
 {
 	/* Tas 0100101011mmmrrr */
 	uint32_t dstvalue = DecodeGetSetDstValue();
@@ -6902,13 +6902,13 @@ LOCALIPROC DoCodeTas(void)
 	ArgSetDstValue(dstvalue);
 }
 
-LOCALIPROC DoCodeFdefault(void)
+LOCALIPROC DoCodeFdefault()
 {
 	BackupPC();
 	Exception(0xB);
 }
 
-static void m68k_setstopped(void)
+static void m68k_setstopped()
 {
 	/* not implemented. doesn't seemed to be used on Mac Plus */
 	Exception(4); /* fake an illegal instruction */
@@ -6917,7 +6917,7 @@ static void m68k_setstopped(void)
 #endif
 }
 
-LOCALIPROC DoCodeStop(void)
+LOCALIPROC DoCodeStop()
 {
 	/* Stop 0100111001110010 */
 	if (0 == V_regs.s) {
@@ -6928,9 +6928,9 @@ LOCALIPROC DoCodeStop(void)
 	}
 }
 
-static void local_customreset(void);
+static void local_customreset();
 
-LOCALIPROC DoCodeReset(void)
+LOCALIPROC DoCodeReset()
 {
 	/* Reset 0100111001110000 */
 	if (0 == V_regs.s) {
@@ -6941,7 +6941,7 @@ LOCALIPROC DoCodeReset(void)
 }
 
 #if Use68020
-LOCALIPROC DoCodeCallMorRtm(void)
+LOCALIPROC DoCodeCallMorRtm()
 {
 	/* CALLM or RTM 0000011011mmmrrr */
 	ReportAbnormalID(0x010D, "CALLM or RTM instruction");
@@ -6949,7 +6949,7 @@ LOCALIPROC DoCodeCallMorRtm(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeMoveCCREa(void)
+LOCALIPROC DoCodeMoveCCREa()
 {
 	/* Move from CCR 0100001011mmmrrr */
 	DecodeSetDstValue(m68k_getCR());
@@ -6957,7 +6957,7 @@ LOCALIPROC DoCodeMoveCCREa(void)
 #endif
 
 #if Use68020 || EmFPU
-LOCALIPROC DoCodeBraL(void)
+LOCALIPROC DoCodeBraL()
 {
 	/* Bra 0110ccccnnnnnnnn */
 	int32_t offset = ((int32_t)(uint32_t)nextilong()) - 4;
@@ -6976,7 +6976,7 @@ LOCALIPROC DoCodeBraL(void)
 #endif
 
 #if Use68020 || EmFPU
-static void SkipiLong(void)
+static void SkipiLong()
 {
 	V_pc_p += 4;
 
@@ -6989,7 +6989,7 @@ static void SkipiLong(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeBccL(void)
+LOCALIPROC DoCodeBccL()
 {
 	/* Bcc 0110ccccnnnnnnnn */
 	cctrue(DoCodeBraL, SkipiLong);
@@ -6997,7 +6997,7 @@ LOCALIPROC DoCodeBccL(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeBsrL(void)
+LOCALIPROC DoCodeBsrL()
 {
 	int32_t offset = ((int32_t)(uint32_t)nextilong()) - 4;
 	uint8_t * s = V_pc_p + offset;
@@ -7020,7 +7020,7 @@ LOCALIPROC DoCodeBsrL(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeEXTBL(void)
+LOCALIPROC DoCodeEXTBL()
 {
 	/* EXTB.L */
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
@@ -7037,7 +7037,7 @@ LOCALIPROC DoCodeEXTBL(void)
 #endif
 
 #if Use68020
-static void DoCHK2orCMP2(void)
+static void DoCHK2orCMP2()
 {
 	/* CHK2 or CMP2 00000ss011mmmrrr */
 	uint32_t regv;
@@ -7101,7 +7101,7 @@ static void DoCHK2orCMP2(void)
 #endif
 
 #if Use68020
-static void DoCAS(void)
+static void DoCAS()
 {
 	/* CAS 00001ss011mmmrrr */
 	uint32_t srcvalue;
@@ -7171,7 +7171,7 @@ static void DoCAS(void)
 #endif
 
 #if Use68020
-static void DoCAS2(void)
+static void DoCAS2()
 {
 	/* CAS2 00001ss011111100 */
 	uint32_t extra = nextilong();
@@ -7253,7 +7253,7 @@ static void DoCAS2(void)
 #endif
 
 #if Use68020
-static void DoMOVES(void)
+static void DoMOVES()
 {
 	/* MoveS 00001110ssmmmrrr */
 	ReportAbnormalID(0x0112, "MoveS instruction");
@@ -7378,7 +7378,7 @@ static bool div_unsigned(ui6r0 *src, uint32_t div,
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeMulL(void)
+LOCALIPROC DoCodeMulL()
 {
 	/* MULU 0100110000mmmrrr 0rrr0s0000000rrr */
 	/* MULS 0100110000mmmrrr 0rrr1s0000000rrr */
@@ -7455,7 +7455,7 @@ LOCALIPROC DoCodeMulL(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeDivL(void)
+LOCALIPROC DoCodeDivL()
 {
 	/* DIVU 0100110001mmmrrr 0rrr0s0000000rrr */
 	/* DIVS 0100110001mmmrrr 0rrr1s0000000rrr */
@@ -7547,7 +7547,7 @@ LOCALIPROC DoCodeDivL(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoMoveToControl(void)
+LOCALIPROC DoMoveToControl()
 {
 	if (0 == V_regs.s) {
 		DoPrivilegeViolation();
@@ -7611,7 +7611,7 @@ LOCALIPROC DoMoveToControl(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoMoveFromControl(void)
+LOCALIPROC DoMoveFromControl()
 {
 	if (0 == V_regs.s) {
 		DoPrivilegeViolation();
@@ -7676,7 +7676,7 @@ LOCALIPROC DoMoveFromControl(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeBkpt(void)
+LOCALIPROC DoCodeBkpt()
 {
 	/* BKPT 0100100001001rrr */
 	ReportAbnormalID(0x0119, "BKPT instruction");
@@ -7685,7 +7685,7 @@ LOCALIPROC DoCodeBkpt(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeRtd(void)
+LOCALIPROC DoCodeRtd()
 {
 	/* Rtd 0100111001110100 */
 	uint32_t NewPC = get_long(m68k_areg(7));
@@ -7698,7 +7698,7 @@ LOCALIPROC DoCodeRtd(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeLinkL(void)
+LOCALIPROC DoCodeLinkL()
 {
 	/* Link.L 0100100000001rrr */
 
@@ -7717,7 +7717,7 @@ LOCALIPROC DoCodeLinkL(void)
 #endif
 
 #if Use68020
-static void DoCodeTRAPcc_t(void)
+static void DoCodeTRAPcc_t()
 {
 	ReportAbnormalID(0x011B, "TRAPcc trapping");
 	Exception(7);
@@ -7726,13 +7726,13 @@ static void DoCodeTRAPcc_t(void)
 #endif
 
 #if Use68020
-static void DoCodeTRAPcc_f(void)
+static void DoCodeTRAPcc_f()
 {
 }
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeTRAPcc(void)
+LOCALIPROC DoCodeTRAPcc()
 {
 	/* TRAPcc 0101cccc11111sss */
 	/* ReportAbnormal("TRAPcc"); */
@@ -7759,7 +7759,7 @@ LOCALIPROC DoCodeTRAPcc(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodePack(void)
+LOCALIPROC DoCodePack()
 {
 	uint32_t offs = nextiSWord();
 	uint32_t val = DecodeGetSrcValue();
@@ -7774,7 +7774,7 @@ LOCALIPROC DoCodePack(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoCodeUnpk(void)
+LOCALIPROC DoCodeUnpk()
 {
 	uint32_t offs = nextiSWord();
 	uint32_t val = DecodeGetSrcValue();
@@ -7788,7 +7788,7 @@ LOCALIPROC DoCodeUnpk(void)
 #endif
 
 #if Use68020
-LOCALIPROC DoBitField(void)
+LOCALIPROC DoBitField()
 {
 	uint32_t tmp;
 	uint32_t newtmp;
@@ -8094,7 +8094,7 @@ static bool DecodeModeRegister(uint32_t sz)
 #endif
 
 #if EmMMU | EmFPU
-static uint32_t GetArgValueL(void)
+static uint32_t GetArgValueL()
 {
 	uint32_t v;
 
@@ -8110,7 +8110,7 @@ static uint32_t GetArgValueL(void)
 #endif
 
 #if EmMMU | EmFPU
-static uint32_t GetArgValueW(void)
+static uint32_t GetArgValueW()
 {
 	uint32_t v;
 
@@ -8126,7 +8126,7 @@ static uint32_t GetArgValueW(void)
 #endif
 
 #if EmMMU | EmFPU
-static uint32_t GetArgValueB(void)
+static uint32_t GetArgValueB()
 {
 	uint32_t v;
 
@@ -8181,7 +8181,7 @@ static void SetArgValueB(uint32_t v)
 
 
 #if EmMMU
-LOCALIPROC DoCodeMMU(void)
+LOCALIPROC DoCodeMMU()
 {
 	/*
 		Emulate enough of MMU for System 7.5.5 universal
@@ -8227,7 +8227,7 @@ LOCALIPROC DoCodeMMU(void)
 }
 #else
 /* EMU disabled — stub to satisfy dispatch table */
-LOCALIPROC DoCodeMMU(void) { DoCodeFdefault(); }
+LOCALIPROC DoCodeMMU() { DoCodeFdefault(); }
 #endif
 
 #if EmFPU
@@ -8237,19 +8237,19 @@ LOCALIPROC DoCodeMMU(void) { DoCodeFdefault(); }
 
 #else
 /* FPU disabled — stubs to satisfy dispatch table */
-LOCALIPROC DoCodeFPU_md60(void)   { DoCodeFdefault(); }
-LOCALIPROC DoCodeFPU_DBcc(void)   { DoCodeFdefault(); }
-LOCALIPROC DoCodeFPU_Trapcc(void) { DoCodeFdefault(); }
-LOCALIPROC DoCodeFPU_Scc(void)    { DoCodeFdefault(); }
-LOCALIPROC DoCodeFPU_FBccW(void)  { DoCodeFdefault(); }
-LOCALIPROC DoCodeFPU_FBccL(void)  { DoCodeFdefault(); }
-LOCALIPROC DoCodeFPU_Save(void)   { DoCodeFdefault(); }
-LOCALIPROC DoCodeFPU_Restore(void){ DoCodeFdefault(); }
-LOCALIPROC DoCodeFPU_dflt(void)   { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_md60()   { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_DBcc()   { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_Trapcc() { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_Scc()    { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_FBccW()  { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_FBccL()  { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_Save()   { DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_Restore(){ DoCodeFdefault(); }
+LOCALIPROC DoCodeFPU_dflt()   { DoCodeFdefault(); }
 #endif
 
 #if HaveGlbReg
-static void Em_Swap(void)
+static void Em_Swap()
 {
 #ifdef r_pc_p
 	{
@@ -8325,7 +8325,7 @@ static uint32_t LocalMMDV_Access(ATTep p, uint32_t Data,
 #define LocalMMDV_Access MMDV_Access
 #endif
 
-static void local_customreset(void)
+static void local_customreset()
 {
 	Em_Exit();
 	customreset();
@@ -8603,7 +8603,7 @@ Label_Retry:
 }
 #endif
 
-static void Recalc_PC_Block(void)
+static void Recalc_PC_Block()
 {
 	ATTep p;
 	uint32_t curpc = m68k_getpc();
@@ -8649,7 +8649,7 @@ static uint32_t Recalc_PC_BlockReturnUi5r(uint32_t v)
 	return v;
 }
 
-static uint32_t nextilong_ext(void)
+static uint32_t nextilong_ext()
 {
 	uint32_t r;
 
@@ -8665,7 +8665,7 @@ static uint32_t nextilong_ext(void)
 	return r;
 }
 
-static void DoCheckExternalInterruptPending(void)
+static void DoCheckExternalInterruptPending()
 {
 	uint8_t level = *V_regs.fIPL;
 	if ((level > V_regs.intmask) || (level == 7)) {
@@ -8678,7 +8678,7 @@ static void DoCheckExternalInterruptPending(void)
 	}
 }
 
-static void do_trace(void)
+static void do_trace()
 {
 	V_regs.TracePending = true;
 	NeedToGetOut();
@@ -8719,7 +8719,7 @@ void m68k_go_nCycles(uint32_t n)
 	Em_Exit();
 }
 
- int32_t GetCyclesRemaining(void)
+ int32_t GetCyclesRemaining()
 {
 	int32_t v;
 
@@ -8845,7 +8845,7 @@ void DiskInsertedPsuedoException(uint32_t newpc, uint32_t data)
 	Em_Exit();
 }
 
-void m68k_IPLchangeNtfy(void)
+void m68k_IPLchangeNtfy()
 {
 	Em_Enter();
 	{
@@ -8859,7 +8859,7 @@ void m68k_IPLchangeNtfy(void)
 }
 
 #if WantDumpTable
-static void InitDumpTable(void)
+static void InitDumpTable()
 {
 	int32_t i;
 
@@ -8878,14 +8878,14 @@ static void DumpATable(uint32_t *p, uint32_t n)
 	}
 }
 
-extern void DoDumpTable(void);
-void DoDumpTable(void)
+extern void DoDumpTable();
+void DoDumpTable()
 {
 	DumpATable(DumpTable, kNumIKinds);
 }
 #endif
 
-void m68k_reset(void)
+void m68k_reset()
 {
 	Em_Enter();
 
@@ -8940,7 +8940,7 @@ void m68k_reset(void)
 }
 
 #if SmallGlobals
-void MINEM68K_ReserveAlloc(void)
+void MINEM68K_ReserveAlloc()
 {
 	ReserveAllocOneBlock((uint8_t * *)&regs.disp_table,
 		disp_table_sz * 8, 6, false);

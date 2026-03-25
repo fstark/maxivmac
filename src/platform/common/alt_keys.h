@@ -27,7 +27,7 @@ static bool AltKeysTrueShift = false;
 static bool AltKeysModOn = false;
 static bool AltKeysTextOn = false;
 
-static void CheckAltKeyUseMode(void)
+static void CheckAltKeyUseMode()
 {
 	bool NewAltKeysTextOn;
 
@@ -185,7 +185,7 @@ static void DisconnectKeyCodes1(uint32_t KeepMask)
 	AltKeysTextOn = AltKeysLockText || AltKeysModOn;
 }
 
-static void DrawAltKeyMode(void)
+static void DrawAltKeyMode()
 {
 	int i;
 

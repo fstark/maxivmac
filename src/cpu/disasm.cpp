@@ -42,7 +42,7 @@ static uint8_t Disasm_pcp_dummy[2] = {
 
 extern ATTep FindATTel(uint32_t addr);
 
-static void Disasm_Find_pcp(void)
+static void Disasm_Find_pcp()
 {
 	ATTep p;
 
@@ -58,7 +58,7 @@ static void Disasm_Find_pcp(void)
 	}
 }
 
-static uint16_t Disasm_nextiword(void)
+static uint16_t Disasm_nextiword()
 /* NOT sign extended */
 {
 	uint16_t r = do_get_mem_word(Disasm_pcp);
@@ -70,12 +70,12 @@ static uint16_t Disasm_nextiword(void)
 	return r;
 }
 
-static inline uint8_t Disasm_nextibyte(void)
+static inline uint8_t Disasm_nextibyte()
 {
 	return (uint8_t) Disasm_nextiword();
 }
 
-static uint32_t Disasm_nextilong(void)
+static uint32_t Disasm_nextilong()
 {
 	uint32_t hi = Disasm_nextiword();
 	uint32_t lo = Disasm_nextiword();
@@ -105,7 +105,7 @@ static uint32_t Disasm_opsize;
 #define Disasm_md6 ((Disasm_opcode >> 6) & 7)
 #define Disasm_rg9 ((Disasm_opcode >> 9) & 7)
 
-static void DisasmOpSizeFromb76(void)
+static void DisasmOpSizeFromb76()
 {
 	Disasm_opsize = 1 << Disasm_b76;
 	switch (Disasm_opsize) {
@@ -331,31 +331,31 @@ static void DisasmAAs_xxxxdddxssxxxrrr(char *s)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmTst(void)
+static inline void DisasmTst()
 {
 	/* Tst 01001010ssmmmrrr */
 	Disasm_xxxxxxxxssmmmrrr("TST");
 }
 
-static inline void DisasmCompare(void)
+static inline void DisasmCompare()
 {
 	/* Cmp 1011ddd0ssmmmrrr */
 	DisasmEaD_xxxxdddxssmmmrrr("CMP");
 }
 
-static inline void DisasmCmpI(void)
+static inline void DisasmCmpI()
 {
 	/* CMPI 00001100ssmmmrrr */
 	DisasmI_xxxxxxxxssmmmrrr("CMP");
 }
 
-static inline void DisasmCmpM(void)
+static inline void DisasmCmpM()
 {
 	/* CmpM 1011ddd1ss001rrr */
 	DisasmsAA_xxxxdddxssxxxrrr("CMP");
 }
 
-static void DisasmCC(void)
+static void DisasmCC()
 {
 	switch ((Disasm_opcode >> 8) & 15) {
 		case 0:  dbglog_writeCStr("T"); break;
@@ -378,7 +378,7 @@ static void DisasmCC(void)
 	}
 }
 
-static inline void DisasmBcc(void)
+static inline void DisasmBcc()
 {
 	/* Bcc 0110ccccnnnnnnnn */
 	uint32_t src = ((uint32_t)Disasm_opcode) & 255;
@@ -409,7 +409,7 @@ static inline void DisasmBcc(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmDBcc(void)
+static inline void DisasmDBcc()
 {
 	/* DBcc 0101cccc11001ddd */
 
@@ -427,7 +427,7 @@ static inline void DisasmDBcc(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmSwap(void)
+static inline void DisasmSwap()
 {
 	/* Swap 0100100001000rrr */
 
@@ -436,7 +436,7 @@ static inline void DisasmSwap(void)
 	dbglog_writeReturn();
 }
 
-static void DisasmMove(void) /* MOVE */
+static void DisasmMove() /* MOVE */
 {
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
 	dbglog_writeCStr(", ");
@@ -444,42 +444,42 @@ static void DisasmMove(void) /* MOVE */
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMoveL(void)
+static inline void DisasmMoveL()
 {
 	DisasmStartOne("MOVE.L ");
 	Disasm_opsize = 4;
 	DisasmMove();
 }
 
-static inline void DisasmMoveW(void)
+static inline void DisasmMoveW()
 {
 	DisasmStartOne("MOVE.W ");
 	Disasm_opsize = 2;
 	DisasmMove();
 }
 
-static inline void DisasmMoveB(void)
+static inline void DisasmMoveB()
 {
 	DisasmStartOne("MOVE.B ");
 	Disasm_opsize = 1;
 	DisasmMove();
 }
 
-static inline void DisasmMoveAL(void)
+static inline void DisasmMoveAL()
 {
 	DisasmStartOne("MOVEA.L ");
 	Disasm_opsize = 4;
 	DisasmMove();
 }
 
-static inline void DisasmMoveAW(void)
+static inline void DisasmMoveAW()
 {
 	DisasmStartOne("MOVEA.W ");
 	Disasm_opsize = 2;
 	DisasmMove();
 }
 
-static inline void DisasmMoveQ(void)
+static inline void DisasmMoveQ()
 {
 	/* MoveQ 0111ddd0nnnnnnnn */
 	DisasmStartOne("MOVEQ #");
@@ -489,49 +489,49 @@ static inline void DisasmMoveQ(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmAddEaR(void)
+static inline void DisasmAddEaR()
 {
 	DisasmEaD_xxxxdddxssmmmrrr("ADD");
 }
 
-static inline void DisasmAddQ(void)
+static inline void DisasmAddQ()
 {
 	/* AddQ 0101nnn0ssmmmrrr */
 	Disasm_xxxxnnnxssmmmrrr("ADDQ");
 }
 
-static inline void DisasmAddI(void)
+static inline void DisasmAddI()
 {
 	DisasmI_xxxxxxxxssmmmrrr("ADDI");
 }
 
-static inline void DisasmAddREa(void)
+static inline void DisasmAddREa()
 {
 	DisasmDEa_xxxxdddxssmmmrrr("ADD");
 }
 
-static inline void DisasmSubEaR(void)
+static inline void DisasmSubEaR()
 {
 	DisasmEaD_xxxxdddxssmmmrrr("SUB");
 }
 
-static inline void DisasmSubQ(void)
+static inline void DisasmSubQ()
 {
 	/* SubQ 0101nnn1ssmmmrrr */
 	Disasm_xxxxnnnxssmmmrrr("SUBQ");
 }
 
-static inline void DisasmSubI(void)
+static inline void DisasmSubI()
 {
 	DisasmI_xxxxxxxxssmmmrrr("SUBI");
 }
 
-static inline void DisasmSubREa(void)
+static inline void DisasmSubREa()
 {
 	DisasmDEa_xxxxdddxssmmmrrr("SUB");
 }
 
-static inline void DisasmLea(void)
+static inline void DisasmLea()
 {
 	/* Lea 0100aaa111mmmrrr */
 	DisasmStartOne("LEA ");
@@ -541,7 +541,7 @@ static inline void DisasmLea(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmPEA(void)
+static inline void DisasmPEA()
 {
 	/* PEA 0100100001mmmrrr */
 	DisasmStartOne("PEA ");
@@ -549,14 +549,14 @@ static inline void DisasmPEA(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmALine(void)
+static inline void DisasmALine()
 {
 	DisasmStartOne("$");
 	dbglog_writeHex(Disasm_opcode);
 	dbglog_writeReturn();
 }
 
-static inline void DisasmBsr(void)
+static inline void DisasmBsr()
 {
 	uint32_t src = ((uint32_t)Disasm_opcode) & 255;
 	uint32_t s = Disasm_pc;
@@ -579,7 +579,7 @@ static inline void DisasmBsr(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmJsr(void)
+static inline void DisasmJsr()
 {
 	/* Jsr 0100111010mmmrrr */
 	DisasmStartOne("JSR ");
@@ -587,14 +587,14 @@ static inline void DisasmJsr(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmLinkA6(void)
+static inline void DisasmLinkA6()
 {
 	DisasmStartOne("LINK A6, ");
 	dbglog_writeHex(Disasm_nextiword());
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMOVEMRmM(void)
+static inline void DisasmMOVEMRmM()
 {
 	/* MOVEM reg to mem 0100100011s100rrr */
 	int16_t z;
@@ -626,7 +626,7 @@ static inline void DisasmMOVEMRmM(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMOVEMApR(void)
+static inline void DisasmMOVEMApR()
 {
 	/* MOVEM mem to reg 0100110011s011rrr */
 	int16_t z;
@@ -658,20 +658,20 @@ static inline void DisasmMOVEMApR(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmUnlkA6(void)
+static inline void DisasmUnlkA6()
 {
 	DisasmStartOne("UNLINK A6");
 	dbglog_writeReturn();
 }
 
-static inline void DisasmRts(void)
+static inline void DisasmRts()
 {
 	/* Rts 0100111001110101 */
 	DisasmStartOne("RTS");
 	dbglog_writeReturn();
 }
 
-static inline void DisasmJmp(void)
+static inline void DisasmJmp()
 {
 	/* JMP 0100111011mmmrrr */
 	DisasmStartOne("JMP ");
@@ -679,19 +679,19 @@ static inline void DisasmJmp(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmClr(void)
+static inline void DisasmClr()
 {
 	/* Clr 01000010ssmmmrrr */
 	Disasm_xxxxxxxxssmmmrrr("CLR");
 }
 
-static inline void DisasmAddA(void)
+static inline void DisasmAddA()
 {
 	/* ADDA 1101dddm11mmmrrr */
 	DisasmEaA_xxxxdddsxxmmmrrr("ADDA");
 }
 
-static inline void DisasmAddQA(void)
+static inline void DisasmAddQA()
 {
 	/* 0101nnn0ss001rrr */
 	DisasmStartOne("ADDQA #");
@@ -701,7 +701,7 @@ static inline void DisasmAddQA(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmSubQA(void)
+static inline void DisasmSubQA()
 {
 	/* 0101nnn1ss001rrr */
 	DisasmStartOne("SUBQA #");
@@ -711,13 +711,13 @@ static inline void DisasmSubQA(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmSubA(void)
+static inline void DisasmSubA()
 {
 	/* SUBA 1001dddm11mmmrrr */
 	DisasmEaA_xxxxdddsxxmmmrrr("SUBA");
 }
 
-static inline void DisasmCmpA(void)
+static inline void DisasmCmpA()
 {
 	DisasmStartOne("CMPA ");
 	Disasm_opsize = Disasm_b8 * 2 + 2;
@@ -727,22 +727,22 @@ static inline void DisasmCmpA(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmAddXd(void)
+static inline void DisasmAddXd()
 {
 	DisasmDD_xxxxdddxssxxxrrr("ADDX");
 }
 
-static inline void DisasmAddXm(void)
+static inline void DisasmAddXm()
 {
 	DisasmAAs_xxxxdddxssxxxrrr("ADDX");
 }
 
-static inline void DisasmSubXd(void)
+static inline void DisasmSubXd()
 {
 	DisasmDD_xxxxdddxssxxxrrr("SUBX");
 }
 
-static inline void DisasmSubXm(void)
+static inline void DisasmSubXm()
 {
 	DisasmAAs_xxxxdddxssxxxrrr("SUBX");
 }
@@ -788,7 +788,7 @@ static void DisasmBinOp1(uint32_t x)
 	}
 }
 
-static inline void DisasmRolopNM(void)
+static inline void DisasmRolopNM()
 {
 	DisasmBinOp1(Disasm_rg9);
 	dbglog_writeCStr(" ");
@@ -797,7 +797,7 @@ static inline void DisasmRolopNM(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmRolopND(void)
+static inline void DisasmRolopND()
 {
 	/* 1110cccdss0ttddd */
 	DisasmBinOp1(Disasm_mode & 3);
@@ -809,7 +809,7 @@ static inline void DisasmRolopND(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmRolopDD(void)
+static inline void DisasmRolopDD()
 {
 	/* 1110rrrdss1ttddd */
 	DisasmBinOp1(Disasm_mode & 3);
@@ -821,7 +821,7 @@ static inline void DisasmRolopDD(void)
 	dbglog_writeReturn();
 }
 
-static void DisasmBinBitOp1(void)
+static void DisasmBinBitOp1()
 {
 	switch (Disasm_b76) {
 		case 0:
@@ -842,7 +842,7 @@ static void DisasmBinBitOp1(void)
 	}
 }
 
-static inline void DisasmBitOpDD(void)
+static inline void DisasmBitOpDD()
 {
 	/* dynamic bit, Opcode = 0000ddd1tt000rrr */
 	DisasmBinBitOp1();
@@ -854,7 +854,7 @@ static inline void DisasmBitOpDD(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmBitOpDM(void)
+static inline void DisasmBitOpDM()
 {
 	/* dynamic bit, Opcode = 0000ddd1ttmmmrrr */
 	DisasmBinBitOp1();
@@ -866,7 +866,7 @@ static inline void DisasmBitOpDM(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmBitOpND(void)
+static inline void DisasmBitOpND()
 {
 	/* static bit 00001010tt000rrr */
 	DisasmBinBitOp1();
@@ -878,7 +878,7 @@ static inline void DisasmBitOpND(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmBitOpNM(void)
+static inline void DisasmBitOpNM()
 {
 	/* static bit 00001010ttmmmrrr */
 	DisasmBinBitOp1();
@@ -890,58 +890,58 @@ static inline void DisasmBitOpNM(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmAndI(void)
+static inline void DisasmAndI()
 {
 	DisasmI_xxxxxxxxssmmmrrr("ANDI");
 }
 
-static inline void DisasmAndDEa(void)
+static inline void DisasmAndDEa()
 {
 	/* And 1100ddd1ssmmmrrr */
 	DisasmDEa_xxxxdddxssmmmrrr("AND");
 }
 
-static inline void DisasmAndEaD(void)
+static inline void DisasmAndEaD()
 {
 	/* And 1100ddd0ssmmmrrr */
 	DisasmEaD_xxxxdddxssmmmrrr("AND");
 }
 
-static inline void DisasmOrI(void)
+static inline void DisasmOrI()
 {
 	DisasmI_xxxxxxxxssmmmrrr("ORI");
 }
 
-static inline void DisasmOrDEa(void)
+static inline void DisasmOrDEa()
 {
 	/* OR 1000ddd1ssmmmrrr */
 	DisasmDEa_xxxxdddxssmmmrrr("OR");
 }
 
-static inline void DisasmOrEaD(void)
+static inline void DisasmOrEaD()
 {
 	/* OR 1000ddd0ssmmmrrr */
 	DisasmEaD_xxxxdddxssmmmrrr("OR");
 }
 
-static inline void DisasmEorI(void)
+static inline void DisasmEorI()
 {
 	DisasmI_xxxxxxxxssmmmrrr("EORI");
 }
 
-static inline void DisasmEor(void)
+static inline void DisasmEor()
 {
 	/* Eor 1011ddd1ssmmmrrr */
 	DisasmDEa_xxxxdddxssmmmrrr("EOR");
 }
 
-static inline void DisasmNot(void)
+static inline void DisasmNot()
 {
 	/* Not 01000110ssmmmrrr */
 	Disasm_xxxxxxxxssmmmrrr("NOT");
 }
 
-static inline void DisasmScc(void)
+static inline void DisasmScc()
 {
 	/* Scc 0101cccc11mmmrrr */
 	Disasm_opsize = 1;
@@ -952,33 +952,33 @@ static inline void DisasmScc(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmEXTL(void)
+static inline void DisasmEXTL()
 {
 	DisasmStartOne("EXT.L D");
 	dbglog_writeHex(Disasm_reg);
 	dbglog_writeReturn();
 }
 
-static inline void DisasmEXTW(void)
+static inline void DisasmEXTW()
 {
 	DisasmStartOne("EXT.W D");
 	dbglog_writeHex(Disasm_reg);
 	dbglog_writeReturn();
 }
 
-static inline void DisasmNeg(void)
+static inline void DisasmNeg()
 {
 	/* Neg 01000100ssmmmrrr */
 	Disasm_xxxxxxxxssmmmrrr("NEG");
 }
 
-static inline void DisasmNegX(void)
+static inline void DisasmNegX()
 {
 	/* NegX 01000000ssmmmrrr */
 	Disasm_xxxxxxxxssmmmrrr("NEGX");
 }
 
-static inline void DisasmMulU(void)
+static inline void DisasmMulU()
 {
 	/* MulU 1100ddd011mmmrrr */
 	Disasm_opsize = 2;
@@ -990,7 +990,7 @@ static inline void DisasmMulU(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMulS(void)
+static inline void DisasmMulS()
 {
 	/* MulS 1100ddd111mmmrrr */
 	Disasm_opsize = 2;
@@ -1002,7 +1002,7 @@ static inline void DisasmMulS(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmDivU(void)
+static inline void DisasmDivU()
 {
 	/* DivU 1000ddd011mmmrrr */
 
@@ -1015,7 +1015,7 @@ static inline void DisasmDivU(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmDivS(void)
+static inline void DisasmDivS()
 {
 	/* DivS 1000ddd111mmmrrr */
 
@@ -1028,7 +1028,7 @@ static inline void DisasmDivS(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmExgdd(void)
+static inline void DisasmExgdd()
 {
 	/* Exg 1100ddd101000rrr */
 
@@ -1040,7 +1040,7 @@ static inline void DisasmExgdd(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmExgaa(void)
+static inline void DisasmExgaa()
 {
 	/* Exg 1100ddd101001rrr */
 
@@ -1052,7 +1052,7 @@ static inline void DisasmExgaa(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmExgda(void)
+static inline void DisasmExgda()
 {
 	/* Exg 1100ddd110001rrr */
 
@@ -1064,7 +1064,7 @@ static inline void DisasmExgda(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMoveCCREa(void)
+static inline void DisasmMoveCCREa()
 {
 	/* Move from CCR 0100001011mmmrrr */
 	Disasm_opsize = 2;
@@ -1073,7 +1073,7 @@ static inline void DisasmMoveCCREa(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMoveEaCR(void)
+static inline void DisasmMoveEaCR()
 {
 	/* 0100010011mmmrrr */
 	Disasm_opsize = 2;
@@ -1083,7 +1083,7 @@ static inline void DisasmMoveEaCR(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMoveSREa(void)
+static inline void DisasmMoveSREa()
 {
 	/* Move from SR 0100000011mmmrrr */
 	Disasm_opsize = 2;
@@ -1092,7 +1092,7 @@ static inline void DisasmMoveSREa(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMoveEaSR(void)
+static inline void DisasmMoveEaSR()
 {
 	/* 0100011011mmmrrr */
 	Disasm_opsize = 2;
@@ -1102,7 +1102,7 @@ static inline void DisasmMoveEaSR(void)
 	dbglog_writeReturn();
 }
 
-static void DisasmBinOpStatusCCR(void)
+static void DisasmBinOpStatusCCR()
 {
 	switch (Disasm_rg9) {
 		case 0 :
@@ -1171,13 +1171,13 @@ static void disasmreglist(int16_t direction, uint32_t m1, uint32_t r1)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMOVEMrm(void)
+static inline void DisasmMOVEMrm()
 {
 	/* MOVEM reg to mem 010010001ssmmmrrr */
 	disasmreglist(0, Disasm_mode, Disasm_reg);
 }
 
-static inline void DisasmMOVEMmr(void)
+static inline void DisasmMOVEMmr()
 {
 	/* MOVEM mem to reg 0100110011smmmrrr */
 	disasmreglist(1, Disasm_mode, Disasm_reg);
@@ -1194,51 +1194,51 @@ static void DisasmByteBinOp(char *s, uint32_t m1, uint32_t r1, uint32_t m2, uint
 	dbglog_writeReturn();
 }
 
-static inline void DisasmAbcdr(void)
+static inline void DisasmAbcdr()
 {
 	/* ABCD 1100ddd100000rrr */
 	DisasmByteBinOp("ABCD", 0, Disasm_reg, 0, Disasm_rg9);
 }
 
-static inline void DisasmAbcdm(void)
+static inline void DisasmAbcdm()
 {
 	/* ABCD 1100ddd100001rrr */
 	DisasmByteBinOp("ABCD", 4, Disasm_reg, 4, Disasm_rg9);
 }
 
-static inline void DisasmSbcdr(void)
+static inline void DisasmSbcdr()
 {
 	/* SBCD 1000xxx100000xxx */
 	DisasmByteBinOp("ABCD", 0, Disasm_reg, 0, Disasm_rg9);
 }
 
-static inline void DisasmSbcdm(void)
+static inline void DisasmSbcdm()
 {
 	/* SBCD 1000xxx100001xxx */
 	DisasmByteBinOp("ABCD", 4, Disasm_reg, 4, Disasm_rg9);
 }
 
-static inline void DisasmNbcd(void)
+static inline void DisasmNbcd()
 {
 	/* Nbcd 0100100000mmmrrr */
 	Disasm_xxxxxxxxssmmmrrr("NBCD");
 }
 
-static inline void DisasmRte(void)
+static inline void DisasmRte()
 {
 	/* Rte 0100111001110011 */
 	DisasmStartOne("RTE");
 	dbglog_writeReturn();
 }
 
-static inline void DisasmNop(void)
+static inline void DisasmNop()
 {
 	/* Nop 0100111001110001 */
 	DisasmStartOne("NOP");
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMoveP(void)
+static inline void DisasmMoveP()
 {
 	/* MoveP 0000ddd1mm001aaa */
 
@@ -1263,13 +1263,13 @@ static inline void DisasmMoveP(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmIllegal(void)
+static inline void DisasmIllegal()
 {
 	DisasmStartOne("ILLEGAL");
 	dbglog_writeReturn();
 }
 
-static void DisasmCheck(void)
+static void DisasmCheck()
 {
 	DisasmStartOne("CHK");
 	if (2 == Disasm_opsize) {
@@ -1285,14 +1285,14 @@ static void DisasmCheck(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmChkW(void)
+static inline void DisasmChkW()
 {
 	/* Chk.W 0100ddd110mmmrrr */
 	Disasm_opsize = 2;
 	DisasmCheck();
 }
 
-static inline void DisasmTrap(void)
+static inline void DisasmTrap()
 {
 	/* Trap 010011100100vvvv */
 	DisasmStartOne("TRAP ");
@@ -1300,21 +1300,21 @@ static inline void DisasmTrap(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmTrapV(void)
+static inline void DisasmTrapV()
 {
 	/* TrapV 0100111001110110 */
 	DisasmStartOne("TRAPV");
 	dbglog_writeReturn();
 }
 
-static inline void DisasmRtr(void)
+static inline void DisasmRtr()
 {
 	/* Rtr 0100111001110111 */
 	DisasmStartOne("RTR");
 	dbglog_writeReturn();
 }
 
-static inline void DisasmLink(void)
+static inline void DisasmLink()
 {
 	DisasmStartOne("LINK A");
 	dbglog_writeHex(Disasm_reg);
@@ -1323,14 +1323,14 @@ static inline void DisasmLink(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmUnlk(void)
+static inline void DisasmUnlk()
 {
 	DisasmStartOne("UNLINK A");
 	dbglog_writeHex(Disasm_reg);
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMoveRUSP(void)
+static inline void DisasmMoveRUSP()
 {
 	/* MOVE USP 0100111001100aaa */
 	DisasmStartOne("MOVE A");
@@ -1339,7 +1339,7 @@ static inline void DisasmMoveRUSP(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmMoveUSPR(void)
+static inline void DisasmMoveUSPR()
 {
 	/* MOVE USP 0100111001101aaa */
 	DisasmStartOne("MOVE USP, A");
@@ -1347,7 +1347,7 @@ static inline void DisasmMoveUSPR(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmTas(void)
+static inline void DisasmTas()
 {
 	/* Tas 0100101011mmmrrr */
 	Disasm_opsize = 1;
@@ -1357,14 +1357,14 @@ static inline void DisasmTas(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmFLine(void)
+static inline void DisasmFLine()
 {
 	DisasmStartOne("$");
 	dbglog_writeHex(Disasm_opcode);
 	dbglog_writeReturn();
 }
 
-static inline void DisasmCallMorRtm(void)
+static inline void DisasmCallMorRtm()
 {
 	DisasmStartOne("CALLM #");
 	dbglog_writeHex(Disasm_nextibyte());
@@ -1373,7 +1373,7 @@ static inline void DisasmCallMorRtm(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmStop(void)
+static inline void DisasmStop()
 {
 	/* Stop 0100111001110010 */
 	DisasmStartOne("STOP #");
@@ -1381,7 +1381,7 @@ static inline void DisasmStop(void)
 	dbglog_writeReturn();
 }
 
-static inline void DisasmReset(void)
+static inline void DisasmReset()
 {
 	/* Reset 0100111001100000 */
 	DisasmStartOne("RESET");
@@ -1389,7 +1389,7 @@ static inline void DisasmReset(void)
 }
 
 #if Use68020
-static inline void DisasmEXTBL(void)
+static inline void DisasmEXTBL()
 {
 	/* EXTB.L */
 	DisasmStartOne("EXTB.L D");
@@ -1399,7 +1399,7 @@ static inline void DisasmEXTBL(void)
 #endif
 
 #if Use68020
-static inline void DisasmTRAPcc(void)
+static inline void DisasmTRAPcc()
 {
 	/* TRAPcc 0101cccc11111sss */
 
@@ -1428,7 +1428,7 @@ static inline void DisasmTRAPcc(void)
 #endif
 
 #if Use68020
-static inline void DisasmChkL(void)
+static inline void DisasmChkL()
 {
 	/* Chk.L 0100ddd100mmmrrr */
 	Disasm_opsize = 4;
@@ -1437,7 +1437,7 @@ static inline void DisasmChkL(void)
 #endif
 
 #if Use68020
-static inline void DisasmBkpt(void)
+static inline void DisasmBkpt()
 {
 	/* BKPT 0100100001001rrr */
 	DisasmStartOne("BKPT #");
@@ -1447,7 +1447,7 @@ static inline void DisasmBkpt(void)
 #endif
 
 #if Use68020
-static inline void DisasmDivL(void)
+static inline void DisasmDivL()
 {
 	/* DIVU 0100110001mmmrrr 0rrr0s0000000rrr */
 	/* DIVS 0100110001mmmrrr 0rrr1s0000000rrr */
@@ -1487,7 +1487,7 @@ static inline void DisasmDivL(void)
 #endif
 
 #if Use68020
-static inline void DisasmMulL(void)
+static inline void DisasmMulL()
 {
 	/* MULU 0100110000mmmrrr 0rrr0s0000000rrr */
 	/* MULS 0100110000mmmrrr 0rrr1s0000000rrr */
@@ -1526,7 +1526,7 @@ static inline void DisasmMulL(void)
 #endif
 
 #if Use68020
-static inline void DisasmRtd(void)
+static inline void DisasmRtd()
 {
 	/* Rtd 0100111001110100 */
 	DisasmStartOne("RTD #");
@@ -1571,7 +1571,7 @@ static void DisasmControlReg(uint16_t i)
 #endif
 
 #if Use68020
-static inline void DisasmMoveC(void)
+static inline void DisasmMoveC()
 {
 	/* MOVEC 010011100111101m */
 	DisasmStartOne("MOVEC ");
@@ -1613,7 +1613,7 @@ static inline void DisasmMoveC(void)
 #endif
 
 #if Use68020
-static inline void DisasmLinkL(void)
+static inline void DisasmLinkL()
 {
 	/* Link.L 0100100000001rrr */
 	DisasmStartOne("LINK.L A");
@@ -1625,7 +1625,7 @@ static inline void DisasmLinkL(void)
 #endif
 
 #if Use68020
-static inline void DisasmPack(void)
+static inline void DisasmPack()
 {
 	DisasmStartOne("PACK ???");
 	dbglog_writeReturn();
@@ -1634,7 +1634,7 @@ static inline void DisasmPack(void)
 #endif
 
 #if Use68020
-static inline void DisasmUnpk(void)
+static inline void DisasmUnpk()
 {
 	DisasmStartOne("UNPK ???");
 	dbglog_writeReturn();
@@ -1643,7 +1643,7 @@ static inline void DisasmUnpk(void)
 #endif
 
 #if Use68020
-static inline void DisasmCHK2orCMP2(void)
+static inline void DisasmCHK2orCMP2()
 {
 	DisasmStartOne("CHK2/CMP2 ???");
 	dbglog_writeReturn();
@@ -1652,7 +1652,7 @@ static inline void DisasmCHK2orCMP2(void)
 #endif
 
 #if Use68020
-static inline void DisasmCAS2(void)
+static inline void DisasmCAS2()
 {
 	DisasmStartOne("CAS2 ???");
 	dbglog_writeReturn();
@@ -1661,7 +1661,7 @@ static inline void DisasmCAS2(void)
 #endif
 
 #if Use68020
-static inline void DisasmCAS(void)
+static inline void DisasmCAS()
 {
 	DisasmStartOne("CAS ???");
 	dbglog_writeReturn();
@@ -1670,7 +1670,7 @@ static inline void DisasmCAS(void)
 #endif
 
 #if Use68020
-static inline void DisasmMOVES(void)
+static inline void DisasmMOVES()
 {
 	DisasmStartOne("MOVES ???");
 	dbglog_writeReturn();
@@ -1679,7 +1679,7 @@ static inline void DisasmMOVES(void)
 #endif
 
 #if Use68020
-static inline void DisasmBitField(void)
+static inline void DisasmBitField()
 {
 	DisasmStartOne("BitField ???");
 	dbglog_writeReturn();
@@ -1687,17 +1687,17 @@ static inline void DisasmBitField(void)
 }
 #endif
 
-static bool IsValidAddrMode(void)
+static bool IsValidAddrMode()
 {
 	return (Disasm_mode != 7) || (Disasm_reg < 5);
 }
 
-static bool IsValidDstAddrMode(void)
+static bool IsValidDstAddrMode()
 {
 	return (Disasm_md6 != 7) || (Disasm_rg9 < 2);
 }
 
-static bool IsValidDataAltAddrMode(void)
+static bool IsValidDataAltAddrMode()
 {
 	bool IsOk;
 
@@ -1722,7 +1722,7 @@ static bool IsValidDataAltAddrMode(void)
 	return IsOk;
 }
 
-static bool IsValidDataAddrMode(void)
+static bool IsValidDataAddrMode()
 {
 	bool IsOk;
 
@@ -1747,7 +1747,7 @@ static bool IsValidDataAddrMode(void)
 	return IsOk;
 }
 
-static bool IsValidControlAddrMode(void)
+static bool IsValidControlAddrMode()
 {
 	bool IsOk;
 
@@ -1772,7 +1772,7 @@ static bool IsValidControlAddrMode(void)
 	return IsOk;
 }
 
-static bool IsValidControlAltAddrMode(void)
+static bool IsValidControlAltAddrMode()
 {
 	bool IsOk;
 
@@ -1797,7 +1797,7 @@ static bool IsValidControlAltAddrMode(void)
 	return IsOk;
 }
 
-static bool IsValidAltMemAddrMode(void)
+static bool IsValidAltMemAddrMode()
 {
 	bool IsOk;
 
@@ -1822,7 +1822,7 @@ static bool IsValidAltMemAddrMode(void)
 	return IsOk;
 }
 
-static inline void DisasmCode0(void)
+static inline void DisasmCode0()
 {
 	if (Disasm_b8 == 1) {
 		if (Disasm_mode == 1) {
@@ -1965,7 +1965,7 @@ static inline void DisasmCode0(void)
 	}
 }
 
-static inline void DisasmCode1(void)
+static inline void DisasmCode1()
 {
 	if ((Disasm_mode == 1) || ! IsValidAddrMode()) {
 		DisasmIllegal();
@@ -1978,7 +1978,7 @@ static inline void DisasmCode1(void)
 	}
 }
 
-static inline void DisasmCode2(void)
+static inline void DisasmCode2()
 {
 	if (Disasm_md6 == 1) { /* MOVEA */
 		if (IsValidAddrMode()) {
@@ -1995,7 +1995,7 @@ static inline void DisasmCode2(void)
 	}
 }
 
-static inline void DisasmCode3(void)
+static inline void DisasmCode3()
 {
 	if (Disasm_md6 == 1) { /* MOVEA */
 		if (IsValidAddrMode()) {
@@ -2012,7 +2012,7 @@ static inline void DisasmCode3(void)
 	}
 }
 
-static inline void DisasmCode4(void)
+static inline void DisasmCode4()
 {
 	if (Disasm_b8 != 0) {
 		switch (Disasm_b76) {
@@ -2386,7 +2386,7 @@ static inline void DisasmCode4(void)
 	}
 }
 
-static inline void DisasmCode5(void)
+static inline void DisasmCode5()
 {
 	if (Disasm_b76 == 3) {
 		if (Disasm_mode == 1) {
@@ -2435,7 +2435,7 @@ static inline void DisasmCode5(void)
 	}
 }
 
-static inline void DisasmCode6(void)
+static inline void DisasmCode6()
 {
 	uint32_t cond = (Disasm_opcode >> 8) & 15;
 
@@ -2451,7 +2451,7 @@ static inline void DisasmCode6(void)
 	}
 }
 
-static inline void DisasmCode7(void)
+static inline void DisasmCode7()
 {
 	if (Disasm_b8 == 0) {
 		DisasmMoveQ();
@@ -2460,7 +2460,7 @@ static inline void DisasmCode7(void)
 	}
 }
 
-static inline void DisasmCode8(void)
+static inline void DisasmCode8()
 {
 	if (Disasm_b76 == 3) {
 		if (Disasm_b8 == 0) {
@@ -2523,7 +2523,7 @@ static inline void DisasmCode8(void)
 	}
 }
 
-static inline void DisasmCode9(void)
+static inline void DisasmCode9()
 {
 	if (Disasm_b76 == 3) {
 		/* SUBA 1001dddm11mmmrrr */
@@ -2559,12 +2559,12 @@ static inline void DisasmCode9(void)
 	}
 }
 
-static inline void DisasmCodeA(void)
+static inline void DisasmCodeA()
 {
 	DisasmALine();
 }
 
-static inline void DisasmCodeB(void)
+static inline void DisasmCodeB()
 {
 	if (Disasm_b76 == 3) {
 		/* CMPA 1011ddds11mmmrrr */
@@ -2595,7 +2595,7 @@ static inline void DisasmCodeB(void)
 	}
 }
 
-static inline void DisasmCodeC(void)
+static inline void DisasmCodeC()
 {
 	if (Disasm_b76 == 3) {
 		if (Disasm_b8 == 0) {
@@ -2662,7 +2662,7 @@ static inline void DisasmCodeC(void)
 	}
 }
 
-static inline void DisasmCodeD(void)
+static inline void DisasmCodeD()
 {
 	if (Disasm_b76 == 3) {
 		/* ADDA 1101dddm11mmmrrr */
@@ -2696,7 +2696,7 @@ static inline void DisasmCodeD(void)
 	}
 }
 
-static inline void DisasmCodeE(void)
+static inline void DisasmCodeE()
 {
 	if (Disasm_b76 == 3) {
 		if ((Disasm_opcode & 0x0800) != 0) {
@@ -2763,12 +2763,12 @@ static inline void DisasmCodeE(void)
 	}
 }
 
-static inline void DisasmCodeF(void)
+static inline void DisasmCodeF()
 {
 	DisasmFLine();
 }
 
-static void m68k_Disasm_one(void)
+static void m68k_Disasm_one()
 {
 	Disasm_opcode = Disasm_nextiword();
 
@@ -2846,7 +2846,7 @@ static inline void DisasmOneAndBack(uint32_t pc)
 	m68k_Disasm_one();
 }
 
-static inline void DisasmSavedPCs(void)
+static inline void DisasmSavedPCs()
 {
 	uint32_t n = SavedPCsIn - SavedPCsOut;
 
@@ -2928,7 +2928,7 @@ void DisasmOneOrSave(uint32_t pc)
 	}
 }
 
-void m68k_WantDisasmContext(void)
+void m68k_WantDisasmContext()
 {
 	DisasmSavedPCs();
 	DisasmCounter = /* 256 */ 128;

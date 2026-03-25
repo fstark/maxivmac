@@ -42,7 +42,7 @@
 	!ADBMouseDisabled.  ADBMouseDisabled starts at 1 (wire default)
 	and is cleared to 0 when the ADB manager first polls the mouse.
 */
-bool Mouse_Enabled(void)
+bool Mouse_Enabled()
 {
 	if (g_machine->config().emClassicKbrd) {
 		if (auto* scc = g_machine->findDevice<SCCDevice>())

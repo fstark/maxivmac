@@ -70,7 +70,7 @@ static bool IsFindingNode = false;
 	handle collision detection and retransmission.  Besides this is
 	what a standard AppleTalk (LocalTalk to EtherTalk) bridge does.
 */
-static void LT_TransmitPacket1(void)
+static void LT_TransmitPacket1()
 {
 	/* Check for LLAP RTS/CTS packets, which we won't send */
 #if SCC_dolog
@@ -171,7 +171,7 @@ static void LT_TransmitPacket1(void)
 
 static uint8_t MyCTSBuffer[4];
 
-static void GetCTSpacket(void)
+static void GetCTSpacket()
 {
 	/* Get a single buffer worth of packets at a time */
 	uint8_t * device_buffer = MyCTSBuffer;
@@ -196,7 +196,7 @@ static uint8_t my_node_address = 0;
 
 static bool LTAddrSrchMd = false;
 
-static void GetNextPacketForMe(void)
+static void GetNextPacketForMe()
 {
 	uint8_t dst;
 	uint8_t src;
@@ -295,7 +295,7 @@ label_retry:
 	}
 }
 
-static void LT_ReceivePacket1(void)
+static void LT_ReceivePacket1()
 {
 	if (CTSpacketPending)  {
 		GetCTSpacket();
@@ -533,7 +533,7 @@ bool SCCDevice::interruptsEnabled()
 /* ---- */
 
 /* Function used to update the interrupt state of the SCC */
-static void CheckSCCInterruptFlag(void)
+static void CheckSCCInterruptFlag()
 {
 #if 0 /* ReceiveAInterrupt always false */
 	bool ReceiveAInterrupt = false
@@ -876,7 +876,7 @@ static void SCC_TxBuffPut(uint8_t Data)
 	This function is called once all the normal packet bytes have been
 	received.
 */
-static void rx_complete(void)
+static void rx_complete()
 {
 	if (SCC.a[1].EndOfFrame) {
 		ReportAbnormalID(0x0702, "EndOfFrame true in rx_complete");
@@ -897,7 +897,7 @@ static void rx_complete(void)
 	SCC.a[1].EndOfFrame = true;
 }
 
-static void SCC_RxBuffAdvance(void)
+static void SCC_RxBuffAdvance()
 {
 	uint8_t value;
 
@@ -978,7 +978,7 @@ static void SCC_Interrupt(int Type)
 #endif
 
 #if 0
-static void SCC_Int(void)
+static void SCC_Int()
 {
 	/* This should be called at regular intervals */
 

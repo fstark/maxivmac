@@ -84,7 +84,7 @@ static const uint8_t VidDrvr_contents[] = {
 0x08, 0xFC, 0x4E, 0xD0
 };
 
-static void ChecksumSlotROM(void)
+static void ChecksumSlotROM()
 {
 	/* Calculate CRC */
 	/* assuming check sum field initialized to zero */
@@ -130,7 +130,7 @@ static void PatchAOSLstEntry(uint8_t Id, uint8_t * Offset)
 	PatchALong((Id << 24) | ((Offset - pPatch) & 0x00FFFFFF));
 }
 
-static uint8_t * ReservePatchOSLstEntry(void)
+static uint8_t * ReservePatchOSLstEntry()
 {
 	uint8_t * v = pPatch;
 	pPatch += 4;
@@ -150,7 +150,7 @@ static void PatchADatLstEntry(uint8_t Id, uint32_t Data)
 	PatchALong((Id << 24) | (Data & 0x00FFFFFF));
 }
 
-static void PatchAnEndOfLst(void)
+static void PatchAnEndOfLst()
 {
 	PatchADatLstEntry(0xFF /* endOfList */, 0x00000000);
 }
@@ -432,7 +432,7 @@ void VideoDevice::update()
 	}
 }
 
-static uint16_t Vid_GetMode(void)
+static uint16_t Vid_GetMode()
 {
 	return (0 != vMacScreenDepth && UseColorMode) ? 129 : 128;
 }
@@ -484,7 +484,7 @@ static tMacErr Vid_SetMode(uint16_t v)
 
 static bool UseGrayTones = false;
 
-static void FillScreenWithGrayPattern(void)
+static void FillScreenWithGrayPattern()
 {
 	int i;
 	int j;

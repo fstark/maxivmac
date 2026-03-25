@@ -87,7 +87,7 @@ void PbufDispose(tPbuf i)
 #endif
 
 #if IncludePbufs
-void UnInitPbufs(void)
+void UnInitPbufs()
 {
 	tPbuf i;
 

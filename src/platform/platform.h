@@ -35,12 +35,12 @@ extern void WarnMsgAbnormalID(uint16_t id);
 #endif
 
 #if NonDiskProtect
-extern void WarnMsgUnsupportedDisk(void);
+extern void WarnMsgUnsupportedDisk();
 #endif
 
 #if dbglog_HAVE
 extern void dbglog_writeCStr(char *s);
-extern void dbglog_writeReturn(void);
+extern void dbglog_writeReturn();
 extern void dbglog_writeHex(uint32_t x);
 extern void dbglog_writeNum(uint32_t x);
 extern void dbglog_writeMacChar(uint8_t x);
@@ -137,7 +137,7 @@ extern tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 extern tMacErr vSonyEject(tDrive Drive_No);
 extern tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count);
 
-extern bool AnyDiskInserted(void);
+extern bool AnyDiskInserted();
 extern void DiskRevokeWritable(tDrive Drive_No);
 
 #if IncludeSonyRawMode
@@ -210,7 +210,7 @@ extern bool EmVideoDisable;
 extern int8_t EmLagTime;
 
 extern void Screen_OutputFrame(uint8_t * screencurrentbuff);
-extern void DoneWithDrawingForTick(void);
+extern void DoneWithDrawingForTick();
 
 extern bool ForceMacOff;
 
@@ -218,7 +218,7 @@ extern bool WantMacInterrupt;
 
 extern bool WantMacReset;
 
-extern bool ExtraTimeNotOver(void);
+extern bool ExtraTimeNotOver();
 
 extern uint8_t SpeedValue;
 
@@ -279,16 +279,16 @@ extern bool CertainlyNotMyPacket;
 extern uint8_t * LT_TxBuffer;
 extern uint16_t LT_TxBuffSz;
 
-extern void LT_TransmitPacket(void);
+extern void LT_TransmitPacket();
 
 extern uint8_t * LT_RxBuffer;
 extern uint32_t LT_RxBuffSz;
 
-extern void LT_ReceivePacket(void);
+extern void LT_ReceivePacket();
 
 #endif
 
-extern void WaitForNextTick(void);
+extern void WaitForNextTick();
 
 #define MyEvtQElKindKey 0
 #define MyEvtQElKindMouseButton 1
@@ -312,8 +312,8 @@ struct MyEvtQEl {
 };
 typedef struct MyEvtQEl MyEvtQEl;
 
-extern MyEvtQEl * MyEvtQOutP(void);
-extern void MyEvtQOutDone(void);
+extern MyEvtQEl * MyEvtQOutP();
+extern void MyEvtQOutDone();
 
 #define MKC_A 0x00
 #define MKC_B 0x0B

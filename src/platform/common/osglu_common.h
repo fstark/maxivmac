@@ -148,11 +148,11 @@ extern uint32_t LT_MyStamp;
 /* NOTE: Functions already declared in platform/platform.h are NOT
    duplicated here. */
 
-void ScreenClearChanges(void);
-void ScreenChangedAll(void);
+void ScreenClearChanges();
+void ScreenChangedAll();
 
 #if EnableFSMouseMotion
-void AutoScrollScreen(void);
+void AutoScrollScreen();
 #endif
 
 bool FirstFreeDisk(tDrive *Drive_No);
@@ -172,17 +172,17 @@ void MyMousePositionSetDelta(uint16_t dh, uint16_t dv);
 #endif
 void MyMousePositionSet(uint16_t h, uint16_t v);
 
-void InitKeyCodes(void);
+void InitKeyCodes();
 void DisconnectKeyCodes(uint32_t KeepMask);
-void MyEvtQTryRecoverFromFull(void);
+void MyEvtQTryRecoverFromFull();
 
-MyEvtQEl * MyEvtQElPreviousIn(void);
-MyEvtQEl * MyEvtQElAlloc(void);
+MyEvtQEl * MyEvtQElPreviousIn();
+MyEvtQEl * MyEvtQElAlloc();
 
 void MacMsg(char *briefMsg, char *longMsg, bool fatal);
 
 #if dbglog_HAVE
-void dbglog_ReserveAlloc(void);
+void dbglog_ReserveAlloc();
 
 #ifndef dbglog_buflnsz
 /* unbuffered mode — map directly to the platform _open0/_close0/_write0 */
@@ -194,5 +194,5 @@ void dbglog_ReserveAlloc(void);
 
 #if EmLocalTalk
 void EntropyPoolAddPtr(uint8_t * p, uint32_t n);
-void LT_PickStampNodeHint(void);
+void LT_PickStampNodeHint();
 #endif

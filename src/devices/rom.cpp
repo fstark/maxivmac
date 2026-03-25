@@ -193,7 +193,7 @@ static uint32_t getSonyDriverBase() {
 #define Sony_DriverBase getSonyDriverBase()
 
 #if UseSonyPatch
-static void Sony_Install(void)
+static void Sony_Install()
 {
 	uint8_t * pto = Sony_DriverBase + ROM;
 
@@ -246,7 +246,7 @@ static void Sony_Install(void)
 #endif
 
 #ifdef ln2mtb
-static void ROMscrambleForMTB(void)
+static void ROMscrambleForMTB()
 {
 	int32_t j;
 	uint8_t * p = ROM;

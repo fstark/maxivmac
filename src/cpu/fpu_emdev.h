@@ -35,7 +35,7 @@ static void myfp_SetFPIAR(uint32_t v)
 	fpu_dat.FPIAR = v;
 }
 
-static uint32_t myfp_GetFPIAR(void)
+static uint32_t myfp_GetFPIAR()
 {
 	return fpu_dat.FPIAR;
 }
@@ -227,7 +227,7 @@ static int CheckFPCondition(uint16_t predicate)
 	return condition_true;
 }
 
-LOCALIPROC DoCodeFPU_dflt(void)
+LOCALIPROC DoCodeFPU_dflt()
 {
 	ReportAbnormalID(0x0301,
 		"unimplemented Floating Point Instruction");
@@ -242,7 +242,7 @@ LOCALIPROC DoCodeFPU_dflt(void)
 	DoCodeFdefault();
 }
 
-LOCALIPROC DoCodeFPU_Save(void)
+LOCALIPROC DoCodeFPU_Save()
 {
 	uint16_t opcode = ((uint16_t)(V_regs.CurDecOpY.v[0].AMd) << 8)
 		| V_regs.CurDecOpY.v[0].ArgDat;
@@ -277,7 +277,7 @@ LOCALIPROC DoCodeFPU_Save(void)
 	}
 }
 
-LOCALIPROC DoCodeFPU_Restore(void)
+LOCALIPROC DoCodeFPU_Restore()
 {
 	uint16_t opcode = ((uint16_t)(V_regs.CurDecOpY.v[0].AMd) << 8)
 		| V_regs.CurDecOpY.v[0].ArgDat;
@@ -316,7 +316,7 @@ LOCALIPROC DoCodeFPU_Restore(void)
 	}
 }
 
-LOCALIPROC DoCodeFPU_FBccW(void)
+LOCALIPROC DoCodeFPU_FBccW()
 {
 	/*
 		Also get here for a NOP instruction (opcode 0xF280),
@@ -333,7 +333,7 @@ LOCALIPROC DoCodeFPU_FBccW(void)
 	/* printf("pc_p set to 0x%p in FBcc (32bit)\n", V_pc_p); */
 }
 
-LOCALIPROC DoCodeFPU_FBccL(void)
+LOCALIPROC DoCodeFPU_FBccL()
 {
 	uint16_t Dat = V_regs.CurDecOpY.v[0].ArgDat;
 
@@ -344,7 +344,7 @@ LOCALIPROC DoCodeFPU_FBccL(void)
 	}
 }
 
-LOCALIPROC DoCodeFPU_DBcc(void)
+LOCALIPROC DoCodeFPU_DBcc()
 {
 	uint16_t Dat = V_regs.CurDecOpY.v[0].ArgDat;
 	uint16_t thereg = Dat & 7;
@@ -369,7 +369,7 @@ LOCALIPROC DoCodeFPU_DBcc(void)
 	}
 }
 
-LOCALIPROC DoCodeFPU_Trapcc(void)
+LOCALIPROC DoCodeFPU_Trapcc()
 {
 	uint16_t Dat = V_regs.CurDecOpY.v[0].ArgDat;
 	uint16_t thereg = Dat & 7;
@@ -395,7 +395,7 @@ LOCALIPROC DoCodeFPU_Trapcc(void)
 	}
 }
 
-LOCALIPROC DoCodeFPU_Scc(void)
+LOCALIPROC DoCodeFPU_Scc()
 {
 	uint16_t word2 = (int)nextiword();
 
@@ -413,7 +413,7 @@ LOCALIPROC DoCodeFPU_Scc(void)
 	}
 }
 
-static void DoCodeF_InvalidPlusWord(void)
+static void DoCodeF_InvalidPlusWord()
 {
 	BackupPC();
 	DoCodeFPU_dflt();
@@ -1181,7 +1181,7 @@ static void DoCodeFPU_Move_FP_EA(uint16_t word2)
 	}
 }
 
-LOCALIPROC DoCodeFPU_md60(void)
+LOCALIPROC DoCodeFPU_md60()
 {
 	uint16_t word2 = (int)nextiword();
 

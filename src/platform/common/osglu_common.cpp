@@ -25,9 +25,9 @@
 /* --- backend-provided debug log primitives (extern) --- */
 
 #if dbglog_HAVE
-extern bool dbglog_open0(void);
+extern bool dbglog_open0();
 extern void dbglog_write0(char *s, uint32_t L);
-extern void dbglog_close0(void);
+extern void dbglog_close0();
 #endif
 
 /* --- global variables --- */
@@ -210,7 +210,7 @@ bool FirstFreeDisk(tDrive *Drive_No)
 	return false;
 }
 
-bool AnyDiskInserted(void)
+bool AnyDiskInserted()
 {
 	return 0 != vSonyInsertedMask;
 }
@@ -585,7 +585,7 @@ int16_t ScreenChangedLeft;
 int16_t ScreenChangedBottom;
 int16_t ScreenChangedRight;
 
-void ScreenClearChanges(void)
+void ScreenClearChanges()
 {
 	ScreenChangedTop = 0;
 	ScreenChangedBottom = vMacScreenHeight;
@@ -593,7 +593,7 @@ void ScreenClearChanges(void)
 	ScreenChangedRight = vMacScreenWidth;
 }
 
-void ScreenChangedAll(void)
+void ScreenChangedAll()
 {
 	ScreenChangedTop = 0;
 	ScreenChangedBottom = vMacScreenHeight;
@@ -680,7 +680,7 @@ int16_t SavedMouseV;
 #endif
 
 #if EnableFSMouseMotion
-void AutoScrollScreen(void)
+void AutoScrollScreen()
 {
 	int16_t Shift;
 	int16_t Limit;
@@ -794,7 +794,7 @@ void ReserveAllocOneBlock(uint8_t * *p, uint32_t n,
 
 #ifndef dbglog_buflnsz
 
-void dbglog_ReserveAlloc(void)
+void dbglog_ReserveAlloc()
 {
 	/* nothing to do in unbuffered mode */
 }
@@ -808,7 +808,7 @@ static uint32_t dbglog_bufpos = 0;
 
 static char *dbglog_bufp = nullptr;
 
-void dbglog_ReserveAlloc(void)
+void dbglog_ReserveAlloc()
 {
 	ReserveAllocOneBlock((uint8_t * *)&dbglog_bufp, dbglog_bufsz,
 		5, false);
@@ -816,7 +816,7 @@ void dbglog_ReserveAlloc(void)
 
 #define dbglog_open dbglog_open0
 
-static void dbglog_close(void)
+static void dbglog_close()
 {
 	uint32_t n = ModPow2(dbglog_bufpos, dbglog_buflnsz);
 	if (n != 0) {
@@ -866,7 +866,7 @@ void dbglog_writeCStr(char *s)
 	dbglog_write(s, CStrLength(s));
 }
 
-void dbglog_writeReturn(void)
+void dbglog_writeReturn()
 {
 	dbglog_writeCStr("\n");
 }
@@ -922,7 +922,7 @@ void dbglog_writeMacChar(uint8_t x)
 	dbglog_write(&s, 1);
 }
 
-static void dbglog_writeSpace(void)
+static void dbglog_writeSpace()
 {
 	dbglog_writeCStr(" ");
 }
@@ -958,7 +958,7 @@ MyEvtQEl MyEvtQA[MyEvtQSz];
 uint16_t MyEvtQIn = 0;
 uint16_t MyEvtQOut = 0;
 
-MyEvtQEl * MyEvtQOutP(void)
+MyEvtQEl * MyEvtQOutP()
 {
 	MyEvtQEl *p = nullptr;
 	if (MyEvtQIn != MyEvtQOut) {
@@ -967,14 +967,14 @@ MyEvtQEl * MyEvtQOutP(void)
 	return p;
 }
 
-void MyEvtQOutDone(void)
+void MyEvtQOutDone()
 {
 	++MyEvtQOut;
 }
 
 bool MyEvtQNeedRecover = false;
 
-MyEvtQEl * MyEvtQElPreviousIn(void)
+MyEvtQEl * MyEvtQElPreviousIn()
 {
 	MyEvtQEl *p = nullptr;
 	if (MyEvtQIn - MyEvtQOut != 0) {
@@ -984,7 +984,7 @@ MyEvtQEl * MyEvtQElPreviousIn(void)
 	return p;
 }
 
-MyEvtQEl * MyEvtQElAlloc(void)
+MyEvtQEl * MyEvtQElAlloc()
 {
 	MyEvtQEl *p = nullptr;
 	if (MyEvtQIn - MyEvtQOut >= MyEvtQSz) {
@@ -1089,7 +1089,7 @@ void MyMousePositionSet(uint16_t h, uint16_t v)
 	}
 }
 
-void InitKeyCodes(void)
+void InitKeyCodes()
 {
 	theKeys[0] = 0;
 	theKeys[1] = 0;
@@ -1129,7 +1129,7 @@ void DisconnectKeyCodes(uint32_t KeepMask)
 	}
 }
 
-void MyEvtQTryRecoverFromFull(void)
+void MyEvtQTryRecoverFromFull()
 {
 	MyMouseButtonSet(false);
 	DisconnectKeyCodes(0);
@@ -1183,7 +1183,7 @@ uint32_t e_p[2] = {
 	0, 0
 	};
 
-static void EntropyPoolStir(void)
+static void EntropyPoolStir()
 {
 	uint32_t t0a = e_p[0];
 	uint32_t t1a = e_p[1];
@@ -1227,7 +1227,7 @@ void EntropyPoolAddPtr(uint8_t * p, uint32_t n)
 
 uint32_t LT_MyStamp = 0;
 
-void LT_PickStampNodeHint(void)
+void LT_PickStampNodeHint()
 {
 	LT_MyStamp = e_p[0];
 

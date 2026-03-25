@@ -32,7 +32,7 @@ tMacErr PbufNewFromPtr(void *p, uint32_t count, tPbuf *r);
 void PbufKillToPtr(void **p, uint32_t *count, tPbuf r);
 tMacErr PbufNew(uint32_t count, tPbuf *r);
 void PbufDispose(tPbuf i);
-void UnInitPbufs(void);
+void UnInitPbufs();
 uint8_t * PbufLock(tPbuf i);
 #define PbufUnlock(i)
 void PbufTransfer(uint8_t * Buffer,

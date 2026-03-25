@@ -22,4 +22,4 @@
 
 extern void DisasmOneOrSave(uint32_t pc);
 
-extern void m68k_WantDisasmContext(void);
+extern void m68k_WantDisasmContext();

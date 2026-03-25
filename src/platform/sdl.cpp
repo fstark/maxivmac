@@ -100,7 +100,7 @@ static tMacErr ChildPath(char *x, char *y, char **r)
 static FILE *dbglog_File = nullptr;
 #endif
 
-bool dbglog_open0(void)
+bool dbglog_open0()
 {
 #if dbglog_ToStdErr || dbglog_ToSDL_Log
 	return true;
@@ -148,7 +148,7 @@ void dbglog_write0(char *s, uint32_t L)
 #endif
 }
 
-void dbglog_close0(void)
+void dbglog_close0()
 {
 #if ! dbglog_ToStdErr
 	if (dbglog_File != nullptr) {
@@ -189,7 +189,7 @@ static void NativeStrFromCStr(char *r, char *s)
 
 static FILE *Drives[NumDrives]; /* open disk image files */
 
-static void InitDrives(void)
+static void InitDrives()
 {
 	/*
 		This isn't really needed, Drives[i] and DriveNames[i]
@@ -303,7 +303,7 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 }
 #endif
 
-static void UnInitDrives(void)
+static void UnInitDrives()
 {
 	tDrive i;
 
@@ -456,7 +456,7 @@ static bool Sony_InsertIth(int i)
 	return v;
 }
 
-static bool LoadInitialImages(void)
+static bool LoadInitialImages()
 {
 	if (! AnyDiskInserted()) {
 		int i;
@@ -474,7 +474,7 @@ static bool LoadInitialImages(void)
 static char *rom_path = nullptr;
 
 #if CanGetAppPath
-static tMacErr LoadMacRomFromPrefDir(void)
+static tMacErr LoadMacRomFromPrefDir()
 {
 	tMacErr err;
 	char *t = nullptr;
@@ -505,7 +505,7 @@ static tMacErr LoadMacRomFromPrefDir(void)
 }
 #endif
 
-static tMacErr LoadMacRomFromAppPar(void)
+static tMacErr LoadMacRomFromAppPar()
 {
 	tMacErr err;
 	const char *romFileName = g_machine->config().romFileName;
@@ -536,7 +536,7 @@ static tMacErr LoadMacRomFromAppPar(void)
 	return err;
 }
 
-static bool LoadMacRom(void)
+static bool LoadMacRom()
 {
 	tMacErr err;
 
@@ -1228,7 +1228,7 @@ label_exit:
 #endif /* 0 != SDL_MAJOR_VERSION */
 }
 
-static void MyDrawChangesAndClear(void)
+static void MyDrawChangesAndClear()
 {
 	if (ScreenChangedBottom > ScreenChangedTop) {
 		HaveChangedScreenBuff(ScreenChangedTop, ScreenChangedLeft,
@@ -1237,7 +1237,7 @@ static void MyDrawChangesAndClear(void)
 	}
 }
 
-void DoneWithDrawingForTick(void)
+void DoneWithDrawingForTick()
 {
 #if EnableFSMouseMotion
 	if (HaveMouseMotion) {
@@ -1254,7 +1254,7 @@ void DoneWithDrawingForTick(void)
 static bool HaveCursorHidden = false;
 static bool WantCursorHidden = false;
 
-static void ForceShowCursor(void)
+static void ForceShowCursor()
 {
 	if (HaveCursorHidden) {
 		HaveCursorHidden = false;
@@ -1428,7 +1428,7 @@ static void MousePositionNotifyRelative(int deltah, int deltav)
 }
 #endif
 
-static void CheckMouseState(void)
+static void CheckMouseState()
 {
 #if 0 != SDL_MAJOR_VERSION
 	/*
@@ -1781,7 +1781,7 @@ static void DoKeyCode(
 }
 #endif /* SDL_MAJOR_VERSION */
 
-static void DisableKeyRepeat(void)
+static void DisableKeyRepeat()
 {
 	/*
 		OSGLUxxx common:
@@ -1789,7 +1789,7 @@ static void DisableKeyRepeat(void)
 	*/
 }
 
-static void RestoreKeyRepeat(void)
+static void RestoreKeyRepeat()
 {
 	/*
 		OSGLUxxx common:
@@ -1797,11 +1797,11 @@ static void RestoreKeyRepeat(void)
 	*/
 }
 
-static void ReconnectKeyCodes3(void)
+static void ReconnectKeyCodes3()
 {
 }
 
-static void DisconnectKeyCodes3(void)
+static void DisconnectKeyCodes3()
 {
 	DisconnectKeyCodes2();
 	MyMouseButtonSet(false);
@@ -1844,7 +1844,7 @@ static uint32_t NextFracTime;
 
 #endif /* 0 != SDL_MAJOR_VERSION */
 
-static void IncrNextTime(void)
+static void IncrNextTime()
 {
 #if 0 != SDL_MAJOR_VERSION
 	NextFracTime += MyInvTimeStep;
@@ -1853,7 +1853,7 @@ static void IncrNextTime(void)
 #endif /* 0 != SDL_MAJOR_VERSION */
 }
 
-static void InitNextTime(void)
+static void InitNextTime()
 {
 #if 0 != SDL_MAJOR_VERSION
 	NextIntTime = LastTime;
@@ -1864,7 +1864,7 @@ static void InitNextTime(void)
 
 static uint32_t NewMacDateInSeconds;
 
-static bool UpdateTrueEmulatedTime(void)
+static bool UpdateTrueEmulatedTime()
 {
 	/*
 		OSGLUxxx common:
@@ -1919,7 +1919,7 @@ static bool UpdateTrueEmulatedTime(void)
 }
 
 
-static bool CheckDateTime(void)
+static bool CheckDateTime()
 {
 	/*
 		OSGLUxxx common:
@@ -1939,7 +1939,7 @@ static bool CheckDateTime(void)
 	}
 }
 
-static void StartUpTimeAdjust(void)
+static void StartUpTimeAdjust()
 {
 	/*
 		OSGLUxxx common:
@@ -1956,7 +1956,7 @@ static void StartUpTimeAdjust(void)
 	InitNextTime();
 }
 
-static bool InitLocationDat(void)
+static bool InitLocationDat()
 {
 #if dbglog_OSGInit
 	dbglog_writeln("enter InitLocationDat");
@@ -2010,14 +2010,14 @@ static uint16_t MaxFilledSoundBuffs;
 #endif
 static uint16_t TheWriteOffset;
 
-static void MySound_Init0(void)
+static void MySound_Init0()
 {
 	ThePlayOffset = 0;
 	TheFillOffset = 0;
 	TheWriteOffset = 0;
 }
 
-static void MySound_Start0(void)
+static void MySound_Start0()
 {
 	/* Reset variables */
 	MinFilledSoundBuffs = kSoundBuffers + 1;
@@ -2060,7 +2060,7 @@ static void ConvertSoundBlockToNative(tpSoundSamp p)
 #define ConvertSoundBlockToNative(p)
 #endif
 
-static void MySound_WroteABlock(void)
+static void MySound_WroteABlock()
 {
 #if (4 == kLn2SoundSampSz)
 	uint16_t PrevWriteOffset = TheWriteOffset - kOneBuffLen;
@@ -2107,7 +2107,7 @@ static bool MySound_EndWrite0(uint16_t actL)
 	return v;
 }
 
-static void MySound_SecondNotify0(void)
+static void MySound_SecondNotify0()
 {
 	if (MinFilledSoundBuffs <= kSoundBuffers) {
 		if (MinFilledSoundBuffs > DesiredMinFilledSoundBuffs) {
@@ -2326,7 +2326,7 @@ static MySoundR cur_audio;
 
 static bool HaveSoundOut = false;
 
-static void MySound_Stop(void)
+static void MySound_Stop()
 {
 #if dbglog_SoundStuff
 	dbglog_writeln("enter MySound_Stop");
@@ -2383,7 +2383,7 @@ label_retry:
 #endif
 }
 
-static void MySound_Start(void)
+static void MySound_Start()
 {
 	if ((! cur_audio.wantplaying) && HaveSoundOut) {
 		MySound_Start0();
@@ -2403,7 +2403,7 @@ static void MySound_Start(void)
 	}
 }
 
-static void MySound_UnInit(void)
+static void MySound_UnInit()
 {
 	if (HaveSoundOut) {
 #if 0 != SDL_MAJOR_VERSION
@@ -2418,7 +2418,7 @@ static void MySound_UnInit(void)
 
 #define SOUND_SAMPLERATE 22255 /* = round(7833600 * 2 / 704) */
 
-static bool MySound_Init(void)
+static bool MySound_Init()
 {
 #if dbglog_OSGInit
 	dbglog_writeln("enter MySound_Init");
@@ -2500,7 +2500,7 @@ void MySound_EndWrite(uint16_t actL)
 	}
 }
 
-static void MySound_SecondNotify(void)
+static void MySound_SecondNotify()
 {
 	/*
 		OSGLUxxx common:
@@ -2519,7 +2519,7 @@ static void MySound_SecondNotify(void)
 
 /* --- basic dialogs --- */
 
-static void CheckSavedMacMsg(void)
+static void CheckSavedMacMsg()
 {
 	/*
 		OSGLUxxx common:
@@ -3884,7 +3884,7 @@ static void HandleTheEvent(SDL_Event *event)
 static int my_argc;
 static char **my_argv;
 
-static bool Screen_Init(void)
+static bool Screen_Init()
 {
 	bool v = false;
 
@@ -3929,7 +3929,7 @@ static bool GrabMachine = false;
 #endif
 
 #if MayFullScreen
-static void GrabTheMachine(void)
+static void GrabTheMachine()
 {
 #if GrabKeysFullScreen
 #if 1 == SDL_MAJOR_VERSION
@@ -3972,7 +3972,7 @@ static void GrabTheMachine(void)
 #endif
 
 #if MayFullScreen
-static void UngrabMachine(void)
+static void UngrabMachine()
 {
 #if EnableFSMouseMotion
 
@@ -4003,7 +4003,7 @@ static void UngrabMachine(void)
 #endif
 
 #if EnableFSMouseMotion && HaveWorkingWarp
-static void MyMouseConstrain(void)
+static void MyMouseConstrain()
 {
 	int16_t shiftdh;
 	int16_t shiftdv;
@@ -4035,7 +4035,7 @@ static void MyMouseConstrain(void)
 
 #if 0 == SDL_MAJOR_VERSION
 
-static bool CreateMainWindow(void)
+static bool CreateMainWindow()
 {
 #if dbglog_OSGInit
 	dbglog_writeln("enter CreateMainWindow");
@@ -4044,12 +4044,12 @@ static bool CreateMainWindow(void)
 	return true;
 }
 
-static void CloseMainWindow(void)
+static void CloseMainWindow()
 {
 }
 
 #if EnableRecreateW
-static bool ReCreateMainWindow(void)
+static bool ReCreateMainWindow()
 {
 	ForceShowCursor(); /* hide/show cursor api is per window */
 
@@ -4079,7 +4079,7 @@ static bool ReCreateMainWindow(void)
 
 #elif 1 == SDL_MAJOR_VERSION
 
-static bool CreateMainWindow(void)
+static bool CreateMainWindow()
 {
 	int NewWindowHeight = vMacScreenHeight;
 	int NewWindowWidth = vMacScreenWidth;
@@ -4127,12 +4127,12 @@ static bool CreateMainWindow(void)
 	return v;
 }
 
-static void CloseMainWindow(void)
+static void CloseMainWindow()
 {
 }
 
 #if EnableRecreateW
-static bool ReCreateMainWindow(void)
+static bool ReCreateMainWindow()
 {
 	ForceShowCursor(); /* hide/show cursor api is per window */
 
@@ -4179,7 +4179,7 @@ static int WinPositionsX[kNumMagStates];
 static int WinPositionsY[kNumMagStates];
 #endif
 
-static bool CreateMainWindow(void)
+static bool CreateMainWindow()
 {
 	/*
 		OSGLUxxx common:
@@ -4428,7 +4428,7 @@ static bool CreateMainWindow(void)
 	return v;
 }
 
-static void CloseMainWindow(void)
+static void CloseMainWindow()
 {
 	/*
 		OSGLUxxx common:
@@ -4459,7 +4459,7 @@ static void CloseMainWindow(void)
 }
 
 #if EnableRecreateW
-static void ZapMyWState(void)
+static void ZapMyWState()
 {
 	my_main_wind = nullptr;
 	my_renderer = nullptr;
@@ -4569,7 +4569,7 @@ static int WinMagStates[kNumWinStates];
 #endif
 
 #if EnableRecreateW
-static bool ReCreateMainWindow(void)
+static bool ReCreateMainWindow()
 {
 	/*
 		OSGLUxxx common:
@@ -4667,7 +4667,7 @@ static bool ReCreateMainWindow(void)
 #endif /* SDL_MAJOR_VERSION */
 
 
-static void ZapWinStateVars(void)
+static void ZapWinStateVars()
 {
 #if SDL_MAJOR_VERSION >= 2
 #if MayNotFullScreen
@@ -4692,7 +4692,7 @@ static void ZapWinStateVars(void)
 }
 
 #if VarFullScreen
-void ToggleWantFullScreen(void)
+void ToggleWantFullScreen()
 {
 	WantFullScreen = ! WantFullScreen;
 
@@ -4731,13 +4731,13 @@ void ToggleWantFullScreen(void)
 
 /* --- SavedTasks --- */
 
-static void LeaveBackground(void)
+static void LeaveBackground()
 {
 	ReconnectKeyCodes3();
 	DisableKeyRepeat();
 }
 
-static void EnterBackground(void)
+static void EnterBackground()
 {
 	RestoreKeyRepeat();
 	DisconnectKeyCodes3();
@@ -4745,7 +4745,7 @@ static void EnterBackground(void)
 	ForceShowCursor();
 }
 
-static void LeaveSpeedStopped(void)
+static void LeaveSpeedStopped()
 {
 #if MySoundEnabled
 	MySound_Start();
@@ -4754,14 +4754,14 @@ static void LeaveSpeedStopped(void)
 	StartUpTimeAdjust();
 }
 
-static void EnterSpeedStopped(void)
+static void EnterSpeedStopped()
 {
 #if MySoundEnabled
 	MySound_Stop();
 #endif
 }
 
-static void CheckForSavedTasks(void)
+static void CheckForSavedTasks()
 {
 	if (MyEvtQNeedRecover) {
 		MyEvtQNeedRecover = false;
@@ -4877,7 +4877,7 @@ static void CheckForSavedTasks(void)
 
 /* --- command line parsing --- */
 
-static bool ScanCommandLine(void)
+static bool ScanCommandLine()
 {
 	char *pa;
 	int i = 1;
@@ -4931,7 +4931,7 @@ label_retry:
 
 /* --- main program flow --- */
 
-static void WaitForTheNextEvent(void)
+static void WaitForTheNextEvent()
 {
 #if 0 != SDL_MAJOR_VERSION
 	SDL_Event event;
@@ -4942,7 +4942,7 @@ static void WaitForTheNextEvent(void)
 #endif
 }
 
-static void CheckForSystemEvents(void)
+static void CheckForSystemEvents()
 {
 	/*
 		OSGLUxxx common:
@@ -4962,13 +4962,13 @@ static void CheckForSystemEvents(void)
 }
 
 
- bool ExtraTimeNotOver(void)
+ bool ExtraTimeNotOver()
 {
 	UpdateTrueEmulatedTime();
 	return TrueEmulatedTime == OnTrueTime;
 }
 
-void WaitForNextTick(void)
+void WaitForNextTick()
 {
 label_retry:
 	CheckForSystemEvents();
@@ -5021,7 +5021,7 @@ label_retry:
 
 #include "core/main.h"
 
-static void ZapOSGLUVars(void)
+static void ZapOSGLUVars()
 {
 	/*
 		OSGLUxxx common:
@@ -5035,7 +5035,7 @@ static void ZapOSGLUVars(void)
 	ZapWinStateVars();
 }
 
-static void ReserveAllocAll(void)
+static void ReserveAllocAll()
 {
 #if dbglog_HAVE
 	dbglog_ReserveAlloc();
@@ -5058,7 +5058,7 @@ static void ReserveAllocAll(void)
 	EmulationReserveAlloc();
 }
 
-static bool AllocMyMemory(void)
+static bool AllocMyMemory()
 {
 	uint32_t n;
 	bool IsOk = false;
@@ -5083,7 +5083,7 @@ static bool AllocMyMemory(void)
 	return IsOk;
 }
 
-static void UnallocMyMemory(void)
+static void UnallocMyMemory()
 {
 	if (nullptr != ReserveAllocBigBlock) {
 		free((char *)ReserveAllocBigBlock);
@@ -5091,7 +5091,7 @@ static void UnallocMyMemory(void)
 }
 
 #if CanGetAppPath
-static bool InitWhereAmI(void)
+static bool InitWhereAmI()
 {
 	app_parent = (char *)SDL_GetBasePath();
 
@@ -5102,7 +5102,7 @@ static bool InitWhereAmI(void)
 #endif
 
 #if CanGetAppPath
-static void UninitWhereAmI(void)
+static void UninitWhereAmI()
 {
 	SDL_free(pref_dir);
 
@@ -5112,7 +5112,7 @@ static void UninitWhereAmI(void)
 }
 #endif
 
-static bool InitOSGLU(void)
+static bool InitOSGLU()
 {
 #define INIT_STEP(name, expr) \
 	fprintf(stderr, "[SDL init] " name "...\n"); \
@@ -5142,7 +5142,7 @@ static bool InitOSGLU(void)
 	return true;
 }
 
-static void UnInitOSGLU(void)
+static void UnInitOSGLU()
 {
 	/*
 		OSGLUxxx common:

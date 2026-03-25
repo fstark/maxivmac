@@ -59,7 +59,7 @@ static bool ASC_Playing = false;
 
 #define ASC_dolog (dbglog_HAVE && 0)
 
-static void ASC_RecalcStatus(void)
+static void ASC_RecalcStatus()
 {
 	if ((1 == SoundReg801) && ASC_Playing) {
 		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200) {
@@ -87,7 +87,7 @@ static void ASC_RecalcStatus(void)
 	}
 }
 
-static void ASC_ClearFIFO(void)
+static void ASC_ClearFIFO()
 {
 	ASC_FIFO_Out = 0;
 	ASC_FIFO_InA = 0;

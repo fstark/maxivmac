@@ -6187,7 +6187,7 @@ static void myfp_SetFPCR(uint32_t v)
 	}
 }
 
-static uint32_t myfp_GetFPCR(void)
+static uint32_t myfp_GetFPCR()
 {
 	uint32_t v = 0;
 
@@ -6230,12 +6230,12 @@ static void myfp_SetFPSR(uint32_t v)
 	myfp_env.FPSR = v;
 }
 
-static uint32_t myfp_GetFPSR(void)
+static uint32_t myfp_GetFPSR()
 {
 	return myfp_env.FPSR;
 }
 
-static uint8_t myfp_GetConditionCodeByte(void)
+static uint8_t myfp_GetConditionCodeByte()
 {
 	return (myfp_env.FPSR >> 24) & 0x0F;
 }
