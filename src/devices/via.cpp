@@ -67,8 +67,8 @@ extern void VIA1_iB0_ChangeNtfy();
 #ifdef VIA1_iB1_ChangeNtfy
 extern void VIA1_iB1_ChangeNtfy();
 #endif
-#define Ui3rPowOf2(p) (1 << (p))
-#define Ui3rTestBit(i, p) (((i) & Ui3rPowOf2(p)) != 0)
+#define BitMask(p) (1 << (p))
+#define TestBit(i, p) (((i) & BitMask(p)) != 0)
 
 #define kIntCA2 0
 #define kIntCA1 1
@@ -92,7 +92,7 @@ uint8_t VIA1Device::getORA(uint8_t Selection)
 	uint8_t Value = (~ cfg.oraCanIn) & Selection & cfg.oraFloatVal;
 
 	for (int bit = 0; bit < 8; bit++) {
-		if (Ui3rTestBit(cfg.oraCanIn, bit) && Ui3rTestBit(Selection, bit)) {
+		if (TestBit(cfg.oraCanIn, bit) && TestBit(Selection, bit)) {
 			int wireId = cfg.portAWires[bit];
 			if (wireId >= 0) {
 				Value |= (g_wires.get(wireId) << bit);
@@ -109,7 +109,7 @@ uint8_t VIA1Device::getORB(uint8_t Selection)
 	uint8_t Value = (~ cfg.orbCanIn) & Selection & cfg.orbFloatVal;
 
 	for (int bit = 0; bit < 8; bit++) {
-		if (Ui3rTestBit(cfg.orbCanIn, bit) && Ui3rTestBit(Selection, bit)) {
+		if (TestBit(cfg.orbCanIn, bit) && TestBit(Selection, bit)) {
 			int wireId = cfg.portBWires[bit];
 			if (wireId >= 0) {
 				Value |= (g_wires.get(wireId) << bit);
@@ -126,7 +126,7 @@ void VIA1Device::putORA(uint8_t Selection, uint8_t Data)
 
 	/* Iterate bits 7→0 to match the reference build's callback ordering */
 	for (int bit = 7; bit >= 0; bit--) {
-		if (Ui3rTestBit(cfg.oraCanOut, bit) && Ui3rTestBit(Selection, bit)) {
+		if (TestBit(cfg.oraCanOut, bit) && TestBit(Selection, bit)) {
 			int wireId = cfg.portAWires[bit];
 			if (wireId >= 0) {
 				g_wires.set(wireId, (Data >> bit) & 1);
@@ -141,7 +141,7 @@ void VIA1Device::putORB(uint8_t Selection, uint8_t Data)
 
 	/* Iterate bits 7→0 to match the reference build's callback ordering */
 	for (int bit = 7; bit >= 0; bit--) {
-		if (Ui3rTestBit(cfg.orbCanOut, bit) && Ui3rTestBit(Selection, bit)) {
+		if (TestBit(cfg.orbCanOut, bit) && TestBit(Selection, bit)) {
 			int wireId = cfg.portBWires[bit];
 			if (wireId >= 0) {
 				g_wires.set(wireId, (Data >> bit) & 1);
@@ -301,7 +301,7 @@ void VIA1Device::doTimer1Check()
 					uint16_t ntrans = 1 + ((v == 0) ? 0 :
 						(((deltaTemp - Temp) / v) >> 16));
 					NewTemp += (((uint32_t)v * ntrans) << 16);
-					if (Ui3rTestBit(t1cfg.orbCanOut, 7)) {
+					if (TestBit(t1cfg.orbCanOut, 7)) {
 						if ((d_.ACR & 0x80) != 0) { /* invert ? */
 							if ((ntrans & 1) != 0) {
 								int b7Wire = t1cfg.portBWires[7];
@@ -669,8 +669,8 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 		case kPCR:
 			if (WriteMem) {
 				d_.PCR = Data;
-#define Ui3rSetContains(s, i) (((s) & (1 << (i))) != 0)
-				if (! Ui3rSetContains(acfg.cb2ModesAllowed,
+#define SetContains(s, i) (((s) & (1 << (i))) != 0)
+				if (! SetContains(acfg.cb2ModesAllowed,
 					(d_.PCR >> 5) & 0x07))
 				{
 					ReportAbnormalID(0x040A,
@@ -680,7 +680,7 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					ReportAbnormalID(0x040B,
 						"Set d_.PCR CB1 INTERRUPT CONTROL?");
 				}
-				if (! Ui3rSetContains(acfg.ca2ModesAllowed,
+				if (! SetContains(acfg.ca2ModesAllowed,
 					(d_.PCR >> 1) & 0x07))
 				{
 					ReportAbnormalID(0x040C,
