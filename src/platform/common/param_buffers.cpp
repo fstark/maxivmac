@@ -66,7 +66,7 @@ tMacErr PbufNew(uint32_t count, tPbuf *r)
 	tMacErr err = mnvm_miscErr;
 
 	void *p = calloc(1, count);
-	if (NULL != p) {
+	if (nullptr != p) {
 		err = PbufNewFromPtr(p, count, r);
 	}
 

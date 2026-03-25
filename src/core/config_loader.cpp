@@ -150,11 +150,11 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			continue;
 		}
 		if (strncmp(arg, "--log-start=", 12) == 0) {
-			lc.logStart = (uint32_t)strtoul(arg + 12, NULL, 10);
+			lc.logStart = (uint32_t)strtoul(arg + 12, nullptr, 10);
 			continue;
 		}
 		if (strncmp(arg, "--log-count=", 12) == 0) {
-			lc.logCount = (uint32_t)strtoul(arg + 12, NULL, 10);
+			lc.logCount = (uint32_t)strtoul(arg + 12, nullptr, 10);
 			continue;
 		}
 		if (strncmp(arg, "--record=", 9) == 0) {
@@ -174,11 +174,11 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			continue;
 		}
 		if (strncmp(arg, "--snapshot-interval=", 20) == 0) {
-			lc.snapshotInterval = (uint32_t)strtoul(arg + 20, NULL, 10);
+			lc.snapshotInterval = (uint32_t)strtoul(arg + 20, nullptr, 10);
 			continue;
 		}
 		if (strncmp(arg, "--max-instructions=", 19) == 0) {
-			lc.maxInstructions = (uint64_t)strtoull(arg + 19, NULL, 10);
+			lc.maxInstructions = (uint64_t)strtoull(arg + 19, nullptr, 10);
 			continue;
 		}
 		if (strncmp(arg, "--title=", 8) == 0) {
@@ -235,11 +235,11 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			continue;
 		}
 		if (strcmp(arg, "--log-start") == 0 && i + 1 < argc) {
-			lc.logStart = (uint32_t)strtoul(argv[++i], NULL, 10);
+			lc.logStart = (uint32_t)strtoul(argv[++i], nullptr, 10);
 			continue;
 		}
 		if (strcmp(arg, "--log-count") == 0 && i + 1 < argc) {
-			lc.logCount = (uint32_t)strtoul(argv[++i], NULL, 10);
+			lc.logCount = (uint32_t)strtoul(argv[++i], nullptr, 10);
 			continue;
 		}
 

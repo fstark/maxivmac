@@ -110,13 +110,13 @@ uint8_t LT_NodeHint = 0;
 bool CertainlyNotMyPacket = false;
 #endif
 
-uint8_t * LT_TxBuffer = NULL;
+uint8_t * LT_TxBuffer = nullptr;
 
 /* Transmit state */
 uint16_t LT_TxBuffSz = 0;
 
 /* Receive state */
-uint8_t * LT_RxBuffer = NULL;
+uint8_t * LT_RxBuffer = nullptr;
 uint32_t LT_RxBuffSz = 0;
 
 #endif
@@ -976,7 +976,7 @@ bool MyEvtQNeedRecover = false;
 
 MyEvtQEl * MyEvtQElPreviousIn(void)
 {
-	MyEvtQEl *p = NULL;
+	MyEvtQEl *p = nullptr;
 	if (MyEvtQIn - MyEvtQOut != 0) {
 		p = &MyEvtQA[(MyEvtQIn - 1) & MyEvtQIMask];
 	}
@@ -986,7 +986,7 @@ MyEvtQEl * MyEvtQElPreviousIn(void)
 
 MyEvtQEl * MyEvtQElAlloc(void)
 {
-	MyEvtQEl *p = NULL;
+	MyEvtQEl *p = nullptr;
 	if (MyEvtQIn - MyEvtQOut >= MyEvtQSz) {
 		MyEvtQNeedRecover = true;
 	} else {
@@ -1011,7 +1011,7 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 	bool CurDown = ((*kpi & bit) != 0);
 	if (CurDown != down) {
 		MyEvtQEl *p = MyEvtQElAlloc();
-		if (NULL != p) {
+		if (nullptr != p) {
 			p->kind = MyEvtQElKindKey;
 			p->u.press.key = k;
 			p->u.press.down = down;
@@ -1033,7 +1033,7 @@ void MyMouseButtonSet(bool down)
 {
 	if (MyMouseButtonState != down) {
 		MyEvtQEl *p = MyEvtQElAlloc();
-		if (NULL != p) {
+		if (nullptr != p) {
 			p->kind = MyEvtQElKindMouseButton;
 			p->u.press.down = down;
 
@@ -1049,12 +1049,12 @@ void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
 	if ((dh != 0) || (dv != 0)) {
 		MyEvtQEl *p = MyEvtQElPreviousIn();
-		if ((NULL != p) && (MyEvtQElKindMouseDelta == p->kind)) {
+		if ((nullptr != p) && (MyEvtQElKindMouseDelta == p->kind)) {
 			p->u.pos.h += dh;
 			p->u.pos.v += dv;
 		} else {
 			p = MyEvtQElAlloc();
-			if (NULL != p) {
+			if (nullptr != p) {
 				p->kind = MyEvtQElKindMouseDelta;
 				p->u.pos.h = dh;
 				p->u.pos.v = dv;
@@ -1073,10 +1073,10 @@ void MyMousePositionSet(uint16_t h, uint16_t v)
 {
 	if ((h != MyMousePosCurH) || (v != MyMousePosCurV)) {
 		MyEvtQEl *p = MyEvtQElPreviousIn();
-		if ((NULL == p) || (MyEvtQElKindMousePos != p->kind)) {
+		if ((nullptr == p) || (MyEvtQElKindMousePos != p->kind)) {
 			p = MyEvtQElAlloc();
 		}
-		if (NULL != p) {
+		if (nullptr != p) {
 			p->kind = MyEvtQElKindMousePos;
 			p->u.pos.h = h;
 			p->u.pos.v = v;

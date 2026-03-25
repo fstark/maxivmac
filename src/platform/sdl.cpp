@@ -38,12 +38,12 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 #endif
 #endif
 
-static char *d_arg = NULL;
-static char *n_arg = NULL;
+static char *d_arg = nullptr;
+static char *n_arg = nullptr;
 
 #if CanGetAppPath
-static char *app_parent = NULL;
-static char *pref_dir = NULL;
+static char *app_parent = nullptr;
+static char *pref_dir = nullptr;
 #endif
 
 #ifdef _WIN32
@@ -53,7 +53,7 @@ static char *pref_dir = NULL;
 #endif
 
 #if SDL_MAJOR_VERSION >= 3
-static SDL_AudioStream *stream = NULL;
+static SDL_AudioStream *stream = nullptr;
 #endif
 
 static tMacErr ChildPath(char *x, char *y, char **r)
@@ -68,7 +68,7 @@ static tMacErr ChildPath(char *x, char *y, char **r)
 		{
 			int nr = nx + 1 + ny;
 			char *p = (char *)malloc(nr + 1);
-			if (p != NULL) {
+			if (p != nullptr) {
 				char *p2 = p;
 				(void) memcpy(p2, x, nx);
 				p2 += nx;
@@ -97,7 +97,7 @@ static tMacErr ChildPath(char *x, char *y, char **r)
 #endif
 
 #if ! dbglog_ToStdErr
-static FILE *dbglog_File = NULL;
+static FILE *dbglog_File = nullptr;
 #endif
 
 bool dbglog_open0(void)
@@ -106,14 +106,14 @@ bool dbglog_open0(void)
 	return true;
 #else
 #if CanGetAppPath
-	if (NULL == app_parent)
+	if (nullptr == app_parent)
 #endif
 	{
 		dbglog_File = fopen("dbglog.txt", "w");
 	}
 #if CanGetAppPath
 	else {
-		char *t = NULL;
+		char *t = nullptr;
 
 		if (mnvm_noErr == ChildPath(app_parent, "dbglog.txt", &t)) {
 			dbglog_File = fopen(t, "w");
@@ -123,7 +123,7 @@ bool dbglog_open0(void)
 	}
 #endif
 
-	return (NULL != dbglog_File);
+	return (nullptr != dbglog_File);
 #endif
 }
 
@@ -142,7 +142,7 @@ void dbglog_write0(char *s, uint32_t L)
 
 	SDL_Log("%s", t);
 #else
-	if (dbglog_File != NULL) {
+	if (dbglog_File != nullptr) {
 		(void) fwrite(s, 1, L, dbglog_File);
 	}
 #endif
@@ -151,9 +151,9 @@ void dbglog_write0(char *s, uint32_t L)
 void dbglog_close0(void)
 {
 #if ! dbglog_ToStdErr
-	if (dbglog_File != NULL) {
+	if (dbglog_File != nullptr) {
 		fclose(dbglog_File);
-		dbglog_File = NULL;
+		dbglog_File = nullptr;
 	}
 #endif
 }
@@ -198,7 +198,7 @@ static void InitDrives(void)
 	tDrive i;
 
 	for (i = 0; i < NumDrives; ++i) {
-		Drives[i] = NULL;
+		Drives[i] = nullptr;
 	}
 }
 
@@ -275,7 +275,7 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	DiskEjectedNotify(Drive_No);
 
 	fclose(refnum);
-	Drives[Drive_No] = NULL; /* not really needed */
+	Drives[Drive_No] = nullptr; /* not really needed */
 
 	return mnvm_noErr;
 }
@@ -352,11 +352,11 @@ static bool Sony_Insert1(char *drivepath, bool silentfail)
 	bool locked = false;
 	/* printf("Sony_Insert1 %s\n", drivepath); */
 	FILE * refnum = fopen(drivepath, "rb+");
-	if (NULL == refnum) {
+	if (nullptr == refnum) {
 		locked = true;
 		refnum = fopen(drivepath, "rb");
 	}
-	if (NULL == refnum) {
+	if (nullptr == refnum) {
 		if (! silentfail) {
 			MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, false);
 		}
@@ -373,7 +373,7 @@ static tMacErr LoadMacRomFrom(char *path)
 	int File_Size;
 
 	ROM_File = fopen(path, "rb");
-	if (NULL == ROM_File) {
+	if (nullptr == ROM_File) {
 		err = mnvm_fnfErr;
 	} else {
 		const uint32_t romSize = g_machine->config().romSize;
@@ -418,16 +418,16 @@ static bool Sony_Insert2(char *s)
 {
 	char *d =
 #if CanGetAppPath
-		(NULL == d_arg) ? app_parent :
+		(nullptr == d_arg) ? app_parent :
 #endif
 		d_arg;
 	bool IsOk = false;
 
-	if (NULL == d) {
+	if (nullptr == d) {
 		IsOk = Sony_Insert1(s, true);
 	} else
 	{
-		char *t = NULL;
+		char *t = nullptr;
 
 		if (mnvm_noErr == ChildPath(d, s, &t)) {
 			IsOk = Sony_Insert1(t, true);
@@ -471,17 +471,17 @@ static bool LoadInitialImages(void)
 
 /* --- ROM --- */
 
-static char *rom_path = NULL;
+static char *rom_path = nullptr;
 
 #if CanGetAppPath
 static tMacErr LoadMacRomFromPrefDir(void)
 {
 	tMacErr err;
-	char *t = NULL;
-	char *t2 = NULL;
+	char *t = nullptr;
+	char *t2 = nullptr;
 	const char *romFileName = g_machine->config().romFileName;
 
-	if (NULL == pref_dir) {
+	if (nullptr == pref_dir) {
 		err = mnvm_fnfErr;
 	} else
 	if (mnvm_noErr != (err =
@@ -511,15 +511,15 @@ static tMacErr LoadMacRomFromAppPar(void)
 	const char *romFileName = g_machine->config().romFileName;
 	char *d =
 #if CanGetAppPath
-		(NULL == d_arg) ? app_parent :
+		(nullptr == d_arg) ? app_parent :
 #endif
 		d_arg;
 
-	if (NULL == d) {
+	if (nullptr == d) {
 		err = mnvm_fnfErr;
 	} else
 	{
-		char *t = NULL;
+		char *t = nullptr;
 
 		if (mnvm_noErr != (err =
 			ChildPath(d, const_cast<char*>(romFileName), &t)))
@@ -540,7 +540,7 @@ static bool LoadMacRom(void)
 {
 	tMacErr err;
 
-	if ((NULL == rom_path)
+	if ((nullptr == rom_path)
 		|| (mnvm_fnfErr == (err = LoadMacRomFrom(rom_path))))
 	if (mnvm_fnfErr == (err = LoadMacRomFromAppPar()))
 #if CanGetAppPath
@@ -587,16 +587,16 @@ static bool CurSpeedStopped = true;
 static SDL_Surface *my_surface = nullptr;
 #define my_format (my_surface->format)
 #elif SDL_MAJOR_VERSION >= 2
-static SDL_Window *my_main_wind = NULL;
-static SDL_Renderer *my_renderer = NULL;
-static SDL_Texture *my_texture = NULL;
+static SDL_Window *my_main_wind = nullptr;
+static SDL_Renderer *my_renderer = nullptr;
+static SDL_Texture *my_texture = nullptr;
 static
 #if SDL_MAJOR_VERSION >= 3
 const SDL_PixelFormatDetails
 #else
 SDL_PixelFormat
 #endif
-*my_format = NULL;
+*my_format = nullptr;
 #endif
 
 static uint8_t * ScalingBuff = nullptr;
@@ -956,7 +956,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		#else
 		0 !=
 		#endif
-		SDL_LockTexture(my_texture, NULL, &pixels, &pitch)
+		SDL_LockTexture(my_texture, nullptr, &pixels, &pitch)
 	) {
 		return;
 	}
@@ -981,7 +981,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		for (i = 0; i < CLUT_size; ++i) {
 			CLUT_pixel[i] = SDL_MapRGB(my_format,
 				#if SDL_MAJOR_VERSION >= 3
-				NULL,
+				nullptr,
 				#endif
 				CLUT_reds[i] >> 8,
 				CLUT_greens[i] >> 8,
@@ -991,7 +991,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		BWLUT_pixel[1] = SDL_MapRGB(
 			my_format,
 			#if SDL_MAJOR_VERSION >= 3
-			NULL,
+			nullptr,
 			#endif
 			0, 0, 0
 		);
@@ -999,7 +999,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		BWLUT_pixel[0] = SDL_MapRGB(
 			my_format,
 			#if SDL_MAJOR_VERSION >= 3
-			NULL,
+			nullptr,
 			#endif
 			255, 255, 255
 		);
@@ -2473,9 +2473,9 @@ static bool MySound_Init(void)
 	/* Open the audio device */
 	if (
 		#if SDL_MAJOR_VERSION >= 3
-		stream == NULL
+		stream == nullptr
 		#else
-		SDL_OpenAudio(&desired, NULL) < 0
+		SDL_OpenAudio(&desired, nullptr) < 0
 		#endif
 	) {
 		fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
@@ -3135,7 +3135,7 @@ static void MacRoman2UniCodeData(uint8_t *s, uint32_t L, char *t)
 	uint32_t L = PbufSize[i];
 	uint32_t sz = MacRoman2UniCodeSize(s, L);
 
-	if (NULL == (p = (char *)malloc(sz + 1))) {
+	if (nullptr == (p = (char *)malloc(sz + 1))) {
 		err = mnvm_miscErr;
 	} else {
 		MacRoman2UniCodeData(s, L, p);
@@ -3592,10 +3592,10 @@ label_retry:
 
 	tMacErr err;
 	uint32_t L;
-	char *s = NULL;
+	char *s = nullptr;
 	tPbuf t = NotAPbuf;
 
-	if (NULL == (s = SDL_GetClipboardText())) {
+	if (nullptr == (s = SDL_GetClipboardText())) {
 		err = mnvm_miscErr;
 	} else
 	if (mnvm_noErr != (err =
@@ -3619,7 +3619,7 @@ label_retry:
 	if (NotAPbuf != t) {
 		PbufDispose(t);
 	}
-	if (NULL != s) {
+	if (nullptr != s) {
 		SDL_free(s);
 	}
 
@@ -3915,7 +3915,7 @@ static bool Screen_Init(void)
 #endif
 	{
 #if 1 == SDL_MAJOR_VERSION
-		SDL_WM_SetCaption((NULL != n_arg) ? n_arg : kStrAppName, NULL);
+		SDL_WM_SetCaption((nullptr != n_arg) ? n_arg : kStrAppName, nullptr);
 #endif /* 1 == SDL_MAJOR_VERSION */
 
 		v = true;
@@ -4114,7 +4114,7 @@ static bool CreateMainWindow(void)
 		/* 32 */ /* 24 */ /* 16 */ 8,
 #endif
 		flags);
-	if (NULL == my_surface) {
+	if (nullptr == my_surface) {
 		fprintf(stderr, "SDL_SetVideoMode fails: %s\n",
 			SDL_GetError());
 	} else {
@@ -4264,8 +4264,8 @@ static bool CreateMainWindow(void)
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 #endif
 
-	if (NULL == (my_main_wind = SDL_CreateWindow(
-		(NULL != n_arg) ? n_arg : kStrAppName,
+	if (nullptr == (my_main_wind = SDL_CreateWindow(
+		(nullptr != n_arg) ? n_arg : kStrAppName,
 		#if SDL_MAJOR_VERSION <= 2
 		NewWindowX, NewWindowY,
 		#endif
@@ -4275,7 +4275,7 @@ static bool CreateMainWindow(void)
 		fprintf(stderr, "SDL_CreateWindow fails: %s\n",
 			SDL_GetError());
 	} else
-	if (NULL == (my_renderer = SDL_CreateRenderer(
+	if (nullptr == (my_renderer = SDL_CreateRenderer(
 		my_main_wind,
 		#if SDL_MAJOR_VERSION <= 2
 		-1,
@@ -4315,7 +4315,7 @@ static bool CreateMainWindow(void)
 			SDL_GetError());
 	#endif
 	} else
-	if (NULL == (my_texture = SDL_CreateTexture(
+	if (nullptr == (my_texture = SDL_CreateTexture(
 		my_renderer,
 		SDL_PIXELFORMAT_ARGB8888,
 		SDL_TEXTUREACCESS_STREAMING,
@@ -4341,7 +4341,7 @@ static bool CreateMainWindow(void)
 	#endif
 	} else
 	if (
-		NULL == (
+		nullptr == (
 			my_format =
 			#if SDL_MAJOR_VERSION >= 3
 			SDL_GetPixelFormatDetails
@@ -4435,36 +4435,36 @@ static void CloseMainWindow(void)
 		Dispose of anything set up by CreateMainWindow.
 	*/
 
-	if (NULL != my_format) {
+	if (nullptr != my_format) {
 		#if SDL_MAJOR_VERSION <= 2
 		SDL_FreeFormat(my_format);
 		#endif
-		my_format = NULL;
+		my_format = nullptr;
 	}
 
-	if (NULL != my_texture) {
+	if (nullptr != my_texture) {
 		SDL_DestroyTexture(my_texture);
-		my_texture = NULL;
+		my_texture = nullptr;
 	}
 
-	if (NULL != my_renderer) {
+	if (nullptr != my_renderer) {
 		SDL_DestroyRenderer(my_renderer);
-		my_renderer = NULL;
+		my_renderer = nullptr;
 	}
 
-	if (NULL != my_main_wind) {
+	if (nullptr != my_main_wind) {
 		SDL_DestroyWindow(my_main_wind);
-		my_main_wind = NULL;
+		my_main_wind = nullptr;
 	}
 }
 
 #if EnableRecreateW
 static void ZapMyWState(void)
 {
-	my_main_wind = NULL;
-	my_renderer = NULL;
-	my_texture = NULL;
-	my_format = NULL;
+	my_main_wind = nullptr;
+	my_renderer = nullptr;
+	my_texture = nullptr;
+	my_format = nullptr;
 }
 #endif
 
@@ -4913,7 +4913,7 @@ label_retry:
 #endif
 				/* long option (--foo) without '=': next argv is its value;
 				   skip it so it is not mistaken for a disk image path */
-				if ('-' == pa[1] && NULL == strchr(pa, '=')) {
+				if ('-' == pa[1] && nullptr == strchr(pa, '=')) {
 					if (i < my_argc && '-' != my_argv[i][0]) {
 						++i; /* skip the value */
 					}
@@ -5068,7 +5068,7 @@ static bool AllocMyMemory(void)
 	ReserveAllocAll();
 	n = ReserveAllocOffset;
 	ReserveAllocBigBlock = (uint8_t *)calloc(1, n);
-	if (NULL == ReserveAllocBigBlock) {
+	if (nullptr == ReserveAllocBigBlock) {
 		MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, true);
 	} else {
 		ReserveAllocOffset = 0;
