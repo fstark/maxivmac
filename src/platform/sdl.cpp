@@ -41,6 +41,8 @@
 
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
+#include "core/machine_obj.h"
+#include "core/main.h"
 
 #ifdef WantOSGLUSDL
 
@@ -104,7 +106,7 @@ static tMacErr ChildPath(char *x, char *y, char **r)
 		}
 		{
 			int nr = nx + 1 + ny;
-			char *p = malloc(nr + 1);
+			char *p = (char *)malloc(nr + 1);
 			if (p != NULL) {
 				char *p2 = p;
 				(void) memcpy(p2, x, nx);
@@ -370,6 +372,24 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	return vSonyEject0(Drive_No, false);
 }
 
+#if IncludeSonyNew
+ tMacErr vSonyEjectDelete(tDrive Drive_No)
+{
+	/* SDL backend: no path tracking, so just eject without deleting */
+	return vSonyEject0(Drive_No, true);
+}
+#endif
+
+#if IncludeSonyGetName
+ tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
+{
+	/* SDL backend: drive path not tracked, cannot return name */
+	(void)Drive_No;
+	(void)r;
+	return mnvm_miscErr;
+}
+#endif
+
 static void UnInitDrives(void)
 {
 	tDrive i;
@@ -443,8 +463,9 @@ static tMacErr LoadMacRomFrom(char *path)
 	if (NULL == ROM_File) {
 		err = mnvm_fnfErr;
 	} else {
-		File_Size = MyFileRead(ROM, 1, kROM_Size, ROM_File);
-		if (File_Size != kROM_Size) {
+		const uint32_t romSize = g_machine->config().romSize;
+		File_Size = MyFileRead(ROM, 1, romSize, ROM_File);
+		if ((uint32_t)File_Size != romSize) {
 #ifdef MyFileEof
 			if (MyFileEof(ROM_File))
 #else
@@ -549,6 +570,7 @@ static tMacErr LoadMacRomFromPrefDir(void)
 	tMacErr err;
 	char *t = NULL;
 	char *t2 = NULL;
+	const char *romFileName = g_machine->config().romFileName;
 
 	if (NULL == pref_dir) {
 		err = mnvm_fnfErr;
@@ -559,7 +581,7 @@ static tMacErr LoadMacRomFromPrefDir(void)
 		/* fail */
 	} else
 	if (mnvm_noErr != (err =
-		ChildPath(t, RomFileName, &t2)))
+		ChildPath(t, const_cast<char*>(romFileName), &t2)))
 	{
 		/* fail */
 	} else
@@ -577,6 +599,7 @@ static tMacErr LoadMacRomFromPrefDir(void)
 static tMacErr LoadMacRomFromAppPar(void)
 {
 	tMacErr err;
+	const char *romFileName = g_machine->config().romFileName;
 	char *d =
 #if CanGetAppPath
 		(NULL == d_arg) ? app_parent :
@@ -590,7 +613,7 @@ static tMacErr LoadMacRomFromAppPar(void)
 		char *t = NULL;
 
 		if (mnvm_noErr != (err =
-			ChildPath(d, RomFileName, &t)))
+			ChildPath(d, const_cast<char*>(romFileName), &t)))
 		{
 			/* fail */
 		} else
@@ -614,7 +637,7 @@ static bool LoadMacRom(void)
 #if CanGetAppPath
 	if (mnvm_fnfErr == (err = LoadMacRomFromPrefDir()))
 #endif
-	if (mnvm_fnfErr == (err = LoadMacRomFrom(RomFileName)))
+	if (mnvm_fnfErr == (err = LoadMacRomFrom(const_cast<char*>(g_machine->config().romFileName))))
 	{
 	}
 
@@ -741,70 +764,168 @@ static uint8_t * CLUT_final;
 #endif /* EnableMagnify && ! UseSDLscaling */
 
 
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
+/* Color copy functions for runtime depths 1, 2, 3 (CLUT-indexed).
+   Each src depth needs its own instantiation since ScrnMapr_SrcDepth
+   must be a compile-time constant.
+   Note: screen_map.h #undefines Src/Dst/Map after each inclusion,
+   so they must be redefined for every instantiation. */
 
-#define ScrnMapr_DoMap UpdateColorDepth3Copy
+#define ScrnMapr_DoMap UpdateColorSrc1Dst3Copy
 #define ScrnMapr_Src GetCurDrawBuff()
 #define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth vMacScreenDepth
+#define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
-
 #include "platform/common/screen_map.h"
 
-#define ScrnMapr_DoMap UpdateColorDepth4Copy
+#define ScrnMapr_DoMap UpdateColorSrc1Dst4Copy
 #define ScrnMapr_Src GetCurDrawBuff()
 #define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth vMacScreenDepth
+#define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 4
 #define ScrnMapr_Map CLUT_final
-
 #include "platform/common/screen_map.h"
 
-#define ScrnMapr_DoMap UpdateColorDepth5Copy
+#define ScrnMapr_DoMap UpdateColorSrc1Dst5Copy
 #define ScrnMapr_Src GetCurDrawBuff()
 #define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth vMacScreenDepth
+#define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
+#include "platform/common/screen_map.h"
 
+#define ScrnMapr_DoMap UpdateColorSrc2Dst3Copy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 2
+#define ScrnMapr_DstDepth 3
+#define ScrnMapr_Map CLUT_final
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc2Dst4Copy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 2
+#define ScrnMapr_DstDepth 4
+#define ScrnMapr_Map CLUT_final
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc2Dst5Copy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 2
+#define ScrnMapr_DstDepth 5
+#define ScrnMapr_Map CLUT_final
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc3Dst3Copy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 3
+#define ScrnMapr_DstDepth 3
+#define ScrnMapr_Map CLUT_final
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc3Dst4Copy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 3
+#define ScrnMapr_DstDepth 4
+#define ScrnMapr_Map CLUT_final
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc3Dst5Copy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 3
+#define ScrnMapr_DstDepth 5
+#define ScrnMapr_Map CLUT_final
 #include "platform/common/screen_map.h"
 
 #if EnableMagnify && ! UseSDLscaling
 
-#define ScrnMapr_DoMap UpdateColorDepth3ScaledCopy
+#define ScrnMapr_DoMap UpdateColorSrc1Dst3ScaledCopy
 #define ScrnMapr_Src GetCurDrawBuff()
 #define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth vMacScreenDepth
+#define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
 #define ScrnMapr_Scale MyWindowScale
-
 #include "platform/common/screen_map.h"
 
-#define ScrnMapr_DoMap UpdateColorDepth4ScaledCopy
+#define ScrnMapr_DoMap UpdateColorSrc1Dst4ScaledCopy
 #define ScrnMapr_Src GetCurDrawBuff()
 #define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth vMacScreenDepth
+#define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 4
 #define ScrnMapr_Map CLUT_final
 #define ScrnMapr_Scale MyWindowScale
-
 #include "platform/common/screen_map.h"
 
-#define ScrnMapr_DoMap UpdateColorDepth5ScaledCopy
+#define ScrnMapr_DoMap UpdateColorSrc1Dst5ScaledCopy
 #define ScrnMapr_Src GetCurDrawBuff()
 #define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth vMacScreenDepth
+#define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
 #define ScrnMapr_Scale MyWindowScale
+#include "platform/common/screen_map.h"
 
+#define ScrnMapr_DoMap UpdateColorSrc2Dst3ScaledCopy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 2
+#define ScrnMapr_DstDepth 3
+#define ScrnMapr_Map CLUT_final
+#define ScrnMapr_Scale MyWindowScale
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc2Dst4ScaledCopy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 2
+#define ScrnMapr_DstDepth 4
+#define ScrnMapr_Map CLUT_final
+#define ScrnMapr_Scale MyWindowScale
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc2Dst5ScaledCopy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 2
+#define ScrnMapr_DstDepth 5
+#define ScrnMapr_Map CLUT_final
+#define ScrnMapr_Scale MyWindowScale
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc3Dst3ScaledCopy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 3
+#define ScrnMapr_DstDepth 3
+#define ScrnMapr_Map CLUT_final
+#define ScrnMapr_Scale MyWindowScale
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc3Dst4ScaledCopy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 3
+#define ScrnMapr_DstDepth 4
+#define ScrnMapr_Map CLUT_final
+#define ScrnMapr_Scale MyWindowScale
+#include "platform/common/screen_map.h"
+
+#define ScrnMapr_DoMap UpdateColorSrc3Dst5ScaledCopy
+#define ScrnMapr_Src GetCurDrawBuff()
+#define ScrnMapr_Dst ScalingBuff
+#define ScrnMapr_SrcDepth 3
+#define ScrnMapr_DstDepth 5
+#define ScrnMapr_Map CLUT_final
+#define ScrnMapr_Scale MyWindowScale
 #include "platform/common/screen_map.h"
 
 #endif /* EnableMagnify && ! UseSDLscaling */
-
-#endif
 
 
 static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
@@ -815,9 +936,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	int j;
 	uint8_t *p;
 	Uint32 pixel;
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
 	Uint32 CLUT_pixel[CLUT_size];
-#endif
 	Uint32 BWLUT_pixel[2];
 	uint32_t top2;
 	uint32_t left2;
@@ -949,9 +1068,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	}
 #endif
 
-#if 0 != vMacScreenDepth
-	if (UseColorMode) {
-#if vMacScreenDepth < 4
+	if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
 		for (i = 0; i < CLUT_size; ++i) {
 			CLUT_pixel[i] = SDL_MapRGB(my_format,
 				#if SDL_MAJOR_VERSION >= 3
@@ -961,10 +1078,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 				CLUT_greens[i] >> 8,
 				CLUT_blues[i] >> 8);
 		}
-#endif
-	} else
-#endif
-	{
+	} else {
 		BWLUT_pixel[1] = SDL_MapRGB(
 			my_format,
 			#if SDL_MAJOR_VERSION >= 3
@@ -985,9 +1099,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 	if ((0 == ((bpp - 1) & bpp)) /* a power of 2 */
 		&& (pitch == ExpectedPitch)
-#if (vMacScreenDepth > 3)
-		&& ! UseColorMode
-#endif
+		&& (vMacScreenDepth <= 3 || ! UseColorMode)
 		)
 	{
 		int k;
@@ -996,28 +1108,19 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		int a;
 #endif
 		int PixPerByte =
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-			UseColorMode ? (1 << (3 - vMacScreenDepth)) :
-#endif
-			8;
+			(UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4)
+			? (1 << (3 - vMacScreenDepth)) : 8;
 		Uint8 *p4 = (Uint8 *)CLUT_final;
 
 		for (i = 0; i < 256; ++i) {
 			for (k = PixPerByte; --k >= 0; ) {
 
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-				if (UseColorMode) {
+				if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
 					v = CLUT_pixel[
-#if 3 == vMacScreenDepth
-						i
-#else
-						(i >> (k << vMacScreenDepth))
-							& (CLUT_size - 1)
-#endif
-						];
-				} else
-#endif
-				{
+						(vMacScreenDepth == 3) ? i :
+						((i >> (k << vMacScreenDepth)) & (CLUT_size - 1))
+					];
+				} else {
 					v = BWLUT_pixel[(i >> k) & 1];
 				}
 
@@ -1044,42 +1147,24 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 		ScalingBuff = (uint8_t *)pixels;
 
-#if (0 != vMacScreenDepth) && (vMacScreenDepth < 4)
-		if (UseColorMode) {
+		if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
 #if EnableMagnify && ! UseSDLscaling
 			if (UseMagnify) {
-				switch (bpp) {
-					case 1:
-						UpdateColorDepth3ScaledCopy(
-							top, left, bottom, right);
-						break;
-					case 2:
-						UpdateColorDepth4ScaledCopy(
-							top, left, bottom, right);
-						break;
-					case 4:
-						UpdateColorDepth5ScaledCopy(
-							top, left, bottom, right);
-						break;
+				switch (vMacScreenDepth) {
+					case 1: switch (bpp) { case 1: UpdateColorSrc1Dst3ScaledCopy(top,left,bottom,right); break; case 2: UpdateColorSrc1Dst4ScaledCopy(top,left,bottom,right); break; case 4: UpdateColorSrc1Dst5ScaledCopy(top,left,bottom,right); break; } break;
+					case 2: switch (bpp) { case 1: UpdateColorSrc2Dst3ScaledCopy(top,left,bottom,right); break; case 2: UpdateColorSrc2Dst4ScaledCopy(top,left,bottom,right); break; case 4: UpdateColorSrc2Dst5ScaledCopy(top,left,bottom,right); break; } break;
+					case 3: switch (bpp) { case 1: UpdateColorSrc3Dst3ScaledCopy(top,left,bottom,right); break; case 2: UpdateColorSrc3Dst4ScaledCopy(top,left,bottom,right); break; case 4: UpdateColorSrc3Dst5ScaledCopy(top,left,bottom,right); break; } break;
 				}
 			} else
 #endif
 			{
-				switch (bpp) {
-					case 1:
-						UpdateColorDepth3Copy(top, left, bottom, right);
-						break;
-					case 2:
-						UpdateColorDepth4Copy(top, left, bottom, right);
-						break;
-					case 4:
-						UpdateColorDepth5Copy(top, left, bottom, right);
-						break;
+				switch (vMacScreenDepth) {
+					case 1: switch (bpp) { case 1: UpdateColorSrc1Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc1Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc1Dst5Copy(top,left,bottom,right); break; } break;
+					case 2: switch (bpp) { case 1: UpdateColorSrc2Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc2Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc2Dst5Copy(top,left,bottom,right); break; } break;
+					case 3: switch (bpp) { case 1: UpdateColorSrc3Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc3Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc3Dst5Copy(top,left,bottom,right); break; } break;
 				}
 			}
-		} else
-#endif
-		{
+		} else {
 #if EnableMagnify && ! UseSDLscaling
 			if (UseMagnify) {
 				switch (bpp) {
@@ -1132,40 +1217,37 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 				}
 #endif
 
-#if 0 != vMacScreenDepth
-				if (UseColorMode) {
-#if vMacScreenDepth < 4
-					p = the_data + ((i0 * vMacScreenWidth + j0)
-						>> (3 - vMacScreenDepth));
-					{
-						uint8_t k = (*p >> (((~ j0)
-								& ((1 << (3 - vMacScreenDepth)) - 1))
-							<< vMacScreenDepth))
-							& (CLUT_size - 1);
-						pixel = CLUT_pixel[k];
-					}
-#elif 4 == vMacScreenDepth
-					p = the_data + ((i0 * vMacScreenWidth + j0) << 1);
-					{
-						uint16_t t0 = do_get_mem_word(p);
+				if (UseColorMode && vMacScreenDepth > 0) {
+					if (vMacScreenDepth < 4) {
+						p = the_data + ((i0 * vMacScreenWidth + j0)
+							>> (3 - vMacScreenDepth));
+						{
+							uint8_t k = (*p >> (((~ j0)
+									& ((1 << (3 - vMacScreenDepth)) - 1))
+								<< vMacScreenDepth))
+								& (CLUT_size - 1);
+							pixel = CLUT_pixel[k];
+						}
+					} else if (vMacScreenDepth == 4) {
+						p = the_data + ((i0 * vMacScreenWidth + j0) << 1);
+						{
+							uint16_t t0 = do_get_mem_word(p);
+							pixel = SDL_MapRGB(my_format,
+								((t0 & 0x7C00) >> 7)
+									| ((t0 & 0x7000) >> 12),
+								((t0 & 0x03E0) >> 2)
+									| ((t0 & 0x0380) >> 7),
+								((t0 & 0x001F) << 3)
+									| ((t0 & 0x001C) >> 2));
+						}
+					} else { /* depth == 5 */
+						p = the_data + ((i0 * vMacScreenWidth + j0) << 2);
 						pixel = SDL_MapRGB(my_format,
-							((t0 & 0x7C00) >> 7)
-								| ((t0 & 0x7000) >> 12),
-							((t0 & 0x03E0) >> 2)
-								| ((t0 & 0x0380) >> 7),
-							((t0 & 0x001F) << 3)
-								| ((t0 & 0x001C) >> 2));
+							p[1],
+							p[2],
+							p[3]);
 					}
-#elif 5 == vMacScreenDepth
-					p = the_data + ((i0 * vMacScreenWidth + j0) << 2);
-					pixel = SDL_MapRGB(my_format,
-						p[1],
-						p[2],
-						p[3]);
-#endif
-				} else
-#endif
-				{
+				} else {
 					p = the_data + ((i0 * vMacScreenWidth + j0) / 8);
 					pixel = BWLUT_pixel[(*p >> ((~ j0) & 0x7)) & 1];
 				}
@@ -3157,11 +3239,11 @@ static void MacRoman2UniCodeData(uint8_t *s, uint32_t L, char *t)
 	*/
 	tMacErr err;
 	char *p;
-	uint8_t * s = PbufDat[i];
+	uint8_t * s = (uint8_t *)PbufDat[i];
 	uint32_t L = PbufSize[i];
 	uint32_t sz = MacRoman2UniCodeSize(s, L);
 
-	if (NULL == (p = malloc(sz + 1))) {
+	if (NULL == (p = (char *)malloc(sz + 1))) {
 		err = mnvm_miscErr;
 	} else {
 		MacRoman2UniCodeData(s, L, p);
@@ -3641,7 +3723,7 @@ label_retry:
 	{
 		err = mnvm_noErr;
 
-		UniCodeStr2MacRoman(s, PbufDat[t]);
+		UniCodeStr2MacRoman(s, (char *)PbufDat[t]);
 		*r = t;
 		t = NotAPbuf;
 	}
@@ -4450,9 +4532,7 @@ static bool CreateMainWindow(void)
 		}
 #endif
 
-#if 0 != vMacScreenDepth
 		ColorModeWorks = true;
-#endif
 
 		v = true;
 	}
@@ -4930,34 +5010,30 @@ label_retry:
 					goto label_retry;
 				}
 			} else
-			if (0 == strcmp(pa, "-n"))
+			if (0 == strncmp(pa, "--rom=", 6))
 			{
-				if (i < my_argc) {
-					n_arg = my_argv[i++];
-					goto label_retry;
-				}
-			} else
-			if (0 == strcmp(pa, "-d"))
-			{
-				if (i < my_argc) {
-					d_arg = my_argv[i++];
-					goto label_retry;
-				}
-			} else
-			if (('p' == pa[1]) && ('s' == pa[2]) && ('n' == pa[3]))
-			{
-				/* seen in OS X. ignore */
+				/* --rom=path form (also handled by ProgramEarlyInit) */
+				rom_path = pa + 6;
 				goto label_retry;
 			} else
 			{
-				MacMsg(kStrBadArgTitle, kStrBadArgMessage, false);
+				/* ignore unrecognized options (e.g. --model, --help
+				   already consumed by ProgramEarlyInit, or OS X -psn_*) */
 #if dbglog_HAVE
-				dbglog_writeln("bad command line argument");
+				dbglog_writeln("ignoring command line argument");
 				dbglog_writeln(pa);
 #endif
+				/* long option (--foo) without '=': next argv is its value;
+				   skip it so it is not mistaken for a disk image path */
+				if ('-' == pa[1] && NULL == strchr(pa, '=')) {
+					if (i < my_argc && '-' != my_argv[i][0]) {
+						++i; /* skip the value */
+					}
+				}
+				goto label_retry;
 			}
 		} else {
-			(void) Sony_Insert1(pa, false);
+			/* positional disk paths are handled via lc.diskPaths in main() */
 			goto label_retry;
 		}
 	}
@@ -5092,7 +5168,7 @@ static void ReserveAllocAll(void)
 #if dbglog_HAVE
 	dbglog_ReserveAlloc();
 #endif
-	ReserveAllocOneBlock(&ROM, kROM_Size, 5, false);
+	ReserveAllocOneBlock(&ROM, g_machine->config().romSize, 5, false);
 
 	ReserveAllocOneBlock(&screencomparebuff,
 		vMacScreenNumBytes, 5, true);
@@ -5166,32 +5242,32 @@ static void UninitWhereAmI(void)
 
 static bool InitOSGLU(void)
 {
-	/*
-		OSGLUxxx common:
-		Run all the initializations needed for the program.
-	*/
+#define INIT_STEP(name, expr) \
+	fprintf(stderr, "[SDL init] " name "...\n"); \
+	if (!(expr)) { fprintf(stderr, "[SDL init] " name " FAILED\n"); return false; } \
+	fprintf(stderr, "[SDL init] " name " ok\n");
 
-	if (AllocMyMemory())
+	INIT_STEP("AllocMyMemory", AllocMyMemory())
 #if CanGetAppPath
-	if (InitWhereAmI())
+	INIT_STEP("InitWhereAmI", InitWhereAmI())
 #endif
 #if dbglog_HAVE
-	if (dbglog_open())
+	/* dbglog_open is best-effort: fail to open log file is non-fatal */
+	dbglog_open();
 #endif
-	if (ScanCommandLine())
-	if (LoadMacRom())
-	if (LoadInitialImages())
-	if (InitLocationDat())
-	if (Screen_Init()) /* StevenSYS: This needs to run first so the audio subsystem is initialized when it tries to initialize the sound */
+	INIT_STEP("ScanCommandLine", ScanCommandLine())
+	INIT_STEP("LoadMacRom", LoadMacRom())
+	INIT_STEP("LoadInitialImages", LoadInitialImages())
+	INIT_STEP("InitLocationDat", InitLocationDat())
+	INIT_STEP("Screen_Init", Screen_Init())
 #if MySoundEnabled
-	if (MySound_Init())
+	INIT_STEP("MySound_Init", MySound_Init())
 #endif
-	if (CreateMainWindow())
-	if (WaitForRom())
-	{
-		return true;
-	}
-	return false;
+	INIT_STEP("CreateMainWindow", CreateMainWindow())
+	INIT_STEP("WaitForRom", WaitForRom())
+
+#undef INIT_STEP
+	return true;
 }
 
 static void UnInitOSGLU(void)
@@ -5249,11 +5325,35 @@ int main(int argc, char **argv)
 	my_argc = argc;
 	my_argv = argv;
 
+	ProgramEarlyInit(argc, argv);
+
+	const LaunchConfig& lc = GetLaunchConfig();
+	if (lc.help) {
+		return 0;
+	}
+
+	/* Seed SDL-specific options from common launch config */
+	static std::string s_title;
+	static std::string s_romDir;
+	if (!lc.title.empty()) {
+		s_title = lc.title;
+		n_arg = const_cast<char*>(s_title.c_str());
+	}
+	if (!lc.romDir.empty()) {
+		s_romDir = lc.romDir;
+		d_arg = const_cast<char*>(s_romDir.c_str());
+	}
+
+	/* Insert disk images from command line */
 	ZapOSGLUVars();
 	if (InitOSGLU()) {
+		for (const auto& diskPath : lc.diskPaths) {
+			(void) Sony_Insert1(const_cast<char*>(diskPath.c_str()), false);
+		}
 		ProgramMain();
 	}
 	UnInitOSGLU();
+	ProgramCleanup();
 
 	return 0;
 }

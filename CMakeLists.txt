@@ -130,11 +130,7 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
 #include <sys/time.h>")
 elseif(MINIVMAC_BACKEND STREQUAL "sdl")
     set(MINIVMAC_BACKEND_TAG "SDL")
-    if(APPLE)
-        set(MINIVMAC_IS_BUNDLE 1)
-    else()
-        set(MINIVMAC_IS_BUNDLE 0)
-    endif()
+    set(MINIVMAC_IS_BUNDLE 0)
     set(CNFUIOSG_SYSTEM_INCLUDES
 "#include <SDL.h>
 #include <stdio.h>
@@ -274,16 +270,7 @@ if(MINIVMAC_BACKEND STREQUAL "cocoa")
 elseif(MINIVMAC_BACKEND STREQUAL "sdl")
     list(APPEND MINIVMAC_SOURCES src/platform/sdl.cpp)
 
-    if(APPLE)
-        add_executable(maxivmac MACOSX_BUNDLE ${MINIVMAC_SOURCES})
-        set_target_properties(maxivmac PROPERTIES
-            MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/src/config/Info.plist"
-            MACOSX_BUNDLE_BUNDLE_NAME "Maxi vMac"
-            MACOSX_BUNDLE_GUI_IDENTIFIER "com.gryphel.maxivmac"
-        )
-    else()
-        add_executable(maxivmac ${MINIVMAC_SOURCES})
-    endif()
+    add_executable(maxivmac ${MINIVMAC_SOURCES})
 
     # Try SDL3 first, fall back to SDL2
     find_package(SDL3 QUIET)

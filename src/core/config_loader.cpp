@@ -181,6 +181,14 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			lc.maxInstructions = (uint64_t)strtoull(arg + 19, NULL, 10);
 			continue;
 		}
+		if (strncmp(arg, "--title=", 8) == 0) {
+			lc.title = arg + 8;
+			continue;
+		}
+		if (strncmp(arg, "--romdir=", 9) == 0) {
+			lc.romDir = arg + 9;
+			continue;
+		}
 
 		// --key value (separate token) style
 		if (strcmp(arg, "--model") == 0 && i + 1 < argc) {
@@ -216,6 +224,14 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 		}
 		if (strcmp(arg, "--speed") == 0 && i + 1 < argc) {
 			lc.speed = atoi(argv[++i]);
+			continue;
+		}
+		if (strcmp(arg, "--title") == 0 && i + 1 < argc) {
+			lc.title = argv[++i];
+			continue;
+		}
+		if (strcmp(arg, "--romdir") == 0 && i + 1 < argc) {
+			lc.romDir = argv[++i];
 			continue;
 		}
 		if (strcmp(arg, "--log-start") == 0 && i + 1 < argc) {
