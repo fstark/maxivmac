@@ -124,13 +124,6 @@ static tMacErr ChildPath(char *x, char *y, char **r)
 	return err;
 }
 
-static void MyMayFree(char *p)
-{
-	if (NULL != p) {
-		free(p);
-	}
-}
-
 /* --- sending debugging info to file --- */
 
 #if dbglog_HAVE
@@ -165,7 +158,7 @@ bool dbglog_open0(void)
 			dbglog_File = fopen(t, "w");
 		}
 
-		MyMayFree(t);
+		free(t);
 	}
 #endif
 
@@ -524,7 +517,7 @@ static bool Sony_Insert2(char *s)
 			IsOk = Sony_Insert1(t, true);
 		}
 
-		MyMayFree(t);
+		free(t);
 	}
 
 	return IsOk;
@@ -589,8 +582,8 @@ static tMacErr LoadMacRomFromPrefDir(void)
 		err = LoadMacRomFrom(t2);
 	}
 
-	MyMayFree(t2);
-	MyMayFree(t);
+	free(t2);
+	free(t);
 
 	return err;
 }
@@ -621,7 +614,7 @@ static tMacErr LoadMacRomFromAppPar(void)
 			err = LoadMacRomFrom(t);
 		}
 
-		MyMayFree(t);
+		free(t);
 	}
 
 	return err;
