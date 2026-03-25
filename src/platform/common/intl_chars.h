@@ -235,16 +235,6 @@ enum {
 	kInsertText03,
 	kInsertText04,
 #endif
-#if EnableDemoMsg
-	kCellDemo0,
-	kCellDemo1,
-	kCellDemo2,
-	kCellDemo3,
-	kCellDemo4,
-	kCellDemo5,
-	kCellDemo6,
-	kCellDemo7,
-#endif
 
 	kNumCells
 };
@@ -252,12 +242,6 @@ enum {
 /* --- Data table declarations --- */
 
 extern const uint8_t CellData[];
-
-#if UseActvCode && 0
-#define UseActvFile 1
-#else
-#define UseActvFile 0
-#endif
 
 #ifndef NeedCell2MacAsciiMap
 #if 1

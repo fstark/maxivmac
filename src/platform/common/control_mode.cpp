@@ -296,7 +296,7 @@ void DrawSpclMode0(char *Title, SpclModeBody Body)
 #endif
 /* Keyboard_UpdateKeyMap1/DisconnectKeyCodes1 aliases provided by control_mode.h */
 
-#if WantAbnormalReports || UseActvFile
+#if WantAbnormalReports
 void ClStrAppendHexNib(int *L0, uint8_t *r, uint8_t v)
 {
 	if (v < 10) {
@@ -307,7 +307,7 @@ void ClStrAppendHexNib(int *L0, uint8_t *r, uint8_t v)
 }
 #endif
 
-#if WantAbnormalReports || UseActvFile
+#if WantAbnormalReports
 void ClStrAppendHexByte(int *L0, uint8_t *r, uint8_t v)
 {
 	ClStrAppendHexNib(L0, r, (v >> 4) & 0x0F);
@@ -315,7 +315,7 @@ void ClStrAppendHexByte(int *L0, uint8_t *r, uint8_t v)
 }
 #endif
 
-#if WantAbnormalReports || UseActvFile
+#if WantAbnormalReports
 void ClStrAppendHexWord(int *L0, uint8_t *r, uint16_t v)
 {
 	ClStrAppendHexByte(L0, r, (v >> 8) & 0xFF);
@@ -493,9 +493,6 @@ enum {
 #if IncludePbufs
 	kCntrlMsgOptionsStrCopied,
 #endif
-#if 0 && (UseActvCode || EnableDemoMsg)
-	kCntrlMsgRegStrCopied,
-#endif
 
 	kNumCntrlMsgs
 };
@@ -594,17 +591,6 @@ void CopyOptionsStr(void)
 }
 #endif
 
-#if 0
-#if UseActvCode
-static void CopyRegistrationStr(void);
-#elif EnableDemoMsg
-static void CopyRegistrationStr(void)
-{
-	HTCEexportSubstCStr("^v");
-}
-#endif
-#endif
-
 
 void DoControlModeKey(uint8_t key)
 {
@@ -675,12 +661,6 @@ void DoControlModeKey(uint8_t key)
 				case MKC_P:
 					CopyOptionsStr();
 					ControlMessage = kCntrlMsgOptionsStrCopied;
-					break;
-#endif
-#if 0 && (UseActvCode || EnableDemoMsg)
-				case MKC_P:
-					CopyRegistrationStr();
-					ControlMessage = kCntrlMsgRegStrCopied;
 					break;
 #endif
 #if NeedRequestIthDisk
@@ -953,17 +933,6 @@ void DrawCellsControlModeBody(void)
 			DrawCellsOneLineStr(kStrHaveCopiedOptions);
 			break;
 #endif
-#if 0
-#if UseActvCode
-		case kCntrlMsgRegStrCopied:
-			DrawCellsOneLineStr("Registration String copied.");
-			break;
-#elif EnableDemoMsg
-		case kCntrlMsgRegStrCopied:
-			DrawCellsOneLineStr("Variation name copied.");
-			break;
-#endif
-#endif
 #if WantEnblCtrlRst
 		case kCntrlMsgConfirmResetStart:
 			DrawCellsOneLineStr(kStrConfirmReset);
@@ -1020,39 +989,6 @@ void DrawControlMode(void)
 
 #endif /* UseControlKeys */
 
-#if EnableDemoMsg
-
-void DrawDemoMode(void)
-{
-	CurCellv0 = ControlBoxv0 + ((9 * CurMacDateInSeconds) & 0x0F);
-	CurCellh0 = ControlBoxh0 + ((15 * CurMacDateInSeconds) & 0x1F);
-
-	DrawCellAdvance(kCellDemo0);
-	DrawCellAdvance(kCellDemo6);
-	DrawCellAdvance(kCellDemo6);
-	DrawCellAdvance(kCellDemo7);
-	DrawCellAdvance(kCellDemo1);
-	DrawCellAdvance(kCellDemo2);
-	DrawCellAdvance(kCellDemo3);
-	DrawCellAdvance(kCellDemo4);
-	DrawCellAdvance(kCellDemo7);
-	DrawCellAdvance(kCellDemo6);
-	DrawCellAdvance(kCellDemo6);
-	DrawCellAdvance(kCellDemo5);
-}
-
-void DemoModeSecondNotify(void)
-{
-	NeedWholeScreenDraw = true;
-	SpecialModeSet(SpclModeDemo);
-}
-
-#endif /* EnableDemoMsg */
-
-#if UseActvCode
-#include "platform/common/actv_code.h"
-#endif
-
 void DrawSpclMode(void)
 {
 #if UseControlKeys
@@ -1066,19 +1002,9 @@ void DrawSpclMode(void)
 	if (SpecialModeTst(SpclModeNoRom)) {
 		DrawNoRomMode();
 	} else
-#if UseActvCode
-	if (SpecialModeTst(SpclModeActvCode)) {
-		DrawActvCodeMode();
-	} else
-#endif
 #if EnableAltKeysMode
 	if (SpecialModeTst(SpclModeAltKeyText)) {
 		DrawAltKeyMode();
-	} else
-#endif
-#if EnableDemoMsg
-	if (SpecialModeTst(SpclModeDemo)) {
-		DrawDemoMode();
 	} else
 #endif
 	{
@@ -1228,15 +1154,10 @@ void Keyboard_UpdateKeyMap2(uint8_t key, bool down)
 	} else
 #endif
 	if ((0 == SpecialModes)
-#if EnableAltKeysMode || EnableDemoMsg
+#if EnableAltKeysMode
 			|| (0 == (SpecialModes & ~ (
 				0
-#if EnableAltKeysMode
 				| (1 << SpclModeAltKeyText)
-#endif
-#if EnableDemoMsg
-				| (1 << SpclModeDemo)
-#endif
 				)))
 #endif
 			|| (MKC_CapsLock == key)
@@ -1254,11 +1175,6 @@ void Keyboard_UpdateKeyMap2(uint8_t key, bool down)
 			if (SpecialModeTst(SpclModeMessage)) {
 				DoMessageModeKey(key);
 			} else
-#if UseActvCode
-			if (SpecialModeTst(SpclModeActvCode)) {
-				DoActvCodeModeKey(key);
-			} else
-#endif
 			{
 			}
 		} /* else if not down ignore */

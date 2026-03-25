@@ -56,8 +56,6 @@
 #define WantEnblCtrlRst 1
 #define WantEnblCtrlKtg 1
 #define UseControlKeys 1
-#define UseActvCode 0
-#define EnableDemoMsg 0
 
 /* version and other info to display to user */
 

@@ -25,14 +25,8 @@
 /* --- Special Mode enum --- */
 
 enum {
-#if EnableDemoMsg
-	SpclModeDemo,
-#endif
 #if EnableAltKeysMode
 	SpclModeAltKeyText,
-#endif
-#if UseActvCode
-	SpclModeActvCode,
 #endif
 	SpclModeNoRom,
 	SpclModeMessage,
@@ -77,10 +71,6 @@ void MacMsgDisplayOn(void);
 void MacMsgDisplayOff(void);
 tMacErr ROM_IsValid(void);
 bool WaitForRom(void);
-
-#if EnableDemoMsg
-void DemoModeSecondNotify(void);
-#endif
 
 #if NeedDoMoreCommandsMsg
 void DoMoreCommandsMsg(void);
