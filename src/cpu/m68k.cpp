@@ -324,7 +324,7 @@ static inline uint16_t nextiword(void)
 	V_pc_p += 2;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(V_pc_p >= V_pc_pHi)) {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		Recalc_PC_Block();
 	}
 #endif
@@ -338,7 +338,7 @@ static inline uint32_t nextiSByte(void)
 	V_pc_p += 2;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(V_pc_p >= V_pc_pHi)) {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		return Recalc_PC_BlockReturnUi5r(r);
 	}
 #endif
@@ -353,7 +353,7 @@ static inline uint32_t nextiSWord(void)
 	V_pc_p += 2;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(V_pc_p >= V_pc_pHi)) {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		return Recalc_PC_BlockReturnUi5r(r);
 	}
 #endif
@@ -370,7 +370,7 @@ static inline uint32_t nextilong(void)
 
 #if USE_PCLIMIT
 	/* could be two words in different blocks */
-	if (my_cond_rare(V_pc_p >= V_pc_pHi)) {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		r = nextilong_ext();
 	}
 #endif
@@ -383,7 +383,7 @@ static inline void BackupPC(void)
 	V_pc_p -= 2;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(V_pc_p < V_regs.pc_pLo)) {
+	if (V_pc_p < V_regs.pc_pLo) [[unlikely]] {
 		Recalc_PC_Block();
 	}
 #endif
@@ -4077,8 +4077,8 @@ LOCALIPROC DoCodeBraB(void)
 	V_pc_p = s;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(s >= V_pc_pHi)
-		|| my_cond_rare(s < V_regs.pc_pLo))
+	if (s >= V_pc_pHi
+		|| s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -4094,8 +4094,8 @@ LOCALIPROC DoCodeBraW(void)
 	V_pc_p = s;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(s >= V_pc_pHi)
-		|| my_cond_rare(s < V_regs.pc_pLo))
+	if (s >= V_pc_pHi
+		|| s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -4131,7 +4131,7 @@ static void SkipiWord(void)
 	V_pc_p += 2;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(V_pc_p >= V_pc_pHi)) {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		Recalc_PC_Block();
 	}
 #endif
@@ -4429,8 +4429,8 @@ static void m68k_setpc(uint32_t newpc)
 #endif
 
 	V_pc_p = V_regs.pc_pLo + (newpc - V_regs.pc);
-	if (my_cond_rare(V_pc_p >= V_pc_pHi)
-		|| my_cond_rare(V_pc_p < V_regs.pc_pLo))
+	if (V_pc_p >= V_pc_pHi
+		|| V_pc_p < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -6966,8 +6966,8 @@ LOCALIPROC DoCodeBraL(void)
 	V_pc_p = s;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(s >= V_pc_pHi)
-		|| my_cond_rare(s < V_regs.pc_pLo))
+	if (s >= V_pc_pHi
+		|| s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -6981,7 +6981,7 @@ static void SkipiLong(void)
 	V_pc_p += 4;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(V_pc_p >= V_pc_pHi)) {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		Recalc_PC_Block();
 	}
 #endif
@@ -7007,8 +7007,8 @@ LOCALIPROC DoCodeBsrL(void)
 	V_pc_p = s;
 
 #if USE_PCLIMIT
-	if (my_cond_rare(s >= V_pc_pHi)
-		|| my_cond_rare(s < V_regs.pc_pLo))
+	if (s >= V_pc_pHi
+		|| s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -8610,7 +8610,7 @@ static void Recalc_PC_Block(void)
 
 Label_Retry:
 	p = LocalFindATTel(curpc);
-	if (my_cond_rare(0 == (p->Access & kATTA_readreadymask))) {
+	if (0 == (p->Access & kATTA_readreadymask)) [[unlikely]] {
 		if (0 != (p->Access & kATTA_ntfymask)) {
 			if (LocalMemAccessNtfy(p)) {
 				goto Label_Retry;

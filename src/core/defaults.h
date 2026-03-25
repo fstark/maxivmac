@@ -19,8 +19,3 @@
 */
 
 #pragma once
-
-/* Branch prediction hint */
-#ifndef my_cond_rare
-#define my_cond_rare(x) (x)
-#endif
