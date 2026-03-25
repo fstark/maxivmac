@@ -1,77 +1,34 @@
 # Dead Code Audit — Platform Files
 
 **Generated:** 2026-03-23  
-**Scope:** 8 platform backend files in `src/platform/`
+**Updated:** 2026-03-25 (platform cleanup complete)  
+**Scope:** Platform backend files in `src/platform/`
 
 ---
 
 ## Overview
 
-| File | Total Lines | `#if 0` Dead Lines | % Dead | In Build? |
-|------|------------|-------------------|--------|-----------|
-| `win32.cpp` | 6,299 | 638 | 10% | **NO** |
-| `sdl.cpp` | 5,261 | 1,656 | **31%** | **YES** (SDL backend) |
-| `x11.cpp` | 5,754 | 172 | 2% | **NO** |
-| `gtk.cpp` | 1,766 | 118 | 6% | **NO** |
-| `nds.cpp` | 1,384 | 9 | 0% | **NO** |
-| `dos.cpp` | 1,541 | 4 | 0% | **NO** |
-| `carbon.cpp` | 5,669 | 298 | 5% | **NO** |
-| `classic_mac.cpp` | 5,601 | 128 | 2% | **NO** |
-| **TOTAL** | **33,275** | **3,023** | **9%** | |
+> **Platform cleanup complete.** All non-SDL platform backends have been
+> removed from the codebase: Cocoa (`cocoa.mm`), Carbon (`carbon.cpp`),
+> X11 (`x11.cpp`), GTK (`gtk.cpp`), Win32 (`win32.cpp`), DOS (`dos.cpp`),
+> NDS (`nds.cpp`), and Classic Mac (`classic_mac.cpp`) — totaling ~33K lines
+> deleted. Only `sdl.cpp` remains as the sole platform backend.
 
-The CMakeLists.txt only compiles two backends: **cocoa** (macOS via `cocoa.mm`) and **sdl** (cross-platform via `sdl.cpp`). The other 7 files are entirely dead — never compiled.
+| File | Total Lines | `#if 0` Dead Lines | % Dead | Status |
+|------|------------|-------------------|--------|--------|
+| `sdl.cpp` | 5,261 | ~0 truly dead | 0% | **ACTIVE** (sole backend) |
 
----
-
-## Entire-File Dead Code Assessment
-
-### Files That Are Themselves Dead (never compiled in maxivmac)
-
-| File | Lines | Status | Reason |
-|------|-------|--------|--------|
-| `win32.cpp` | 6,299 | **DEAD_OBSOLETE** | Native Win32 backend; maxivmac uses SDL on Windows instead. Entire file unused. |
-| `x11.cpp` | 5,754 | **DEAD_OBSOLETE** | Native X11 backend; maxivmac uses SDL on Linux instead. Entire file unused. |
-| `gtk.cpp` | 1,766 | **DEAD_OBSOLETE** | GTK backend; maxivmac uses SDL instead. Entire file unused. |
-| `nds.cpp` | 1,384 | **DEAD_OBSOLETE** | Nintendo DS backend. Dead platform — no NDS cross-compiler in build system. |
-| `dos.cpp` | 1,541 | **DEAD_OBSOLETE** | MS-DOS backend. Dead platform — no DOS toolchain in build system. |
-| `carbon.cpp` | 5,669 | **DEAD_OBSOLETE** | Mac OS X Carbon API backend. Carbon was deprecated in 10.8, removed in recent macOS. Replaced by cocoa.mm. |
-| `classic_mac.cpp` | 5,601 | **DEAD_OBSOLETE** | Classic Mac OS (System 6/7/8/9) backend. Dead platform — no classic Mac compiler in build system. |
-
-**Total dead-file lines: 27,014** (out of 33,275 — 81% of all platform code)
-
-### Files That Are Actively Used
-
-| File | Lines | Status |
-|------|-------|--------|
-| `sdl.cpp` | 5,261 | **ACTIVE** — SDL backend, used for all non-macOS builds and optionally macOS |
-
-(Note: `cocoa.mm` is the other active backend but was not in the analysis scope.)
+The `#if 0 != SDL_MAJOR_VERSION` / `#if 0 == SDL_MAJOR_VERSION` blocks in
+sdl.cpp are NOT dead code — they are compile-time SDL version dispatch.
 
 ---
 
 ## Per-File `#if 0` Block Analysis
 
-### 1. `win32.cpp` (6,299 lines — **ENTIRE FILE IS DEAD**)
+### `sdl.cpp` — sole platform backend
 
 | Lines | Size | Category | Description |
 |-------|------|----------|-------------|
-| L805-L811 | 7 | **KEYBOARD_LAYOUT** | Czech keyboard mapping alternative for Windows 7 |
-| L1124-L1278 | 155 | **KEYBOARD_LAYOUT** | Latvian + many complex keyboard layouts ("too complicated, don't bother with") |
-| L1279-L1584 | 306 | **KEYBOARD_LAYOUT** | Azeri Cyrillic, Belarusian, Bengali, Bosnian Cyrillic, Bulgarian, many CJK layouts — purely empty stubs and partial mappings |
-| L2883-L2887 | 5 | **ALTERNATIVE_IMPL** | Old `InsertMenu` call replaced by `MENUITEMINFO` approach |
-| L3108-L3110 | 3 | **PLATFORM_COMPAT** | `vMacScreenDepth` conditional — color mode init |
-| L3365-L3374 | 10 | **ALTERNATIVE_IMPL** | Testing code for screen buffer PatBlt |
-| L3375-L3495 | 121 | **PLATFORM_COMPAT** | `vMacScreenDepth` color mode drawing code |
-| L4132-L4153 | 22 | **ALTERNATIVE_IMPL** | Alternative entropy source via `sysinfo()` |
-| L5275-L5277 | 3 | **ALTERNATIVE_IMPL** | `GetShortPathName` call — short path variant |
-| L5335-L5340 | 6 | **FUTURE_FEATURE** | Disabled `-l` command-line argument parsing |
-
-**Summary:** 638 `#if 0` lines. The largest blocks (461 lines) are **KEYBOARD_LAYOUT** — disabled non-Latin keyboard mappings that were never fully implemented. The entire file is dead since win32.cpp is never compiled.
-
----
-
-### 2. `sdl.cpp` (5,261 lines — **ACTIVE, heavily conditional**)
-
 | Lines | Size | Category | Description |
 |-------|------|----------|-------------|
 | L813-L1237 | 425 | **PLATFORM_COMPAT** | `SDL_MAJOR_VERSION != 0` — entire `HaveChangedScreenBuff` for SDL1/2/3 (the `== 0` path = headless/no-SDL) |
@@ -106,167 +63,15 @@ The CMakeLists.txt only compiles two backends: **cocoa** (macOS via `cocoa.mm`) 
 
 ---
 
-### 3. `x11.cpp` (5,754 lines — **ENTIRE FILE IS DEAD**)
+## Remaining Recommendation
 
-| Lines | Size | Category | Description |
-|-------|------|----------|-------------|
-| L915-L918 | 4 | **DEAD_OBSOLETE** | Disabled `#include <pwd.h>` / `<unistd.h>` |
-| L924-L926 | 3 | **ALTERNATIVE_IMPL** | `struct passwd *user` variable |
-| L932-L950 | 19 | **ALTERNATIVE_IMPL** | `getpwuid()` fallback for `$HOME` — disabled per man page advice |
-| L1474-L1487 | 14 | **PLATFORM_COMPAT** | `vMacScreenDepth` color mode drawing block |
-| L1524-L1546 | 23 | **PLATFORM_COMPAT** | `vMacScreenDepth` color mode magnified drawing |
-| L3084-L3087 | 4 | **FUTURE_FEATURE** | `AutoTimeZone` — `tm_gmtoff` portability concern |
-| L3784-L3805 | 22 | **ALTERNATIVE_IMPL** | Alternative entropy via `sysinfo()` |
-| L3995-L3997 | 3 | **DEAD_OBSOLETE** | Debug event logging (`MyDbgEvents`) |
-| L4274-L4278 | 5 | **DEAD_OBSOLETE** | Debug fprintf for bitmap_bit_order |
-| L4294-L4315 | 22 | **DEAD_OBSOLETE** | Debug fprintf for DefaultDepth, caps |
-| L4348-L4350 | 3 | **PLATFORM_COMPAT** | `vMacScreenDepth` color mode works flag |
-| L4640-L4642 | 3 | **ALTERNATIVE_IMPL** | Disabled `XSync` call |
-| L4644-L4664 | 21 | **ALTERNATIVE_IMPL** | Disabled RandR extension check |
-| L5045-L5057 | 13 | **ALTERNATIVE_IMPL** | Disabled `XMoveWindow` (broken in Red Hat 6) |
-| L5140-L5146 | 7 | **FUTURE_FEATURE** | Disabled `ToggleWantFullScreen` path |
-| L5287-L5292 | 6 | **FUTURE_FEATURE** | Disabled `-l` argument parsing for `SpeedValue` |
-
-**Summary:** 172 `#if 0` lines. Mixture of obsolete debug code, alternative implementations tried and abandoned, and portability workarounds. Entire file is dead — never compiled.
-
----
-
-### 4. `gtk.cpp` (1,766 lines — **ENTIRE FILE IS DEAD**)
-
-| Lines | Size | Category | Description |
-|-------|------|----------|-------------|
-| L447-L457 | 11 | **ALTERNATIVE_IMPL** | Alternative mouse coordinate extraction |
-| L492-L494 | 3 | **DEAD_OBSOLETE** | Debug fprintf for keyboard events |
-| L802-L807 | 6 | **ALTERNATIVE_IMPL** | Alternative GDate-based time implementation |
-| L812-L815 | 4 | **FUTURE_FEATURE** | `AutoTimeZone` via `tm_gmtoff` |
-| L942-L944 | 3 | **DEAD_OBSOLETE** | Debug fprintf for Expose events |
-| L1043-L1049 | 7 | **ALTERNATIVE_IMPL** | Cmd+Opt reconnect handling |
-| L1078-L1080 | 3 | **DEAD_OBSOLETE** | Disabled DisableKeyRepeat |
-| L1085-L1087 | 3 | **DEAD_OBSOLETE** | Disabled RestoreKeyRepeat |
-| L1222-L1231 | 10 | **FUTURE_FEATURE** | Disabled `--display` argument parsing |
-| L1240-L1244 | 5 | **FUTURE_FEATURE** | Disabled `-l` argument parsing |
-| L1275-L1277 | 3 | **DEAD_OBSOLETE** | Disabled `XFlush` call |
-| L1330-L1337 | 8 | **ALTERNATIVE_IMPL** | Alternative GTK main loop iteration |
-| L1369-L1373 | 5 | **DEAD_OBSOLETE** | Debug fprintf for key_press_event |
-| L1374-L1389 | 16 | **ALTERNATIVE_IMPL** | Alternative key event handling |
-| L1399-L1403 | 5 | **DEAD_OBSOLETE** | Debug fprintf for key_release_event |
-| L1507-L1515 | 9 | **ALTERNATIVE_IMPL** | Alternative widget creation |
-| L1608-L1610 | 3 | **DEAD_OBSOLETE** | Unused button variable |
-| L1721-L1734 | 14 | **FUTURE_FEATURE** | Commented-out quit button in UI |
-
-**Summary:** 118 `#if 0` lines. Mostly debug printfs, abandoned alternatives, and a few future features. Entire file is dead — never compiled.
-
----
-
-### 5. `nds.cpp` (1,384 lines — **ENTIRE FILE IS DEAD**)
-
-| Lines | Size | Category | Description |
-|-------|------|----------|-------------|
-| L515-L519 | 5 | **FUTURE_FEATURE** | `EnableFSMouseMotion` — full-screen mouse motion |
-| L763-L766 | 4 | **FUTURE_FEATURE** | `AutoTimeZone` via `tm_gmtoff` |
-
-**Summary:** 9 `#if 0` lines. Very clean file code-wise, but the **entire 1,384-line file is dead** — targets Nintendo DS, which is not a supported platform for maxivmac.
-
----
-
-### 6. `dos.cpp` (1,541 lines — **ENTIRE FILE IS DEAD**)
-
-| Lines | Size | Category | Description |
-|-------|------|----------|-------------|
-| L1125-L1128 | 4 | **FUTURE_FEATURE** | `AutoTimeZone` via `tm_gmtoff` |
-
-**Summary:** 4 `#if 0` lines. Very clean, but the **entire 1,541-line file is dead** — targets MS-DOS (DJGPP toolchain), which is not a supported platform for maxivmac.
-
----
-
-### 7. `carbon.cpp` (5,669 lines — **ENTIRE FILE IS DEAD**)
-
-| Lines | Size | Category | Description |
-|-------|------|----------|-------------|
-| L383-L405 | 23 | **ALTERNATIVE_IMPL** | `CGDisplayMoveCursorToPoint` dynamic lookup — replaced by different approach |
-| L1408-L1437 | 30 | **PLATFORM_COMPAT** | `vMacScreenDepth` color mode OpenGL drawing |
-| L1525-L1534 | 10 | **ALTERNATIVE_IMPL** | Old `glBitmap` screen draw approach |
-| L1538-L1547 | 10 | **PLATFORM_COMPAT** | `vMacScreenDepth` color drawing variant |
-| L1558-L1572 | 15 | **ALTERNATIVE_IMPL** | "Quick and dirty check" of drawing bounds via `glDrawPixels` in red |
-| L1838-L1843 | 6 | **DEAD_OBSOLETE** | `MyShowCursorProc` per-display — replaced by single-display call |
-| L1847-L1850 | 4 | **DEAD_OBSOLETE** | Deprecated `ShowCursor()` call path |
-| L1857-L1862 | 6 | **DEAD_OBSOLETE** | `MyHideCursorProc` per-display |
-| L1866-L1869 | 4 | **DEAD_OBSOLETE** | Deprecated `HideCursor()` call path |
-| L1947-L1958 | 12 | **ALTERNATIVE_IMPL** | Alternative cursor positioning via `CGDisplayMoveCursorToPoint` |
-| L2023-L2046 | 24 | **ALTERNATIVE_IMPL** | Alternative `InitMousePosition` implementation |
-| L2411-L2422 | 12 | **PLATFORM_COMPAT** | Full-screen grab handling logic |
-| L2676-L2678 | 3 | **ALTERNATIVE_IMPL** | `GrabbedPort` variable for screen grab experiments |
-| L2680-L2702 | 23 | **ALTERNATIVE_IMPL** | `AdjustMainScreenGrab` using `CGCaptureAllDisplays` |
-| L2704-L2736 | 33 | **ALTERNATIVE_IMPL** | `CGReleaseAllDisplays` dynamic lookup |
-| L2875-L2877 | 3 | **DEAD_OBSOLETE** | Disabled call to `AdjustMainScreenGrab()` |
-| L3345-L3360 | 16 | **ALTERNATIVE_IMPL** | Nav Services `kNavCBUserAction` handler |
-| L4032-L4035 | 4 | **ALTERNATIVE_IMPL** | Mouse event handling ("CheckMouseState will take care of it") |
-| L4328-L4330 | 3 | **PLATFORM_COMPAT** | `vMacScreenDepth` color mode works flag |
-| L4729-L4746 | 18 | **ALTERNATIVE_IMPL** | Cursor visibility check via `CGCursorIsVisible` |
-| L5046-L5049 | 4 | **ALTERNATIVE_IMPL** | Duplicate mouse event handling (same as L4032) |
-| L5228-L5259 | 32 | **ALTERNATIVE_IMPL** | Display reconfiguration callback |
-| L5414-L5416 | 3 | **PLATFORM_COMPAT** | `vMacScreenDepth` pixel size multiplier |
-
-**Summary:** 298 `#if 0` lines. Heavy on alternative implementations (Carbon was iteratively developed with many API approach tryouts). Entire file is dead — Carbon API was deprecated in macOS 10.8 (2012) and is functionally removed. Replaced by `cocoa.mm`.
-
----
-
-### 8. `classic_mac.cpp` (5,601 lines — **ENTIRE FILE IS DEAD**)
-
-| Lines | Size | Category | Description |
-|-------|------|----------|-------------|
-| L471-L473 | 3 | **ALTERNATIVE_IMPL** | Alternative `FSClose` return |
-| L1127-L1208 | 82 | **ALTERNATIVE_IMPL** | "Experimental code in progress" — direct pixel buffer manipulation for full-screen mode |
-| L2068-L2079 | 12 | **DEAD_OBSOLETE** | Debug fprintf for sound sample data |
-| L2295-L2297 | 3 | **DEAD_OBSOLETE** | Disabled `AdjustMainScreenGrab()` call |
-| L2450-L2460 | 11 | **PLATFORM_COMPAT** | Control Strip hiding (System 7.5 feature) |
-| L2492-L2501 | 10 | **PLATFORM_COMPAT** | Control Strip showing |
-| L5190-L5193 | 4 | **PLATFORM_COMPAT** | Disabled `EventAvail` check ("causes crashes on some machines") |
-| L5209-L5211 | 3 | **DEAD_OBSOLETE** | Unused closing brace |
-
-**Summary:** 128 `#if 0` lines. Includes an 82-line experimental pixel-blitting block. The entire file is dead — targets Classic Mac OS (System 6-9), which hasn't been a viable platform since ~2002.
-
----
-
-## Category Totals (across `#if 0` blocks only)
-
-| Category | Blocks | ~Lines |
-|----------|--------|--------|
-| **KEYBOARD_LAYOUT** | 3 | ~461 |
-| **PLATFORM_COMPAT** | ~25 | ~960 |
-| **ALTERNATIVE_IMPL** | ~30 | ~520 |
-| **DEAD_OBSOLETE** | ~18 | ~85 |
-| **FUTURE_FEATURE** | ~10 | ~50 |
-
-Note: sdl.cpp's `#if 0 != SDL_MAJOR_VERSION` blocks (~1,656 lines) are **not dead code** — they are compile-time version dispatch and compile normally when SDL is present.
-
----
-
-## Recommendations
-
-### High Priority — Remove entire dead files (~27,000 lines)
-
-These 7 files are never compiled and serve no purpose in the modern maxivmac project:
-
-| File | Lines | Justification |
-|------|-------|---------------|
-| `classic_mac.cpp` | 5,601 | Classic Mac OS — dead since 2002 |
-| `nds.cpp` | 1,384 | Nintendo DS — novelty port, no build support |
-| `dos.cpp` | 1,541 | MS-DOS — dead platform, no build support |
-| `carbon.cpp` | 5,669 | Carbon API — deprecated 2012, removed from macOS |
-| `win32.cpp` | 6,299 | Native Win32 — replaced by SDL backend |
-| `x11.cpp` | 5,754 | Native X11 — replaced by SDL backend |
-| `gtk.cpp` | 1,766 | GTK — replaced by SDL backend |
-
-**If historical preservation is desired**, these could be moved to a `src/platform/legacy/` directory or tagged in git and deleted from HEAD.
-
-### Medium Priority — Clean sdl.cpp
+### Clean sdl.cpp
 
 The `sdl.cpp` `#if 0 == SDL_MAJOR_VERSION` block (L4066-L4699, 634 lines) provides a headless/no-SDL fallback. If headless mode is not needed, this could be removed. All `#if 0 != SDL_MAJOR_VERSION` blocks are live code when SDL is present and should be left alone.
 
-### Low Priority — If keeping legacy files for reference
-
-If any legacy platform files are kept, the `#if 0` blocks within them could be cleaned up, but this is moot if the files themselves are removed.
+> **Note:** All other platform backend files (win32.cpp, x11.cpp, gtk.cpp, nds.cpp,
+> dos.cpp, carbon.cpp, classic_mac.cpp) have been deleted from the codebase.
+> The original per-file dead code analysis for those files is no longer relevant.
 
 ---
 ---
@@ -555,7 +360,7 @@ No `#if 0` blocks within the file. Clean implementation.
 
 Contains: Cocoa/CoreAudio/OpenGL includes, `EnableDragDrop=1`, `MyAppIsBundle=1`, app metadata strings.
 
-**No dead code.** All defines are actively used by the cocoa.mm backend.
+**No dead code.** All defines are actively used by the sdl.cpp backend.
 
 ### 2. `src/config/CNFUIALL.h` — Cross-Platform Config
 

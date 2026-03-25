@@ -38,7 +38,7 @@ src/
   cpu/          — m68k.cpp (68000/68020), m68k_tables.cpp, disasm.cpp, fpu_math.h
   devices/      — VIA, SCC, SCSI, IWM, RTC, ROM, ADB, Keyboard, Mouse, Sound, ASC, PMU,
                   Sony, Screen, Video — each a Device subclass
-  platform/     — cocoa.mm (macOS), sdl.cpp, win32.cpp, x11.cpp, etc.
+  platform/     — sdl.cpp (sole backend, cross-platform)
   lang/         — Localized string headers
   resources/    — App icons and resources
 ```
@@ -57,11 +57,11 @@ main(argc, argv)
 ## CLI Interface
 
 ```
-./minivmac --model=MacII --rom=MacII.ROM --ram=8M --screen=640x480x8 disk.img
-./minivmac --model=MacPlus --rom=MacPlus.ROM --ram=4M disk.img
-./minivmac --model=MacSE --rom=MacSE.ROM disk.img
-./minivmac --model=PB100 --rom=PB100.ROM disk.img
-./minivmac -h   # show help
+./maxivmac --model=MacII --rom=MacII.ROM --ram=8M --screen=640x480x8 disk.img
+./maxivmac --model=MacPlus --rom=MacPlus.ROM --ram=4M disk.img
+./maxivmac --model=MacSE --rom=MacSE.ROM disk.img
+./maxivmac --model=PB100 --rom=PB100.ROM disk.img
+./maxivmac -h   # show help
 ```
 
 ## Supported Models

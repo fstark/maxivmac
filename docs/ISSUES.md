@@ -35,24 +35,15 @@ decode/execute/memory, and no way to unit-test any individual instruction.
 functions.  Decode, execute, and memory subsystems should be separate
 compilation units.
 
-### 3. Massive platform code duplication (~38K lines across 6 backends)
+### 3. ~~Massive platform code duplication~~ — RESOLVED
 
-| File | Lines |
-|------|------:|
-| `platform/win32.cpp` | 6,299 |
-| `platform/x11.cpp` | 5,754 |
-| `platform/carbon.cpp` | 5,669 |
-| `platform/classic_mac.cpp` | 5,601 |
-| `platform/cocoa.mm` | 5,364 |
-| `platform/sdl.cpp` | 5,261 |
+> **Status: Resolved.** All non-SDL backends have been removed. Only
+> `platform/sdl.cpp` (5,261 lines) remains, plus shared code in
+> `platform/common/`. The ~33K lines of duplicated platform code across
+> Cocoa, Carbon, X11, GTK, Win32, DOS, NDS, and Classic Mac backends are gone.
 
-Each re-implements the same ~13 lifecycle patterns: `AllocMyMemory`,
-`LoadMacRom`, `InitOSGLU`, `CheckForSavedTasks`, screen scaling, keycode
-tables, tick timing, etc.  Changes to common logic must be replicated across
-all six files.
-
-**Impact:** any behavioral change (e.g. a new disk insertion path) must be
-patched in six places.  Bugs will exist in some backends but not others.
+**Impact:** No longer an issue. A behavioral change only needs to be made once
+in `sdl.cpp` (or in `platform/common/` for shared logic).
 
 ### 4. Dead code cemetery — 294 `#if 0` blocks (72 in SCC alone)
 

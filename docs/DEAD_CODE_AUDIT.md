@@ -1,7 +1,8 @@
 # Dead/Disabled Code Audit — maxivmac `src/`
 
 **Generated:** 2026-03-23  
-**Scope:** All `.cpp`, `.h`, `.mm` files under `src/` (115 files)
+**Updated:** 2026-03-25 (platform cleanup complete: only SDL backend remains)  
+**Scope:** All `.cpp`, `.h` files under `src/` (excluding deleted platform backends)
 
 ---
 
@@ -9,12 +10,18 @@
 
 | Category | Blocks | ~Dead Lines |
 |----------|--------|-------------|
-| Pure `#if 0` blocks | ~198 | ~3,500+ |
-| `#if 0 && Feature` blocks | 13 | ~60 |
+| Pure `#if 0` blocks | ~120 | ~2,000+ |
+| `#if 0 && Feature` blocks | 3 | ~20 |
 | `#if 0 /* comment */` blocks (conditional disabled) | ~30 | ~200 |
 | Config-gated always-false (`EmLocalTalk`, `SCC_TrackMore`, etc.) | ~292 | ~3,547 |
 | Entire unused files (`src/unused/`) | 4 files | 2,686 |
-| **Estimated Total** | | **~10,000 lines** |
+| **Estimated Total** | | **~8,500 lines** |
+
+> **Note:** ~33,000 lines of dead platform backends (Cocoa, Carbon, X11, GTK,
+> Win32, DOS, NDS, Classic Mac) were removed in the SDL-only cleanup.
+> The `cocoa.mm`, `win32.cpp`, `x11.cpp`, `gtk.cpp`, `carbon.cpp`,
+> `classic_mac.cpp`, `nds.cpp`, and `dos.cpp` sections from the original
+> audit no longer apply.
 
 **NOTE:** `#if 0 != MACRO` patterns (e.g., `#if 0 != SDL_MAJOR_VERSION`, `#if 0 != vMacScreenDepth`) are NOT dead code — they are valid comparisons and are excluded from this report.
 
@@ -251,44 +258,6 @@ Many `#if 0 /* comment */` blocks mark SCC features that are "always true/false"
 |-------|-----------|-------------|----------------|
 | L266-290 | `#if 0` | Screen hack alert drawing (25 lines) | not-yet-enabled feature |
 
-### `src/platform/cocoa.mm` (34 blocks)
-
-| Lines | Condition | Description | Classification |
-|-------|-----------|-------------|----------------|
-| L525-531 | `#if 0` | NSString from MacRoman encoding | obsolete/removable |
-| L553-558 | `#if 0` | cStringUsingEncoding alternative | obsolete/removable |
-| L559-561 | `#if 0` | NSData encoding alternative | obsolete/removable |
-| L605-609 | `#if 0` | NSString ASCII encoding | obsolete/removable |
-| L610-616 | `#if 0` | NSData/NSString alternative construction | obsolete/removable |
-| L870-884 | `#if 0` | File locking with flock (15 lines) | not-yet-enabled feature |
-| L914-925 | `#if 0` | File unlock with flock (12 lines) | not-yet-enabled feature |
-| L1493-1496 | `#if 0` | Cursor set via performSelector | obsolete/removable |
-| L1497-1499 | `#if 0` | Arrow cursor fallback | obsolete/removable |
-| L1724-1731 | `#if 0` | CGSetLocalEventsSuppressionInterval | obsolete/removable |
-| L2075-2089 | `#if 0 /* quick and dirty drawing check */` | Debug drawing visualization | obsolete/removable |
-| L2165-2167 | `#if 0 && dbglog_TimeStuff` | Time debugging log | obsolete/removable |
-| L2774-2776 | `#if 0` | SignedInteger audio format flag | obsolete/removable |
-| L2777-2779 | `#if 0` | BigEndian audio format flag | obsolete/removable |
-| L3041-3049 | `#if 0` | lockFocusIfCanDraw (9 lines, deprecated API) | obsolete/removable |
-| L3053-3055 | `#if 0` | unlockFocus | obsolete/removable |
-| L3085-3089 | `#if 0` | 15-bit color mask | obsolete/removable |
-| L3093-3097 | `#if 0` | 32-bit color mask variant 1 | obsolete/removable |
-| L3101-3105 | `#if 0` | 32-bit color mask variant 2 | obsolete/removable |
-| L3368-3374 | `#if 0` | Gestalt system version check | obsolete/removable |
-| L3376-3382 | `#if 0` | CGMainDisplayID usage | obsolete/removable |
-| L3722-3733 | `#if 0` | Exposed rect list enumeration | obsolete/removable |
-| L3785-3788 | `#if 0` | NSString initWithUTF8String | obsolete/removable |
-| L3790-3792 | `#if 0` | String release | obsolete/removable |
-| L4437-4440 | `#if 0` | setNameFieldStringValue (OS X 10.6) | obsolete/removable |
-| L4441-4444 | `#if 0` | performSelector setNameFieldStringValue | obsolete/removable |
-| L4453-4459 | `#if 0` | runModalForDirectory (deprecated) | obsolete/removable |
-| L4460-4472 | `#if 0` | NSInvocation for modal directory | obsolete/removable |
-| L4870-4873 | `#if 0` | NSDate tick interval | obsolete/removable |
-| L4904-4913 | `#if 0 && EnableAutoSlow` | Auto-slow logic | not-yet-enabled feature |
-| L4936-4940 | `#if 0` | CheckMouseState in foreground | obsolete/removable |
-| L5146-5148 | `#if 0` | finishLaunching call | obsolete/removable |
-| L5224-5226 | `#if 0 /* for testing start up error */` | Test error reporting | obsolete/removable |
-
 ### `src/platform/sdl.cpp` (3 pure `#if 0` + many `#if 0 != SDL_MAJOR_VERSION`)
 
 Pure `#if 0` blocks:
@@ -301,107 +270,6 @@ Pure `#if 0` blocks:
 | L4392-? | `#if 0` | Disabled code | obsolete/removable |
 
 **Note:** SDL has many `#if 0 != SDL_MAJOR_VERSION` and `#if 0 == SDL_MAJOR_VERSION` blocks. These are NOT dead code — they're conditional on the actual SDL version. However, the `#if 0 == SDL_MAJOR_VERSION` blocks at L1853 and L4066-4699 (634 lines!) are dead if SDL is present (SDL_MAJOR_VERSION > 0). The L4066-4699 block is a massive 634-line `CreateMainWindow` implementation for the "no SDL" case that is likely obsolete.
-
-### `src/platform/win32.cpp`
-
-| Lines | Condition | Description | Classification |
-|-------|-----------|-------------|----------------|
-| L805-811 | `#if 0` | Windows 7 keyboard mapping workaround | obsolete/removable |
-| L1124-1278 | `#if 0` | Keyboard layouts: Latvian, Lithuanian, etc. (155 lines) | obsolete/removable |
-| L1279-1584 | `#if 0` | More keyboard layouts: Azeri, Armenian, Georgian, etc. (306 lines) | obsolete/removable |
-| L1301-? | `#if 0 /* Only in Windows 95 */` | (nested in above) | obsolete/removable |
-| L2883-2887 | `#if 0` | InsertMenu call | obsolete/removable |
-| L3365-3374 | `#if 0` | PatBlt testing code | obsolete/removable |
-| L4132-4153 | `#if 0` | Entropy source alternative (22 lines) | obsolete/removable |
-| L5275-5277 | `#if 0` | GetShortPathName | obsolete/removable |
-| L5335-5340 | `#if 0` | Command-line `-l` option handling | obsolete/removable |
-
-### `src/platform/gtk.cpp`
-
-| Lines | Condition | Description | Classification |
-|-------|-----------|-------------|----------------|
-| L447-457 | `#if 0` | Mouse position tracking vars | obsolete/removable |
-| L492-494 | `#if 0` | Key event debug fprintf | obsolete/removable |
-| L802-807 | `#if 0` | GDate time code | obsolete/removable |
-| L812-815 | `#if 0 && AutoTimeZone` | Time zone auto-detect | not-yet-enabled feature |
-| L942-944 | `#if 0 && MyDbgEvents` | Expose event debug | obsolete/removable |
-| L1043-1049 | `#if 0` | WantCmdOptOnReconnect | obsolete/removable |
-| L1078-1080 | `#if 0` | DisableKeyRepeat | obsolete/removable |
-| L1085-1087 | `#if 0` | RestoreKeyRepeat | obsolete/removable |
-| L1222-1231 | `#if 0` | --display arg parsing | obsolete/removable |
-| L1240-1244 | `#if 0` | -l arg parsing | obsolete/removable |
-| L1275-1277 | `#if 0` | XFlush | obsolete/removable |
-| L1330-1337 | `#if 0` | GTK main iteration loop | obsolete/removable |
-| L1369-1373 | `#if 0` | Key press debug | obsolete/removable |
-| L1374-1389 | `#if 0` | GdkKeymapKey keyval lookup (16 lines) | obsolete/removable |
-| L1399-1403 | `#if 0` | Key release debug | obsolete/removable |
-| L1507-1515 | `#if 0` | Debug block | obsolete/removable |
-| L1608-1610 | `#if 0` | GtkWidget button variable | obsolete/removable |
-| L1721-1734 | `#if 0` | Quit button creation (14 lines) | obsolete/removable |
-
-### `src/platform/x11.cpp`
-
-| Lines | Condition | Description | Classification |
-|-------|-----------|-------------|----------------|
-| L915-918 | `#if 0` | pwd.h/unistd.h includes | obsolete/removable |
-| L924-926 | `#if 0` | passwd struct var | obsolete/removable |
-| L932-950 | `#if 0` | Home directory via getpwuid (19 lines) | obsolete/removable |
-| L3084-3087 | `#if 0 && AutoTimeZone` | Time zone auto-detect | not-yet-enabled feature |
-| L3784-3805 | `#if 0` | Entropy source alternative (22 lines) | obsolete/removable |
-| L3995-3997 | `#if 0 && MyDbgEvents` | Expose event debug | obsolete/removable |
-| L4274-4278 | `#if 0` | Image format debug prints | obsolete/removable |
-| L4294-4315 | `#if 0` | DefaultDepth/visual debug (22 lines) | obsolete/removable |
-| L4640-4642 | `#if 0` | XSync call | obsolete/removable |
-| L4644-4664 | `#if 0` | Window activation workaround (21 lines) | obsolete/removable |
-| L5045-5057 | `#if 0` | Window positioning workaround (13 lines) | obsolete/removable |
-| L5140-5141 | `#if 0` | ToggleWantFullScreen | obsolete/removable |
-| L5287-5292 | `#if 0` | -l arg parsing | obsolete/removable |
-
-### `src/platform/carbon.cpp`
-
-| Lines | Condition | Description | Classification |
-|-------|-----------|-------------|----------------|
-| L383-405 | `#if 0` | CGDisplayMoveCursorToPoint typedef (23 lines) | obsolete/removable |
-| L1525-1534 | `#if 0` | OpenGL glBitmap rendering (10 lines) | obsolete/removable |
-| L1838-1843 | `#if 0` | MyShowCursorProc function | obsolete/removable |
-| L1847-1850 | `#if 0` | ShowCursor via DoForEachDisplay | obsolete/removable |
-| L1857-1862 | `#if 0` | MyHideCursorProc function | obsolete/removable |
-| L1866-1869 | `#if 0` | HideCursor via DoForEachDisplay | obsolete/removable |
-| L1947-1958 | `#if 0` | Mouse position via CGDisplayMoveCursorToPoint | obsolete/removable |
-| L2023-2046 | `#if 0` | InitMousePosition function (24 lines) | obsolete/removable |
-| L2411-2422 | `#if 0` | Sound sample debug dump | obsolete/removable |
-| L2680-2702 | `#if 0` | AdjustMainScreenGrab function (23 lines) | obsolete/removable |
-| L2704-2736 | `#if 0` | CGReleaseAllDisplays typedef (33 lines) | obsolete/removable |
-| L2875-2877 | `#if 0` | AdjustMainScreenGrab call | obsolete/removable |
-| L3345-3360 | `#if 0` | Nav dialog user action handling (16 lines) | obsolete/removable |
-| L4729-4746 | `#if 0` | CGCursorIsVisible handling (18 lines) | obsolete/removable |
-| L5228-5259 | `#if 0` | Display reconfiguration debug (32 lines) | obsolete/removable |
-
-### `src/platform/classic_mac.cpp`
-
-| Lines | Condition | Description | Classification |
-|-------|-----------|-------------|----------------|
-| L471-473 | `#if 0` | FSClose alternative | obsolete/removable |
-| L1127-1208 | `#if 0 /* experimental code in progress */` | Full-screen experimental (82 lines) | not-yet-enabled feature |
-| L2068-2079 | `#if 0` | Sound sample debug dump | obsolete/removable |
-| L2295-2297 | `#if 0` | AdjustMainScreenGrab | obsolete/removable |
-| L2450-2460 | `#if 0` | Control strip visibility (11 lines) | obsolete/removable |
-| L2492-2501 | `#if 0` | Control strip restoration (10 lines) | obsolete/removable |
-| L5190-5193 | `#if 0 /* crashes on some machines */` | EventAvail check | other (known crash) |
-| L5209-5211 | `#if 0` | Closing brace | obsolete/removable |
-
-### `src/platform/dos.cpp`
-
-| Lines | Condition | Description | Classification |
-|-------|-----------|-------------|----------------|
-| L1125-1128 | `#if 0 && AutoTimeZone` | Time zone auto-detect | not-yet-enabled feature |
-
-### `src/platform/nds.cpp`
-
-| Lines | Condition | Description | Classification |
-|-------|-----------|-------------|----------------|
-| L515-519 | `#if 0 && EnableFSMouseMotion` | Full-screen mouse motion | not-yet-enabled feature |
-| L763-766 | `#if 0 && AutoTimeZone` | Time zone auto-detect | not-yet-enabled feature |
 
 ### `src/platform/common/control_mode.cpp`
 
@@ -432,19 +300,13 @@ These use `0 &&` which always evaluates to false regardless of the feature flag:
 
 | File | Line | Condition | Description | Classification |
 |------|------|-----------|-------------|----------------|
-| `src/platform/cocoa.mm` | L2165 | `#if 0 && dbglog_TimeStuff` | Time debug logging | obsolete/removable |
-| `src/platform/cocoa.mm` | L4904 | `#if 0 && EnableAutoSlow` | Auto-slow logic | not-yet-enabled feature |
 | `src/devices/scc.cpp` | L1334 | `#if 0 && EmLocalTalk` | LocalTalk value | obsolete/removable |
-| `src/platform/gtk.cpp` | L812 | `#if 0 && AutoTimeZone` | Auto timezone (4 lines) | not-yet-enabled feature |
-| `src/platform/gtk.cpp` | L942 | `#if 0 && MyDbgEvents` | Debug event logging | obsolete/removable |
-| `src/platform/dos.cpp` | L1125 | `#if 0 && AutoTimeZone` | Auto timezone (4 lines) | not-yet-enabled feature |
-| `src/platform/nds.cpp` | L515 | `#if 0 && EnableFSMouseMotion` | Full-screen mouse | not-yet-enabled feature |
-| `src/platform/nds.cpp` | L763 | `#if 0 && AutoTimeZone` | Auto timezone (4 lines) | not-yet-enabled feature |
+| `src/platform/sdl.cpp` | L3695 | `#if 0 && UseMotionEvents` | Motion events | not-yet-enabled feature |
 | `src/platform/common/control_mode.cpp` | L496 | `#if 0 && (UseActvCode \|\| EnableDemoMsg)` | Reg string message | not-yet-enabled feature |
 | `src/platform/common/control_mode.cpp` | L680 | `#if 0 && (UseActvCode \|\| EnableDemoMsg)` | Key handler copy reg | not-yet-enabled feature |
-| `src/platform/x11.cpp` | L3084 | `#if 0 && AutoTimeZone` | Auto timezone (4 lines) | not-yet-enabled feature |
-| `src/platform/x11.cpp` | L3995 | `#if 0 && MyDbgEvents` | Debug event logging | obsolete/removable |
-| `src/platform/sdl.cpp` | L3695 | `#if 0 && UseMotionEvents` | Motion events | not-yet-enabled feature |
+
+> **Note:** Entries for deleted platform files (cocoa.mm, gtk.cpp, dos.cpp,
+> nds.cpp, x11.cpp) have been removed — those files no longer exist in the codebase.
 
 ---
 
@@ -454,7 +316,7 @@ These defines are set to 0 in the current config and gate code across the codeba
 
 ### `EmLocalTalk` = 0 (in `CNFUDALL.h`)
 - **57 blocks, ~1,134 lines** of LocalTalk networking code
-- Files: `scc.cpp` (majority), `scc.h`, `rtc.cpp`, `main.cpp`, `platform.h`, `cocoa.mm`, `carbon.cpp`, `win32.cpp`, `x11.cpp`, `osglu_common.cpp`, `osglu_common.h`
+- Files: `scc.cpp` (majority), `scc.h`, `rtc.cpp`, `main.cpp`, `platform.h`, `osglu_common.cpp`, `osglu_common.h`
 - **Classification:** not-yet-enabled feature (LocalTalk networking support)
 
 ### `SCC_TrackMore` = 0 (local in `scc.cpp`)
@@ -484,12 +346,12 @@ These defines are set to 0 in the current config and gate code across the codeba
 
 ### `EnableDemoMsg` = 0 (in `CNFUDOSG.h`)
 - **16 blocks, ~105 lines** of demo message display
-- Files: `control_mode.cpp`, `control_mode.h`, `intl_chars.cpp`, `intl_chars.h`, `cocoa.mm`, `carbon.cpp`, `classic_mac.cpp`, `dos.cpp`, `gtk.cpp`, `nds.cpp`, `sdl.cpp`, `win32.cpp`, `x11.cpp`
+- Files: `control_mode.cpp`, `control_mode.h`, `intl_chars.cpp`, `intl_chars.h`, `sdl.cpp`
 - **Classification:** not-yet-enabled feature (demo/registration messaging)
 
 ### `UseActvCode` = 0 (in `CNFUDOSG.h`)
 - **11 blocks, ~48 lines** of activation code support
-- Files: `control_mode.cpp`, `control_mode.h`, `cocoa.mm`, `carbon.cpp`, `classic_mac.cpp`, `win32.cpp`, `x11.cpp`
+- Files: `control_mode.cpp`, `control_mode.h`, `sdl.cpp`
 - **Classification:** not-yet-enabled feature (software activation system)
 
 ### `EnableAltKeysMode` = 0 (in `CNFUDOSG.h`)
@@ -521,15 +383,9 @@ Biggest concentrations of dead code by file:
 |------|-------------|---------------|
 | `src/devices/scc.cpp` | ~2,700+ | `SCC_dolog`=0, `SCC_TrackMore`=0, `EmLocalTalk`=0, + many `#if 0` |
 | `src/platform/common/intl_chars.cpp` | ~979 | `NeedIntlChars`=0 |
-| `src/platform/cocoa.mm` | ~300+ | Many `#if 0` blocks |
-| `src/platform/win32.cpp` | ~600+ | Two massive keyboard layout blocks (461 lines) |
 | `src/cpu/fpu_math.h` | ~200+ | Alternative FPU implementations |
 | `src/cpu/m68k_tables.cpp` | ~100+ | Disabled instruction decode entries |
 | `src/platform/sdl.cpp` | ~100+ | Pure `#if 0` blocks (excl. SDL version gates) |
-| `src/platform/carbon.cpp` | ~300+ | Various `#if 0` + `EmLocalTalk` |
-| `src/platform/x11.cpp` | ~250+ | Various `#if 0` + `EmLocalTalk` |
-| `src/platform/gtk.cpp` | ~120+ | Various `#if 0` |
-| `src/platform/classic_mac.cpp` | ~200+ | Various `#if 0` + 82-line experimental block |
 | `src/unused/*` | 2,686 | Entire abandoned files |
 
 ---
@@ -539,9 +395,7 @@ Biggest concentrations of dead code by file:
 ### Obsolete/Removable (~60% of total)
 - Pure `#if 0` blocks with no feature flag reference
 - Debug fprintf blocks
-- Deprecated API workarounds (OS X 10.4/10.6, Windows 95)
 - Alternative implementations that were replaced
-- Dead keyboard layout tables in win32.cpp
 
 ### Not-Yet-Enabled Features (~35% of total)
 - `EmLocalTalk` — LocalTalk networking (biggest single feature)

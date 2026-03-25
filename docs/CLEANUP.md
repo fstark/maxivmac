@@ -246,15 +246,12 @@ fine — step 6 will address it.
 
 ---
 
-## Step 5 — Frontend Simplification
+## Step 5 — Frontend Simplification ✅
 
-Keep two backends: **Cocoa** (native macOS) and **SDL** (everything else).
-Drop Carbon, X11, GTK, Win32, DOS, NDS, Classic Mac — that's ~28K lines
-gone.  They can be resurrected from git history if anyone ever wants them.
-
-The implicit interface in `platform.h` becomes a proper abstract class.
-Each backend implements it.  The shared code in `platform/common/`
-(control mode UI, screen translation, param buffers) stays.
+> **Status: Complete.** All backends except **SDL** have been removed.
+> Dropped: Cocoa, Carbon, X11, GTK, Win32, DOS, NDS, Classic Mac — ~33K lines
+> gone. The platform directory now contains only `sdl.cpp` and the shared
+> code in `platform/common/`. The CMake build is SDL-only on all platforms.
 
 ---
 
@@ -273,5 +270,5 @@ registry, config.  The details will be obvious when we get here.
 - **Don't refactor `m68k.cpp` yet.**  It's the CPU hot path.  Splitting it
   needs benchmark validation.  Steps 1–4 only touch it for `LOCALIPROC`,
   `ui5r_From*`, and the snapshot hook.
-- **Don't touch platform backends until step 5.**
+- **Don't touch platform backends until step 5.**  *(Step 5 is now complete — only SDL remains.)*
 - **If in doubt, delete.**  Git has the history.

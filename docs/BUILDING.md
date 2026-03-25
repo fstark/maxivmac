@@ -1,4 +1,4 @@
-# Building Mini vMac
+# Building maxivmac
 
 ## Source Layout
 
@@ -6,7 +6,7 @@
 src/core/        — Core emulation (machine glue, main loop, endian helpers)
 src/cpu/         — 68000/68020 CPU emulator and instruction decode tables
 src/devices/     — Hardware device emulation (VIA, SCC, IWM, SCSI, ADB, etc.)
-src/platform/    — Platform backends (cocoa.mm, sdl.cpp, win32.cpp, etc.)
+src/platform/    — Platform backend (sdl.cpp)
   common/        — Shared platform code compiled as separate translation units:
                    osglu_common, intl_chars, param_buffers, control_mode
 src/config/      — Build configuration headers and language strings
@@ -21,12 +21,11 @@ rm -rf bld/
 ```
 
 ```bash
-cmake --preset macos-cocoa
-cmake --build --preset macos-cocoa
-cp -R bld/macos-cocoa/maxivmac.app ./
+cmake --preset macos
+cmake --build --preset macos
 ```
 
-The app bundle is at `bld/macos-cocoa/minivmac.app`. Drop a Mac ROM file next to the app and a System disk image onto the window to boot.
+The binary is at `bld/macos/maxivmac`. Place a Mac ROM file in the working directory and pass a System disk image on the command line to boot.
 
 ## Runtime Model Selection
 
@@ -35,16 +34,16 @@ flags to select the model at launch:
 
 ```bash
 # Mac II (default)
-./minivmac.app/Contents/MacOS/minivmac --rom=MacII.ROM disk.hfs
+./maxivmac --rom=MacII.ROM disk.hfs
 
 # Mac Plus
-./minivmac.app/Contents/MacOS/minivmac --model=MacPlus --rom=MacPlus.ROM disk.dsk
+./maxivmac --model=MacPlus --rom=MacPlus.ROM disk.dsk
 
 # Mac SE
-./minivmac.app/Contents/MacOS/minivmac --model=MacSE --rom=MacSE.ROM disk.hfs
+./maxivmac --model=MacSE --rom=MacSE.ROM disk.hfs
 
 # Custom RAM and screen
-./minivmac.app/Contents/MacOS/minivmac --model=MacII --ram=8M --screen=1024x768x8
+./maxivmac --model=MacII --ram=8M --screen=1024x768x8
 ```
 
 ### Command-Line Options
@@ -64,18 +63,18 @@ flags to select the model at launch:
 
 - **CMake** ≥ 3.20
 - **Ninja** (recommended) or Make
-- **macOS:** Xcode command-line tools (provides Clang, AppKit, AudioUnit, OpenGL)
-- **Linux:** SDL2 or SDL3 development libraries, X11
-- **Windows:** SDL2, MinGW or MSVC
+- **SDL2** or **SDL3** development libraries (all platforms)
+- **macOS:** Xcode command-line tools (provides Clang)
+- **Linux:** X11 development libraries (optional, for X11 support via SDL)
+- **Windows:** MinGW or MSVC
 
 ## Build Presets
 
 | Preset | Platform | Backend | Notes |
 |--------|----------|---------|-------|
-| `macos-cocoa` | macOS | Cocoa/OpenGL | Default. Native macOS experience. |
-| `macos-sdl` | macOS | SDL | For cross-platform testing. |
-| `linux-sdl` | Linux | SDL | Default on Linux. |
-| `windows-sdl` | Windows | SDL | Default on Windows. |
+| `macos` | macOS | SDL | Default for macOS. |
+| `linux` | Linux | SDL | Default for Linux. |
+| `windows` | Windows | SDL | Default for Windows. |
 
 Usage:
 
@@ -90,18 +89,11 @@ If you don't want to use presets:
 
 ```bash
 cmake -B bld -G Ninja \
-    -DMINIVMAC_BACKEND=cocoa \
     -DCMAKE_BUILD_TYPE=Release
 cmake --build bld
 ```
 
 ## CMake Options
-
-### Core
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `MINIVMAC_BACKEND` | `auto` | `cocoa`, `sdl`, or `auto` (Cocoa on macOS, SDL elsewhere) |
 
 ### Display (build-time window defaults)
 
@@ -133,16 +125,16 @@ Note: Screen resolution, bit depth, and RAM size are now runtime — use `--scre
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `MINIVMAC_DBGLOG` | `0` | Enable debug logging |
+| `MINIVMAC_DBGLOG` | `1` | Enable debug logging |
 | `MINIVMAC_ABNORMAL_REPORTS` | `0` | Enable abnormal-condition reports |
 | `MINIVMAC_LOCALTALK` | `0` | Enable LocalTalk emulation |
 
 ## Legacy Build
 
-The original build scripts (`build_macos.sh`, `build_linux.sh`, etc.) and the `setup/` tool remain in the repository. They use a 3-stage pipeline:
+The original build scripts and `setup/` tool remain in the `reference/` directory. They use a 3-stage pipeline:
 
 1. Compile `setup/tool.c` → `setup_t`
 2. Run `./setup_t` → generates `setup.sh` and config headers in `cfg/`
 3. Run `setup.sh` → invokes `xcodebuild` or `make`
 
-The CMake build replaces this pipeline with a single step. The `cfg/` directory still contains the original generated headers (for the Mac II / Cocoa / macOS target) as a reference.
+The CMake build replaces this pipeline with a single step. The `cfg/` directory still contains the original generated headers as a reference.

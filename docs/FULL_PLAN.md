@@ -10,7 +10,7 @@ Replace the 3-stage pipeline (compile `setup_t` → generate `setup.sh` → gene
 
 1. Create a top-level `CMakeLists.txt` that compiles all sources in `src/` directly, with `cfg/` and `src/` as include paths — mirroring what the Xcode project already does at `minivmac.xcodeproj/project.pbxproj`.
 2. Hand-write the 6 config headers currently in `cfg/` as static files (they're already checked in and only ~240 lines total for `CNFUDPIC.h`, the largest). Use CMake `option()` / `set()` for the key knobs (`CurEmMd`, `Use68020`, `EmFPU`, screen size, etc.) and `configure_file()` to template them.
-3. Add presets for the 3 primary platforms (macOS/Cocoa, Linux/SDL, Windows/SDL) — replacing `build_macos.sh`, `build_linux.sh`, `build_windows.sh`.
+3. Add presets for the 3 primary platforms (macOS/SDL, Linux/SDL, Windows/SDL) — replacing `build_macos.sh`, `build_linux.sh`, `build_windows.sh`.
 4. Keep the old build scripts and `setup/` intact for now (no deletion). Verify the CMake build produces a working binary by booting a System 7 disk image.
 
 **Result:** `cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build` produces a working emulator. The `setup/` directory becomes optional legacy.
@@ -37,7 +37,7 @@ Make the source tree navigable.
    - `src/cpu/` — `m68k.cpp` (from `MINEM68K.c`), `m68k_tables.cpp` (from `M68KITAB.c`), `m68k.h`, `disasm.cpp`
    - `src/devices/` — `via.cpp`, `via2.cpp`, `iwm.cpp`, `scc.cpp`, `scsi.cpp`, `rtc.cpp`, `rom.cpp`, `video.cpp`, `screen.cpp`, `sound.cpp`, `asc.cpp`, `sony.cpp`, `keyboard.cpp`, `adb.cpp`, `pmu.cpp`, `mouse.cpp`
    - `src/core/` — `machine.cpp` (from `GLOBGLUE.c`), `main.cpp` (from `PROGMAIN.c`), `machine.h`, `types.h`
-   - `src/platform/` — `cocoa.mm`, `sdl.cpp`, `platform.h` (from `OSGLUAAA.h`)
+   - `src/platform/` — `sdl.cpp`, `platform.h` (from `OSGLUAAA.h`)
    - `src/platform/common/` — shared platform code (from `COMOSGLU.h`, `CONTROLM.h`, `OSGCOMUI.h`, `OSGCOMUD.h`)
    - `cfg/` → `src/config/`
 2. Update `CMakeLists.txt` to reflect new paths. Keep `.c` → `.cpp` renames as part of this phase (files already compile as C++, since the codebase avoids C++ keywords).
@@ -110,24 +110,18 @@ The architectural pivot that enables everything downstream. **Completed.**
 | `main.cpp:s_machine` | `unique_ptr<Machine>` | Main machine instance (intentional) |
 | `main.cpp:s_launchConfig` | `LaunchConfig` | Parsed CLI config (intentional) |
 
-**Result:** `./minivmac --model=II --rom=MacII.ROM disk.img` or `./minivmac --model=Plus --rom=vMac.ROM --ram=4M disk.img`
+**Result:** `./maxivmac --model=II --rom=MacII.ROM disk.img` or `./maxivmac --model=Plus --rom=vMac.ROM --ram=4M disk.img`
 
 ---
 
-## Phase 6 — Platform Consolidation
+## Phase 6 — Platform Consolidation ✅
 
-Reduce 9 backends to 2.
+**Completed.** Reduced to a single SDL backend.
 
-1. Keep `src/OSGLUCCO.m` (Cocoa, macOS native) and `src/OSGLUSDL.c` (SDL, cross-platform). Drop Carbon (`OSGLUOSX.c`), X11 (`OSGLUXWN.c`), GTK (`OSGLUGTK.c`), Win32 (`OSGLUWIN.c`), DOS (`OSGLUDOS.c`), NDS (`OSGLUNDS.c`), Classic Mac (`OSGLUMAC.c`).
-2. Split each remaining backend into subsystems implementing focused interfaces:
-   - `platform::Window` — windowing, resize, fullscreen
-   - `platform::Audio` — sound output
-   - `platform::Input` — keyboard/mouse events
-   - `platform::FileIO` — disk image access, ROM loading
-   - `platform::Clipboard` — host clipboard exchange
-3. Extract the shared code currently in `COMOSGLU.h` and `CONTROLM.h` (the in-emulator control mode UI) into a platform-independent module.
-
-**Result:** Clean separation of concerns. Adding a new backend (e.g., Wayland-native) means implementing 5 small interfaces, not one 5,000-line file.
+Dropped all non-SDL backends: Cocoa (`cocoa.mm`), Carbon, X11, GTK, Win32,
+DOS, NDS, Classic Mac — ~33K lines removed. The `src/platform/` directory now
+contains only `sdl.cpp` and shared code in `platform/common/`. The CMake build
+is SDL-only on all platforms (macOS, Linux, Windows).
 
 ---
 
@@ -153,7 +147,7 @@ Reduce 9 backends to 2.
 2. Expose the debugger via a simple command interface (stdin/stdout or socket) so external tools can connect.
 3. Add optional structured logging (replacing the ad-hoc `dbglog_*` system) with categories per device.
 
-**Result:** `./minivmac --debug` drops into an interactive debugger. External tools can attach.
+**Result:** `./maxivmac --debug` drops into an interactive debugger. External tools can attach.
 
 ---
 
@@ -176,12 +170,12 @@ Reduce 9 backends to 2.
 
 ## Verification
 
-- After each phase: `cmake --build build && ./minivmac MacII.ROM` boots System 7 successfully
+- After each phase: `cmake --build build && ./maxivmac MacII.ROM` boots System 7 successfully
 - Phase 2: Compile with `-Wall -Wextra -Wpedantic` under C++17 — zero warnings
 - Phase 4: ✅ `Machine` object owns all state; Mac II boots System 7
 - Phase 5: Boot the same ROM+disk with `--model=Plus` and `--model=II` from one binary
 - Phase 7: `ctest` passes all CPU instruction tests and device unit tests
-- Phase 8: `./minivmac --debug` can set a breakpoint, hit it, and inspect registers
+- Phase 8: `./maxivmac --debug` can set a breakpoint, hit it, and inspect registers
 - Phase 9: A Python script can connect to the socket, send a keystroke, and read back the screen buffer
 
 ---
@@ -190,6 +184,6 @@ Reduce 9 backends to 2.
 
 - **CMake over Meson**: wider IDE support (CLion, VS Code, Xcode generator) and easier FetchContent for test frameworks
 - **C++ over modern C**: classes for device encapsulation, `std::unique_ptr` for ownership, namespaces for organization, `constexpr` for compile-time constants — these are the features that matter, not heavy template metaprogramming
-- **Keep Cocoa backend alongside SDL**: native macOS integration (menu bar, drag-and-drop, Retina, system audio) is important for the primary development platform and for "better integration with the mac desktop"
+- **SDL as sole backend**: simplifies the build, eliminates platform code duplication, and SDL provides native windowing/audio/input on macOS, Linux, and Windows. A native Cocoa backend can be resurrected from git history if needed.
 - **Runtime `if` over compile-time `#if` for CPU/model**: modern branch predictors make this zero-cost in practice. The simplicity win of one binary is enormous
 - **TOML for config files**: human-editable, well-supported in C++ (toml++ is header-only)

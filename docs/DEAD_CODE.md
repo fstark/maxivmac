@@ -3,7 +3,12 @@
 Comprehensive analysis of `#if`-disabled code, always-false config guards, unused modules,
 and other dead code in the maxivmac codebase.
 
-**Bottom line: ~5,500+ lines of dead code in compiled sources, plus ~27,000 lines in uncompiled platform files and ~2,700 lines in `src/unused/`.**
+> **Update (2026-03):** The platform frontend cleanup is complete. All backends
+> except SDL have been removed (Cocoa, Carbon, X11, GTK, Win32, DOS, NDS,
+> Classic Mac — ~33K lines deleted). Sections about those deleted files have
+> been removed from this audit.
+
+**Bottom line: ~5,500+ lines of dead code in compiled sources, plus ~2,700 lines in `src/unused/`.**
 
 ---
 
@@ -119,16 +124,12 @@ deprecated API paths, debug scaffolding, and truly dead stubs.
   - `SCC_SetBaud` — references non-existent function
   - TxUnderrun/EOM alternatives — "works better without this"
 
-### B5. `cocoa.mm` Dead Blocks — ~200 lines → DELETE
-All 31 removable `#if 0` blocks in `src/platform/cocoa.mm`:
-- **Deprecated API paths** (7): `Gestalt`, `CGSetLocalEventsSuppressionInterval`,
-  `lockFocusIfCanDraw`/`unlockFocus`, `cStringUsingEncoding`, `runModalForDirectory`
-- **Alternative implementations** (15): fcntl vs flock file locking, NSString construction
-  variants, cursor set methods, audio format flags, NSInvocation dispatching
-- **Dead obsolete** (8): debug `glDrawPixels` visualization, per-tick log spam, unused
-  color masks, unused screen dimension queries, test scaffolding
-- **One to consider keeping**: Auto-slow power saving (L4904-4913, ~10 lines) —
-  minor future value
+### B5. SDL `#if 0` Blocks — ~100 lines → DELETE
+Pure `#if 0` blocks and `#if 0 && Feature` blocks in `src/platform/sdl.cpp`:
+- `UseMotionEvents` motion event handling
+- Disabled event handling code
+- The `#if 0 == SDL_MAJOR_VERSION` block (L4066-4699, 634 lines) is a headless/no-SDL
+  fallback that is dead when SDL is present.
 
 ### B6. VIA Debug Logging (`_VIA_Debug`) — ~50 lines → DELETE
 - **`src/devices/adb.cpp`**, **`keyboard.cpp`**, **`via.cpp`**, **`via2.cpp`**:
@@ -176,23 +177,17 @@ All 31 removable `#if 0` blocks in `src/platform/cocoa.mm`:
   (like `--trace-scc` flag). This eliminates 93 `#if`/`#endif` pairs while
   preserving diagnostic value.
 
-### C2. Uncompiled Platform Files — ~27,000 lines → ARCHIVE or DELETE
-These files exist in `src/platform/` but are **never compiled** by CMakeLists.txt.
-Only `cocoa.mm` and `sdl.cpp` are active backends.
+### C2. `src/unused/` Files — ~2,700 lines → ARCHIVE or DELETE
 
 | File | Lines | Target Platform | Status |
 |------|-------|----------------|--------|
-| `carbon.cpp` | ~5,400 | macOS Carbon API | Dead (Carbon deprecated 2012) |
-| `classic_mac.cpp` | ~4,200 | Classic Mac OS 9 | Dead (OS unsupported) |
-| `win32.cpp` | ~5,200 | Native Win32 | Replaced by SDL backend |
-| `x11.cpp` | ~4,500 | Native X11 | Replaced by SDL backend |
-| `gtk.cpp` | ~4,100 | GTK+ | Replaced by SDL backend |
-| `nds.cpp` | ~2,300 | Nintendo DS | Dead (novelty port) |
-| `dos.cpp` | ~1,300 | MS-DOS | Dead (OS unsupported) |
+| `LTOVRBPF.h` | 383 | LocalTalk over BPF | Potential future use (LocalTalk) |
+| `LTOVRUDP.h` | 457 | LocalTalk over UDP | Potential future use (LocalTalk) |
+| `SGLUALSA.h` | 1,619 | ALSA sound (Linux) | Potential future use |
+| `SGLUDDSP.h` | 229 | OSS sound (Linux) | Dead (OSS deprecated) |
 
-**Recommendation**: Move to `src/platform/archive/` or delete. If win32.cpp is ever
-needed for a native Windows port, it should be rewritten against modern Win32/WinRT APIs
-rather than resurrecting this code.
+**Note:** All non-SDL platform backends (Cocoa, Carbon, X11, GTK, Win32, DOS,
+NDS, Classic Mac — ~33K lines) have already been removed from the codebase.
 
 ### C3. Internal Dead Code in `src/unused/` Files
 - **`LTOVRBPF.h`**: 10 lines internal `#if 0` (minor)
@@ -213,7 +208,7 @@ Similar to SCC — should be converted to runtime-configurable tracing.
 | **`src/platform/common/actv_code.h`** | 374 | B1 | **Delete entire file** |
 | **`src/devices/screen_hack.h`** | 404 | B7 | **Delete entire file** |
 | **`src/devices/hpmac_hack.h`** | 256 | B7 | **Delete entire file** |
-| **`src/platform/cocoa.mm`** | ~200 | B5 | Delete 31 `#if 0` blocks |
+| **`src/platform/sdl.cpp`** | ~100 | B5 | Delete `#if 0` blocks, headless fallback |
 | **`src/cpu/m68k.cpp`** | ~120 | B8 | Delete dead stubs |
 | **`src/cpu/m68k_tables.cpp`** | ~100 | B8 | Delete old decode logic |
 | **`src/cpu/fpu_math.h`** | ~600 | A4+B8 | Keep `cIncludeFPUUnused`, delete `#if 0` |
@@ -231,7 +226,7 @@ Similar to SCC — should be converted to runtime-configurable tracing.
 | **`src/devices/rom.cpp`** | ~20 | A6 | Keep (useful feature) |
 | **`src/cpu/endian.h`** | ~15 | B8 | Delete alt byte-swaps |
 | **`src/unused/SGLUDDSP.h`** | 229 | B9 | **Delete entire file** |
-| **Uncompiled platforms** (7 files) | ~27,000 | C2 | Archive or delete |
+| **Uncompiled platforms** (7 files) | ~27,000 | C2 | ~~Archive or delete~~ **Done** — all removed |
 
 ---
 
@@ -247,18 +242,17 @@ Similar to SCC — should be converted to runtime-configurable tracing.
 ### Priority 2 — Moderate Cleanup (~800 lines)
 6. **Delete 50 SCC "always constant" stubs** — replace with one-line comment
 7. **Delete 14 SCC alternative implementation blocks** — 290 lines of dead logic
-8. **Delete 31 `#if 0` blocks in `cocoa.mm`** — deprecated APIs, abandoned approaches
+8. **Delete `#if 0` blocks in `sdl.cpp`** — headless fallback and disabled code
 9. **Delete CPU/core `#if 0` blocks** — old decode tables, SmallGlobals, alternatives
 
 ### Priority 3 — Structural
-10. **Archive 7 uncompiled platform files** to `src/platform/archive/` — ~27,000 lines
-11. **Convert SCC debug logging** to runtime-configurable tracing — eliminates 93 `#if`/`#endif` pairs
-12. **Convert other device `*_dolog`** patterns similarly
+10. **Convert SCC debug logging** to runtime-configurable tracing — eliminates 93 `#if`/`#endif` pairs
+11. **Convert other device `*_dolog`** patterns similarly
 
 ### Priority 4 — Leave Alone
-13. **Keep `EmLocalTalk` code** — complete, valuable feature
-14. **Keep `SCC_TrackMore` code** — serial port scaffolding
-15. **Keep `NeedIntlChars` code** — needed for proper clipboard
-16. **Keep `cIncludeFPUUnused` code** — may be needed for full FPU coverage
-17. **Keep `SGLUALSA.h`** — Linux audio backend
-18. **Keep `LTOVRBPF.h` and `LTOVRUDP.h`** — LocalTalk transports
+12. **Keep `EmLocalTalk` code** — complete, valuable feature
+13. **Keep `SCC_TrackMore` code** — serial port scaffolding
+14. **Keep `NeedIntlChars` code** — needed for proper clipboard
+15. **Keep `cIncludeFPUUnused` code** — may be needed for full FPU coverage
+16. **Keep `SGLUALSA.h`** — Linux audio backend
+17. **Keep `LTOVRBPF.h` and `LTOVRUDP.h`** — LocalTalk transports
