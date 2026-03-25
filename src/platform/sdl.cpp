@@ -1,43 +1,4 @@
-/*
-	OSGLUSDL.c
 
-	Copyright (C) 2012-2025 Paul C. Pratt, Manuel Alfayate, StevenSYS
-
-	You can redistribute this file and/or modify it under the terms
-	of version 2 of the GNU General Public License as published by
-	the Free Software Foundation.  You should have received a copy
-	of the license along with this file; see the file COPYING.
-
-	This file is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	license for more details.
-*/
-
-/*
-	Operating System GLUe for SDL (1.2, 2.0 and 3.x) library
-
-	All operating system dependent code for the
-	SDL Library should go here.
-
-	This is also the "reference" implementation. General
-	comments about what the platform dependent code
-	does should go here, and not be repeated for each
-	platform. Such comments are labeled with "OSGLUxxx common".
-
-	The SDL port can be used to create a more native port. Once
-	the SDL port runs on a new platform, the source code for
-	Mini vMac and SDL can be merged together. Then any SDL code
-	not used for this platform is removed, then a lot of clean
-	up is done step by step to remove the rest of the SDL code.
-	This technique is particular useful if you are not very
-	familiar with the new platform. It is long but straightforward,
-	and you can learn about the platform as you go. The Cocoa
-	port was created this way, with no previous knowledge of
-	Cocoa or Objective-C.
-
-	The main entry point 'main' is at the end of this file.
-*/
 
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
@@ -226,48 +187,7 @@ static void NativeStrFromCStr(char *r, char *s)
 
 /* --- drives --- */
 
-/*
-	OSGLUxxx common:
-	define NotAfileRef to some value that is different
-	from any valid open file reference.
-*/
-#define NotAfileRef NULL
-
-#ifndef UseRWops
-#define UseRWops 0
-#endif
-
-#if UseRWops
-#define MyFilePtr SDL_RWops *
-#define MySeek SDL_RWseek
-	/*
-		unlike fseek, SDL_RWseek returns nonzero value on success
-	*/
-#define MySeekSet RW_SEEK_SET
-#define MySeekCur RW_SEEK_CUR
-#define MySeekEnd RW_SEEK_END
-#define MyFileRead(ptr, size, nmemb, stream) \
-	SDL_RWread(stream, ptr, size, nmemb)
-#define MyFileWrite(ptr, size, nmemb, stream) \
-	SDL_RWwrite(stream, ptr, size, nmemb)
-#define MyFileTell SDL_RWtell
-#define MyFileClose SDL_RWclose
-#define MyFileOpen SDL_RWFromFile
-#else
-#define MyFilePtr FILE *
-#define MySeek fseek
-#define MySeekSet SEEK_SET
-#define MySeekCur SEEK_CUR
-#define MySeekEnd SEEK_END
-#define MyFileRead fread
-#define MyFileWrite fwrite
-#define MyFileTell ftell
-#define MyFileClose fclose
-#define MyFileOpen fopen
-#define MyFileEof feof
-#endif
-
-static MyFilePtr Drives[NumDrives]; /* open disk image files */
+static FILE *Drives[NumDrives]; /* open disk image files */
 
 static void InitDrives(void)
 {
@@ -278,7 +198,7 @@ static void InitDrives(void)
 	tDrive i;
 
 	for (i = 0; i < NumDrives; ++i) {
-		Drives[i] = NotAfileRef;
+		Drives[i] = NULL;
 	}
 }
 
@@ -293,14 +213,14 @@ static void InitDrives(void)
 		will do) on failure.
 	*/
 	tMacErr err = mnvm_miscErr;
-	MyFilePtr refnum = Drives[Drive_No];
+	FILE * refnum = Drives[Drive_No];
 	uint32_t NewSony_Count = 0;
 
-	if (MySeek(refnum, Sony_Start, MySeekSet) >= 0) {
+	if (fseek(refnum, Sony_Start, SEEK_SET) >= 0) {
 		if (IsWrite) {
-			NewSony_Count = MyFileWrite(Buffer, 1, Sony_Count, refnum);
+			NewSony_Count = fwrite(Buffer, 1, Sony_Count, refnum);
 		} else {
-			NewSony_Count = MyFileRead(Buffer, 1, Sony_Count, refnum);
+			NewSony_Count = fread(Buffer, 1, Sony_Count, refnum);
 		}
 
 		if (NewSony_Count == Sony_Count) {
@@ -326,11 +246,11 @@ static void InitDrives(void)
 		will do) on failure.
 	*/
 	tMacErr err = mnvm_miscErr;
-	MyFilePtr refnum = Drives[Drive_No];
+	FILE * refnum = Drives[Drive_No];
 	long v;
 
-	if (MySeek(refnum, 0, MySeekEnd) >= 0) {
-		v = MyFileTell(refnum);
+	if (fseek(refnum, 0, SEEK_END) >= 0) {
+		v = ftell(refnum);
 		if (v >= 0) {
 			*Sony_Count = v;
 			err = mnvm_noErr;
@@ -350,12 +270,12 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 		Macintosh style error code, but -1
 		will do) on failure.
 	*/
-	MyFilePtr refnum = Drives[Drive_No];
+	FILE * refnum = Drives[Drive_No];
 
 	DiskEjectedNotify(Drive_No);
 
-	MyFileClose(refnum);
-	Drives[Drive_No] = NotAfileRef; /* not really needed */
+	fclose(refnum);
+	Drives[Drive_No] = NULL; /* not really needed */
 
 	return mnvm_noErr;
 }
@@ -394,7 +314,7 @@ static void UnInitDrives(void)
 	}
 }
 
-static bool Sony_Insert0(MyFilePtr refnum, bool locked,
+static bool Sony_Insert0(FILE * refnum, bool locked,
 	char *drivepath)
 {
 	/*
@@ -421,7 +341,7 @@ static bool Sony_Insert0(MyFilePtr refnum, bool locked,
 	}
 
 	if (! IsOk) {
-		MyFileClose(refnum);
+		fclose(refnum);
 	}
 
 	return IsOk;
@@ -431,10 +351,10 @@ static bool Sony_Insert1(char *drivepath, bool silentfail)
 {
 	bool locked = false;
 	/* printf("Sony_Insert1 %s\n", drivepath); */
-	MyFilePtr refnum = MyFileOpen(drivepath, "rb+");
+	FILE * refnum = fopen(drivepath, "rb+");
 	if (NULL == refnum) {
 		locked = true;
-		refnum = MyFileOpen(drivepath, "rb");
+		refnum = fopen(drivepath, "rb");
 	}
 	if (NULL == refnum) {
 		if (! silentfail) {
@@ -449,21 +369,17 @@ static bool Sony_Insert1(char *drivepath, bool silentfail)
 static tMacErr LoadMacRomFrom(char *path)
 {
 	tMacErr err;
-	MyFilePtr ROM_File;
+	FILE * ROM_File;
 	int File_Size;
 
-	ROM_File = MyFileOpen(path, "rb");
+	ROM_File = fopen(path, "rb");
 	if (NULL == ROM_File) {
 		err = mnvm_fnfErr;
 	} else {
 		const uint32_t romSize = g_machine->config().romSize;
-		File_Size = MyFileRead(ROM, 1, romSize, ROM_File);
+		File_Size = fread(ROM, 1, romSize, ROM_File);
 		if ((uint32_t)File_Size != romSize) {
-#ifdef MyFileEof
-			if (MyFileEof(ROM_File))
-#else
-			if (File_Size > 0)
-#endif
+			if (feof(ROM_File))
 			{
 				MacMsgOverride(kStrShortROMTitle,
 					kStrShortROMMessage);
@@ -476,7 +392,7 @@ static tMacErr LoadMacRomFrom(char *path)
 		} else {
 			err = ROM_IsValid();
 		}
-		MyFileClose(ROM_File);
+		fclose(ROM_File);
 	}
 
 	return err;
@@ -1354,23 +1270,6 @@ static void ForceShowCursor(void)
 
 /* cursor moving */
 
-/*
-	OSGLUxxx common:
-	When "EnableFSMouseMotion" the platform
-	specific code can get relative mouse
-	motion, instead of absolute coordinates
-	on the emulated screen. It should
-	set HaveMouseMotion to true when
-	it is doing this (normally when in
-	full screen mode.)
-
-	This can usually be implemented by
-	hiding the platform specific cursor,
-	and then keeping it within a box,
-	moving the cursor back to the center whenever
-	it leaves the box. This requires the
-	ability to move the cursor (in MyMoveMouse).
-*/
 
 #ifndef HaveWorkingWarp
 #define HaveWorkingWarp 1
@@ -3326,10 +3225,6 @@ label_retry:
 #if IncludeHostTextClipExchange
 static uint8_t UniCodePoint2MacRoman(uint32_t x)
 {
-/*
-	adapted from
-		http://www.unicode.org/Public/MAPPINGS/VENDORS/APPLE/ROMAN.TXT
-*/
 	uint8_t y;
 
 	if (x < 128) {
@@ -5066,19 +4961,6 @@ static void CheckForSystemEvents(void)
 #endif
 }
 
-/*
-	OSGLUxxx common:
-	In general, attempt to emulate one Macintosh tick (1/60.14742
-	seconds) for every tick of real time. When done emulating
-	one tick, wait for one tick of real time to elapse, by
-	calling WaitForNextTick.
-
-	But, Mini vMac can run the emulation at greater than 1x speed, up to
-	and including running as fast as possible, by emulating extra cycles
-	at the end of the emulated tick. In this case, the extra emulation
-	should continue only as long as the current real time tick is not
-	over - until ExtraTimeNotOver returns false.
-*/
 
  bool ExtraTimeNotOver(void)
 {
