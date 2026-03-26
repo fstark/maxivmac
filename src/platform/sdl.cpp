@@ -5,6 +5,8 @@
 #include "core/machine_obj.h"
 #include "core/main.h"
 
+#include <sys/stat.h>
+
 #ifdef WantOSGLUSDL
 
 /* --- some simple utilities --- */
@@ -365,6 +367,55 @@ static bool Sony_Insert1(char *drivepath, bool silentfail)
 	}
 	return false;
 }
+
+#if IncludeSonyNew
+static bool WriteZero(FILE *refnum, uint32_t L)
+{
+	uint8_t buffer[2048];
+	memset(buffer, 0, sizeof(buffer));
+
+	while (L > 0) {
+		uint32_t i = (L > sizeof(buffer)) ? sizeof(buffer) : L;
+		if (fwrite(buffer, 1, i, refnum) != i) {
+			return false;
+		}
+		L -= i;
+	}
+	return true;
+}
+
+static void MakeNewDisk0(uint32_t L, char *drivepath)
+{
+	bool IsOk = false;
+	FILE *refnum = fopen(drivepath, "wb+");
+	if (nullptr == refnum) {
+		MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, false);
+	} else {
+		if (WriteZero(refnum, L)) {
+			IsOk = Sony_Insert0(refnum, false, drivepath);
+			refnum = nullptr;
+		}
+		if (refnum != nullptr) {
+			fclose(refnum);
+		}
+		if (! IsOk) {
+			(void) remove(drivepath);
+		}
+	}
+}
+
+static void MakeNewDisk(uint32_t L, char *drivename)
+{
+	/* Create new disk in working directory / "out" subdirectory */
+	char s[256];
+
+	snprintf(s, sizeof(s), "out/%s", drivename);
+	/* Ensure "out" directory exists */
+	(void) mkdir("out", 0755);
+	MakeNewDisk0(L, s);
+	fprintf(stderr, "Exported file: %s\n", s);
+}
+#endif
 
 static tMacErr LoadMacRomFrom(char *path)
 {
@@ -4857,6 +4908,46 @@ static void CheckForSavedTasks()
 	if (0 != RequestIthDisk) {
 		Sony_InsertIth(RequestIthDisk);
 		RequestIthDisk = 0;
+	}
+#endif
+
+#if IncludeSonyNew
+	if (vSonyNewDiskWanted) {
+#if IncludeSonyNameNew
+		if (vSonyNewDiskName != NotAPbuf) {
+			uint8_t *p = (uint8_t *)PbufDat[vSonyNewDiskName];
+			uint32_t L = PbufSize[vSonyNewDiskName];
+			char drivename[256];
+			uint32_t j = 0;
+			for (uint32_t i = 0; i < L && j < sizeof(drivename) - 1; ++i) {
+				uint8_t x = p[i];
+				if (x < 32) {
+					x = '-';
+				} else {
+					switch (x) {
+						case '/': case '<': case '>':
+						case '|': case ':':
+							x = '-';
+						default:
+							break;
+					}
+				}
+				drivename[j++] = x;
+			}
+			drivename[j] = 0;
+			if (j > 0 && drivename[0] == '.') {
+				drivename[0] = '-';
+			}
+			MakeNewDisk(vSonyNewDiskSize, drivename);
+			PbufDispose(vSonyNewDiskName);
+			vSonyNewDiskName = NotAPbuf;
+		} else
+#endif
+		{
+			char defaultName[] = "untitled.dsk";
+			MakeNewDisk(vSonyNewDiskSize, defaultName);
+		}
+		vSonyNewDiskWanted = false;
 	}
 #endif
 

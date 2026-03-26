@@ -13,3 +13,5 @@
 * Acceleration and 1s clock management is not user friendly anymore
 
 * Funky kExtnVideo management
+
+* Rename the "NewDisk" stuff in sdl.cpp. It is used for FILE export, not DISK. Also, it has nothing SDL specific, it should be in the the generic code.
