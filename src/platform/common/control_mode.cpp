@@ -1189,88 +1189,8 @@ void DisconnectKeyCodes2()
 #endif
 }
 
-#ifndef CheckRomCheckSum
-#define CheckRomCheckSum 1
-#endif
-
-#if CheckRomCheckSum
-static uint32_t Calc_Checksum()
-{
-	long int i;
-	uint32_t CheckSum = 0;
-	uint8_t * p = 4 + ROM;
-	uint32_t checkSumSize = g_machine ? g_machine->config().romSize : kCheckSumRom_Size;
-
-	for (i = (checkSumSize - 4) >> 1; --i >= 0; ) {
-		CheckSum += do_get_mem_word(p);
-		p += 2;
-	}
-
-	return CheckSum;
-}
-#endif
-
-#if CheckRomCheckSum && RomStartCheckSum
-void WarnMsgCorruptedROM()
-{
-	MacMsgOverride(kStrCorruptedROMTitle, kStrCorruptedROMMessage);
-}
-#endif
-
-#if CheckRomCheckSum
-void WarnMsgUnsupportedROM()
-{
-	MacMsgOverride(kStrUnsupportedROMTitle,
-		kStrUnsupportedROMMessage);
-}
-#endif
-
 tMacErr ROM_IsValid()
 {
-#if CheckRomCheckSum
-	uint32_t CheckSum =
-#if RomStartCheckSum
-		do_get_mem_long(ROM)
-#else
-		Calc_Checksum()
-#endif
-		;
-
-#ifdef kRomCheckSum1
-	if (CheckSum == kRomCheckSum1) {
-	} else
-#endif
-#ifdef kRomCheckSum2
-	if (CheckSum == kRomCheckSum2) {
-	} else
-#endif
-#ifdef kRomCheckSum3
-	if (CheckSum == kRomCheckSum3) {
-	} else
-#endif
-	{
-		WarnMsgUnsupportedROM();
-		return mnvm_miscErr;
-	}
-	/*
-		Even if ROM is corrupt or unsupported, go ahead and
-		try to run anyway. It shouldn't do any harm.
-		[update: no, don't]
-	*/
-
-#if RomStartCheckSum
-	{
-		uint32_t CheckSumActual = Calc_Checksum();
-
-		if (CheckSum != CheckSumActual) {
-			WarnMsgCorruptedROM();
-			return mnvm_miscErr;
-		}
-	}
-#endif
-
-#endif /* CheckRomCheckSum */
-
 	ROM_loaded = true;
 	SpeedStopped = false;
 

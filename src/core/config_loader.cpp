@@ -107,20 +107,21 @@ void PrintUsage(const char* progname)
 		"                   Classic, PB100, SEFDHD, Mac128K, Mac512Ke, MacPlusKanji,\n"
 		"                   Twig43, Twiggy  (default: MacII)\n"
 		"  --rom=PATH       Path to ROM file (auto-detected from model if omitted)\n"
+		"  --romdir=DIR     Directory to search for ROM files\n"
 		"  --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)\n"
 		"  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.\n"
 		"  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)\n"
 		"  --fullscreen     Start in fullscreen mode\n"
+		"  --title=TEXT     Window title\n"
 		"  --record=PATH    Record golden file for non-regression testing\n"
 		"  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)\n"
 		"  --trace=PATH     Write CPU+IO text trace to file\n"
 		"  --trace-cpu=PATH Write CPU-only text trace to file\n"
 		"  --snapshot-interval=N  Instructions between snapshots (default: 100000)\n"
 		"  --max-instructions=N   Instruction budget (default: 20000000)\n"
-		"  -r PATH          ROM path (short form)\n"
 		"  -h, --help       Show this help\n"
 		"\n"
-		"ROM auto-detection searches: ./<MODEL>.ROM, roms/<MODEL>.ROM\n"
+		"ROM auto-detection searches: ./<MODEL>.ROM, <romdir>/<MODEL>.ROM, roms/<MODEL>.ROM\n"
 		"\n"
 		"Examples:\n"
 		"  %s --model=MacII system7.img\n"
@@ -274,12 +275,6 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			continue;
 		}
 
-		// Short flags for GDB/rom path compat
-		if (strcmp(arg, "-r") == 0 && i + 1 < argc) {
-			lc.romPath = argv[++i];
-			continue;
-		}
-
 		// Reject unknown flags
 		if (arg[0] == '-') {
 			fprintf(stderr, "Error: unknown option '%s'\n\n", arg);
@@ -354,7 +349,7 @@ static bool fileExists(const std::string& path)
 	return false;
 }
 
-std::string ResolveRomPath(const std::string& romPath, MacModel model)
+std::string ResolveRomPath(const std::string& romPath, MacModel model, const std::string& romDir)
 {
 	if (!romPath.empty())
 		return romPath;
@@ -365,6 +360,13 @@ std::string ResolveRomPath(const std::string& romPath, MacModel model)
 	std::string p = name;
 	if (fileExists(p))
 		return p;
+
+	// Try <romDir>/<name>
+	if (!romDir.empty()) {
+		p = romDir + "/" + name;
+		if (fileExists(p))
+			return p;
+	}
 
 	// Try roms/<name>
 	p = std::string("roms/") + name;

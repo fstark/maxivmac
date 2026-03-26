@@ -8,12 +8,6 @@
 */
 
 
-#define RomFileName "MacII.ROM"
-#define kCheckSumRom_Size 0x00040000
-#define kRomCheckSum1 0x9779D2C4
-#define kRomCheckSum2 0x97221136
-#define CheckRomCheckSum 0
-#define RomStartCheckSum 1
 #define SaveDialogEnable 1
 #define EnableAltKeysMode 0
 #define MKC_formac_Control MKC_CM

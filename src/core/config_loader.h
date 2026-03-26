@@ -57,6 +57,6 @@ const char* ModelToString(MacModel model);
 const char* DefaultRomFileName(MacModel model);
 
 // Resolve ROM path: if romPath is set, return it; otherwise search
-// CWD and CWD/roms/ for the model's default ROM filename.
+// CWD, romDir (if non-empty), and CWD/roms/ for the model's default ROM filename.
 // Returns empty string if not found.
-std::string ResolveRomPath(const std::string& romPath, MacModel model);
+std::string ResolveRomPath(const std::string& romPath, MacModel model, const std::string& romDir = {});

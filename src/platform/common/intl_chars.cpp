@@ -22,6 +22,7 @@
 #include "platform/common/osglu_ud.h"
 #include "platform/common/osglu_common.h"
 #include "platform/common/intl_chars.h"
+#include "core/machine_obj.h"
 
 /* master copy of private font data */
 /*
@@ -1464,7 +1465,7 @@ char * GetSubstitutionStr(char x)
 			s = kAppVariationStr;
 			break;
 		case 'r':
-			s = RomFileName;
+			s = const_cast<char*>(g_machine->config().romFileName);
 			break;
 		case 'c':
 			s = kControlModeKey;

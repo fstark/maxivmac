@@ -111,15 +111,6 @@ configure_file(
 )
 
 # ---------------------------------------------------------------------------
-# ROM / model defaults for CNFUDOSG.h template (compile-time fallbacks).
-# Actual ROM file, size, and base address are runtime — see MachineConfig.
-# ---------------------------------------------------------------------------
-set(MINIVMAC_ROM_FILE "MacII.ROM")
-set(MINIVMAC_ROM_CHECKSUM1 "0x9779D2C4")
-set(MINIVMAC_ROM_CHECKSUM2 "0x97221136")
-set(MINIVMAC_CHECK_ROM_CHECKSUM "0")
-
-# ---------------------------------------------------------------------------
 # Language → header mapping
 # ---------------------------------------------------------------------------
 set(_lang_map_English    "lang/strings_english.h")

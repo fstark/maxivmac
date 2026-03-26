@@ -4890,8 +4890,7 @@ label_retry:
 	if (i < my_argc) {
 		pa = my_argv[i++];
 		if ('-' == pa[0]) {
-			if ((0 == strcmp(pa, "--rom"))
-				|| (0 == strcmp(pa, "-r")))
+			if (0 == strcmp(pa, "--rom"))
 			{
 				if (i < my_argc) {
 					rom_path = my_argv[i++];
@@ -5195,6 +5194,7 @@ int main(int argc, char **argv)
 	/* Seed SDL-specific options from common launch config */
 	static std::string s_title;
 	static std::string s_romDir;
+	static std::string s_resolvedRom;
 	if (!lc.title.empty()) {
 		s_title = lc.title;
 		n_arg = const_cast<char*>(s_title.c_str());
@@ -5202,6 +5202,10 @@ int main(int argc, char **argv)
 	if (!lc.romDir.empty()) {
 		s_romDir = lc.romDir;
 		d_arg = const_cast<char*>(s_romDir.c_str());
+	}
+	s_resolvedRom = ResolveRomPath(lc.romPath, lc.model, lc.romDir);
+	if (!s_resolvedRom.empty()) {
+		rom_path = const_cast<char*>(s_resolvedRom.c_str());
 	}
 
 	/* Insert disk images from command line */

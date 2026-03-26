@@ -526,7 +526,7 @@ void ProgramEarlyInit(int argc, char* argv[])
 		rc.screenDepth = s_machineConfig.screenDepth;
 
 		// Hash ROM file
-		std::string resolvedRom = ResolveRomPath(s_launchConfig.romPath, s_launchConfig.model);
+		std::string resolvedRom = ResolveRomPath(s_launchConfig.romPath, s_launchConfig.model, s_launchConfig.romDir);
 		if (!resolvedRom.empty())
 			md5_file(resolvedRom.c_str(), rc.romHash);
 		// Hash first disk
