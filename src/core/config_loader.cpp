@@ -97,6 +97,37 @@ static bool parseScreenSpec(const char* s, uint16_t& w, uint16_t& h, uint8_t& d)
 	return false;
 }
 
+void PrintUsage(const char* progname)
+{
+	fprintf(stderr,
+		"Usage: %s [options] [disk1.img] [disk2.img] ...\n"
+		"\n"
+		"Options:\n"
+		"  --model=MODEL    Mac model (= ROM base name): MacPlus, MacSE, MacII, MacIIx,\n"
+		"                   Classic, PB100, SEFDHD, Mac128K, Mac512Ke, MacPlusKanji,\n"
+		"                   Twig43, Twiggy  (default: MacII)\n"
+		"  --rom=PATH       Path to ROM file (auto-detected from model if omitted)\n"
+		"  --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)\n"
+		"  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.\n"
+		"  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)\n"
+		"  --fullscreen     Start in fullscreen mode\n"
+		"  --record=PATH    Record golden file for non-regression testing\n"
+		"  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)\n"
+		"  --trace=PATH     Write CPU+IO text trace to file\n"
+		"  --trace-cpu=PATH Write CPU-only text trace to file\n"
+		"  --snapshot-interval=N  Instructions between snapshots (default: 100000)\n"
+		"  --max-instructions=N   Instruction budget (default: 20000000)\n"
+		"  -r PATH          ROM path (short form)\n"
+		"  -h, --help       Show this help\n"
+		"\n"
+		"ROM auto-detection searches: ./<MODEL>.ROM, roms/<MODEL>.ROM\n"
+		"\n"
+		"Examples:\n"
+		"  %s --model=MacII system7.img\n"
+		"  %s --model=MacPlus disk.img\n",
+		progname, progname, progname);
+}
+
 LaunchConfig ParseCommandLine(int argc, char* argv[])
 {
 	LaunchConfig lc;
@@ -249,10 +280,11 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			continue;
 		}
 
-		// Skip unknown flags
+		// Reject unknown flags
 		if (arg[0] == '-') {
-			fprintf(stderr, "Warning: unknown option '%s'\n", arg);
-			continue;
+			fprintf(stderr, "Error: unknown option '%s'\n\n", arg);
+			PrintUsage(argv[0]);
+			exit(1);
 		}
 
 		// Positional arguments are disk image paths
@@ -287,37 +319,6 @@ MachineConfig BuildMachineConfig(const LaunchConfig& launch)
 	}
 
 	return config;
-}
-
-void PrintUsage(const char* progname)
-{
-	fprintf(stderr,
-		"Usage: %s [options] [disk1.img] [disk2.img] ...\n"
-		"\n"
-		"Options:\n"
-		"  --model=MODEL    Mac model (= ROM base name): MacPlus, MacSE, MacII, MacIIx,\n"
-		"                   Classic, PB100, SEFDHD, Mac128K, Mac512Ke, MacPlusKanji,\n"
-		"                   Twig43, Twiggy  (default: MacII)\n"
-		"  --rom=PATH       Path to ROM file (auto-detected from model if omitted)\n"
-		"  --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)\n"
-		"  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.\n"
-		"  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)\n"
-		"  --fullscreen     Start in fullscreen mode\n"
-		"  --record=PATH    Record golden file for non-regression testing\n"
-		"  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)\n"
-		"  --trace=PATH     Write CPU+IO text trace to file\n"
-		"  --trace-cpu=PATH Write CPU-only text trace to file\n"
-		"  --snapshot-interval=N  Instructions between snapshots (default: 100000)\n"
-		"  --max-instructions=N   Instruction budget (default: 20000000)\n"
-		"  -r PATH          ROM path (short form)\n"
-		"  -h, --help       Show this help\n"
-		"\n"
-		"ROM auto-detection searches: ./<MODEL>.ROM, roms/<MODEL>.ROM\n"
-		"\n"
-		"Examples:\n"
-		"  %s --model=MacII system7.img\n"
-		"  %s --model=MacPlus disk.img\n",
-		progname, progname, progname);
 }
 
 const char* ModelToString(MacModel model)
