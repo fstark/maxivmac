@@ -15,3 +15,5 @@ CMakeUserPresets.json
 disk.hfs
 reference/
 tmp/
+out/
+mf2.hfs

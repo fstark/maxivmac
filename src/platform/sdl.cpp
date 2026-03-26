@@ -190,6 +190,11 @@ static void NativeStrFromCStr(char *r, char *s)
 /* --- drives --- */
 
 static FILE *Drives[NumDrives]; /* open disk image files */
+static char *DriveNames[NumDrives]; /* paths of open disk images */
+
+/* forward declarations for vSonyGetName */
+static tMacErr UniCodeStrLength(char *s, uint32_t *r);
+static void UniCodeStr2MacRoman(char *s, char *r);
 
 static void InitDrives()
 {
@@ -201,6 +206,7 @@ static void InitDrives()
 
 	for (i = 0; i < NumDrives; ++i) {
 		Drives[i] = nullptr;
+		DriveNames[i] = nullptr;
 	}
 }
 
@@ -276,8 +282,15 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 
 	DiskEjectedNotify(Drive_No);
 
+	if (deleteit && DriveNames[Drive_No] != nullptr) {
+		(void) remove(DriveNames[Drive_No]);
+	}
+
 	fclose(refnum);
 	Drives[Drive_No] = nullptr; /* not really needed */
+
+	free(DriveNames[Drive_No]);
+	DriveNames[Drive_No] = nullptr;
 
 	return mnvm_noErr;
 }
@@ -290,7 +303,6 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 #if IncludeSonyNew
  tMacErr vSonyEjectDelete(tDrive Drive_No)
 {
-	/* SDL backend: no path tracking, so just eject without deleting */
 	return vSonyEject0(Drive_No, true);
 }
 #endif
@@ -298,10 +310,34 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 #if IncludeSonyGetName
  tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 {
-	/* SDL backend: drive path not tracked, cannot return name */
-	(void)Drive_No;
-	(void)r;
-	return mnvm_miscErr;
+	char *path = DriveNames[Drive_No];
+	if (nullptr == path) {
+		return mnvm_miscErr;
+	}
+
+	/* extract last path component */
+	char *name = strrchr(path, '/');
+	if (name != nullptr) {
+		++name;
+	} else {
+		name = path;
+	}
+
+	uint32_t L;
+	tMacErr err = UniCodeStrLength(name, &L);
+	if (mnvm_noErr != err) {
+		return err;
+	}
+
+	tPbuf t;
+	err = PbufNew(L, &t);
+	if (mnvm_noErr != err) {
+		return err;
+	}
+
+	UniCodeStr2MacRoman(name, (char *)PbufDat[t]);
+	*r = t;
+	return mnvm_noErr;
 }
 #endif
 
@@ -336,6 +372,8 @@ static bool Sony_Insert0(FILE * refnum, bool locked,
 
 		{
 			Drives[Drive_No] = refnum;
+			DriveNames[Drive_No] = (drivepath != nullptr)
+				? strdup(drivepath) : nullptr;
 			DiskInsertNotify(Drive_No, locked);
 
 			IsOk = true;
