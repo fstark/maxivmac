@@ -222,17 +222,17 @@ struct ATTer {
 typedef struct ATTer ATTer;
 typedef ATTer *ATTep;
 
-#define kATTA_readreadybit 0
-#define kATTA_writereadybit 1
-#define kATTA_mmdvbit 2
-#define kATTA_ntfybit 3
+constexpr int kATTA_readreadybit  = 0;
+constexpr int kATTA_writereadybit = 1;
+constexpr int kATTA_mmdvbit       = 2;
+constexpr int kATTA_ntfybit       = 3;
 
-#define kATTA_readwritereadymask \
-	((1 << kATTA_readreadybit) | (1 << kATTA_writereadybit))
-#define kATTA_readreadymask (1 << kATTA_readreadybit)
-#define kATTA_writereadymask (1 << kATTA_writereadybit)
-#define kATTA_mmdvmask (1 << kATTA_mmdvbit)
-#define kATTA_ntfymask (1 << kATTA_ntfybit)
+constexpr int kATTA_readwritereadymask =
+	(1 << kATTA_readreadybit) | (1 << kATTA_writereadybit);
+constexpr int kATTA_readreadymask  = (1 << kATTA_readreadybit);
+constexpr int kATTA_writereadymask = (1 << kATTA_writereadybit);
+constexpr int kATTA_mmdvmask       = (1 << kATTA_mmdvbit);
+constexpr int kATTA_ntfymask       = (1 << kATTA_ntfybit);
 
 extern uint32_t MMDV_Access(ATTep p, uint32_t Data,
 	bool WriteMem, bool ByteSize, uint32_t addr);
