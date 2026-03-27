@@ -7,118 +7,120 @@
 
 #pragma once
 
-#define MKC_A 0x00
-#define MKC_B 0x0B
-#define MKC_C 0x08
-#define MKC_D 0x02
-#define MKC_E 0x0E
-#define MKC_F 0x03
-#define MKC_G 0x05
-#define MKC_H 0x04
-#define MKC_I 0x22
-#define MKC_J 0x26
-#define MKC_K 0x28
-#define MKC_L 0x25
-#define MKC_M 0x2E
-#define MKC_N 0x2D
-#define MKC_O 0x1F
-#define MKC_P 0x23
-#define MKC_Q 0x0C
-#define MKC_R 0x0F
-#define MKC_S 0x01
-#define MKC_T 0x11
-#define MKC_U 0x20
-#define MKC_V 0x09
-#define MKC_W 0x0D
-#define MKC_X 0x07
-#define MKC_Y 0x10
-#define MKC_Z 0x06
+#include <cstdint>
 
-#define MKC_1 0x12
-#define MKC_2 0x13
-#define MKC_3 0x14
-#define MKC_4 0x15
-#define MKC_5 0x17
-#define MKC_6 0x16
-#define MKC_7 0x1A
-#define MKC_8 0x1C
-#define MKC_9 0x19
-#define MKC_0 0x1D
+inline constexpr uint8_t MKC_A = 0x00;
+inline constexpr uint8_t MKC_B = 0x0B;
+inline constexpr uint8_t MKC_C = 0x08;
+inline constexpr uint8_t MKC_D = 0x02;
+inline constexpr uint8_t MKC_E = 0x0E;
+inline constexpr uint8_t MKC_F = 0x03;
+inline constexpr uint8_t MKC_G = 0x05;
+inline constexpr uint8_t MKC_H = 0x04;
+inline constexpr uint8_t MKC_I = 0x22;
+inline constexpr uint8_t MKC_J = 0x26;
+inline constexpr uint8_t MKC_K = 0x28;
+inline constexpr uint8_t MKC_L = 0x25;
+inline constexpr uint8_t MKC_M = 0x2E;
+inline constexpr uint8_t MKC_N = 0x2D;
+inline constexpr uint8_t MKC_O = 0x1F;
+inline constexpr uint8_t MKC_P = 0x23;
+inline constexpr uint8_t MKC_Q = 0x0C;
+inline constexpr uint8_t MKC_R = 0x0F;
+inline constexpr uint8_t MKC_S = 0x01;
+inline constexpr uint8_t MKC_T = 0x11;
+inline constexpr uint8_t MKC_U = 0x20;
+inline constexpr uint8_t MKC_V = 0x09;
+inline constexpr uint8_t MKC_W = 0x0D;
+inline constexpr uint8_t MKC_X = 0x07;
+inline constexpr uint8_t MKC_Y = 0x10;
+inline constexpr uint8_t MKC_Z = 0x06;
 
-#define MKC_Command 0x37
-#define MKC_Shift 0x38
-#define MKC_CapsLock 0x39
-#define MKC_Option 0x3A
+inline constexpr uint8_t MKC_1 = 0x12;
+inline constexpr uint8_t MKC_2 = 0x13;
+inline constexpr uint8_t MKC_3 = 0x14;
+inline constexpr uint8_t MKC_4 = 0x15;
+inline constexpr uint8_t MKC_5 = 0x17;
+inline constexpr uint8_t MKC_6 = 0x16;
+inline constexpr uint8_t MKC_7 = 0x1A;
+inline constexpr uint8_t MKC_8 = 0x1C;
+inline constexpr uint8_t MKC_9 = 0x19;
+inline constexpr uint8_t MKC_0 = 0x1D;
 
-#define MKC_Space 0x31
-#define MKC_Return 0x24
-#define MKC_BackSpace 0x33
-#define MKC_Tab 0x30
+inline constexpr uint8_t MKC_Command = 0x37;
+inline constexpr uint8_t MKC_Shift = 0x38;
+inline constexpr uint8_t MKC_CapsLock = 0x39;
+inline constexpr uint8_t MKC_Option = 0x3A;
 
-#define MKC_Left /* 0x46 */ 0x7B
-#define MKC_Right /* 0x42 */ 0x7C
-#define MKC_Down /* 0x48 */ 0x7D
-#define MKC_Up /* 0x4D */ 0x7E
+inline constexpr uint8_t MKC_Space = 0x31;
+inline constexpr uint8_t MKC_Return = 0x24;
+inline constexpr uint8_t MKC_BackSpace = 0x33;
+inline constexpr uint8_t MKC_Tab = 0x30;
 
-#define MKC_Minus 0x1B
-#define MKC_Equal 0x18
-#define MKC_BackSlash 0x2A
-#define MKC_Comma 0x2B
-#define MKC_Period 0x2F
-#define MKC_Slash 0x2C
-#define MKC_SemiColon 0x29
-#define MKC_SingleQuote 0x27
-#define MKC_LeftBracket 0x21
-#define MKC_RightBracket 0x1E
-#define MKC_Grave 0x32
-#define MKC_Clear 0x47
-#define MKC_KPEqual 0x51
-#define MKC_KPDevide 0x4B
-#define MKC_KPMultiply 0x43
-#define MKC_KPSubtract 0x4E
-#define MKC_KPAdd 0x45
-#define MKC_Enter 0x4C
+inline constexpr uint8_t MKC_Left = /* 0x46 */ 0x7B;
+inline constexpr uint8_t MKC_Right = /* 0x42 */ 0x7C;
+inline constexpr uint8_t MKC_Down = /* 0x48 */ 0x7D;
+inline constexpr uint8_t MKC_Up = /* 0x4D */ 0x7E;
 
-#define MKC_KP1 0x53
-#define MKC_KP2 0x54
-#define MKC_KP3 0x55
-#define MKC_KP4 0x56
-#define MKC_KP5 0x57
-#define MKC_KP6 0x58
-#define MKC_KP7 0x59
-#define MKC_KP8 0x5B
-#define MKC_KP9 0x5C
-#define MKC_KP0 0x52
-#define MKC_Decimal 0x41
+inline constexpr uint8_t MKC_Minus = 0x1B;
+inline constexpr uint8_t MKC_Equal = 0x18;
+inline constexpr uint8_t MKC_BackSlash = 0x2A;
+inline constexpr uint8_t MKC_Comma = 0x2B;
+inline constexpr uint8_t MKC_Period = 0x2F;
+inline constexpr uint8_t MKC_Slash = 0x2C;
+inline constexpr uint8_t MKC_SemiColon = 0x29;
+inline constexpr uint8_t MKC_SingleQuote = 0x27;
+inline constexpr uint8_t MKC_LeftBracket = 0x21;
+inline constexpr uint8_t MKC_RightBracket = 0x1E;
+inline constexpr uint8_t MKC_Grave = 0x32;
+inline constexpr uint8_t MKC_Clear = 0x47;
+inline constexpr uint8_t MKC_KPEqual = 0x51;
+inline constexpr uint8_t MKC_KPDevide = 0x4B;
+inline constexpr uint8_t MKC_KPMultiply = 0x43;
+inline constexpr uint8_t MKC_KPSubtract = 0x4E;
+inline constexpr uint8_t MKC_KPAdd = 0x45;
+inline constexpr uint8_t MKC_Enter = 0x4C;
+
+inline constexpr uint8_t MKC_KP1 = 0x53;
+inline constexpr uint8_t MKC_KP2 = 0x54;
+inline constexpr uint8_t MKC_KP3 = 0x55;
+inline constexpr uint8_t MKC_KP4 = 0x56;
+inline constexpr uint8_t MKC_KP5 = 0x57;
+inline constexpr uint8_t MKC_KP6 = 0x58;
+inline constexpr uint8_t MKC_KP7 = 0x59;
+inline constexpr uint8_t MKC_KP8 = 0x5B;
+inline constexpr uint8_t MKC_KP9 = 0x5C;
+inline constexpr uint8_t MKC_KP0 = 0x52;
+inline constexpr uint8_t MKC_Decimal = 0x41;
 
 /* these aren't on the Mac Plus keyboard */
 
-#define MKC_Control 0x3B
-#define MKC_Escape 0x35
-#define MKC_F1 0x7a
-#define MKC_F2 0x78
-#define MKC_F3 0x63
-#define MKC_F4 0x76
-#define MKC_F5 0x60
-#define MKC_F6 0x61
-#define MKC_F7 0x62
-#define MKC_F8 0x64
-#define MKC_F9 0x65
-#define MKC_F10 0x6d
-#define MKC_F11 0x67
-#define MKC_F12 0x6f
+inline constexpr uint8_t MKC_Control = 0x3B;
+inline constexpr uint8_t MKC_Escape = 0x35;
+inline constexpr uint8_t MKC_F1 = 0x7a;
+inline constexpr uint8_t MKC_F2 = 0x78;
+inline constexpr uint8_t MKC_F3 = 0x63;
+inline constexpr uint8_t MKC_F4 = 0x76;
+inline constexpr uint8_t MKC_F5 = 0x60;
+inline constexpr uint8_t MKC_F6 = 0x61;
+inline constexpr uint8_t MKC_F7 = 0x62;
+inline constexpr uint8_t MKC_F8 = 0x64;
+inline constexpr uint8_t MKC_F9 = 0x65;
+inline constexpr uint8_t MKC_F10 = 0x6d;
+inline constexpr uint8_t MKC_F11 = 0x67;
+inline constexpr uint8_t MKC_F12 = 0x6f;
 
-#define MKC_Home 0x73
-#define MKC_End 0x77
-#define MKC_PageUp 0x74
-#define MKC_PageDown 0x79
-#define MKC_Help 0x72 /* = Insert */
-#define MKC_ForwardDel 0x75
-#define MKC_Print 0x69
-#define MKC_ScrollLock 0x6B
-#define MKC_Pause 0x71
+inline constexpr uint8_t MKC_Home = 0x73;
+inline constexpr uint8_t MKC_End = 0x77;
+inline constexpr uint8_t MKC_PageUp = 0x74;
+inline constexpr uint8_t MKC_PageDown = 0x79;
+inline constexpr uint8_t MKC_Help = 0x72 /* = Insert */;
+inline constexpr uint8_t MKC_ForwardDel = 0x75;
+inline constexpr uint8_t MKC_Print = 0x69;
+inline constexpr uint8_t MKC_ScrollLock = 0x6B;
+inline constexpr uint8_t MKC_Pause = 0x71;
 
-#define MKC_AngleBracket 0x0A /* found on german keyboard */
+inline constexpr uint8_t MKC_AngleBracket = 0x0A /* found on german keyboard */;
 
 /*
 	Additional codes found in Apple headers
@@ -145,10 +147,10 @@
 
 /* not Apple key codes, only for Mini vMac */
 
-#define MKC_CM 0x80
-#define MKC_real_CapsLock 0x81
+inline constexpr uint8_t MKC_CM = 0x80;
+inline constexpr uint8_t MKC_real_CapsLock = 0x81;
 	/*
 		for use in platform specific code
 		when CapsLocks need special handling.
 	*/
-#define MKC_None 0xFF
+inline constexpr uint8_t MKC_None = 0xFF;
