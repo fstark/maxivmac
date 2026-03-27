@@ -10,23 +10,33 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # ---------------------------------------------------------------------------
+# Version from git
+# ---------------------------------------------------------------------------
+execute_process(
+    COMMAND git describe --tags --match "v*" --always
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE GIT_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+    RESULT_VARIABLE GIT_RESULT
+)
+if(NOT GIT_RESULT EQUAL 0 OR GIT_VERSION STREQUAL "")
+    set(GIT_VERSION "dev-unknown")
+elseif(NOT GIT_VERSION MATCHES "^v")
+    set(GIT_VERSION "dev-${GIT_VERSION}")
+endif()
+message(STATUS "Version: ${GIT_VERSION}")
+
+# ---------------------------------------------------------------------------
 # Options
 # ---------------------------------------------------------------------------
-set(MINIVMAC_MAINTAINER "egon.rath@gmail.com" CACHE STRING "Maintainer contact")
-set(MINIVMAC_HOMEPAGE "https://github.com/egrath" CACHE STRING "Project homepage")
-
-# Model selection — now runtime via --model flag.
-# MINIVMAC_MODEL is retained only as a hint for CNFUDOSG.h defaults.
-
-# Screen dimensions are now runtime — see MachineConfig.
 
 # Language
 set(MINIVMAC_LANGUAGE "English" CACHE STRING "UI language")
 set_property(CACHE MINIVMAC_LANGUAGE PROPERTY STRINGS
-    English French German Italian Spanish Dutch PortugueseBrazilian Polish Czech Serbian)
+    English French German Italian Spanish Dutch PortugueseBrazilian Polish Czech Serbian Catalan)
 
 # Debug
-set(MINIVMAC_DBGLOG "1" CACHE STRING "Enable debug log (1/0)")
 set(MINIVMAC_ABNORMAL_REPORTS "0" CACHE STRING "Enable abnormal reports (1/0)")
 set(MINIVMAC_LOCALTALK "0" CACHE STRING "Enable LocalTalk (1/0)")
 
@@ -72,27 +82,10 @@ set(MINIVMAC_SOURCES
 )
 
 # ---------------------------------------------------------------------------
-# Generate CNFUIOSG.h from template (SDL backend)
+# Generate STRCONST.h from template (language selection)
 # ---------------------------------------------------------------------------
 set(MINIVMAC_GENERATED_CFG_DIR "${CMAKE_BINARY_DIR}/cfg_generated")
 file(MAKE_DIRECTORY "${MINIVMAC_GENERATED_CFG_DIR}")
-
-set(MINIVMAC_BACKEND "sdl")
-set(MINIVMAC_BACKEND_TAG "SDL")
-set(MINIVMAC_IS_BUNDLE 0)
-set(CNFUIOSG_SYSTEM_INCLUDES
-"#include <SDL.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/param.h>
-#include <sys/time.h>")
-
-configure_file(
-    "${CMAKE_SOURCE_DIR}/cmake/CNFUIOSG.h.in"
-    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUIOSG.h"
-    @ONLY
-)
 
 # ---------------------------------------------------------------------------
 # Language → header mapping
@@ -107,6 +100,7 @@ set(_lang_map_PortugueseBrazilian "lang/strings_portuguese.h")
 set(_lang_map_Polish     "lang/strings_polish.h")
 set(_lang_map_Czech      "lang/strings_czech.h")
 set(_lang_map_Serbian    "lang/strings_serbian.h")
+set(_lang_map_Catalan    "lang/strings_catalan.h")
 
 if(DEFINED _lang_map_${MINIVMAC_LANGUAGE})
     set(MINIVMAC_LANGUAGE_HEADER "${_lang_map_${MINIVMAC_LANGUAGE}}")
@@ -115,41 +109,12 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------
-# Generate remaining config headers
+# Generate STRCONST.h (only remaining generated header — selects language)
 # ---------------------------------------------------------------------------
-configure_file(
-    "${CMAKE_SOURCE_DIR}/cmake/CNFUDALL.h.in"
-    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUDALL.h"
-    @ONLY
-)
-configure_file(
-    "${CMAKE_SOURCE_DIR}/cmake/CNFUDOSG.h.in"
-    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUDOSG.h"
-    @ONLY
-)
 configure_file(
     "${CMAKE_SOURCE_DIR}/cmake/STRCONST.h.in"
     "${MINIVMAC_GENERATED_CFG_DIR}/STRCONST.h"
     @ONLY
-)
-
-# CNFUDPIC.h — now model-independent (all model-specific config is runtime).
-configure_file(
-    "${CMAKE_SOURCE_DIR}/src/config/CNFUDPIC.h"
-    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUDPIC.h"
-    COPYONLY
-)
-
-# CNFUIALL.h and CNFUIPIC.h are compiler/platform detection — copy as-is
-configure_file(
-    "${CMAKE_SOURCE_DIR}/src/config/CNFUIALL.h"
-    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUIALL.h"
-    COPYONLY
-)
-configure_file(
-    "${CMAKE_SOURCE_DIR}/src/config/CNFUIPIC.h"
-    "${MINIVMAC_GENERATED_CFG_DIR}/CNFUIPIC.h"
-    COPYONLY
 )
 # ---------------------------------------------------------------------------
 # SDL target (Linux / Windows / macOS)
@@ -186,12 +151,19 @@ endif()
 # Common settings
 # ---------------------------------------------------------------------------
 
-# Include paths: generated cfg dir has all 7 config headers (generated or
-# copied). src/config/ for static fallback configs. src/ for source headers.
+# Include paths: cfg_generated/ has STRCONST.h (generated).
+# src/config/ has all other config headers (now static). src/ for source headers.
 target_include_directories(maxivmac PRIVATE
     "${MINIVMAC_GENERATED_CFG_DIR}"
     "${CMAKE_SOURCE_DIR}/src/config"
     "${CMAKE_SOURCE_DIR}/src"
+)
+
+# Build-time definitions: version string and optional feature toggles
+target_compile_definitions(maxivmac PRIVATE
+    "MAXIVMAC_VERSION=\"${GIT_VERSION}\""
+    "WantAbnormalReports=${MINIVMAC_ABNORMAL_REPORTS}"
+    "EmLocalTalk=${MINIVMAC_LOCALTALK}"
 )
 
 # Compiler flags matching the original Xcode project
