@@ -39,7 +39,7 @@ LOCALFUNC tMyErr ExportFromFile2HostFile(short refNum, ui5r L,
 	return err;
 }
 
-LOCALFUNC tMyErr DoFilter2(void)
+LOCALFUNC tMyErr DoFilter2()
 {
 	tMyErr err;
 	MyDir_R d;
@@ -62,7 +62,7 @@ LOCALFUNC tMyErr DoFilter2(void)
 	return err;
 }
 
-LOCALPROC ProgramMain(void)
+LOCALPROC ProgramMain()
 {
 	(void) ProgressBar_SetStage_v2("Ready to export file\311", 0);
 label_1:
@@ -81,16 +81,16 @@ label_1:
 	}
 }
 
-LOCALPROC ProgramZapVars(void)
+LOCALPROC ProgramZapVars()
 {
 }
 
-LOCALPROC ProgramPreInit(void)
+LOCALPROC ProgramPreInit()
 {
 	OneWindAppPreInit();
 }
 
-LOCALFUNC blnr ExportExtnInit(void)
+LOCALFUNC blnr ExportExtnInit()
 {
 	ui4r version;
 	ui5r features;
@@ -116,7 +116,7 @@ LOCALFUNC blnr ExportExtnInit(void)
 	return IsOk;
 }
 
-LOCALFUNC blnr ProgramInit(void)
+LOCALFUNC blnr ProgramInit()
 {
 	if (CheckSysErr(MyMemory_Init_v2()))
 	if (ExportExtnInit())
@@ -127,13 +127,13 @@ LOCALFUNC blnr ProgramInit(void)
 	return falseblnr;
 }
 
-LOCALPROC ProgramUnInit(void)
+LOCALPROC ProgramUnInit()
 {
 	OneWindAppUnInit();
 	MyMemory_UnInit();
 }
 
-int main(void)
+int main()
 {
 	ProgramZapVars();
 	ProgramPreInit();

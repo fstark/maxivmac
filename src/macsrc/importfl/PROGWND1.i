@@ -65,7 +65,7 @@ LOCALPROC GetVersLongStr(StringPtr s)
 	}
 }
 
-LOCALPROC ShowAboutMessage(void)
+LOCALPROC ShowAboutMessage()
 {
 	MyPStr s;
 
@@ -142,7 +142,7 @@ LOCALVAR xbh_r InputA = xbh_ZapVal;
 #endif
 
 #if WantRealInputFile
-LOCALFUNC tMyErr InitInputA(void)
+LOCALFUNC tMyErr InitInputA()
 {
 	return xbh_Init_v2(0, &InputA);
 }
@@ -157,7 +157,7 @@ LOCALFUNC blnr PopFromInputA(input_r *r)
 #endif
 
 #if WantRealInputFile
-LOCALPROC ClearInputA(void)
+LOCALPROC ClearInputA()
 {
 	input_r r;
 
@@ -168,7 +168,7 @@ LOCALPROC ClearInputA(void)
 #endif
 
 #if WantRealInputFile
-LOCALPROC UnInitInputA(void)
+LOCALPROC UnInitInputA()
 {
 	if (xbh_Initted(&InputA)) {
 		ClearInputA();
@@ -209,7 +209,7 @@ LOCALVAR input_r InputCur;
 #endif
 
 #if WantRealInputFile
-LOCALPROC CloseInputCur(void)
+LOCALPROC CloseInputCur()
 {
 	if (GotInputCur) {
 		DisposeInputR(&InputCur);
@@ -268,7 +268,7 @@ LOCALFUNC tMyErr ProcessInputFileNameNamevRef_v2(
 #endif
 
 #if WantRealInputFile
-LOCALPROC DoGetOldFile(void)
+LOCALPROC DoGetOldFile()
 {
 	tMyErr err;
 	MyDir_R d;
@@ -306,7 +306,7 @@ LOCALPROC DoGetOldFile(void)
 #endif
 
 #if WantRealInputFile
-LOCALFUNC tMyErr MyAppFilesInit_v2(void)
+LOCALFUNC tMyErr MyAppFilesInit_v2()
 {
 	tMyErr err = noErr;
 	short i;
@@ -492,7 +492,7 @@ LOCALFUNC tMyErr MyInstallEventHandler(AEEventClass theAEEventClass,
 		theAEEventID, p, handlerRefcon, isSysHandler);
 }
 
-LOCALFUNC tMyErr InstallAppleEventHandlers(void)
+LOCALFUNC tMyErr InstallAppleEventHandlers()
 {
 	tMyErr err;
 
@@ -609,7 +609,7 @@ LOCALVAR blnr gHaveDragMgr = falseblnr;
 #endif
 
 #if WantRealInputFile
-LOCALPROC PrepareForDragging(void)
+LOCALPROC PrepareForDragging()
 {
 	if (HaveDragMgrAvail()) {
 		if (noErr == InstallTrackingHandler(
@@ -632,7 +632,7 @@ LOCALPROC PrepareForDragging(void)
 #endif
 
 #if WantRealInputFile
-LOCALPROC UnPrepareForDragging(void)
+LOCALPROC UnPrepareForDragging()
 {
 	if (gHaveDragMgr) {
 		RemoveReceiveHandler(GlobalReceiveHandler, MyMainWind);
@@ -668,7 +668,7 @@ LOCALFUNC Boolean EventIsAbort(EventRecord *theEvent)
 	return v;
 }
 
-LOCALFUNC blnr EventPendingQuickCheck(void)
+LOCALFUNC blnr EventPendingQuickCheck()
 {
 	EvQElPtr p = (EvQElPtr)GetEvQHdr()->qHead;
 
@@ -694,7 +694,7 @@ LOCALFUNC blnr EventPendingQuickCheck(void)
 	return falseblnr;
 }
 
-LOCALPROC MyMainWindowUnInit(void)
+LOCALPROC MyMainWindowUnInit()
 {
 	if (MyMainWind != NULL) {
 		DisposeWindow(MyMainWind);
@@ -722,7 +722,7 @@ LOCALPROC CloseAWindow(WindowRef w)
 	}
 }
 
-LOCALPROC CloseAllExtraWindows(void)
+LOCALPROC CloseAllExtraWindows()
 /*
 	assuming our window is gone, get
 	rid of the rest of the windows,
@@ -781,11 +781,11 @@ LOCALPROC DecodeSysMenus(long theMenuItem)
 	HiliteMenu(0);
 }
 
-LOCALPROC DoUpdateMenus(void)
+LOCALPROC DoUpdateMenus()
 {
 }
 
-LOCALPROC MyMenusInit(void)
+LOCALPROC MyMenusInit()
 {
 #define chrApple ((unsigned char)20)
 	Str255 s;
@@ -823,18 +823,18 @@ LOCALPROC MyMenusInit(void)
 LOCALVAR EventRecord curevent;
 LOCALVAR WindowRef MacEventWind;
 
-LOCALPROC inMenuBarAction(void)
+LOCALPROC inMenuBarAction()
 {
 	DoUpdateMenus();
 	DecodeSysMenus(MenuSelect(curevent.where));
 }
 
-LOCALPROC inSysWindowAction(void)
+LOCALPROC inSysWindowAction()
 {
 	SystemClick(&curevent, MacEventWind);
 }
 
-LOCALPROC inContentAction(void)
+LOCALPROC inContentAction()
 {
 	if (MacEventWind == MyMainWind) {
 		if (MacEventWind != FrontWindow()) {
@@ -851,7 +851,7 @@ LOCALPROC inContentAction(void)
 	}
 }
 
-LOCALPROC inDragAction(void)
+LOCALPROC inDragAction()
 {
 	Rect totalrect;
 
@@ -867,7 +867,7 @@ LOCALPROC inDragAction(void)
 	}
 }
 
-LOCALPROC ProcessMouseDown(void)
+LOCALPROC ProcessMouseDown()
 {
 	short which_part;
 
@@ -907,7 +907,7 @@ LOCALPROC ProcessCommandKey(char theChar)
 	DecodeSysMenus(MenuKey(theChar));
 }
 
-LOCALPROC ProcessKeyDown(void)
+LOCALPROC ProcessKeyDown()
 {
 	if (EventIsAbort(&curevent)) {
 		AbortRequested = trueblnr;
@@ -922,7 +922,7 @@ LOCALPROC ProcessKeyDown(void)
 	}
 }
 
-LOCALPROC ProcessUpdateEvt(void)
+LOCALPROC ProcessUpdateEvt()
 {
 	WindowRef MacEventWind;
 
@@ -938,7 +938,7 @@ LOCALPROC ProcessUpdateEvt(void)
 	}
 }
 
-LOCALPROC ProcessDiskEvt(void)
+LOCALPROC ProcessDiskEvt()
 {
 	Point where;
 
@@ -949,7 +949,7 @@ LOCALPROC ProcessDiskEvt(void)
 	}
 }
 
-LOCALPROC ProcessHighLevelEvt(void)
+LOCALPROC ProcessHighLevelEvt()
 {
 	AEEventClass thisClass;
 
@@ -966,7 +966,7 @@ LOCALPROC ProcessHighLevelEvt(void)
 	}
 }
 
-LOCALPROC ProcessMacEvent(void)
+LOCALPROC ProcessMacEvent()
 {
 	switch (curevent.what) {
 		case mouseDown:
@@ -1022,7 +1022,7 @@ LOCALPROC MyDoNextEvents(unsigned long sleep)
 	} while (EventAvail(everyEvent, &curevent) && (! AbortRequested));
 }
 
-LOCALPROC CheckAbort0_v2(void)
+LOCALPROC CheckAbort0_v2()
 {
 	blnr ShouldGetEvent;
 	long CurrentTick = LMGetTicks();
@@ -1051,7 +1051,7 @@ LOCALPROC CheckAbort0_v2(void)
 	}
 }
 
-GLOBALFUNC tMyErr CheckAbortRequested(void)
+GLOBALFUNC tMyErr CheckAbortRequested()
 {
 	if (LMGetTicks() >= NextCheckTick) {
 		CheckAbort0_v2();
@@ -1060,7 +1060,7 @@ GLOBALFUNC tMyErr CheckAbortRequested(void)
 	return AbortRequested ? kMyErrUsrAbort : noErr;
 }
 
-LOCALPROC ReportErrors(void)
+LOCALPROC ReportErrors()
 {
 	if ((SavedSysErr != noErr) || AbortRequested) {
 		if (AbortRequested) {
@@ -1080,7 +1080,7 @@ LOCALPROC ReportErrors(void)
 	}
 }
 
-LOCALPROC OneWindAppPreInit(void)
+LOCALPROC OneWindAppPreInit()
 {
 	MyMacHeapInit();
 	MyMacToolBoxInit();
@@ -1114,7 +1114,7 @@ LOCALFUNC tMyErr SaferNewWindow(Ptr wStorage, const Rect *boundsRect,
 	return err;
 }
 
-LOCALFUNC tMyErr OneWindAppInit_v2(void)
+LOCALFUNC tMyErr OneWindAppInit_v2()
 {
 	tMyErr err;
 	Rect tempRect;
@@ -1159,7 +1159,7 @@ LOCALFUNC tMyErr OneWindAppInit_v2(void)
 	return err;
 }
 
-LOCALPROC OneWindAppUnInit(void)
+LOCALPROC OneWindAppUnInit()
 {
 	ReportErrors();
 #if WantRealInputFile
@@ -1173,7 +1173,7 @@ LOCALPROC OneWindAppUnInit(void)
 }
 
 #if WantRealInputFile
-LOCALPROC WaitForInput(void)
+LOCALPROC WaitForInput()
 {
 	while ((! GotInputCur) && (! ProgramDone)) {
 		ReportErrors();

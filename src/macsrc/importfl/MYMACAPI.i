@@ -171,7 +171,7 @@ typedef UInt8 Byte;
 typedef SInt8 SignedByte;
 
 pascal void
-Debugger(void)
+Debugger()
 	= {
 		0xA9FF
 	};
@@ -281,7 +281,7 @@ enum {
 /* From MacMemory.h */
 
 pascal OSErr
-MemError(void)
+MemError()
 	= {
 		0x3EB8, 0x0220 /* MOVE.W     $0BAC,(A7) */
 	};
@@ -495,13 +495,13 @@ BlockMove(
 	};
 
 pascal void
-MaxApplZone(void)
+MaxApplZone()
 	= {
 		0xA063
 	};
 
 pascal void
-MoreMasters(void)
+MoreMasters()
 	= {
 		0xA036
 	};
@@ -510,7 +510,7 @@ MoreMasters(void)
 #pragma parameter __D0 FreeMem
 #endif
 pascal long
-FreeMem(void)
+FreeMem()
 	= {
 #if PRAGMA_PARAMETER
 		0xA01C
@@ -567,7 +567,7 @@ typedef THz * THzPtr;
 #pragma parameter __A0 GetZone
 #endif
 pascal THz
-GetZone(void)
+GetZone()
 	= {
 #if PRAGMA_PARAMETER
 		0xA11A
@@ -581,7 +581,7 @@ GetZone(void)
 /* From OSUtils.h */
 
 pascal UInt32
-TickCount(void)
+TickCount()
 	= {
 		0xA975
 	};
@@ -1558,13 +1558,13 @@ CloseResFile(short refNum)
 	};
 
 pascal OSErr
-ResError(void)
+ResError()
 	= {
 		0xA9AF
 	};
 
 pascal short
-CurResFile(void)
+CurResFile()
 	= {
 		0xA994
 	};
@@ -1808,7 +1808,7 @@ SecondsToDate(
 /* From Fonts.h */
 
 pascal void
-InitFonts(void)
+InitFonts()
 	= {
 		0xA8FE
 	};
@@ -2054,7 +2054,7 @@ InitGraf(void * globalPtr)
 	};
 
 pascal void
-InitCursor(void)
+InitCursor()
 	= {
 		0xA850
 	};
@@ -2173,7 +2173,7 @@ EmptyRect(const Rect * r)
 	};
 
 pascal RgnHandle
-NewRgn(void)
+NewRgn()
 	= {
 		0xA8D8
 	};
@@ -2185,7 +2185,7 @@ DisposeRgn(RgnHandle rgn)
 	};
 
 pascal void
-OpenRgn(void)
+OpenRgn()
 	= {
 		0xA8DA
 	};
@@ -2398,13 +2398,13 @@ FillRgn(
 #define GetPortBounds(port, r) *(r) = ((port)->portRect)
 
 pascal void
-HideCursor(void)
+HideCursor()
 	= {
 		0xA852
 	};
 
 pascal void
-ShowCursor(void)
+ShowCursor()
 	= {
 		0xA853
 	};
@@ -2432,7 +2432,7 @@ GetCursor(short cursorID)
 /* From MacWindows.h */
 
 pascal void
-InitWindows(void)
+InitWindows()
 	= {
 		0xA912
 	};
@@ -2557,7 +2557,7 @@ FindWindow(
 	};
 
 pascal WindowRef
-FrontWindow(void)
+FrontWindow()
 	= {
 		0xA924
 	};
@@ -2722,7 +2722,7 @@ typedef struct EvQEl EvQEl;
 typedef EvQEl * EvQElPtr;
 
 pascal QHdrPtr
-GetEvQHdr(void)
+GetEvQHdr()
 	= {
 		0x2EBC, 0x0000, 0x014A
 	};
@@ -2734,13 +2734,13 @@ GetMouse(Point * mouseLoc)
 	};
 
 pascal Boolean
-Button(void)
+Button()
 	= {
 		0xA974
 	};
 
 pascal Boolean
-StillDown(void)
+StillDown()
 	= {
 		0xA973
 	};
@@ -2754,7 +2754,7 @@ GetKeys(KeyMap theKeys)
 	};
 
 pascal UInt32
-GetCaretTime(void)
+GetCaretTime()
 	= {
 		0x2EB8, 0x02F4
 	};
@@ -2803,7 +2803,7 @@ SystemClick(
 	};
 
 pascal void
-SystemTask(void)
+SystemTask()
 	= {
 		0xA9B4
 	};
@@ -2993,13 +2993,13 @@ typedef MenuHandle MenuRef;
 typedef Handle MenuBarHandle;
 
 pascal void
-InitMenus(void)
+InitMenus()
 	= {
 		0xA930
 	};
 
 pascal void
-DrawMenuBar(void)
+DrawMenuBar()
 	= {
 		0xA937
 	};
@@ -3120,7 +3120,7 @@ GetScrap(
 	};
 
 pascal OSStatus
-ZeroScrap(void)
+ZeroScrap()
 	= {
 		0xA9FC
 	};
@@ -3182,7 +3182,7 @@ typedef char * CharsPtr;
 typedef CharsPtr * CharsHandle;
 
 pascal void
-TEInit(void)
+TEInit()
 	= {
 		0xA9CC
 	};
@@ -3322,7 +3322,7 @@ TEInsert(
 #define LMGetTEScrpHandle() (*(Handle *)(0x0AB4))
 
 static pascal OSErr
-TEFromScrap(void)
+TEFromScrap()
 {
 	long L;
 	SInt32 offset;
@@ -3351,7 +3351,7 @@ TEFromScrap(void)
 }
 
 static pascal OSErr
-TEToScrap(void)
+TEToScrap()
 {
 	OSErr v;
 	Handle h = LMGetTEScrpHandle();
@@ -3397,7 +3397,7 @@ ParamText(
 	};
 
 pascal void
-ResetAlertStage(void)
+ResetAlertStage()
 	= {
 		0x4278, 0x0A9A
 	};
@@ -4259,7 +4259,7 @@ pascal OSErr LaunchApplication(LaunchPBPtr LaunchParams)
 	};
 
 pascal void
-ExitToShell(void)
+ExitToShell()
 	= {
 		0xA9F4
 	};

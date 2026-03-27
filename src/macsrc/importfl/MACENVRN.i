@@ -84,7 +84,7 @@ LOCALFUNC blnr OSTrapAvailable(short trap_num)
 LOCALVAR blnr MyEnvrAttrWaitNextEventAvail;
 LOCALVAR blnr HaveEnvrAttrWaitNextEventAvail = falseblnr;
 
-LOCALFUNC blnr HaveWaitNextEventAvail(void)
+LOCALFUNC blnr HaveWaitNextEventAvail()
 {
 	if (! HaveEnvrAttrWaitNextEventAvail) {
 		MyEnvrAttrWaitNextEventAvail =
@@ -97,7 +97,7 @@ LOCALFUNC blnr HaveWaitNextEventAvail(void)
 LOCALVAR blnr MyEnvrAttrGestaltAvail;
 LOCALVAR blnr HaveEnvrAttrGestaltAvail = falseblnr;
 
-LOCALFUNC blnr HaveGestaltAvail(void)
+LOCALFUNC blnr HaveGestaltAvail()
 {
 	if (! HaveEnvrAttrGestaltAvail) {
 		MyEnvrAttrGestaltAvail =
@@ -119,7 +119,7 @@ LOCALFUNC blnr HaveGestaltAvail(void)
 LOCALVAR blnr MyEnvrAttrCustomPutFileAvail;
 LOCALVAR blnr HaveEnvrAttrCustomPutFileAvail = falseblnr;
 
-LOCALFUNC blnr HaveCustomPutFileAvail(void)
+LOCALFUNC blnr HaveCustomPutFileAvail()
 {
 	if (! HaveEnvrAttrCustomPutFileAvail) {
 		long reply;
@@ -136,7 +136,7 @@ LOCALFUNC blnr HaveCustomPutFileAvail(void)
 LOCALVAR blnr MyEnvrAttrAliasMgrAvail;
 LOCALVAR blnr HaveEnvrAttrAliasMgrAvail = falseblnr;
 
-LOCALFUNC blnr HaveAliasMgrAvail(void)
+LOCALFUNC blnr HaveAliasMgrAvail()
 {
 	if (! HaveEnvrAttrAliasMgrAvail) {
 		long reply;
@@ -153,7 +153,7 @@ LOCALFUNC blnr HaveAliasMgrAvail(void)
 LOCALVAR blnr MyEnvrAttrAppleEvtMgrAvail;
 LOCALVAR blnr HaveEnvrAttrAppleEvtMgrAvail = falseblnr;
 
-LOCALFUNC blnr HaveAppleEvtMgrAvail(void)
+LOCALFUNC blnr HaveAppleEvtMgrAvail()
 {
 	if (! HaveEnvrAttrAppleEvtMgrAvail) {
 		long reply;
@@ -170,7 +170,7 @@ LOCALFUNC blnr HaveAppleEvtMgrAvail(void)
 LOCALVAR blnr MyEnvrAttrDragMgrAvail;
 LOCALVAR blnr HaveEnvrAttrDragMgrAvail = falseblnr;
 
-LOCALFUNC blnr HaveDragMgrAvail(void)
+LOCALFUNC blnr HaveDragMgrAvail()
 {
 	if (! HaveEnvrAttrDragMgrAvail) {
 		long reply;

@@ -68,7 +68,7 @@ typedef struct MyDriverDat_R MyDriverDat_R;
 LOCALVAR ui5r pokeaddr;
 LOCALVAR blnr HavePokeAddr = falseblnr;
 
-LOCALFUNC tMyErr GetPokeAddr(void)
+LOCALFUNC tMyErr GetPokeAddr()
 {
 	tMyErr err;
 	MyDriverDat_R *SonyVars;
@@ -145,7 +145,7 @@ LOCALFUNC tMyErr InvokeExtension2(ui3b *datp)
 LOCALVAR ui4r PBufExtnId;
 LOCALVAR blnr HavePBufExtnId = falseblnr;
 
-LOCALFUNC tMyErr GetPBufExtnId(void)
+LOCALFUNC tMyErr GetPBufExtnId()
 {
 	tMyErr err;
 	ui3b DskDatV[DSKDat_TotSize];
@@ -164,7 +164,7 @@ LOCALFUNC tMyErr GetPBufExtnId(void)
 	return err;
 }
 
-GLOBALFUNC tMyErr HavePBufExtenstion_v2(void)
+GLOBALFUNC tMyErr HavePBufExtenstion_v2()
 {
 	return HavePBufExtnId ? noErr : GetPBufExtnId();
 }
@@ -299,7 +299,7 @@ GLOBALFUNC tMyErr PbufTransfer_v2(void *Buffer,
 LOCALVAR ui4r DiskExtnId;
 LOCALVAR blnr HaveDiskExtnId = falseblnr;
 
-LOCALFUNC tMyErr GetDiskExtnId(void)
+LOCALFUNC tMyErr GetDiskExtnId()
 {
 	tMyErr err;
 	ui3b DskDatV[DSKDat_TotSize];
@@ -317,7 +317,7 @@ LOCALFUNC tMyErr GetDiskExtnId(void)
 	return err;
 }
 
-GLOBALFUNC tMyErr HaveDiskExtenstion_v2(void)
+GLOBALFUNC tMyErr HaveDiskExtenstion_v2()
 {
 	return HaveDiskExtnId ? noErr : GetDiskExtnId();
 }
@@ -541,7 +541,7 @@ GLOBALFUNC tMyErr DiskEjectDelete_v2(tDrive Drive_No)
 	return InvokeDiskExtension_v2(DskDatV);
 }
 
-GLOBALFUNC tMyErr DiskQuitOnEject(void)
+GLOBALFUNC tMyErr DiskQuitOnEject()
 {
 	ui3b DskDatV[DSKDat_TotSize];
 
@@ -561,7 +561,7 @@ GLOBALFUNC tMyErr DiskQuitOnEject(void)
 LOCALVAR ui4r HTCExtnId;
 LOCALVAR blnr HaveHTCExtnId = falseblnr;
 
-LOCALFUNC tMyErr GetHTCExtnId(void)
+LOCALFUNC tMyErr GetHTCExtnId()
 {
 	tMyErr err;
 	ui3b DskDatV[DSKDat_TotSize];
@@ -580,7 +580,7 @@ LOCALFUNC tMyErr GetHTCExtnId(void)
 	return err;
 }
 
-GLOBALFUNC tMyErr HaveHTCExtenstion_v2(void)
+GLOBALFUNC tMyErr HaveHTCExtenstion_v2()
 {
 	return HaveHTCExtnId ? noErr : GetHTCExtnId();
 }

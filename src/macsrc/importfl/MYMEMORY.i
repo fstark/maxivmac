@@ -18,7 +18,7 @@
 */
 
 
-LOCALFUNC tMyErr ReportMemErr(void)
+LOCALFUNC tMyErr ReportMemErr()
 {
 	tMyErr err = MemError();
 
@@ -48,7 +48,7 @@ GLOBALVAR Handle TempBuffH = NULL;
 #define TempBuffSize (32 * (long)1024)
 	/* may become variable in future */
 
-GLOBALFUNC tMyErr MyMemory_Init_v2(void)
+GLOBALFUNC tMyErr MyMemory_Init_v2()
 {
 	tMyErr err;
 
@@ -60,7 +60,7 @@ GLOBALFUNC tMyErr MyMemory_Init_v2(void)
 	return err;
 }
 
-GLOBALPROC MyMemory_UnInit(void)
+GLOBALPROC MyMemory_UnInit()
 {
 	if (NULL != TempBuffH) {
 		DisposeHandle(TempBuffH);
@@ -69,7 +69,7 @@ GLOBALPROC MyMemory_UnInit(void)
 
 #define HaveTempBuffH 1
 
-LOCALFUNC tMyErr ReallocTempBuffH_v2(void)
+LOCALFUNC tMyErr ReallocTempBuffH_v2()
 {
 	tMyErr err;
 
@@ -102,7 +102,7 @@ GLOBALFUNC blnr TempBuffHBeginUse_v2(MyPtr *p)
 	return err;
 }
 
-GLOBALPROC TempBuffHEndUse(void)
+GLOBALPROC TempBuffHEndUse()
 {
 	HUnlock(TempBuffH);
 	/* HPurge(TempBuffH); */
@@ -145,7 +145,7 @@ GLOBALFUNC tMyErr MyHandleSetLen_v2(Handle h, uimr L)
 	return err;
 }
 
-GLOBALFUNC tMyErr MyMemoryCheckSpare(void)
+GLOBALFUNC tMyErr MyMemoryCheckSpare()
 {
 	return GetTempBuffH_v2();
 }

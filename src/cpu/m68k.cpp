@@ -542,7 +542,7 @@ static void DoCodeFPU_Save();
 static void DoCodeFPU_Restore();
 static void DoCodeFPU_dflt();
 
-typedef void (*func_pointer_t)(void);
+typedef void (*func_pointer_t)();
 
 static const func_pointer_t OpDispatch[kNumIKinds + 1] = {
 	DoCodeTst /* kIKindTst */,
@@ -2163,7 +2163,7 @@ static inline uint32_t DecodeGetSrcGetDstValue()
 }
 
 
-typedef void (*cond_actP)(void);
+typedef void (*cond_actP)();
 
 static void cctrue_T(cond_actP t_act, cond_actP f_act)
 {
@@ -3444,7 +3444,7 @@ static void NeedDefaultLazyXFlagDefault()
 {
 }
 
-typedef void (*NeedLazyFlagP)(void);
+typedef void (*NeedLazyFlagP)();
 
 static const NeedLazyFlagP
 	NeedLazyXFlagDispatch[kNumLazyFlagsKinds + 1] =

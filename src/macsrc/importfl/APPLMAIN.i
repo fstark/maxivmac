@@ -23,7 +23,7 @@ LOCALVAR blnr CapturingInserts = falseblnr;
 LOCALVAR ui5r SaveCallBack;
 LOCALVAR ui4r SaveRawMode;
 
-LOCALPROC CapturingInsertsOn(void)
+LOCALPROC CapturingInsertsOn()
 {
 	tMyErr err;
 
@@ -52,7 +52,7 @@ LOCALPROC CapturingInsertsOn(void)
 	}
 }
 
-LOCALPROC CapturingInsertsOff(void)
+LOCALPROC CapturingInsertsOff()
 {
 	tMyErr err;
 
@@ -82,7 +82,7 @@ LOCALFUNC blnr TryCaptureInsert(tDrive *r)
 
 LOCALVAR blnr ReadyToImport = falseblnr;
 
-LOCALPROC CheckStateAfterEvents(void)
+LOCALPROC CheckStateAfterEvents()
 {
 	if (ReadyToImport != (! gBackgroundFlag)) {
 		ReadyToImport = ! ReadyToImport;
@@ -98,7 +98,7 @@ LOCALPROC CheckStateAfterEvents(void)
 }
 
 
-LOCALPROC TryImportHostFile(void)
+LOCALPROC TryImportHostFile()
 {
 	tMyErr err;
 	tDrive InsertVol;
@@ -144,7 +144,7 @@ LOCALPROC TryImportHostFile(void)
 	}
 }
 
-LOCALPROC ProgramMain(void)
+LOCALPROC ProgramMain()
 {
 	while (! ProgramDone) {
 		UpdateProgressBar();
@@ -158,16 +158,16 @@ LOCALPROC ProgramMain(void)
 	}
 }
 
-LOCALPROC ProgramZapVars(void)
+LOCALPROC ProgramZapVars()
 {
 }
 
-LOCALPROC ProgramPreInit(void)
+LOCALPROC ProgramPreInit()
 {
 	OneWindAppPreInit();
 }
 
-LOCALFUNC blnr ImportExtnInit(void)
+LOCALFUNC blnr ImportExtnInit()
 {
 	ui4r version;
 	ui5r features;
@@ -197,7 +197,7 @@ LOCALFUNC blnr ImportExtnInit(void)
 	return IsOk;
 }
 
-LOCALFUNC blnr ProgramInit(void)
+LOCALFUNC blnr ProgramInit()
 {
 	if (CheckSysErr(MyMemory_Init_v2()))
 	if (ImportExtnInit())
@@ -208,14 +208,14 @@ LOCALFUNC blnr ProgramInit(void)
 	return falseblnr;
 }
 
-LOCALPROC ProgramUnInit(void)
+LOCALPROC ProgramUnInit()
 {
 	CapturingInsertsOff();
 	OneWindAppUnInit();
 	MyMemory_UnInit();
 }
 
-int main(void)
+int main()
 {
 	ProgramZapVars();
 	ProgramPreInit();

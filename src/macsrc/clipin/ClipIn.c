@@ -51,7 +51,7 @@ typedef char si3b;
 
 static XtnsDR xdr;
 
-static void DoTheTask(void)
+static void DoTheTask()
 {
 	XtnsDR xdr;
 

@@ -229,7 +229,7 @@ void DrawCellsKeyCommand(const char *k, const char *s)
 	DrawCellsEndLine();
 }
 
-typedef void (*SpclModeBody) (void);
+typedef void (*SpclModeBody) ();
 
 void DrawSpclMode0(const char *Title, SpclModeBody Body)
 {

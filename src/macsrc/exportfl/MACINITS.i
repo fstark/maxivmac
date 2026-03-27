@@ -23,11 +23,11 @@
 #endif
 
 #if ShouldUnloadDataInit
-extern void _DataInit(void);
+extern void _DataInit();
 #endif
 
 #if ShouldUnloadDataInit
-LOCALPROC MyUnloadDataInit(void)
+LOCALPROC MyUnloadDataInit()
 {
 	Handle h;
 
@@ -44,7 +44,7 @@ LOCALPROC MyUnloadDataInit(void)
 #define StackAlloc 0
 #endif
 
-LOCALPROC MyMacHeapInit(void)
+LOCALPROC MyMacHeapInit()
 {
 #if ShouldUnloadDataInit
 	MyUnloadDataInit();
@@ -70,7 +70,7 @@ LOCALPROC MyMacHeapInit(void)
 	large memory allocations.
 */
 
-LOCALPROC MyMacToolBoxInit(void)
+LOCALPROC MyMacToolBoxInit()
 {
 
 #if NumMoreMasters != 0

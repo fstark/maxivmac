@@ -44,14 +44,14 @@ GLOBALFUNC tMyErr ProgressBar_Init_v2(WindowRef w, Rect *r)
 	return err;
 }
 
-GLOBALPROC ProgressBar_UnInit(void)
+GLOBALPROC ProgressBar_UnInit()
 {
 	xbh_UnInit(&ProgressBar_curtext);
 	xbh_UnInit(&ProgressBar_newtext);
 	ProgressBar_Wind = NULL;
 }
 
-LOCALPROC ProgressBar_SwapText(void)
+LOCALPROC ProgressBar_SwapText()
 {
 	xbh_r t;
 
@@ -79,7 +79,7 @@ GLOBALFUNC tMyErr ProgressBar_SetTextCStr_v2(char *s)
 #define ProgressBarPartWind 0
 #endif
 
-LOCALPROC ProgressBar_DrawText(void)
+LOCALPROC ProgressBar_DrawText()
 {
 	if (0 != xbh_GetLen(&ProgressBar_curtext)) {
 #if ProgressBarPartWind
@@ -114,7 +114,7 @@ LOCALPROC ProgressBar_DrawText(void)
 	}
 }
 
-GLOBALPROC UpdateProgressBar(void)
+GLOBALPROC UpdateProgressBar()
 {
 	short OldWidth;
 	blnr wChanged;
@@ -168,7 +168,7 @@ GLOBALPROC UpdateProgressBar(void)
 	}
 }
 
-GLOBALPROC ProgressBar_Draw(void)
+GLOBALPROC ProgressBar_Draw()
 {
 	GrafPtr saveport;
 	Rect tempRect;
@@ -203,7 +203,7 @@ GLOBALFUNC tMyErr ProgressBar_SetStage_v2(char *s, uimr n)
 	return err;
 }
 
-GLOBALPROC ProgressBar_InvertAll(void)
+GLOBALPROC ProgressBar_InvertAll()
 {
 	GrafPtr saveport;
 
