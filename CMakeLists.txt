@@ -23,8 +23,7 @@ set(MINIVMAC_HOMEPAGE "https://github.com/egrath" CACHE STRING "Project homepage
 # Drives
 set(MINIVMAC_NUM_DRIVES "6" CACHE STRING "Number of floppy drives")
 
-# Magnify / speed
-set(MINIVMAC_WINDOW_SCALE   "2" CACHE STRING "Window scale factor")
+# Speed
 set(MINIVMAC_SPEED "4" CACHE STRING "Initial speed value (0-5, 4=8x)")
 
 # Language

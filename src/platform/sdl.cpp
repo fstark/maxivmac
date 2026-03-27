@@ -650,8 +650,10 @@ static bool gBackgroundFlag = false;
 static bool gTrueBackgroundFlag = false;
 static bool CurSpeedStopped = true;
 
+static int WindowScale = 2;
+
 #if ! UseSDLscaling
-#define MaxScale MyWindowScale
+#define MaxScale 2
 #else
 #define MaxScale 1
 #endif
@@ -682,7 +684,7 @@ static uint8_t * CLUT_final;
 		256 possible values of one byte
 		8 pixels per byte maximum (when black and white)
 		4 bytes per destination pixel maximum
-			multiplied by MyWindowScale when magnified
+			multiplied by WindowScale when magnified
 	*/
 
 #define ScrnMapr_DoMap UpdateBWDepth3Copy
@@ -720,7 +722,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 0
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 
 #include "platform/common/screen_map.h"
 
@@ -730,7 +732,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 0
 #define ScrnMapr_DstDepth 4
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 
 #include "platform/common/screen_map.h"
 
@@ -740,7 +742,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 0
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 
 #include "platform/common/screen_map.h"
 
@@ -833,7 +835,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 #include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc1Dst4ScaledCopy
@@ -842,7 +844,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 4
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 #include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc1Dst5ScaledCopy
@@ -851,7 +853,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 #include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc2Dst3ScaledCopy
@@ -860,7 +862,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 2
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 #include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc2Dst4ScaledCopy
@@ -869,7 +871,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 2
 #define ScrnMapr_DstDepth 4
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 #include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc2Dst5ScaledCopy
@@ -878,7 +880,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 2
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 #include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc3Dst3ScaledCopy
@@ -887,7 +889,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 3
 #define ScrnMapr_DstDepth 3
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 #include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc3Dst4ScaledCopy
@@ -896,7 +898,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 3
 #define ScrnMapr_DstDepth 4
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 #include "platform/common/screen_map.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc3Dst5ScaledCopy
@@ -905,7 +907,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_SrcDepth 3
 #define ScrnMapr_DstDepth 5
 #define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale MyWindowScale
+#define ScrnMapr_Scale 2
 #include "platform/common/screen_map.h"
 
 #endif /* ! UseSDLscaling */
@@ -972,10 +974,10 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	}
 
 	if (UseMagnify) {
-		XDest *= MyWindowScale;
-		YDest *= MyWindowScale;
-		DestWidth *= MyWindowScale;
-		DestHeight *= MyWindowScale;
+		XDest *= WindowScale;
+		YDest *= WindowScale;
+		DestWidth *= WindowScale;
+		DestHeight *= WindowScale;
 	}
 
 	if (UseFullScreen)
@@ -993,10 +995,10 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 #if ! UseSDLscaling
 	if (UseMagnify) {
-		top2 *= MyWindowScale;
-		left2 *= MyWindowScale;
-		bottom2 *= MyWindowScale;
-		right2 *= MyWindowScale;
+		top2 *= WindowScale;
+		left2 *= WindowScale;
+		bottom2 *= WindowScale;
+		right2 *= WindowScale;
 	}
 #endif
 
@@ -1033,7 +1035,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 #if ! UseSDLscaling
 	if (UseMagnify) {
-		ExpectedPitch *= MyWindowScale;
+		ExpectedPitch *= WindowScale;
 	}
 #endif
 
@@ -1094,7 +1096,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 				}
 
 #if ! UseSDLscaling
-				for (a = UseMagnify ? MyWindowScale : 1; --a >= 0; )
+				for (a = UseMagnify ? WindowScale : 1; --a >= 0; )
 #endif
 				{
 					switch (bpp) {
@@ -1181,8 +1183,8 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 #if ! UseSDLscaling
 				if (UseMagnify) {
-					i0 /= MyWindowScale;
-					j0 /= MyWindowScale;
+					i0 /= WindowScale;
+					j0 /= WindowScale;
 				}
 #endif
 
@@ -1352,8 +1354,8 @@ static bool MyMoveMouse(int16_t h, int16_t v)
 	}
 
 	if (UseMagnify) {
-		h *= MyWindowScale;
-		v *= MyWindowScale;
+		h *= WindowScale;
+		v *= WindowScale;
 	}
 
 #if SDL_MAJOR_VERSION >= 2
@@ -1389,8 +1391,8 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 #endif /* SDL_MAJOR_VERSION >= 2 */
 
 	if (UseMagnify) {
-		NewMousePosh /= MyWindowScale;
-		NewMousePosv /= MyWindowScale;
+		NewMousePosh /= WindowScale;
+		NewMousePosv /= WindowScale;
 	}
 
 	if (UseFullScreen)
@@ -1449,8 +1451,8 @@ static void MousePositionNotifyRelative(int deltah, int deltav)
 			This is not really right. If only move one pixel
 			each time, emulated mouse doesn't move at all.
 		*/
-		deltah /= MyWindowScale;
-		deltav /= MyWindowScale;
+		deltah /= WindowScale;
+		deltav /= WindowScale;
 	}
 
 	MyMousePositionSetDelta(deltah,
@@ -4053,8 +4055,8 @@ static bool CreateMainWindow()
 
 #if 1
 	if (UseMagnify) {
-		NewWindowHeight *= MyWindowScale;
-		NewWindowWidth *= MyWindowScale;
+		NewWindowHeight *= WindowScale;
+		NewWindowWidth *= WindowScale;
 	}
 #endif
 
@@ -4159,8 +4161,8 @@ static bool CreateMainWindow()
 
 #if 1
 	if (UseMagnify) {
-		NewWindowHeight *= MyWindowScale;
-		NewWindowWidth *= MyWindowScale;
+		NewWindowHeight *= WindowScale;
+		NewWindowWidth *= WindowScale;
 	}
 #endif
 
@@ -4327,8 +4329,8 @@ static bool CreateMainWindow()
 			ViewHSize = wr;
 			ViewVSize = hr;
 			if (UseMagnify) {
-				ViewHSize /= MyWindowScale;
-				ViewVSize /= MyWindowScale;
+				ViewHSize /= WindowScale;
+				ViewVSize /= WindowScale;
 			}
 			if (ViewHSize >= vMacScreenWidth) {
 				ViewHStart = 0;
@@ -4599,8 +4601,8 @@ void ToggleWantFullScreen()
 				SDL_Rect r;
 
 				if (0 == SDL_GetDisplayBounds(0, &r)) {
-					if ((r.w >= vMacScreenWidth * MyWindowScale)
-						&& (r.h >= vMacScreenHeight * MyWindowScale)
+					if ((r.w >= vMacScreenWidth * WindowScale)
+						&& (r.h >= vMacScreenHeight * WindowScale)
 						)
 					{
 						WantMagnify = true;
@@ -5083,6 +5085,8 @@ int main(int argc, char **argv)
 	my_argv = argv;
 
 	ProgramEarlyInit(argc, argv);
+
+	WindowScale = GetEmulatorConfig().windowScale;
 
 	const LaunchConfig& lc = GetLaunchConfig();
 	if (lc.help) {

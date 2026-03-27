@@ -38,7 +38,6 @@
 #define MKC_formac_ROption MKC_Option
 #define MKC_formac_RShift MKC_Shift
 #define MKC_UnMappedKey  MKC_Control
-#define MyWindowScale 2
 #define WantInitRunInBackground 0
 #define WantInitSpeedValue 4
 #define WantEnblCtrlInt 1

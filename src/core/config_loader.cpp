@@ -104,6 +104,7 @@ void PrintUsage(const char* progname)
 		"  --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)\n"
 		"  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.\n"
 		"  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)\n"
+		"  --scale=N        Window scale factor (default: 2)\n"
 		"  --fullscreen     Start in fullscreen mode\n"
 		"  --silent         Disable audio output\n"
 		"  --title=TEXT     Window title\n"
@@ -177,6 +178,10 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 		}
 		if (strncmp(arg, "--speed=", 8) == 0) {
 			lc.speed = atoi(arg + 8);
+			continue;
+		}
+		if (strncmp(arg, "--scale=", 8) == 0) {
+			lc.scale = atoi(arg + 8);
 			continue;
 		}
 		if (strncmp(arg, "--log-start=", 12) == 0) {
@@ -256,6 +261,10 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			lc.speed = atoi(argv[++i]);
 			continue;
 		}
+		if (strcmp(arg, "--scale") == 0 && i + 1 < argc) {
+			lc.scale = atoi(argv[++i]);
+			continue;
+		}
 		if (strcmp(arg, "--title") == 0 && i + 1 < argc) {
 			lc.title = argv[++i];
 			continue;
@@ -320,6 +329,7 @@ EmulatorConfig BuildEmulatorConfig(const LaunchConfig& launch)
 	if (launch.fullscreen) ec.fullscreen = true;
 	if (launch.silent) ec.soundEnabled = false;
 	if (launch.speed > 0) ec.speed = launch.speed;
+	if (launch.scale > 0) ec.windowScale = launch.scale;
 	return ec;
 }
 

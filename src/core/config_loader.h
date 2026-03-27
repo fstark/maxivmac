@@ -21,6 +21,7 @@ struct LaunchConfig {
 	uint16_t screenH    = 0;
 	uint8_t  screenDepth = 0;  // log2 bpp
 	int      speed      = 0;   // 0 = model default
+	int      scale      = 0;   // 0 = use default (2)
 	uint32_t logStart   = 0;   // first instruction to log (0 = no logging)
 	uint32_t logCount   = 0;   // how many instructions to log (0 = no logging)
 	bool     fullscreen = false;
