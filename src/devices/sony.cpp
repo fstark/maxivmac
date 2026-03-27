@@ -286,11 +286,7 @@ static void Drive_UpdateChecksums(tDrive Drive_No)
 #define checkheaderblocks 64
 
 #define checkheaderoffset 0
-#if NonDiskProtect
 #define checkheadersize (checkheaderblocks * 512)
-#else
-#define checkheadersize 128
-#endif
 
 #define Sony_SupportOtherFormats Sony_SupportDC42
 
@@ -312,21 +308,16 @@ static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 			uint32_t TagOffset = 0;
 #endif
 
-#if Sony_SupportOtherFormats || NonDiskProtect
-#if IncludeSonyRawMode
 			if (! vSonyRawMode)
-#endif
 			{
 				uint8_t Temp[checkheadersize];
 				uint32_t Sony_Count = checkheadersize;
 				bool gotFormat = false;
 
-#if NonDiskProtect
 				if (L < checkheadersize) {
 					WarnMsgUnsupportedDisk();
 					result = -1;
 				} else
-#endif
 				if (mnvm_noErr == (result = vSonyTransfer(false,
 					Temp, i, checkheaderoffset, Sony_Count, nullptr)))
 				{
@@ -407,7 +398,6 @@ static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 						}
 					}
 #endif /* Sony_SupportDC42 */
-#if NonDiskProtect
 					if (! gotFormat) {
 						uint16_t drSigWord = do_get_mem_word(
 							&Temp[0x400]);
@@ -463,11 +453,9 @@ static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 						WarnMsgUnsupportedDisk();
 						result = -1;
 					}
-#endif
 				}
 			}
 			if (mnvm_noErr == result)
-#endif /* Sony_SupportOtherFormats */
 			{
 				vSonyMountedMask |= ((uint32_t)1 << i);
 
@@ -516,9 +504,7 @@ void SonyDevice::update()
 
 				g_cpu.diskInsertedPseudoException(MountCallBack, data);
 
-#if IncludeSonyRawMode
 				if (! vSonyRawMode)
-#endif
 				{
 					DelayUntilNextInsert = MinTicksBetweenInsert;
 					/*
@@ -600,7 +586,6 @@ static tMacErr Drive_Eject(tDrive Drive_No)
 	return result;
 }
 
-#if IncludeSonyNew
 static tMacErr Drive_EjectDelete(tDrive Drive_No)
 {
 	tMacErr result;
@@ -617,7 +602,6 @@ static tMacErr Drive_EjectDelete(tDrive Drive_No)
 
 	return result;
 }
-#endif
 
 void SonyDevice::ejectAllDisks()
 {
@@ -655,18 +639,12 @@ void SonyDevice::reset()
 #define kCmndDiskQuitOnEject 8
 #define kCmndDiskFeatures 9
 #define kCmndDiskNextPendingInsert 10
-#if IncludeSonyRawMode
 #define kCmndDiskGetRawMode 11
 #define kCmndDiskSetRawMode 12
-#endif
-#if IncludeSonyNew
 #define kCmndDiskNew 13
 #define kCmndDiskGetNewWanted 14
 #define kCmndDiskEjectDelete 15
-#endif
-#if IncludeSonyGetName
 #define kCmndDiskGetName 16
-#endif
 
 #define kFeatureCmndDisk_RawMode 0
 #define kFeatureCmndDisk_New 1
@@ -753,18 +731,10 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 		case kCmndDiskFeatures:
 			{
 				uint32_t v = (0
-#if IncludeSonyRawMode
 					| ((uint32_t)1 << kFeatureCmndDisk_RawMode)
-#endif
-#if IncludeSonyNew
 					| ((uint32_t)1 << kFeatureCmndDisk_New)
-#endif
-#if IncludeSonyNameNew
 					| ((uint32_t)1 << kFeatureCmndDisk_NewName)
-#endif
-#if IncludeSonyGetName
 					| ((uint32_t)1 << kFeatureCmndDisk_GetName)
-#endif
 					);
 
 				put_vm_long(p + ExtnDat_params + 0, v);
@@ -781,7 +751,6 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 				}
 			}
 			break;
-#if IncludeSonyRawMode
 		case kCmndDiskGetRawMode:
 			put_vm_word(p + kParamDiskBuffer, vSonyRawMode);
 			result = mnvm_noErr;
@@ -790,8 +759,6 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			vSonyRawMode = get_vm_word(p + kParamDiskBuffer);
 			result = mnvm_noErr;
 			break;
-#endif
-#if IncludeSonyNew
 		case kCmndDiskNew:
 			{
 				uint32_t count = get_vm_long(p + ExtnDat_params + 0);
@@ -800,23 +767,17 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 
 				result = mnvm_noErr;
 
-#if IncludePbufs
 				if (Pbuf_No != NotAPbuf) {
 					result = CheckPbuf(Pbuf_No);
 					if (mnvm_noErr == result) {
 						vSonyNewDiskWanted = true;
 						vSonyNewDiskSize = count;
-#if IncludeSonyNameNew
 						if (vSonyNewDiskName != NotAPbuf) {
 							PbufDispose(vSonyNewDiskName);
 						}
 						vSonyNewDiskName = Pbuf_No;
-#else
-						PbufDispose(Pbuf_No);
-#endif
 					}
 				} else
-#endif
 				{
 					vSonyNewDiskWanted = true;
 					vSonyNewDiskSize = count;
@@ -833,8 +794,6 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 				result = Drive_EjectDelete(Drive_No);
 			}
 			break;
-#endif
-#if IncludeSonyGetName
 		case kCmndDiskGetName:
 			{
 				tDrive Drive_No = get_vm_word(p + ExtnDat_params + 0);
@@ -847,7 +806,6 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 				}
 			}
 			break;
-#endif
 	}
 
 	put_vm_word(p + ExtnDat_result, result);

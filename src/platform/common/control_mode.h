@@ -84,9 +84,7 @@ void DoAboutMsg();
 void MacMsgDebugAlert(char *s);
 #endif
 
-#if NonDiskProtect
 void WarnMsgUnsupportedDisk();
-#endif
 
 /* --- Backend-provided functions --- */
 /* These must be defined by each platform backend */

@@ -22,19 +22,9 @@
 
 /* --- feature computation macros --- */
 
-#if EnableMouseMotion
 #define EnableFSMouseMotion 1
-#else
-#define EnableFSMouseMotion 0
-#endif
-
 #define EnableRecreateW 1
-
-#if EnableRecreateW || EnableFSMouseMotion
 #define EnableMoveMouse 1
-#else
-#define EnableMoveMouse 0
-#endif
 
 #ifndef GrabKeysFullScreen
 #define GrabKeysFullScreen 1
@@ -76,12 +66,10 @@ extern int16_t ScreenChangedLeft;
 extern int16_t ScreenChangedBottom;
 extern int16_t ScreenChangedRight;
 
-#if EnableAutoSlow
 extern int16_t ScreenChangedQuietTop;
 extern int16_t ScreenChangedQuietLeft;
 extern int16_t ScreenChangedQuietBottom;
 extern int16_t ScreenChangedQuietRight;
-#endif
 
 extern uint16_t ViewHSize;
 extern uint16_t ViewVSize;
@@ -96,11 +84,9 @@ extern int16_t SavedMouseV;
 extern bool HaveMouseMotion;
 #endif
 
-#if IncludePbufs
 extern uint32_t PbufAllocatedMask;
 extern uint32_t PbufSize[NumPbufs];
 #define PbufIsAllocated(i) ((PbufAllocatedMask & ((uint32_t)1 << (i))) != 0)
-#endif
 
 extern uint32_t theKeys[4];
 extern bool MyMouseButtonState;
@@ -150,11 +136,9 @@ bool FirstFreeDisk(tDrive *Drive_No);
 void DiskInsertNotify(tDrive Drive_No, bool locked);
 void DiskEjectedNotify(tDrive Drive_No);
 
-#if IncludePbufs
 bool FirstFreePbuf(tPbuf *r);
 void PbufNewNotify(tPbuf Pbuf_No, uint32_t count);
 void PbufDisposeNotify(tPbuf Pbuf_No);
-#endif
 
 void Keyboard_UpdateKeyMap(uint8_t key, bool down);
 void MyMouseButtonSet(bool down);

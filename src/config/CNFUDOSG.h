@@ -40,7 +40,6 @@
 #define MKC_UnMappedKey  MKC_Control
 #define MyWindowScale 2
 #define WantInitRunInBackground 0
-#define WantInitNotAutoSlow 0
 #define WantInitSpeedValue 4
 #define WantEnblCtrlInt 1
 #define WantEnblCtrlRst 1

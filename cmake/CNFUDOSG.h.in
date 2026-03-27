@@ -37,7 +37,6 @@
 #define MKC_UnMappedKey MKC_Control
 #define MyWindowScale @MINIVMAC_WINDOW_SCALE@
 #define WantInitRunInBackground 0
-#define WantInitNotAutoSlow 0
 #define WantInitSpeedValue @MINIVMAC_SPEED@
 #define WantEnblCtrlInt 1
 #define WantEnblCtrlRst 1

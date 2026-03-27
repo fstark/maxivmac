@@ -77,7 +77,6 @@ void MouseDevice::update()
 			(0 == MasterMyEvtQLock) &&
 			(nullptr != (p = MyEvtQOutP())))
 		{
-#if EnableMouseMotion
 			if (g_machine->config().emClassicKbrd
 				&& MyEvtQElKindMouseDelta == p->kind)
 			{
@@ -91,7 +90,6 @@ void MouseDevice::update()
 				}
 				MyEvtQOutDone();
 			} else
-#endif
 			if (MyEvtQElKindMousePos == p->kind) {
 				uint32_t NewMouse = (p->u.pos.v << 16) | p->u.pos.h;
 

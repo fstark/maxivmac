@@ -22,7 +22,6 @@
 
 #include "platform/common/osglu_ui.h"
 
-#if IncludePbufs
 
 extern void *PbufDat[NumPbufs];
 
@@ -38,4 +37,3 @@ uint8_t * PbufLock(tPbuf i);
 void PbufTransfer(uint8_t * Buffer,
 	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite);
 
-#endif

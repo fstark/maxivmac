@@ -26,11 +26,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#if IncludePbufs
 void *PbufDat[NumPbufs];
-#endif
 
-#if IncludePbufs
 tMacErr PbufNewFromPtr(void *p, uint32_t count, tPbuf *r)
 {
 	tPbuf i;
@@ -48,9 +45,7 @@ tMacErr PbufNewFromPtr(void *p, uint32_t count, tPbuf *r)
 
 	return err;
 }
-#endif
 
-#if IncludePbufs
 void PbufKillToPtr(void **p, uint32_t *count, tPbuf r)
 {
 	*p = PbufDat[r];
@@ -58,9 +53,7 @@ void PbufKillToPtr(void **p, uint32_t *count, tPbuf r)
 
 	PbufDisposeNotify(r);
 }
-#endif
 
-#if IncludePbufs
 tMacErr PbufNew(uint32_t count, tPbuf *r)
 {
 	tMacErr err = mnvm_miscErr;
@@ -72,9 +65,7 @@ tMacErr PbufNew(uint32_t count, tPbuf *r)
 
 	return err;
 }
-#endif
 
-#if IncludePbufs
 void PbufDispose(tPbuf i)
 {
 	void *p;
@@ -84,9 +75,7 @@ void PbufDispose(tPbuf i)
 
 	free(p);
 }
-#endif
 
-#if IncludePbufs
 void UnInitPbufs()
 {
 	tPbuf i;
@@ -97,16 +86,12 @@ void UnInitPbufs()
 		}
 	}
 }
-#endif
 
-#if IncludePbufs
 uint8_t * PbufLock(tPbuf i)
 {
 	return (uint8_t *)PbufDat[i];
 }
-#endif
 
-#if IncludePbufs
 void PbufTransfer(uint8_t * Buffer,
 	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
 {
@@ -117,4 +102,3 @@ void PbufTransfer(uint8_t * Buffer,
 		(void) memcpy(Buffer, p, count);
 	}
 }
-#endif

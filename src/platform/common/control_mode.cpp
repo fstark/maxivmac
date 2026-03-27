@@ -481,14 +481,10 @@ enum {
 	kCntrlMsgNewSpeed,
 	kCntrlMsgNewStopped,
 	kCntrlMsgNewRunInBack,
-#if EnableAutoSlow
 	kCntrlMsgNewAutoSlow,
-#endif
 	kCntrlMsgAbout,
 	kCntrlMsgHelp,
-#if IncludePbufs
 	kCntrlMsgOptionsStrCopied,
-#endif
 
 	kNumCntrlMsgs
 };
@@ -530,7 +526,6 @@ void SetSpeedValue(uint8_t i)
 
 /* ToggleWantFullScreen declared extern in control_mode.h */
 
-#if IncludeHostTextClipExchange
 void HTCEexportSubstCStr(char *s)
 {
 	int i;
@@ -578,14 +573,11 @@ void HTCEexportSubstCStr(char *s)
 	}
 #endif
 }
-#endif
 
-#if IncludeHostTextClipExchange
 void CopyOptionsStr()
 {
 	HTCEexportSubstCStr(kBldOpts);
 }
-#endif
 
 
 void DoControlModeKey(uint8_t key)
@@ -649,12 +641,10 @@ void DoControlModeKey(uint8_t key)
 					ToggleWantFullScreen();
 					ControlMessage = kCntrlMsgFullScreen;
 					break;
-#if IncludeHostTextClipExchange
 				case MKC_P:
 					CopyOptionsStr();
 					ControlMessage = kCntrlMsgOptionsStrCopied;
 					break;
-#endif
 #if NeedRequestIthDisk
 				case MKC_1:
 					RequestIthDisk = 1;
@@ -760,13 +750,11 @@ void DoControlModeKey(uint8_t key)
 						ControlMessage = kCntrlMsgNewStopped;
 					}
 					break;
-#if EnableAutoSlow
 				case MKC_W:
 					WantNotAutoSlow = ! WantNotAutoSlow;
 					CurControlMode = kCntrlModeBase;
 					ControlMessage = kCntrlMsgNewAutoSlow;
 					break;
-#endif
 				case MKC_Z:
 					SetSpeedValue(0);
 					break;
@@ -886,9 +874,7 @@ void DrawCellsControlModeBody()
 			DrawCellsBlankLine();
 			DrawCellsKeyCommand("D", kStrSpeedStopped);
 			DrawCellsKeyCommand("B", kStrSpeedBackToggle);
-#if EnableAutoSlow
 			DrawCellsKeyCommand("W", kStrSpeedAutoSlowToggle);
-#endif
 			DrawCellsBlankLine();
 			DrawCellsKeyCommand("E", kStrSpeedExit);
 			break;
@@ -901,22 +887,18 @@ void DrawCellsControlModeBody()
 		case kCntrlMsgNewStopped:
 			DrawCellsOneLineStr(kStrNewStopped);
 			break;
-#if EnableAutoSlow
 		case kCntrlMsgNewAutoSlow:
 			DrawCellsOneLineStr(kStrNewAutoSlow);
 			break;
-#endif
 		case kCntrlMsgMagnify:
 			DrawCellsOneLineStr(kStrNewMagnify);
 			break;
 		case kCntrlMsgFullScreen:
 			DrawCellsOneLineStr(kStrNewFullScreen);
 			break;
-#if IncludeHostTextClipExchange
 		case kCntrlMsgOptionsStrCopied:
 			DrawCellsOneLineStr(kStrHaveCopiedOptions);
 			break;
-#endif
 #if WantEnblCtrlRst
 		case kCntrlMsgConfirmResetStart:
 			DrawCellsOneLineStr(kStrConfirmReset);
@@ -1181,14 +1163,12 @@ tMacErr ROM_IsValid()
 	return mnvm_noErr;
 }
 
-#if NonDiskProtect
 void WarnMsgUnsupportedDisk()
 {
 	MacMsgOverride("Unsupported Disk Image",
 		"I do not recognize the format of the Disk Image,"
 		" and so will not try to mount it.");
 }
-#endif
 
 bool WaitForRom()
 {

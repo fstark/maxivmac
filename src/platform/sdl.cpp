@@ -295,14 +295,11 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	return vSonyEject0(Drive_No, false);
 }
 
-#if IncludeSonyNew
  tMacErr vSonyEjectDelete(tDrive Drive_No)
 {
 	return vSonyEject0(Drive_No, true);
 }
-#endif
 
-#if IncludeSonyGetName
  tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
 {
 	char *path = DriveNames[Drive_No];
@@ -334,7 +331,6 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	*r = t;
 	return mnvm_noErr;
 }
-#endif
 
 static void UnInitDrives()
 {
@@ -401,7 +397,6 @@ static bool Sony_Insert1(char *drivepath, bool silentfail)
 	return false;
 }
 
-#if IncludeSonyNew
 static bool WriteZero(FILE *refnum, uint32_t L)
 {
 	uint8_t buffer[2048];
@@ -448,7 +443,6 @@ static void MakeNewDisk(uint32_t L, char *drivename)
 	MakeNewDisk0(L, s);
 	fprintf(stderr, "Exported file: %s\n", s);
 }
-#endif
 
 static tMacErr LoadMacRomFrom(char *path)
 {
@@ -2584,7 +2578,6 @@ static void CheckSavedMacMsg()
 
 /* --- clipboard --- */
 
-#if IncludeHostTextClipExchange
 static uint32_t MacRoman2UniCodeSize(uint8_t *s, uint32_t L)
 {
 	uint32_t i;
@@ -2863,9 +2856,7 @@ static uint32_t MacRoman2UniCodeSize(uint8_t *s, uint32_t L)
 
 	return v;
 }
-#endif
 
-#if IncludeHostTextClipExchange
 static void MacRoman2UniCodeData(uint8_t *s, uint32_t L, char *t)
 {
 	uint32_t i;
@@ -3139,9 +3130,7 @@ static void MacRoman2UniCodeData(uint8_t *s, uint32_t L, char *t)
 		}
 	}
 }
-#endif
 
-#if IncludeHostTextClipExchange
  tMacErr HTCEexport(tPbuf i)
 {
 	/*
@@ -3181,9 +3170,7 @@ static void MacRoman2UniCodeData(uint8_t *s, uint32_t L, char *t)
 
 	return err;
 }
-#endif
 
-#if IncludeHostTextClipExchange
 static tMacErr UniCodeStrLength(char *s, uint32_t *r)
 {
 	tMacErr err;
@@ -3250,9 +3237,7 @@ label_retry:
 	*r = L;
 	return err;
 }
-#endif
 
-#if IncludeHostTextClipExchange
 static uint8_t UniCodePoint2MacRoman(uint32_t x)
 {
 	uint8_t y;
@@ -3524,9 +3509,7 @@ static uint8_t UniCodePoint2MacRoman(uint32_t x)
 
 	return y;
 }
-#endif
 
-#if IncludeHostTextClipExchange
 static void UniCodeStr2MacRoman(char *s, char *r)
 {
 	tMacErr err;
@@ -3604,9 +3587,7 @@ label_retry:
 		/* longer code not supported yet */
 	}
 }
-#endif
 
-#if IncludeHostTextClipExchange
  tMacErr HTCEimport(tPbuf *r)
 {
 	/*
@@ -3655,7 +3636,6 @@ label_retry:
 
 	return err;
 }
-#endif
 
 /* --- event handling for main window --- */
 
@@ -4737,7 +4717,7 @@ static void CheckForSavedTasks()
 
 	if (CurSpeedStopped != (SpeedStopped ||
 		(gBackgroundFlag && ! RunInBackground
-#if EnableAutoSlow && 0
+#if 0
 			&& (QuietSubTicks >= 4092)
 #endif
 		)))
@@ -4788,9 +4768,7 @@ static void CheckForSavedTasks()
 	}
 #endif
 
-#if IncludeSonyNew
 	if (vSonyNewDiskWanted) {
-#if IncludeSonyNameNew
 		if (vSonyNewDiskName != NotAPbuf) {
 			uint8_t *p = (uint8_t *)PbufDat[vSonyNewDiskName];
 			uint32_t L = PbufSize[vSonyNewDiskName];
@@ -4819,14 +4797,12 @@ static void CheckForSavedTasks()
 			PbufDispose(vSonyNewDiskName);
 			vSonyNewDiskName = NotAPbuf;
 		} else
-#endif
 		{
 			char defaultName[] = "untitled.dsk";
 			MakeNewDisk(vSonyNewDiskSize, defaultName);
 		}
 		vSonyNewDiskWanted = false;
 	}
-#endif
 
 	if (HaveCursorHidden != (WantCursorHidden
 		&& ! (gTrueBackgroundFlag || CurSpeedStopped)))
@@ -5123,9 +5099,7 @@ static void UnInitOSGLU()
 #if MySoundEnabled
 	MySound_UnInit();
 #endif
-#if IncludePbufs
 	UnInitPbufs();
-#endif
 	UnInitDrives();
 
 	ForceShowCursor();

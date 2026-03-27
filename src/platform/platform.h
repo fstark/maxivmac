@@ -34,9 +34,7 @@
 extern void WarnMsgAbnormalID(uint16_t id);
 #endif
 
-#if NonDiskProtect
 extern void WarnMsgUnsupportedDisk();
-#endif
 
 #if dbglog_HAVE
 extern void dbglog_writeCStr(char *s);
@@ -105,7 +103,6 @@ using tMacErr = uint16_t;
 #define mnvm_afpAccessDenied  ((tMacErr) 0xEC78)
 	/* (uint16_t) - 5000 - Insufficient access privileges for operation */
 
-#if IncludePbufs
 
 using tPbuf = uint16_t;
 
@@ -119,7 +116,6 @@ extern void PbufDispose(tPbuf i);
 extern void PbufTransfer(uint8_t * Buffer,
 	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite);
 
-#endif
 
 using tDrive = uint16_t;
 
@@ -138,40 +134,26 @@ extern tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count);
 extern bool AnyDiskInserted();
 extern void DiskRevokeWritable(tDrive Drive_No);
 
-#if IncludeSonyRawMode
 extern bool vSonyRawMode;
-#endif
 
-#if IncludeSonyNew
 extern bool vSonyNewDiskWanted;
 extern uint32_t vSonyNewDiskSize;
 extern tMacErr vSonyEjectDelete(tDrive Drive_No);
-#endif
 
-#if IncludeSonyNameNew
 extern tPbuf vSonyNewDiskName;
-#endif
 
-#if IncludeSonyGetName
 extern tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r);
-#endif
 
-#if IncludeHostTextClipExchange
 extern tMacErr HTCEexport(tPbuf i);
 extern tMacErr HTCEimport(tPbuf *r);
-#endif
 
 extern uint32_t OnTrueTime;
 
 extern uint32_t CurMacDateInSeconds;
-#if AutoLocation
 extern uint32_t CurMacLatitude;
 extern uint32_t CurMacLongitude;
-#endif
-#if AutoTimeZone
 extern uint32_t CurMacDelta;
 	/* (dlsDelta << 24) | (gmtDelta & 0x00FFFFFF) */
-#endif
 
 
 /* --- Runtime screen dimensions (set from MachineConfig at init) --- */
@@ -222,15 +204,12 @@ extern uint8_t SpeedValue;
 
 extern bool g_SkipThrottle;
 
-#if EnableAutoSlow
 extern bool WantNotAutoSlow;
-#endif
 
 /* where emulated machine thinks mouse is */
 extern uint16_t CurMouseV;
 extern uint16_t CurMouseH;
 
-#if EnableAutoSlow
 extern uint32_t QuietTime;
 extern uint32_t QuietSubTicks;
 
@@ -239,9 +218,6 @@ extern uint32_t QuietSubTicks;
 	QuietTime = 0; \
 	QuietSubTicks = 0; \
 }
-#else
-#define QuietEnds()
-#endif
 
 #if 3 == kLn2SoundSampSz
 using trSoundSamp = uint8_t;

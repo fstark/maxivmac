@@ -38,27 +38,17 @@ bool ROM_loaded = false;
 uint32_t vSonyWritableMask = 0;
 uint32_t vSonyInsertedMask = 0;
 
-#if IncludeSonyRawMode
 bool vSonyRawMode = false;
-#endif
 
-#if IncludeSonyNew
 bool vSonyNewDiskWanted = false;
 uint32_t vSonyNewDiskSize;
-#endif
 
-#if IncludeSonyNameNew
 tPbuf vSonyNewDiskName = NotAPbuf;
-#endif
 
 uint32_t CurMacDateInSeconds = 0;
-#if AutoLocation
 uint32_t CurMacLatitude = 0;
 uint32_t CurMacLongitude = 0;
-#endif
-#if AutoTimeZone
 uint32_t CurMacDelta = 0;
-#endif
 
 /* Runtime screen dimensions — initialized from MachineConfig */
 uint16_t g_screenWidth  = 640;
@@ -86,9 +76,7 @@ uint8_t SpeedValue = WantInitSpeedValue;
 
 bool g_SkipThrottle = false;
 
-#if EnableAutoSlow
-bool WantNotAutoSlow = (WantInitNotAutoSlow != 0);
-#endif
+bool WantNotAutoSlow = false;
 
 uint16_t CurMouseV = 0;
 uint16_t CurMouseH = 0;
@@ -97,10 +85,8 @@ uint16_t CurMouseH = 0;
 bool HaveMouseMotion = false;
 #endif
 
-#if EnableAutoSlow
 uint32_t QuietTime = 0;
 uint32_t QuietSubTicks = 0;
-#endif
 
 #if EmLocalTalk
 
@@ -128,12 +114,9 @@ uint32_t OnTrueTime = 0;
 
 /* --- Pbuf support --- */
 
-#if IncludePbufs
 uint32_t PbufAllocatedMask;
 uint32_t PbufSize[NumPbufs];
-#endif
 
-#if IncludePbufs
 bool FirstFreePbuf(tPbuf *r)
 {
 	tPbuf i;
@@ -146,24 +129,18 @@ bool FirstFreePbuf(tPbuf *r)
 	}
 	return false;
 }
-#endif
 
-#if IncludePbufs
 void PbufNewNotify(tPbuf Pbuf_No, uint32_t count)
 {
 	PbufSize[Pbuf_No] = count;
 	PbufAllocatedMask |= ((uint32_t)1 << Pbuf_No);
 }
-#endif
 
-#if IncludePbufs
 void PbufDisposeNotify(tPbuf Pbuf_No)
 {
 	PbufAllocatedMask &= ~ ((uint32_t)1 << Pbuf_No);
 }
-#endif
 
-#if IncludePbufs
 tMacErr CheckPbuf(tPbuf Pbuf_No)
 {
 	tMacErr result;
@@ -178,9 +155,7 @@ tMacErr CheckPbuf(tPbuf Pbuf_No)
 
 	return result;
 }
-#endif
 
-#if IncludePbufs
 tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
 {
 	tMacErr result = CheckPbuf(Pbuf_No);
@@ -191,7 +166,6 @@ tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
 
 	return result;
 }
-#endif
 
 /* --- Disk support --- */
 
@@ -601,12 +575,10 @@ void ScreenChangedAll()
 	ScreenChangedRight = vMacScreenWidth;
 }
 
-#if EnableAutoSlow
 int16_t ScreenChangedQuietTop = vMacScreenHeight;
 int16_t ScreenChangedQuietLeft = vMacScreenWidth;
 int16_t ScreenChangedQuietBottom = 0;
 int16_t ScreenChangedQuietRight = 0;
-#endif
 
 void Screen_OutputFrame(uint8_t * screencurrentbuff)
 {
@@ -632,7 +604,6 @@ void Screen_OutputFrame(uint8_t * screencurrentbuff)
 				ScreenChangedRight = right;
 			}
 
-#if EnableAutoSlow
 			if (top < ScreenChangedQuietTop) {
 				ScreenChangedQuietTop = top;
 			}
@@ -657,7 +628,6 @@ void Screen_OutputFrame(uint8_t * screencurrentbuff)
 
 				QuietEnds();
 			}
-#endif
 		}
 	}
 }

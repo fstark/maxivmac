@@ -297,7 +297,6 @@ static uint32_t ExtraSubTicksToDo = 0;
 
 static void DoEmulateOneTick()
 {
-#if EnableAutoSlow
 	{
 		uint32_t NewQuietTime = QuietTime + 1;
 
@@ -306,8 +305,6 @@ static void DoEmulateOneTick()
 			QuietTime = NewQuietTime;
 		}
 	}
-#endif
-#if EnableAutoSlow
 	{
 		uint32_t NewQuietSubTicks = QuietSubTicks + kNumSubTicks;
 
@@ -316,7 +313,6 @@ static void DoEmulateOneTick()
 			QuietSubTicks = NewQuietSubTicks;
 		}
 	}
-#endif
 
 	SixtiethSecondNotify();
 
@@ -367,7 +363,6 @@ static void DoEmulateExtraTime()
 	if (MoreSubTicksToDo()) {
 		ExtraTimeBeginNotify();
 		do {
-#if EnableAutoSlow
 			{
 				uint32_t NewQuietSubTicks = QuietSubTicks + 1;
 
@@ -376,7 +371,6 @@ static void DoEmulateExtraTime()
 					QuietSubTicks = NewQuietSubTicks;
 				}
 			}
-#endif
 			m68k_go_nCycles_1(CyclesScaledPerSubTick);
 			--ExtraSubTicksToDo;
 		} while (MoreSubTicksToDo());
