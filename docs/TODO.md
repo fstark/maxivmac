@@ -20,3 +20,20 @@
 
 * Get rid of UnusedParam macro
 
+## Future Work
+
+- Key mappings (`MKC_formac_*`) should move to their own header.
+- `WantInitRunInBackground` could become `EmulatorConfig::runInBackground`.
+- `EmLocalTalk` could become runtime when networking gets a device abstraction.
+- `dbglog_HAVE` / `WantAbnormalReports` could become runtime if debug
+  logging overhead becomes negligible.
+
+---
+
+## Out of Scope
+
+- Language (`MINIVMAC_LANGUAGE`) — separate plan.
+- `MKC_formac_*` key mappings — separate concern, needs its own design.
+- `WantCycByPriOp` — tracked in CLEANUP.md Step 4.
+- `SCC_TrackMore` — tracked in CLEANUP.md Step 4.
+- Moving globals into Machine — tracked in CLEANUP.md Step 3.

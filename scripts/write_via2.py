@@ -4,23 +4,7 @@ import os
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-via2_h = r"""/*
-	VIA2EMDV.h
-
-	Copyright (C) 2004 Philip Cummins, Paul C. Pratt
-
-	You can redistribute this file and/or modify it under the terms
-	of version 2 of the GNU General Public License as published by
-	the Free Software Foundation.  You should have received a copy
-	of the license along with this file; see the file COPYING.
-
-	This file is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	license for more details.
-*/
-
-#pragma once
+via2_h = r"""#pragma once
 
 #include "devices/device.h"
 #include <cstdint>
@@ -127,22 +111,6 @@ extern uint8_t VIA2_ShiftOutData(void);
 """
 
 via2_cpp = r"""/*
-	VIA2EMDV.c
-
-	Copyright (C) 2008 Philip Cummins, Paul C. Pratt
-
-	You can redistribute this file and/or modify it under the terms
-	of version 2 of the GNU General Public License as published by
-	the Free Software Foundation.  You should have received a copy
-	of the license along with this file; see the file COPYING.
-
-	This file is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	license for more details.
-*/
-
-/*
 	Versatile Interface Adapter EMulated DEVice
 
 	Emulates the VIA found in the Mac II (VIA2).

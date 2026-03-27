@@ -6,22 +6,6 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ===== via.h =====
 via_h = '''\
-/*
-\tVIAEMDEV.h
-
-\tCopyright (C) 2004 Philip Cummins, Paul C. Pratt
-
-\tYou can redistribute this file and/or modify it under the terms
-\tof version 2 of the GNU General Public License as published by
-\tthe Free Software Foundation.  You should have received a copy
-\tof the license along with this file; see the file COPYING.
-
-\tThis file is distributed in the hope that it will be useful,
-\tbut WITHOUT ANY WARRANTY; without even the implied warranty of
-\tMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-\tlicense for more details.
-*/
-
 #pragma once
 
 #include "devices/device.h"
@@ -135,22 +119,6 @@ print("via.h written")
 # ===== via.cpp =====
 # Read original to preserve as reference, then write the new version
 via_cpp = '''\
-/*
-\tVIAEMDEV.c
-
-\tCopyright (C) 2008 Philip Cummins, Paul C. Pratt
-
-\tYou can redistribute this file and/or modify it under the terms
-\tof version 2 of the GNU General Public License as published by
-\tthe Free Software Foundation.  You should have received a copy
-\tof the license along with this file; see the file COPYING.
-
-\tThis file is distributed in the hope that it will be useful,
-\tbut WITHOUT ANY WARRANTY; without even the implied warranty of
-\tMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-\tlicense for more details.
-*/
-
 /*
 \tVersatile Interface Adapter EMulated DEVice
 
