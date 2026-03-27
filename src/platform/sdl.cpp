@@ -1967,10 +1967,6 @@ static bool UpdateTrueEmulatedTime()
 
 	LatestTime = SDL_GetTicks();
 	if (LatestTime != LastTime) {
-
-		NewMacDateInSeconds = LatestTime / 1000;
-			/* no date and time api in SDL */
-
 		LastTime = LatestTime;
 		TimeDiff = (LatestTime - NextIntTime);
 			/* this should work even when time wraps */
@@ -2010,22 +2006,15 @@ static bool UpdateTrueEmulatedTime()
 
 static bool CheckDateTime()
 {
-	/*
-		OSGLUxxx common:
-		Update CurMacDateInSeconds, the number
-		of seconds since midnight January 1, 1904.
-
-		return true if CurMacDateInSeconds is
-		different than it was on the last
-		call to CheckDateTime.
-	*/
-
-	if (CurMacDateInSeconds != NewMacDateInSeconds) {
-		CurMacDateInSeconds = NewMacDateInSeconds;
+	/* CurMacDateInSeconds is driven by tick counter in
+	   SixtiethSecondNotify (60 ticks = 1 second), not wall clock.
+	   Just detect transitions for sound/demo notifications. */
+	static uint32_t lastSeenDate = 0;
+	if (CurMacDateInSeconds != lastSeenDate) {
+		lastSeenDate = CurMacDateInSeconds;
 		return true;
-	} else {
-		return false;
 	}
+	return false;
 }
 
 static void StartUpTimeAdjust()
@@ -2054,9 +2043,12 @@ static bool InitLocationDat()
 #if 0 != SDL_MAJOR_VERSION
 	LastTime = SDL_GetTicks();
 	InitNextTime();
-	NewMacDateInSeconds = LastTime / 1000;
-	CurMacDateInSeconds = NewMacDateInSeconds;
 #endif
+
+	/* Fixed date: 14 March 1990 12:00:00 UTC (Mac epoch seconds).
+	   Deterministic so emulated RTC doesn't depend on host clock. */
+	NewMacDateInSeconds = UINT32_C(0xA223E2C0);
+	CurMacDateInSeconds = NewMacDateInSeconds;
 
 	return true;
 }
@@ -5098,6 +5090,15 @@ static void CheckForSystemEvents()
 
 void WaitForNextTick()
 {
+	/* Deterministic path: no wall-clock gating, advance exactly one
+	   tick per call.  Used for --record / --verify golden files. */
+	if (g_SkipThrottle) {
+		CheckForSystemEvents();
+		DoneWithDrawingForTick();
+		++OnTrueTime;
+		return;
+	}
+
 label_retry:
 	CheckForSystemEvents();
 	CheckForSavedTasks();
