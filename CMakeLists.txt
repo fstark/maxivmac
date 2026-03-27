@@ -23,9 +23,6 @@ set(MINIVMAC_HOMEPAGE "https://github.com/egrath" CACHE STRING "Project homepage
 # Drives
 set(MINIVMAC_NUM_DRIVES "6" CACHE STRING "Number of floppy drives")
 
-# Speed
-set(MINIVMAC_SPEED "4" CACHE STRING "Initial speed value (0-5, 4=8x)")
-
 # Language
 set(MINIVMAC_LANGUAGE "English" CACHE STRING "UI language")
 set_property(CACHE MINIVMAC_LANGUAGE PROPERTY STRINGS

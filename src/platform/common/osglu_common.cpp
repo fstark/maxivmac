@@ -72,7 +72,7 @@ bool WantMacInterrupt = false;
 
 bool WantMacReset = false;
 
-uint8_t SpeedValue = WantInitSpeedValue;
+uint8_t SpeedValue = 4;
 
 bool g_SkipThrottle = false;
 

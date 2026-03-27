@@ -5087,6 +5087,7 @@ int main(int argc, char **argv)
 	ProgramEarlyInit(argc, argv);
 
 	WindowScale = GetEmulatorConfig().windowScale;
+	SpeedValue = GetEmulatorConfig().speed;
 
 	const LaunchConfig& lc = GetLaunchConfig();
 	if (lc.help) {
