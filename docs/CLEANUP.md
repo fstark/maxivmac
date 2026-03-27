@@ -57,11 +57,12 @@ for the full list.
 - ✅ `MacModel` comparison operators added; `static_cast<int>` workarounds
   removed from `rom.cpp`, `sony.cpp`, `machine.cpp`, etc.
 - ✅ `kATTA_*` → `constexpr` — 8 macros in `machine.h` converted.
+- ✅ `MKC_*` keycodes extracted into `src/platform/keycodes.h`;
+  `platform.h` now includes it.
 
 ### Remaining
 
-- ❌ `MKC_*` keycodes into own header — ~100 `#define`s still in
-  `platform.h`, used by `sdl.cpp` and `CNFUDOSG.h`.
+(All Step 2 items complete.)
 
 ---
 
