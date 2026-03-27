@@ -1,15 +1,17 @@
 # Maxi vMac
 
-## Maxi vMac is a fork of Mini vMac that fixes my two major issues with it:
+## Maxi vMac is a fork of Mini vMac that fixes my major issues with it:
 
 * Get rid of the byzantine build system
 * Supports all models in a single binary
 * Stop support for non mainstream platforms
-* Single front-end
-* Stop focus in performance, focus on ease of development
+* Single front-end for all platforms
+* Stop focus in performance, focus on correctness and ease of development
 * Cycle-precise non-regression test
 
 ## Future directions:
+
+The long-term direction of the project (apart from the idea of playing with AI to modernize complex software) is to give me a tool for automatic testing and easier development of [MacFlim](https://github.com/fstark/macflim)
 
 The goals of maxivmac are different from minivmac, and focus on user experience.
 
@@ -19,23 +21,23 @@ That makes 4 streams of work:
 
 * Improve Emulator User Experience
 
-This is about making onboarding and runnning the emulator as smooth as possible. Those are targetted at "first time users". In general, I prefer a feature to be removed than to be complicated to find and/or use.
+This is about making onboarding and running the emulator as smooth as possible. Those are targetted at "first time users". In general, I prefer a feature to be removed than to be complicated to find and/or use.
 
 -> Binary releases for OSX arm/x86 and Windows arm/x86 + source release for Linux
 -> Bundle the utilities in a "rom disk"
--> Bundle some disk images
+-> Bundle some system disk images
 -> Explore an imgui interface
--> Explore graphical choice of models
+-> Explore graphical choice of mac models and run-time configuration options
 
 * Improve Emulator Developer Experience
 
-This is about making easier for me (and others if they want) to work on the maxivmac codebase. If the codebase is not high quality, there is little chance of anything else happening. The codebase is currently a mile 
+This is about making easier for me (and others if they want) to work on the maxivmac codebase. If the codebase is not high quality, there is little chance of anything else happening. The codebase is currently a mixed bag.
 
 - remove *all* the remaining #define
-- rename the functions
-- split mega-functions
+- rename the functions into something understandable
+- split mega-functions if possible
 - remove spurious code or obscure functions
-- github actions, workflow, non-reg tests
+- introduce github actions, workflow, non-reg tests
 
 * Improve MacOS User Experience
 
@@ -50,11 +52,9 @@ This is about making the life of the user of the emulated MacOS better.
 
 This is about making the life of someone that wants to use the emulator to create vintage mac software easier.
 
--> automatic send of keystorkes and mouse movments
+-> automatic send of keystrokes and mouse movments
 -> debugger, trap watcher, etc
 -> mcp server
-
-
 
 
 
@@ -86,11 +86,6 @@ Examples:
   maxivmac --model=MacII system7.img
   maxivmac --model=MacPlus disk.img
 ```
-
-While it builds and runs for both Mac Plus and Mac II emulation under a Cocoa OSX frontend, it is **far** from finished.
-Now that the bases are here, I will clean-up the code and remove old supported platform and esoteric front ends.
-
-The long-term direction of the project (apart from the idea of playing with AI to modernize complex software) is to give me a tool for automatic testing and easier development of [MacFlim](https://github.com/fstark/macflim)
 
 # ORIGINAL Mini vMac READ ME. MAY OR MAY NOT APPLY TO THE CONTENT OF THE REPO
 
