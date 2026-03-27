@@ -383,7 +383,7 @@ static void ExtnParamBuffers_Access(uint32_t p)
 			break;
 	}
 
-	put_vm_word(p + ExtnDat_result, result);
+	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
 }
 #endif
 
@@ -426,7 +426,7 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 			break;
 	}
 
-	put_vm_word(p + ExtnDat_result, result);
+	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
 }
 #endif
 
@@ -536,7 +536,7 @@ static void ExtnFind_Access(uint32_t p)
 			break;
 	}
 
-	put_vm_word(p + ExtnDat_result, result);
+	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
 }
 
 #define kDSK_Params_Hi 0
@@ -585,7 +585,7 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 							break;
 						default:
 							put_vm_word(p + ExtnDat_result,
-								mnvm_controlErr);
+								static_cast<uint16_t>(mnvm_controlErr));
 							break;
 					}
 				}

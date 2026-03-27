@@ -300,7 +300,7 @@ static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 
 				if (L < checkheadersize) {
 					WarnMsgUnsupportedDisk();
-					result = -1;
+					result = mnvm_miscErr;
 				} else
 				if (mnvm_noErr == (result = vSonyTransfer(false,
 					Temp, i, checkheaderoffset, Sony_Count, nullptr)))
@@ -423,7 +423,7 @@ static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 
 					if (! gotFormat) {
 						WarnMsgUnsupportedDisk();
-						result = -1;
+						result = mnvm_miscErr;
 					}
 				}
 			}
@@ -780,7 +780,7 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			break;
 	}
 
-	put_vm_word(p + ExtnDat_result, result);
+	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
 }
 
 
@@ -1153,11 +1153,11 @@ static tMacErr Sony_Prime(uint32_t p)
 	}
 
 label_fail:
-	put_vm_word(ParamBlk + kioResult, result);
+	put_vm_word(ParamBlk + kioResult, static_cast<uint16_t>(result));
 	put_vm_long(ParamBlk + kioActCount, Sony_ActCount);
 
 	if (mnvm_noErr != result) {
-		put_vm_word(0x0142 /* DskErr */, result);
+		put_vm_word(0x0142 /* DskErr */, static_cast<uint16_t>(result));
 	}
 	return result;
 }
@@ -1331,7 +1331,7 @@ static tMacErr Sony_Control(uint32_t p)
 	}
 
 	if (mnvm_noErr != result) {
-		put_vm_word(0x0142 /* DskErr */, result);
+		put_vm_word(0x0142 /* DskErr */, static_cast<uint16_t>(result));
 	}
 	return result;
 }
@@ -1376,7 +1376,7 @@ static tMacErr Sony_Status(uint32_t p)
 	}
 
 	if (mnvm_noErr != result) {
-		put_vm_word(0x0142 /* DskErr */, result);
+		put_vm_word(0x0142 /* DskErr */, static_cast<uint16_t>(result));
 	}
 	return result;
 }
@@ -1544,5 +1544,5 @@ void SonyDevice::extnSonyAccess(uint32_t p)
 			break;
 	}
 
-	put_vm_word(p + ExtnDat_result, result);
+	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
 }

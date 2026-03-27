@@ -915,5 +915,5 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 			break;
 	}
 
-	put_vm_word(p + ExtnDat_result, result);
+	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
 }

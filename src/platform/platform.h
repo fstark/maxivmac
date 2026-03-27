@@ -45,46 +45,48 @@ extern uint8_t * ROM;
 	(passed back to the emulated 68k code).
 */
 
-using tMacErr = uint16_t;
+enum class tMacErr : uint16_t {
+	noErr            = 0x0000,  /*    0 - No Error */
+	miscErr          = 0xFFFF,  /*   -1 - Should probably replace these */
+	controlErr       = 0xFFEF,  /*  -17 - I/O System Errors */
+	statusErr        = 0xFFEE,  /*  -18 - Driver can't respond to Status call */
+	closErr          = 0xFFE8,  /*  -24 - I/O System Errors */
+	eofErr           = 0xFFD9,  /*  -39 - End of file */
+	tmfoErr          = 0xFFD6,  /*  -42 - too many files open */
+	fnfErr           = 0xFFD5,  /*  -43 - File not found */
+	wPrErr           = 0xFFD4,  /*  -44 - diskette is write protected */
+	vLckdErr         = 0xFFD2,  /*  -46 - volume is locked */
+	dupFNErr         = 0xFFD0,  /*  -48 - duplicate filename */
+	opWrErr          = 0xFFCF,  /*  -49 - file already open with write permission */
+	paramErr         = 0xFFCE,  /*  -50 - error in parameter list */
+	permErr          = 0xFFCA,  /*  -54 - permissions error (on file open) */
+	nsDrvErr         = 0xFFC8,  /*  -56 - No Such Drive */
+	wrPermErr        = 0xFFC3,  /*  -61 - write permissions error */
+	offLinErr        = 0xFFBF,  /*  -65 - off-line drive */
+	dirNFErr         = 0xFF88,  /* -120 - directory not found */
+	afpAccessDenied  = 0xEC78,  /* -5000 - Insufficient access privileges */
+};
 
-#define mnvm_noErr      ((tMacErr) 0x0000)
-	/* (uint16_t)    0 - No Error */
-#define mnvm_miscErr    ((tMacErr) 0xFFFF)
-	/* (uint16_t) -  1 - Should probably replace these */
-#define mnvm_controlErr ((tMacErr) 0xFFEF)
-	/* (uint16_t) - 17 - I/O System Errors */
-#define mnvm_statusErr  ((tMacErr) 0xFFEE)
-	/* (uint16_t) - 18 - Driver can't respond to Status call */
-#define mnvm_closErr    ((tMacErr) 0xFFE8)
-	/* (uint16_t) - 24 - I/O System Errors */
-#define mnvm_eofErr     ((tMacErr) 0xFFD9)
-	/* (uint16_t) - 39 - End of file */
-#define mnvm_tmfoErr    ((tMacErr) 0xFFD6)
-	/* (uint16_t) - 42 - too many files open */
-#define mnvm_fnfErr     ((tMacErr) 0xFFD5)
-	/* (uint16_t) - 43 - File not found */
-#define mnvm_wPrErr     ((tMacErr) 0xFFD4)
-	/* (uint16_t) - 44 - diskette is write protected */
-#define mnvm_vLckdErr   ((tMacErr) 0xFFD2)
-	/* (uint16_t) - 46 - volume is locked */
-#define mnvm_dupFNErr   ((tMacErr) 0xFFD0)
-	/* (uint16_t) - 48 - duplicate filename */
-#define mnvm_opWrErr    ((tMacErr) 0xFFCF)
-	/* (uint16_t) - 49 - file already open with with write permission */
-#define mnvm_paramErr   ((tMacErr) 0xFFCE)
-	/* (uint16_t) - 50 - error in parameter list */
-#define mnvm_permErr    ((tMacErr) 0xFFCA)
-	/* (uint16_t) - 54 - permissions error (on file open) */
-#define mnvm_nsDrvErr   ((tMacErr) 0xFFC8)
-	/* (uint16_t) - 56 - No Such Drive */
-#define mnvm_wrPermErr  ((tMacErr) 0xFFC3)
-	/* (uint16_t) - 61 - write permissions error */
-#define mnvm_offLinErr  ((tMacErr) 0xFFBF)
-	/* (uint16_t) - 65 - off-line drive */
-#define mnvm_dirNFErr  ((tMacErr) 0xFF88)
-	/* (uint16_t) - 120 - directory not found */
-#define mnvm_afpAccessDenied  ((tMacErr) 0xEC78)
-	/* (uint16_t) - 5000 - Insufficient access privileges for operation */
+/* Backward-compat aliases — allow incremental migration. */
+constexpr tMacErr mnvm_noErr            = tMacErr::noErr;
+constexpr tMacErr mnvm_miscErr          = tMacErr::miscErr;
+constexpr tMacErr mnvm_controlErr       = tMacErr::controlErr;
+constexpr tMacErr mnvm_statusErr        = tMacErr::statusErr;
+constexpr tMacErr mnvm_closErr          = tMacErr::closErr;
+constexpr tMacErr mnvm_eofErr           = tMacErr::eofErr;
+constexpr tMacErr mnvm_tmfoErr          = tMacErr::tmfoErr;
+constexpr tMacErr mnvm_fnfErr           = tMacErr::fnfErr;
+constexpr tMacErr mnvm_wPrErr           = tMacErr::wPrErr;
+constexpr tMacErr mnvm_vLckdErr         = tMacErr::vLckdErr;
+constexpr tMacErr mnvm_dupFNErr         = tMacErr::dupFNErr;
+constexpr tMacErr mnvm_opWrErr          = tMacErr::opWrErr;
+constexpr tMacErr mnvm_paramErr         = tMacErr::paramErr;
+constexpr tMacErr mnvm_permErr          = tMacErr::permErr;
+constexpr tMacErr mnvm_nsDrvErr         = tMacErr::nsDrvErr;
+constexpr tMacErr mnvm_wrPermErr        = tMacErr::wrPermErr;
+constexpr tMacErr mnvm_offLinErr        = tMacErr::offLinErr;
+constexpr tMacErr mnvm_dirNFErr         = tMacErr::dirNFErr;
+constexpr tMacErr mnvm_afpAccessDenied  = tMacErr::afpAccessDenied;
 
 
 using tPbuf = uint16_t;
