@@ -35,7 +35,7 @@ public:
 
 	bool interruptsEnabled();
 
-#if EmLocalTalk
+#ifdef EmLocalTalk
 	void localTalkTick();
 #endif
 };

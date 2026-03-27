@@ -76,7 +76,6 @@ private:
 
 	// Interrupt state
 	uint8_t curIPL_ = 0;
-	bool    interruptButton_ = false;
 };
 
 // Global Machine pointer — backward compatibility during migration.

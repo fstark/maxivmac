@@ -100,7 +100,7 @@ static FILE* openTextOutput(const std::string& path)
 static void hashToHex(const uint8_t h[16], char out[33])
 {
 	for (int i = 0; i < 16; i++)
-		std::sprintf(out + i * 2, "%02x", h[i]);
+		std::snprintf(out + i * 2, 3, "%02x", h[i]);
 	out[32] = '\0';
 }
 
@@ -365,12 +365,12 @@ static void dumpMismatch(FILE* out, uint32_t snapIdx,
 	field16("SR", expected.sr, actual.sr);
 	for (int i = 0; i < 8; i++) {
 		char name[4];
-		std::sprintf(name, "D%d", i);
+		std::snprintf(name, sizeof(name), "D%d", i);
 		field32(name, expected.d[i], actual.d[i]);
 	}
 	for (int i = 0; i < 8; i++) {
 		char name[4];
-		std::sprintf(name, "A%d", i);
+		std::snprintf(name, sizeof(name), "A%d", i);
 		field32(name, expected.a[i], actual.a[i]);
 	}
 

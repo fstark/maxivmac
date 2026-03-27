@@ -50,13 +50,6 @@ bool ParseModelName(const std::string& name, MacModel& out)
 	return false;
 }
 
-// Extract the value from "--key=value" or nullptr if no '='
-static const char* extractValue(const char* arg)
-{
-	const char* eq = strchr(arg, '=');
-	return eq ? eq + 1 : nullptr;
-}
-
 // Parse RAM size string like "1M", "2M", "4M", "8M" or just a number in bytes
 static uint32_t parseRAMSize(const char* s)
 {

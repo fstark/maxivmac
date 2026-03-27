@@ -100,12 +100,13 @@ static void SubTickNotify(int SubTick)
 	dbglog_writeNum(SubTick);
 	dbglog_writeReturn();
 #endif
-	if (g_machine->config().emClassicSnd)
+	if (g_machine->config().emClassicSnd) {
 		if (auto* d = g_machine->findDevice<SoundDevice>()) d->subTick(SubTick);
-	else if (g_machine->config().emASC)
+	} else if (g_machine->config().emASC) {
 		if (auto* d = g_machine->findDevice<ASCDevice>()) d->subTick(SubTick);
-	else
+	} else {
 		UnusedParam(SubTick);
+	}
 }
 
 #define CyclesScaledPerTick (130240UL * g_machine->config().clockMult * kCycleScale)

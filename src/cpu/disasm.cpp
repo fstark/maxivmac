@@ -1661,6 +1661,7 @@ static inline void DisasmCAS2()
 #endif
 
 #if Use68020
+[[maybe_unused]]
 static inline void DisasmCAS()
 {
 	DisasmStartOne("CAS ???");
@@ -1670,6 +1671,7 @@ static inline void DisasmCAS()
 #endif
 
 #if Use68020
+[[maybe_unused]]
 static inline void DisasmMOVES()
 {
 	DisasmStartOne("MOVES ???");

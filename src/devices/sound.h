@@ -29,7 +29,7 @@ public:
 	void reset() override;
 	const char* name() const override { return "Sound"; }
 
-#if MySoundEnabled
+#ifdef MySoundEnabled
 	void subTick(int subTick);
 #endif
 
