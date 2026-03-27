@@ -202,7 +202,7 @@ static int CheckFPCondition(uint16_t predicate)
 	return condition_true;
 }
 
-LOCALIPROC DoCodeFPU_dflt()
+static void DoCodeFPU_dflt()
 {
 	ReportAbnormalID(0x0301,
 		"unimplemented Floating Point Instruction");
@@ -217,7 +217,7 @@ LOCALIPROC DoCodeFPU_dflt()
 	DoCodeFdefault();
 }
 
-LOCALIPROC DoCodeFPU_Save()
+static void DoCodeFPU_Save()
 {
 	uint16_t opcode = ((uint16_t)(V_regs.CurDecOpY.v[0].AMd) << 8)
 		| V_regs.CurDecOpY.v[0].ArgDat;
@@ -248,7 +248,7 @@ LOCALIPROC DoCodeFPU_Save()
 	}
 }
 
-LOCALIPROC DoCodeFPU_Restore()
+static void DoCodeFPU_Restore()
 {
 	uint16_t opcode = ((uint16_t)(V_regs.CurDecOpY.v[0].AMd) << 8)
 		| V_regs.CurDecOpY.v[0].ArgDat;
@@ -287,7 +287,7 @@ LOCALIPROC DoCodeFPU_Restore()
 	}
 }
 
-LOCALIPROC DoCodeFPU_FBccW()
+static void DoCodeFPU_FBccW()
 {
 	/*
 		Also get here for a NOP instruction (opcode 0xF280),
@@ -304,7 +304,7 @@ LOCALIPROC DoCodeFPU_FBccW()
 	/* printf("pc_p set to 0x%p in FBcc (32bit)\n", V_pc_p); */
 }
 
-LOCALIPROC DoCodeFPU_FBccL()
+static void DoCodeFPU_FBccL()
 {
 	uint16_t Dat = V_regs.CurDecOpY.v[0].ArgDat;
 
@@ -315,7 +315,7 @@ LOCALIPROC DoCodeFPU_FBccL()
 	}
 }
 
-LOCALIPROC DoCodeFPU_DBcc()
+static void DoCodeFPU_DBcc()
 {
 	uint16_t Dat = V_regs.CurDecOpY.v[0].ArgDat;
 	uint16_t thereg = Dat & 7;
@@ -340,7 +340,7 @@ LOCALIPROC DoCodeFPU_DBcc()
 	}
 }
 
-LOCALIPROC DoCodeFPU_Trapcc()
+static void DoCodeFPU_Trapcc()
 {
 	uint16_t Dat = V_regs.CurDecOpY.v[0].ArgDat;
 	uint16_t thereg = Dat & 7;
@@ -366,7 +366,7 @@ LOCALIPROC DoCodeFPU_Trapcc()
 	}
 }
 
-LOCALIPROC DoCodeFPU_Scc()
+static void DoCodeFPU_Scc()
 {
 	uint16_t word2 = (int)nextiword();
 
@@ -1152,7 +1152,7 @@ static void DoCodeFPU_Move_FP_EA(uint16_t word2)
 	}
 }
 
-LOCALIPROC DoCodeFPU_md60()
+static void DoCodeFPU_md60()
 {
 	uint16_t word2 = (int)nextiword();
 
