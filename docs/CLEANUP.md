@@ -56,11 +56,10 @@ for the full list.
   aliases; `put_vm_word` call sites cast explicitly.
 - ✅ `MacModel` comparison operators added; `static_cast<int>` workarounds
   removed from `rom.cpp`, `sony.cpp`, `machine.cpp`, etc.
+- ✅ `kATTA_*` → `constexpr` — 8 macros in `machine.h` converted.
 
 ### Remaining
 
-- ❌ `kATTA_*` → `constexpr` — still `#define` in `machine.h` (~8 macros,
-  ~30+ usage sites in `m68k.cpp`).
 - ❌ `MKC_*` keycodes into own header — ~100 `#define`s still in
   `platform.h`, used by `sdl.cpp` and `CNFUDOSG.h`.
 
