@@ -45,11 +45,11 @@ for the full list.
   removed).
 - ✅ `#if 0` blocks stripped — 196 blocks removed across 29 files
   (-1248 lines).  Valid `#if 0 !=` / `#if 0 ==` conditionals preserved.
+- ✅ `(void)` → `()` — parameter lists cleaned across m68k.cpp,
+  control_mode.cpp, and all macsrc files (188 sites).
 
 ### Remaining
 
-- ❌ `(void)` → `()` — 50+ sites remain, mostly in `sdl.cpp` and
-  `src/unused/`.
 - ❌ Kill `LOCALIPROC` — still defined in `m68k.cpp`, used in ~34 function
   definitions across `m68k.cpp` and `fpu_emdev.h`.
 - ❌ Replace `Bit0`–`Bit7` — still `#define`d and used in `scc.cpp`.
