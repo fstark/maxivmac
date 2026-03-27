@@ -6,6 +6,9 @@
 	Patch ROM to support other screen sizes.
 */
 
+static void ApplyScreenHack(uint8_t *pto)
+{
+uint8_t *patchp = pto;
 
 if (g_machine->config().model
 	<= MacModel::Mac128K)
@@ -362,3 +365,4 @@ if (g_machine->config().model
 	do_put_mem_word(102324 + ROM, vMacScreenHeight);
 
 } /* end screen hack model dispatch */
+}

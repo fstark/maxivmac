@@ -206,11 +206,7 @@ static void Sony_Install()
 	pto += sizeof(my_disk_icon);
 
 #if UseLargeScreenHack
-	{
-		uint8_t * patchp = pto;
-
-#include "devices/screen_hack.h"
-	}
+	ApplyScreenHack(pto);
 #endif
 
 	(void) pto; /* avoid warning about unused */
