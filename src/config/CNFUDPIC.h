@@ -7,6 +7,8 @@
 	you know what you're doing.
 */
 
+#pragma once
+
 /* CPU feature flags — always 1 so all instruction code compiles.
    Runtime selection via MachineConfig::use68020/emFPU/emMMU +
    dispatch table fixup in M68KITAB_setup(). */

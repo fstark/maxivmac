@@ -1,30 +1,90 @@
 # Maxi vMac
 
-Maxi vMac is a fork of Mini vMac that fixes my two major issues with it:
+## Maxi vMac is a fork of Mini vMac that fixes my two major issues with it:
 
 * Get rid of the byzantine build system
 * Supports all models in a single binary
+* Stop support for non mainstream platforms
+* Single front-end
+* Stop focus in performance, focus on ease of development
+* Cycle-precise non-regression test
+
+## Future directions:
+
+The goals of maxivmac are different from minivmac, and focus on user experience.
+
+There are end-user features, and developer features. Some features are targetted at making the emulator friendlier, and some features are targetted at making the emulated machine better.
+
+That makes 4 streams of work:
+
+* Improve Emulator User Experience
+
+This is about making onboarding and runnning the emulator as smooth as possible. Those are targetted at "first time users". In general, I prefer a feature to be removed than to be complicated to find and/or use.
+
+-> Binary releases for OSX arm/x86 and Windows arm/x86 + source release for Linux
+-> Bundle the utilities in a "rom disk"
+-> Bundle some disk images
+-> Explore an imgui interface
+-> Explore graphical choice of models
+
+* Improve Emulator Developer Experience
+
+This is about making easier for me (and others if they want) to work on the maxivmac codebase. If the codebase is not high quality, there is little chance of anything else happening. The codebase is currently a mile 
+
+- remove *all* the remaining #define
+- rename the functions
+- split mega-functions
+- remove spurious code or obscure functions
+- github actions, workflow, non-reg tests
+
+* Improve MacOS User Experience
+
+This is about making the life of the user of the emulated MacOS better.
+
+-> redo the mac<->minivmac communication layer
+-> implement working transparent cut-and-paste
+-> explore host slip
+-> explore host file mounting
+
+* Improve MacOS Developer Experience
+
+This is about making the life of someone that wants to use the emulator to create vintage mac software easier.
+
+-> automatic send of keystorkes and mouse movments
+-> debugger, trap watcher, etc
+-> mcp server
+
+
+
+
 
 ```
-maxivmac % ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --help
-Usage: ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac [options] [disk1.img] [disk2.img] ...
+Usage: maxivmac [options] [disk1.img] [disk2.img] ...
 
 Options:
   --model=MODEL    Mac model (= ROM base name): MacPlus, MacSE, MacII, MacIIx,
-                   Classic, PB100, SEFDHD, Mac128K, Mac512Ke
-                   (default: MacII)
-  --rom=PATH       Path to ROM file
+                   Classic, PB100, SEFDHD, Mac128K, Mac512Ke, MacPlusKanji,
+                   Twig43, Twiggy  (default: MacII)
+  --rom=PATH       Path to ROM file (auto-detected from model if omitted)
+  --romdir=DIR     Directory to search for ROM files
   --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)
   --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.
   --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)
   --fullscreen     Start in fullscreen mode
-  -r PATH          ROM path (short form)
+  --title=TEXT     Window title
+  --record=PATH    Record golden file for non-regression testing
+  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)
+  --trace=PATH     Write CPU+IO text trace to file
+  --trace-cpu=PATH Write CPU-only text trace to file
+  --snapshot-interval=N  Instructions between snapshots (default: 100000)
+  --max-instructions=N   Instruction budget (default: 20000000)
   -h, --help       Show this help
 
+ROM auto-detection searches: ./<MODEL>.ROM, <romdir>/<MODEL>.ROM, roms/<MODEL>.ROM
+
 Examples:
-  ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --model=MacII --rom=MacII.ROM system7.img
-  ./bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac --model=MacPlus --rom=MacPlus.ROM --ram=4M disk.img
-maxivmac % 
+  maxivmac --model=MacII system7.img
+  maxivmac --model=MacPlus disk.img
 ```
 
 While it builds and runs for both Mac Plus and Mac II emulation under a Cocoa OSX frontend, it is **far** from finished.

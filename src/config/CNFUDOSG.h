@@ -7,6 +7,8 @@
 	you know what you're doing.
 */
 
+#pragma once
+
 
 #define SaveDialogEnable 1
 #define EnableAltKeysMode 0

@@ -14,6 +14,8 @@
 	license for more details.
 */
 
+#pragma once
+
 /*
 	STRing CoNstants for DUTch
 

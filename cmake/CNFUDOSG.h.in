@@ -5,6 +5,8 @@
     OS-glue display/input configuration.
 */
 
+#pragma once
+
 #define SaveDialogEnable 1
 #define EnableAltKeysMode 0
 #define MKC_formac_Control MKC_CM

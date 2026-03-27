@@ -7,6 +7,8 @@
 	you know what you're doing.
 */
 
+#pragma once
+
 #import <Cocoa/Cocoa.h>
 #include <CoreAudio/CoreAudio.h>
 #include <AudioUnit/AudioUnit.h>

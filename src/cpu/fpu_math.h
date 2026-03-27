@@ -15,6 +15,8 @@
 	license for more details.
 */
 
+#pragma once
+
 /*
 	Floating Point MATH implemented with software EMulation
 

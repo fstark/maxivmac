@@ -7,6 +7,8 @@
 	you know what you're doing.
 */
 
+#pragma once
+
 #define MySoundEnabled 1
 
 #define MySoundRecenterSilence 0

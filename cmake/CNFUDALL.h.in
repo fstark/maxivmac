@@ -5,6 +5,8 @@
     Model-independent device/display configuration.
 */
 
+#pragma once
+
 #define MySoundEnabled @MINIVMAC_SOUND@
 
 #define MySoundRecenterSilence 0

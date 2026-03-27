@@ -14,6 +14,8 @@
 	license for more details.
 */
 
+#pragma once
+
 /*
 	Floating Point CoProcessor Emulated Device
 	(included by MINEM68K.c)

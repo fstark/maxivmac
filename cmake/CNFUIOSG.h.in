@@ -5,6 +5,8 @@
     This file selects the platform backend and system includes.
 */
 
+#pragma once
+
 @CNFUIOSG_SYSTEM_INCLUDES@
 
 #define EnableDragDrop 1

@@ -6,3 +6,5 @@
 	combinations. Avoid changing this file manually unless
 	you know what you're doing.
 */
+#pragma once
+
