@@ -52,11 +52,11 @@ for the full list.
 - ✅ `Bit0`–`Bit7` replaced with `(1 << N)` in scc.cpp, `#define`s deleted.
 - ✅ `ui5r_FromSByte`/`ui5r_FromSWord`/`ui5r_FromSLong` replaced with
   inline `static_cast` chains; `#define`s deleted from `machine.h`.
+- ✅ `tMacErr` → `enum class : uint16_t` with constexpr backward-compat
+  aliases; `put_vm_word` call sites cast explicitly.
 
 ### Remaining
 
-- ❌ `tMacErr` → `enum class` — still a `using tMacErr = uint16_t` alias
-  in `platform.h`.
 - ❌ `MacModel` comparison operators — enum class exists but code uses
   `static_cast<int>` workarounds everywhere (see `rom.cpp`, `sony.cpp`).
 - ❌ `kATTA_*` → `constexpr` — still `#define` in `machine.h` (~8 macros,
