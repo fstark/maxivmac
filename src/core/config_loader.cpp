@@ -309,6 +309,14 @@ MachineConfig BuildMachineConfig(const LaunchConfig& launch)
 	return config;
 }
 
+EmulatorConfig BuildEmulatorConfig(const LaunchConfig& launch)
+{
+	EmulatorConfig ec;
+	if (launch.fullscreen) ec.fullscreen = true;
+	if (launch.speed > 0) ec.speed = launch.speed;
+	return ec;
+}
+
 const char* ModelToString(MacModel model)
 {
 	switch (model) {

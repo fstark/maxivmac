@@ -42,6 +42,7 @@
 #include "core/config_loader.h"
 #include "core/machine_obj.h"
 #include "core/machine_config.h"
+#include "core/emulator_config.h"
 #include "core/ict_scheduler.h"
 #include "core/state_recorder.hpp"
 #include "core/md5.h"
@@ -443,15 +444,27 @@ static void MainEventLoop()
 static std::unique_ptr<Machine> s_machine;
 static LaunchConfig s_launchConfig;
 static MachineConfig s_machineConfig;
+static EmulatorConfig s_emulatorConfig;
 
 const LaunchConfig& GetLaunchConfig()
 {
 	return s_launchConfig;
 }
 
+const EmulatorConfig& GetEmulatorConfig()
+{
+	return s_emulatorConfig;
+}
+
+EmulatorConfig& GetEmulatorConfigMut()
+{
+	return s_emulatorConfig;
+}
+
 void ProgramEarlyInit(int argc, char* argv[])
 {
 	s_launchConfig = ParseCommandLine(argc, argv);
+	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
 
 	if (s_launchConfig.help) {
 		PrintUsage(argv[0]);

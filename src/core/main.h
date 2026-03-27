@@ -27,3 +27,7 @@ extern void ProgramCleanup();
 
 // Access the parsed launch config (available after ProgramEarlyInit).
 extern const LaunchConfig& GetLaunchConfig();
+
+// Access the emulator config (available after ProgramEarlyInit).
+extern const EmulatorConfig& GetEmulatorConfig();
+extern EmulatorConfig& GetEmulatorConfigMut();

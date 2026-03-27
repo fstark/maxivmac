@@ -8,6 +8,7 @@
 #pragma once
 
 #include "core/machine_config.h"
+#include "core/emulator_config.h"
 #include <string>
 #include <vector>
 
@@ -41,6 +42,9 @@ LaunchConfig ParseCommandLine(int argc, char* argv[]);
 
 // Convert LaunchConfig → MachineConfig (applies overrides on top of model defaults).
 MachineConfig BuildMachineConfig(const LaunchConfig& launch);
+
+// Convert LaunchConfig → EmulatorConfig (presentation/UX settings).
+EmulatorConfig BuildEmulatorConfig(const LaunchConfig& launch);
 
 // Print usage/help to stderr.
 void PrintUsage(const char* progname);
