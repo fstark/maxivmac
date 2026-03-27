@@ -492,7 +492,7 @@ static inline void add192(
 	ui6b *z2Ptr)
 {
 	ui6b z0, z1, z2;
-	int8_t carry0, carry1;
+	ui6b carry0, carry1;
 
 	z2 = a2 + b2;
 	carry1 = ( z2 < a2 );
@@ -548,7 +548,7 @@ static inline void
  )
 {
 	ui6b z0, z1, z2;
-	int8_t borrow0, borrow1;
+	ui6b borrow0, borrow1;
 
 	z2 = a2 - b2;
 	borrow1 = ( a2 < b2 );
@@ -1418,7 +1418,7 @@ static floatx80
 	}
 	if ( roundBits ) float_exception_flags |= float_flag_inexact;
 	zSig0 += roundIncrement;
-	if ( zSig0 < roundIncrement ) {
+	if ( zSig0 < (ui6b) roundIncrement ) {
 		++zExp;
 		zSig0 = LIT64( 0x8000000000000000 );
 	}

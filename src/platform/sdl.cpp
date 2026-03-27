@@ -1096,7 +1096,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	}
 
 	if ((0 == ((bpp - 1) & bpp)) /* a power of 2 */
-		&& (pitch == ExpectedPitch)
+		&& ((uint32_t)pitch == ExpectedPitch)
 		&& (vMacScreenDepth <= 3 || ! UseColorMode)
 		)
 	{
@@ -1201,8 +1201,8 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 		/* adapted from putpixel in SDL documentation */
 
-		for (i = top2; i < bottom2; ++i) {
-			for (j = left2; j < right2; ++j) {
+		for (i = top2; i < (int)bottom2; ++i) {
+			for (j = left2; j < (int)right2; ++j) {
 				int i0 = i;
 				int j0 = j;
 				Uint8 *bufp = (Uint8 *)pixels

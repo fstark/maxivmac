@@ -21,7 +21,7 @@
 
 class VideoDevice : public Device {
 public:
-	uint32_t access(uint32_t data, bool writeMem, uint32_t addr) override
+	uint32_t access(uint32_t data, bool /*writeMem*/, uint32_t /*addr*/) override
 		{ return data; }
 	void zap() override {}
 	void reset() override;

@@ -620,7 +620,7 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 */
 class ExtnDevice : public Device {
 public:
-	uint32_t access(uint32_t data, bool writeMem, uint32_t addr) override {
+	uint32_t access(uint32_t data, bool /*writeMem*/, uint32_t addr) override {
 		Extn_Access(data, addr);
 		return data;
 	}

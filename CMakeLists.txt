@@ -213,6 +213,8 @@ target_include_directories(maxivmac PRIVATE
 # Compiler flags matching the original Xcode project
 target_compile_options(maxivmac PRIVATE
     -Wall
+    -Wextra
+    -Werror
     -Wundef
     -Wconditional-uninitialized
     -Wno-write-strings
