@@ -630,9 +630,9 @@ void Extn_Reset()
 
 static uint32_t addrmap_ROM_CmpZeroMask() {
 	const auto& cfg = g_machine->config();
-	auto m = static_cast<int>(cfg.model);
-	if (m <= static_cast<int>(MacModel::Mac512Ke)) return 0;
-	if (m <= static_cast<int>(MacModel::Plus)) {
+	auto m = cfg.model;
+	if (m <= MacModel::Mac512Ke) return 0;
+	if (m <= MacModel::Plus) {
 		return (cfg.romSize > 0x00020000) ? 0 : 0x00020000;
 	}
 	/* SE, Classic, PB100, II, IIx all use 0 */
@@ -643,10 +643,10 @@ static uint32_t addrmap_ROM_CmpZeroMask() {
 #define kROM_cmpmask (0x00F00000 | ROM_CmpZeroMask)
 
 static uint32_t addrmap_Overlay_ROM_CmpZeroMask() {
-	auto m = static_cast<int>(g_machine->config().model);
-	if (m <= static_cast<int>(MacModel::Mac512Ke)) return 0x00100000;
-	if (m <= static_cast<int>(MacModel::Plus))     return 0x00020000;
-	if (m <= static_cast<int>(MacModel::Classic))   return 0x00300000;
+	auto m = g_machine->config().model;
+	if (m <= MacModel::Mac512Ke) return 0x00100000;
+	if (m <= MacModel::Plus)     return 0x00020000;
+	if (m <= MacModel::Classic)   return 0x00300000;
 	/* PB100, II, IIx */
 	return 0;
 }
@@ -1369,7 +1369,7 @@ static void SetUpMemBanks()
 			{
 				if (WriteMem) {
 					auto m = g_machine->config().model;
-					if (static_cast<int>(m) >= static_cast<int>(MacModel::Mac512Ke)
+					if (m >= MacModel::Mac512Ke
 						&& m != MacModel::PB100)
 					{
 						ReportAbnormalID(0x110E, "access SCC even/odd");
@@ -1521,8 +1521,8 @@ static void SetUpMemBanks()
 
 	switch (pT->Ntfy) {
 		case kMAN_OverlayOff:
-			if (static_cast<int>(g_machine->config().model)
-				>= static_cast<int>(MacModel::SE))
+			if (g_machine->config().model
+				>= MacModel::SE)
 			{
 				pT->Access = kATTA_readreadymask;
 

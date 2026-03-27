@@ -11,6 +11,7 @@
 #pragma once
 #include <cstdint>
 #include <array>
+#include <type_traits>
 
 // VIA port configuration — replaces compile-time VIA1_ORA_FloatVal etc.
 struct VIAConfig {
@@ -48,6 +49,21 @@ enum class MacModel : int {
 	II       = 10,
 	IIx      = 11,
 };
+
+/* Relational operators for MacModel — ordered by enum value. */
+using MacModel_ut = std::underlying_type_t<MacModel>;
+constexpr bool operator<(MacModel a, MacModel b) {
+	return static_cast<MacModel_ut>(a) < static_cast<MacModel_ut>(b);
+}
+constexpr bool operator<=(MacModel a, MacModel b) {
+	return static_cast<MacModel_ut>(a) <= static_cast<MacModel_ut>(b);
+}
+constexpr bool operator>(MacModel a, MacModel b) {
+	return static_cast<MacModel_ut>(a) > static_cast<MacModel_ut>(b);
+}
+constexpr bool operator>=(MacModel a, MacModel b) {
+	return static_cast<MacModel_ut>(a) >= static_cast<MacModel_ut>(b);
+}
 
 struct MachineConfig {
 	MacModel model       = MacModel::II;
@@ -101,14 +117,14 @@ struct MachineConfig {
 		return model == MacModel::II || model == MacModel::IIx;
 	}
 	bool isCompactMac() const {
-		return static_cast<int>(model) <= static_cast<int>(MacModel::Plus);
+		return model <= MacModel::Plus;
 	}
 	bool isSEFamily() const {
 		return model == MacModel::SE || model == MacModel::SEFDHD
 		    || model == MacModel::Classic;
 	}
 	bool isSEOrLater() const {
-		return static_cast<int>(model) >= static_cast<int>(MacModel::SE);
+		return model >= MacModel::SE;
 	}
 	uint32_t ramSize() const { return ramASize + ramBSize; }
 };

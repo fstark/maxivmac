@@ -212,8 +212,8 @@ static uint32_t getHappyMacBase() {
 	if (m == MacModel::Twig43) return 0xA34;
 	if (m == MacModel::Twiggy) return 0x8F4;
 	if (m == MacModel::Mac128K) return 0x8A0;
-	if (static_cast<int>(m) <= static_cast<int>(MacModel::Plus)) return 0xFD2;
-	if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) return 0x125C;
+	if (m <= MacModel::Plus) return 0xFD2;
+	if (m <= MacModel::Classic) return 0x125C;
 	if (m == MacModel::PB100) return 0x2BB0;
 	return 0x1948; /* II/IIx */
 }

@@ -7,8 +7,8 @@
 */
 
 
-if (static_cast<int>(g_machine->config().model)
-	<= static_cast<int>(MacModel::Mac128K))
+if (g_machine->config().model
+	<= MacModel::Mac128K)
 {
 	do_put_mem_long(112 + ROM, kVidMem_Base);
 	do_put_mem_long(260 + ROM, kVidMem_Base);
@@ -124,8 +124,8 @@ if (static_cast<int>(g_machine->config().model)
 	do_put_mem_word(3838 + ROM, vMacScreenWidth);
 	/* do_put_mem_word(7810 + ROM, vMacScreenHeight); */
 
-} else if (static_cast<int>(g_machine->config().model)
-	<= static_cast<int>(MacModel::Plus))
+} else if (g_machine->config().model
+	<= MacModel::Plus)
 {
 
 	do_put_mem_long(138 + ROM, kVidMem_Base);
@@ -250,8 +250,8 @@ if (static_cast<int>(g_machine->config().model)
 	do_put_mem_word(7810 + ROM, vMacScreenHeight);
 
 
-} else if (static_cast<int>(g_machine->config().model)
-	<= static_cast<int>(MacModel::Classic))
+} else if (g_machine->config().model
+	<= MacModel::Classic)
 {
 
 	/* screen setup, main */

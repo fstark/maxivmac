@@ -170,8 +170,8 @@ static uint32_t getSonyDriverBase() {
 	if (m == MacModel::Twig43) return 0x1836;
 	if (m == MacModel::Twiggy) return 0x16E4;
 	if (m == MacModel::Mac128K) return 0x1690;
-	if (static_cast<int>(m) <= static_cast<int>(MacModel::Plus)) return 0x17D30;
-	if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) return 0x34680;
+	if (m <= MacModel::Plus) return 0x17D30;
+	if (m <= MacModel::Classic) return 0x34680;
 	return 0x2D72C; /* II/IIx */
 }
 #define Sony_DriverBase getSonyDriverBase()
@@ -184,7 +184,7 @@ static void Sony_Install()
 	MyMoveBytes((uint8_t *)sony_driver, (uint8_t *)pto, sizeof(sony_driver));
 	{
 		auto m = g_machine->config().model;
-		if (static_cast<int>(m) <= static_cast<int>(MacModel::Twiggy)) {
+		if (m <= MacModel::Twiggy) {
 			do_put_mem_long(pto + 0x14, 0x4469736B);
 				/* 'Disk' instead of 'Sony' */
 			do_put_mem_word(pto + 0xEA,
@@ -265,9 +265,9 @@ static void ROMscrambleForMTB()
 		do_put_mem_word(0x136 + ROM, 0x6004);
 	} else if (m == MacModel::Mac128K) {
 		do_put_mem_word(0xE2 + ROM, 0x6004);
-	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Plus)) {
+	} else if (m <= MacModel::Plus) {
 		do_put_mem_word(0xD7A + ROM, 0x6022);
-	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) {
+	} else if (m <= MacModel::Classic) {
 		do_put_mem_word(0x1C68 + ROM, 0x6008);
 	} else if (g_machine->config().isIIFamily()) {
 		do_put_mem_word(0x2AB0 + ROM, 0x6008);
@@ -281,14 +281,14 @@ static void ROMscrambleForMTB()
 
 {
 	auto m = g_machine->config().model;
-	if (static_cast<int>(m) <= static_cast<int>(MacModel::Mac128K)) {
+	if (m <= MacModel::Mac128K) {
 		/* nothing */
-	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Plus)) {
+	} else if (m <= MacModel::Plus) {
 		do_put_mem_word(3752 + ROM, 0x4E71);
 			/* shorten the ram check read */
 		do_put_mem_word(3728 + ROM, 0x4E71);
 			/* shorten the ram check write */
-	} else if (static_cast<int>(m) <= static_cast<int>(MacModel::Classic)) {
+	} else if (m <= MacModel::Classic) {
 		do_put_mem_word(134 + ROM, 0x6002);
 		do_put_mem_word(286 + ROM, 0x6002);
 	} else if (g_machine->config().isIIFamily()) {
