@@ -90,14 +90,6 @@ static void ScrnTrns_DoTrans(int16_t top, int16_t left,
 				((t0 & 0x001F) << 3) |
 				((t0 & 0x001C) >> 2);
 #endif
-#if 0
-				((t0 & 0x7C00) << 1) |
-				((t0 & 0x7000) >> 4) |
-				((t0 & 0x03E0) << 14) |
-				((t0 & 0x0380) << 9) |
-				((t0 & 0x001F) << 27) |
-				((t0 & 0x001C) << 22);
-#endif
 
 #elif 5 == ScrnTrns_SrcDepth
 			t0 = do_get_mem_long(pSrc);

@@ -554,19 +554,6 @@ static bool CheckAltMemAddrMode(WorkR *p)
 static void FindOpSizeFromb76(WorkR *p)
 {
 	p->opsize = 1 << b76(p);
-#if 0
-	switch (b76(p)) {
-		case 0 :
-			p->opsize = 1;
-			break;
-		case 1 :
-			p->opsize = 2;
-			break;
-		case 2 :
-			p->opsize = 4;
-			break;
-	}
-#endif
 }
 
 static uint8_t OpSizeOffset(WorkR *p)
@@ -787,11 +774,6 @@ static inline void DeCode0(WorkR *p)
 		} else
 		if (rg9(p) == 6) {
 			/* CMPI 00001100ssmmmrrr */
-#if 0
-			if (CheckDataAltAddrMode(p)) {
-				p->MainClass = kIKindCmpI;
-			}
-#endif
 			FindOpSizeFromb76(p);
 			if (CheckValidAddrMode(p, 7, 4, kAddrValidAny, true))
 			if (CheckValidAddrMode(p,
@@ -863,11 +845,6 @@ static inline void DeCode0(WorkR *p)
 			} else {
 				switch (rg9(p)) {
 					case 0:
-#if 0
-						if (CheckDataAltAddrMode(p)) {
-							p->MainClass = kIKindOrI;
-						}
-#endif
 						FindOpSizeFromb76(p);
 						if (CheckValidAddrMode(p, 7, 4,
 							kAddrValidAny, true))
@@ -897,11 +874,6 @@ static inline void DeCode0(WorkR *p)
 						}
 						break;
 					case 1:
-#if 0
-						if (CheckDataAltAddrMode(p)) {
-							p->MainClass = kIKindAndI;
-						}
-#endif
 						FindOpSizeFromb76(p);
 						if (CheckValidAddrMode(p, 7, 4,
 							kAddrValidAny, true))
@@ -931,11 +903,6 @@ static inline void DeCode0(WorkR *p)
 						}
 						break;
 					case 2:
-#if 0
-						if (CheckDataAltAddrMode(p)) {
-							p->MainClass = kIKindSubI;
-						}
-#endif
 						FindOpSizeFromb76(p);
 						if (CheckValidAddrMode(p, 7, 4,
 							kAddrValidAny, true))
@@ -965,11 +932,6 @@ static inline void DeCode0(WorkR *p)
 						}
 						break;
 					case 3:
-#if 0
-						if (CheckDataAltAddrMode(p)) {
-							p->MainClass = kIKindAddI;
-						}
-#endif
 						FindOpSizeFromb76(p);
 						if (CheckValidAddrMode(p, 7, 4,
 							kAddrValidAny, true))
@@ -999,11 +961,6 @@ static inline void DeCode0(WorkR *p)
 						}
 						break;
 					case 5:
-#if 0
-						if (CheckDataAltAddrMode(p)) {
-							p->MainClass = kIKindEorI;
-						}
-#endif
 						FindOpSizeFromb76(p);
 						if (CheckValidAddrMode(p, 7, 4,
 							kAddrValidAny, true))
@@ -2006,19 +1963,9 @@ static inline void DeCode5(WorkR *p)
 #endif
 				if (b8(p) == 0) {
 					/* AddQ 0101nnn0ssmmmrrr */
-#if 0
-					if (CheckDataAltAddrMode(p)) {
-						p->MainClass = kIKindAddQ;
-					}
-#endif
 					p->MainClass = kIKindAddB + OpSizeOffset(p);
 				} else {
 					/* SubQ 0101nnn1ssmmmrrr */
-#if 0
-					if (CheckDataAltAddrMode(p)) {
-						p->MainClass = kIKindSubQ;
-					}
-#endif
 					p->MainClass = kIKindSubB + OpSizeOffset(p);
 				}
 			}
@@ -2157,11 +2104,6 @@ static inline void DeCode8(WorkR *p)
 	} else {
 		if (b8(p) == 0) {
 			/* OR 1000ddd0ssmmmrrr */
-#if 0
-			if (CheckDataAddrMode(p)) {
-				p->MainClass = kIKindOrEaD;
-			}
-#endif
 			FindOpSizeFromb76(p);
 			if (CheckValidAddrMode(p, mode(p), reg(p),
 				kAddrValidData, true))
@@ -2281,11 +2223,6 @@ static inline void DeCode8(WorkR *p)
 				}
 			} else {
 				/* OR 1000ddd1ssmmmrrr */
-#if 0
-				if (CheckDataAltAddrMode(p)) {
-					p->MainClass = kIKindOrDEa;
-				}
-#endif
 				FindOpSizeFromb76(p);
 				if (CheckValidAddrMode(p, 0, rg9(p),
 					kAddrValidAny, true))
@@ -2311,11 +2248,6 @@ static inline void DeCode9(WorkR *p)
 {
 	if (b76(p) == 3) {
 		/* SUBA 1001dddm11mmmrrr */
-#if 0
-		if (IsValidAddrMode(p)) {
-			p->MainClass = kIKindSubA;
-		}
-#endif
 		p->opsize = b8(p) * 2 + 2;
 		SetDcoArgFields(p, false, kAMdRegL, rg9(p) + 8);
 			/* always long, regardless of opsize */
@@ -2340,11 +2272,6 @@ static inline void DeCode9(WorkR *p)
 	} else {
 		if (b8(p) == 0) {
 			/* SUB 1001ddd0ssmmmrrr */
-#if 0
-			if (IsValidAddrMode(p)) {
-				p->MainClass = kIKindSubEaR;
-			}
-#endif
 			FindOpSizeFromb76(p);
 			if (CheckValidAddrMode(p, mode(p), reg(p),
 				kAddrValidAny, true))
@@ -2404,11 +2331,6 @@ static inline void DeCode9(WorkR *p)
 				}
 			} else {
 				/* SUB 1001ddd1ssmmmrrr */
-#if 0
-				if (CheckAltMemAddrMode(p)) {
-					p->MainClass = kIKindSubREa;
-				}
-#endif
 				FindOpSizeFromb76(p);
 				if (CheckValidAddrMode(p, 0, rg9(p),
 					kAddrValidAny, true))
@@ -2443,11 +2365,6 @@ static inline void DeCodeB(WorkR *p)
 {
 	if (b76(p) == 3) {
 		/* CMPA 1011ddds11mmmrrr */
-#if 0
-		if (IsValidAddrMode(p)) {
-			p->MainClass = kIKindCmpA;
-		}
-#endif
 		p->opsize = b8(p) * 2 + 2;
 		SetDcoArgFields(p, false, kAMdRegL, rg9(p) + 8);
 			/* always long, regardless of opsize */
@@ -2463,9 +2380,6 @@ static inline void DeCodeB(WorkR *p)
 	} else if (b8(p) == 1) {
 		if (mode(p) == 1) {
 			/* CmpM 1011ddd1ss001rrr */
-#if 0
-			p->MainClass = kIKindCmpM;
-#endif
 			FindOpSizeFromb76(p);
 			if (CheckValidAddrMode(p, 3, reg(p),
 				kAddrValidAny, true))
@@ -2481,11 +2395,6 @@ static inline void DeCodeB(WorkR *p)
 			}
 		} else {
 			/* Eor 1011ddd1ssmmmrrr */
-#if 0
-			if (CheckDataAltAddrMode(p)) {
-				p->MainClass = kIKindEor;
-			}
-#endif
 			FindOpSizeFromb76(p);
 			if (CheckValidAddrMode(p, 0, rg9(p),
 				kAddrValidAny, true))
@@ -2511,11 +2420,6 @@ static inline void DeCodeB(WorkR *p)
 		}
 	} else {
 		/* Cmp 1011ddd0ssmmmrrr */
-#if 0
-		if (IsValidAddrMode(p)) {
-			p->MainClass = kIKindCmp;
-		}
-#endif
 		FindOpSizeFromb76(p);
 		if (CheckValidAddrMode(p, mode(p), reg(p),
 			kAddrValidAny, true))
@@ -2562,11 +2466,6 @@ static inline void DeCodeC(WorkR *p)
 	} else {
 		if (b8(p) == 0) {
 			/* And 1100ddd0ssmmmrrr */
-#if 0
-			if (CheckDataAddrMode(p)) {
-				p->MainClass = kIKindAndEaD;
-			}
-#endif
 			FindOpSizeFromb76(p);
 			if (CheckValidAddrMode(p, mode(p), reg(p),
 				kAddrValidData, true))
@@ -2668,11 +2567,6 @@ static inline void DeCodeC(WorkR *p)
 				}
 			} else {
 				/* And 1100ddd1ssmmmrrr */
-#if 0
-				if (CheckAltMemAddrMode(p)) {
-					p->MainClass = kIKindAndDEa;
-				}
-#endif
 				FindOpSizeFromb76(p);
 				if (CheckValidAddrMode(p, 0, rg9(p),
 					kAddrValidAny, true))

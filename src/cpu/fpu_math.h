@@ -568,10 +568,6 @@ static inline void Ui5to6Mul( uint32_t src1, uint32_t src2, ui6b *z)
 static inline void Ui6fromHiLo(uint32_t hi, uint32_t lo, ui6b *z)
 {
 	*z = (((ui6b)(hi)) << 32) + lo;
-#if 0
-	z->lo = hi;
-	z->hi = lo;
-#endif
 }
 
 static void Ui5to6Mul( uint32_t src1, uint32_t src2, ui6b *z)
@@ -3742,13 +3738,6 @@ typedef enum {
 | for Binary Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 
-#if 0
-inline floatx80 floatx80_abs(floatx80 *reg)
-{
-	reg->high &= 0x7FFF;
-	return *reg;
-}
-#endif
 
 /*-----------------------------------------------------------------------------
 | Changes the sign of the extended double-precision floating-point value 'a'.
@@ -3782,13 +3771,6 @@ static floatx80 floatx80_chs(floatx80 *x)
 #if cIncludeFPUUnused
 static Bit16s floatx80_to_int16(floatx80 a)
 {
-#if 0
-   if (floatx80_is_unsupported(a))
-   {
-		float_raise(float_flag_invalid);
-		return int16_indefinite;
-   }
-#endif
 
    Bit32s v32 = floatx80_to_int32(a);
 
@@ -3813,13 +3795,6 @@ static Bit16s floatx80_to_int16(floatx80 a)
 #if cIncludeFPUUnused
 static Bit16s floatx80_to_int16_round_to_zero(floatx80 a)
 {
-#if 0
-   if (floatx80_is_unsupported(a))
-   {
-		float_raise(float_flag_invalid);
-		return int16_indefinite;
-   }
-#endif
 
    Bit32s v32 = floatx80_to_int32_round_to_zero(a);
 
@@ -3845,14 +3820,6 @@ static floatx80 floatx80_extract(floatx80 *a)
 	Bit32s aExp = extractFloatx80Exp(*a);
 	int   aSign = extractFloatx80Sign(*a);
 
-#if 0
-	if (floatx80_is_unsupported(*a))
-	{
-		float_raise(float_flag_invalid);
-		*a = floatx80_default_nan;
-		return *a;
-	}
-#endif
 
 	if (aExp == 0x7FFF) {
 		if ((Bit64u) (aSig<<1))
@@ -3892,13 +3859,6 @@ static floatx80 floatx80_scale(floatx80 a, floatx80 b)
 	Bit32s scale;
 
 	// handle unsupported extended double-precision floating encodings
-#if 0
-	if (floatx80_is_unsupported(a) || floatx80_is_unsupported(b))
-	{
-		float_raise(float_flag_invalid);
-		return floatx80_default_nan;
-	}
-#endif
 
 	Bit64u aSig = extractFloatx80Frac(a);
 	Bit32s aExp = extractFloatx80Exp(a);
@@ -4089,10 +4049,6 @@ static int floatx80_compare_quiet(floatx80 a, floatx80 b)
 
 	if (aClass == float_NaN || bClass == float_NaN)
 	{
-#if 0
-		if (floatx80_is_unsupported(a) || floatx80_is_unsupported(b))
-			float_raise(float_flag_invalid);
-#endif
 
 		if (floatx80_is_signaling_nan(a) || floatx80_is_signaling_nan(b))
 			float_raise(float_flag_invalid);
@@ -4175,14 +4131,6 @@ static floatx80 do_fprem(floatx80 a, floatx80 b, Bit64u *q, int rounding_mode)
 	int aSign;
 	*q = 0;
 
-#if 0
-	// handle unsupported extended double-precision floating encodings
-	if (floatx80_is_unsupported(a) || floatx80_is_unsupported(b))
-	{
-		float_raise(float_flag_invalid);
-		return floatx80_default_nan;
-	}
-#endif
 
 	aSig0 = extractFloatx80Frac(a);
 	aExp = extractFloatx80Exp(a);
@@ -4383,9 +4331,6 @@ static float128 EvalPoly(float128 x, float128 *arr, unsigned n)
 	float128 x2 = float128_mul(x, x);
 	unsigned i;
 
-#if 0
-	assert(n > 1);
-#endif
 
 	float128 r1 = arr[--n];
 	i = n;
@@ -4874,14 +4819,6 @@ static floatx80 f2xm1(floatx80 a)
 	Bit64u zSig0, zSig1;
 	float128 x;
 
-#if 0
-	// handle unsupported extended double-precision floating encodings
-	if (floatx80_is_unsupported(a))
-	{
-		float_raise(float_flag_invalid);
-		return floatx80_default_nan;
-	}
-#endif
 
 	Bit64u aSig = extractFloatx80Frac(a);
 	Bit32s aExp = extractFloatx80Exp(a);
@@ -4944,9 +4881,6 @@ static floatx80 f2xm1(floatx80 a)
 
 #define USE_estimateDiv128To64
 
-#if 0
-static const floatx80 floatx80_one = packFloatx80m(0, 0x3fff, LIT64(0x8000000000000000));
-#endif
 
 /* reduce trigonometric function argument using 128-bit precision
    M_PI approximation */
@@ -5139,13 +5073,6 @@ static int fsincos(floatx80 a, floatx80 *sin_a, floatx80 *cos_a)
 	int aSign, zSign;
 	int q = 0;
 
-#if 0
-	// handle unsupported extended double-precision floating encodings
-	if (floatx80_is_unsupported(a))
-	{
-		goto invalid;
-	}
-#endif
 
 	aSig0 = extractFloatx80Frac(a);
 	aExp = extractFloatx80Exp(a);
@@ -5158,9 +5085,6 @@ static int fsincos(floatx80 a, floatx80 *sin_a, floatx80 *cos_a)
 			return 0;
 		}
 
-#if 0
-	invalid:
-#endif
 		float_raise(float_flag_invalid);
 		sincos_invalid(sin_a, cos_a, floatx80_default_nan);
 		return 0;
@@ -5260,13 +5184,6 @@ static int ftan(floatx80 *a)
 	int aSign, zSign;
 	int q = 0;
 
-#if 0
-	// handle unsupported extended double-precision floating encodings
-	if (floatx80_is_unsupported(*a))
-	{
-		goto invalid;
-	}
-#endif
 
 	aSig0 = extractFloatx80Frac(*a);
 	aExp = extractFloatx80Exp(*a);
@@ -5280,9 +5197,6 @@ static int ftan(floatx80 *a)
 			return 0;
 		}
 
-#if 0
-	invalid:
-#endif
 		float_raise(float_flag_invalid);
 		*a = floatx80_default_nan;
 		return 0;
@@ -5355,10 +5269,6 @@ static int ftan(floatx80 *a)
 
 #define FPATAN_ARR_SIZE 11
 
-#if 0
-static const float128 float128_one =
-		packFloat2x128m(LIT64(0x3fff000000000000), LIT64(0x0000000000000000));
-#endif
 static const float128 float128_sqrt3 =
 		packFloat2x128m(LIT64(0x3fffbb67ae8584ca), LIT64(0xa73b25742d7078b8));
 static const floatx80 floatx80_pi  =
@@ -5469,12 +5379,6 @@ static floatx80 fpatan(floatx80 a, floatx80 b)
 	int rSign;
 
 	// handle unsupported extended double-precision floating encodings
-#if 0
-	if (floatx80_is_unsupported(a)) {
-		float_raise(float_flag_invalid);
-		return floatx80_default_nan;
-	}
-#endif
 
 	Bit64u aSig = extractFloatx80Frac(a);
 	Bit32s aExp = extractFloatx80Exp(a);

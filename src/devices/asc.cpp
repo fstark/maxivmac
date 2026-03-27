@@ -88,10 +88,6 @@ static void ASC_ClearFIFO()
 				if (0 == (addr & 0x400)) {
 					if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x400)
 					{
-#if 0 /* seems to happen in tetris */
-						ReportAbnormalID(0x0F01,
-							"ASC - Channel A Overflow");
-#endif
 						SoundReg804 |= 0x02;
 					} else {
 
@@ -105,9 +101,6 @@ static void ASC_ClearFIFO()
 							SoundReg804 &= ~ 0x01;
 						}
 					} else {
-#if 0 /* doesn't seem to be necessary, but doesn't hurt either */
-						SoundReg804 |= 0x01;
-#endif
 					}
 					if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x400)
 					{
@@ -146,9 +139,6 @@ static void ASC_ClearFIFO()
 							SoundReg804 &= ~ 0x04;
 						}
 					} else {
-#if 0 /* doesn't seem to be necessary, but doesn't hurt either */
-						SoundReg804 |= 0x04;
-#endif
 					}
 					if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x400)
 					{
@@ -179,13 +169,6 @@ static void ASC_ClearFIFO()
 		}
 
 #if ASC_dolog && 1
-#if 0
-		if (((addr & 0x1FF) >= 0x04)
-			&& ((addr & 0x1FF) < (0x200 - 0x04)))
-		{
-			/* don't report them all */
-		} else
-#endif
 		{
 			dbglog_AddrAccess("ASC_Access SampBuff",
 				Data, WriteMem, addr);
@@ -244,10 +227,6 @@ static void ASC_ClearFIFO()
 								ASC_ClearFIFO();
 							}
 
-#if 0
-							ReportAbnormalID(0x0F08,
-								"ASC - changing CONTROL while ENABLEd");
-#endif
 						}
 					}
 #endif
@@ -278,10 +257,6 @@ static void ASC_ClearFIFO()
 								"ASC - set clear FIFO again");
 						} else
 						if (1 != SoundReg801) {
-#if 0 /* happens in system 6, such as with Lunar Phantom */
-							ReportAbnormalID(0x0F0D,
-								"ASC - clear FIFO when not FIFO mode");
-#endif
 						} else
 						{
 							ASC_ClearFIFO();
@@ -303,12 +278,6 @@ static void ASC_ClearFIFO()
 				break;
 			case 0x804:
 				if (WriteMem) {
-#if 0
-					if ((0 != SoundReg804) && (0 != Data)) {
-						ReportAbnormalID(0x0F0F,
-							"ASC - set FIFO IRQ STATUS when not 0");
-					}
-#endif
 					SoundReg804 = Data;
 					if (0 != SoundReg804) {
 					if (auto* via2 = machine_->findDevice<VIA2Device>())
@@ -326,13 +295,6 @@ static void ASC_ClearFIFO()
 #endif
 				} else {
 					Data = SoundReg804;
-#if 0
-					if (1 != SoundReg801) {
-						/* no, ok, part of normal interrupt handling */
-						ReportAbnormalID(0x0F10,
-							"ASC - read STATUS when not FIFO");
-					}
-#endif
 					/* SoundReg804 = 0; */
 					SoundReg804 &= ~ 0x01;
 					SoundReg804 &= ~ 0x04;
@@ -342,9 +304,6 @@ static void ASC_ClearFIFO()
 							status was read previous.
 						*/
 #if ASC_dolog && 1
-#if 0
-					if (0 != Data)
-#endif
 					{
 						dbglog_AddrAccess(
 							"ASC_Access Control (FIFO IRQ STATUS)",

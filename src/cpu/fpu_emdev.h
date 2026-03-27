@@ -110,17 +110,6 @@ static void write_double(uint32_t addr, myfpr *dd)
 	put_long(addr + 4, v0);
 }
 
-#if 0
-static void read_single(uint32_t addr, myfpr *r)
-{
-	myfp_FromSingleFormat(r, get_long(addr));
-}
-
-static void write_single(uint32_t addr, myfpr *ff)
-{
-	put_long(addr, myfp_ToSingleFormat(ff));
-}
-#endif
 
 
 static int CheckFPCondition(uint16_t predicate)
@@ -233,10 +222,6 @@ LOCALIPROC DoCodeFPU_Save()
 	uint16_t opcode = ((uint16_t)(V_regs.CurDecOpY.v[0].AMd) << 8)
 		| V_regs.CurDecOpY.v[0].ArgDat;
 	if ((opcode == 0xF327) || (opcode == 0xF32D)) {
-#if 0
-		DecodeModeRegister(4);
-		SetArgValueL(0); /* for now, try null state frame */
-#endif
 		/* 28 byte 68881 IDLE frame */
 
 		if (! DecodeAddrModeRegister(28)) {

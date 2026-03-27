@@ -139,10 +139,6 @@ static void DisasmModeRegister(uint32_t themode, uint32_t thereg)
 			break;
 		case 6 :
 			dbglog_writeCStr("???");
-#if 0
-			ArgKind = AKMemory;
-			ArgAddr.mem = get_disp_ea(m68k_areg(thereg));
-#endif
 			break;
 		case 7 :
 			switch (thereg) {
@@ -167,10 +163,6 @@ static void DisasmModeRegister(uint32_t themode, uint32_t thereg)
 					break;
 				case 3 :
 					dbglog_writeCStr("???");
-#if 0
-					ArgKind = AKMemory;
-					s = get_disp_ea(Disasm_pc);
-#endif
 					break;
 				case 4 :
 					dbglog_writeCStr("#");
@@ -2841,9 +2833,6 @@ static inline void DisasmSavedPCs()
 #if DisasmIncludeCycles
 		uint32_t i;
 #endif
-#if 0
-		bool Skipped = false;
-#endif
 		uint32_t j = SavedPCsOut;
 
 		SavedPCsOut = SavedPCsIn;
@@ -2861,9 +2850,6 @@ static inline void DisasmSavedPCs()
 			n = NumSavedPCs;
 			j = SavedPCsIn - NumSavedPCs;
 			dbglog_writeReturn();
-#if 0
-			Skipped = true;
-#endif
 		}
 
 		do {
@@ -2880,24 +2866,6 @@ static inline void DisasmSavedPCs()
 			++j;
 		} while (n != 0);
 
-#if 0
-		if (Skipped) {
-			int16_t z;
-
-			for (z = 0; z < 16; ++z) {
-				if (z >= 8) {
-					dbglog_writeCStr(" A");
-					dbglog_writeHex(z - 8);
-				} else {
-					dbglog_writeCStr(" D");
-					dbglog_writeHex(z);
-				}
-				dbglog_writeCStr(" = ");
-				dbglog_writeHex(regs.regs[z]);
-				dbglog_writeReturn();
-			}
-		}
-#endif
 	}
 }
 

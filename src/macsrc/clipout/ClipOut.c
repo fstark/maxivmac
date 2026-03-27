@@ -120,10 +120,6 @@ static void doCtlEvent(EventRecord *theEvent, DCtlPtr dCtl)
 		case activateEvt:
 			if ((theEvent->modifiers & activeFlag) != 0) {
 				((Globals *)(*dCtl->dCtlStorage))->GotActivate = true;
-#if 0 /* Clip may not be converted yet */
-				DoTheTask();
-				CloseDriver(dCtl->dCtlRefNum);
-#endif
 			}
 			break;
 	}

@@ -47,9 +47,6 @@ GLOBALPROC vCheckSysErr(OSErr theErr)
 {
 	if (noErr != theErr) {
 		if (noErr == SavedSysErr) {
-#if 0
-			Debugger();
-#endif
 			SavedSysErr = theErr;
 		}
 	}

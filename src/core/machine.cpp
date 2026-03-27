@@ -732,25 +732,6 @@ static void FinishATTList()
 			h = p;
 		}
 
-#if 0 /* verify list. not for final version */
-		{
-			ATTep q1;
-			ATTep q2;
-			for (q1 = h; nullptr != q1->Next; q1 = q1->Next) {
-				if ((q1->cmpvalu & ~ q1->cmpmask) != 0) {
-					ReportAbnormalID(0x1102, "ATTListA bad entry");
-				}
-				for (q2 = q1->Next; nullptr != q2->Next; q2 = q2->Next) {
-					uint32_t common_mask = (q1->cmpmask) & (q2->cmpmask);
-					if ((q1->cmpvalu & common_mask) ==
-						(q2->cmpvalu & common_mask))
-					{
-						ReportAbnormalID(0x1103, "ATTListA Conflict");
-					}
-				}
-			}
-		}
-#endif
 
 		g_cpu.setHeadATTel(h);
 	}
@@ -921,22 +902,6 @@ static void SetUp_io()
 	r.device = g_machine->findDevice<IWMDevice>();
 	AddToATTList(&r);
 
-#if 0
-		case 14:
-			/*
-				fail, nothing supposed to be here,
-				but rom accesses it anyway
-			*/
-			{
-				uint32_t addr2 = addr & 0x1FFFF;
-
-				if ((addr2 != 0x1DA00) && (addr2 != 0x1DC00)) {
-					ReportAbnormalID(0x1104, "another unknown access");
-				}
-			}
-			get_fail_realblock(p);
-			break;
-#endif
 }
 
 /* Mac II/IIx: 24-bit address space setup */
@@ -945,11 +910,6 @@ static void SetUp_address24()
 	const auto& cfg = g_machine->config();
 	ATTer r{};
 
-#if 0
-	if (MemOverlay) {
-		ReportAbnormalID(0x1105, "Overlay with 24 bit addressing");
-	}
-#endif
 
 	if (MemOverlay) {
 		r.cmpmask = Overlay_ROM_CmpZeroMask |
@@ -1071,16 +1031,6 @@ static void SetUp_address32()
 	r.Access = kATTA_readreadymask;
 	AddToATTList(&r);
 
-#if 0
-	/* haven't persuaded emulated computer to look here yet. */
-	/* NuBus super space */
-	r.cmpmask = ~ ((1 << 28) - 1);
-	r.cmpvalu = 0x90000000;
-	r.usemask = cfg.vidMemSize - 1;
-	r.usebase = VidMem;
-	r.Access = kATTA_readwritereadymask;
-	AddToATTList(&r);
-#endif
 
 	/* Standard NuBus space */
 	r.cmpmask = ~ ((1 << 20) - 1);
@@ -1089,14 +1039,6 @@ static void SetUp_address32()
 	r.usebase = VidROM;
 	r.Access = kATTA_readreadymask;
 	AddToATTList(&r);
-#if 0
-	r.cmpmask = ~ 0x007FFFFF;
-	r.cmpvalu = 0xF9000000;
-	r.usemask = 0x007FFFFF & (cfg.vidMemSize - 1);
-	r.usebase = VidMem;
-	r.Access = kATTA_readwritereadymask;
-	AddToATTList(&r);
-#endif
 
 	r.cmpmask = ~ 0x000FFFFF;
 	r.cmpvalu = 0xF9900000;
@@ -1130,11 +1072,6 @@ static void SetUp_address32()
 
 	SetUp_io();
 
-#if 0
-	if ((addr >= 0x58000000) && (addr < 0x58000004)) {
-		/* test hardware. fail */
-	}
-#endif
 }
 
 /* Mac II/IIx: address space dispatcher */
@@ -1342,16 +1279,6 @@ static void SetUpMemBanks()
 	FinishATTList();
 }
 
-#if 0
-static void get_fail_realblock(ATTep p)
-{
-	p->cmpmask = 0;
-	p->cmpvalu = 0xFFFFFFFF;
-	p->usemask = 0;
-	p->usebase = nullptr;
-	p->Access = 0;
-}
-#endif
 
  uint32_t MMDV_Access(ATTep p, uint32_t Data,
 	bool WriteMem, bool ByteSize, uint32_t addr)

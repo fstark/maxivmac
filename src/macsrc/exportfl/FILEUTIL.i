@@ -329,9 +329,6 @@ GLOBALFUNC tMyErr MyCloseFile_v2(short refNum)
 	r.ioParam.ioRefNum = refNum;
 
 	return PBCloseSync(&r);
-#if 0
-	return (tMyErr)FSClose(refNum);
-#endif
 }
 
 GLOBALFUNC tMyErr MyWriteBytes_v2(short refNum, MyPtr p, uimr L)
@@ -376,9 +373,6 @@ GLOBALFUNC tMyErr MyOpenFileGetFPos(short refNum, uimr *offset)
 	}
 
 	return err;
-#if 0
-	return GetFPos(refnum, (long *)offset);
-#endif
 }
 
 GLOBALFUNC tMyErr MyOpenFileSetFPos(short refNum, uimr offset)
@@ -391,9 +385,6 @@ GLOBALFUNC tMyErr MyOpenFileSetFPos(short refNum, uimr offset)
 	r.ioParam.ioPosOffset = offset;
 
 	return PBSetFPosSync(&r);
-#if 0
-	return SetFPos(refnum, fsFromStart, (long)offset);
-#endif
 }
 
 GLOBALFUNC tMyErr MyBackWriteBytes_v2(short refNum, uimr offset,
@@ -442,9 +433,6 @@ GLOBALFUNC tMyErr MyOpenFileGetEOF_v2(short refNum, uimr *L)
 	}
 
 	return err;
-#if 0
-	return GetEOF(refNum, (long *)L);
-#endif
 }
 
 GLOBALFUNC tMyErr MyOpenFileSetEOF_v2(short refNum, uimr L)
@@ -456,9 +444,6 @@ GLOBALFUNC tMyErr MyOpenFileSetEOF_v2(short refNum, uimr L)
 	r.ioParam.ioMisc = (Ptr)L;
 
 	return PBSetEOFSync(&r);
-#if 0
-	return SetEOF(refNum, (long)L);
-#endif
 }
 
 GLOBALFUNC tMyErr MyFileFlushVol(

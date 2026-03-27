@@ -80,11 +80,6 @@ static void InterruptReset_Update()
 
 static void SubTickNotify(int SubTick)
 {
-#if 0
-	dbglog_writeCStr("ending sub tick ");
-	dbglog_writeNum(SubTick);
-	dbglog_writeReturn();
-#endif
 	if (g_machine->config().emClassicSnd) {
 		if (auto* d = g_machine->findDevice<SoundDevice>()) d->subTick(SubTick);
 	} else if (g_machine->config().emASC) {
@@ -168,10 +163,6 @@ static void SixtiethEndNotify()
 
 static void ExtraTimeBeginNotify()
 {
-#if 0
-	dbglog_writeCStr("begin extra time");
-	dbglog_writeReturn();
-#endif
 	if (auto* d = g_machine->findDevice<VIA1Device>()) d->extraTimeBegin();
 	if (auto* d = g_machine->findDevice<VIA2Device>()) d->extraTimeBegin();
 }
@@ -180,10 +171,6 @@ static void ExtraTimeEndNotify()
 {
 	if (auto* d = g_machine->findDevice<VIA1Device>()) d->extraTimeEnd();
 	if (auto* d = g_machine->findDevice<VIA2Device>()) d->extraTimeEnd();
-#if 0
-	dbglog_writeCStr("end extra time");
-	dbglog_writeReturn();
-#endif
 }
 
 bool EmulationReserveAlloc()

@@ -79,10 +79,6 @@ void PMUDevice::checkCommandOp()
 				/* already done */
 			}
 			break;
-#if 0
-		case 0xE2: /* kPMUdownloadStatus - PRAM status */
-			break;
-#endif
 		case 0xE0: /* kPMUwritePmgrRAM - write to internal PMGR RAM */
 			break;
 		case 0x21: /* kPMUpMgrADBoff - turn ADB auto-poll off */
@@ -196,15 +192,6 @@ void PMUDevice::checkCommandOp()
 					ReportAbnormalID(0x0E09, "Unknown kPMUpramRead op");
 				}
 			} else if (kPMUStateSendBuffer == state_) {
-#if 0
-				{
-					int i;
-
-					for (i = 0; i < kBuffSz; ++i) {
-						buffA_[i] = 0;
-					}
-				}
-#endif
 				if (0 == i_) {
 					p_ = &paramRAM_[16];
 					rem_ = 16;

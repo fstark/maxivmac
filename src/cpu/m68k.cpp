@@ -203,9 +203,6 @@ static struct regstruct
 
 	bool TracePending;
 	bool ExternalInterruptPending;
-#if 0
-	bool ResetPending;
-#endif
 	uint8_t *fIPL;
 #ifdef r_regs
 	struct regstruct *save_regs;
@@ -2343,27 +2340,7 @@ static void cctrue_TstL_LS(cond_actP t_act, cond_actP f_act)
 	}
 }
 
-#if 0 /* always true */
-static void cctrue_TstL_CC(cond_actP t_act, cond_actP f_act)
-{
-	if (((uint32_t)V_regs.LazyFlagArgDst) >= ((uint32_t)0)) {
-		t_act();
-	} else {
-		f_act();
-	}
-}
-#endif
 
-#if 0 /* always false */
-static void cctrue_TstL_CS(cond_actP t_act, cond_actP f_act)
-{
-	if (((uint32_t)V_regs.LazyFlagArgDst) < ((uint32_t)0)) {
-		t_act();
-	} else {
-		f_act();
-	}
-}
-#endif
 
 static void cctrue_TstL_NE(cond_actP t_act, cond_actP f_act)
 {
@@ -3690,28 +3667,6 @@ static void NeedDefaultLazyFlagsAddW()
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-#if 0
-static void NeedDefaultLazyFlagsAddCommon(uint32_t result)
-{
-	ZFLG = Bool2Bit(result == 0);
-	{
-		flagtype flgn = Bool2Bit(ui5r_MSBisSet(result));
-		flagtype flgs = Bool2Bit(ui5r_MSBisSet(V_regs.LazyFlagArgSrc));
-		flagtype flgo = Bool2Bit(ui5r_MSBisSet(V_regs.LazyFlagArgDst));
-		flagtype flgsando = flgs & flgo;
-		flagtype flgsoro = flgs | flgo;
-
-		NFLG = flgn;
-		flgn ^= 1;
-		VFLG = ((flgn | flgsoro) ^ 1) | (flgn & flgsando);
-		CFLG = flgsando | (flgn & flgsoro);
-	}
-
-	XFLG = CFLG;
-	V_regs.LazyFlagKind = kLazyFlagsDefault;
-	V_regs.LazyXFlagKind = kLazyFlagsDefault;
-}
-#endif
 
 static void NeedDefaultLazyFlagsAddL()
 {
@@ -4401,12 +4356,6 @@ static void m68k_setpc(uint32_t newpc)
 	DumpAJump(newpc);
 #endif
 
-#if 0
-	if (newpc == 0xBD50 /* 401AB4 */) {
-		/* Debugger(); */
-		/* Exception(5); */ /* try and get macsbug */
-	}
-#endif
 
 	V_pc_p = V_regs.pc_pLo + (newpc - V_regs.pc);
 	if (V_pc_p >= V_pc_pHi
@@ -6676,13 +6625,6 @@ LOCALIPROC DoCodeMoveP0()
 	*dstp =
 		(*dstp & ~ 0xffff) | (val & 0xffff);
 
-#if 0
-	if ((Displacement & 0x00008000) != 0) {
-		/* **** for testing only **** */
-		BackupPC();
-		op_illg();
-	}
-#endif
 }
 
 LOCALIPROC DoCodeMoveP1()
@@ -8670,11 +8612,6 @@ void m68k_go_nCycles(uint32_t n)
 	V_MaxCyclesToGo += (n + V_regs.ResidualCycles);
 	while (V_MaxCyclesToGo > 0) {
 
-#if 0
-		if (V_regs.ResetPending) {
-			m68k_DoReset();
-		}
-#endif
 		if (V_regs.TracePending) {
 #if WantCloserCyc
 			V_MaxCyclesToGo -= (34 * kCycleScale
@@ -8882,10 +8819,6 @@ void m68k_reset()
 	do_put_mem_word(V_regs.fakeword, 0x4AFC);
 		/* illegal instruction opcode */
 
-#if 0
-	V_regs.ResetPending = true;
-	NeedToGetOut();
-#else
 /* Sets the MC68000 reset jump vector... */
 	m68k_setpc(get_long(0x00000004));
 
@@ -8914,7 +8847,6 @@ void m68k_reset()
 		V_regs.cacr = 0;
 		V_regs.caar = 0;
 	}
-#endif
 
 	Em_Exit();
 }

@@ -35,24 +35,6 @@ static inline uint16_t do_get_mem_word(uint8_t * a)
 static inline uint32_t do_get_mem_long(uint8_t * a)
 {
 #if LittleEndianUnaligned
-#if 0
-	uint32_t b = (*((uint32_t *)(a)));
-	return ((b & 0x000000FF) << 24)
-		|  ((b & 0x0000FF00) <<  8)
-		|  ((b & 0x00FF0000) >>  8)
-		|  ((b & 0xFF000000) >> 24);
-#endif
-#if 0
-	uint32_t b = (*((uint32_t *)(a)));
-	return ((b << 24) & 0xFF000000)
-		|  ((b <<  8) & 0x00FF0000)
-		|  ((b >>  8) & 0x0000FF00)
-		|  ((b >> 24) & 0x000000FF);
-	/*
-		no, this doesn't do well with apple tools,
-		instead try combining two 16 bit swaps.
-	*/
-#endif
 	uint32_t b = (*((uint32_t *)(a)));
 	uint16_t b1 = b;
 	uint16_t b2 = b >> 16;

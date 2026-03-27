@@ -386,18 +386,6 @@ static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 						uint16_t drSigWord = do_get_mem_word(
 							&Temp[0x400]);
 
-#if 0 /* don't look at boot blocks */
-						uint16_t bbID = do_get_mem_word(
-							&Temp[0]);
-						if ((0x4C4B == bbID) || (0 == bbID))
-						if ((Temp[0x0A] < 16)
-								/* length System name */
-							&& (Temp[0x1A] < 16)
-								/* length Finder name */
-							&& (Temp[0x2A] < 16)
-								/* length Macsbug name */
-							)
-#endif
 						if ((0x4244 == drSigWord) /* HFS */
 							|| (0xD2D7 == drSigWord) /* MFS */
 							)
@@ -885,20 +873,6 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 
 #define kdCtlPosition 16
 
-#if 0
-struct MyDriverDat_R {
-	uint32_t zeroes[4];  /*  0 */
-	uint32_t checkval;   /* 16 */
-	uint32_t pokeaddr;   /* 20 */
-	uint16_t NumDrives;  /* 24 */
-	uint16_t DiskExtn;   /* 26 */
-	TMTask NullTask; /* 28 */
-	VBLTask NullVBLTask; /* 48 */
-	/* total size must be <= FirstDriveVarsOffset */
-};
-
-typedef struct MyDriverDat_R MyDriverDat_R;
-#endif
 
 
 static uint32_t sony_SonyVarsPtr() {
@@ -1136,60 +1110,6 @@ static tMacErr Sony_Prime(uint32_t p)
 			}
 		}
 
-#if 0
-		uint16_t PosMode = get_vm_word(ParamBlk + kioPosMode);
-
-		if (0 != (PosMode & 64)) {
-#if ExtraAbnormalReports
-			/*
-				This is used when copy to floppy
-				disk with Finder. But not implemented
-				yet.
-			*/
-			ReportAbnormalID(0x0906, "read verify mode requested");
-#endif
-			PosMode &= ~ 64;
-		}
-
-		/*
-			Don't use the following code, because
-			according to Apple's Technical Note FL24
-			the Device Manager takes care of this,
-			and puts the result in dCtlPosition.
-			(The RAMDisk example in Apple's sample
-			code serves to confirm this. Further
-			evidence found in Basilisk II emulator,
-			and disassembly of Mac Plus disk driver.)
-		*/
-		uint32_t PosOffset = get_vm_long(ParamBlk + kioPosOffset);
-		switch (PosMode) {
-			case kfsAtMark:
-				Sony_Start = get_vm_long(DeviceCtl + kdCtlPosition);
-				break;
-			case kfsFromStart:
-				Sony_Start = PosOffset;
-				break;
-#if 0
-			/*
-				not valid for device driver.
-				actually only kfsFromStart seems to be used.
-			*/
-			case kfsFromLEOF:
-				Sony_Start = ImageDataSize[Drive_No]
-					+ PosOffset;
-				break;
-#endif
-			case kfsFromMark:
-				Sony_Start = PosOffset
-					+ get_vm_long(DeviceCtl + kdCtlPosition);
-				break;
-			default:
-				ReportAbnormalID(0x0907, "unknown PosMode");
-				result = mnvm_paramErr;
-				goto label_fail;
-				break;
-		}
-#endif
 		Sony_Start = get_vm_long(DeviceCtl + kdCtlPosition);
 
 		Sony_Count = get_vm_long(ParamBlk + kioReqCount);
@@ -1275,20 +1195,6 @@ static tMacErr Sony_Control(uint32_t p)
 		if (static_cast<int>(g_machine->config().model) <= static_cast<int>(MacModel::Mac128K)) {
 			result = mnvm_controlErr;
 		} else {
-#if 0
-		uint8_t Arg1 = get_vm_byte(ParamBlk + kcsParam);
-		uint8_t Arg2 = get_vm_byte(ParamBlk + kcsParam + 1);
-		if (0 == Arg1) {
-			/* disable track cache */
-		} else {
-			/* enable track cache */
-		}
-		if (Arg2 < 0) {
-			/* remove track cache */
-		} else if (Arg2 > 0) {
-			/* install track cache */
-		}
-#endif
 		result = mnvm_noErr;
 			/* not implemented, but pretend we did it */
 		}
@@ -1329,10 +1235,6 @@ static tMacErr Sony_Control(uint32_t p)
 						/* Drive Writeable */
 					put_vm_byte(dvl + kDiskInPlace, 0x00);
 						/* Drive No Disk */
-#if 0
-					put_vm_byte(dvl + kTwoSideFmt, 0x00);
-						/* Drive Single Format (Initially) */
-#endif
 					put_vm_word(dvl + kQRefNum, 0xFFFB);
 						/* Drive i uses .Sony */
 
@@ -1481,10 +1383,6 @@ static tMacErr Sony_Status(uint32_t p)
 
 static tMacErr Sony_Close(uint32_t p)
 {
-#if 0
-	uint32_t ParamBlk = get_vm_long(p + ExtnDat_params + 0);
-	uint32_t DeviceCtl = get_vm_long(p + ExtnDat_params + 4);
-#endif
 	UnusedParam(p);
 	return mnvm_closErr; /* Can't Close Driver */
 }

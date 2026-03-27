@@ -590,9 +590,6 @@ uint32_t VIA1Device::access(uint32_t Data, bool WriteMem, uint32_t addr)
 						g_wires.set(acfg.cb2Wire, 0);
 					}
 					}
-#if 0
-					setInterruptFlag(kIntSR);
-#endif
 					break;
 				case 7 : /* Shifting Out */
 					break;

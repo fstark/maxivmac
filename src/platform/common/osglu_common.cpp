@@ -1182,9 +1182,6 @@ void LT_PickStampNodeHint()
 	dbglog_writelnNum("LT_MyStamp ", LT_MyStamp);
 #endif
 
-#if 0
-	LT_NodeHint = 1; /* for testing collision handling */
-#else
 	{
 		int i = 8 + 1;
 
@@ -1210,7 +1207,6 @@ label_retry:
 			goto label_retry;
 		}
 	}
-#endif
 }
 
 #endif /* EmLocalTalk */

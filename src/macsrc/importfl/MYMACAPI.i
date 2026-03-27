@@ -817,11 +817,6 @@ union ParamBlockRec {
 	IOParam             ioParam;
 	FileParam           fileParam;
 	VolumeParam         volumeParam;
-#if 0
-	CntrlParam          cntrlParam;
-	SlotDevParam        slotDevParam;
-	MultiDevParam       multiDevParam;
-#endif
 };
 
 struct HFileInfo {
@@ -982,15 +977,6 @@ union HParamBlockRec {
 	HIOParam            ioParam;
 	HFileParam          fileParam;
 	HVolumeParam        volumeParam;
-#if 0
-	AccessParam         accessParam;
-	ObjParam            objParam;
-	CopyParam           copyParam;
-	WDParam             wdParam;
-	FIDParam            fidParam;
-	CSParam             csParam;
-	ForeignPrivParam    foreignPrivParam;
-#endif
 };
 typedef union HParamBlockRec            HParamBlockRec;
 

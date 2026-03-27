@@ -3641,11 +3641,6 @@ static void HandleTheEvent(SDL_Event *event)
 			switch (event->active.state) {
 				case SDL_APPINPUTFOCUS:
 					gTrueBackgroundFlag = (0 == event->active.gain);
-#if 0 && UseMotionEvents
-					if (! gTrueBackgroundFlag) {
-						CheckMouseState();
-					}
-#endif
 					break;
 				case SDL_APPMOUSEFOCUS:
 					CaughtMouse = (0 != event->active.gain);
@@ -3830,30 +3825,6 @@ static void HandleTheEvent(SDL_Event *event)
 			}
 			break;
 #endif /* SDL_MAJOR_VERSION >= 2 */
-#if 0
-		case Expose: /* SDL doesn't have an expose event */
-			int x0 = event->expose.x;
-			int y0 = event->expose.y;
-			int x1 = x0 + event->expose.width;
-			int y1 = y0 + event->expose.height;
-
-			if (x0 < 0) {
-				x0 = 0;
-			}
-			if (x1 > vMacScreenWidth) {
-				x1 = vMacScreenWidth;
-			}
-			if (y0 < 0) {
-				y0 = 0;
-			}
-			if (y1 > vMacScreenHeight) {
-				y1 = vMacScreenHeight;
-			}
-			if ((x0 < x1) && (y0 < y1)) {
-				HaveChangedScreenBuff(y0, x0, y1, x1);
-			}
-			break;
-#endif
 	}
 }
 #endif
@@ -4203,9 +4174,6 @@ static bool CreateMainWindow()
 		CurWinIndx = WinIndx;
 	}
 
-#if 0
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-#endif
 
 	if (nullptr == (my_main_wind = SDL_CreateWindow(
 		(nullptr != n_arg) ? n_arg : kStrAppName,
@@ -4302,16 +4270,6 @@ static bool CreateMainWindow()
 
 		SDL_RenderClear(my_renderer);
 
-#if 0
-		SDL_DisplayMode info;
-
-		if (0 != SDL_GetCurrentDisplayMode(0, &info)) {
-			fprintf(stderr, "SDL_GetCurrentDisplayMode fails: %s\n",
-				SDL_GetError());
-
-			return false;
-		}
-#endif
 
 		if (UseFullScreen)
 		{
@@ -4682,9 +4640,6 @@ static void CheckForSavedTasks()
 
 	if (CurSpeedStopped != (SpeedStopped ||
 		(gBackgroundFlag && ! RunInBackground
-#if 0
-			&& (QuietSubTicks >= 4092)
-#endif
 		)))
 	{
 		CurSpeedStopped = ! CurSpeedStopped;

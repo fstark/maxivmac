@@ -120,12 +120,8 @@ label_retry:
 	if (actL > 0) {
 		if (g_wires.get(Wire_SoundDisable) && (SoundInvertTime == 0)) {
 			for (i = 0; i < actL; i++) {
-#if 0
-				*p++ = 0x00; /* this is believed more accurate */
-#else
 				/* But this avoids more clicks. */
 				*p++ = kCenterSound;
-#endif
 			}
 		} else {
 			for (i = 0; i < actL; i++) {

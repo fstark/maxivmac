@@ -102,12 +102,6 @@ static void PatchALong(uint32_t v)
 	PatchAWord(v & 0x0000FFFF);
 }
 
-#if 0
-static void PatchAOSLstEntry0(uint8_t Id, uint32_t Offset)
-{
-	PatchALong((Id << 24) | (Offset & 0x00FFFFFF));
-}
-#endif
 
 static void PatchAOSLstEntry(uint8_t Id, uint8_t * Offset)
 {
@@ -157,10 +151,6 @@ static void PatchAnEndOfLst()
 	uint8_t * pTo_VideoName;
 	uint8_t * pTo_MinorBase;
 	uint8_t * pTo_MinorLength;
-#if 0
-	uint8_t * pTo_MajorBase;
-	uint8_t * pTo_MajorLength;
-#endif
 	uint8_t * pTo_VidDrvrDir;
 	uint8_t * pTo_sMacOS68020;
 	uint8_t * pTo_OneBitMode;
@@ -245,10 +235,6 @@ static void PatchAnEndOfLst()
 	PatchADatLstEntry(0x08 /* sRsrcHWDevId */, 0x00000001);
 	pTo_MinorBase = ReservePatchOSLstEntry();
 	pTo_MinorLength = ReservePatchOSLstEntry();
-#if 0
-	pTo_MajorBase = ReservePatchOSLstEntry();
-	pTo_MajorLength = ReservePatchOSLstEntry();
-#endif
 	pTo_OneBitMode = ReservePatchOSLstEntry();
 	if (0 != vMacScreenDepth) {
 		if (ColorModeWorks) {
@@ -283,13 +269,6 @@ static void PatchAnEndOfLst()
 	PatchAReservedOSLstEntry(pTo_MinorLength, 0x0B /* MinorLength */);
 	PatchALong(g_machine->config().vidMemSize);
 
-#if 0
-	PatchAReservedOSLstEntry(pTo_MajorBase, 0x0C /* MinorBaseOS */);
-	PatchALong(0x00000000);
-
-	PatchAReservedOSLstEntry(pTo_MajorLength, 0x0D /* MinorLength */);
-	PatchALong(g_machine->config().vidMemSize);
-#endif
 
 	PatchAReservedOSLstEntry(pTo_VidDrvrDir, 0x04 /* sRsrcDrvrDir */);
 	pTo_sMacOS68020 = ReservePatchOSLstEntry();
@@ -687,18 +666,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoControl, SetGamma");
 #endif
 						{
-#if 0
-							uint32_t csTable = get_vm_long(
-								csParam + VDGammaRecord_csGTable);
-							/* not implemented */
-#endif
 						}
-#if 0
-						ReportAbnormalID(0x0A03,
-							"Video_Access SetGamma not implemented");
-#else
 						result = mnvm_noErr;
-#endif
 						break;
 					case 5: /* GrayScreen */
 #if VID_dolog
@@ -707,11 +676,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"GrayScreen");
 #endif
 						{
-#if 0
-							uint16_t csPage = get_vm_word(
-								csParam + VDPageInfo_csPage);
-							/* not implemented */
-#endif
 							FillScreenWithGrayPattern();
 							result = mnvm_noErr;
 						}
@@ -798,16 +762,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"GetEntries");
 #endif
 						{
-#if 0
-							uint32_t csTable = get_vm_long(
-								csParam + VDSetEntryRecord_csTable);
-							put_vm_word(
-								csParam + VDSetEntryRecord_csStart,
-								csStart);
-							put_vm_word(
-								csParam + VDSetEntryRecord_csCount,
-								csCount);
-#endif
 							ReportAbnormalID(0x0A05,
 								"GetEntries not implemented");
 						}
@@ -883,18 +837,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						dbglog_WriteNote(
 							"Video_Access kCmndVideoStatus, "
 							"GetCurrentMode");
-#endif
-#if 0
-						put_vm_word(csParam + VDPageInfo_csMode,
-							Vid_GetMode());
-						put_vm_long(csParam + VDPageInfo_csData, 0);
-							/* what is this ? */
-						put_vm_word(csParam + VDPageInfo_csPage, 0);
-							/* page is always 0 */
-						put_vm_long(csParam + VDPageInfo_csBaseAddr,
-							VidBaseAddr);
-
-						result = mnvm_noErr;
 #endif
 						break;
 					case 12: /* GetConnection */

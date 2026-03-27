@@ -62,10 +62,6 @@ static void SCSI_BusReset()
 	SCSI[scsiWr + sTDMArx] = 0;
 	SCSI[scsiRd + sRESET] = 0;
 	SCSI[scsiWr + sIDMArx] = 0;
-#if 0
-	SCSI[scsiRd + sODR + dackWr] = 0;
-	SCSI[scsiWr + sIDR + dackRd] = 0;
-#endif
 
 	/* The missing piece of the puzzle.. :) */
 	put_ram_word(0xb22, get_ram_word(0xb22) | 0x8000);

@@ -249,31 +249,6 @@ if (static_cast<int>(g_machine->config().model)
 	do_put_mem_word(7790 + ROM, vMacScreenWidth);
 	do_put_mem_word(7810 + ROM, vMacScreenHeight);
 
-#if 0
-	/*
-		Haven't got these working. Alert outlines ok, but
-		not contents. Perhaps global position of contents
-		stored in system resource file.
-	*/
-
-	/* perhaps switch disk alert */
-	do_put_mem_word(10936 + ROM, vMacScreenHeight / 2 - 91);
-	do_put_mem_word(10938 + ROM, vMacScreenWidth / 2 - 136);
-	do_put_mem_word(10944 + ROM, vMacScreenHeight / 2 - 19);
-	do_put_mem_word(10946 + ROM, vMacScreenWidth / 2 + 149);
-
-	do_put_mem_word(11008 + ROM, ?);
-	do_put_mem_word(11010 + ROM, ?);
-
-	/* DSAlertRect */
-	do_put_mem_word(4952 + ROM, vMacScreenHeight / 2 - 107);
-	do_put_mem_word(4954 + ROM, vMacScreenWidth / 2 - 236);
-	do_put_mem_word(4958 + ROM, vMacScreenHeight / 2 + 19);
-	do_put_mem_word(4960 + ROM, vMacScreenWidth / 2 + 236);
-
-	do_put_mem_word(5212 + ROM, vMacScreenHeight / 2 - 101);
-	do_put_mem_word(5214 + ROM, vMacScreenWidth / 2 - 218);
-#endif
 
 } else if (static_cast<int>(g_machine->config().model)
 	<= static_cast<int>(MacModel::Classic))
