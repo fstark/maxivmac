@@ -9,11 +9,6 @@
 
 #pragma once
 
-#define MySoundEnabled 1
-
-#define MySoundRecenterSilence 0
-#define kLn2SoundSampSz 4
-
 #define dbglog_HAVE 1
 #define WantAbnormalReports 0
 

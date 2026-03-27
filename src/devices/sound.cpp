@@ -42,8 +42,6 @@ void SoundDevice::reset()
 	soundInvertState_ = 0;
 }
 
-#if MySoundEnabled
-
 #include "cpu/m68k.h"
 
 
@@ -63,13 +61,7 @@ static const uint16_t vol_mult[] = {
 };
 
 static const trSoundSamp vol_offset[] = {
-#if 3 == kLn2SoundSampSz
-	112, 110, 107, 103, 96, 86, 64, 0
-#elif 4 == kLn2SoundSampSz
 	28672, 28087, 27307, 26215, 24576, 21846, 16384, 0
-#else
-#error "unsupported kLn2SoundSampSz"
-#endif
 };
 
 static const uint16_t SubTick_offset[kNumSubTicks] = {
@@ -160,9 +152,7 @@ label_retry:
 #else
 					get_vm_byte(addr)
 #endif
-#if 4 == kLn2SoundSampSz
 					<< 8
-#endif
 					;
 
 				/* Move the address on */
@@ -223,5 +213,3 @@ label_retry:
 		}
 	}
 }
-
-#endif /* MySoundEnabled */

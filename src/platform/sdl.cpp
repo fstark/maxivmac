@@ -1998,7 +1998,6 @@ static bool InitLocationDat()
 
 /* --- sound --- */
 
-#if MySoundEnabled
 
 #define kLn2SoundBuffers 4 /* kSoundBuffers must be a power of two */
 #define kSoundBuffers (1 << kLn2SoundBuffers)
@@ -2014,8 +2013,8 @@ static bool InitLocationDat()
 #define kLnAllBuffLen (kLn2SoundBuffers + kLnOneBuffLen)
 #define kOneBuffLen (1UL << kLnOneBuffLen)
 #define kAllBuffLen (1UL << kLnAllBuffLen)
-#define kLnOneBuffSz (kLnOneBuffLen + kLn2SoundSampSz - 3)
-#define kLnAllBuffSz (kLnAllBuffLen + kLn2SoundSampSz - 3)
+#define kLnOneBuffSz (kLnOneBuffLen + 1)
+#define kLnAllBuffSz (kLnAllBuffLen + 1)
 #define kOneBuffSz (1UL << kLnOneBuffSz)
 #define kAllBuffSz (1UL << kLnAllBuffSz)
 #define kOneBuffMask (kOneBuffLen - 1)
@@ -2071,7 +2070,6 @@ static void MySound_Start0()
 	return TheSoundBuffer + (TheWriteOffset & kAllBuffMask);
 }
 
-#if 4 == kLn2SoundSampSz
 static void ConvertSoundBlockToNative(tpSoundSamp p)
 {
 	int i;
@@ -2080,16 +2078,11 @@ static void ConvertSoundBlockToNative(tpSoundSamp p)
 		*p++ -= 0x8000;
 	}
 }
-#else
-#define ConvertSoundBlockToNative(p)
-#endif
 
 static void MySound_WroteABlock()
 {
-#if (4 == kLn2SoundSampSz)
 	uint16_t PrevWriteOffset = TheWriteOffset - kOneBuffLen;
 	tpSoundSamp p = TheSoundBuffer + (PrevWriteOffset & kAllBuffMask);
-#endif
 
 #if dbglog_SoundStuff
 	dbglog_writeln("enter MySound_WroteABlock");
@@ -2162,21 +2155,9 @@ typedef uint16_t trSoundTemp;
 
 #define AudioStepVal 0x0040
 
-#if 3 == kLn2SoundSampSz
-#define ConvertTempSoundSampleFromNative(v) ((v) << 8)
-#elif 4 == kLn2SoundSampSz
 #define ConvertTempSoundSampleFromNative(v) ((v) + kCenterSound)
-#else
-#error "unsupported kLn2SoundSampSz"
-#endif
 
-#if 3 == kLn2SoundSampSz
-#define ConvertTempSoundSampleToNative(v) ((v) >> 8)
-#elif 4 == kLn2SoundSampSz
 #define ConvertTempSoundSampleToNative(v) ((v) - kCenterSound)
-#else
-#error "unsupported kLn2SoundSampSz"
-#endif
 
 static void SoundRampTo(trSoundTemp *last_val, trSoundTemp dst_val,
 	tpSoundSamp *stream, int *len)
@@ -2238,9 +2219,7 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 	trSoundTemp v1 = v0;
 	tpSoundSamp dst = (tpSoundSamp)stream;
 
-#if kLn2SoundSampSz > 3
-	len >>= (kLn2SoundSampSz - 3);
-#endif
+	len >>= 1; /* convert byte length to sample count (16-bit samples) */
 
 #if dbglog_SoundStuff
 	dbglog_writeln("Enter my_audio_callback");
@@ -2462,23 +2441,12 @@ static bool MySound_Init()
 
 #if 0 != SDL_MAJOR_VERSION
 	desired.freq = SOUND_SAMPLERATE;
-#if 3 == kLn2SoundSampSz
-	desired.format =
-	#if SDL_MAJOR_VERSION >= 3
-	SDL_AUDIO_U8;
-	#else
-	AUDIO_U8;
-	#endif
-#elif 4 == kLn2SoundSampSz
 	desired.format =
 	#if SDL_MAJOR_VERSION >= 3
 	SDL_AUDIO_S16;
 	#else
 	AUDIO_S16SYS;
 	#endif
-#else
-#error "unsupported audio format"
-#endif
 
 	desired.channels = 1;
 	#if SDL_MAJOR_VERSION >= 3
@@ -2539,7 +2507,6 @@ static void MySound_SecondNotify()
 	}
 }
 
-#endif /* MySoundEnabled */
 
 /* --- basic dialogs --- */
 
@@ -4663,18 +4630,14 @@ static void EnterBackground()
 
 static void LeaveSpeedStopped()
 {
-#if MySoundEnabled
 	MySound_Start();
-#endif
 
 	StartUpTimeAdjust();
 }
 
 static void EnterSpeedStopped()
 {
-#if MySoundEnabled
 	MySound_Stop();
-#endif
 }
 
 static void CheckForSavedTasks()
@@ -4948,9 +4911,7 @@ label_retry:
 	}
 
 	if (CheckDateTime()) {
-#if MySoundEnabled
 		MySound_SecondNotify();
-#endif
 	}
 
 	if ((! gBackgroundFlag)
@@ -5003,10 +4964,8 @@ static bool AllocMyMemory()
 #endif
 	if (!AllocBlock(&CLUT_final, CLUT_finalsz, false))
 		goto fail;
-#if MySoundEnabled
 	if (!AllocBlock((uint8_t **)&TheSoundBuffer, dbhBufferSize, false))
 		goto fail;
-#endif
 	if (!EmulationReserveAlloc())
 		goto fail;
 
@@ -5024,9 +4983,7 @@ static void UnallocMyMemory()
 	free(CntrlDisplayBuff); CntrlDisplayBuff = nullptr;
 #endif
 	free(CLUT_final); CLUT_final = nullptr;
-#if MySoundEnabled
 	free(TheSoundBuffer); TheSoundBuffer = nullptr;
-#endif
 	EmulationFreeAlloc();
 }
 
@@ -5070,9 +5027,7 @@ static bool InitOSGLU()
 	INIT_STEP("LoadInitialImages", LoadInitialImages())
 	INIT_STEP("InitLocationDat", InitLocationDat())
 	INIT_STEP("Screen_Init", Screen_Init())
-#if MySoundEnabled
 	INIT_STEP("MySound_Init", MySound_Init())
-#endif
 	INIT_STEP("CreateMainWindow", CreateMainWindow())
 	INIT_STEP("WaitForRom", WaitForRom())
 
@@ -5093,12 +5048,8 @@ static void UnInitOSGLU()
 
 	RestoreKeyRepeat();
 	UngrabMachine();
-#if MySoundEnabled
 	MySound_Stop();
-#endif
-#if MySoundEnabled
 	MySound_UnInit();
-#endif
 	UnInitPbufs();
 	UnInitDrives();
 

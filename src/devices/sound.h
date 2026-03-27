@@ -29,9 +29,7 @@ public:
 	void reset() override;
 	const char* name() const override { return "Sound"; }
 
-#ifdef MySoundEnabled
 	void subTick(int subTick);
-#endif
 
 private:
 	VIA1Device* via1() const;

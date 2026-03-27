@@ -219,27 +219,16 @@ extern uint32_t QuietSubTicks;
 	QuietSubTicks = 0; \
 }
 
-#if 3 == kLn2SoundSampSz
-using trSoundSamp = uint8_t;
-using tbSoundSamp = uint8_t;
-using tpSoundSamp = uint8_t *;
-#define kCenterSound 0x80
-#elif 4 == kLn2SoundSampSz
 using trSoundSamp = uint16_t;
 using tbSoundSamp = uint16_t;
 using tpSoundSamp = uint16_t *;
 #define kCenterSound 0x8000
-#else
-#error "unsupported kLn2SoundSampSz"
-#endif
 
-#if MySoundEnabled
 
 extern tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL);
 extern void MySound_EndWrite(uint16_t actL);
 
 /* 370 samples per tick = 22,254.54 per second */
-#endif
 
 #if EmLocalTalk
 

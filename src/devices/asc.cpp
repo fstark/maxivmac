@@ -515,21 +515,13 @@ static void ASC_ClearFIFO()
 	= {approx} (x - kCenterSound) / (8 - SoundVolume) + kCenterSound;
 */
 
-#if MySoundEnabled
 static const uint16_t vol_mult[] = {
 	8192, 9362, 10922, 13107, 16384, 21845, 32768
 };
 
 static const trSoundSamp vol_offset[] = {
-#if 3 == kLn2SoundSampSz
-	112, 110, 107, 103, 96, 86, 64, 0
-#elif 4 == kLn2SoundSampSz
 	28672, 28087, 27307, 26215, 24576, 21846, 16384, 0
-#else
-#error "unsupported kLn2SoundSampSz"
-#endif
 };
-#endif /* MySoundEnabled */
 
 static const uint8_t SubTick_n[kNumSubTicks] = {
 	23,  23,  23,  23,  23,  23,  23,  24,
@@ -539,27 +531,17 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 void ASCDevice::subTick(int SubTick)
 {
 	uint16_t actL;
-#if MySoundEnabled
 	tpSoundSamp p;
-#endif
 	uint16_t i;
 	uint16_t n = SubTick_n[SubTick];
-#if MySoundEnabled
 	uint8_t SoundVolume = SoundReg_Volume;
-#endif
 
-#if MySoundEnabled
 label_retry:
 	p = MySound_BeginWrite(n, &actL);
-#else
-	actL = n;
-#endif
 	if (actL > 0) {
 
 		if (1 == SoundReg801) {
-#if MySoundEnabled
 			uint8_t * addr;
-#endif
 
 			if (0 != (SoundReg802 & 2)) {
 
@@ -599,13 +581,10 @@ label_retry:
 					ASC_Playing = false;
 				}
 				if (! ASC_Playing) {
-#if MySoundEnabled
 					*p++ = 0x80;
-#endif
 				} else
 				{
 
-#if MySoundEnabled
 				addr = ASC_SampBuff + (ASC_FIFO_Out & 0x3FF);
 
 #if ASC_dolog && 1
@@ -622,11 +601,8 @@ label_retry:
 #endif
 
 				*p++ = ((addr[0] + addr[0x400])
-#if 4 == kLn2SoundSampSz
 					<< 8
-#endif
 					) >> 1;
-#endif /* MySoundEnabled */
 
 				ASC_FIFO_Out += 1;
 
@@ -653,13 +629,10 @@ label_retry:
 					ASC_Playing = false;
 				}
 				if (! ASC_Playing) {
-#if MySoundEnabled
 					*p++ = 0x80;
-#endif
 				} else
 				{
 
-#if MySoundEnabled
 				addr = ASC_SampBuff + (ASC_FIFO_Out & 0x3FF);
 
 #if ASC_dolog && 1
@@ -676,11 +649,8 @@ label_retry:
 #endif
 
 				*p++ = (addr[0])
-#if 4 == kLn2SoundSampSz
 					<< 8
-#endif
 					;
-#endif /* MySoundEnabled */
 
 				/* Move the address on */
 				/* *addr = 0x80; */
@@ -692,13 +662,11 @@ label_retry:
 
 			}
 		} else if (2 == SoundReg801) {
-#if MySoundEnabled
 			uint16_t v;
 			uint16_t i0;
 			uint16_t i1;
 			uint16_t i2;
 			uint16_t i3;
-#endif
 			uint32_t freq0 = do_get_mem_long(ASC_ChanA[0].freq);
 			uint32_t freq1 = do_get_mem_long(ASC_ChanA[1].freq);
 			uint32_t freq2 = do_get_mem_long(ASC_ChanA[2].freq);
@@ -725,7 +693,6 @@ label_retry:
 				phase2 += freq2;
 				phase3 += freq3;
 
-#if MySoundEnabled
 
 #if 1
 				i0 = ((phase0 + 0x4000) >> 15) & 0x1FF;
@@ -760,7 +727,6 @@ label_retry:
 #endif
 
 				*p++ = (v >> 2);
-#endif /* MySoundEnabled */
 			}
 
 			do_put_mem_long(ASC_ChanA[0].phase, phase0);
@@ -768,15 +734,12 @@ label_retry:
 			do_put_mem_long(ASC_ChanA[2].phase, phase2);
 			do_put_mem_long(ASC_ChanA[3].phase, phase3);
 		} else {
-#if MySoundEnabled
 			for (i = 0; i < actL; i++) {
 				*p++ = kCenterSound;
 			}
-#endif
 		}
 
 
-#if MySoundEnabled
 		if (SoundVolume < 7) {
 			/*
 				Usually have volume at 7, so this
@@ -797,7 +760,6 @@ label_retry:
 		if (n > 0) {
 			goto label_retry;
 		}
-#endif
 	}
 
 #if 1

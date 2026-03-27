@@ -20,9 +20,6 @@ set(MINIVMAC_HOMEPAGE "https://github.com/egrath" CACHE STRING "Project homepage
 
 # Screen dimensions are now runtime — see MachineConfig.
 
-# Sound
-set(MINIVMAC_SOUND "1" CACHE STRING "Enable sound (1/0)")
-
 # Drives
 set(MINIVMAC_NUM_DRIVES "6" CACHE STRING "Number of floppy drives")
 

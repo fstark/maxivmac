@@ -105,6 +105,7 @@ void PrintUsage(const char* progname)
 		"  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.\n"
 		"  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)\n"
 		"  --fullscreen     Start in fullscreen mode\n"
+		"  --silent         Disable audio output\n"
 		"  --title=TEXT     Window title\n"
 		"  --record=PATH    Record golden file for non-regression testing\n"
 		"  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)\n"
@@ -135,6 +136,10 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 		}
 		if (strcmp(arg, "--fullscreen") == 0) {
 			lc.fullscreen = true;
+			continue;
+		}
+		if (strcmp(arg, "--silent") == 0) {
+			lc.silent = true;
 			continue;
 		}
 
@@ -313,6 +318,7 @@ EmulatorConfig BuildEmulatorConfig(const LaunchConfig& launch)
 {
 	EmulatorConfig ec;
 	if (launch.fullscreen) ec.fullscreen = true;
+	if (launch.silent) ec.soundEnabled = false;
 	if (launch.speed > 0) ec.speed = launch.speed;
 	return ec;
 }
