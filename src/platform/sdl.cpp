@@ -27,11 +27,6 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 #define SDL_MAJOR_VERSION 0
 #endif
 
-#if EnableMagnify && SDL_MAJOR_VERSION >= 3
-	#undef EnableMagnify
-	#define EnableMagnify 0
-#endif
-
 #ifndef CanGetAppPath
 #if SDL_MAJOR_VERSION >= 2
 #define CanGetAppPath 1
@@ -651,9 +646,7 @@ static int vOffset;
 
 static bool UseFullScreen = false;
 
-#if EnableMagnify
-static bool UseMagnify = (WantInitMagnify != 0);
-#endif
+static bool UseMagnify = true;
 
 #ifndef UseSDLscaling
 #define UseSDLscaling 0
@@ -663,7 +656,7 @@ static bool gBackgroundFlag = false;
 static bool gTrueBackgroundFlag = false;
 static bool CurSpeedStopped = true;
 
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 #define MaxScale MyWindowScale
 #else
 #define MaxScale 1
@@ -695,7 +688,7 @@ static uint8_t * CLUT_final;
 		256 possible values of one byte
 		8 pixels per byte maximum (when black and white)
 		4 bytes per destination pixel maximum
-			multiplied by MyWindowScale if EnableMagnify
+			multiplied by MyWindowScale when magnified
 	*/
 
 #define ScrnMapr_DoMap UpdateBWDepth3Copy
@@ -725,7 +718,7 @@ static uint8_t * CLUT_final;
 
 #include "platform/common/screen_map.h"
 
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 
 #define ScrnMapr_DoMap UpdateBWDepth3ScaledCopy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -757,7 +750,7 @@ static uint8_t * CLUT_final;
 
 #include "platform/common/screen_map.h"
 
-#endif /* EnableMagnify && ! UseSDLscaling */
+#endif /* ! UseSDLscaling */
 
 
 /* Color copy functions for runtime depths 1, 2, 3 (CLUT-indexed).
@@ -838,7 +831,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Map CLUT_final
 #include "platform/common/screen_map.h"
 
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 
 #define ScrnMapr_DoMap UpdateColorSrc1Dst3ScaledCopy
 #define ScrnMapr_Src GetCurDrawBuff()
@@ -921,7 +914,7 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Scale MyWindowScale
 #include "platform/common/screen_map.h"
 
-#endif /* EnableMagnify && ! UseSDLscaling */
+#endif /* ! UseSDLscaling */
 
 
 static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
@@ -984,14 +977,12 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		YDest -= ViewVStart;
 	}
 
-#if EnableMagnify
 	if (UseMagnify) {
 		XDest *= MyWindowScale;
 		YDest *= MyWindowScale;
 		DestWidth *= MyWindowScale;
 		DestHeight *= MyWindowScale;
 	}
-#endif
 
 	if (UseFullScreen)
 	{
@@ -1006,7 +997,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	bottom2 = bottom;
 	right2 = right;
 
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 	if (UseMagnify) {
 		top2 *= MyWindowScale;
 		left2 *= MyWindowScale;
@@ -1046,7 +1037,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	#endif
 	uint32_t ExpectedPitch = vMacScreenWidth * bpp;
 
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 	if (UseMagnify) {
 		ExpectedPitch *= MyWindowScale;
 	}
@@ -1088,7 +1079,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	{
 		int k;
 		Uint32 v;
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 		int a;
 #endif
 		int PixPerByte =
@@ -1108,7 +1099,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 					v = BWLUT_pixel[(i >> k) & 1];
 				}
 
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 				for (a = UseMagnify ? MyWindowScale : 1; --a >= 0; )
 #endif
 				{
@@ -1132,7 +1123,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		ScalingBuff = (uint8_t *)pixels;
 
 		if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 			if (UseMagnify) {
 				switch (vMacScreenDepth) {
 					case 1: switch (bpp) { case 1: UpdateColorSrc1Dst3ScaledCopy(top,left,bottom,right); break; case 2: UpdateColorSrc1Dst4ScaledCopy(top,left,bottom,right); break; case 4: UpdateColorSrc1Dst5ScaledCopy(top,left,bottom,right); break; } break;
@@ -1149,7 +1140,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 				}
 			}
 		} else {
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 			if (UseMagnify) {
 				switch (bpp) {
 					case 1:
@@ -1194,7 +1185,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 				Uint8 *bufp = (Uint8 *)pixels
 					+ i * pitch + j * bpp;
 
-#if EnableMagnify && ! UseSDLscaling
+#if ! UseSDLscaling
 				if (UseMagnify) {
 					i0 /= MyWindowScale;
 					j0 /= MyWindowScale;
@@ -1366,12 +1357,10 @@ static bool MyMoveMouse(int16_t h, int16_t v)
 		v -= ViewVStart;
 	}
 
-#if EnableMagnify
 	if (UseMagnify) {
 		h *= MyWindowScale;
 		v *= MyWindowScale;
 	}
-#endif
 
 #if SDL_MAJOR_VERSION >= 2
 	if (UseFullScreen)
@@ -1405,12 +1394,10 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 	}
 #endif /* SDL_MAJOR_VERSION >= 2 */
 
-#if EnableMagnify
 	if (UseMagnify) {
 		NewMousePosh /= MyWindowScale;
 		NewMousePosv /= MyWindowScale;
 	}
-#endif
 
 	if (UseFullScreen)
 	{
@@ -1463,7 +1450,6 @@ static void MousePositionNotifyRelative(int deltah, int deltav)
 {
 	bool ShouldHaveCursorHidden = true;
 
-#if EnableMagnify
 	if (UseMagnify) {
 		/*
 			This is not really right. If only move one pixel
@@ -1472,7 +1458,6 @@ static void MousePositionNotifyRelative(int deltah, int deltav)
 		deltah /= MyWindowScale;
 		deltav /= MyWindowScale;
 	}
-#endif
 
 	MyMousePositionSetDelta(deltah,
 		deltav);
@@ -4097,9 +4082,7 @@ static bool ReCreateMainWindow()
 		UngrabMachine();
 	}
 
-#if EnableMagnify
 	UseMagnify = WantMagnify;
-#endif
 	UseFullScreen = WantFullScreen;
 
 	(void) CreateMainWindow();
@@ -4121,7 +4104,7 @@ static bool CreateMainWindow()
 	Uint32 flags = SDL_SWSURFACE;
 	bool v = false;
 
-#if EnableMagnify && 1
+#if 1
 	if (UseMagnify) {
 		NewWindowHeight *= MyWindowScale;
 		NewWindowWidth *= MyWindowScale;
@@ -4172,9 +4155,7 @@ static bool ReCreateMainWindow()
 		UngrabMachine();
 	}
 
-#if EnableMagnify
 	UseMagnify = WantMagnify;
-#endif
 	UseFullScreen = WantFullScreen;
 
 	(void) CreateMainWindow();
@@ -4191,9 +4172,7 @@ static bool ReCreateMainWindow()
 
 enum {
 	kMagStateNormal,
-#if EnableMagnify
 	kMagStateMagnifgy,
-#endif
 	kNumMagStates
 };
 
@@ -4231,7 +4210,7 @@ static bool CreateMainWindow()
 	;
 	bool v = false;
 
-#if EnableMagnify && 1
+#if 1
 	if (UseMagnify) {
 		NewWindowHeight *= MyWindowScale;
 		NewWindowWidth *= MyWindowScale;
@@ -4257,11 +4236,9 @@ static bool CreateMainWindow()
 	{
 		int WinIndx;
 
-#if EnableMagnify
 		if (UseMagnify) {
 			WinIndx = kMagStateMagnifgy;
 		} else
-#endif
 		{
 			WinIndx = kMagStateNormal;
 		}
@@ -4402,12 +4379,10 @@ static bool CreateMainWindow()
 
 			ViewHSize = wr;
 			ViewVSize = hr;
-#if EnableMagnify
 			if (UseMagnify) {
 				ViewHSize /= MyWindowScale;
 				ViewVSize /= MyWindowScale;
 			}
-#endif
 			if (ViewHSize >= vMacScreenWidth) {
 				ViewHStart = 0;
 				ViewHSize = vMacScreenWidth;
@@ -4490,9 +4465,7 @@ struct MyWState {
 	int f_hOffset;
 	int f_vOffset;
 	bool f_UseFullScreen;
-#if EnableMagnify
 	bool f_UseMagnify;
-#endif
 	int f_CurWinIndx;
 	SDL_Window *f_my_main_wind;
 	SDL_Renderer *f_my_renderer;
@@ -4517,9 +4490,7 @@ static void GetMyWState(MyWState *r)
 	r->f_hOffset = hOffset;
 	r->f_vOffset = vOffset;
 	r->f_UseFullScreen = UseFullScreen;
-#if EnableMagnify
 	r->f_UseMagnify = UseMagnify;
-#endif
 	r->f_CurWinIndx = CurWinIndx;
 	r->f_my_main_wind = my_main_wind;
 	r->f_my_renderer = my_renderer;
@@ -4538,9 +4509,7 @@ static void SetMyWState(MyWState *r)
 	hOffset = r->f_hOffset;
 	vOffset = r->f_vOffset;
 	UseFullScreen = r->f_UseFullScreen;
-#if EnableMagnify
 	UseMagnify = r->f_UseMagnify;
-#endif
 	CurWinIndx = r->f_CurWinIndx;
 	my_main_wind = r->f_my_main_wind;
 	my_renderer = r->f_my_renderer;
@@ -4549,19 +4518,13 @@ static void SetMyWState(MyWState *r)
 }
 #endif
 
-#if EnableMagnify
 enum {
 	kWinStateWindowed,
-#if EnableMagnify
 	kWinStateFullScreen,
-#endif
 	kNumWinStates
 };
-#endif
 
-#if EnableMagnify
 static int WinMagStates[kNumWinStates];
-#endif
 
 #if EnableRecreateW
 static bool ReCreateMainWindow()
@@ -4588,7 +4551,6 @@ static bool ReCreateMainWindow()
 #if HaveWorkingWarp
 	bool HadCursorHidden = HaveCursorHidden;
 #endif
-#if EnableMagnify
 	int OldWinState =
 		UseFullScreen ? kWinStateFullScreen : kWinStateWindowed;
 	int OldMagState =
@@ -4596,7 +4558,6 @@ static bool ReCreateMainWindow()
 
 	WinMagStates[OldWinState] =
 		OldMagState;
-#endif
 
 	if (! UseFullScreen)
 	{
@@ -4617,9 +4578,7 @@ static bool ReCreateMainWindow()
 
 	ZapMyWState();
 
-#if EnableMagnify
 	UseMagnify = WantMagnify;
-#endif
 	UseFullScreen = WantFullScreen;
 
 	if (! CreateMainWindow()) {
@@ -4628,9 +4587,7 @@ static bool ReCreateMainWindow()
 
 		/* avoid retry */
 		WantFullScreen = UseFullScreen;
-#if EnableMagnify
 		WantMagnify = UseMagnify;
-#endif
 
 	} else {
 		GetMyWState(&new_state);
@@ -4662,7 +4619,6 @@ static void ZapWinStateVars()
 			HavePositionWins[i] = false;
 		}
 	}
-#if EnableMagnify
 	{
 		int i;
 
@@ -4670,7 +4626,6 @@ static void ZapWinStateVars()
 			WinMagStates[i] = kMagStateAuto;
 		}
 	}
-#endif
 #endif /* SDL_MAJOR_VERSION >= 2 */
 }
 
@@ -4678,7 +4633,7 @@ void ToggleWantFullScreen()
 {
 	WantFullScreen = ! WantFullScreen;
 
-#if EnableMagnify && (SDL_MAJOR_VERSION >= 2)
+#if (SDL_MAJOR_VERSION >= 2)
 	{
 		int OldWinState =
 			UseFullScreen ? kWinStateFullScreen : kWinStateWindowed;
@@ -4801,9 +4756,7 @@ static void CheckForSavedTasks()
 
 #if EnableRecreateW
 	if (0
-#if EnableMagnify
 		|| (UseMagnify != WantMagnify)
-#endif
 		|| (UseFullScreen != WantFullScreen)
 		)
 	{

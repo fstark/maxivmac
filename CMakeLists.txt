@@ -26,9 +26,7 @@ set(MINIVMAC_SOUND "1" CACHE STRING "Enable sound (1/0)")
 # Drives
 set(MINIVMAC_NUM_DRIVES "6" CACHE STRING "Number of floppy drives")
 
-# Magnify / fullscreen / speed
-set(MINIVMAC_MAGNIFY_ENABLE "1" CACHE STRING "Allow magnification (1/0)")
-set(MINIVMAC_MAGNIFY_INIT   "1" CACHE STRING "Start magnified (1/0)")
+# Magnify / speed
 set(MINIVMAC_WINDOW_SCALE   "2" CACHE STRING "Window scale factor")
 set(MINIVMAC_SPEED "4" CACHE STRING "Initial speed value (0-5, 4=8x)")
 

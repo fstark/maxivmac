@@ -1428,9 +1428,7 @@ bool RunInBackground = (WantInitRunInBackground != 0);
 
 bool WantFullScreen = false;
 
-#if EnableMagnify
-bool WantMagnify = (WantInitMagnify != 0);
-#endif
+bool WantMagnify = true;
 
 /* NeedRequestInsertDisk, NeedDoMoreCommandsMsg, NeedDoAboutMsg,
    NeedRequestIthDisk defaults are provided by intl_chars.h */
@@ -1480,7 +1478,6 @@ char * GetSubstitutionStr(char x)
 			}
 			break;
 #endif
-#if EnableMagnify
 		case 'g':
 			if (WantMagnify) {
 				s = kStrOn;
@@ -1488,7 +1485,6 @@ char * GetSubstitutionStr(char x)
 				s = kStrOff;
 			}
 			break;
-#endif
 		case 'f':
 			if (WantFullScreen) {
 				s = kStrOn;

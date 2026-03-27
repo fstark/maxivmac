@@ -38,8 +38,6 @@
 #define MKC_formac_ROption MKC_Option
 #define MKC_formac_RShift MKC_Shift
 #define MKC_UnMappedKey  MKC_Control
-#define WantInitMagnify 1
-#define EnableMagnify 1
 #define MyWindowScale 2
 #define WantInitRunInBackground 0
 #define WantInitNotAutoSlow 0

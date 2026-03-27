@@ -28,11 +28,7 @@
 #define EnableFSMouseMotion 0
 #endif
 
-#if EnableMagnify
 #define EnableRecreateW 1
-#else
-#define EnableRecreateW 0
-#endif
 
 #if EnableRecreateW || EnableFSMouseMotion
 #define EnableMoveMouse 1

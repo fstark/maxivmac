@@ -287,9 +287,7 @@ extern bool RunInBackground;
 
 extern bool WantFullScreen;
 
-#if EnableMagnify
 extern bool WantMagnify;
-#endif
 
 /* Force all Need* to 1 — these variables are always compiled in intl_chars.cpp */
 #ifndef NeedRequestInsertDisk

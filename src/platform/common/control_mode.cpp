@@ -460,9 +460,7 @@ enum {
 
 enum {
 	kCntrlMsgBaseStart,
-#if EnableMagnify
 	kCntrlMsgMagnify,
-#endif
 	kCntrlMsgFullScreen,
 #if WantEnblCtrlRst
 	kCntrlMsgConfirmResetStart,
@@ -643,12 +641,10 @@ void DoControlModeKey(uint8_t key)
 					RequestInsertDisk = true;
 					break;
 #endif
-#if EnableMagnify
 				case MKC_M:
 					WantMagnify = ! WantMagnify;
 					ControlMessage = kCntrlMsgMagnify;
 					break;
-#endif
 				case MKC_F:
 					ToggleWantFullScreen();
 					ControlMessage = kCntrlMsgFullScreen;
@@ -864,9 +860,7 @@ void DrawCellsControlModeBody()
 #endif
 			DrawCellsKeyCommand("Q", kStrCmdQuit);
 			DrawCellsKeyCommand("S", kStrCmdSpeedControl);
-#if EnableMagnify
 			DrawCellsKeyCommand("M", kStrCmdMagnifyToggle);
-#endif
 			DrawCellsKeyCommand("F", kStrCmdFullScrnToggle);
 #if WantEnblCtrlKtg
 			DrawCellsKeyCommand("K", kStrCmdCtrlKeyToggle);
@@ -912,11 +906,9 @@ void DrawCellsControlModeBody()
 			DrawCellsOneLineStr(kStrNewAutoSlow);
 			break;
 #endif
-#if EnableMagnify
 		case kCntrlMsgMagnify:
 			DrawCellsOneLineStr(kStrNewMagnify);
 			break;
-#endif
 		case kCntrlMsgFullScreen:
 			DrawCellsOneLineStr(kStrNewFullScreen);
 			break;
