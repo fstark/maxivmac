@@ -54,11 +54,11 @@ for the full list.
   inline `static_cast` chains; `#define`s deleted from `machine.h`.
 - ✅ `tMacErr` → `enum class : uint16_t` with constexpr backward-compat
   aliases; `put_vm_word` call sites cast explicitly.
+- ✅ `MacModel` comparison operators added; `static_cast<int>` workarounds
+  removed from `rom.cpp`, `sony.cpp`, `machine.cpp`, etc.
 
 ### Remaining
 
-- ❌ `MacModel` comparison operators — enum class exists but code uses
-  `static_cast<int>` workarounds everywhere (see `rom.cpp`, `sony.cpp`).
 - ❌ `kATTA_*` → `constexpr` — still `#define` in `machine.h` (~8 macros,
   ~30+ usage sites in `m68k.cpp`).
 - ❌ `MKC_*` keycodes into own header — ~100 `#define`s still in
