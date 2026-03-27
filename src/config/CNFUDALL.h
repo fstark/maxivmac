@@ -12,7 +12,7 @@
 #define dbglog_HAVE 1
 #define WantAbnormalReports 0
 
-#define NumDrives 6
+constexpr int NumDrives = 6;
 
 /* vMacScreenWidth/Height/Depth are now runtime — see platform.h */
 /* kROM_Size is now runtime — see MachineConfig::romSize */
