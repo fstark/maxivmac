@@ -50,11 +50,11 @@ for the full list.
 - ✅ `LOCALIPROC` killed — expanded to `static void` in m68k.cpp (158 sites)
   and fpu_emdev.h (9 sites), `#define` deleted.
 - ✅ `Bit0`–`Bit7` replaced with `(1 << N)` in scc.cpp, `#define`s deleted.
+- ✅ `ui5r_FromSByte`/`ui5r_FromSWord`/`ui5r_FromSLong` replaced with
+  inline `static_cast` chains; `#define`s deleted from `machine.h`.
 
 ### Remaining
 
-- ❌ Replace `ui5r_FromSByte` / `ui5r_FromSWord` / `ui5r_FromSLong` —
-  ~20+ uses in `disasm.cpp` and `m68k.cpp`.
 - ❌ `tMacErr` → `enum class` — still a `using tMacErr = uint16_t` alias
   in `platform.h`.
 - ❌ `MacModel` comparison operators — enum class exists but code uses
