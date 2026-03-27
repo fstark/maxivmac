@@ -155,7 +155,7 @@ static void DisasmModeRegister(uint32_t themode, uint32_t thereg)
 				case 2 :
 					{
 						uint32_t s = Disasm_pc;
-						s += ui5r_FromSWord(Disasm_nextiword());
+						s += static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword()));
 						dbglog_writeCStr("(");
 						dbglog_writeHex(s);
 						dbglog_writeCStr(")");
@@ -215,11 +215,11 @@ static void DisasmI_xxxxxxxxssmmmrrr(char *s)
 	DisasmOpSizeFromb76();
 	dbglog_writeCStr(" #");
 	if (Disasm_opsize == 2) {
-		dbglog_writeHex(ui5r_FromSWord(Disasm_nextiword()));
+		dbglog_writeHex(static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword())));
 	} else if (Disasm_opsize < 2) {
-		dbglog_writeHex(ui5r_FromSByte(Disasm_nextibyte()));
+		dbglog_writeHex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_nextibyte())));
 	} else {
-		dbglog_writeHex(ui5r_FromSLong(Disasm_nextilong()));
+		dbglog_writeHex(static_cast<uint32_t>(Disasm_nextilong()));
 	}
 	dbglog_writeCStr(", ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
@@ -369,17 +369,17 @@ static inline void DisasmBcc()
 	dbglog_writeCStr(" ");
 
 	if (src == 0) {
-		s += ui5r_FromSWord(Disasm_nextiword());
+		s += static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword()));
 	} else
 #if Use68020
 	if (src == 255) {
-		s += ui5r_FromSLong(Disasm_nextilong());
+		s += static_cast<uint32_t>(Disasm_nextilong());
 		/* ReportAbnormal("long branch in DoCode6"); */
 		/* Used by various Apps */
 	} else
 #endif
 	{
-		s += ui5r_FromSByte(src);
+		s += static_cast<uint32_t>(static_cast<int8_t>(src));
 	}
 	dbglog_writeHex(s);
 	dbglog_writeReturn();
@@ -459,7 +459,7 @@ static inline void DisasmMoveQ()
 {
 	/* MoveQ 0111ddd0nnnnnnnn */
 	DisasmStartOne("MOVEQ #");
-	dbglog_writeHex(ui5r_FromSByte(Disasm_opcode));
+	dbglog_writeHex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_opcode)));
 	dbglog_writeCStr(", D");
 	dbglog_writeHex(Disasm_rg9);
 	dbglog_writeReturn();
@@ -848,7 +848,7 @@ static inline void DisasmBitOpND()
 	DisasmBinBitOp1();
 	Disasm_opsize = 4;
 	dbglog_writeCStr(" #");
-	dbglog_writeHex(ui5r_FromSByte(Disasm_nextibyte()));
+	dbglog_writeHex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_nextibyte())));
 	dbglog_writeCStr(", ");
 	DisasmModeRegister(0, Disasm_reg);
 	dbglog_writeReturn();
@@ -860,7 +860,7 @@ static inline void DisasmBitOpNM()
 	DisasmBinBitOp1();
 	Disasm_opsize = 1;
 	dbglog_writeCStr(" #");
-	dbglog_writeHex(ui5r_FromSByte(Disasm_nextibyte()));
+	dbglog_writeHex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_nextibyte())));
 	dbglog_writeCStr(", ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
 	dbglog_writeReturn();
@@ -1095,7 +1095,7 @@ static void DisasmBinOpStatusCCR()
 	}
 	DisasmOpSizeFromb76();
 	dbglog_writeCStr(" #");
-	dbglog_writeHex(ui5r_FromSWord(Disasm_nextiword()));
+	dbglog_writeHex(static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword())));
 	if (Disasm_b76 != 0) {
 		dbglog_writeCStr(", SR");
 	} else {

@@ -326,7 +326,7 @@ static void DoCodeFPU_DBcc()
 	int condition_true = CheckFPCondition(predicate);
 
 	if (! condition_true) {
-		uint32_t fdb_count = ui5r_FromSWord(m68k_dreg(thereg)) - 1;
+		uint32_t fdb_count = static_cast<uint32_t>(static_cast<int16_t>(m68k_dreg(thereg))) - 1;
 
 		m68k_dreg(thereg) =
 			(m68k_dreg(thereg) & ~ 0xFFFF) | (fdb_count & 0xFFFF);

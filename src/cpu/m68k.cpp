@@ -311,7 +311,7 @@ static inline uint16_t nextiword()
 
 static inline uint32_t nextiSByte()
 {
-	uint32_t r = ui5r_FromSByte(do_get_mem_byte(V_pc_p + 1));
+	uint32_t r = static_cast<uint32_t>(static_cast<int8_t>(do_get_mem_byte(V_pc_p + 1)));
 	V_pc_p += 2;
 
 #if USE_PCLIMIT
@@ -326,7 +326,7 @@ static inline uint32_t nextiSByte()
 static inline uint32_t nextiSWord()
 /* NOT sign extended */
 {
-	uint32_t r = ui5r_FromSWord(do_get_mem_word(V_pc_p));
+	uint32_t r = static_cast<uint32_t>(static_cast<int16_t>(do_get_mem_word(V_pc_p)));
 	V_pc_p += 2;
 
 #if USE_PCLIMIT
@@ -872,7 +872,7 @@ static uint32_t get_byte(uint32_t addr)
 	uint8_t * m = (addr & V_regs.MATCrdB.usemask) + V_regs.MATCrdB.usebase;
 
 	if ((addr & V_regs.MATCrdB.cmpmask) == V_regs.MATCrdB.cmpvalu) {
-		return ui5r_FromSByte(*m);
+		return static_cast<uint32_t>(static_cast<int8_t>(*m));
 	} else {
 		return get_byte_ext(addr);
 	}
@@ -896,7 +896,7 @@ static uint32_t get_word(uint32_t addr)
 {
 	uint8_t * m = (addr & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
 	if ((addr & V_regs.MATCrdW.cmpmask) == V_regs.MATCrdW.cmpvalu) {
-		return ui5r_FromSWord(do_get_mem_word(m));
+		return static_cast<uint32_t>(static_cast<int16_t>(do_get_mem_word(m)));
 	} else {
 		return get_word_ext(addr);
 	}
@@ -929,7 +929,7 @@ static uint32_t get_long_misaligned(uint32_t addr)
 		uint32_t Data = ((hi << 16) & 0xFFFF0000)
 			| (lo & 0x0000FFFF);
 
-		return ui5r_FromSLong(Data);
+		return static_cast<uint32_t>(Data);
 	} else {
 		return get_long_misaligned_ext(addr);
 	}
@@ -946,7 +946,7 @@ static uint32_t get_long(uint32_t addr)
 		uint8_t * m = (addr & V_regs.MATCrdL.usemask)
 			+ V_regs.MATCrdL.usebase;
 		if ((addr & V_regs.MATCrdL.cmpmask) == V_regs.MATCrdL.cmpvalu) {
-			return ui5r_FromSLong(do_get_mem_long(m));
+			return static_cast<uint32_t>(do_get_mem_long(m));
 		} else {
 			return get_long_ext(addr);
 		}
@@ -1255,17 +1255,17 @@ static inline uint32_t DecodeAddrSrcDst(DecArgR *f)
 
 static uint32_t DecodeGetSrcDst_RegB(uint8_t ArgDat)
 {
-	return ui5r_FromSByte(V_regs.regs[ArgDat]);
+	return static_cast<uint32_t>(static_cast<int8_t>(V_regs.regs[ArgDat]));
 }
 
 static uint32_t DecodeGetSrcDst_RegW(uint8_t ArgDat)
 {
-	return ui5r_FromSWord(V_regs.regs[ArgDat]);
+	return static_cast<uint32_t>(static_cast<int16_t>(V_regs.regs[ArgDat]));
 }
 
 static uint32_t DecodeGetSrcDst_RegL(uint8_t ArgDat)
 {
-	return ui5r_FromSLong(V_regs.regs[ArgDat]);
+	return static_cast<uint32_t>(V_regs.regs[ArgDat]);
 }
 
 static uint32_t DecodeGetSrcDst_IndirectB(uint8_t ArgDat)
@@ -1468,7 +1468,7 @@ static uint32_t DecodeGetSrcDst_ImmedW(uint8_t ArgDat)
 static uint32_t DecodeGetSrcDst_ImmedL(uint8_t ArgDat)
 {
 	UnusedParam(ArgDat);
-	return ui5r_FromSLong(nextilong());
+	return static_cast<uint32_t>(nextilong());
 }
 
 static uint32_t DecodeGetSrcDst_Dat4(uint8_t ArgDat)
@@ -1834,7 +1834,7 @@ static uint32_t DecodeGetSetSrcDst_RegB(uint8_t ArgDat)
 	V_regs.ArgAddr.rga = p;
 	V_regs.ArgSetDst = ArgSetDstRegBValue;
 
-	return ui5r_FromSByte(*p);
+	return static_cast<uint32_t>(static_cast<int8_t>(*p));
 }
 
 static uint32_t DecodeGetSetSrcDst_RegW(uint8_t ArgDat)
@@ -1844,7 +1844,7 @@ static uint32_t DecodeGetSetSrcDst_RegW(uint8_t ArgDat)
 	V_regs.ArgAddr.rga = p;
 	V_regs.ArgSetDst = ArgSetDstRegWValue;
 
-	return ui5r_FromSWord(*p);
+	return static_cast<uint32_t>(static_cast<int16_t>(*p));
 }
 
 static uint32_t DecodeGetSetSrcDst_RegL(uint8_t ArgDat)
@@ -1854,7 +1854,7 @@ static uint32_t DecodeGetSetSrcDst_RegL(uint8_t ArgDat)
 	V_regs.ArgAddr.rga = p;
 	V_regs.ArgSetDst = ArgSetDstRegLValue;
 
-	return ui5r_FromSLong(*p);
+	return static_cast<uint32_t>(*p);
 }
 
 static uint32_t getarg_byte(uint32_t a)
@@ -2804,7 +2804,7 @@ static void cctrue_AslB_CS(cond_actP t_act, cond_actP f_act)
 static void cctrue_AslB_VC(cond_actP t_act, cond_actP f_act)
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
-	uint32_t dst = ui5r_FromSByte(V_regs.LazyFlagArgDst << cnt);
+	uint32_t dst = static_cast<uint32_t>(static_cast<int8_t>(V_regs.LazyFlagArgDst << cnt));
 
 	if (Ui5rASR(dst, cnt) == V_regs.LazyFlagArgDst) {
 		t_act();
@@ -2816,7 +2816,7 @@ static void cctrue_AslB_VC(cond_actP t_act, cond_actP f_act)
 static void cctrue_AslB_VS(cond_actP t_act, cond_actP f_act)
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
-	uint32_t dst = ui5r_FromSByte(V_regs.LazyFlagArgDst << cnt);
+	uint32_t dst = static_cast<uint32_t>(static_cast<int8_t>(V_regs.LazyFlagArgDst << cnt));
 
 	if (Ui5rASR(dst, cnt) != V_regs.LazyFlagArgDst) {
 		t_act();
@@ -2850,7 +2850,7 @@ static void cctrue_AslW_CS(cond_actP t_act, cond_actP f_act)
 static void cctrue_AslW_VC(cond_actP t_act, cond_actP f_act)
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
-	uint32_t dst = ui5r_FromSWord(V_regs.LazyFlagArgDst << cnt);
+	uint32_t dst = static_cast<uint32_t>(static_cast<int16_t>(V_regs.LazyFlagArgDst << cnt));
 
 	if (Ui5rASR(dst, cnt) == V_regs.LazyFlagArgDst) {
 		t_act();
@@ -2862,7 +2862,7 @@ static void cctrue_AslW_VC(cond_actP t_act, cond_actP f_act)
 static void cctrue_AslW_VS(cond_actP t_act, cond_actP f_act)
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
-	uint32_t dst = ui5r_FromSWord(V_regs.LazyFlagArgDst << cnt);
+	uint32_t dst = static_cast<uint32_t>(static_cast<int16_t>(V_regs.LazyFlagArgDst << cnt));
 
 	if (Ui5rASR(dst, cnt) != V_regs.LazyFlagArgDst) {
 		t_act();
@@ -2896,7 +2896,7 @@ static void cctrue_AslL_CS(cond_actP t_act, cond_actP f_act)
 static void cctrue_AslL_VC(cond_actP t_act, cond_actP f_act)
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
-	uint32_t dst = ui5r_FromSLong(V_regs.LazyFlagArgDst << cnt);
+	uint32_t dst = static_cast<uint32_t>(V_regs.LazyFlagArgDst << cnt);
 
 	if (Ui5rASR(dst, cnt) == V_regs.LazyFlagArgDst) {
 		t_act();
@@ -2908,7 +2908,7 @@ static void cctrue_AslL_VC(cond_actP t_act, cond_actP f_act)
 static void cctrue_AslL_VS(cond_actP t_act, cond_actP f_act)
 {
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
-	uint32_t dst = ui5r_FromSLong(V_regs.LazyFlagArgDst << cnt);
+	uint32_t dst = static_cast<uint32_t>(V_regs.LazyFlagArgDst << cnt);
 
 	if (Ui5rASR(dst, cnt) != V_regs.LazyFlagArgDst) {
 		t_act();
@@ -3509,7 +3509,7 @@ static void NeedDefaultLazyFlagsCmpB()
 	uint32_t result0 = dst - src;
 	uint32_t result1 = ui5r_FromUByte(dst)
 		- ui5r_FromUByte(src);
-	uint32_t result = ui5r_FromSByte(result0);
+	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
 	NFLG = Bool2Bit(ui5r_MSBisSet(result));
@@ -3523,7 +3523,7 @@ static void NeedDefaultLazyFlagsCmpB()
 static void NeedDefaultLazyFlagsCmpW()
 {
 	uint32_t result0 = V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc;
-	uint32_t result = ui5r_FromSWord(result0);
+	uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
 	NFLG = Bool2Bit(ui5r_MSBisSet(result));
@@ -3544,7 +3544,7 @@ static void NeedDefaultLazyFlagsCmpL()
 {
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
-	uint32_t result = ui5r_FromSLong(dst - src);
+	uint32_t result = static_cast<uint32_t>(dst - src);
 
 	ZFLG = Bool2Bit(result == 0);
 
@@ -3571,7 +3571,7 @@ static void NeedDefaultLazyFlagsSubB()
 	uint32_t result0 = dst - src;
 	uint32_t result1 = ui5r_FromUByte(dst)
 		- ui5r_FromUByte(src);
-	uint32_t result = ui5r_FromSByte(result0);
+	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
 	NFLG = Bool2Bit(ui5r_MSBisSet(result));
@@ -3586,7 +3586,7 @@ static void NeedDefaultLazyFlagsSubB()
 static void NeedDefaultLazyFlagsSubW()
 {
 	uint32_t result0 = V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc;
-	uint32_t result = ui5r_FromSWord(result0);
+	uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
 	NFLG = Bool2Bit(ui5r_MSBisSet(result));
@@ -3608,7 +3608,7 @@ static void NeedDefaultLazyFlagsSubL()
 {
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
-	uint32_t result = ui5r_FromSLong(dst - src);
+	uint32_t result = static_cast<uint32_t>(dst - src);
 
 	ZFLG = Bool2Bit(result == 0);
 
@@ -3636,7 +3636,7 @@ static void NeedDefaultLazyFlagsAddB()
 	uint32_t result0 = dst + src;
 	uint32_t result1 = ui5r_FromUByte(dst)
 		+ ui5r_FromUByte(src);
-	uint32_t result = ui5r_FromSByte(result0);
+	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
 	NFLG = Bool2Bit(ui5r_MSBisSet(result));
@@ -3655,7 +3655,7 @@ static void NeedDefaultLazyFlagsAddW()
 	uint32_t result0 = dst + src;
 	uint32_t result1 = ui5r_FromUWord(dst)
 		+ ui5r_FromUWord(src);
-	uint32_t result = ui5r_FromSWord(result0);
+	uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
 	NFLG = Bool2Bit(ui5r_MSBisSet(result));
@@ -3673,7 +3673,7 @@ static void NeedDefaultLazyFlagsAddL()
 #if 1
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
-	uint32_t result = ui5r_FromSLong(dst + src);
+	uint32_t result = static_cast<uint32_t>(dst + src);
 
 	ZFLG = Bool2Bit(result == 0);
 	NFLG = Bool2Bit(ui5r_MSBisSet(result));
@@ -3691,8 +3691,8 @@ static void NeedDefaultLazyFlagsAddL()
 			+ ui5r_FromUWord(src)
 			+ MidCarry;
 		CFLG = (result1 >> 16);
-		result0 = ui5r_FromSWord(dst)
-			+ ui5r_FromSWord(src)
+		result0 = static_cast<uint32_t>(static_cast<int16_t>(dst))
+			+ static_cast<uint32_t>(static_cast<int16_t>(src))
 			+ MidCarry;
 		VFLG = (((result0 >> 1) ^ result0) >> 15) & 1;
 	}
@@ -3701,7 +3701,7 @@ static void NeedDefaultLazyFlagsAddL()
 	V_regs.LazyFlagKind = kLazyFlagsDefault;
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 #else
-	uint32_t result = ui5r_FromSLong(V_regs.LazyFlagArgDst
+	uint32_t result = static_cast<uint32_t>(V_regs.LazyFlagArgDst
 		+ V_regs.LazyFlagArgSrc);
 
 	NeedDefaultLazyFlagsAddCommon(result);
@@ -3726,7 +3726,7 @@ static void NeedDefaultLazyFlagsNegCommon(uint32_t dstvalue, uint32_t result)
 static void NeedDefaultLazyFlagsNegB()
 {
 	uint32_t dstvalue = V_regs.LazyFlagArgDst;
-	uint32_t result = ui5r_FromSByte(0 - dstvalue);
+	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(0 - dstvalue));
 
 	NeedDefaultLazyFlagsNegCommon(dstvalue, result);
 }
@@ -3734,7 +3734,7 @@ static void NeedDefaultLazyFlagsNegB()
 static void NeedDefaultLazyFlagsNegW()
 {
 	uint32_t dstvalue = V_regs.LazyFlagArgDst;
-	uint32_t result = ui5r_FromSWord(0 - dstvalue);
+	uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(0 - dstvalue));
 
 	NeedDefaultLazyFlagsNegCommon(dstvalue, result);
 }
@@ -3742,7 +3742,7 @@ static void NeedDefaultLazyFlagsNegW()
 static void NeedDefaultLazyFlagsNegL()
 {
 	uint32_t dstvalue = V_regs.LazyFlagArgDst;
-	uint32_t result = ui5r_FromSLong(0 - dstvalue);
+	uint32_t result = static_cast<uint32_t>(0 - dstvalue);
 
 	NeedDefaultLazyFlagsNegCommon(dstvalue, result);
 }
@@ -3772,10 +3772,10 @@ static void NeedDefaultLazyFlagsAslB()
 	uint32_t comparevalue;
 
 	dst = dst << (cnt - 1);
-	dst = ui5r_FromSByte(dst);
+	dst = static_cast<uint32_t>(static_cast<int8_t>(dst));
 	CFLG = Bool2Bit(ui5r_MSBisSet(dst));
 	dst = dst << 1;
-	dst = ui5r_FromSByte(dst);
+	dst = static_cast<uint32_t>(static_cast<int8_t>(dst));
 	comparevalue = Ui5rASR(dst, cnt);
 	VFLG = Bool2Bit(comparevalue != dstvalue0);
 	ZFLG = Bool2Bit(dst == 0);
@@ -3794,10 +3794,10 @@ static void NeedDefaultLazyFlagsAslW()
 	uint32_t comparevalue;
 
 	dst = dst << (cnt - 1);
-	dst = ui5r_FromSWord(dst);
+	dst = static_cast<uint32_t>(static_cast<int16_t>(dst));
 	CFLG = Bool2Bit(ui5r_MSBisSet(dst));
 	dst = dst << 1;
-	dst = ui5r_FromSWord(dst);
+	dst = static_cast<uint32_t>(static_cast<int16_t>(dst));
 	comparevalue = Ui5rASR(dst, cnt);
 	VFLG = Bool2Bit(comparevalue != dstvalue0);
 	ZFLG = Bool2Bit(dst == 0);
@@ -3816,10 +3816,10 @@ static void NeedDefaultLazyFlagsAslL()
 	uint32_t comparevalue;
 
 	dst = dst << (cnt - 1);
-	dst = ui5r_FromSLong(dst);
+	dst = static_cast<uint32_t>(dst);
 	CFLG = Bool2Bit(ui5r_MSBisSet(dst));
 	dst = dst << 1;
-	dst = ui5r_FromSLong(dst);
+	dst = static_cast<uint32_t>(dst);
 	comparevalue = Ui5rASR(dst, cnt);
 	VFLG = Bool2Bit(comparevalue != dstvalue0);
 	ZFLG = Bool2Bit(dst == 0);
@@ -4104,7 +4104,7 @@ static void DoCodeDBF()
 
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
-	uint32_t dstvalue = ui5r_FromSWord(*dstp);
+	uint32_t dstvalue = static_cast<uint32_t>(static_cast<int16_t>(*dstp));
 
 	--dstvalue;
 #if LittleEndianUnaligned
@@ -4149,7 +4149,7 @@ static void DoCodeSwap()
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t src = *dstp;
-	uint32_t dst = ui5r_FromSLong(((src >> 16) & 0xFFFF)
+	uint32_t dst = static_cast<uint32_t>(((src >> 16) & 0xFFFF)
 		| ((src & 0xFFFF) << 16));
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
@@ -4171,7 +4171,7 @@ static void DoCodeMoveA() /* MOVE */
 static void DoCodeMoveQ()
 {
 	/* MoveQ 0111ddd0nnnnnnnn */
-	uint32_t src = ui5r_FromSByte(V_regs.CurDecOpY.v[0].ArgDat);
+	uint32_t src = static_cast<uint32_t>(static_cast<int8_t>(V_regs.CurDecOpY.v[0].ArgDat));
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
@@ -4186,7 +4186,7 @@ static void DoCodeAddB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
-	uint32_t result = ui5r_FromSByte(dstvalue + srcvalue);
+	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(dstvalue + srcvalue));
 
 	V_regs.LazyFlagKind = kLazyFlagsAddB;
 	V_regs.LazyFlagArgSrc = srcvalue;
@@ -4205,7 +4205,7 @@ static void DoCodeAddW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
-	uint32_t result = ui5r_FromSWord(dstvalue + srcvalue);
+	uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(dstvalue + srcvalue));
 
 	V_regs.LazyFlagKind = kLazyFlagsAddW;
 	V_regs.LazyFlagArgSrc = srcvalue;
@@ -4224,7 +4224,7 @@ static void DoCodeAddL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
-	uint32_t result = ui5r_FromSLong(dstvalue + srcvalue);
+	uint32_t result = static_cast<uint32_t>(dstvalue + srcvalue);
 
 	V_regs.LazyFlagKind = kLazyFlagsAddL;
 	V_regs.LazyFlagArgSrc = srcvalue;
@@ -4243,7 +4243,7 @@ static void DoCodeSubB()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
-	uint32_t result = ui5r_FromSByte(dstvalue - srcvalue);
+	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(dstvalue - srcvalue));
 
 	V_regs.LazyFlagKind = kLazyFlagsSubB;
 	V_regs.LazyFlagArgSrc = srcvalue;
@@ -4262,7 +4262,7 @@ static void DoCodeSubW()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
-	uint32_t result = ui5r_FromSWord(dstvalue - srcvalue);
+	uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(dstvalue - srcvalue));
 
 	V_regs.LazyFlagKind = kLazyFlagsSubW;
 	V_regs.LazyFlagArgSrc = srcvalue;
@@ -4281,7 +4281,7 @@ static void DoCodeSubL()
 {
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
-	uint32_t result = ui5r_FromSLong(dstvalue - srcvalue);
+	uint32_t result = static_cast<uint32_t>(dstvalue - srcvalue);
 
 	V_regs.LazyFlagKind = kLazyFlagsSubL;
 	V_regs.LazyFlagArgSrc = srcvalue;
@@ -4691,7 +4691,7 @@ static void DoCodeAddXB()
 	{
 		uint32_t dstvalue = DecodeGetSrcSetDstValue();
 		uint32_t srcvalue = V_regs.SrcVal;
-		uint32_t result = ui5r_FromSByte(XFLG + dstvalue + srcvalue);
+		uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(XFLG + dstvalue + srcvalue));
 
 		SetCCRforAddX(dstvalue, srcvalue, result);
 	}
@@ -4708,7 +4708,7 @@ static void DoCodeAddXW()
 	{
 		uint32_t dstvalue = DecodeGetSrcSetDstValue();
 		uint32_t srcvalue = V_regs.SrcVal;
-		uint32_t result = ui5r_FromSWord(XFLG + dstvalue + srcvalue);
+		uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(XFLG + dstvalue + srcvalue));
 
 		SetCCRforAddX(dstvalue, srcvalue, result);
 	}
@@ -4739,7 +4739,7 @@ static void DoCodeAddXL()
 	{
 		uint32_t dstvalue = DecodeGetSrcSetDstValue();
 		uint32_t srcvalue = V_regs.SrcVal;
-		uint32_t result = ui5r_FromSLong(XFLG + dstvalue + srcvalue);
+		uint32_t result = static_cast<uint32_t>(XFLG + dstvalue + srcvalue);
 
 		SetCCRforAddX(dstvalue, srcvalue, result);
 	}
@@ -4772,7 +4772,7 @@ static void DoCodeSubXB()
 	{
 		uint32_t dstvalue = DecodeGetSrcSetDstValue();
 		uint32_t srcvalue = V_regs.SrcVal;
-		uint32_t result = ui5r_FromSByte(dstvalue - srcvalue - XFLG);
+		uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(dstvalue - srcvalue - XFLG));
 
 		SetCCRforSubX(dstvalue, srcvalue, result);
 	}
@@ -4789,7 +4789,7 @@ static void DoCodeSubXW()
 	{
 		uint32_t dstvalue = DecodeGetSrcSetDstValue();
 		uint32_t srcvalue = V_regs.SrcVal;
-		uint32_t result = ui5r_FromSWord(dstvalue - srcvalue - XFLG);
+		uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(dstvalue - srcvalue - XFLG));
 
 		SetCCRforSubX(dstvalue, srcvalue, result);
 	}
@@ -4800,7 +4800,7 @@ static void DoCodeSubXL()
 	if (kLazyFlagsSubL == V_regs.LazyFlagKind) {
 		uint32_t src = V_regs.LazyFlagArgSrc;
 		uint32_t dst = V_regs.LazyFlagArgDst;
-		uint32_t result = ui5r_FromSLong(dst - src);
+		uint32_t result = static_cast<uint32_t>(dst - src);
 
 		ZFLG = Bool2Bit(result == 0);
 		XFLG = Bool2Bit(((uint32_t)dst) < ((uint32_t)src));
@@ -4820,7 +4820,7 @@ static void DoCodeSubXL()
 	{
 		uint32_t dstvalue = DecodeGetSrcSetDstValue();
 		uint32_t srcvalue = V_regs.SrcVal;
-		uint32_t result = ui5r_FromSLong(dstvalue - srcvalue - XFLG);
+		uint32_t result = static_cast<uint32_t>(dstvalue - srcvalue - XFLG);
 
 		SetCCRforSubX(dstvalue, srcvalue, result);
 	}
@@ -4881,7 +4881,7 @@ static void DoCodeAslB()
 				DoCodeOverAsl(dstvalue);
 			}
 		} else {
-			uint32_t result = ui5r_FromSByte(dstvalue << cnt);
+			uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(dstvalue << cnt));
 
 			V_regs.LazyFlagKind = kLazyFlagsAslB;
 			V_regs.LazyFlagArgSrc = cnt;
@@ -4917,7 +4917,7 @@ static void DoCodeAslW()
 				DoCodeOverAsl(dstvalue);
 			}
 		} else {
-			uint32_t result = ui5r_FromSWord(dstvalue << cnt);
+			uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(dstvalue << cnt));
 
 			V_regs.LazyFlagKind = kLazyFlagsAslW;
 			V_regs.LazyFlagArgSrc = cnt;
@@ -4953,7 +4953,7 @@ static void DoCodeAslL()
 				DoCodeOverAsl(dstvalue);
 			}
 		} else {
-			uint32_t result = ui5r_FromSLong(dstvalue << cnt);
+			uint32_t result = static_cast<uint32_t>(dstvalue << cnt);
 
 			V_regs.LazyFlagKind = kLazyFlagsAslL;
 			V_regs.LazyFlagArgSrc = cnt;
@@ -5136,7 +5136,7 @@ static void DoCodeLslB()
 		} else {
 			CFLG = (dstvalue >> (8 - cnt)) & 1;
 			dstvalue = dstvalue << cnt;
-			dstvalue = ui5r_FromSByte(dstvalue);
+			dstvalue = static_cast<uint32_t>(static_cast<int8_t>(dstvalue));
 
 			ZFLG = Bool2Bit(dstvalue == 0);
 			NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -5171,7 +5171,7 @@ static void DoCodeLslW()
 		} else {
 			CFLG = (dstvalue >> (16 - cnt)) & 1;
 			dstvalue = dstvalue << cnt;
-			dstvalue = ui5r_FromSWord(dstvalue);
+			dstvalue = static_cast<uint32_t>(static_cast<int16_t>(dstvalue));
 
 			ZFLG = Bool2Bit(dstvalue == 0);
 			NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -5206,7 +5206,7 @@ static void DoCodeLslL()
 		} else {
 			CFLG = (dstvalue >> (32 - cnt)) & 1;
 			dstvalue = dstvalue << cnt;
-			dstvalue = ui5r_FromSLong(dstvalue);
+			dstvalue = static_cast<uint32_t>(dstvalue);
 
 			ZFLG = Bool2Bit(dstvalue == 0);
 			NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -5340,7 +5340,7 @@ static void DoCodeRxlB()
 		for (; cnt; --cnt) {
 			CFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
 			dstvalue = (dstvalue << 1) | XFLG;
-			dstvalue = ui5r_FromSByte(dstvalue);
+			dstvalue = static_cast<uint32_t>(static_cast<int8_t>(dstvalue));
 			XFLG = CFLG;
 		}
 
@@ -5367,7 +5367,7 @@ static void DoCodeRxlW()
 		for (; cnt; --cnt) {
 			CFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
 			dstvalue = (dstvalue << 1) | XFLG;
-			dstvalue = ui5r_FromSWord(dstvalue);
+			dstvalue = static_cast<uint32_t>(static_cast<int16_t>(dstvalue));
 			XFLG = CFLG;
 		}
 
@@ -5394,7 +5394,7 @@ static void DoCodeRxlL()
 		for (; cnt; --cnt) {
 			CFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
 			dstvalue = (dstvalue << 1) | XFLG;
-			dstvalue = ui5r_FromSLong(dstvalue);
+			dstvalue = static_cast<uint32_t>(dstvalue);
 			XFLG = CFLG;
 		}
 
@@ -5424,7 +5424,7 @@ static void DoCodeRxrB()
 			dstvalue = (dstvalue >> 1) | (((uint32_t)XFLG) << 7);
 			XFLG = CFLG;
 		}
-		dstvalue = ui5r_FromSByte(dstvalue);
+		dstvalue = static_cast<uint32_t>(static_cast<int8_t>(dstvalue));
 
 		ZFLG = Bool2Bit(dstvalue == 0);
 		NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -5452,7 +5452,7 @@ static void DoCodeRxrW()
 			dstvalue = (dstvalue >> 1) | (((uint32_t)XFLG) << 15);
 			XFLG = CFLG;
 		}
-		dstvalue = ui5r_FromSWord(dstvalue);
+		dstvalue = static_cast<uint32_t>(static_cast<int16_t>(dstvalue));
 
 		ZFLG = Bool2Bit(dstvalue == 0);
 		NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -5480,7 +5480,7 @@ static void DoCodeRxrL()
 			dstvalue = (dstvalue >> 1) | (((uint32_t)XFLG) << 31);
 			XFLG = CFLG;
 		}
-		dstvalue = ui5r_FromSLong(dstvalue);
+		dstvalue = static_cast<uint32_t>(dstvalue);
 
 		ZFLG = Bool2Bit(dstvalue == 0);
 		NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -5897,7 +5897,7 @@ static void DoCodeEXTL()
 	/* EXT.L */
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
-	uint32_t dstvalue = ui5r_FromSWord(*dstp);
+	uint32_t dstvalue = static_cast<uint32_t>(static_cast<int16_t>(*dstp));
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5912,7 +5912,7 @@ static void DoCodeEXTW()
 	/* EXT.W */
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
-	uint32_t dstvalue = ui5r_FromSByte(*dstp);
+	uint32_t dstvalue = static_cast<uint32_t>(static_cast<int8_t>(*dstp));
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5929,7 +5929,7 @@ static void DoCodeEXTW()
 static void DoCodeNegB()
 {
 	uint32_t dstvalue = DecodeGetSetDstValue();
-	uint32_t result = ui5r_FromSByte(0 - dstvalue);
+	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(0 - dstvalue));
 
 	V_regs.LazyFlagKind = kLazyFlagsNegB;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5944,7 +5944,7 @@ static void DoCodeNegB()
 static void DoCodeNegW()
 {
 	uint32_t dstvalue = DecodeGetSetDstValue();
-	uint32_t result = ui5r_FromSWord(0 - dstvalue);
+	uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(0 - dstvalue));
 
 	V_regs.LazyFlagKind = kLazyFlagsNegW;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5959,7 +5959,7 @@ static void DoCodeNegW()
 static void DoCodeNegL()
 {
 	uint32_t dstvalue = DecodeGetSetDstValue();
-	uint32_t result = ui5r_FromSLong(0 - dstvalue);
+	uint32_t result = static_cast<uint32_t>(0 - dstvalue);
 
 	V_regs.LazyFlagKind = kLazyFlagsNegL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5993,7 +5993,7 @@ static void DoCodeNegXB()
 
 	{
 		uint32_t dstvalue = DecodeGetSetDstValue();
-		uint32_t result = ui5r_FromSByte(0 - (XFLG + dstvalue));
+		uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(0 - (XFLG + dstvalue)));
 
 		SetCCRforNegX(dstvalue, result);
 	}
@@ -6009,7 +6009,7 @@ static void DoCodeNegXW()
 
 	{
 		uint32_t dstvalue = DecodeGetSetDstValue();
-		uint32_t result = ui5r_FromSWord(0 - (XFLG + dstvalue));
+		uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(0 - (XFLG + dstvalue)));
 
 		SetCCRforNegX(dstvalue, result);
 	}
@@ -6031,7 +6031,7 @@ static void DoCodeNegXL()
 
 	{
 		uint32_t dstvalue = DecodeGetSetDstValue();
-		uint32_t result = ui5r_FromSLong(0 - (XFLG + dstvalue));
+		uint32_t result = static_cast<uint32_t>(0 - (XFLG + dstvalue));
 
 		SetCCRforNegX(dstvalue, result);
 	}
@@ -6045,7 +6045,7 @@ static void DoCodeMulU()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t dstvalue = *dstp;
 
-	dstvalue = ui5r_FromSLong(ui5r_FromUWord(dstvalue)
+	dstvalue = static_cast<uint32_t>(ui5r_FromUWord(dstvalue)
 		* ui5r_FromUWord(srcvalue));
 #if WantCloserCyc
 	{
@@ -6076,7 +6076,7 @@ static void DoCodeMulS()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t dstvalue = *dstp;
 
-	dstvalue = ui5r_FromSLong((int32_t)(int16_t)dstvalue
+	dstvalue = static_cast<uint32_t>((int32_t)(int16_t)dstvalue
 		* (int32_t)(int16_t)srcvalue);
 #if WantCloserCyc
 	{
@@ -6456,7 +6456,7 @@ static void DoCodeAbcd()
 		if (CFLG != 0) {
 			newv += 0x60;
 		}
-		dstvalue = ui5r_FromSByte(newv);
+		dstvalue = static_cast<uint32_t>(static_cast<int8_t>(newv));
 		if (dstvalue != 0) {
 			ZFLG = 0;
 		}
@@ -6493,7 +6493,7 @@ static void DoCodeSbcd()
 		if (CFLG != 0) {
 			newv -= 0x60;
 		}
-		dstvalue = ui5r_FromSByte(newv);
+		dstvalue = static_cast<uint32_t>(static_cast<int8_t>(newv));
 		if (dstvalue != 0) {
 			ZFLG = 0;
 		}
@@ -6530,7 +6530,7 @@ static void DoCodeNbcd()
 			newv -= 0x60;
 		}
 
-		dstvalue = ui5r_FromSByte(newv);
+		dstvalue = static_cast<uint32_t>(static_cast<int8_t>(newv));
 		NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
 		if (dstvalue != 0) {
 			ZFLG = 0;
@@ -6764,7 +6764,7 @@ static void DoCodeLink()
 	m68k_areg(7) = stackp; /* only matters if dstreg == 7 + 8 */
 	put_long(stackp, *dstp);
 	*dstp = stackp;
-	m68k_areg(7) += ui5r_FromSWord(nextiword_nm());
+	m68k_areg(7) += static_cast<uint32_t>(static_cast<int16_t>(nextiword_nm()));
 }
 
 static void DoCodeUnlk()
@@ -6946,7 +6946,7 @@ static void DoCodeEXTBL()
 	/* EXTB.L */
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
-	uint32_t dstvalue = ui5r_FromSByte(*dstp);
+	uint32_t dstvalue = static_cast<uint32_t>(static_cast<int8_t>(*dstp));
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -6973,18 +6973,18 @@ static void DoCHK2orCMP2()
 	switch (V_regs.CurDecOpY.v[0].ArgDat) {
 		case 1:
 			if ((extra & 0x8000) == 0) {
-				regv = ui5r_FromSByte(*srcp);
+				regv = static_cast<uint32_t>(static_cast<int8_t>(*srcp));
 			} else {
-				regv = ui5r_FromSLong(*srcp);
+				regv = static_cast<uint32_t>(*srcp);
 			}
 			lower = get_byte(DstAddr);
 			upper = get_byte(DstAddr + 1);
 			break;
 		case 2:
 			if ((extra & 0x8000) == 0) {
-				regv = ui5r_FromSWord(*srcp);
+				regv = static_cast<uint32_t>(static_cast<int16_t>(*srcp));
 			} else {
-				regv = ui5r_FromSLong(*srcp);
+				regv = static_cast<uint32_t>(*srcp);
 			}
 			lower = get_word(DstAddr);
 			upper = get_word(DstAddr + 2);
@@ -6997,9 +6997,9 @@ static void DoCHK2orCMP2()
 			}
 #endif
 			if ((extra & 0x8000) == 0) {
-				regv = ui5r_FromSLong(*srcp);
+				regv = static_cast<uint32_t>(*srcp);
 			} else {
-				regv = ui5r_FromSLong(*srcp);
+				regv = static_cast<uint32_t>(*srcp);
 			}
 			lower = get_long(DstAddr);
 			upper = get_long(DstAddr + 4);
@@ -7035,10 +7035,10 @@ static void DoCAS()
 	ReportAbnormalID(0x010F, "CAS instruction");
 	switch (V_regs.CurDecOpY.v[0].ArgDat) {
 		case 1:
-			srcvalue = ui5r_FromSByte(V_regs.regs[rc]);
+			srcvalue = static_cast<uint32_t>(static_cast<int8_t>(V_regs.regs[rc]));
 			break;
 		case 2:
-			srcvalue = ui5r_FromSWord(V_regs.regs[rc]);
+			srcvalue = static_cast<uint32_t>(static_cast<int16_t>(V_regs.regs[rc]));
 			break;
 		default:
 #if ExtraAbnormalReports
@@ -7046,7 +7046,7 @@ static void DoCAS()
 				ReportAbnormalID(0x0110, "illegal opsize in DoCAS");
 			}
 #endif
-			srcvalue = ui5r_FromSLong(V_regs.regs[rc]);
+			srcvalue = static_cast<uint32_t>(V_regs.regs[rc]);
 			break;
 	}
 	dstvalue = DecodeGetSetDstValue();
@@ -7056,11 +7056,11 @@ static void DoCAS()
 		int flgo = ((int32_t)dstvalue) < 0;
 		uint32_t newv = dstvalue - srcvalue;
 		if (V_regs.CurDecOpY.v[0].ArgDat == 1) {
-			newv = ui5r_FromSByte(newv);
+			newv = static_cast<uint32_t>(static_cast<int8_t>(newv));
 		} else if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
-			newv = ui5r_FromSWord(newv);
+			newv = static_cast<uint32_t>(static_cast<int16_t>(newv));
 		} else {
-			newv = ui5r_FromSLong(newv);
+			newv = static_cast<uint32_t>(newv);
 		}
 		ZFLG = Bool2Bit(((int32_t)newv) == 0);
 		NFLG = Bool2Bit(((int32_t)newv) < 0);
@@ -8023,7 +8023,7 @@ static uint32_t GetArgValueL()
 		v = get_long(V_regs.ArgAddr.mem);
 	} else {
 		/* must be AKRegister */
-		v = ui5r_FromSLong(*V_regs.ArgAddr.rga);
+		v = static_cast<uint32_t>(*V_regs.ArgAddr.rga);
 	}
 
 	return v;
@@ -8039,7 +8039,7 @@ static uint32_t GetArgValueW()
 		v = get_word(V_regs.ArgAddr.mem);
 	} else {
 		/* must be AKRegister */
-		v = ui5r_FromSWord(*V_regs.ArgAddr.rga);
+		v = static_cast<uint32_t>(static_cast<int16_t>(*V_regs.ArgAddr.rga));
 	}
 
 	return v;
@@ -8055,7 +8055,7 @@ static uint32_t GetArgValueB()
 		v = get_byte(V_regs.ArgAddr.mem);
 	} else {
 		/* must be AKRegister */
-		v = ui5r_FromSByte(*V_regs.ArgAddr.rga);
+		v = static_cast<uint32_t>(static_cast<int8_t>(*V_regs.ArgAddr.rga));
 	}
 
 	return v;
@@ -8320,7 +8320,7 @@ Label_Retry:
 		Data = 0; /* fail */
 	}
 
-	return ui5r_FromSByte(Data);
+	return static_cast<uint32_t>(static_cast<int8_t>(Data));
 }
 
 static void put_byte_ext(uint32_t addr, uint32_t b)
@@ -8387,7 +8387,7 @@ Label_Retry:
 		}
 	}
 
-	return ui5r_FromSWord(Data);
+	return static_cast<uint32_t>(static_cast<int16_t>(Data));
 }
 
 static void put_word_ext(uint32_t addr, uint32_t w)
@@ -8431,7 +8431,7 @@ static uint32_t get_long_misaligned_ext(uint32_t addr)
 	uint32_t Data = ((hi << 16) & 0xFFFF0000)
 		| (lo & 0x0000FFFF);
 
-	return ui5r_FromSLong(Data);
+	return static_cast<uint32_t>(Data);
 }
 
 static void put_long_misaligned_ext(uint32_t addr, uint32_t l)
@@ -8482,7 +8482,7 @@ Label_Retry:
 		}
 	}
 
-	return ui5r_FromSLong(Data);
+	return static_cast<uint32_t>(Data);
 }
 #endif
 
@@ -8707,21 +8707,21 @@ void SetCyclesRemaining(int32_t n)
 void put_vm_byte(uint32_t addr, uint8_t b)
 {
 	Em_Enter();
-	put_byte(addr, ui5r_FromSByte(b));
+	put_byte(addr, static_cast<uint32_t>(static_cast<int8_t>(b)));
 	Em_Exit();
 }
 
 void put_vm_word(uint32_t addr, uint16_t w)
 {
 	Em_Enter();
-	put_word(addr, ui5r_FromSWord(w));
+	put_word(addr, static_cast<uint32_t>(static_cast<int16_t>(w)));
 	Em_Exit();
 }
 
 void put_vm_long(uint32_t addr, uint32_t l)
 {
 	Em_Enter();
-	put_long(addr, ui5r_FromSLong(l));
+	put_long(addr, static_cast<uint32_t>(l));
 	Em_Exit();
 }
 

@@ -81,9 +81,6 @@ extern uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
 extern bool AddrSpac_Init();
 
 
-#define ui5r_FromSByte(x) ((uint32_t)(int32_t)(int8_t)(uint8_t)(x))
-#define ui5r_FromSWord(x) ((uint32_t)(int32_t)(int16_t)(uint16_t)(x))
-#define ui5r_FromSLong(x) ((uint32_t)(int32_t)(int32_t)(uint32_t)(x))
 
 #define ui5r_FromUByte(x) ((uint32_t)(uint8_t)(x))
 #define ui5r_FromUWord(x) ((uint32_t)(uint16_t)(x))
