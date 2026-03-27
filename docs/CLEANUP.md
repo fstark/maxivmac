@@ -43,12 +43,11 @@ for the full list.
 - ✅ `Ui3rPowOf2` macro removed (no longer present in codebase).
 - ✅ `src/unused/` deleted (LTOVRUDP.h, LTOVRBPF.h, SGLUALSA.h, SGLUDDSP.h
   removed).
+- ✅ `#if 0` blocks stripped — 196 blocks removed across 29 files
+  (-1248 lines).  Valid `#if 0 !=` / `#if 0 ==` conditionals preserved.
 
 ### Remaining
 
-- ❌ Strip `#if 0` blocks — ~80+ instances remain across `m68k_tables.cpp`,
-  `m68k.cpp`, `fpu_math.h`, `sony.cpp`, `video.cpp`, `asc.cpp`, `disasm.cpp`,
-  `machine.cpp`, and others.  (Exclude valid `#if 0 != VAR` conditionals.)
 - ❌ `(void)` → `()` — 50+ sites remain, mostly in `sdl.cpp` and
   `src/unused/`.
 - ❌ Kill `LOCALIPROC` — still defined in `m68k.cpp`, used in ~34 function
