@@ -1,313 +1,98 @@
-# Cleanup Plan: Compile-Time #defines → Runtime Config
+# Compile-Time #defines Cleanup — Completed
 
-This plan eliminates the `MINIVMAC_*` CMake options and their generated
-`#define`s, replacing them with either hardcoded values (for pointless
-options) or runtime configuration (for useful preferences).
+All planned steps have been executed and verified against the 6-model
+golden test suite (Mac512Ke, MacPlus, MacSE, Classic, MacII, MacIIx).
 
-The key architectural insight: **`MachineConfig` describes the emulated
-hardware** (what the Mac sees). A new **`EmulatorConfig` describes the
-emulator's presentation** (what the user sees). This separation matters
-because:
+## Architecture
 
-- `MachineConfig` is fixed at startup — changing RAM or CPU mid-run
-  makes no sense.
-- `EmulatorConfig` is mutable at runtime — toggling fullscreen, changing
-  speed, or muting sound should be immediate, no restart needed.
-- A future UI panel maps cleanly: machine settings = startup dialog,
-  emulator settings = preferences / hotkeys.
+**`MachineConfig`** describes the emulated hardware (what the Mac sees).
+Fixed at startup.
 
----
+**`EmulatorConfig`** (`src/core/emulator_config.h`) describes the
+emulator's presentation (what the user sees). Mutable at runtime.
+Fields: `fullscreen`, `magnify`, `windowScale`, `soundEnabled`, `speed`.
 
-## Current State
+`BuildEmulatorConfig()` in `config_loader.cpp` constructs it from CLI
+flags. `GetEmulatorConfig()` / `GetEmulatorConfigMut()` in `main.h`
+provide access.
 
-### CMake options (CMakeLists.txt)
+## What Was Removed
 
-| CMake Variable | Template | Generated #define | Default |
-|---|---|---|---|
-| `MINIVMAC_SOUND` | CNFUDALL.h.in | `MySoundEnabled` | 1 |
-| `MINIVMAC_NUM_DRIVES` | CNFUDALL.h.in | `NumDrives` | 6 |
-| `MINIVMAC_ABNORMAL_REPORTS` | CNFUDALL.h.in | `WantAbnormalReports` | 0 |
-| `MINIVMAC_LOCALTALK` | CNFUDALL.h.in | `EmLocalTalk` | 0 |
-| `MINIVMAC_DBGLOG` | CNFUDALL.h.in | `dbglog_HAVE` | 1 |
-| `MINIVMAC_MAGNIFY_ENABLE` | CNFUDOSG.h.in | `EnableMagnify` | 1 |
-| `MINIVMAC_MAGNIFY_INIT` | CNFUDOSG.h.in | `WantInitMagnify` | 1 |
-| `MINIVMAC_WINDOW_SCALE` | CNFUDOSG.h.in | `MyWindowScale` | 2 |
-| `MINIVMAC_FULLSCREEN_VAR` | CNFUDOSG.h.in | `VarFullScreen` | 1 |
-| `MINIVMAC_FULLSCREEN_INIT` | CNFUDOSG.h.in | `WantInitFullScreen` | 0 |
-| `MINIVMAC_FULLSCREEN_MAY` | CNFUDOSG.h.in | `MayFullScreen` | 1 |
-| `MINIVMAC_FULLSCREEN_MAY_NOT` | CNFUDOSG.h.in | `MayNotFullScreen` | 1 |
-| `MINIVMAC_SPEED` | CNFUDOSG.h.in | `WantInitSpeedValue` | 4 |
+### CMake options removed
 
-### Hardcoded #defines in CNFUDALL.h.in (no CMake variable)
-
-These are already constants with no CMake knob. They will be addressed
-in the final cleanup pass (step 5 below).
-
-| #define | Value | Notes |
+| Former CMake Variable | Former #define | Disposition |
 |---|---|---|
-| `MySoundRecenterSilence` | 0 | Sound implementation detail |
-| `kLn2SoundSampSz` | 4 | Sound sample size (16-bit) |
-| `NonDiskProtect` | 1 | Always want disk protection |
-| `IncludeSonyRawMode` | 1 | Always want raw disk mode |
-| `IncludeSonyGetName` | 1 | Always want disk name support |
-| `IncludeSonyNew` | 1 | Always want new-disk support |
-| `IncludeSonyNameNew` | 1 | Always want named new-disk |
-| `IncludePbufs` | 1 | Always want param buffers |
-| `NumPbufs` | 4 | Param buffer count |
-| `EnableMouseMotion` | 1 | Always want mouse |
-| `IncludeHostTextClipExchange` | 1 | Always want clipboard |
-| `EnableAutoSlow` | 1 | Always want auto-slow |
-| `AutoLocation` | 1 | Always set Mac location |
-| `AutoTimeZone` | 1 | Always set Mac timezone |
+| `MINIVMAC_FULLSCREEN_VAR` | `VarFullScreen` | Guards deleted, code unconditional |
+| `MINIVMAC_FULLSCREEN_INIT` | `WantInitFullScreen` | → `EmulatorConfig::fullscreen` |
+| `MINIVMAC_FULLSCREEN_MAY` | `MayFullScreen` | Guards deleted |
+| `MINIVMAC_FULLSCREEN_MAY_NOT` | `MayNotFullScreen` | Guards deleted |
+| `MINIVMAC_MAGNIFY_ENABLE` | `EnableMagnify` | Guards deleted |
+| `MINIVMAC_MAGNIFY_INIT` | `WantInitMagnify` | → `EmulatorConfig::magnify` |
+| `MINIVMAC_SOUND` | `MySoundEnabled` | Guards deleted; `--silent` flag added |
+| `MINIVMAC_WINDOW_SCALE` | `MyWindowScale` | → `EmulatorConfig::windowScale`; `--scale` flag added |
+| `MINIVMAC_SPEED` | `WantInitSpeedValue` | → `EmulatorConfig::speed`; `--speed` wired |
+| `MINIVMAC_NUM_DRIVES` | `NumDrives` | → `constexpr int NumDrives = 6` in CNFUDALL.h |
 
-### Hardcoded #defines in CNFUDOSG.h.in (no CMake variable)
+### Hardcoded #defines removed from CNFUDALL.h.in
 
-| #define | Value | Notes |
+| Former #define | Disposition |
+|---|---|
+| `MySoundRecenterSilence` | Deleted (unused, always 0) |
+| `kLn2SoundSampSz` | Inlined (always 4); `#if` branches for value 3 deleted |
+| `NonDiskProtect` | Guards deleted, code unconditional |
+| `IncludeSonyRawMode` | Guards deleted |
+| `IncludeSonyGetName` | Guards deleted |
+| `IncludeSonyNew` | Guards deleted |
+| `IncludeSonyNameNew` | Guards deleted |
+| `IncludePbufs` | Guards deleted |
+| `EnableMouseMotion` | Guards deleted |
+| `IncludeHostTextClipExchange` | Guards deleted |
+| `EnableAutoSlow` | Guards deleted |
+| `AutoLocation` | Guards deleted |
+| `AutoTimeZone` | Guards deleted |
+| `NumPbufs` | → `constexpr int NumPbufs = 4` in CNFUDALL.h |
+
+## What Remains
+
+### CNFUDALL.h.in / CNFUDALL.h
+
+| #define | CMake Variable | Rationale |
 |---|---|---|
-| `SaveDialogEnable` | 1 | Always want save dialogs |
-| `EnableAltKeysMode` | 0 | Alternative key mapping off |
-| `MKC_formac_*` | various | Key mappings — separate concern |
-| `MKC_UnMappedKey` | MKC_Control | Unmapped key target |
-| `WantInitRunInBackground` | 0 | Background running default |
-| `WantInitNotAutoSlow` | 0 | Auto-slow enabled by default |
-| `WantEnblCtrlInt` | 1 | Control-mode interrupt |
-| `WantEnblCtrlRst` | 1 | Control-mode reset |
-| `WantEnblCtrlKtg` | 1 | Control-mode key toggle |
-| `UseControlKeys` | 1 | Control key mode |
-| `NeedIntlChars` | 0 | International chars |
-| `kBldOpts` | string | Build description — keep? |
+| `dbglog_HAVE` | `MINIVMAC_DBGLOG` | Debug logging overhead; compile-time gate |
+| `WantAbnormalReports` | `MINIVMAC_ABNORMAL_REPORTS` | Debug diagnostic |
+| `EmLocalTalk` | `MINIVMAC_LOCALTALK` | Gates ~600 lines of networking code |
 
----
+Plus `constexpr int NumDrives = 6` and `constexpr int NumPbufs = 4`.
 
-## New Architecture
+### CNFUDOSG.h.in / CNFUDOSG.h
 
-### EmulatorConfig struct
-
-```cpp
-// src/core/emulator_config.h
-
-struct EmulatorConfig {
-    // Display
-    bool     fullscreen   = false;   // start fullscreen
-    bool     magnify      = true;    // enable pixel scaling
-    uint8_t  windowScale  = 2;       // 1x, 2x, 3x, ...
-
-    // Audio
-    bool     soundEnabled = true;    // audio output
-
-    // Speed
-    int      speed        = 4;       // 0=all-out, 1=1x, 2=2x, 3=4x, 4=8x, 5=16x
-
-    // Background behavior
-    bool     runInBackground = false;
-    bool     autoSlow        = true;
-};
-```
-
-### LaunchConfig changes
-
-`LaunchConfig` gains fields that map to `EmulatorConfig`:
-
-```cpp
-// Already exists:
-int  speed;
-bool fullscreen;
-
-// Add:
-bool silent      = false;   // --silent
-int  windowScale = 0;       // --scale=N (0 = use default)
-```
-
-### BuildEmulatorConfig
-
-New function alongside `BuildMachineConfig`:
-
-```cpp
-EmulatorConfig BuildEmulatorConfig(const LaunchConfig& launch);
-```
-
-### Access pattern
-
-The platform layer (`sdl.cpp`) currently reads `#define`s at startup into
-mutable globals (`UseFullScreen`, `UseMagnify`, `SpeedValue`). Those
-globals become reads/writes on `EmulatorConfig`, which the platform holds
-by reference. The emulator core (`Machine`, devices) never touches
-`EmulatorConfig` — it only knows `MachineConfig`.
-
----
-
-## Execution Plan
-
-Each step is one or more commits. Every commit runs the 6-model
-verification (Mac512Ke, MacPlus, MacSE, Classic, MacII, MacIIx).
-
-### Step 1: Create EmulatorConfig (infrastructure)
-
-- [ ] Create `src/core/emulator_config.h` with the struct above.
-- [ ] Add `EmulatorConfig BuildEmulatorConfig(const LaunchConfig&)` to
-      `config_loader.h/cpp`.
-- [ ] Thread `EmulatorConfig` into the platform init path alongside
-      `MachineConfig` (just plumbing — not used yet).
-- [ ] Verify: no behavior change, all golden files pass.
-
-### Step 2: Tier 1 — remove pointless gate defines
-
-These options exist only to disable features at compile time. Nobody
-builds an emulator that can't go fullscreen. Remove the `#if` guards,
-keep the code unconditionally.
-
-**2a: Fullscreen gates**
-
-- [ ] Remove `VarFullScreen` — delete all `#if VarFullScreen` / `#endif`,
-      keep the code inside unconditionally.
-- [ ] Remove `MayFullScreen` — same treatment. All fullscreen viewport
-      code becomes unconditional.
-- [ ] Remove `MayNotFullScreen` — same.
-- [ ] Remove `WantInitFullScreen` — replace the one use
-      (`static bool UseFullScreen = (WantInitFullScreen != 0)`) with
-      reading `EmulatorConfig::fullscreen`.
-- [ ] Remove from CNFUDOSG.h.in and CMakeLists.txt: `MINIVMAC_FULLSCREEN_VAR`,
-      `MINIVMAC_FULLSCREEN_INIT`, `MINIVMAC_FULLSCREEN_MAY`,
-      `MINIVMAC_FULLSCREEN_MAY_NOT`.
-
-**2b: Magnify gate**
-
-- [ ] Remove `EnableMagnify` — delete all `#if EnableMagnify` / `#endif`,
-      keep magnification code unconditional.
-- [ ] Remove `WantInitMagnify` — replace use with `EmulatorConfig::magnify`.
-- [ ] Remove from CNFUDOSG.h.in and CMakeLists.txt: `MINIVMAC_MAGNIFY_ENABLE`,
-      `MINIVMAC_MAGNIFY_INIT`.
-
-**2c: CNFUDALL.h.in hardcoded constants**
-
-These already have no CMake variable — they're just `#define`s that
-should be plain constants or deleted:
-
-- [ ] `NonDiskProtect`, `IncludeSonyRawMode`, `IncludeSonyGetName`,
-      `IncludeSonyNew`, `IncludeSonyNameNew` — verify they are only
-      tested as `#if X` where X=1, then delete the defines, remove the
-      `#if`/`#endif` wrapping, keep the code.
-- [ ] `IncludePbufs`, `NumPbufs` — same. `NumPbufs` becomes a constexpr.
-- [ ] `EnableMouseMotion` — same.
-- [ ] `IncludeHostTextClipExchange` — same.
-- [ ] `AutoLocation`, `AutoTimeZone` — same.
-- [ ] `EnableAutoSlow` — same. (The auto-slow *behavior* later becomes
-      an `EmulatorConfig` toggle, but the code stays compiled in.)
-
-### Step 3: Tier 2 — move useful options to EmulatorConfig
-
-**3a: `MySoundEnabled` → `EmulatorConfig::soundEnabled`**
-
-This is the exemplar for the pattern.
-
-- [ ] Add `--silent` flag to `LaunchConfig` / CLI parser.
-- [ ] Wire `EmulatorConfig::soundEnabled` from `LaunchConfig::silent`.
-- [ ] In `sound.cpp`: remove `#if MySoundEnabled`, wrap the audio
-      *output* path (not the device emulation) with a runtime check.
-      The Sound device always runs its logic (the Mac OS expects the
-      VIA sound interrupt); only the final PCM output to SDL is gated.
-- [ ] In `asc.cpp`: same — the ASC registers are always emulated (Mac
-      software reads/writes them), but the audio buffer fill is gated
-      by `soundEnabled`.
-- [ ] Remove `MySoundEnabled` from CNFUDALL.h.in.
-- [ ] Remove `MINIVMAC_SOUND` from CMakeLists.txt.
-- [ ] `MySoundRecenterSilence` (always 0) — just delete.
-- [ ] `kLn2SoundSampSz` (always 4) — convert to constexpr in sound.h.
-
-**3b: `MyWindowScale` → `EmulatorConfig::windowScale`**
-
-- [ ] Add `--scale=N` flag to `LaunchConfig` / CLI parser.
-- [ ] Wire `EmulatorConfig::windowScale` from launch config.
-- [ ] In `sdl.cpp`: replace `MyWindowScale` reads with
-      `emulatorConfig.windowScale`. The many `#define ScrnMapr_Scale
-      MyWindowScale` blocks become `ScrnMapr_Scale` reading from config.
-- [ ] Remove `MyWindowScale` from CNFUDOSG.h.in.
-- [ ] Remove `MINIVMAC_WINDOW_SCALE` from CMakeLists.txt.
-
-**3c: `WantInitSpeedValue` → `EmulatorConfig::speed`**
-
-- [ ] Already have `--speed=N` in CLI. Wire it to `EmulatorConfig::speed`.
-- [ ] Replace `SpeedValue = WantInitSpeedValue` in `osglu_common.cpp`
-      with `SpeedValue = emulatorConfig.speed`.
-- [ ] Remove `WantInitSpeedValue` from CNFUDOSG.h.in.
-- [ ] Remove `MINIVMAC_SPEED` from CMakeLists.txt.
-
-**3d: `NumDrives` → constexpr**
-
-Not really an emulator option — 6 drives is universally correct. Just
-make it a constexpr and remove the CMake knob.
-
-- [ ] Replace `#define NumDrives @MINIVMAC_NUM_DRIVES@` with
-      `constexpr int NumDrives = 6;` in an appropriate header.
-- [ ] Remove `MINIVMAC_NUM_DRIVES` from CMakeLists.txt.
-
-### Step 4: Tier 3 — keep as compile-time (for now)
-
-These stay as `#define`s with CMake variables because they have real
-compile-time implications:
-
-| Define | Rationale |
+| #define | Notes |
 |---|---|
-| `dbglog_HAVE` | Debug logging overhead; keep build-time gate |
-| `WantAbnormalReports` | Same — debug diagnostic |
-| `EmLocalTalk` | Gates ~600 lines of networking + potential deps |
+| `SaveDialogEnable` | Always 1 |
+| `EnableAltKeysMode` | Always 0 |
+| `MKC_formac_*` | Key mappings — separate cleanup concern |
+| `MKC_UnMappedKey` | Always MKC_Control |
+| `WantInitRunInBackground` | Always 0 |
+| `WantEnblCtrlInt/Rst/Ktg` | Control-mode toggles, all 1 |
+| `UseControlKeys` | Always 1 |
+| `NeedIntlChars` | Always 0 |
+| `kBldOpts` | Build description string |
 
-These can be revisited later when the codebase is cleaner. LocalTalk
-in particular may eventually become a runtime toggle if it gets a proper
-device abstraction.
+### CNFUIOSG.h.in
 
-### Step 5: Final cleanup of config headers
+Backend selection and app identity strings. Genuine build-time choices.
 
-After steps 1–4, the `.h.in` templates will be significantly slimmer.
-This step cleans up the residue:
+### STRCONST.h.in
 
-- [ ] CNFUDALL.h.in: only `dbglog_HAVE`, `WantAbnormalReports`,
-      `EmLocalTalk` remain as CMake-substituted values. The rest are
-      either deleted or converted to constexpr in source headers.
-      Consider whether this file is still needed at all.
-- [ ] CNFUDOSG.h.in: key mappings (`MKC_formac_*`), control mode toggles
-      (`WantEnblCtrlInt/Rst/Ktg`, `UseControlKeys`), and the `kBldOpts`
-      string remain. These are a separate cleanup concern (key mappings
-      should probably be in their own header, not generated).
-- [ ] CNFUIOSG.h.in: backend selection and app identity strings. Keep
-      as-is — these are genuine build-time choices.
-- [ ] STRCONST.h.in: language header include. Separate plan (noted in
-      CMakeLists.txt).
-- [ ] Remove emptied CMake variables from CMakeLists.txt.
+Language header includes. Separate concern.
 
----
+## Future Work
 
-## Pattern for Each Define Removal
-
-Repeatable procedure for every define:
-
-```
-1. grep -rn DEFINE_NAME src/ cmake/
-2. Classify each use:
-   - #if DEFINE_NAME ... #endif  →  remove guards, keep body
-   - value reference (= DEFINE_NAME)  →  replace with config read or constexpr
-3. Edit source files
-4. Remove from .h.in template
-5. Remove CMake variable (if any) from CMakeLists.txt
-6. Build + verify (6 models)
-7. Commit
-```
-
----
-
-## Files Modified Per Step
-
-| Step | Files touched |
-|---|---|
-| 1 | `emulator_config.h` (new), `config_loader.h/cpp`, `main.cpp`, `sdl.cpp` |
-| 2a | `sdl.cpp`, `intl_chars.cpp`, `CNFUDOSG.h.in`, `CMakeLists.txt` |
-| 2b | `sdl.cpp`, `intl_chars.cpp`, `CNFUDOSG.h.in`, `CMakeLists.txt` |
-| 2c | `sdl.cpp`, `osglu_common.cpp`, `control_mode.cpp`, `param_buffers.cpp`, `sony.cpp`, `CNFUDALL.h.in` |
-| 3a | `sound.h`, `sound.cpp`, `asc.cpp`, `config_loader.cpp`, `CNFUDALL.h.in`, `CMakeLists.txt` |
-| 3b | `sdl.cpp`, `config_loader.cpp`, `CNFUDOSG.h.in`, `CMakeLists.txt` |
-| 3c | `osglu_common.cpp`, `config_loader.cpp`, `CNFUDOSG.h.in`, `CMakeLists.txt` |
-| 3d | `sony.cpp`, `machine.cpp`, `CNFUDALL.h.in`, `CMakeLists.txt` |
-| 5 | `CNFUDALL.h.in`, `CNFUDOSG.h.in`, `CMakeLists.txt` |
+- Key mappings (`MKC_formac_*`) should move to their own header.
+- `WantInitRunInBackground` could become `EmulatorConfig::runInBackground`.
+- `EmLocalTalk` could become runtime when networking gets a device abstraction.
+- `dbglog_HAVE` / `WantAbnormalReports` could become runtime if debug
+  logging overhead becomes negligible.
 
 ---
 
