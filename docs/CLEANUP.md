@@ -47,11 +47,11 @@ for the full list.
   (-1248 lines).  Valid `#if 0 !=` / `#if 0 ==` conditionals preserved.
 - ✅ `(void)` → `()` — parameter lists cleaned across m68k.cpp,
   control_mode.cpp, and all macsrc files (188 sites).
+- ✅ `LOCALIPROC` killed — expanded to `static void` in m68k.cpp (158 sites)
+  and fpu_emdev.h (9 sites), `#define` deleted.
 
 ### Remaining
 
-- ❌ Kill `LOCALIPROC` — still defined in `m68k.cpp`, used in ~34 function
-  definitions across `m68k.cpp` and `fpu_emdev.h`.
 - ❌ Replace `Bit0`–`Bit7` — still `#define`d and used in `scc.cpp`.
 - ❌ Replace `ui5r_FromSByte` / `ui5r_FromSWord` / `ui5r_FromSLong` —
   ~20+ uses in `disasm.cpp` and `m68k.cpp`.
