@@ -52,6 +52,7 @@ set(MINIVMAC_SOURCES
     src/cpu/m68k_tables.cpp
     src/cpu/m68k.cpp
     src/cpu/cpu.cpp
+    src/devices/via_base.cpp
     src/devices/via.cpp
     src/devices/via2.cpp
     src/devices/iwm.cpp

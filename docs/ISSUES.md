@@ -167,135 +167,11 @@ refactoring, which lets the debt compound.
 
 ---
 
-## The 20 Easiest "Most Buck for the Bang" Wins
+## The 9 Easiest "Most Buck for the Bang" Wins
 
 Ordered roughly by effort (easiest first).
 
-### 1. Replace `(void)` with `()` everywhere
-
-*Effort: ~10 minutes with sed.  Fixes 1,745 instances.*
-
-```
-find src/ -name '*.cpp' -o -name '*.h' -o -name '*.mm' | xargs sed -i '' 's/(void)/()/g'
-```
-
-A C-ism unnecessary in C++.  Trivial, zero risk, instant modernization signal.
-
-### 2. Delete the `unused/` directory
-
-*Effort: ~1 minute.  Removes 2,686 lines.*
-
-Four files (`LTOVRBPF.h`, `LTOVRUDP.h`, `SGLUALSA.h`, `SGLUDDSP.h`) sitting
-in `src/unused/`.  Nothing includes them.  They're dead weight in the tree and
-in searches.  `git rm -r src/unused/`.
-
-### 3. Kill the `LOCALIPROC` macro
-
-*Effort: ~15 minutes with sed.  Affects `m68k.cpp` (159 uses) and
-`fpu_emdev.h` (9 uses).*
-
-```
-sed -i '' 's/LOCALIPROC/static void/g' src/cpu/m68k.cpp src/cpu/fpu_emdev.h
-```
-
-Then delete the `#define LOCALIPROC static void` line.  No behavior change.
-
-### 4. Replace `Bit0`–`Bit7` defines with `(1 << n)` in `scc.cpp`
-
-*Effort: ~15 minutes.  8 defines, ~120 use sites.*
-
-```cpp
-// Before
-#define Bit0 1
-#define Bit5 32
-if (Data & Bit5) ...
-
-// After
-if (Data & (1 << 5)) ...
-```
-
-Or better: name the actual SCC register bits (`kSCC_RR0_RxCharAvail`,
-`kSCC_RR0_TxBufEmpty`, etc.).  The `Bit0`–`Bit7` names tell you nothing about
-the *meaning* of the bit.
-
-### 5. Replace `Ui3rPowOf2` / `Ui3rTestBit` macros with plain C++
-
-*Effort: ~15 minutes.  14 call sites in `via.cpp` / `via2.cpp`.*
-
-```cpp
-// Before
-#define Ui3rPowOf2(p) (1 << (p))
-#define Ui3rTestBit(i, p) (((i) & Ui3rPowOf2(p)) != 0)
-
-// After — just inline
-(i & (1 << p)) != 0
-```
-
-Legacy naming from the old type system (`Ui3r` = `uint8_t`).  The macros
-obscure trivial bit operations.
-
-### 6. Strip all `#if 0` dead code blocks
-
-*Effort: ~1 hour.  Removes ~2,000+ lines of noise.*
-
-A single grep pass plus manual review.  The 72 blocks in `scc.cpp` alone would
-dramatically improve readability of the hardest device file.  If anything in
-`#if 0` is ever needed again, it's in git history.  Pure noise removal — zero
-behavioral change.
-
-### 7. Replace `ui5r_From*` macros with `static_cast`
-
-*Effort: ~1 hour.  147 call sites, 6 macro definitions in `machine.h`.*
-
-```cpp
-// Before
-#define ui5r_FromSByte(x) ((uint32_t)(int32_t)(int8_t)(uint8_t)(x))
-uint32_t r = ui5r_FromSByte(do_get_mem_byte(V_pc_p + 1));
-
-// After
-uint32_t r = static_cast<uint32_t>(static_cast<int8_t>(do_get_mem_byte(V_pc_p + 1)));
-```
-
-Or wrap in a properly-named `inline` function like `sign_extend_byte()`.
-The `ui5r` prefix is from the dead type system and actively misleads.
-
-### 8. Add `operator<=>`  to `MacModel` (or just `operator<`)
-
-*Effort: ~30 minutes.  Eliminates 40 `static_cast<int>` comparisons.*
-
-```cpp
-// Before (used 40 times)
-if (static_cast<int>(g_machine->config().model) <= static_cast<int>(MacModel::Plus))
-
-// After
-if (g_machine->config().model <= MacModel::Plus)
-```
-
-Since `MacModel` is `enum class MacModel : int`, just add a defaulted
-comparison operator (C++20) or a free `operator<` that casts internally once.
-
-### 9. Make `tMacErr` a proper `enum class`
-
-*Effort: ~1–2 hours.  19 `#define` codes → enum members, ~440 use sites.*
-
-```cpp
-// Before
-using tMacErr = uint16_t;
-#define mnvm_noErr   ((tMacErr) 0x0000)
-#define mnvm_eofErr  ((tMacErr) 0xFFD9)
-
-// After
-enum class tMacErr : uint16_t {
-    noErr   = 0x0000,
-    eofErr  = 0xFFD9,
-    ...
-};
-```
-
-The compiler will then catch sites where error codes are confused with
-integers or used as booleans.
-
-### 10. Merge `via.cpp` / `via2.cpp` into a single parameterized class
+### 1. Merge `via.cpp` / `via2.cpp` into a single parameterized class
 
 *Effort: ~2 hours.  Eliminates ~800 lines of duplication.*
 
@@ -304,7 +180,7 @@ pure name substitutions (`VIA1` → `VIA2`, `kICT_VIA1_Timer1Check` →
 `kICT_VIA2_Timer1Check`, etc.).  Make one `VIADevice` class that takes a VIA
 number as a constructor parameter and uses it for ICT IDs and wire IDs.
 
-### 11. Name the I/O address constants
+### 2. Name the I/O address constants
 
 *Effort: ~1–2 hours.  Huge readability gain in `machine.cpp`.*
 
@@ -324,24 +200,7 @@ namespace io {
 Replace all raw hex in ATT setup.  Mechanical, safe, massive clarity boost
 for the most confusing part of the codebase.
 
-### 12. Convert `kATTA_*` bit-field `#defines` to `constexpr`
-
-*Effort: ~30 minutes.  11 macros → named constants.*
-
-```cpp
-// Before (machine.h)
-#define kATTA_readreadybit 0
-#define kATTA_mmdvmask (1 << kATTA_mmdvbit)
-
-// After
-namespace ATT {
-    constexpr uint32_t kReadReadyBit  = 0;
-    constexpr uint32_t kReadReadyMask = 1 << kReadReadyBit;
-    ...
-}
-```
-
-### 13. Make `MyEvtQElKind` an `enum class`
+### 3. Make `MyEvtQElKind` an `enum class`
 
 *Effort: ~30 minutes.  4 `#define` constants, ~50 use sites.*
 
@@ -364,16 +223,15 @@ enum class EvtKind : uint8_t {
 Also rename `MyEvtQEl` → `InputEvent` while you're there.  The `My` prefix
 is a minivmac-ism that adds nothing.
 
-### 14. Convert `MKC_*` keycode defines to a `constexpr` table or `enum`
+### 4. Convert `MKC_*` keycode defines to a `constexpr` table or `enum`
 
-*Effort: ~1 hour.  104 `#define` constants in `platform.h` lines 325–460.*
+*Effort: ~1 hour.  ~100 `#define` constants in `keycodes.h`.*
 
-These are Mac virtual keycodes.  As `#defines` they pollute the global
-namespace and can silently conflict.  Move to an `enum class MKC : uint8_t`
-or a `constexpr` lookup.  The 104 values are just a flat mapping that's
-trivial to convert.
+Already extracted into their own `keycodes.h` header.  Still `#define`s that
+pollute the global namespace.  Convert to `enum class MKC : uint8_t` or
+`constexpr` constants.
 
-### 15. Turn `screen_hack.h` / `hpmac_hack.h` into proper functions
+### 5. Turn `screen_hack.h` / `hpmac_hack.h` into proper functions
 
 *Effort: ~1 hour.  403 + 255 = 658 lines of `.h` files `#include`d as code.*
 
@@ -382,7 +240,7 @@ fragments, not headers.  Convert each to a proper function in `rom.cpp` (or
 its own `.cpp`).  This eliminates a confusing anti-pattern where headers
 contain raw executable statements.
 
-### 16. Promote `ReportAbnormalID` hex codes to a central `enum`
+### 6. Promote `ReportAbnormalID` hex codes to a central `enum`
 
 *Effort: ~2 hours.  276 call sites with raw hex IDs like `0x1108`, `0x074C`.*
 
@@ -399,9 +257,10 @@ enum class AbnormalID : uint16_t {
 Right now a collision between two IDs in different files would be invisible.
 A central enum makes them searchable and unique.
 
-### 17. Replace `label_N:` / `goto label_N` with loops
+### 7. Replace `label_N:` / `goto label_N` with loops
 
-*Effort: ~1 hour.  6 instances across `machine.cpp` and `sony.cpp`.*
+*Effort: ~2 hours.  43 instances across `osglu_common.cpp`, `sony.cpp`,
+`asc.cpp`, `scc.cpp`, and others.*
 
 ```cpp
 // Before (machine.cpp:299)
@@ -420,12 +279,12 @@ while (count != 0) {
 result = mnvm_noErr;
 ```
 
-These are all simple retry loops disguised as gotos.  6 easy conversions,
-big readability win.
+These are all simple retry loops disguised as gotos.
 
-### 18. Remove the C-style `typedef struct` pattern
+### 8. Remove the C-style `typedef struct` pattern
 
-*Effort: ~30 minutes.  Affects `MyEvtQEl` and a handful of others.*
+*Effort: ~30 minutes.  19 instances across `rtc.cpp`, `asc.cpp`, `scc.cpp`,
+`iwm.cpp`, `m68k.cpp`, `machine.h`, `sdl.cpp`, `platform.h`, etc.*
 
 ```cpp
 // Before (platform.h)
@@ -436,20 +295,10 @@ typedef struct MyEvtQEl MyEvtQEl;
 struct InputEvent { ... };
 ```
 
-### 19. Replace C-style casts with `static_cast` / `reinterpret_cast`
+### 9. Replace C-style casts with `static_cast` / `reinterpret_cast`
 
-*Effort: ~2–3 hours.  183 C-style casts across the codebase.*
+*Effort: ~2–3 hours.  ~80 C-style pointer casts across the codebase.*
 
 Most are `(uint8_t *)`, `(char *)`, `(void *)`.  Converting to explicit C++
 casts makes intent clear (is this a reinterpret, a const_cast, or a
 safe numeric conversion?) and makes them grep-able.  Can be done file by file.
-
-### 20. Move the 104 `MKC_` keycodes out of `platform.h`
-
-*Effort: ~30 minutes.  Zero behavioral change.*
-
-`platform.h` is 461 lines, and 135 of those are Mac keycode `#defines`.
-Move them to a dedicated `keycodes.h` (which already has a natural home
-alongside `platform/common/alt_keys.h`).  This shrinks the mega-header
-so that files which just need `tMacErr` or `vSonyTransfer` don't also
-pull in keyboard constants they'll never use.
