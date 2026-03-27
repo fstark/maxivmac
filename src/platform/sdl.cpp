@@ -167,7 +167,7 @@ void dbglog_close0()
 
 /* --- text translation --- */
 
-static void NativeStrFromCStr(char *r, char *s)
+static void NativeStrFromCStr(char *r, const char *s)
 {
 	uint8_t ps[ClStrMaxLength];
 	int i;
@@ -356,7 +356,7 @@ static bool Sony_Insert0(FILE * refnum, bool locked,
 	bool IsOk = false;
 
 	if (! FirstFreeDisk(&Drive_No)) {
-		MacMsg(kStrTooManyImagesTitle, kStrTooManyImagesMessage,
+		MacMsg(Localize(kStrTooManyImagesTitle), Localize(kStrTooManyImagesMessage),
 			false);
 	} else {
 		/* printf("Sony_Insert0 %d\n", (int)Drive_No); */
@@ -389,7 +389,7 @@ static bool Sony_Insert1(char *drivepath, bool silentfail)
 	}
 	if (nullptr == refnum) {
 		if (! silentfail) {
-			MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, false);
+			MacMsg(Localize(kStrOpenFailTitle), Localize(kStrOpenFailMessage), false);
 		}
 	} else {
 		return Sony_Insert0(refnum, locked, drivepath);
@@ -417,7 +417,7 @@ static void MakeNewDisk0(uint32_t L, char *drivepath)
 	bool IsOk = false;
 	FILE *refnum = fopen(drivepath, "wb+");
 	if (nullptr == refnum) {
-		MacMsg(kStrOpenFailTitle, kStrOpenFailMessage, false);
+		MacMsg(Localize(kStrOpenFailTitle), Localize(kStrOpenFailMessage), false);
 	} else {
 		if (WriteZero(refnum, L)) {
 			IsOk = Sony_Insert0(refnum, false, drivepath);
@@ -459,12 +459,12 @@ static tMacErr LoadMacRomFrom(char *path)
 		if ((uint32_t)File_Size != romSize) {
 			if (feof(ROM_File))
 			{
-				MacMsgOverride(kStrShortROMTitle,
-					kStrShortROMMessage);
+				MacMsgOverride(Localize(kStrShortROMTitle),
+					Localize(kStrShortROMMessage));
 				err = mnvm_eofErr;
 			} else {
-				MacMsgOverride(kStrNoReadROMTitle,
-					kStrNoReadROMMessage);
+				MacMsgOverride(Localize(kStrNoReadROMTitle),
+					Localize(kStrNoReadROMMessage));
 				err = mnvm_miscErr;
 			}
 		} else {
@@ -4660,8 +4660,8 @@ static void CheckForSavedTasks()
 	if (RequestMacOff) {
 		RequestMacOff = false;
 		if (AnyDiskInserted()) {
-			MacMsgOverride(kStrQuitWarningTitle,
-				kStrQuitWarningMessage);
+			MacMsgOverride(Localize(kStrQuitWarningTitle),
+				Localize(kStrQuitWarningMessage));
 		} else {
 			ForceMacOff = true;
 		}
@@ -4973,7 +4973,7 @@ static bool AllocMyMemory()
 
 	return true;
 fail:
-	MacMsg(kStrOutOfMemTitle, kStrOutOfMemMessage, true);
+	MacMsg(Localize(kStrOutOfMemTitle), Localize(kStrOutOfMemMessage), true);
 	return false;
 }
 

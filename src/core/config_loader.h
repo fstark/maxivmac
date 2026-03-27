@@ -9,6 +9,7 @@
 
 #include "core/machine_config.h"
 #include "core/emulator_config.h"
+#include "lang/localization.h"
 #include <string>
 #include <vector>
 
@@ -37,6 +38,8 @@ struct LaunchConfig {
 	std::string traceCpuPath;     // --trace-cpu=<path> (CPU-only text)
 	uint32_t    snapshotInterval = 0; // --snapshot-interval=N (0=default 100K)
 	uint64_t    maxInstructions  = 0; // --max-instructions=N (0=default 20M)
+	Language    lang             = kLangEnglish; // --lang=<name>
+	bool        langSet          = false;
 };
 
 // Parse command-line arguments into a LaunchConfig.

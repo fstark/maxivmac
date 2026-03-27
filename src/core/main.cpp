@@ -444,6 +444,10 @@ void ProgramEarlyInit(int argc, char* argv[])
 	s_launchConfig = ParseCommandLine(argc, argv);
 	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
 
+	if (s_launchConfig.langSet) {
+		SetLanguage(s_launchConfig.lang);
+	}
+
 	if (s_launchConfig.help) {
 		PrintUsage(argv[0]);
 		// Help flag will be checked by caller to exit early

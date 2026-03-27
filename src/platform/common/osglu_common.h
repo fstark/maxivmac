@@ -88,8 +88,8 @@ extern uint16_t MyEvtQIn;
 extern uint16_t MyEvtQOut;
 extern bool MyEvtQNeedRecover;
 
-extern char *SavedBriefMsg;
-extern char *SavedLongMsg;
+extern const char *SavedBriefMsg;
+extern const char *SavedLongMsg;
 #if WantAbnormalReports
 extern uint16_t SavedIDMsg;
 #endif
@@ -138,7 +138,7 @@ void MyEvtQTryRecoverFromFull();
 MyEvtQEl * MyEvtQElPreviousIn();
 MyEvtQEl * MyEvtQElAlloc();
 
-void MacMsg(char *briefMsg, char *longMsg, bool fatal);
+void MacMsg(const char *briefMsg, const char *longMsg, bool fatal);
 
 #if dbglog_HAVE
 bool dbglog_ReserveAlloc();

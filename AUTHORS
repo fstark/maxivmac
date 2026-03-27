@@ -1,13 +1,21 @@
 Maxi vMac
 =========
 
+Author
+------
+Fred Stark
+
 Based on Mini vMac by Paul C. Pratt
 http://www.gryphel.com/c/minivmac/
 
 Mini vMac is itself derived from vMac by Philip Cummins.
 
+Mini vMac maintainer
+--------------------
+Egon Rath
+
 Original authors
------------------
+----------------
 Paul C. Pratt          — primary developer of Mini vMac
 Philip Cummins         — original vMac; VIA, IWM, SCSI, keyboard,
                          mouse, screen, sony, sound, ROM, SCC devices
@@ -16,7 +24,7 @@ Bernd Schmidt          — endian access code (from Un*x Amiga Emulator),
 Richard F. Bannister   — screen device, early macOS platform port
 
 Device & feature contributions
--------------------------------
+------------------------------
 Ross Martin            — FPU emulation integration (2007)
 Steve Chamberlin       — Happy Mac icon hack (2016)
 Jesus A. Alvarez       — Sony floppy device contributions
@@ -24,13 +32,13 @@ Weston Pawlowski       — SCC serial device contributions
 Michael Fort           — SCC serial device contributions
 
 Incorporated third-party code
--------------------------------
+-----------------------------
 John R. Hauser         — SoftFloat IEC/IEEE floating-point library
 Stanislav Shwartsman   — SoftFloat extensions for Bochs
 Bradford L. Barrett    — jdate() function from Webalizer
 
 Translations
--------------
+------------
 Pierre Lemieux         — English, French
 Gaël Coupée            — French (proofreading)
 Detlef Kahner          — German
@@ -43,11 +51,3 @@ Przemysław Buczkowski  — Polish
 ArduinoXino            — Catalan
 SerbXenomorph          — Serbian (Latin)
 Anonymous              — Czech
-
-Maxi vMac maintainer
----------------------
-Fred Stark
-
-Previous Mini vMac maintainer
-------------------------------
-Egon Rath

@@ -156,7 +156,7 @@ void DrawCellsBlankLine()
 	DrawCellsEndLine();
 }
 
-void DrawCellsFromStr(char *s)
+void DrawCellsFromStr(const char *s)
 {
 	uint8_t ps[ClStrMaxLength];
 	uint8_t cs;
@@ -212,14 +212,14 @@ void DrawCellsFromStr(char *s)
 	}
 }
 
-void DrawCellsOneLineStr(char *s)
+void DrawCellsOneLineStr(const char *s)
 {
 	DrawCellsBeginLine();
 	DrawCellsFromStr(s);
 	DrawCellsEndLine();
 }
 
-void DrawCellsKeyCommand(char *k, char *s)
+void DrawCellsKeyCommand(const char *k, const char *s)
 {
 	DrawCellsBeginLine();
 	DrawCellsFromStr(" ");
@@ -231,7 +231,7 @@ void DrawCellsKeyCommand(char *k, char *s)
 
 typedef void (*SpclModeBody) (void);
 
-void DrawSpclMode0(char *Title, SpclModeBody Body)
+void DrawSpclMode0(const char *Title, SpclModeBody Body)
 {
 	int i;
 	int k;
@@ -339,7 +339,7 @@ void DrawCellsMessageModeBody()
 
 void DrawMessageMode()
 {
-	DrawSpclMode0(kStrModeMessage, DrawCellsMessageModeBody);
+	DrawSpclMode0(Localize(kStrModeMessage), DrawCellsMessageModeBody);
 }
 
 void MacMsgDisplayOff()
@@ -367,7 +367,7 @@ void DoMessageModeKey(uint8_t key)
 	}
 }
 
-void MacMsgOverride(char *briefMsg, char *longMsg)
+void MacMsgOverride(const char *briefMsg, const char *longMsg)
 {
 	if (MacMsgDisplayed) {
 		MacMsgDisplayOff();
@@ -377,7 +377,7 @@ void MacMsgOverride(char *briefMsg, char *longMsg)
 }
 
 #if dbglog_HAVE
-void MacMsgDebugAlert(char *s)
+void MacMsgDebugAlert(const char *s)
 {
 	MacMsgOverride("Debug", s);
 }
@@ -386,16 +386,16 @@ void MacMsgDebugAlert(char *s)
 #if NeedDoMoreCommandsMsg
 void DoMoreCommandsMsg()
 {
-	MacMsgOverride(kStrMoreCommandsTitle,
-		kStrMoreCommandsMessage);
+	MacMsgOverride(Localize(kStrMoreCommandsTitle),
+		Localize(kStrMoreCommandsMessage));
 }
 #endif
 
 #if NeedDoAboutMsg
 void DoAboutMsg()
 {
-	MacMsgOverride(kStrAboutTitle,
-		kStrAboutMessage);
+	MacMsgOverride(Localize(kStrAboutTitle),
+		Localize(kStrAboutMessage));
 }
 #endif
 
@@ -413,12 +413,12 @@ void NoRomMsgDisplayOn()
 
 void DrawCellsNoRomModeBody()
 {
-	DrawCellsOneLineStr(kStrNoROMMessage);
+	DrawCellsOneLineStr(Localize(kStrNoROMMessage));
 }
 
 void DrawNoRomMode()
 {
-	DrawSpclMode0(kStrNoROMTitle, DrawCellsNoRomModeBody);
+	DrawSpclMode0(Localize(kStrNoROMTitle), DrawCellsNoRomModeBody);
 }
 
 #if UseControlKeys
@@ -510,7 +510,7 @@ void SetSpeedValue(uint8_t i)
 
 /* ToggleWantFullScreen declared extern in control_mode.h */
 
-void HTCEexportSubstCStr(char *s)
+void HTCEexportSubstCStr(const char *s)
 {
 	int i;
 	int L;
@@ -766,33 +766,33 @@ void DoControlModeKey(uint8_t key)
 	NeedWholeScreenDraw = true;
 }
 
-static char * ControlMode2TitleStr()
+static const char * ControlMode2TitleStr()
 {
-	char *s;
+	const char *s;
 
 	switch (CurControlMode) {
 #if WantEnblCtrlRst
 		case kCntrlModeConfirmReset:
-			s = kStrModeConfirmReset;
+			s = Localize(kStrModeConfirmReset);
 			break;
 #endif
 #if WantEnblCtrlInt
 		case kCntrlModeConfirmInterrupt:
-			s = kStrModeConfirmInterrupt;
+			s = Localize(kStrModeConfirmInterrupt);
 			break;
 #endif
 		case kCntrlModeConfirmQuit:
-			s = kStrModeConfirmQuit;
+			s = Localize(kStrModeConfirmQuit);
 			break;
 		case kCntrlModeSpeedControl:
-			s = kStrModeSpeedControl;
+			s = Localize(kStrModeSpeedControl);
 			break;
 		case kCntrlModeBase:
 		default:
 			if (kCntrlMsgHelp == ControlMessage) {
-				s = kStrModeControlHelp;
+				s = Localize(kStrModeControlHelp);
 			} else {
-				s = kStrModeControlBase;
+				s = Localize(kStrModeControlBase);
 			}
 			break;
 	}
@@ -804,130 +804,130 @@ void DrawCellsControlModeBody()
 {
 	switch (ControlMessage) {
 		case kCntrlMsgAbout:
-			DrawCellsOneLineStr(kStrProgramInfo);
+			DrawCellsOneLineStr(Localize(kStrProgramInfo));
 
 			DrawCellsBlankLine();
 
-			DrawCellsOneLineStr(kStrWorkOfMany);
+			DrawCellsOneLineStr(Localize(kStrWorkOfMany));
 			DrawCellsOneLineStr(kMaintainerName);
-			DrawCellsOneLineStr(kStrForMoreInfo);
+			DrawCellsOneLineStr(Localize(kStrForMoreInfo));
 			DrawCellsOneLineStr("^w");
 
 			DrawCellsBlankLine();
 
 			DrawCellsBeginLine();
-			DrawCellsFromStr(kStrLicense);
-			DrawCellsFromStr(kStrDisclaimer);
+			DrawCellsFromStr(Localize(kStrLicense));
+			DrawCellsFromStr(Localize(kStrDisclaimer));
 			DrawCellsEndLine();
 
 			break;
 
 		case kCntrlMsgHelp:
-			DrawCellsOneLineStr(kStrHowToLeaveControl);
-			DrawCellsOneLineStr(kStrHowToPickACommand);
+			DrawCellsOneLineStr(Localize(kStrHowToLeaveControl));
+			DrawCellsOneLineStr(Localize(kStrHowToPickACommand));
 			DrawCellsBlankLine();
-			DrawCellsKeyCommand("A", kStrCmdAbout);
+			DrawCellsKeyCommand("A", Localize(kStrCmdAbout));
 #if NeedRequestInsertDisk
-			DrawCellsKeyCommand("O", kStrCmdOpenDiskImage);
+			DrawCellsKeyCommand("O", Localize(kStrCmdOpenDiskImage));
 #endif
-			DrawCellsKeyCommand("Q", kStrCmdQuit);
-			DrawCellsKeyCommand("S", kStrCmdSpeedControl);
-			DrawCellsKeyCommand("M", kStrCmdMagnifyToggle);
-			DrawCellsKeyCommand("F", kStrCmdFullScrnToggle);
+			DrawCellsKeyCommand("Q", Localize(kStrCmdQuit));
+			DrawCellsKeyCommand("S", Localize(kStrCmdSpeedControl));
+			DrawCellsKeyCommand("M", Localize(kStrCmdMagnifyToggle));
+			DrawCellsKeyCommand("F", Localize(kStrCmdFullScrnToggle));
 #if WantEnblCtrlKtg
-			DrawCellsKeyCommand("K", kStrCmdCtrlKeyToggle);
+			DrawCellsKeyCommand("K", Localize(kStrCmdCtrlKeyToggle));
 #endif
 #if WantEnblCtrlRst
-			DrawCellsKeyCommand("R", kStrCmdReset);
+			DrawCellsKeyCommand("R", Localize(kStrCmdReset));
 #endif
 #if WantEnblCtrlInt
-			DrawCellsKeyCommand("I", kStrCmdInterrupt);
+			DrawCellsKeyCommand("I", Localize(kStrCmdInterrupt));
 #endif
-			DrawCellsKeyCommand("P", kStrCmdCopyOptions);
-			DrawCellsKeyCommand("H", kStrCmdHelp);
+			DrawCellsKeyCommand("P", Localize(kStrCmdCopyOptions));
+			DrawCellsKeyCommand("H", Localize(kStrCmdHelp));
 			break;
 		case kCntrlMsgSpeedControlStart:
-			DrawCellsOneLineStr(kStrCurrentSpeed);
+			DrawCellsOneLineStr(Localize(kStrCurrentSpeed));
 			DrawCellsKeyCommand("Z", "1x");
 			DrawCellsKeyCommand("1", "2x");
 			DrawCellsKeyCommand("2", "4x");
 			DrawCellsKeyCommand("3", "8x");
 			DrawCellsKeyCommand("4", "16x");
 			DrawCellsKeyCommand("5", "32x");
-			DrawCellsKeyCommand("A", kStrSpeedAllOut);
+			DrawCellsKeyCommand("A", Localize(kStrSpeedAllOut));
 			DrawCellsBlankLine();
-			DrawCellsKeyCommand("D", kStrSpeedStopped);
-			DrawCellsKeyCommand("B", kStrSpeedBackToggle);
-			DrawCellsKeyCommand("W", kStrSpeedAutoSlowToggle);
+			DrawCellsKeyCommand("D", Localize(kStrSpeedStopped));
+			DrawCellsKeyCommand("B", Localize(kStrSpeedBackToggle));
+			DrawCellsKeyCommand("W", Localize(kStrSpeedAutoSlowToggle));
 			DrawCellsBlankLine();
-			DrawCellsKeyCommand("E", kStrSpeedExit);
+			DrawCellsKeyCommand("E", Localize(kStrSpeedExit));
 			break;
 		case kCntrlMsgNewSpeed:
-			DrawCellsOneLineStr(kStrNewSpeed);
+			DrawCellsOneLineStr(Localize(kStrNewSpeed));
 			break;
 		case kCntrlMsgNewRunInBack:
-			DrawCellsOneLineStr(kStrNewRunInBack);
+			DrawCellsOneLineStr(Localize(kStrNewRunInBack));
 			break;
 		case kCntrlMsgNewStopped:
-			DrawCellsOneLineStr(kStrNewStopped);
+			DrawCellsOneLineStr(Localize(kStrNewStopped));
 			break;
 		case kCntrlMsgNewAutoSlow:
-			DrawCellsOneLineStr(kStrNewAutoSlow);
+			DrawCellsOneLineStr(Localize(kStrNewAutoSlow));
 			break;
 		case kCntrlMsgMagnify:
-			DrawCellsOneLineStr(kStrNewMagnify);
+			DrawCellsOneLineStr(Localize(kStrNewMagnify));
 			break;
 		case kCntrlMsgFullScreen:
-			DrawCellsOneLineStr(kStrNewFullScreen);
+			DrawCellsOneLineStr(Localize(kStrNewFullScreen));
 			break;
 		case kCntrlMsgOptionsStrCopied:
-			DrawCellsOneLineStr(kStrHaveCopiedOptions);
+			DrawCellsOneLineStr(Localize(kStrHaveCopiedOptions));
 			break;
 #if WantEnblCtrlRst
 		case kCntrlMsgConfirmResetStart:
-			DrawCellsOneLineStr(kStrConfirmReset);
+			DrawCellsOneLineStr(Localize(kStrConfirmReset));
 			DrawCellsBlankLine();
-			DrawCellsKeyCommand("Y", kStrResetDo);
-			DrawCellsKeyCommand("N", kStrResetNo);
+			DrawCellsKeyCommand("Y", Localize(kStrResetDo));
+			DrawCellsKeyCommand("N", Localize(kStrResetNo));
 			break;
 		case kCntrlMsgHaveReset:
-			DrawCellsOneLineStr(kStrHaveReset);
+			DrawCellsOneLineStr(Localize(kStrHaveReset));
 			break;
 		case kCntrlMsgResetCancelled:
-			DrawCellsOneLineStr(kStrCancelledReset);
+			DrawCellsOneLineStr(Localize(kStrCancelledReset));
 			break;
 #endif
 #if WantEnblCtrlInt
 		case kCntrlMsgConfirmInterruptStart:
-			DrawCellsOneLineStr(kStrConfirmInterrupt);
+			DrawCellsOneLineStr(Localize(kStrConfirmInterrupt));
 			DrawCellsBlankLine();
-			DrawCellsKeyCommand("Y", kStrInterruptDo);
-			DrawCellsKeyCommand("N", kStrInterruptNo);
+			DrawCellsKeyCommand("Y", Localize(kStrInterruptDo));
+			DrawCellsKeyCommand("N", Localize(kStrInterruptNo));
 			break;
 		case kCntrlMsgHaveInterrupted:
-			DrawCellsOneLineStr(kStrHaveInterrupted);
+			DrawCellsOneLineStr(Localize(kStrHaveInterrupted));
 			break;
 		case kCntrlMsgInterruptCancelled:
-			DrawCellsOneLineStr(kStrCancelledInterrupt);
+			DrawCellsOneLineStr(Localize(kStrCancelledInterrupt));
 			break;
 #endif
 		case kCntrlMsgConfirmQuitStart:
-			DrawCellsOneLineStr(kStrConfirmQuit);
+			DrawCellsOneLineStr(Localize(kStrConfirmQuit));
 			DrawCellsBlankLine();
-			DrawCellsKeyCommand("Y", kStrQuitDo);
-			DrawCellsKeyCommand("N", kStrQuitNo);
+			DrawCellsKeyCommand("Y", Localize(kStrQuitDo));
+			DrawCellsKeyCommand("N", Localize(kStrQuitNo));
 			break;
 		case kCntrlMsgQuitCancelled:
-			DrawCellsOneLineStr(kStrCancelledQuit);
+			DrawCellsOneLineStr(Localize(kStrCancelledQuit));
 			break;
 #if WantEnblCtrlKtg
 		case kCntrlMsgEmCntrl:
-			DrawCellsOneLineStr(kStrNewCntrlKey);
+			DrawCellsOneLineStr(Localize(kStrNewCntrlKey));
 			break;
 #endif
 		case kCntrlMsgBaseStart:
 		default:
-			DrawCellsOneLineStr(kStrHowToLeaveControl);
+			DrawCellsOneLineStr(Localize(kStrHowToLeaveControl));
 			break;
 	}
 }

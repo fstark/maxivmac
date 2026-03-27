@@ -1,3 +1,4 @@
 #pragma once
 
-#include "lang/strings_english.h"
+#include "lang/localization_keys.h"
+#include "lang/localization.h"

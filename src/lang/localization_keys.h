@@ -57,8 +57,8 @@
 #define kStrReleased "released"
 
 /* state of Stopped */
-#define kStrStoppedOn kStrOn
-#define kStrStoppedOff kStrOff
+#define kStrStoppedOn "stopped on"
+#define kStrStoppedOff "stopped off"
 
 /* About Screen */
 #define kStrProgramInfo "^v"
@@ -91,7 +91,7 @@
 #define kStrSpeedExit "Exit speed control"
 
 #define kStrNewSpeed "Speed: ^s"
-#define kStrSpeedValueAllOut kStrSpeedAllOut
+#define kStrSpeedValueAllOut "speed all out"
 
 #define kStrNewStopped "Stopped is ^h."
 #define kStrNewRunInBack "Run in background is ^b."
@@ -106,24 +106,24 @@
 #define kStrCmdCancel "cancel"
 
 #define kStrConfirmReset "Are you sure you want to reset the emulated computer? Unsaved changes will be lost, and there is a risk of corrupting the mounted disk image files. Type a letter:"
-#define kStrResetDo "reset"
-#define kStrResetNo kStrCmdCancel
+#define kStrResetDo "reset do"
+#define kStrResetNo "reset no"
 
 #define kStrHaveReset "Have reset the emulated computer"
 
 #define kStrCancelledReset "Reset cancelled"
 
 #define kStrConfirmInterrupt "Are you sure you want to interrupt the emulated computer? This will invoke any installed debugger. Type a letter:"
-#define kStrInterruptDo "interrupt"
-#define kStrInterruptNo kStrCmdCancel
+#define kStrInterruptDo "interrupt do"
+#define kStrInterruptNo "interrupt no"
 
 #define kStrHaveInterrupted "Have interrupted the emulated computer"
 
 #define kStrCancelledInterrupt "Interrupt cancelled"
 
 #define kStrConfirmQuit "Are you sure you want to quit ^p? You should shut down the emulated computer before quitting to prevent corrupting the mounted disk image files. Type a letter:"
-#define kStrQuitDo "quit"
-#define kStrQuitNo kStrCmdCancel
+#define kStrQuitDo "quit do"
+#define kStrQuitNo "quit no"
 
 #define kStrCancelledQuit "Quit cancelled"
 

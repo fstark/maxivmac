@@ -1084,14 +1084,14 @@ void MyEvtQTryRecoverFromFull()
 
 /* --- MacMsg --- */
 
-char *SavedBriefMsg = nullptr;
-char *SavedLongMsg;
+const char *SavedBriefMsg = nullptr;
+const char *SavedLongMsg;
 #if WantAbnormalReports
 uint16_t SavedIDMsg = 0;
 #endif
 bool SavedFatalMsg;
 
-void MacMsg(char *briefMsg, char *longMsg, bool fatal)
+void MacMsg(const char *briefMsg, const char *longMsg, bool fatal)
 {
 	if (nullptr != SavedBriefMsg) {
 		/*
@@ -1108,8 +1108,8 @@ void MacMsg(char *briefMsg, char *longMsg, bool fatal)
 #if WantAbnormalReports
 void WarnMsgAbnormalID(uint16_t id)
 {
-	MacMsg(kStrReportAbnormalTitle,
-		kStrReportAbnormalMessage, false);
+	MacMsg(Localize(kStrReportAbnormalTitle),
+		Localize(kStrReportAbnormalMessage), false);
 
 	if (0 != SavedIDMsg) {
 		/*

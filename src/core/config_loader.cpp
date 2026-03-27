@@ -5,6 +5,7 @@
 */
 
 #include "core/config_loader.h"
+#include "lang/localization.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -92,6 +93,13 @@ static bool parseScreenSpec(const char* s, uint16_t& w, uint16_t& h, uint8_t& d)
 
 void PrintUsage(const char* progname)
 {
+	/* Build language code list dynamically from the localization API */
+	std::string langCodes;
+	for (int i = 0; i < kLangCount; ++i) {
+		if (i > 0) langCodes += ", ";
+		langCodes += ISOFromLanguage(static_cast<Language>(i));
+	}
+
 	fprintf(stderr,
 		"Usage: %s [options] [disk1.img] [disk2.img] ...\n"
 		"\n"
@@ -107,6 +115,8 @@ void PrintUsage(const char* progname)
 		"  --scale=N        Window scale factor (default: 2)\n"
 		"  --fullscreen     Start in fullscreen mode\n"
 		"  --silent         Disable audio output\n"
+		"  --lang=CODE      UI language (ISO 639-1): %s\n"
+		"                   (default: en)\n"
 		"  --title=TEXT     Window title\n"
 		"  --record=PATH    Record golden file for non-regression testing\n"
 		"  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)\n"
@@ -121,7 +131,7 @@ void PrintUsage(const char* progname)
 		"Examples:\n"
 		"  %s --model=MacII system7.img\n"
 		"  %s --model=MacPlus disk.img\n",
-		progname, progname, progname);
+		progname, langCodes.c_str(), progname, progname);
 }
 
 LaunchConfig ParseCommandLine(int argc, char* argv[])
@@ -216,6 +226,16 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			lc.maxInstructions = (uint64_t)strtoull(arg + 19, nullptr, 10);
 			continue;
 		}
+		if (strncmp(arg, "--lang=", 7) == 0) {
+			Language lang;
+			if (LanguageFromISO(arg + 7, lang)) {
+				lc.lang = lang;
+				lc.langSet = true;
+			} else {
+				fprintf(stderr, "Warning: unknown language code '%s', using default (en)\n", arg + 7);
+			}
+			continue;
+		}
 		if (strncmp(arg, "--title=", 8) == 0) {
 			lc.title = arg + 8;
 			continue;
@@ -263,6 +283,16 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 		}
 		if (strcmp(arg, "--scale") == 0 && i + 1 < argc) {
 			lc.scale = atoi(argv[++i]);
+			continue;
+		}
+		if (strcmp(arg, "--lang") == 0 && i + 1 < argc) {
+			Language lang;
+			if (LanguageFromISO(argv[++i], lang)) {
+				lc.lang = lang;
+				lc.langSet = true;
+			} else {
+				fprintf(stderr, "Warning: unknown language code '%s', using default (en)\n", argv[i]);
+			}
 			continue;
 		}
 		if (strcmp(arg, "--title") == 0 && i + 1 < argc) {

@@ -31,11 +31,6 @@ message(STATUS "Version: ${GIT_VERSION}")
 # Options
 # ---------------------------------------------------------------------------
 
-# Language
-set(MINIVMAC_LANGUAGE "English" CACHE STRING "UI language")
-set_property(CACHE MINIVMAC_LANGUAGE PROPERTY STRINGS
-    English French German Italian Spanish Dutch PortugueseBrazilian Polish Czech Serbian Catalan)
-
 # Debug
 set(MINIVMAC_ABNORMAL_REPORTS "0" CACHE STRING "Enable abnormal reports (1/0)")
 set(MINIVMAC_LOCALTALK "0" CACHE STRING "Enable LocalTalk (1/0)")
@@ -79,43 +74,20 @@ set(MINIVMAC_SOURCES
     src/platform/common/intl_chars.cpp
     src/platform/common/param_buffers.cpp
     src/platform/common/control_mode.cpp
+    src/lang/localization.cpp
+    src/lang/lang_english.cpp
+    src/lang/lang_french.cpp
+    src/lang/lang_german.cpp
+    src/lang/lang_italian.cpp
+    src/lang/lang_spanish.cpp
+    src/lang/lang_dutch.cpp
+    src/lang/lang_portuguese.cpp
+    src/lang/lang_polish.cpp
+    src/lang/lang_czech.cpp
+    src/lang/lang_serbian.cpp
+    src/lang/lang_catalan.cpp
 )
 
-# ---------------------------------------------------------------------------
-# Generate STRCONST.h from template (language selection)
-# ---------------------------------------------------------------------------
-set(MINIVMAC_GENERATED_CFG_DIR "${CMAKE_BINARY_DIR}/cfg_generated")
-file(MAKE_DIRECTORY "${MINIVMAC_GENERATED_CFG_DIR}")
-
-# ---------------------------------------------------------------------------
-# Language → header mapping
-# ---------------------------------------------------------------------------
-set(_lang_map_English    "lang/strings_english.h")
-set(_lang_map_French     "lang/strings_french.h")
-set(_lang_map_German     "lang/strings_german.h")
-set(_lang_map_Italian    "lang/strings_italian.h")
-set(_lang_map_Spanish    "lang/strings_spanish.h")
-set(_lang_map_Dutch      "lang/strings_dutch.h")
-set(_lang_map_PortugueseBrazilian "lang/strings_portuguese.h")
-set(_lang_map_Polish     "lang/strings_polish.h")
-set(_lang_map_Czech      "lang/strings_czech.h")
-set(_lang_map_Serbian    "lang/strings_serbian.h")
-set(_lang_map_Catalan    "lang/strings_catalan.h")
-
-if(DEFINED _lang_map_${MINIVMAC_LANGUAGE})
-    set(MINIVMAC_LANGUAGE_HEADER "${_lang_map_${MINIVMAC_LANGUAGE}}")
-else()
-    message(FATAL_ERROR "Unknown language: ${MINIVMAC_LANGUAGE}")
-endif()
-
-# ---------------------------------------------------------------------------
-# Generate STRCONST.h (only remaining generated header — selects language)
-# ---------------------------------------------------------------------------
-configure_file(
-    "${CMAKE_SOURCE_DIR}/cmake/STRCONST.h.in"
-    "${MINIVMAC_GENERATED_CFG_DIR}/STRCONST.h"
-    @ONLY
-)
 # ---------------------------------------------------------------------------
 # SDL target (Linux / Windows / macOS)
 # ---------------------------------------------------------------------------
@@ -151,10 +123,8 @@ endif()
 # Common settings
 # ---------------------------------------------------------------------------
 
-# Include paths: cfg_generated/ has STRCONST.h (generated).
-# src/config/ has all other config headers (now static). src/ for source headers.
+# Include paths: src/config/ has all config headers (static). src/ for source headers.
 target_include_directories(maxivmac PRIVATE
-    "${MINIVMAC_GENERATED_CFG_DIR}"
     "${CMAKE_SOURCE_DIR}/src/config"
     "${CMAKE_SOURCE_DIR}/src"
 )

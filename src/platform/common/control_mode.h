@@ -50,7 +50,7 @@ uint8_t * GetCurDrawBuff();
 uint8_t Keyboard_RemapMac(uint8_t key);
 void Keyboard_UpdateKeyMap2(uint8_t key, bool down);
 void DisconnectKeyCodes2();
-void MacMsgOverride(char *briefMsg, char *longMsg);
+void MacMsgOverride(const char *briefMsg, const char *longMsg);
 void MacMsgDisplayOn();
 void MacMsgDisplayOff();
 tMacErr ROM_IsValid();
@@ -65,7 +65,7 @@ void DoAboutMsg();
 #endif
 
 #if dbglog_HAVE
-void MacMsgDebugAlert(char *s);
+void MacMsgDebugAlert(const char *s);
 #endif
 
 void WarnMsgUnsupportedDisk();

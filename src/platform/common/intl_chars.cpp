@@ -1427,9 +1427,9 @@ bool ControlKeyPressed = false;
 
 /* kStrCntrlKyName, kControlModeKey, kUnMappedKey provided by intl_chars.h */
 
-char * GetSubstitutionStr(char x)
+const char * GetSubstitutionStr(char x)
 {
-	char *s;
+	const char *s;
 
 	switch (x) {
 		case 'w':
@@ -1456,45 +1456,45 @@ char * GetSubstitutionStr(char x)
 #if UseControlKeys
 		case 'k':
 			if (ControlKeyPressed) {
-				s = kStrPressed;
+				s = Localize(kStrPressed);
 			} else {
-				s = kStrReleased;
+				s = Localize(kStrReleased);
 			}
 			break;
 #endif
 		case 'g':
 			if (WantMagnify) {
-				s = kStrOn;
+				s = Localize(kStrOn);
 			} else {
-				s = kStrOff;
+				s = Localize(kStrOff);
 			}
 			break;
 		case 'f':
 			if (WantFullScreen) {
-				s = kStrOn;
+				s = Localize(kStrOn);
 			} else {
-				s = kStrOff;
+				s = Localize(kStrOff);
 			}
 			break;
 		case 'b':
 			if (RunInBackground) {
-				s = kStrOn;
+				s = Localize(kStrOn);
 			} else {
-				s = kStrOff;
+				s = Localize(kStrOff);
 			}
 			break;
 		case 'h':
 			if (SpeedStopped) {
-				s = kStrStoppedOn;
+				s = Localize(kStrStoppedOn);
 			} else {
-				s = kStrStoppedOff;
+				s = Localize(kStrStoppedOff);
 			}
 			break;
 		case 'l':
 			if (WantNotAutoSlow) {
-				s = kStrStoppedOff;
+				s = Localize(kStrStoppedOff);
 			} else {
-				s = kStrStoppedOn;
+				s = Localize(kStrStoppedOn);
 			}
 			break;
 		case 's':
@@ -1518,7 +1518,7 @@ char * GetSubstitutionStr(char x)
 					s = "32x";
 					break;
 				default:
-					s = kStrSpeedValueAllOut;
+					s = Localize(kStrSpeedValueAllOut);
 					break;
 			}
 			break;
@@ -1529,11 +1529,11 @@ char * GetSubstitutionStr(char x)
 	return s;
 }
 
-int ClStrSizeSubstCStr(char *s)
+int ClStrSizeSubstCStr(const char *s)
 {
 	/* must match ClStrAppendSubstCStr ! */
 
-	char *p = s;
+	const char *p = s;
 	char c;
 	int L = 0;
 
@@ -1592,11 +1592,11 @@ void ClStrAppendChar(int *L0, uint8_t *r, uint8_t c)
 	*L0 = L;
 }
 
-void ClStrAppendSubstCStr(int *L, uint8_t *r, char *s)
+void ClStrAppendSubstCStr(int *L, uint8_t *r, const char *s)
 {
 	/* must match ClStrSizeSubstCStr ! */
 
-	char *p = s;
+	const char *p = s;
 	char c;
 	uint8_t x;
 
@@ -1910,7 +1910,7 @@ void ClStrAppendSubstCStr(int *L, uint8_t *r, char *s)
 
 /* ClStrMaxLength defined in intl_chars.h */
 
-void ClStrFromSubstCStr(int *L, uint8_t *r, char *s)
+void ClStrFromSubstCStr(int *L, uint8_t *r, const char *s)
 {
 	int n = ClStrSizeSubstCStr(s);
 
