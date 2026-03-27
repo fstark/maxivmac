@@ -17,3 +17,5 @@ reference/
 tmp/
 out/
 mf2.hfs
+608.hfs
+test/.608_verify.hfs

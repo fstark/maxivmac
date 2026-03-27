@@ -7,7 +7,7 @@ model, ROM and disk combination.
 
 ## Prerequisites
 
-- The emulator must be built: `cmake --build --preset macos-cocoa`
+- The emulator must be built: `cmake --build --preset macos`
 - ROMs must exist in `roms/` (one per model)
 - The reference disk `extras/disks/608.hfs` must exist
 

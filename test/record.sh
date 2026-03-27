@@ -10,7 +10,7 @@
 set -e
 
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
-EMU="$DIR/bld/macos-cocoa/maxivmac.app/Contents/MacOS/maxivmac"
+EMU="$DIR/bld/macos/maxivmac"
 ROMS="$DIR/roms"
 DISK_SRC="$DIR/extras/disks/608.hfs"
 TESTDIR="$DIR/test"
@@ -30,7 +30,7 @@ fi
 # ── Sanity checks ──────────────────────────────────────
 if [ ! -x "$EMU" ]; then
     echo "ERROR: emulator not found at $EMU"
-    echo "       Run: cmake --build --preset macos-cocoa"
+    echo "       Run: cmake --build --preset macos"
     exit 1
 fi
 if [ ! -f "$DISK_SRC" ]; then
