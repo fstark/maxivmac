@@ -310,14 +310,6 @@ static void LT_NodeAddressSet(uint8_t v)
 #endif /* EmLocalTalk */
 
 /* Just to make things a little easier */
-#define Bit0 1
-#define Bit1 2
-#define Bit2 4
-#define Bit3 8
-#define Bit4 16
-#define Bit5 32
-#define Bit6 64
-#define Bit7 128
 
 /* SCC Interrupts */
 #define SCC_A_Rx       8 /* Rx Char Available */
@@ -851,8 +843,8 @@ static uint8_t SCC_GetRR1(int chan)
 	UnusedParam(chan);
 #endif
 
-	value = Bit2 | Bit1
-		| Bit0
+	value = (1 << 2) | (1 << 1)
+		| (1 << 0)
 #if EmLocalTalk
 		/* otherwise EndOfFrame always false */
 		| (SCC.a[chan].EndOfFrame ? (1 << 7) : 0)
@@ -873,31 +865,31 @@ static uint8_t SCC_GetRR2(int chan)
 		{
 			/* Status Low */
 			value = value
-				& (Bit0 | Bit4 | Bit5 | Bit6 | Bit7);
+				& ((1 << 0) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7));
 
 			switch (SCC.SCC_Interrupt_Type) {
 				case SCC_A_Rx:
-					value |= Bit3 | Bit2;
+					value |= (1 << 3) | (1 << 2);
 					break;
 
 				case SCC_A_Rx_Spec:
-					value |= Bit3 | Bit2 | Bit1;
+					value |= (1 << 3) | (1 << 2) | (1 << 1);
 					break;
 
 				case SCC_A_Tx_Empty:
-					value |= Bit3;
+					value |= (1 << 3);
 					break;
 
 				case SCC_A_Ext:
-					value |= Bit3 | Bit1;
+					value |= (1 << 3) | (1 << 1);
 					break;
 
 				case SCC_B_Rx:
-					value |= Bit2;
+					value |= (1 << 2);
 					break;
 
 				case SCC_B_Rx_Spec:
-					value |= Bit2 | Bit1;
+					value |= (1 << 2) | (1 << 1);
 					break;
 
 				case SCC_B_Tx_Empty:
@@ -905,11 +897,11 @@ static uint8_t SCC_GetRR2(int chan)
 					break;
 
 				case SCC_B_Ext:
-					value |= Bit1;
+					value |= (1 << 1);
 					break;
 
 				default:
-					value |= Bit2 | Bit1;
+					value |= (1 << 2) | (1 << 1);
 					break;
 			}
 		}
@@ -1148,7 +1140,7 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 {
 #if EmLocalTalk || SCC_TrackMore
 	{
-		bool NewExtIE = (Data & Bit0) != 0;
+		bool NewExtIE = (Data & (1 << 0)) != 0;
 		if (SCC.a[chan].ExtIE != NewExtIE) {
 			SCC.a[chan].ExtIE = NewExtIE;
 #if SCC_dolog
@@ -1164,7 +1156,7 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 #endif
 
 	{
-		bool NewTxIE = (Data & Bit1) != 0;
+		bool NewTxIE = (Data & (1 << 1)) != 0;
 		if (SCC.a[chan].TxIE != NewTxIE) {
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan, "Tx Int Enable",
@@ -1179,7 +1171,7 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewPrtySpclCond = (Data & Bit2) != 0;
+		bool NewPrtySpclCond = (Data & (1 << 2)) != 0;
 		if (SCC.a[chan].PrtySpclCond != NewPrtySpclCond) {
 			SCC.a[chan].PrtySpclCond = NewPrtySpclCond;
 #if SCC_dolog
@@ -1236,7 +1228,7 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewWaitRqstRT = (Data & Bit5) != 0;
+		bool NewWaitRqstRT = (Data & (1 << 5)) != 0;
 		if (SCC.a[chan].WaitRqstRT != NewWaitRqstRT) {
 			SCC.a[chan].WaitRqstRT = NewWaitRqstRT;
 #if SCC_dolog
@@ -1251,7 +1243,7 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewWaitRqstSlct = (Data & Bit6) != 0;
+		bool NewWaitRqstSlct = (Data & (1 << 6)) != 0;
 		if (SCC.a[chan].WaitRqstSlct != NewWaitRqstSlct) {
 			SCC.a[chan].WaitRqstSlct = NewWaitRqstSlct;
 #if SCC_dolog
@@ -1265,7 +1257,7 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewWaitRqstEnbl = (Data & Bit7) != 0;
+		bool NewWaitRqstEnbl = (Data & (1 << 7)) != 0;
 		if (SCC.a[chan].WaitRqstEnbl != NewWaitRqstEnbl) {
 			SCC.a[chan].WaitRqstEnbl = NewWaitRqstEnbl;
 #if SCC_dolog
@@ -1302,28 +1294,28 @@ static void SCC_PutWR2(uint8_t Data, int chan)
 #endif
 		SCC.InterruptVector = Data;
 	}
-	if ((Data & Bit0) != 0) { /* interrupt vector 0 */
+	if ((Data & (1 << 0)) != 0) { /* interrupt vector 0 */
 		ReportAbnormalID(0x070E, "interrupt vector 0");
 	}
-	if ((Data & Bit1) != 0) { /* interrupt vector 1 */
+	if ((Data & (1 << 1)) != 0) { /* interrupt vector 1 */
 		ReportAbnormalID(0x070F, "interrupt vector 1");
 	}
-	if ((Data & Bit2) != 0) { /* interrupt vector 2 */
+	if ((Data & (1 << 2)) != 0) { /* interrupt vector 2 */
 		ReportAbnormalID(0x0710, "interrupt vector 2");
 	}
-	if ((Data & Bit3) != 0) { /* interrupt vector 3 */
+	if ((Data & (1 << 3)) != 0) { /* interrupt vector 3 */
 		ReportAbnormalID(0x0711, "interrupt vector 3");
 	}
-	if ((Data & Bit4) != 0) { /* interrupt vector 4 */
+	if ((Data & (1 << 4)) != 0) { /* interrupt vector 4 */
 		/* happens on boot with appletalk on */
 	}
-	if ((Data & Bit5) != 0) { /* interrupt vector 5 */
+	if ((Data & (1 << 5)) != 0) { /* interrupt vector 5 */
 		/* happens on boot with appletalk on */
 	}
-	if ((Data & Bit6) != 0) { /* interrupt vector 6 */
+	if ((Data & (1 << 6)) != 0) { /* interrupt vector 6 */
 		ReportAbnormalID(0x0712, "interrupt vector 6");
 	}
-	if ((Data & Bit7) != 0) { /* interrupt vector 7 */
+	if ((Data & (1 << 7)) != 0) { /* interrupt vector 7 */
 		ReportAbnormalID(0x0713, "interrupt vector 7");
 	}
 }
@@ -1367,7 +1359,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 	}
 #endif
 
-	if ((Data & Bit5) != 0) { /* Auto Enables */
+	if ((Data & (1 << 5)) != 0) { /* Auto Enables */
 		/*
 			use DCD input as receiver enable,
 			and set RTS output when transmit buffer empty
@@ -1375,7 +1367,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 		ReportAbnormalID(0x0714, "Auto Enables");
 	}
 
-	if ((Data & Bit4) != 0) { /* Enter Hunt Mode */
+	if ((Data & (1 << 4)) != 0) { /* Enter Hunt Mode */
 #if SCC_dolog
 		SCC_DbgLogChanCmnd(chan, "Enter Hunt Mode");
 #endif
@@ -1388,7 +1380,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewRxCRCEnbl = (Data & Bit3) != 0;
+		bool NewRxCRCEnbl = (Data & (1 << 3)) != 0;
 		if (SCC.a[chan].RxCRCEnbl != NewRxCRCEnbl) {
 			SCC.a[chan].RxCRCEnbl = NewRxCRCEnbl;
 #if SCC_dolog
@@ -1402,7 +1394,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 
 #if EmLocalTalk || SCC_TrackMore
 	{
-		bool NewAddrSrchMd = (Data & Bit2) != 0;
+		bool NewAddrSrchMd = (Data & (1 << 2)) != 0;
 		if (SCC.a[chan].AddrSrchMd != NewAddrSrchMd) {
 			SCC.a[chan].AddrSrchMd = NewAddrSrchMd;
 #if SCC_dolog
@@ -1419,7 +1411,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewSyncChrLdInhb = (Data & Bit1) != 0;
+		bool NewSyncChrLdInhb = (Data & (1 << 1)) != 0;
 		if (SCC.a[chan].SyncChrLdInhb != NewSyncChrLdInhb) {
 			SCC.a[chan].SyncChrLdInhb = NewSyncChrLdInhb;
 #if SCC_dolog
@@ -1432,7 +1424,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 #endif
 
 	{
-		bool NewRxEnable = (Data & Bit0) != 0;
+		bool NewRxEnable = (Data & (1 << 0)) != 0;
 		if (SCC.a[chan].RxEnable != NewRxEnable) {
 			SCC.a[chan].RxEnable = NewRxEnable;
 #if SCC_dolog
@@ -1478,7 +1470,7 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewPrtyEnable = (Data & Bit0) != 0;
+		bool NewPrtyEnable = (Data & (1 << 0)) != 0;
 		if (SCC.a[chan].PrtyEnable != NewPrtyEnable) {
 			SCC.a[chan].PrtyEnable = NewPrtyEnable;
 #if SCC_dolog
@@ -1491,7 +1483,7 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewPrtyEven = (Data & Bit1) != 0;
+		bool NewPrtyEven = (Data & (1 << 1)) != 0;
 		if (SCC.a[chan].PrtyEven != NewPrtyEven) {
 			SCC.a[chan].PrtyEven = NewPrtyEven;
 #if SCC_dolog
@@ -1610,7 +1602,7 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewTxCRCEnbl = (Data & Bit0) != 0;
+		bool NewTxCRCEnbl = (Data & (1 << 0)) != 0;
 		if (SCC.a[chan].TxCRCEnbl != NewTxCRCEnbl) {
 			SCC.a[chan].TxCRCEnbl = NewTxCRCEnbl;
 #if SCC_dolog
@@ -1624,7 +1616,7 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewRTSctrl = (Data & Bit1) != 0;
+		bool NewRTSctrl = (Data & (1 << 1)) != 0;
 		if (SCC.a[chan].RTSctrl != NewRTSctrl) {
 			SCC.a[chan].RTSctrl = NewRTSctrl;
 #if SCC_dolog
@@ -1640,12 +1632,12 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 	}
 #endif
 
-	if ((Data & Bit2) != 0) { /* SDLC/CRC-16 */
+	if ((Data & (1 << 2)) != 0) { /* SDLC/CRC-16 */
 		ReportAbnormalID(0x0719, "SDLC/CRC-16");
 	}
 
 	{
-		bool NewTxEnable = (Data & Bit3) != 0;
+		bool NewTxEnable = (Data & (1 << 3)) != 0;
 		if (SCC.a[chan].TxEnable != NewTxEnable) {
 			SCC.a[chan].TxEnable = NewTxEnable;
 #if SCC_dolog
@@ -1671,7 +1663,7 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewSndBrkCtrl = (Data & Bit4) != 0;
+		bool NewSndBrkCtrl = (Data & (1 << 4)) != 0;
 		if (SCC.a[chan].SndBrkCtrl != NewSndBrkCtrl) {
 			SCC.a[chan].SndBrkCtrl = NewSndBrkCtrl;
 #if SCC_dolog
@@ -1714,7 +1706,7 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewDTRctrl = (Data & Bit7) != 0;
+		bool NewDTRctrl = (Data & (1 << 7)) != 0;
 		if (SCC.a[chan].DTRctrl != NewDTRctrl) {
 			SCC.a[chan].DTRctrl = NewDTRctrl;
 #if SCC_dolog
@@ -1830,13 +1822,13 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 
 	UnusedParam(chan);
 
-	if ((Data & Bit0) != 0) { /* VIS */
+	if ((Data & (1 << 0)) != 0) { /* VIS */
 		ReportAbnormalID(0x0720, "VIS");
 	}
 
 #if SCC_TrackMore
 	{
-		bool NewNoVectorSlct = (Data & Bit1) != 0;
+		bool NewNoVectorSlct = (Data & (1 << 1)) != 0;
 		if (SCC.NoVectorSlct != NewNoVectorSlct) {
 			SCC.NoVectorSlct = NewNoVectorSlct;
 #if SCC_dolog
@@ -1848,12 +1840,12 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 	}
 #endif
 
-	if ((Data & Bit2) != 0) { /* DLC */
+	if ((Data & (1 << 2)) != 0) { /* DLC */
 		ReportAbnormalID(0x0723, "DLC");
 	}
 
 	{
-		bool NewMIE = (Data & Bit3) != 0;
+		bool NewMIE = (Data & (1 << 3)) != 0;
 			/* has both values on boot always */
 		if (SCC.MIE != NewMIE) {
 			SCC.MIE = NewMIE;
@@ -1865,10 +1857,10 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 		}
 	}
 
-	if ((Data & Bit4) != 0) { /* Status high/low */
+	if ((Data & (1 << 4)) != 0) { /* Status high/low */
 		ReportAbnormalID(0x0724, "Status high/low");
 	}
-	if ((Data & Bit5) != 0) { /* WR9 b5 should be 0 */
+	if ((Data & (1 << 5)) != 0) { /* WR9 b5 should be 0 */
 		ReportAbnormalID(0x0725, "WR9 b5 should be 0");
 	}
 
@@ -1915,19 +1907,19 @@ static void SCC_PutWR10(uint8_t Data, int chan)
 	UnusedParam(chan);
 #endif
 
-	if ((Data & Bit0) != 0) { /* 6 bit/8 bit sync */
+	if ((Data & (1 << 0)) != 0) { /* 6 bit/8 bit sync */
 		ReportAbnormalID(0x0727, "6 bit/8 bit sync");
 	}
-	if ((Data & Bit1) != 0) { /* loop mode */
+	if ((Data & (1 << 1)) != 0) { /* loop mode */
 		ReportAbnormalID(0x0728, "loop mode");
 	}
-	if ((Data & Bit2) != 0) { /* abort/flag on underrun */
+	if ((Data & (1 << 2)) != 0) { /* abort/flag on underrun */
 		ReportAbnormalID(0x0729, "abort/flag on underrun");
 	}
-	if ((Data & Bit3) != 0) { /* mark/flag idle */
+	if ((Data & (1 << 3)) != 0) { /* mark/flag idle */
 		ReportAbnormalID(0x072A, "mark/flag idle");
 	}
-	if ((Data & Bit4) != 0) { /* go active on poll */
+	if ((Data & (1 << 4)) != 0) { /* go active on poll */
 		ReportAbnormalID(0x072B, "go active on poll");
 	}
 
@@ -1966,7 +1958,7 @@ static void SCC_PutWR10(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewCRCPreset = (Data & Bit7) != 0;
+		bool NewCRCPreset = (Data & (1 << 7)) != 0;
 		if (SCC.a[chan].CRCPreset != NewCRCPreset) {
 			SCC.a[chan].CRCPreset = NewCRCPreset;
 #if SCC_dolog
@@ -2024,7 +2016,7 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 	}
 #endif
 
-	if ((Data & Bit2) != 0) {
+	if ((Data & (1 << 2)) != 0) {
 		ReportAbnormalID(0x0731, "TRxC O/I");
 	}
 
@@ -2102,7 +2094,7 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 	}
 #endif
 
-	if ((Data & Bit7) != 0) {
+	if ((Data & (1 << 7)) != 0) {
 		ReportAbnormalID(0x0735, "RTxC XTAL/NO XTAL");
 	}
 }
@@ -2170,7 +2162,7 @@ static void SCC_PutWR14(uint8_t Data, int chan)
 
 #if SCC_TrackMore
 	{
-		bool NewBRGEnbl = (Data & Bit0) != 0;
+		bool NewBRGEnbl = (Data & (1 << 0)) != 0;
 		if (SCC.a[chan].BRGEnbl != NewBRGEnbl) {
 			SCC.a[chan].BRGEnbl = NewBRGEnbl;
 #if SCC_dolog
@@ -2183,16 +2175,16 @@ static void SCC_PutWR14(uint8_t Data, int chan)
 	}
 #endif
 
-	if ((Data & Bit1) != 0) { /* BR generator source */
+	if ((Data & (1 << 1)) != 0) { /* BR generator source */
 		ReportAbnormalID(0x0736, "BR generator source");
 	}
-	if ((Data & Bit2) != 0) { /* DTR/request function */
+	if ((Data & (1 << 2)) != 0) { /* DTR/request function */
 		ReportAbnormalID(0x0737, "DTR/request function");
 	}
-	if ((Data & Bit3) != 0) { /* auto echo */
+	if ((Data & (1 << 3)) != 0) { /* auto echo */
 		ReportAbnormalID(0x0738, "auto echo");
 	}
-	if ((Data & Bit4) != 0) { /* local loopback */
+	if ((Data & (1 << 4)) != 0) { /* local loopback */
 		ReportAbnormalID(0x0739, "local loopback");
 	}
 
@@ -2252,30 +2244,30 @@ static void SCC_PutWR15(uint8_t Data, int chan)
 	UnusedParam(chan);
 #endif
 
-	if ((Data & Bit0) != 0) { /* WR15 b0 should be 0 */
+	if ((Data & (1 << 0)) != 0) { /* WR15 b0 should be 0 */
 		ReportAbnormalID(0x073E, "WR15 b0 should be 0");
 	}
-	if ((Data & Bit1) != 0) { /* zero count IE */
+	if ((Data & (1 << 1)) != 0) { /* zero count IE */
 		ReportAbnormalID(0x073F, "zero count IE");
 	}
-	if ((Data & Bit2) != 0) { /* WR15 b2 should be 0 */
+	if ((Data & (1 << 2)) != 0) { /* WR15 b2 should be 0 */
 		ReportAbnormalID(0x0740, "WR15 b2 should be 0");
 	}
 
-	if ((Data & Bit3) == 0) { /* DCD_IE */
+	if ((Data & (1 << 3)) == 0) { /* DCD_IE */
 		if (!g_machine->config().isSEOrLater()) {
 			ReportAbnormalID(0x0741, "not DCD IE");
 		}
 	}
 
-	if ((Data & Bit4) != 0) {
+	if ((Data & (1 << 4)) != 0) {
 		/* SYNC/HUNT IE */
 		ReportAbnormalID(0x0742, "SYNC/HUNT IE");
 	}
 
 #if SCC_TrackMore /* don't care about CTS_IE */
 	{
-		bool NewCTS_IE = (Data & Bit5) != 0;
+		bool NewCTS_IE = (Data & (1 << 5)) != 0;
 		if (SCC.a[chan].CTS_IE != NewCTS_IE) {
 			SCC.a[chan].CTS_IE = NewCTS_IE;
 #if SCC_dolog
@@ -2288,13 +2280,13 @@ static void SCC_PutWR15(uint8_t Data, int chan)
 	}
 #endif
 
-	if ((Data & Bit6) != 0) { /* Tx underrun/EOM IE */
+	if ((Data & (1 << 6)) != 0) { /* Tx underrun/EOM IE */
 		ReportAbnormalID(0x0743, "Tx underrun/EOM IE");
 	}
 
 #if SCC_TrackMore
 	{
-		bool NewBreakAbortIE = (Data & Bit7) != 0;
+		bool NewBreakAbortIE = (Data & (1 << 7)) != 0;
 		if (SCC.a[chan].BreakAbortIE != NewBreakAbortIE) {
 			SCC.a[chan].BreakAbortIE = NewBreakAbortIE;
 #if SCC_dolog
