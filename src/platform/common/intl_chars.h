@@ -285,9 +285,7 @@ extern const char Cell2WinAsciiMap[];
 extern bool SpeedStopped;
 extern bool RunInBackground;
 
-#if VarFullScreen
 extern bool WantFullScreen;
-#endif
 
 #if EnableMagnify
 extern bool WantMagnify;

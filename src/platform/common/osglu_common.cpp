@@ -664,7 +664,6 @@ void Screen_OutputFrame(uint8_t * screencurrentbuff)
 
 /* --- Full screen view support --- */
 
-#if MayFullScreen
 uint16_t ViewHSize;
 uint16_t ViewVSize;
 uint16_t ViewHStart = 0;
@@ -672,7 +671,6 @@ uint16_t ViewVStart = 0;
 #if EnableFSMouseMotion
 int16_t SavedMouseH;
 int16_t SavedMouseV;
-#endif
 #endif
 
 #ifndef WantAutoScrollBorder

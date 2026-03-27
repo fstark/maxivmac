@@ -644,14 +644,12 @@ static bool LoadMacRom()
 
 /* --- video out --- */
 
-#if MayFullScreen && (SDL_MAJOR_VERSION >= 2)
+#if (SDL_MAJOR_VERSION >= 2)
 static int hOffset;
 static int vOffset;
 #endif
 
-#if VarFullScreen
-static bool UseFullScreen = (WantInitFullScreen != 0);
-#endif
+static bool UseFullScreen = false;
 
 #if EnableMagnify
 static bool UseMagnify = (WantInitMagnify != 0);
@@ -955,10 +953,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	int DestWidth;
 	int DestHeight;
 
-#if VarFullScreen
 	if (UseFullScreen)
-#endif
-#if MayFullScreen
 	{
 		if (top < ViewVStart) {
 			top = ViewVStart;
@@ -977,22 +972,17 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 			goto label_exit;
 		}
 	}
-#endif
 
 	XDest = left;
 	YDest = top;
 	DestWidth = (right - left);
 	DestHeight = (bottom - top);
 
-#if VarFullScreen
 	if (UseFullScreen)
-#endif
-#if MayFullScreen
 	{
 		XDest -= ViewHStart;
 		YDest -= ViewVStart;
 	}
-#endif
 
 #if EnableMagnify
 	if (UseMagnify) {
@@ -1003,15 +993,11 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	}
 #endif
 
-#if VarFullScreen
 	if (UseFullScreen)
-#endif
-#if MayFullScreen
 	{
 		XDest += hOffset;
 		YDest += vOffset;
 	}
-#endif
 
 #endif /* SDL_MAJOR_VERSION >= 2 */
 
@@ -1309,10 +1295,8 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	
 	SDL_RenderPresent(my_renderer);
 
-#if MayFullScreen
 label_exit:
 	;
-#endif
 #endif /* SDL_MAJOR_VERSION >= 2 */
 #endif /* 0 != SDL_MAJOR_VERSION */
 }
@@ -1376,15 +1360,11 @@ static bool MyMoveMouse(int16_t h, int16_t v)
 			but there is no way to detect failure.)
 	*/
 
-#if VarFullScreen
 	if (UseFullScreen)
-#endif
-#if MayFullScreen
 	{
 		h -= ViewHStart;
 		v -= ViewVStart;
 	}
-#endif
 
 #if EnableMagnify
 	if (UseMagnify) {
@@ -1394,15 +1374,11 @@ static bool MyMoveMouse(int16_t h, int16_t v)
 #endif
 
 #if SDL_MAJOR_VERSION >= 2
-#if VarFullScreen
 	if (UseFullScreen)
-#endif
-#if MayFullScreen
 	{
 		h += hOffset;
 		v += vOffset;
 	}
-#endif
 #endif /* SDL_MAJOR_VERSION >= 2 */
 
 #if 1 == SDL_MAJOR_VERSION
@@ -1422,15 +1398,11 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 	bool ShouldHaveCursorHidden = true;
 
 #if SDL_MAJOR_VERSION >= 2
-#if VarFullScreen
 	if (UseFullScreen)
-#endif
-#if MayFullScreen
 	{
 		NewMousePosh -= hOffset;
 		NewMousePosv -= vOffset;
 	}
-#endif
 #endif /* SDL_MAJOR_VERSION >= 2 */
 
 #if EnableMagnify
@@ -1440,15 +1412,11 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 	}
 #endif
 
-#if VarFullScreen
 	if (UseFullScreen)
-#endif
-#if MayFullScreen
 	{
 		NewMousePosh += ViewHStart;
 		NewMousePosv += ViewVStart;
 	}
-#endif
 
 #if EnableFSMouseMotion
 	if (HaveMouseMotion) {
@@ -1474,14 +1442,10 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 			ShouldHaveCursorHidden = false;
 		}
 
-#if VarFullScreen
 		if (UseFullScreen)
-#endif
-#if MayFullScreen
 		{
 			ShouldHaveCursorHidden = true;
 		}
-#endif
 
 		/* if (ShouldHaveCursorHidden || CurMouseButton) */
 		/*
@@ -4005,11 +3969,8 @@ static bool Screen_Init()
 	return v;
 }
 
-#if MayFullScreen
 static bool GrabMachine = false;
-#endif
 
-#if MayFullScreen
 static void GrabTheMachine()
 {
 #if GrabKeysFullScreen
@@ -4050,9 +4011,7 @@ static void GrabTheMachine()
 
 #endif /* EnableFSMouseMotion */
 }
-#endif
 
-#if MayFullScreen
 static void UngrabMachine()
 {
 #if EnableFSMouseMotion
@@ -4081,7 +4040,6 @@ static void UngrabMachine()
 #endif
 #endif
 }
-#endif
 
 #if EnableFSMouseMotion && HaveWorkingWarp
 static void MyMouseConstrain()
@@ -4134,19 +4092,15 @@ static bool ReCreateMainWindow()
 {
 	ForceShowCursor(); /* hide/show cursor api is per window */
 
-#if MayFullScreen
 	if (GrabMachine) {
 		GrabMachine = false;
 		UngrabMachine();
 	}
-#endif
 
 #if EnableMagnify
 	UseMagnify = WantMagnify;
 #endif
-#if VarFullScreen
 	UseFullScreen = WantFullScreen;
-#endif
 
 	(void) CreateMainWindow();
 
@@ -4174,14 +4128,10 @@ static bool CreateMainWindow()
 	}
 #endif
 
-#if VarFullScreen
 	if (UseFullScreen)
-#endif
-#if MayFullScreen
 	{
 		flags |= SDL_FULLSCREEN;
 	}
-#endif
 
 	ViewHStart = 0;
 	ViewVStart = 0;
@@ -4217,19 +4167,15 @@ static bool ReCreateMainWindow()
 {
 	ForceShowCursor(); /* hide/show cursor api is per window */
 
-#if MayFullScreen
 	if (GrabMachine) {
 		GrabMachine = false;
 		UngrabMachine();
 	}
-#endif
 
 #if EnableMagnify
 	UseMagnify = WantMagnify;
 #endif
-#if VarFullScreen
 	UseFullScreen = WantFullScreen;
-#endif
 
 	(void) CreateMainWindow();
 
@@ -4253,12 +4199,10 @@ enum {
 
 #define kMagStateAuto kNumMagStates
 
-#if MayNotFullScreen
 static int CurWinIndx;
 static bool HavePositionWins[kNumMagStates];
 static int WinPositionsX[kNumMagStates];
 static int WinPositionsY[kNumMagStates];
-#endif
 
 static bool CreateMainWindow()
 {
@@ -4294,10 +4238,7 @@ static bool CreateMainWindow()
 	}
 #endif
 
-#if VarFullScreen
 	if (UseFullScreen)
-#endif
-#if MayFullScreen
 	{
 		/*
 			We don't want physical screen mode to be changed in modern
@@ -4312,11 +4253,7 @@ static bool CreateMainWindow()
 		NewWindowX = SDL_WINDOWPOS_UNDEFINED;
 		NewWindowY = SDL_WINDOWPOS_UNDEFINED;
 	}
-#endif
-#if VarFullScreen
 	else
-#endif
-#if MayNotFullScreen
 	{
 		int WinIndx;
 
@@ -4339,7 +4276,6 @@ static bool CreateMainWindow()
 
 		CurWinIndx = WinIndx;
 	}
-#endif
 
 #if 0
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
@@ -4451,10 +4387,7 @@ static bool CreateMainWindow()
 		}
 #endif
 
-#if VarFullScreen
 		if (UseFullScreen)
-#endif
-#if MayFullScreen
 		{
 			int wr;
 			int hr;
@@ -4499,7 +4432,6 @@ static bool CreateMainWindow()
 				vOffset = 0;
 			}
 		}
-#endif
 
 		ColorModeWorks = true;
 
@@ -4551,23 +4483,17 @@ static void ZapMyWState()
 
 #if EnableRecreateW
 struct MyWState {
-#if MayFullScreen
 	uint16_t f_ViewHSize;
 	uint16_t f_ViewVSize;
 	uint16_t f_ViewHStart;
 	uint16_t f_ViewVStart;
 	int f_hOffset;
 	int f_vOffset;
-#endif
-#if VarFullScreen
 	bool f_UseFullScreen;
-#endif
 #if EnableMagnify
 	bool f_UseMagnify;
 #endif
-#if MayNotFullScreen
 	int f_CurWinIndx;
-#endif
 	SDL_Window *f_my_main_wind;
 	SDL_Renderer *f_my_renderer;
 	SDL_Texture *f_my_texture;
@@ -4584,23 +4510,17 @@ typedef struct MyWState MyWState;
 #if EnableRecreateW
 static void GetMyWState(MyWState *r)
 {
-#if MayFullScreen
 	r->f_ViewHSize = ViewHSize;
 	r->f_ViewVSize = ViewVSize;
 	r->f_ViewHStart = ViewHStart;
 	r->f_ViewVStart = ViewVStart;
 	r->f_hOffset = hOffset;
 	r->f_vOffset = vOffset;
-#endif
-#if VarFullScreen
 	r->f_UseFullScreen = UseFullScreen;
-#endif
 #if EnableMagnify
 	r->f_UseMagnify = UseMagnify;
 #endif
-#if MayNotFullScreen
 	r->f_CurWinIndx = CurWinIndx;
-#endif
 	r->f_my_main_wind = my_main_wind;
 	r->f_my_renderer = my_renderer;
 	r->f_my_texture = my_texture;
@@ -4611,23 +4531,17 @@ static void GetMyWState(MyWState *r)
 #if EnableRecreateW
 static void SetMyWState(MyWState *r)
 {
-#if MayFullScreen
 	ViewHSize = r->f_ViewHSize;
 	ViewVSize = r->f_ViewVSize;
 	ViewHStart = r->f_ViewHStart;
 	ViewVStart = r->f_ViewVStart;
 	hOffset = r->f_hOffset;
 	vOffset = r->f_vOffset;
-#endif
-#if VarFullScreen
 	UseFullScreen = r->f_UseFullScreen;
-#endif
 #if EnableMagnify
 	UseMagnify = r->f_UseMagnify;
 #endif
-#if MayNotFullScreen
 	CurWinIndx = r->f_CurWinIndx;
-#endif
 	my_main_wind = r->f_my_main_wind;
 	my_renderer = r->f_my_renderer;
 	my_texture = r->f_my_texture;
@@ -4635,7 +4549,7 @@ static void SetMyWState(MyWState *r)
 }
 #endif
 
-#if VarFullScreen && EnableMagnify
+#if EnableMagnify
 enum {
 	kWinStateWindowed,
 #if EnableMagnify
@@ -4645,7 +4559,7 @@ enum {
 };
 #endif
 
-#if VarFullScreen && EnableMagnify
+#if EnableMagnify
 static int WinMagStates[kNumWinStates];
 #endif
 
@@ -4674,7 +4588,7 @@ static bool ReCreateMainWindow()
 #if HaveWorkingWarp
 	bool HadCursorHidden = HaveCursorHidden;
 #endif
-#if VarFullScreen && EnableMagnify
+#if EnableMagnify
 	int OldWinState =
 		UseFullScreen ? kWinStateFullScreen : kWinStateWindowed;
 	int OldMagState =
@@ -4684,26 +4598,20 @@ static bool ReCreateMainWindow()
 		OldMagState;
 #endif
 
-#if VarFullScreen
 	if (! UseFullScreen)
-#endif
-#if MayNotFullScreen
 	{
 		SDL_GetWindowPosition(my_main_wind,
 			&WinPositionsX[CurWinIndx],
 			&WinPositionsY[CurWinIndx]);
 		HavePositionWins[CurWinIndx] = true;
 	}
-#endif
 
 	ForceShowCursor(); /* hide/show cursor api is per window */
 
-#if MayFullScreen
 	if (GrabMachine) {
 		GrabMachine = false;
 		UngrabMachine();
 	}
-#endif
 
 	GetMyWState(&old_state);
 
@@ -4712,18 +4620,14 @@ static bool ReCreateMainWindow()
 #if EnableMagnify
 	UseMagnify = WantMagnify;
 #endif
-#if VarFullScreen
 	UseFullScreen = WantFullScreen;
-#endif
 
 	if (! CreateMainWindow()) {
 		CloseMainWindow();
 		SetMyWState(&old_state);
 
 		/* avoid retry */
-#if VarFullScreen
 		WantFullScreen = UseFullScreen;
-#endif
 #if EnableMagnify
 		WantMagnify = UseMagnify;
 #endif
@@ -4751,7 +4655,6 @@ static bool ReCreateMainWindow()
 static void ZapWinStateVars()
 {
 #if SDL_MAJOR_VERSION >= 2
-#if MayNotFullScreen
 	{
 		int i;
 
@@ -4759,8 +4662,7 @@ static void ZapWinStateVars()
 			HavePositionWins[i] = false;
 		}
 	}
-#endif
-#if VarFullScreen && EnableMagnify
+#if EnableMagnify
 	{
 		int i;
 
@@ -4772,7 +4674,6 @@ static void ZapWinStateVars()
 #endif /* SDL_MAJOR_VERSION >= 2 */
 }
 
-#if VarFullScreen
 void ToggleWantFullScreen()
 {
 	WantFullScreen = ! WantFullScreen;
@@ -4808,7 +4709,6 @@ void ToggleWantFullScreen()
 	}
 #endif
 }
-#endif
 
 /* --- SavedTasks --- */
 
@@ -4904,20 +4804,15 @@ static void CheckForSavedTasks()
 #if EnableMagnify
 		|| (UseMagnify != WantMagnify)
 #endif
-#if VarFullScreen
 		|| (UseFullScreen != WantFullScreen)
-#endif
 		)
 	{
 		(void) ReCreateMainWindow();
 	}
 #endif
 
-#if MayFullScreen
 	if (GrabMachine != (
-#if VarFullScreen
 		UseFullScreen &&
-#endif
 		! (gTrueBackgroundFlag || CurSpeedStopped)))
 	{
 		GrabMachine = ! GrabMachine;
@@ -4927,7 +4822,6 @@ static void CheckForSavedTasks()
 			UngrabMachine();
 		}
 	}
-#endif
 
 	if (NeedWholeScreenDraw) {
 		NeedWholeScreenDraw = false;
@@ -5269,9 +5163,7 @@ static void UnInitOSGLU()
 	}
 
 	RestoreKeyRepeat();
-#if MayFullScreen
 	UngrabMachine();
-#endif
 #if MySoundEnabled
 	MySound_Stop();
 #endif

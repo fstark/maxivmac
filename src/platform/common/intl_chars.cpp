@@ -1426,9 +1426,7 @@ bool SpeedStopped = false;
 
 bool RunInBackground = (WantInitRunInBackground != 0);
 
-#if VarFullScreen
-bool WantFullScreen = (WantInitFullScreen != 0);
-#endif
+bool WantFullScreen = false;
 
 #if EnableMagnify
 bool WantMagnify = (WantInitMagnify != 0);
@@ -1491,7 +1489,6 @@ char * GetSubstitutionStr(char x)
 			}
 			break;
 #endif
-#if VarFullScreen
 		case 'f':
 			if (WantFullScreen) {
 				s = kStrOn;
@@ -1499,7 +1496,6 @@ char * GetSubstitutionStr(char x)
 				s = kStrOff;
 			}
 			break;
-#endif
 		case 'b':
 			if (RunInBackground) {
 				s = kStrOn;

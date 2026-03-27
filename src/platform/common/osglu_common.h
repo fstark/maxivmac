@@ -22,13 +22,13 @@
 
 /* --- feature computation macros --- */
 
-#if EnableMouseMotion && MayFullScreen
+#if EnableMouseMotion
 #define EnableFSMouseMotion 1
 #else
 #define EnableFSMouseMotion 0
 #endif
 
-#if EnableMagnify || VarFullScreen
+#if EnableMagnify
 #define EnableRecreateW 1
 #else
 #define EnableRecreateW 0
@@ -87,7 +87,6 @@ extern int16_t ScreenChangedQuietBottom;
 extern int16_t ScreenChangedQuietRight;
 #endif
 
-#if MayFullScreen
 extern uint16_t ViewHSize;
 extern uint16_t ViewVSize;
 extern uint16_t ViewHStart;
@@ -95,7 +94,6 @@ extern uint16_t ViewVStart;
 #if EnableFSMouseMotion
 extern int16_t SavedMouseH;
 extern int16_t SavedMouseV;
-#endif
 #endif
 
 #if EnableFSMouseMotion

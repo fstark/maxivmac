@@ -38,10 +38,6 @@
 #define MKC_formac_ROption MKC_Option
 #define MKC_formac_RShift MKC_Shift
 #define MKC_UnMappedKey  MKC_Control
-#define VarFullScreen 1
-#define WantInitFullScreen 0
-#define MayFullScreen 1
-#define MayNotFullScreen 1
 #define WantInitMagnify 1
 #define EnableMagnify 1
 #define MyWindowScale 2

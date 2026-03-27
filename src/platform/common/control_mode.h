@@ -91,6 +91,4 @@ void WarnMsgUnsupportedDisk();
 /* --- Backend-provided functions --- */
 /* These must be defined by each platform backend */
 
-#if VarFullScreen
 extern void ToggleWantFullScreen();
-#endif

@@ -463,9 +463,7 @@ enum {
 #if EnableMagnify
 	kCntrlMsgMagnify,
 #endif
-#if VarFullScreen
 	kCntrlMsgFullScreen,
-#endif
 #if WantEnblCtrlRst
 	kCntrlMsgConfirmResetStart,
 	kCntrlMsgHaveReset,
@@ -651,12 +649,10 @@ void DoControlModeKey(uint8_t key)
 					ControlMessage = kCntrlMsgMagnify;
 					break;
 #endif
-#if VarFullScreen
 				case MKC_F:
 					ToggleWantFullScreen();
 					ControlMessage = kCntrlMsgFullScreen;
 					break;
-#endif
 #if IncludeHostTextClipExchange
 				case MKC_P:
 					CopyOptionsStr();
@@ -871,9 +867,7 @@ void DrawCellsControlModeBody()
 #if EnableMagnify
 			DrawCellsKeyCommand("M", kStrCmdMagnifyToggle);
 #endif
-#if VarFullScreen
 			DrawCellsKeyCommand("F", kStrCmdFullScrnToggle);
-#endif
 #if WantEnblCtrlKtg
 			DrawCellsKeyCommand("K", kStrCmdCtrlKeyToggle);
 #endif
@@ -923,11 +917,9 @@ void DrawCellsControlModeBody()
 			DrawCellsOneLineStr(kStrNewMagnify);
 			break;
 #endif
-#if VarFullScreen
 		case kCntrlMsgFullScreen:
 			DrawCellsOneLineStr(kStrNewFullScreen);
 			break;
-#endif
 #if IncludeHostTextClipExchange
 		case kCntrlMsgOptionsStrCopied:
 			DrawCellsOneLineStr(kStrHaveCopiedOptions);
