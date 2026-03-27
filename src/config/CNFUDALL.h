@@ -17,6 +17,6 @@ constexpr int NumDrives = 6;
 /* vMacScreenWidth/Height/Depth are now runtime — see platform.h */
 /* kROM_Size is now runtime — see MachineConfig::romSize */
 
-#define NumPbufs 4
+constexpr int NumPbufs = 4;
 
 #define EmLocalTalk 0
