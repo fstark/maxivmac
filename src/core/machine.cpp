@@ -806,17 +806,34 @@ static void SetUp_RAM24()
 	}
 }
 
+/* Mac II/IIx I/O address space */
+namespace io32 {
+	constexpr uint32_t kBase  = 0x50000000;
+	constexpr uint32_t kMask  = 0xFF01E000;
+	constexpr uint32_t kVIA1  = 0x00000;
+	constexpr uint32_t kVIA2  = 0x02000;
+	constexpr uint32_t kSCC   = 0x04000;
+	constexpr uint32_t kExtn  = 0x0C000;
+	constexpr uint32_t kSCSI  = 0x10000;
+	constexpr uint32_t kASC   = 0x14000;
+	constexpr uint32_t kIWM   = 0x16000;
+}
+namespace io24 {
+	constexpr uint32_t kBase  = 0x00F00000;
+	constexpr uint32_t kMask  = 0x00F1E000;
+}
+
 /* Mac II/IIx: I/O space setup */
 static void SetUp_io()
 {
 	ATTer r{};
 
 	if (Addr32) {
-		r.cmpmask = 0xFF01E000;
-		r.cmpvalu = 0x50000000;
+		r.cmpmask = io32::kMask;
+		r.cmpvalu = io32::kBase | io32::kVIA1;
 	} else {
-		r.cmpmask = 0x00F1E000;
-		r.cmpvalu = 0x00F00000;
+		r.cmpmask = io24::kMask;
+		r.cmpvalu = io24::kBase | io32::kVIA1;
 	}
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
@@ -825,11 +842,11 @@ static void SetUp_io()
 	AddToATTList(&r);
 
 	if (Addr32) {
-		r.cmpmask = 0xFF01E000;
-		r.cmpvalu = 0x50000000 | 0x2000;
+		r.cmpmask = io32::kMask;
+		r.cmpvalu = io32::kBase | io32::kVIA2;
 	} else {
-		r.cmpmask = 0x00F1E000;
-		r.cmpvalu = 0x00F00000 | 0x2000;
+		r.cmpmask = io24::kMask;
+		r.cmpvalu = io24::kBase | io32::kVIA2;
 	}
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
@@ -838,11 +855,11 @@ static void SetUp_io()
 	AddToATTList(&r);
 
 	if (Addr32) {
-		r.cmpmask = 0xFF01E000;
-		r.cmpvalu = 0x50000000 | 0x4000;
+		r.cmpmask = io32::kMask;
+		r.cmpvalu = io32::kBase | io32::kSCC;
 	} else {
-		r.cmpmask = 0x00F1E000;
-		r.cmpvalu = 0x00F00000 | 0x4000;
+		r.cmpmask = io24::kMask;
+		r.cmpvalu = io24::kBase | io32::kSCC;
 	}
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
@@ -851,11 +868,11 @@ static void SetUp_io()
 	AddToATTList(&r);
 
 	if (Addr32) {
-		r.cmpmask = 0xFF01E000;
-		r.cmpvalu = 0x50000000 | 0x0C000;
+		r.cmpmask = io32::kMask;
+		r.cmpvalu = io32::kBase | io32::kExtn;
 	} else {
-		r.cmpmask = 0x00F1E000;
-		r.cmpvalu = 0x00F00000 | 0x0C000;
+		r.cmpmask = io24::kMask;
+		r.cmpvalu = io24::kBase | io32::kExtn;
 	}
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
@@ -864,11 +881,11 @@ static void SetUp_io()
 	AddToATTList(&r);
 
 	if (Addr32) {
-		r.cmpmask = 0xFF01E000;
-		r.cmpvalu = 0x50000000 | 0x10000;
+		r.cmpmask = io32::kMask;
+		r.cmpvalu = io32::kBase | io32::kSCSI;
 	} else {
-		r.cmpmask = 0x00F1E000;
-		r.cmpvalu = 0x00F00000 | 0x10000;
+		r.cmpmask = io24::kMask;
+		r.cmpvalu = io24::kBase | io32::kSCSI;
 	}
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
@@ -877,11 +894,11 @@ static void SetUp_io()
 	AddToATTList(&r);
 
 	if (Addr32) {
-		r.cmpmask = 0xFF01E000;
-		r.cmpvalu = 0x50000000 | 0x14000;
+		r.cmpmask = io32::kMask;
+		r.cmpvalu = io32::kBase | io32::kASC;
 	} else {
-		r.cmpmask = 0x00F1E000;
-		r.cmpvalu = 0x00F00000 | 0x14000;
+		r.cmpmask = io24::kMask;
+		r.cmpvalu = io24::kBase | io32::kASC;
 	}
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
@@ -890,11 +907,11 @@ static void SetUp_io()
 	AddToATTList(&r);
 
 	if (Addr32) {
-		r.cmpmask = 0xFF01E000;
-		r.cmpvalu = 0x50000000 | 0x16000;
+		r.cmpmask = io32::kMask;
+		r.cmpvalu = io32::kBase | io32::kIWM;
 	} else {
-		r.cmpmask = 0x00F1E000;
-		r.cmpvalu = 0x00F00000 | 0x16000;
+		r.cmpmask = io24::kMask;
+		r.cmpvalu = io24::kBase | io32::kIWM;
 	}
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
