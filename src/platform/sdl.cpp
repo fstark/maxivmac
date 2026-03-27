@@ -5231,9 +5231,7 @@ static void UninitWhereAmI()
 static bool InitOSGLU()
 {
 #define INIT_STEP(name, expr) \
-	fprintf(stderr, "[SDL init] " name "...\n"); \
-	if (!(expr)) { fprintf(stderr, "[SDL init] " name " FAILED\n"); return false; } \
-	fprintf(stderr, "[SDL init] " name " ok\n");
+	if (!(expr)) { fprintf(stderr, "[SDL init] " name " FAILED\n"); return false; }
 
 	INIT_STEP("AllocMyMemory", AllocMyMemory())
 #if CanGetAppPath
