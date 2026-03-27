@@ -959,7 +959,7 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 	if (CurDown != down) {
 		MyEvtQEl *p = MyEvtQElAlloc();
 		if (nullptr != p) {
-			p->kind = MyEvtQElKindKey;
+			p->kind = EvtQElKind::Key;
 			p->u.press.key = k;
 			p->u.press.down = down;
 
@@ -981,7 +981,7 @@ void MyMouseButtonSet(bool down)
 	if (MyMouseButtonState != down) {
 		MyEvtQEl *p = MyEvtQElAlloc();
 		if (nullptr != p) {
-			p->kind = MyEvtQElKindMouseButton;
+			p->kind = EvtQElKind::MouseButton;
 			p->u.press.down = down;
 
 			MyMouseButtonState = down;
@@ -996,13 +996,13 @@ void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
 	if ((dh != 0) || (dv != 0)) {
 		MyEvtQEl *p = MyEvtQElPreviousIn();
-		if ((nullptr != p) && (MyEvtQElKindMouseDelta == p->kind)) {
+		if ((nullptr != p) && (EvtQElKind::MouseDelta == p->kind)) {
 			p->u.pos.h += dh;
 			p->u.pos.v += dv;
 		} else {
 			p = MyEvtQElAlloc();
 			if (nullptr != p) {
-				p->kind = MyEvtQElKindMouseDelta;
+				p->kind = EvtQElKind::MouseDelta;
 				p->u.pos.h = dh;
 				p->u.pos.v = dv;
 			}
@@ -1020,11 +1020,11 @@ void MyMousePositionSet(uint16_t h, uint16_t v)
 {
 	if ((h != MyMousePosCurH) || (v != MyMousePosCurV)) {
 		MyEvtQEl *p = MyEvtQElPreviousIn();
-		if ((nullptr == p) || (MyEvtQElKindMousePos != p->kind)) {
+		if ((nullptr == p) || (EvtQElKind::MousePos != p->kind)) {
 			p = MyEvtQElAlloc();
 		}
 		if (nullptr != p) {
-			p->kind = MyEvtQElKindMousePos;
+			p->kind = EvtQElKind::MousePos;
 			p->u.pos.h = h;
 			p->u.pos.v = v;
 

@@ -238,14 +238,16 @@ extern void LT_ReceivePacket();
 
 extern void WaitForNextTick();
 
-#define MyEvtQElKindKey 0
-#define MyEvtQElKindMouseButton 1
-#define MyEvtQElKindMousePos 2
-#define MyEvtQElKindMouseDelta 3
+enum class EvtQElKind : uint8_t {
+	Key        = 0,
+	MouseButton = 1,
+	MousePos   = 2,
+	MouseDelta = 3,
+};
 
 struct MyEvtQEl {
 	/* expected size : 8 bytes */
-	uint8_t kind;
+	EvtQElKind kind;
 	uint8_t pad[3];
 	union {
 		struct {

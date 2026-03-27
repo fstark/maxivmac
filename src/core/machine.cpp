@@ -1754,7 +1754,7 @@ uint16_t MasterMyEvtQLock = 0;
 		(0 == MasterMyEvtQLock) &&
 		(nullptr != (p = MyEvtQOutP())))
 	{
-		if (MyEvtQElKindKey == p->kind) {
+		if (EvtQElKind::Key == p->kind) {
 			*VirtualKey = p->u.press.key;
 			*KeyDown = p->u.press.down;
 			MyEvtQOutDone();

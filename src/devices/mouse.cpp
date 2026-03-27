@@ -62,7 +62,7 @@ void MouseDevice::update()
 			(nullptr != (p = MyEvtQOutP())))
 		{
 			if (g_machine->config().emClassicKbrd
-				&& MyEvtQElKindMouseDelta == p->kind)
+				&& EvtQElKind::MouseDelta == p->kind)
 			{
 				if ((p->u.pos.h != 0) || (p->u.pos.v != 0)) {
 					put_ram_word(0x0828,
@@ -74,7 +74,7 @@ void MouseDevice::update()
 				}
 				MyEvtQOutDone();
 			} else
-			if (MyEvtQElKindMousePos == p->kind) {
+			if (EvtQElKind::MousePos == p->kind) {
 				uint32_t NewMouse = (p->u.pos.v << 16) | p->u.pos.h;
 
 				if (get_ram_long(0x0828) != NewMouse) {
@@ -103,7 +103,7 @@ void MouseDevice::update()
 			(0 == MasterMyEvtQLock) &&
 			(nullptr != (p = MyEvtQOutP())))
 		{
-			if (MyEvtQElKindMouseButton == p->kind) {
+			if (EvtQElKind::MouseButton == p->kind) {
 				g_wires.set(Wire_VIA1_iB3, p->u.press.down ? 0 : 1);
 				MyEvtQOutDone();
 				MasterMyEvtQLock = 4;
