@@ -41,11 +41,11 @@ for the full list.
   `Addr32_ChangeNtfy`, etc. in `machine.cpp`; wire-to-callback mappings
   in `CNFUDPIC.h`).  No longer dead code.
 - ✅ `Ui3rPowOf2` macro removed (no longer present in codebase).
+- ✅ `src/unused/` deleted (LTOVRUDP.h, LTOVRBPF.h, SGLUALSA.h, SGLUDDSP.h
+  removed).
 
 ### Remaining
 
-- ❌ Delete `src/unused/` — still has 4 files (LTOVRUDP.h, LTOVRBPF.h,
-  SGLUALSA.h, SGLUDDSP.h).
 - ❌ Strip `#if 0` blocks — ~80+ instances remain across `m68k_tables.cpp`,
   `m68k.cpp`, `fpu_math.h`, `sony.cpp`, `video.cpp`, `asc.cpp`, `disasm.cpp`,
   `machine.cpp`, and others.  (Exclude valid `#if 0 != VAR` conditionals.)
