@@ -73,29 +73,26 @@ static tMacErr vSonyTransferVM(bool IsWrite,
 		into account that the emulated memory may not be contiguous in
 		real memory. (Though it generally is for macintosh emulation.)
 	*/
-	tMacErr result;
+	tMacErr result = mnvm_noErr;
 	uint32_t contig;
 	uint32_t actual;
 	uint8_t * Buffer;
 	uint32_t offset = Sony_Start;
 	uint32_t n = Sony_Count;
 
-label_1:
-	if (0 == n) {
-		result = mnvm_noErr;
-	} else {
+	while (n != 0) {
 		Buffer = get_real_address0(n, ! IsWrite, Buffera, &contig);
 		if (0 == contig) {
 			result = mnvm_miscErr;
-		} else {
-			result = vSonyTransfer(IsWrite, Buffer, Drive_No,
-				offset, contig, &actual);
-			offset += actual;
-			Buffera += actual;
-			n -= actual;
-			if (mnvm_noErr == result) {
-				goto label_1;
-			}
+			break;
+		}
+		result = vSonyTransfer(IsWrite, Buffer, Drive_No,
+			offset, contig, &actual);
+		offset += actual;
+		Buffera += actual;
+		n -= actual;
+		if (mnvm_noErr != result) {
+			break;
 		}
 	}
 
@@ -113,22 +110,20 @@ static void MyMoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
 	uint32_t contigDst;
 	uint32_t contig;
 
-label_1:
-	if (0 != byteCount) {
+	while (byteCount != 0) {
 		src = get_real_address0(byteCount, false, srcPtr,
 			&contigSrc);
 		dst = get_real_address0(byteCount, true,  dstPtr,
 			&contigDst);
 		if ((0 == contigSrc) || (0 == contigDst)) {
 			ReportAbnormalID(0x0901, "MyMoveBytesVM fails");
-		} else {
-			contig = (contigSrc < contigDst) ? contigSrc : contigDst;
-			MyMoveBytes(src, dst, contig);
-			srcPtr += contig;
-			dstPtr += contig;
-			byteCount -= contig;
-			goto label_1;
+			break;
 		}
+		contig = (contigSrc < contigDst) ? contigSrc : contigDst;
+		MyMoveBytes(src, dst, contig);
+		srcPtr += contig;
+		dstPtr += contig;
+		byteCount -= contig;
 	}
 }
 
@@ -1047,7 +1042,7 @@ static tMacErr Sony_PrimeTags(tDrive Drive_No,
 					result = vSonyTransferVM(true, 0x02FC, Drive_No,
 						TagOffset, count, nullptr);
 					if (mnvm_noErr != result) {
-						goto label_fail;
+						return result;
 					}
 					BufTgFBkNum += 1;
 					TagOffset += 12;
@@ -1056,7 +1051,6 @@ static tMacErr Sony_PrimeTags(tDrive Drive_No,
 		}
 	}
 
-label_fail:
 	return result;
 }
 #endif
@@ -1099,7 +1093,6 @@ static tMacErr Sony_Prime(uint32_t p)
 				put_vm_byte(dvl + kDiskInPlace, 0x02); /* Clamp Drive */
 			} else {
 				result = mnvm_offLinErr;
-				goto label_fail;
 				/*
 					if don't check for this, will go right
 					ahead and boot off a disk that hasn't
@@ -1107,6 +1100,7 @@ static tMacErr Sony_Prime(uint32_t p)
 					(disks other than the boot disk aren't
 					seen unless mounted by Sony_Update)
 				*/
+				goto done;
 			}
 		}
 
@@ -1152,7 +1146,7 @@ static tMacErr Sony_Prime(uint32_t p)
 		}
 	}
 
-label_fail:
+done:
 	put_vm_word(ParamBlk + kioResult, static_cast<uint16_t>(result));
 	put_vm_long(ParamBlk + kioActCount, Sony_ActCount);
 

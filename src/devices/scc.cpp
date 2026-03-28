@@ -185,10 +185,13 @@ static void GetNextPacketForMe()
 	uint8_t src;
 	uint8_t type;
 
-label_retry:
-	LT_ReceivePacket();
+	for (;;) {
+		LT_ReceivePacket();
 
-	if (nullptr != LT_RxBuffer) {
+		if (nullptr == LT_RxBuffer) {
+			break;
+		}
+
 		/* Is this packet destined for me? */
 		dst = LT_RxBuffer[0];
 		src = LT_RxBuffer[1];
@@ -211,8 +214,8 @@ label_retry:
 			dbglog_WriteNote("SCC ignore packet not for me");
 #endif
 			LT_RxBuffer = nullptr;
-			goto label_retry;
-		} else
+			continue;
+		}
 #if LT_MayHaveEcho
 		if (CertainlyNotMyPacket) {
 #if SCC_dolog
@@ -239,7 +242,7 @@ label_retry:
 				dbglog_WriteNote("received lapENQ probably from us");
 #endif
 				LT_RxBuffer = nullptr;
-				goto label_retry;
+				continue;
 			}
 		} else
 		if (0x82 == type) {
@@ -248,7 +251,7 @@ label_retry:
 				dbglog_WriteNote("received lapACK probably from us");
 #endif
 				LT_RxBuffer = nullptr;
-				goto label_retry;
+				continue;
 			} else {
 				/* lapACK, pass it on handle collision */
 #if SCC_dolog
@@ -261,7 +264,7 @@ label_retry:
 			dbglog_WriteNote("SCC ignore packet from myself");
 #endif
 			LT_RxBuffer = nullptr;
-			goto label_retry;
+			continue;
 		}
 #else
 		{
@@ -275,6 +278,7 @@ label_retry:
 			/* ok */
 		}
 #endif
+		break;
 	}
 }
 

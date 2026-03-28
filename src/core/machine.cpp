@@ -278,27 +278,21 @@ static uint32_t addrmap_kASC_ln2Spc() {
 static tMacErr PbufTransferVM(uint32_t Buffera,
 	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
 {
-	tMacErr result;
 	uint32_t contig;
 	uint8_t * Buffer;
 
-label_1:
-	if (0 == count) {
-		result = mnvm_noErr;
-	} else {
+	while (count != 0) {
 		Buffer = get_real_address0(count, ! IsWrite, Buffera, &contig);
 		if (0 == contig) {
-			result = mnvm_miscErr;
-		} else {
-			PbufTransfer(Buffer, i, offset, contig, IsWrite);
-			offset += contig;
-			Buffera += contig;
-			count -= contig;
-			goto label_1;
+			return mnvm_miscErr;
 		}
+		PbufTransfer(Buffer, i, offset, contig, IsWrite);
+		offset += contig;
+		Buffera += contig;
+		count -= contig;
 	}
 
-	return result;
+	return mnvm_noErr;
 }
 #endif
 

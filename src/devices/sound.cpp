@@ -115,9 +115,11 @@ void SoundDevice::subTick(int SubTick)
 	dbglog_writeReturn();
 #endif
 
-label_retry:
-	p = MySound_BeginWrite(n, &actL);
-	if (actL > 0) {
+	while (n > 0) {
+		p = MySound_BeginWrite(n, &actL);
+		if (actL <= 0) {
+			break;
+		}
 		if (g_wires.get(Wire_SoundDisable) && (SoundInvertTime == 0)) {
 			for (i = 0; i < actL; i++) {
 				/* But this avoids more clicks. */
@@ -188,8 +190,5 @@ label_retry:
 
 		MySound_EndWrite(actL);
 		n -= actL;
-		if (n > 0) {
-			goto label_retry;
-		}
 	}
 }

@@ -781,17 +781,18 @@ static void dbglog_write(char *p, uint32_t L)
 	uint32_t newbufpos = dbglog_bufpos + L;
 	uint32_t newbufdiv = FloorDivPow2(newbufpos, dbglog_buflnsz);
 
-label_retry:
-	curbufdiv = FloorDivPow2(dbglog_bufpos, dbglog_buflnsz);
-	bufposmod = ModPow2(dbglog_bufpos, dbglog_buflnsz);
-	if (newbufdiv != curbufdiv) {
+	for (;;) {
+		curbufdiv = FloorDivPow2(dbglog_bufpos, dbglog_buflnsz);
+		bufposmod = ModPow2(dbglog_bufpos, dbglog_buflnsz);
+		if (newbufdiv == curbufdiv) {
+			break;
+		}
 		r = dbglog_bufsz - bufposmod;
 		MyMoveBytes((uint8_t *)p, (uint8_t *)(dbglog_bufp + bufposmod), r);
 		dbglog_write0(dbglog_bufp, dbglog_bufsz);
 		L -= r;
 		p += r;
 		dbglog_bufpos += r;
-		goto label_retry;
 	}
 	MyMoveBytes((uint8_t *)p, (uint8_t *)dbglog_bufp + bufposmod, L);
 	dbglog_bufpos = newbufpos;
@@ -1185,26 +1186,24 @@ void LT_PickStampNodeHint()
 	{
 		int i = 8 + 1;
 
-label_retry:
-		/* user node should be in 1-127 */
+		for (;;) {
+			/* user node should be in 1-127 */
 
-		LT_NodeHint = e_p[1] & 0x7F;
+			LT_NodeHint = e_p[1] & 0x7F;
 
 #if dbglog_HAVE && 1
-		dbglog_writelnNum("LT_NodeHint ", LT_NodeHint);
+			dbglog_writelnNum("LT_NodeHint ", LT_NodeHint);
 #endif
 
-		if (0 != LT_NodeHint) {
-			/* ok */
-		} else
-		if (0 == --i) {
-			/* just maybe, randomness is broken */
-			LT_NodeHint = 4;
-		} else
-		{
+			if (0 != LT_NodeHint) {
+				break;
+			}
+			if (0 == --i) {
+				/* just maybe, randomness is broken */
+				LT_NodeHint = 4;
+				break;
+			}
 			EntropyPoolStir();
-
-			goto label_retry;
 		}
 	}
 }

@@ -958,7 +958,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		}
 
 		if ((top >= bottom) || (left >= right)) {
-			goto label_exit;
+			return;
 		}
 	}
 
@@ -1282,8 +1282,6 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	
 	SDL_RenderPresent(my_renderer);
 
-label_exit:
-	;
 #endif /* SDL_MAJOR_VERSION >= 2 */
 #endif /* 0 != SDL_MAJOR_VERSION */
 }
@@ -2228,86 +2226,86 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 	dbglog_writelnNum("len", len);
 #endif
 
-label_retry:
-	ToPlayLen = *datp->fFillOffset - CurPlayOffset;
-	FilledSoundBuffs = ToPlayLen >> kLnOneBuffLen;
+	while (len > 0) {
+		ToPlayLen = *datp->fFillOffset - CurPlayOffset;
+		FilledSoundBuffs = ToPlayLen >> kLnOneBuffLen;
 
-	if (! datp->wantplaying) {
+		if (! datp->wantplaying) {
 #if dbglog_SoundStuff
-		dbglog_writeln("playing end transistion");
+			dbglog_writeln("playing end transistion");
 #endif
 
-		SoundRampTo(&v1, kCenterTempSound, &dst, &len);
+			SoundRampTo(&v1, kCenterTempSound, &dst, &len);
 
-		ToPlayLen = 0;
-	} else if (! datp->HaveStartedPlaying) {
-#if dbglog_SoundStuff
-		dbglog_writeln("playing start block");
-#endif
-
-		if ((ToPlayLen >> kLnOneBuffLen) < 8) {
 			ToPlayLen = 0;
-		} else {
-			tpSoundSamp p = datp->fTheSoundBuffer
-				+ (CurPlayOffset & kAllBuffMask);
-			trSoundTemp v2 = ConvertTempSoundSampleFromNative(*p);
-
+		} else if (! datp->HaveStartedPlaying) {
 #if dbglog_SoundStuff
-			dbglog_writeln("have enough samples to start");
+			dbglog_writeln("playing start block");
 #endif
 
-			SoundRampTo(&v1, v2, &dst, &len);
+			if ((ToPlayLen >> kLnOneBuffLen) < 8) {
+				ToPlayLen = 0;
+			} else {
+				tpSoundSamp p = datp->fTheSoundBuffer
+					+ (CurPlayOffset & kAllBuffMask);
+				trSoundTemp v2 = ConvertTempSoundSampleFromNative(*p);
 
-			if (v1 == v2) {
 #if dbglog_SoundStuff
-				dbglog_writeln("finished start transition");
+				dbglog_writeln("have enough samples to start");
 #endif
 
-				datp->HaveStartedPlaying = true;
+				SoundRampTo(&v1, v2, &dst, &len);
+
+				if (v1 == v2) {
+#if dbglog_SoundStuff
+					dbglog_writeln("finished start transition");
+#endif
+
+					datp->HaveStartedPlaying = true;
+				}
 			}
 		}
-	}
 
-	if (0 == len) {
-		/* done */
+		if (0 == len) {
+			/* done */
 
-		if (FilledSoundBuffs < *datp->fMinFilledSoundBuffs) {
-			*datp->fMinFilledSoundBuffs = FilledSoundBuffs;
-		}
-	} else if (0 == ToPlayLen) {
+			if (FilledSoundBuffs < *datp->fMinFilledSoundBuffs) {
+				*datp->fMinFilledSoundBuffs = FilledSoundBuffs;
+			}
+		} else if (0 == ToPlayLen) {
 
 #if dbglog_SoundStuff
-		dbglog_writeln("under run");
+			dbglog_writeln("under run");
 #endif
 
-		for (i = 0; i < len; ++i) {
-			*dst++ = ConvertTempSoundSampleToNative(v1);
+			for (i = 0; i < len; ++i) {
+				*dst++ = ConvertTempSoundSampleToNative(v1);
+			}
+			*datp->fMinFilledSoundBuffs = 0;
+			break;
+		} else {
+			uint16_t PlayBuffContig = kAllBuffLen
+				- (CurPlayOffset & kAllBuffMask);
+			tpSoundSamp p = CurSoundBuffer
+				+ (CurPlayOffset & kAllBuffMask);
+
+			if (ToPlayLen > PlayBuffContig) {
+				ToPlayLen = PlayBuffContig;
+			}
+			if (ToPlayLen > len) {
+				ToPlayLen = len;
+			}
+
+			for (i = 0; i < ToPlayLen; ++i) {
+				*dst++ = *p++;
+			}
+			v1 = ConvertTempSoundSampleFromNative(p[-1]);
+
+			CurPlayOffset += ToPlayLen;
+			len -= ToPlayLen;
+
+			*datp->fPlayOffset = CurPlayOffset;
 		}
-		*datp->fMinFilledSoundBuffs = 0;
-	} else {
-		uint16_t PlayBuffContig = kAllBuffLen
-			- (CurPlayOffset & kAllBuffMask);
-		tpSoundSamp p = CurSoundBuffer
-			+ (CurPlayOffset & kAllBuffMask);
-
-		if (ToPlayLen > PlayBuffContig) {
-			ToPlayLen = PlayBuffContig;
-		}
-		if (ToPlayLen > len) {
-			ToPlayLen = len;
-		}
-
-		for (i = 0; i < ToPlayLen; ++i) {
-			*dst++ = *p++;
-		}
-		v1 = ConvertTempSoundSampleFromNative(p[-1]);
-
-		CurPlayOffset += ToPlayLen;
-		len -= ToPlayLen;
-
-		*datp->fPlayOffset = CurPlayOffset;
-
-		goto label_retry;
 	}
 
 	datp->lastv = v1;
@@ -2342,19 +2340,8 @@ static void MySound_Stop()
 
 		cur_audio.wantplaying = false;
 
-label_retry:
-		if (kCenterTempSound == cur_audio.lastv) {
-#if dbglog_SoundStuff
-			dbglog_writeln("reached kCenterTempSound");
-#endif
-
-			/* done */
-		} else if (0 == --retry_limit) {
-#if dbglog_SoundStuff
-			dbglog_writeln("retry limit reached");
-#endif
-			/* done */
-		} else
+		while (kCenterTempSound != cur_audio.lastv
+			&& --retry_limit != 0)
 		{
 			/*
 				give time back, particularly important
@@ -2368,9 +2355,15 @@ label_retry:
 #if 0 != SDL_MAJOR_VERSION
 			(void) SDL_Delay(10);
 #endif
-
-			goto label_retry;
 		}
+
+#if dbglog_SoundStuff
+		if (kCenterTempSound == cur_audio.lastv) {
+			dbglog_writeln("reached kCenterTempSound");
+		} else {
+			dbglog_writeln("retry limit reached");
+		}
+#endif
 
 #if 0 != SDL_MAJOR_VERSION
 		#if SDL_MAJOR_VERSION >= 3
@@ -3148,59 +3141,66 @@ static tMacErr UniCodeStrLength(char *s, uint32_t *r)
 	char *p = s;
 	uint32_t L = 0;
 
-label_retry:
-	if (0 == (t = *p++)) {
-		err = mnvm_noErr;
-		/* done */
-	} else
-	if (0 == (0x80 & t)) {
-		/* One-byte code */
-		L += 1;
-		goto label_retry;
-	} else
-	if (0 == (0x40 & t)) {
-		/* continuation code, error */
-		err = mnvm_miscErr;
-	} else
-	if (0 == (t2 = *p++)) {
-		err = mnvm_miscErr;
-	} else
-	if (0x80 != (0xC0 & t2)) {
-		/* not a continuation code, error */
-		err = mnvm_miscErr;
-	} else
-	if (0 == (0x20 & t)) {
-		/* two bytes */
-		L += 2;
-		goto label_retry;
-	} else
-	if (0 == (t2 = *p++)) {
-		err = mnvm_miscErr;
-	} else
-	if (0x80 != (0xC0 & t2)) {
-		/* not a continuation code, error */
-		err = mnvm_miscErr;
-	} else
-	if (0 == (0x10 & t)) {
-		/* three bytes */
-		L += 3;
-		goto label_retry;
-	} else
-	if (0 == (t2 = *p++)) {
-		err = mnvm_miscErr;
-	} else
-	if (0x80 != (0xC0 & t2)) {
-		/* not a continuation code, error */
-		err = mnvm_miscErr;
-	} else
-	if (0 == (0x08 & t)) {
-		/* four bytes */
-		L += 5;
-		goto label_retry;
-	} else
-	{
+	for (;;) {
+		if (0 == (t = *p++)) {
+			err = mnvm_noErr;
+			break;
+		}
+		if (0 == (0x80 & t)) {
+			/* One-byte code */
+			L += 1;
+			continue;
+		}
+		if (0 == (0x40 & t)) {
+			/* continuation code, error */
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0 == (t2 = *p++)) {
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0x80 != (0xC0 & t2)) {
+			/* not a continuation code, error */
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0 == (0x20 & t)) {
+			/* two bytes */
+			L += 2;
+			continue;
+		}
+		if (0 == (t2 = *p++)) {
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0x80 != (0xC0 & t2)) {
+			/* not a continuation code, error */
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0 == (0x10 & t)) {
+			/* three bytes */
+			L += 3;
+			continue;
+		}
+		if (0 == (t2 = *p++)) {
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0x80 != (0xC0 & t2)) {
+			/* not a continuation code, error */
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0 == (0x08 & t)) {
+			/* four bytes */
+			L += 5;
+			continue;
+		}
 		err = mnvm_miscErr;
 		/* longer code not supported yet */
+		break;
 	}
 
 	*r = L;
@@ -3493,67 +3493,74 @@ static void UniCodeStr2MacRoman(char *s, char *r)
 	/* suppress compiler warning about 'err' being unused */
 	UNUSED(err);
 
-label_retry:
-	if (0 == (t = *p++)) {
-		err = mnvm_noErr;
-		/* done */
-	} else
-	if (0 == (0x80 & t)) {
-		*q++ = t;
-		goto label_retry;
-	} else
-	if (0 == (0x40 & t)) {
-		/* continuation code, error */
-		err = mnvm_miscErr;
-	} else
-	if (0 == (t2 = *p++)) {
-		err = mnvm_miscErr;
-	} else
-	if (0x80 != (0xC0 & t2)) {
-		/* not a continuation code, error */
-		err = mnvm_miscErr;
-	} else
-	if (0 == (0x20 & t)) {
-		/* two bytes */
-		v = t & 0x1F;
-		v = (v << 6) | (t2 & 0x3F);
-		*q++ = UniCodePoint2MacRoman(v);
-		goto label_retry;
-	} else
-	if (0 == (t3 = *p++)) {
-		err = mnvm_miscErr;
-	} else
-	if (0x80 != (0xC0 & t3)) {
-		/* not a continuation code, error */
-		err = mnvm_miscErr;
-	} else
-	if (0 == (0x10 & t)) {
-		/* three bytes */
-		v = t & 0x0F;
-		v = (v << 6) | (t3 & 0x3F);
-		v = (v << 6) | (t2 & 0x3F);
-		*q++ = UniCodePoint2MacRoman(v);
-		goto label_retry;
-	} else
-	if (0 == (t4 = *p++)) {
-		err = mnvm_miscErr;
-	} else
-	if (0x80 != (0xC0 & t4)) {
-		/* not a continuation code, error */
-		err = mnvm_miscErr;
-	} else
-	if (0 == (0x08 & t)) {
-		/* four bytes */
-		v = t & 0x07;
-		v = (v << 6) | (t4 & 0x3F);
-		v = (v << 6) | (t3 & 0x3F);
-		v = (v << 6) | (t2 & 0x3F);
-		*q++ = UniCodePoint2MacRoman(v);
-		goto label_retry;
-	} else
-	{
+	for (;;) {
+		if (0 == (t = *p++)) {
+			err = mnvm_noErr;
+			break;
+		}
+		if (0 == (0x80 & t)) {
+			*q++ = t;
+			continue;
+		}
+		if (0 == (0x40 & t)) {
+			/* continuation code, error */
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0 == (t2 = *p++)) {
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0x80 != (0xC0 & t2)) {
+			/* not a continuation code, error */
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0 == (0x20 & t)) {
+			/* two bytes */
+			v = t & 0x1F;
+			v = (v << 6) | (t2 & 0x3F);
+			*q++ = UniCodePoint2MacRoman(v);
+			continue;
+		}
+		if (0 == (t3 = *p++)) {
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0x80 != (0xC0 & t3)) {
+			/* not a continuation code, error */
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0 == (0x10 & t)) {
+			/* three bytes */
+			v = t & 0x0F;
+			v = (v << 6) | (t3 & 0x3F);
+			v = (v << 6) | (t2 & 0x3F);
+			*q++ = UniCodePoint2MacRoman(v);
+			continue;
+		}
+		if (0 == (t4 = *p++)) {
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0x80 != (0xC0 & t4)) {
+			/* not a continuation code, error */
+			err = mnvm_miscErr;
+			break;
+		}
+		if (0 == (0x08 & t)) {
+			/* four bytes */
+			v = t & 0x07;
+			v = (v << 6) | (t4 & 0x3F);
+			v = (v << 6) | (t3 & 0x3F);
+			v = (v << 6) | (t2 & 0x3F);
+			*q++ = UniCodePoint2MacRoman(v);
+			continue;
+		}
 		err = mnvm_miscErr;
 		/* longer code not supported yet */
+		break;
 	}
 }
 
@@ -4750,22 +4757,19 @@ static bool ScanCommandLine()
 	dbglog_writeln("enter ScanCommandLine"); /*^*/
 #endif
 
-label_retry:
-	if (i < my_argc) {
+	while (i < my_argc) {
 		pa = my_argv[i++];
 		if ('-' == pa[0]) {
 			if (0 == strcmp(pa, "--rom"))
 			{
 				if (i < my_argc) {
 					rom_path = my_argv[i++];
-					goto label_retry;
 				}
 			} else
 			if (0 == strncmp(pa, "--rom=", 6))
 			{
 				/* --rom=path form (also handled by ProgramEarlyInit) */
 				rom_path = pa + 6;
-				goto label_retry;
 			} else
 			{
 				/* ignore unrecognized options (e.g. --model, --help
@@ -4781,12 +4785,9 @@ label_retry:
 						++i; /* skip the value */
 					}
 				}
-				goto label_retry;
 			}
-		} else {
-			/* positional disk paths are handled via lc.diskPaths in main() */
-			goto label_retry;
 		}
+		/* else: positional disk paths are handled via lc.diskPaths in main() */
 	}
 
 	return true;
@@ -4842,29 +4843,32 @@ void WaitForNextTick()
 		return;
 	}
 
-label_retry:
-	CheckForSystemEvents();
-	CheckForSavedTasks();
+	for (;;) {
+		CheckForSystemEvents();
+		CheckForSavedTasks();
 
-	if (ForceMacOff) {
-		return;
-	}
+		if (ForceMacOff) {
+			return;
+		}
 
-	if (CurSpeedStopped) {
-		DoneWithDrawingForTick();
-		WaitForTheNextEvent();
-		goto label_retry;
-	}
+		if (CurSpeedStopped) {
+			DoneWithDrawingForTick();
+			WaitForTheNextEvent();
+			continue;
+		}
 
 #if ! HaveWorkingTime
-	++TrueEmulatedTime;
+		++TrueEmulatedTime;
 #endif
 
-	if (ExtraTimeNotOver()) {
+		if (ExtraTimeNotOver()) {
 #if 0 != SDL_MAJOR_VERSION
-		(void) SDL_Delay(NextIntTime - LastTime);
+			(void) SDL_Delay(NextIntTime - LastTime);
 #endif
-		goto label_retry;
+			continue;
+		}
+
+		break;
 	}
 
 	if (CheckDateTime()) {

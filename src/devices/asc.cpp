@@ -479,9 +479,11 @@ void ASCDevice::subTick(int SubTick)
 	uint16_t n = SubTick_n[SubTick];
 	uint8_t SoundVolume = SoundReg_Volume;
 
-label_retry:
-	p = MySound_BeginWrite(n, &actL);
-	if (actL > 0) {
+	while (n > 0) {
+		p = MySound_BeginWrite(n, &actL);
+		if (actL <= 0) {
+			break;
+		}
 
 		if (1 == SoundReg801) {
 			uint8_t * addr;
@@ -700,9 +702,6 @@ label_retry:
 
 		MySound_EndWrite(actL);
 		n -= actL;
-		if (n > 0) {
-			goto label_retry;
-		}
 	}
 
 #if 1
