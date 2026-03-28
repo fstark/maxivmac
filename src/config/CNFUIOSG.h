@@ -18,5 +18,5 @@
 #define kStrAppName "Maxi vMac"
 #define kAppVariationStr "maxivmac-sdl"
 #define kStrCopyrightYear "2026"
-#define kMaintainerName "egon.rath@gmail.com"
-#define kStrHomePage "https://github.com/egrath"
+#define kMaintainerName "Fred Stark"
+#define kStrHomePage "https://github.com/fstark/maxivmac"
