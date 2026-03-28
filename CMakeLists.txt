@@ -80,6 +80,7 @@ set(MINIVMAC_SOURCES
     src/platform/common/dbglog_platform.cpp
     src/platform/common/tick_timer.cpp
     src/platform/common/disk_io.cpp
+    src/platform/common/clipboard.cpp
     src/platform/common/rom_loader.cpp
     src/lang/localization.cpp
     src/lang/lang_english.cpp
