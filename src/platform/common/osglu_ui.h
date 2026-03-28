@@ -19,7 +19,7 @@
 		for operating system glue.
 		Such as includes of API header files
 	*/
-#include "CNFUIALL.h"
+#include "core/types.h"
 	/*
 		Configuration file independent of user options
 		for all code.

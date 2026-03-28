@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "CNFUIALL.h"
+#include "core/types.h"
 	/* see OSGCOMUI.h for comment */
 #include "core/defaults.h"
 	/* see OSGCOMUI.h for comment */
