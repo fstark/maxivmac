@@ -42,7 +42,7 @@ static char *pref_dir = nullptr;
 static SDL_AudioStream *stream = nullptr;
 
 // Build a full path from directory x and filename y, adding separator.
-static tMacErr ChildPath(char *x, char *y, char **r)
+tMacErr ChildPath(char *x, char *y, char **r)
 {
 	tMacErr err = mnvm_miscErr;
 	int nx = strlen(x);
@@ -152,6 +152,7 @@ void dbglog_close0()
 
 #include "platform/common/mac_roman.h"
 #include "platform/common/disk_io.h"
+#include "platform/common/rom_loader.h"
 
 /* --- text translation --- */
 
@@ -187,125 +188,6 @@ static void NativeStrFromCStr(char *r, const char *s)
 
 
 
-
-/* Open a ROM file, validate its size, and copy into the emulator
-   ROM buffer.  Reports user-visible errors on failure. */
-static tMacErr LoadMacRomFrom(char *path)
-{
-	tMacErr err;
-	FILE * ROM_File;
-	int File_Size;
-
-	ROM_File = fopen(path, "rb");
-	if (nullptr == ROM_File) {
-		err = mnvm_fnfErr;
-	} else {
-		const uint32_t romSize = g_machine->config().romSize;
-		File_Size = fread(ROM, 1, romSize, ROM_File);
-		if ((uint32_t)File_Size != romSize) {
-			if (feof(ROM_File))
-			{
-				MacMsgOverride(Localize(kStrShortROMTitle),
-					Localize(kStrShortROMMessage));
-				err = mnvm_eofErr;
-			} else {
-				MacMsgOverride(Localize(kStrNoReadROMTitle),
-					Localize(kStrNoReadROMMessage));
-				err = mnvm_miscErr;
-			}
-		} else {
-			err = ROM_IsValid();
-		}
-		fclose(ROM_File);
-	}
-
-	return err;
-}
-
-	/* otherwise no drag and drop to make use of this */
-
-/* Resolve a disk path relative to the working directory or
-   app parent, then attempt to insert it. */
-
-
-
-/* --- ROM --- */
-
-static char *rom_path = nullptr;
-
-static tMacErr LoadMacRomFromPrefDir()
-{
-	tMacErr err;
-	char *t = nullptr;
-	char *t2 = nullptr;
-	const char *romFileName = g_machine->config().romFileName;
-
-	if (nullptr == pref_dir) {
-		err = mnvm_fnfErr;
-	} else
-	if (mnvm_noErr != (err =
-		ChildPath(pref_dir, "mnvm_rom", &t)))
-	{
-		/* fail */
-	} else
-	if (mnvm_noErr != (err =
-		ChildPath(t, const_cast<char*>(romFileName), &t2)))
-	{
-		/* fail */
-	} else
-	{
-		err = LoadMacRomFrom(t2);
-	}
-
-	free(t2);
-	free(t);
-
-	return err;
-}
-
-static tMacErr LoadMacRomFromAppPar()
-{
-	tMacErr err;
-	const char *romFileName = g_machine->config().romFileName;
-	char *d =
-		(nullptr == d_arg) ? app_parent :
-		d_arg;
-
-	if (nullptr == d) {
-		err = mnvm_fnfErr;
-	} else
-	{
-		char *t = nullptr;
-
-		if (mnvm_noErr != (err =
-			ChildPath(d, const_cast<char*>(romFileName), &t)))
-		{
-			/* fail */
-		} else
-		{
-			err = LoadMacRomFrom(t);
-		}
-
-		free(t);
-	}
-
-	return err;
-}
-
-static bool LoadMacRom()
-{
-	tMacErr err;
-
-	if ((nullptr == rom_path)
-		|| (mnvm_fnfErr == (err = LoadMacRomFrom(rom_path))))
-	if (mnvm_fnfErr == (err = LoadMacRomFromAppPar()))
-	if (mnvm_fnfErr == (err = LoadMacRomFromPrefDir()))
-	if (mnvm_fnfErr == (err = LoadMacRomFrom(const_cast<char*>(g_machine->config().romFileName))))
-	{
-	}
-
-	return true; /* keep launching Mini vMac, regardless */
-}
 
 /* --- disk insertion helpers --- */
 
@@ -2950,7 +2832,7 @@ static bool InitOSGLU()
 	dbglog_open();
 #endif
 	INIT_STEP("ScanCommandLine", ScanCommandLine())
-	INIT_STEP("LoadMacRom", LoadMacRom())
+	INIT_STEP("LoadMacRom", LoadMacRom(d_arg, app_parent, pref_dir))
 	INIT_STEP("LoadInitialImages", LoadInitialImages())
 	INIT_STEP("InitLocationDat", InitLocationDat())
 	INIT_STEP("Screen_Init", Screen_Init())

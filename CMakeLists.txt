@@ -77,6 +77,7 @@ set(MINIVMAC_SOURCES
     src/platform/common/control_mode.cpp
     src/platform/common/mac_roman.cpp
     src/platform/common/disk_io.cpp
+    src/platform/common/rom_loader.cpp
     src/lang/localization.cpp
     src/lang/lang_english.cpp
     src/lang/lang_french.cpp
