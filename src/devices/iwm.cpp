@@ -17,6 +17,7 @@
 
 #include "devices/iwm.h"
 #include "core/machine_obj.h"
+#include "core/abnormal_ids.h"
 
 /* Global singleton */
 
@@ -88,7 +89,7 @@ static uint8_t IWM_Read_Reg()
 	switch ((IWM.Lines & (kq6 + kq7)) >> 6) {
 		case 0 :
 		if (!g_machine->config().isSEOrLater()) {
-			ReportAbnormalID(0x0601, "IWM Data Read");
+			ReportAbnormalID(AbnormalID::kVIA2_IWM_Data_Read, "IWM Data Read");
 		}
 #if IWM_dolog
 			dbglog_WriteNote("IWM Data Read");
@@ -102,7 +103,7 @@ static uint8_t IWM_Read_Reg()
 			return IWM.Status;
 			break;
 		case 2 :
-			ReportAbnormalID(0x0602, "IWM Handshake Read");
+			ReportAbnormalID(AbnormalID::kVIA2_IWM_Handshake_Read, "IWM Handshake Read");
 #if IWM_dolog
 			dbglog_WriteNote("IWM Handshake Read");
 #endif

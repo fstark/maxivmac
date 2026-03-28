@@ -18,6 +18,7 @@
 
 #include "devices/sony.h"
 #include "core/machine_obj.h"
+#include "core/abnormal_ids.h"
 
 
 /*
@@ -116,7 +117,7 @@ static void MyMoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
 		dst = get_real_address0(byteCount, true,  dstPtr,
 			&contigDst);
 		if ((0 == contigSrc) || (0 == contigDst)) {
-			ReportAbnormalID(0x0901, "MyMoveBytesVM fails");
+			ReportAbnormalID(AbnormalID::kSONY_MyMoveBytesVM_fails, "MyMoveBytesVM fails");
 			break;
 		}
 		contig = (contigSrc < contigDst) ? contigSrc : contigDst;
@@ -223,7 +224,7 @@ static void Drive_UpdateChecksums(tDrive Drive_No)
 			result = DC42BlockChecksum(Drive_No,
 				DataOffset, DataSize, &dataChecksum);
 			if (mnvm_noErr != result) {
-				ReportAbnormalID(0x0902, "Failed to find dataChecksum");
+				ReportAbnormalID(AbnormalID::kSONY_Failed_to_find_dataChecksum, "Failed to find dataChecksum");
 				dataChecksum = 0;
 			}
 			do_put_mem_long(Buffer, dataChecksum);
@@ -244,7 +245,7 @@ static void Drive_UpdateChecksums(tDrive Drive_No)
 					result = DC42BlockChecksum(Drive_No,
 						TagOffset + 12, TagSize - 12, &tagChecksum);
 					if (mnvm_noErr != result) {
-						ReportAbnormalID(0x0903,
+						ReportAbnormalID(AbnormalID::kSONY_Failed_to_find_tagChecksum,
 							"Failed to find tagChecksum");
 						tagChecksum = 0;
 					}
@@ -346,11 +347,11 @@ static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 									tagChecksum = 0;
 								}
 								if (dataChecksum != dataChecksum0) {
-									ReportAbnormalID(0x0904,
+									ReportAbnormalID(AbnormalID::kSONY_bad_dataChecksum,
 										"bad dataChecksum");
 								}
 								if (tagChecksum != tagChecksum0) {
-									ReportAbnormalID(0x0905,
+									ReportAbnormalID(AbnormalID::kSONY_bad_tagChecksum,
 										"bad tagChecksum");
 								}
 #endif
@@ -1126,7 +1127,7 @@ static tMacErr Sony_Prime(uint32_t p)
 		{
 			/* only whole blocks allowed */
 #if ExtraAbnormalReports
-			ReportAbnormalID(0x0908, "not blockwise in Sony_Prime");
+			ReportAbnormalID(AbnormalID::kSONY_not_blockwise_in_Sony_Prime, "not blockwise in Sony_Prime");
 #endif
 			result = mnvm_paramErr;
 		} else if (IsWrite && (get_vm_byte(dvl + kWriteProt) != 0)) {
@@ -1310,7 +1311,7 @@ static tMacErr Sony_Control(uint32_t p)
 						&& (kMediaIcon != OpCode)
 						&& (kDriveInfo != OpCode))
 					{
-						ReportAbnormalID(0x0909,
+						ReportAbnormalID(AbnormalID::kSONY_unexpected_OpCode_in_Sony_Control,
 							"unexpected OpCode in Sony_Control");
 					}
 #endif
@@ -1362,7 +1363,7 @@ static tMacErr Sony_Status(uint32_t p)
 		if ((kReturnFormatList != OpCode)
 			&& (kDuplicatorVersionSupport != OpCode))
 		{
-			ReportAbnormalID(0x090A,
+			ReportAbnormalID(AbnormalID::kSONY_unexpected_OpCode_in_Sony_Control_2,
 				"unexpected OpCode in Sony_Control");
 		}
 #endif

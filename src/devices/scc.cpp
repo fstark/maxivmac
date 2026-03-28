@@ -26,6 +26,7 @@
 #include "devices/scc.h"
 #include "core/wire_bus.h"
 #include "core/machine_obj.h"
+#include "core/abnormal_ids.h"
 
 /* Global singleton */
 
@@ -63,7 +64,7 @@ static void LT_TransmitPacket1()
 #endif
 
 	if (LT_TxBuffSz < 3) {
-		ReportAbnormalID(0x0721,
+		ReportAbnormalID(AbnormalID::kSCC_packet_too_small_in,
 			"packet too small in "
 				"in LT_TransmitPacket1");
 	} else {
@@ -88,7 +89,7 @@ static void LT_TransmitPacket1()
 			/* control packet */
 
 			if (3 != LT_TxBuffSz) {
-				ReportAbnormalID(0x0722,
+				ReportAbnormalID(AbnormalID::kSCC_unexpected_size_of_control_packet_in,
 					"unexpected size of control packet in "
 						"in LT_TransmitPacket1");
 			}
@@ -119,7 +120,7 @@ static void LT_TransmitPacket1()
 #endif
 				} else
 				if (CTSpacketPending) {
-					ReportAbnormalID(0x0701,
+					ReportAbnormalID(AbnormalID::kSCC_Already_CTSpacketPending,
 						"Already CTSpacketPending "
 							"in LT_TransmitPacket1");
 				} else
@@ -717,13 +718,13 @@ static void SCC_TxBuffPut(uint8_t Data)
 static void rx_complete()
 {
 	if (SCC.a[1].EndOfFrame) {
-		ReportAbnormalID(0x0702, "EndOfFrame true in rx_complete");
+		ReportAbnormalID(AbnormalID::kSCC_EndOfFrame_true_in_rx_complete, "EndOfFrame true in rx_complete");
 	}
 	if (! SCC.a[1].RxChrAvail) {
-		ReportAbnormalID(0x0703, "RxChrAvail false in rx_complete");
+		ReportAbnormalID(AbnormalID::kSCC_RxChrAvail_false_in_rx_complete, "RxChrAvail false in rx_complete");
 	}
 	if (SCC.a[1].SyncHunt) {
-		ReportAbnormalID(0x0704, "SyncHunt true in rx_complete");
+		ReportAbnormalID(AbnormalID::kSCC_SyncHunt_true_in_rx_complete, "SyncHunt true in rx_complete");
 	}
 
 	/*
@@ -921,7 +922,7 @@ static uint8_t SCC_GetRR3(int chan)
 	uint8_t value = 0;
 
 	UnusedParam(chan);
-	ReportAbnormalID(0x0706, "RR 3");
+	ReportAbnormalID(AbnormalID::kSCC_RR_3, "RR 3");
 
 
 	return value;
@@ -949,7 +950,7 @@ static uint8_t SCC_GetRR8(int chan)
 #else
 		/* Rx Enable */
 		if (!g_machine->config().isSEOrLater()) {
-			ReportAbnormalID(0x0707, "read rr8 when RxEnable");
+			ReportAbnormalID(AbnormalID::kSCC_read_rr8_when_RxEnable, "read rr8 when RxEnable");
 		}
 
 		/* Input 1 byte from Modem Port/Printer into Data */
@@ -979,7 +980,7 @@ static uint8_t SCC_GetRR12(int chan)
 #if ! SCC_TrackMore
 	UnusedParam(chan);
 #endif
-	ReportAbnormalID(0x0708, "RR 12");
+	ReportAbnormalID(AbnormalID::kSCC_RR_12, "RR 12");
 
 #if SCC_TrackMore /* don't care about Baud */
 	value = SCC.a[chan].BaudLo;
@@ -995,7 +996,7 @@ static uint8_t SCC_GetRR13(int chan)
 #if ! SCC_TrackMore
 	UnusedParam(chan);
 #endif
-	ReportAbnormalID(0x0709, "RR 13");
+	ReportAbnormalID(AbnormalID::kSCC_RR_13, "RR 13");
 
 #if SCC_TrackMore /* don't care about Baud */
 	value = SCC.a[chan].BaudHi;
@@ -1009,7 +1010,7 @@ static uint8_t SCC_GetRR15(int chan)
 	uint8_t value = 0;
 
 	UnusedParam(chan);
-	ReportAbnormalID(0x070A, "RR 15");
+	ReportAbnormalID(AbnormalID::kSCC_RR_15, "RR 15");
 
 
 	return value;
@@ -1049,7 +1050,7 @@ static void SCC_PutWR0(uint8_t Data, int chan)
 {
 	switch ((Data >> 6) & 3) {
 		case 1:
-			ReportAbnormalID(0x070B, "Reset Rx CRC Checker");
+			ReportAbnormalID(AbnormalID::kSCC_Reset_Rx_CRC_Checker, "Reset Rx CRC Checker");
 			break;
 		case 2:
 #if SCC_dolog
@@ -1091,7 +1092,7 @@ static void SCC_PutWR0(uint8_t Data, int chan)
 			SCC.a[chan].SyncHunt = false;
 			break;
 		case 3:
-			ReportAbnormalID(0x070C, "Send Abort (SDLC)");
+			ReportAbnormalID(AbnormalID::kSCC_Send_Abort_SDLC, "Send Abort (SDLC)");
 #if EmLocalTalk
 			SCC.a[chan].TxBufferEmpty = true;
 #endif
@@ -1222,7 +1223,7 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 					/* happens in Print to ImageWriter */
 					break;
 				case 3:
-					ReportAbnormalID(0x070D,
+					ReportAbnormalID(AbnormalID::kSCC_Rx_INT_on_special_condition_only,
 						"Rx INT on special condition only");
 					break;
 			}
@@ -1299,16 +1300,16 @@ static void SCC_PutWR2(uint8_t Data, int chan)
 		SCC.InterruptVector = Data;
 	}
 	if ((Data & (1 << 0)) != 0) { /* interrupt vector 0 */
-		ReportAbnormalID(0x070E, "interrupt vector 0");
+		ReportAbnormalID(AbnormalID::kSCC_interrupt_vector_0, "interrupt vector 0");
 	}
 	if ((Data & (1 << 1)) != 0) { /* interrupt vector 1 */
-		ReportAbnormalID(0x070F, "interrupt vector 1");
+		ReportAbnormalID(AbnormalID::kSCC_interrupt_vector_1, "interrupt vector 1");
 	}
 	if ((Data & (1 << 2)) != 0) { /* interrupt vector 2 */
-		ReportAbnormalID(0x0710, "interrupt vector 2");
+		ReportAbnormalID(AbnormalID::kSCC_interrupt_vector_2, "interrupt vector 2");
 	}
 	if ((Data & (1 << 3)) != 0) { /* interrupt vector 3 */
-		ReportAbnormalID(0x0711, "interrupt vector 3");
+		ReportAbnormalID(AbnormalID::kSCC_interrupt_vector_3, "interrupt vector 3");
 	}
 	if ((Data & (1 << 4)) != 0) { /* interrupt vector 4 */
 		/* happens on boot with appletalk on */
@@ -1317,10 +1318,10 @@ static void SCC_PutWR2(uint8_t Data, int chan)
 		/* happens on boot with appletalk on */
 	}
 	if ((Data & (1 << 6)) != 0) { /* interrupt vector 6 */
-		ReportAbnormalID(0x0712, "interrupt vector 6");
+		ReportAbnormalID(AbnormalID::kSCC_interrupt_vector_6, "interrupt vector 6");
 	}
 	if ((Data & (1 << 7)) != 0) { /* interrupt vector 7 */
-		ReportAbnormalID(0x0713, "interrupt vector 7");
+		ReportAbnormalID(AbnormalID::kSCC_interrupt_vector_7, "interrupt vector 7");
 	}
 }
 
@@ -1368,7 +1369,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 			use DCD input as receiver enable,
 			and set RTS output when transmit buffer empty
 		*/
-		ReportAbnormalID(0x0714, "Auto Enables");
+		ReportAbnormalID(AbnormalID::kSCC_Auto_Enables, "Auto Enables");
 	}
 
 	if ((Data & (1 << 4)) != 0) { /* Enter Hunt Mode */
@@ -1546,7 +1547,7 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 					/* happens on boot always */
 					break;
 				case 1:
-					ReportAbnormalID(0x0715, "16 bit sync char");
+					ReportAbnormalID(AbnormalID::kSCC_16_bit_sync_char, "16 bit sync char");
 					break;
 				case 2:
 #if SCC_dolog
@@ -1558,7 +1559,7 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 #endif
 					break;
 				case 3:
-					ReportAbnormalID(0x0716, "External sync mode");
+					ReportAbnormalID(AbnormalID::kSCC_External_sync_mode, "External sync mode");
 					break;
 			}
 		}
@@ -1587,10 +1588,10 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 					/* happens on boot always */
 					break;
 				case 2:
-					ReportAbnormalID(0x0717, "Clock Rate <- X32");
+					ReportAbnormalID(AbnormalID::kSCC_Clock_Rate_X32, "Clock Rate <- X32");
 					break;
 				case 3:
-					ReportAbnormalID(0x0718, "Clock Rate <- X64");
+					ReportAbnormalID(AbnormalID::kSCC_Clock_Rate_X64, "Clock Rate <- X64");
 					break;
 			}
 		}
@@ -1637,7 +1638,7 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 #endif
 
 	if ((Data & (1 << 2)) != 0) { /* SDLC/CRC-16 */
-		ReportAbnormalID(0x0719, "SDLC/CRC-16");
+		ReportAbnormalID(AbnormalID::kSCC_SDLC_CRC_16, "SDLC/CRC-16");
 	}
 
 	{
@@ -1687,13 +1688,13 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 
 			switch (NewTBitsPerChar) {
 				case 0:
-					ReportAbnormalID(0x071A, "Tx Bits/Character <- 5");
+					ReportAbnormalID(AbnormalID::kSCC_Tx_Bits_Character_5, "Tx Bits/Character <- 5");
 					break;
 				case 1:
-					ReportAbnormalID(0x071B, "Tx Bits/Character <- 7");
+					ReportAbnormalID(AbnormalID::kSCC_Tx_Bits_Character_7, "Tx Bits/Character <- 7");
 					break;
 				case 2:
-					ReportAbnormalID(0x071C, "Tx Bits/Character <- 6");
+					ReportAbnormalID(AbnormalID::kSCC_Tx_Bits_Character_6, "Tx Bits/Character <- 6");
 					break;
 				case 3:
 #if SCC_dolog
@@ -1766,11 +1767,11 @@ static void SCC_PutWR7(uint8_t Data, int chan)
 #if SCC_TrackMore
 	if (2 == SCC.a[chan].SyncMode) {
 		if (0x7E != Data) {
-			ReportAbnormalID(0x071D,
+			ReportAbnormalID(AbnormalID::kSCC_unexpect_flag_character_for_SDLC,
 				"unexpect flag character for SDLC");
 		}
 	} else {
-		ReportAbnormalID(0x071E, "WR7 and not SDLC");
+		ReportAbnormalID(AbnormalID::kSCC_WR7_and_not_SDLC, "WR7 and not SDLC");
 	}
 #endif
 }
@@ -1811,7 +1812,7 @@ static void SCC_PutWR8(uint8_t Data, int chan)
 		SCC.a[chan].TxIP = true;
 		CheckSCCInterruptFlag();
 	} else {
-		ReportAbnormalID(0x071F,
+		ReportAbnormalID(AbnormalID::kSCC_write_when_Transmit_Buffer_not_Enabled,
 			"write when Transmit Buffer not Enabled");
 	}
 }
@@ -1827,7 +1828,7 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 	UnusedParam(chan);
 
 	if ((Data & (1 << 0)) != 0) { /* VIS */
-		ReportAbnormalID(0x0720, "VIS");
+		ReportAbnormalID(AbnormalID::kSCC_VIS, "VIS");
 	}
 
 #if SCC_TrackMore
@@ -1845,7 +1846,7 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 #endif
 
 	if ((Data & (1 << 2)) != 0) { /* DLC */
-		ReportAbnormalID(0x0723, "DLC");
+		ReportAbnormalID(AbnormalID::kSCC_DLC, "DLC");
 	}
 
 	{
@@ -1862,10 +1863,10 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 	}
 
 	if ((Data & (1 << 4)) != 0) { /* Status high/low */
-		ReportAbnormalID(0x0724, "Status high/low");
+		ReportAbnormalID(AbnormalID::kSCC_Status_high_low, "Status high/low");
 	}
 	if ((Data & (1 << 5)) != 0) { /* WR9 b5 should be 0 */
-		ReportAbnormalID(0x0725, "WR9 b5 should be 0");
+		ReportAbnormalID(AbnormalID::kSCC_WR9_b5_should_be_0, "WR9 b5 should be 0");
 	}
 
 	switch ((Data >> 6) & 3) {
@@ -1890,7 +1891,7 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 			dbglog_WriteNote("SCC Force Hardware Reset");
 #endif
 			if (!g_machine->config().isSEOrLater()) {
-				ReportAbnormalID(0x0726, "SCC_Reset");
+				ReportAbnormalID(AbnormalID::kSCC_SCC_Reset, "SCC_Reset");
 			}
 			g_machine->findDevice<SCCDevice>()->reset();
 			CheckSCCInterruptFlag();
@@ -1912,19 +1913,19 @@ static void SCC_PutWR10(uint8_t Data, int chan)
 #endif
 
 	if ((Data & (1 << 0)) != 0) { /* 6 bit/8 bit sync */
-		ReportAbnormalID(0x0727, "6 bit/8 bit sync");
+		ReportAbnormalID(AbnormalID::kSCC_6_bit_8_bit_sync, "6 bit/8 bit sync");
 	}
 	if ((Data & (1 << 1)) != 0) { /* loop mode */
-		ReportAbnormalID(0x0728, "loop mode");
+		ReportAbnormalID(AbnormalID::kSCC_loop_mode, "loop mode");
 	}
 	if ((Data & (1 << 2)) != 0) { /* abort/flag on underrun */
-		ReportAbnormalID(0x0729, "abort/flag on underrun");
+		ReportAbnormalID(AbnormalID::kSCC_abort_flag_on_underrun, "abort/flag on underrun");
 	}
 	if ((Data & (1 << 3)) != 0) { /* mark/flag idle */
-		ReportAbnormalID(0x072A, "mark/flag idle");
+		ReportAbnormalID(AbnormalID::kSCC_mark_flag_idle, "mark/flag idle");
 	}
 	if ((Data & (1 << 4)) != 0) { /* go active on poll */
-		ReportAbnormalID(0x072B, "go active on poll");
+		ReportAbnormalID(AbnormalID::kSCC_go_active_on_poll, "go active on poll");
 	}
 
 #if SCC_TrackMore
@@ -1943,10 +1944,10 @@ static void SCC_PutWR10(uint8_t Data, int chan)
 					/* happens in Print to ImageWriter */
 					break;
 				case 1:
-					ReportAbnormalID(0x072C, "Data Encoding <- NRZI");
+					ReportAbnormalID(AbnormalID::kSCC_Data_Encoding_NRZI, "Data Encoding <- NRZI");
 					break;
 				case 2:
-					ReportAbnormalID(0x072D, "Data Encoding <- FM1");
+					ReportAbnormalID(AbnormalID::kSCC_Data_Encoding_FM1, "Data Encoding <- FM1");
 					break;
 				case 3:
 #if SCC_dolog
@@ -2005,15 +2006,15 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 					/* happens in MacCheck */
 					break;
 				case 1:
-					ReportAbnormalID(0x072E,
+					ReportAbnormalID(AbnormalID::kSCC_TRxC_OUT_transmit_clock,
 						"TRxC OUT = transmit clock");
 					break;
 				case 2:
-					ReportAbnormalID(0x072F,
+					ReportAbnormalID(AbnormalID::kSCC_TRxC_OUT_BR_generator_output,
 						"TRxC OUT = BR generator output");
 					break;
 				case 3:
-					ReportAbnormalID(0x0730, "TRxC OUT = dpll output");
+					ReportAbnormalID(AbnormalID::kSCC_TRxC_OUT_dpll_output, "TRxC OUT = dpll output");
 					break;
 			}
 		}
@@ -2021,7 +2022,7 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 #endif
 
 	if ((Data & (1 << 2)) != 0) {
-		ReportAbnormalID(0x0731, "TRxC O/I");
+		ReportAbnormalID(AbnormalID::kSCC_TRxC_O_I, "TRxC O/I");
 	}
 
 #if SCC_TrackMore
@@ -2032,7 +2033,7 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 
 			switch (NewTClkSlct) {
 				case 0:
-					ReportAbnormalID(0x0732,
+					ReportAbnormalID(AbnormalID::kSCC_transmit_clock_RTxC_pin,
 						"transmit clock = RTxC pin");
 					break;
 				case 1:
@@ -2052,7 +2053,7 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 					/* happens in MacCheck */
 					break;
 				case 3:
-					ReportAbnormalID(0x0733,
+					ReportAbnormalID(AbnormalID::kSCC_transmit_clock_dpll_output,
 						"transmit clock = dpll output");
 					break;
 			}
@@ -2068,7 +2069,7 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 
 			switch (NewRClkSlct) {
 				case 0:
-					ReportAbnormalID(0x0734,
+					ReportAbnormalID(AbnormalID::kSCC_receive_clock_RTxC_pin,
 						"receive clock = RTxC pin");
 					break;
 				case 1:
@@ -2099,7 +2100,7 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 #endif
 
 	if ((Data & (1 << 7)) != 0) {
-		ReportAbnormalID(0x0735, "RTxC XTAL/NO XTAL");
+		ReportAbnormalID(AbnormalID::kSCC_RTxC_XTAL_NO_XTAL, "RTxC XTAL/NO XTAL");
 	}
 }
 
@@ -2180,16 +2181,16 @@ static void SCC_PutWR14(uint8_t Data, int chan)
 #endif
 
 	if ((Data & (1 << 1)) != 0) { /* BR generator source */
-		ReportAbnormalID(0x0736, "BR generator source");
+		ReportAbnormalID(AbnormalID::kSCC_BR_generator_source, "BR generator source");
 	}
 	if ((Data & (1 << 2)) != 0) { /* DTR/request function */
-		ReportAbnormalID(0x0737, "DTR/request function");
+		ReportAbnormalID(AbnormalID::kSCC_DTR_request_function, "DTR/request function");
 	}
 	if ((Data & (1 << 3)) != 0) { /* auto echo */
-		ReportAbnormalID(0x0738, "auto echo");
+		ReportAbnormalID(AbnormalID::kSCC_auto_echo, "auto echo");
 	}
 	if ((Data & (1 << 4)) != 0) { /* local loopback */
-		ReportAbnormalID(0x0739, "local loopback");
+		ReportAbnormalID(AbnormalID::kSCC_local_loopback, "local loopback");
 	}
 
 	switch ((Data >> 5) & 7) {
@@ -2211,7 +2212,7 @@ static void SCC_PutWR14(uint8_t Data, int chan)
 			*/
 			break;
 		case 3:
-			ReportAbnormalID(0x073A, "disable dpll");
+			ReportAbnormalID(AbnormalID::kSCC_disable_dpll, "disable dpll");
 			/*
 				should clear Bit 6 and Bit 7 of RR[10], but
 				since these are never set, don't need
@@ -2219,10 +2220,10 @@ static void SCC_PutWR14(uint8_t Data, int chan)
 			*/
 			break;
 		case 4:
-			ReportAbnormalID(0x073B, "set source = br generator");
+			ReportAbnormalID(AbnormalID::kSCC_set_source_br_generator, "set source = br generator");
 			break;
 		case 5:
-			ReportAbnormalID(0x073C, "set source = RTxC");
+			ReportAbnormalID(AbnormalID::kSCC_set_source_RTxC, "set source = RTxC");
 			break;
 		case 6:
 #if SCC_dolog
@@ -2231,7 +2232,7 @@ static void SCC_PutWR14(uint8_t Data, int chan)
 			/* happens on boot with appletalk on */
 			break;
 		case 7:
-			ReportAbnormalID(0x073D, "set NRZI mode");
+			ReportAbnormalID(AbnormalID::kSCC_set_NRZI_mode, "set NRZI mode");
 			break;
 		case 0: /* No Reset */
 		default:
@@ -2249,24 +2250,24 @@ static void SCC_PutWR15(uint8_t Data, int chan)
 #endif
 
 	if ((Data & (1 << 0)) != 0) { /* WR15 b0 should be 0 */
-		ReportAbnormalID(0x073E, "WR15 b0 should be 0");
+		ReportAbnormalID(AbnormalID::kSCC_WR15_b0_should_be_0, "WR15 b0 should be 0");
 	}
 	if ((Data & (1 << 1)) != 0) { /* zero count IE */
-		ReportAbnormalID(0x073F, "zero count IE");
+		ReportAbnormalID(AbnormalID::kSCC_zero_count_IE, "zero count IE");
 	}
 	if ((Data & (1 << 2)) != 0) { /* WR15 b2 should be 0 */
-		ReportAbnormalID(0x0740, "WR15 b2 should be 0");
+		ReportAbnormalID(AbnormalID::kSCC_WR15_b2_should_be_0, "WR15 b2 should be 0");
 	}
 
 	if ((Data & (1 << 3)) == 0) { /* DCD_IE */
 		if (!g_machine->config().isSEOrLater()) {
-			ReportAbnormalID(0x0741, "not DCD IE");
+			ReportAbnormalID(AbnormalID::kSCC_not_DCD_IE, "not DCD IE");
 		}
 	}
 
 	if ((Data & (1 << 4)) != 0) {
 		/* SYNC/HUNT IE */
-		ReportAbnormalID(0x0742, "SYNC/HUNT IE");
+		ReportAbnormalID(AbnormalID::kSCC_SYNC_HUNT_IE, "SYNC/HUNT IE");
 	}
 
 #if SCC_TrackMore /* don't care about CTS_IE */
@@ -2285,7 +2286,7 @@ static void SCC_PutWR15(uint8_t Data, int chan)
 #endif
 
 	if ((Data & (1 << 6)) != 0) { /* Tx underrun/EOM IE */
-		ReportAbnormalID(0x0743, "Tx underrun/EOM IE");
+		ReportAbnormalID(AbnormalID::kSCC_Tx_underrun_EOM_IE, "Tx underrun/EOM IE");
 	}
 
 #if SCC_TrackMore
@@ -2322,33 +2323,33 @@ static uint8_t SCC_GetReg(int chan, uint8_t SCC_Reg)
 			value = SCC_GetRR3(chan);
 			break;
 		case 4:
-			ReportAbnormalID(0x0744, "RR 4"); /* same as RR0 */
+			ReportAbnormalID(AbnormalID::kSCC_RR_4, "RR 4"); /* same as RR0 */
 			value = SCC_GetRR0(chan);
 			break;
 		case 5:
-			ReportAbnormalID(0x0745, "RR 5"); /* same as RR1 */
+			ReportAbnormalID(AbnormalID::kSCC_RR_5, "RR 5"); /* same as RR1 */
 			value = SCC_GetRR1(chan);
 			break;
 		case 6:
-			ReportAbnormalID(0x0746, "RR 6"); /* same as RR2 */
+			ReportAbnormalID(AbnormalID::kSCC_RR_6, "RR 6"); /* same as RR2 */
 			value = SCC_GetRR2(chan);
 			break;
 		case 7:
-			ReportAbnormalID(0x0747, "RR 7"); /* same as RR3 */
+			ReportAbnormalID(AbnormalID::kSCC_RR_7, "RR 7"); /* same as RR3 */
 			value = SCC_GetRR3(chan);
 			break;
 		case 8:
 			value = SCC_GetRR8(chan);
 			break;
 		case 9:
-			ReportAbnormalID(0x0748, "RR 9"); /* same as RR13 */
+			ReportAbnormalID(AbnormalID::kSCC_RR_9, "RR 9"); /* same as RR13 */
 			value = SCC_GetRR13(chan);
 			break;
 		case 10:
 			value = SCC_GetRR10(chan);
 			break;
 		case 11:
-			ReportAbnormalID(0x0749, "RR 11"); /* same as RR15 */
+			ReportAbnormalID(AbnormalID::kSCC_RR_11, "RR 11"); /* same as RR15 */
 			value = SCC_GetRR15(chan);
 			break;
 		case 12:
@@ -2358,14 +2359,14 @@ static uint8_t SCC_GetReg(int chan, uint8_t SCC_Reg)
 			value = SCC_GetRR13(chan);
 			break;
 		case 14:
-			ReportAbnormalID(0x074A, "RR 14");
+			ReportAbnormalID(AbnormalID::kSCC_RR_14, "RR 14");
 			value = 0;
 			break;
 		case 15:
 			value = SCC_GetRR15(chan);
 			break;
 		default:
-			ReportAbnormalID(0x074B,
+			ReportAbnormalID(AbnormalID::kSCC_unexpected_SCC_Reg_in_SCC_GetReg,
 				"unexpected SCC_Reg in SCC_GetReg");
 			value = 0;
 			break;
@@ -2452,7 +2453,7 @@ static void SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 			SCC_PutWR15(Data, chan);
 			break;
 		default:
-			ReportAbnormalID(0x074C,
+			ReportAbnormalID(AbnormalID::kSCC_unexpected_SCC_Reg_in_SCC_PutReg,
 				"unexpected SCC_Reg in SCC_PutReg");
 			break;
 	}

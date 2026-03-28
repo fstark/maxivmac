@@ -17,6 +17,7 @@
 #include "core/common.h"
 #include "core/machine_config.h"
 #include "core/state_recorder.hpp"
+#include "core/abnormal_ids.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -1027,7 +1028,7 @@ static uint32_t get_disp_ea(uint32_t base)
 			switch ((dp >> 4) & 0x03) {
 				case 0:
 					/* reserved */
-					ReportAbnormalID(0x0101, "Extension Word: dp reserved");
+					ReportAbnormalID(AbnormalID::kCPU_Extension_Word_dp_reserved, "Extension Word: dp reserved");
 					break;
 				case 1:
 					/* no displacement */
@@ -1053,7 +1054,7 @@ static uint32_t get_disp_ea(uint32_t base)
 			if ((dp & 0x03) == 0) {
 				base += regd;
 				if ((dp & 0x04) != 0) {
-					ReportAbnormalID(0x0102,
+					ReportAbnormalID(AbnormalID::kCPU_Extension_Word_reserved_dp_form,
 						"Extension Word: reserved dp form");
 				}
 				/* ReportAbnormal("Extension Word: noindex"); */
@@ -3480,7 +3481,7 @@ static void NeedDefaultLazyXFlag()
 {
 #if ForceFlagsEval
 	if (kLazyFlagsDefault != V_regs.LazyXFlagKind) {
-		ReportAbnormalID(0x0103,
+		ReportAbnormalID(AbnormalID::kCPU_not_kLazyFlagsDefault_in_NeedDefaultLazy,
 			"not kLazyFlagsDefault in NeedDefaultLazyXFlag");
 	}
 #else
@@ -3873,7 +3874,7 @@ static void NeedDefaultLazyAllFlags0()
 static void NeedDefaultLazyAllFlags()
 {
 	if (kLazyFlagsDefault != V_regs.LazyFlagKind) {
-		ReportAbnormalID(0x0104,
+		ReportAbnormalID(AbnormalID::kCPU_not_kLazyFlagsDefault_in_NeedDefaultLazy_2,
 			"not kLazyFlagsDefault in NeedDefaultLazyAllFlags");
 #if dbglog_HAVE
 		dbglog_writelnNum("LazyFlagKind", V_regs.LazyFlagKind);
@@ -4509,14 +4510,14 @@ static void m68k_setSR(uint16_t newsr)
 	if (s_cpuConfig->use68020) {
 		V_regs.t0 = (newsr >> 14) & 1;
 		if (V_regs.t0 != 0) {
-			ReportAbnormalID(0x0105, "t0 flag set in m68k_setSR");
+			ReportAbnormalID(AbnormalID::kCPU_t0_flag_set_in_m68k_setSR, "t0 flag set in m68k_setSR");
 		}
 	}
 	V_regs.s = (newsr >> 13) & 1;
 	if (s_cpuConfig->use68020) {
 		V_regs.m = (newsr >> 12) & 1;
 		if (V_regs.m != 0) {
-			ReportAbnormalID(0x0106, "m flag set in m68k_setSR");
+			ReportAbnormalID(AbnormalID::kCPU_m_flag_set_in_m68k_setSR, "m flag set in m68k_setSR");
 		}
 	}
 	V_regs.intmask = (newsr >> 8) & 7;
@@ -6560,33 +6561,33 @@ static void DoCodeRte()
 					/* ReportAbnormal("rte stack frame format 0"); */
 					break;
 				case 1:
-					ReportAbnormalID(0x0107,
+					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_1,
 						"rte stack frame format 1");
 					NewPC = m68k_getpc() - 2;
 						/* rerun instruction */
 					break;
 				case 2:
-					ReportAbnormalID(0x0108,
+					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_2,
 						"rte stack frame format 2");
 					stackp += 4;
 					break;
 				case 9:
-					ReportAbnormalID(0x0109,
+					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_9,
 						"rte stack frame format 9");
 					stackp += 12;
 					break;
 				case 10:
-					ReportAbnormalID(0x010A,
+					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_10,
 						"rte stack frame format 10");
 					stackp += 24;
 					break;
 				case 11:
-					ReportAbnormalID(0x010B,
+					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_11,
 						"rte stack frame format 11");
 					stackp += 84;
 					break;
 				default:
-					ReportAbnormalID(0x010C,
+					ReportAbnormalID(AbnormalID::kCPU_unknown_rte_stack_frame_format,
 						"unknown rte stack frame format");
 					Exception(14);
 					return;
@@ -6863,7 +6864,7 @@ static void DoCodeReset()
 static void DoCodeCallMorRtm()
 {
 	/* CALLM or RTM 0000011011mmmrrr */
-	ReportAbnormalID(0x010D, "CALLM or RTM instruction");
+	ReportAbnormalID(AbnormalID::kCPU_CALLM_or_RTM_instruction, "CALLM or RTM instruction");
 }
 #endif
 
@@ -6990,7 +6991,7 @@ static void DoCHK2orCMP2()
 		default:
 #if ExtraAbnormalReports
 			if (4 != V_regs.CurDecOpY.v[0].ArgDat) {
-				ReportAbnormalID(0x010E,
+				ReportAbnormalID(AbnormalID::kCPU_illegal_opsize_in_CHK2_or_CMP2,
 					"illegal opsize in CHK2 or CMP2");
 			}
 #endif
@@ -7030,7 +7031,7 @@ static void DoCAS()
 	int ru = (src >> 6) & 7;
 	int rc = src & 7;
 
-	ReportAbnormalID(0x010F, "CAS instruction");
+	ReportAbnormalID(AbnormalID::kCPU_CAS_instruction, "CAS instruction");
 	switch (V_regs.CurDecOpY.v[0].ArgDat) {
 		case 1:
 			srcvalue = static_cast<uint32_t>(static_cast<int8_t>(V_regs.regs[rc]));
@@ -7041,7 +7042,7 @@ static void DoCAS()
 		default:
 #if ExtraAbnormalReports
 			if (4 != V_regs.CurDecOpY.v[0].ArgDat) {
-				ReportAbnormalID(0x0110, "illegal opsize in DoCAS");
+				ReportAbnormalID(AbnormalID::kCPU_illegal_opsize_in_DoCAS, "illegal opsize in DoCAS");
 			}
 #endif
 			srcvalue = static_cast<uint32_t>(V_regs.regs[rc]);
@@ -7104,7 +7105,7 @@ static void DoCAS2()
 	int32_t dst1;
 	int32_t dst2;
 
-	ReportAbnormalID(0x0111, "DoCAS2 instruction");
+	ReportAbnormalID(AbnormalID::kCPU_DoCAS2_instruction, "DoCAS2 instruction");
 	if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
 		dst1 = get_word(rn1);
 		dst2 = get_word(rn2);
@@ -7175,7 +7176,7 @@ static void DoCAS2()
 static void DoMOVES()
 {
 	/* MoveS 00001110ssmmmrrr */
-	ReportAbnormalID(0x0112, "MoveS instruction");
+	ReportAbnormalID(AbnormalID::kCPU_MoveS_instruction, "MoveS instruction");
 	if (0 == V_regs.s) {
 		DoPrivilegeViolation();
 	} else {
@@ -7491,7 +7492,7 @@ static void DoMoveToControl()
 				break;
 			case 0x0800:
 				V_regs.usp = v;
-				ReportAbnormalID(0x0113, "DoMoveToControl: usp");
+				ReportAbnormalID(AbnormalID::kCPU_DoMoveToControl_usp, "DoMoveToControl: usp");
 				break;
 			case 0x0801:
 				V_regs.vbr = v;
@@ -7516,11 +7517,11 @@ static void DoMoveToControl()
 				if (V_regs.m == 0) {
 					m68k_areg(7) = V_regs.isp;
 				}
-				ReportAbnormalID(0x0114, "DoMoveToControl: isp");
+				ReportAbnormalID(AbnormalID::kCPU_DoMoveToControl_isp, "DoMoveToControl: isp");
 				break;
 			default:
 				op_illg();
-				ReportAbnormalID(0x0115,
+				ReportAbnormalID(AbnormalID::kCPU_DoMoveToControl_unknown_reg,
 					"DoMoveToControl: unknown reg");
 				break;
 		}
@@ -7556,7 +7557,7 @@ static void DoMoveFromControl()
 				break;
 			case 0x0800:
 				v = V_regs.usp;
-				ReportAbnormalID(0x0116, "DoMoveFromControl: usp");
+				ReportAbnormalID(AbnormalID::kCPU_DoMoveFromControl_usp, "DoMoveFromControl: usp");
 				break;
 			case 0x0801:
 				v = V_regs.vbr;
@@ -7579,11 +7580,11 @@ static void DoMoveFromControl()
 				v = (V_regs.m == 0)
 					? m68k_areg(7)
 					: V_regs.isp;
-				ReportAbnormalID(0x0117, "DoMoveFromControl: isp");
+				ReportAbnormalID(AbnormalID::kCPU_DoMoveFromControl_isp, "DoMoveFromControl: isp");
 				break;
 			default:
 				v = 0;
-				ReportAbnormalID(0x0118,
+				ReportAbnormalID(AbnormalID::kCPU_DoMoveFromControl_unknown_reg,
 					"DoMoveFromControl: unknown reg");
 				op_illg();
 				break;
@@ -7597,7 +7598,7 @@ static void DoMoveFromControl()
 static void DoCodeBkpt()
 {
 	/* BKPT 0100100001001rrr */
-	ReportAbnormalID(0x0119, "BKPT instruction");
+	ReportAbnormalID(AbnormalID::kCPU_BKPT_instruction, "BKPT instruction");
 	op_illg();
 }
 #endif
@@ -7624,7 +7625,7 @@ static void DoCodeLinkL()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t stackp = m68k_areg(7);
 
-	ReportAbnormalID(0x011A, "Link.L");
+	ReportAbnormalID(AbnormalID::kCPU_Link_L, "Link.L");
 
 	stackp -= 4;
 	m68k_areg(7) = stackp; /* only matters if dstreg == 7 + 8 */
@@ -7637,7 +7638,7 @@ static void DoCodeLinkL()
 #if Use68020
 static void DoCodeTRAPcc_t()
 {
-	ReportAbnormalID(0x011B, "TRAPcc trapping");
+	ReportAbnormalID(AbnormalID::kCPU_TRAPcc_trapping, "TRAPcc trapping");
 	Exception(7);
 	/* pc pushed onto stack wrong */
 }
@@ -7656,11 +7657,11 @@ static void DoCodeTRAPcc()
 	/* ReportAbnormal("TRAPcc"); */
 	switch (V_regs.CurDecOpY.v[1].ArgDat) {
 		case 2:
-			ReportAbnormalID(0x011C, "TRAPcc word data");
+			ReportAbnormalID(AbnormalID::kCPU_TRAPcc_word_data, "TRAPcc word data");
 			SkipiWord();
 			break;
 		case 3:
-			ReportAbnormalID(0x011D, "TRAPcc long data");
+			ReportAbnormalID(AbnormalID::kCPU_TRAPcc_long_data, "TRAPcc long data");
 			SkipiLong();
 			break;
 		case 4:
@@ -7668,7 +7669,7 @@ static void DoCodeTRAPcc()
 			/* no optional data */
 			break;
 		default:
-			ReportAbnormalID(0x011E, "TRAPcc illegal format");
+			ReportAbnormalID(AbnormalID::kCPU_TRAPcc_illegal_format, "TRAPcc illegal format");
 			op_illg();
 			break;
 	}
@@ -7682,7 +7683,7 @@ static void DoCodePack()
 	uint32_t offs = nextiSWord();
 	uint32_t val = DecodeGetSrcValue();
 
-	ReportAbnormalID(0x011F, "PACK");
+	ReportAbnormalID(AbnormalID::kCPU_PACK, "PACK");
 
 	val += offs;
 	val = ((val >> 4) & 0xf0) | (val & 0xf);
@@ -7697,7 +7698,7 @@ static void DoCodeUnpk()
 	uint32_t offs = nextiSWord();
 	uint32_t val = DecodeGetSrcValue();
 
-	ReportAbnormalID(0x0120, "UNPK");
+	ReportAbnormalID(AbnormalID::kCPU_UNPK, "UNPK");
 
 	val = (((val & 0xF0) << 4) | (val & 0x0F)) + offs;
 
@@ -8140,7 +8141,7 @@ static void DoCodeMMU()
 		BackupPC();
 	}
 	/* fprintf(stderr, "opcode %x\n", (int)opcode); */
-	ReportAbnormalID(0x0121, "MMU op");
+	ReportAbnormalID(AbnormalID::kCPU_MMU_op, "MMU op");
 	DoCodeFdefault();
 }
 #else
@@ -8536,7 +8537,7 @@ Label_Retry:
 		}
 		/* in trouble if get here */
 #if ExtraAbnormalReports
-		ReportAbnormalID(0x0122, "Recalc_PC_Block fails");
+		ReportAbnormalID(AbnormalID::kCPU_Recalc_PC_Block_fails, "Recalc_PC_Block fails");
 			/* happens on Restart */
 #endif
 

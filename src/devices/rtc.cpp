@@ -18,6 +18,7 @@
 #include "devices/rtc.h"
 #include "core/wire_bus.h"
 #include "core/machine_obj.h"
+#include "core/abnormal_ids.h"
 
 /* Global singleton */
 
@@ -359,11 +360,11 @@ static uint8_t RTC_Access_Reg(uint8_t Data, bool WriteReg, uint8_t TheCmd)
 					RTC.WrProtect = (Data & 0x80) != 0;
 					break; /* Write_Protect Register */
 				default :
-					ReportAbnormalID(0x0801, "Write RTC Reg unknown");
+					ReportAbnormalID(AbnormalID::kRTC_Write_RTC_Reg_unknown, "Write RTC Reg unknown");
 					break;
 			}
 		} else {
-			ReportAbnormalID(0x0802, "Read RTC Reg unknown");
+			ReportAbnormalID(AbnormalID::kRTC_Read_RTC_Reg_unknown, "Read RTC Reg unknown");
 		}
 	} else {
 		Data = RTC_Access_PRAM_Reg(Data, WriteReg,
@@ -436,7 +437,7 @@ void RTCDevice::unEnabledChangeNtfy()
 #ifdef _RTC_Debug
 			printf("aborting, %2x\n", RTC.Counter);
 #endif
-			ReportAbnormalID(0x0803, "RTC aborting");
+			ReportAbnormalID(AbnormalID::kRTC_RTC_aborting, "RTC aborting");
 		}
 		RTC.Mode = 0;
 		RTC.DataOut = 0;
@@ -488,7 +489,7 @@ void RTCDevice::dataLineChangeNtfy()
 				correct.
 			*/
 		} else {
-			ReportAbnormalID(0x0804,
+			ReportAbnormalID(AbnormalID::kRTC_write_RTC_Data_unexpected_direction,
 				"write RTC Data unexpected direction");
 		}
 	}

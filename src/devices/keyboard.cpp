@@ -18,6 +18,7 @@
 
 #ifdef _VIA_Debug
 #include <stdio.h>
+#include "core/abnormal_ids.h"
 #endif
 
 /*
@@ -86,7 +87,7 @@ bool KeyboardDevice::attemptToFinishInquiry()
 void KeyboardDevice::receiveCommand()
 {
 	if (kybdState_ != kKybdStateRecievingCommand) {
-		ReportAbnormalID(0x0B01,
+		ReportAbnormalID(AbnormalID::kSCSI_KybdState_kKybdStateRecievingCommand,
 			"KybdState != kKybdStateRecievingCommand");
 	} else {
 		uint8_t in = via1()->shiftOutData();
@@ -128,7 +129,7 @@ void KeyboardDevice::receiveCommand()
 void KeyboardDevice::receiveEndCommand()
 {
 	if (kybdState_ != kKybdStateRecievingEndCommand) {
-		ReportAbnormalID(0x0B02,
+		ReportAbnormalID(AbnormalID::kSCSI_KybdState_kKybdStateRecievingEndCommand,
 			"KybdState != kKybdStateRecievingEndCommand");
 	} else {
 		kybdState_ = kKybdStateIdle;

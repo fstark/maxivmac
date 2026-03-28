@@ -10,6 +10,7 @@
 
 #include "core/common.h"
 #include "core/state_recorder.hpp"
+#include "core/abnormal_ids.h"
 
 /* Device headers for ATT Device* dispatch */
 #include "devices/device.h"
@@ -688,7 +689,7 @@ static void AddToATTList(ATTep p)
 {
 	uint16_t NewLast = LastATTel + 1;
 	if (NewLast >= kATTListMax) {
-		ReportAbnormalID(0x1101, "ATT list not big enough");
+		ReportAbnormalID(AbnormalID::kMACH_ATT_list_not_big_enough, "ATT list not big enough");
 	} else {
 		ATTListA[LastATTel] = *p;
 		LastATTel = NewLast;
@@ -1304,10 +1305,10 @@ static void SetUpMemBanks()
 					/* for weirdness on shutdown in System 6 */
 				} else
 				{
-					ReportAbnormalID(0x1106, "access VIA1 word");
+					ReportAbnormalID(AbnormalID::kMACH_VIA1_word, "access VIA1 word");
 				}
 			} else if ((addr & 1) != 0) {
-				ReportAbnormalID(0x1107, "access VIA1 odd");
+				ReportAbnormalID(AbnormalID::kMACH_VIA1_odd, "access VIA1 odd");
 			} else {
 				if (g_machine->config().model != MacModel::PB100) {
 					bool nonStandard;
@@ -1317,7 +1318,7 @@ static void SetUpMemBanks()
 						nonStandard = (addr & 0x000FE1FE) != 0x000FE1FE;
 					}
 					if (nonStandard) {
-						ReportAbnormalID(0x1108,
+						ReportAbnormalID(AbnormalID::kMACH_VIA1_nonstandard_address,
 							"access VIA1 nonstandard address");
 					}
 				}
@@ -1340,7 +1341,7 @@ static void SetUpMemBanks()
 							(addr >> 9) & kVIA2_Mask);
 
 				} else {
-					ReportAbnormalID(0x1109, "access VIA2 word");
+					ReportAbnormalID(AbnormalID::kMACH_VIA2_word, "access VIA2 word");
 				}
 			} else if ((addr & 1) != 0) {
 				if (0x3FFF == (addr & 0x1FFFF)) {
@@ -1351,11 +1352,11 @@ static void SetUpMemBanks()
 					Data = p->device->access(Data, WriteMem,
 						(addr >> 9) & kVIA2_Mask);
 				} else {
-					ReportAbnormalID(0x110A, "access VIA2 odd");
+					ReportAbnormalID(AbnormalID::kMACH_VIA2_odd, "access VIA2 odd");
 				}
 			} else {
 				if ((addr & 0x000001FE) != 0x00000000) {
-					ReportAbnormalID(0x110B,
+					ReportAbnormalID(AbnormalID::kMACH_VIA2_nonstandard_address,
 						"access VIA2 nonstandard address");
 				}
 				Data = p->device->access(Data, WriteMem,
@@ -1367,13 +1368,13 @@ static void SetUpMemBanks()
 			if (g_machine->config().isSEFamily()) {
 				/* SE/Classic only: check for unassigned SCC address */
 				if ((addr & 0x00100000) == 0) {
-					ReportAbnormalID(0x110C,
+					ReportAbnormalID(AbnormalID::kMACH_SCC_unassigned_address,
 						"access SCC unassigned address");
 					break;
 				}
 			}
 			if (! ByteSize) {
-				ReportAbnormalID(0x110D, "Attemped Phase Adjust");
+				ReportAbnormalID(AbnormalID::kMACH_Attemped_Phase_Adjust, "Attemped Phase Adjust");
 			} else
 			if (!g_machine->config().isIIFamily()
 				&& WriteMem != ((addr & 1) != 0))
@@ -1383,7 +1384,7 @@ static void SetUpMemBanks()
 					if (m >= MacModel::Mac512Ke
 						&& m != MacModel::PB100)
 					{
-						ReportAbnormalID(0x110E, "access SCC even/odd");
+						ReportAbnormalID(AbnormalID::kMACH_SCC_even_odd, "access SCC even/odd");
 					}
 				} else {
 					if (auto* d = g_machine->findDevice<SCCDevice>()) d->reset();
@@ -1393,7 +1394,7 @@ static void SetUpMemBanks()
 				&& !g_machine->config().isIIFamily()
 				&& WriteMem != (addr >= kSCCWr_Block_Base))
 			{
-				ReportAbnormalID(0x110F, "access SCC wr/rd base wrong");
+				ReportAbnormalID(AbnormalID::kMACH_SCC_wr_rd_base_wrong, "access SCC wr/rd base wrong");
 			} else
 			{
 				if (g_machine->config().model != MacModel::PB100) {
@@ -1404,7 +1405,7 @@ static void SetUpMemBanks()
 						nonStandard = (addr & 0x001FFFF8) != 0x001FFFF8;
 					}
 					if (nonStandard) {
-						ReportAbnormalID(0x1110,
+						ReportAbnormalID(AbnormalID::kMACH_SCC_nonstandard_address,
 							"access SCC nonstandard address");
 					}
 				}
@@ -1414,11 +1415,11 @@ static void SetUpMemBanks()
 			break;
 		case kMMDV_Extn:
 			if (ByteSize) {
-				ReportAbnormalID(0x1111, "access Sony byte");
+				ReportAbnormalID(AbnormalID::kMACH_Sony_byte, "access Sony byte");
 			} else if ((addr & 1) != 0) {
-				ReportAbnormalID(0x1112, "access Sony odd");
+				ReportAbnormalID(AbnormalID::kMACH_Sony_odd, "access Sony odd");
 			} else if (! WriteMem) {
-				ReportAbnormalID(0x1113, "access Sony read");
+				ReportAbnormalID(AbnormalID::kMACH_Sony_read, "access Sony read");
 			} else {
 				p->device->access(Data, WriteMem, (addr >> 1) & 0x0F);
 			}
@@ -1439,7 +1440,7 @@ static void SetUpMemBanks()
 								WriteMem, (addr + 1) & kASC_Mask);
 					}
 				} else {
-					ReportAbnormalID(0x1114, "access ASC word");
+					ReportAbnormalID(AbnormalID::kMACH_ASC_word, "access ASC word");
 				}
 			} else {
 				Data = p->device->access(Data, WriteMem, addr & kASC_Mask);
@@ -1447,17 +1448,17 @@ static void SetUpMemBanks()
 			break;
 		case kMMDV_SCSI:
 			if (! ByteSize) {
-				ReportAbnormalID(0x1115, "access SCSI word");
+				ReportAbnormalID(AbnormalID::kMACH_SCSI_word, "access SCSI word");
 			} else
 			if (!g_machine->config().isIIFamily()
 				&& WriteMem != ((addr & 1) != 0))
 			{
-				ReportAbnormalID(0x1116, "access SCSI even/odd");
+				ReportAbnormalID(AbnormalID::kMACH_SCSI_even_odd, "access SCSI even/odd");
 			} else
 			{
 				if (g_machine->config().isIIFamily()) {
 					if ((addr & 0x1F8F) != 0x00000000) {
-						ReportAbnormalID(0x1117,
+						ReportAbnormalID(AbnormalID::kMACH_SCSI_nonstandard_address,
 							"access SCSI nonstandard address");
 					}
 				}
@@ -1468,14 +1469,14 @@ static void SetUpMemBanks()
 		case kMMDV_IWM:
 			if (g_machine->config().isSEFamily()) {
 				if ((addr & 0x00100000) == 0) {
-					ReportAbnormalID(0x1118,
+					ReportAbnormalID(AbnormalID::kMACH_IWM_unassigned_address,
 						"access IWM unassigned address");
 					break;
 				}
 			}
 			if (! ByteSize) {
 #if ExtraAbnormalReports
-				ReportAbnormalID(0x1119, "access IWM word");
+				ReportAbnormalID(AbnormalID::kMACH_IWM_word, "access IWM word");
 				/*
 					This happens when quitting 'Glider 3.1.2'.
 					perhaps a bad handle is being disposed of.
@@ -1483,20 +1484,20 @@ static void SetUpMemBanks()
 #endif
 			} else if (g_machine->config().isIIFamily()) {
 				if ((addr & 1) != 0) {
-					ReportAbnormalID(0x111A, "access IWM odd");
+					ReportAbnormalID(AbnormalID::kMACH_IWM_odd, "access IWM odd");
 				} else {
 					Data = p->device->access(Data, WriteMem,
 						(addr >> 9) & kIWM_Mask);
 				}
 			} else {
 				if ((addr & 1) == 0) {
-					ReportAbnormalID(0x111B, "access IWM even");
+					ReportAbnormalID(AbnormalID::kMACH_IWM_even, "access IWM even");
 				} else {
 					if (g_machine->config().model != MacModel::PB100
 						&& !g_machine->config().isIIFamily())
 					{
 						if ((addr & 0x001FE1FF) != 0x001FE1FF) {
-							ReportAbnormalID(0x111C,
+							ReportAbnormalID(AbnormalID::kMACH_IWM_nonstandard_address,
 								"access IWM nonstandard address");
 						}
 					}

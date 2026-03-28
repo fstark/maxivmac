@@ -93,7 +93,7 @@ static void ADB_DoMouseTalk()
 			NotSoRandAddr += 1;
 			break;
 		default:
-			ReportAbnormalID(0x0D01, "Talk to unknown mouse register");
+			ReportAbnormalID(AbnormalID::kPMU_Talk_to_unknown_mouse_register, "Talk to unknown mouse register");
 			break;
 	}
 }
@@ -106,12 +106,12 @@ static void ADB_DoMouseListen()
 				/* change address */
 				MouseADBAddress = (ADB_DatBuf[0] & 0x0F);
 			} else {
-				ReportAbnormalID(0x0D02,
+				ReportAbnormalID(AbnormalID::kPMU_unknown_listen_op_to_mouse_register_3,
 					"unknown listen op to mouse register 3");
 			}
 			break;
 		default:
-			ReportAbnormalID(0x0D03,
+			ReportAbnormalID(AbnormalID::kPMU_listen_to_unknown_mouse_register,
 				"listen to unknown mouse register");
 			break;
 	}
@@ -184,7 +184,7 @@ static void ADB_DoKeyboardTalk()
 			NotSoRandAddr += 1;
 			break;
 		default:
-			ReportAbnormalID(0x0D04,
+			ReportAbnormalID(AbnormalID::kPMU_Talk_to_unknown_keyboard_register,
 				"Talk to unknown keyboard register");
 			break;
 	}
@@ -198,12 +198,12 @@ static void ADB_DoKeyboardListen()
 				/* change address */
 				KeyboardADBAddress = (ADB_DatBuf[0] & 0x0F);
 			} else {
-				ReportAbnormalID(0x0D05,
+				ReportAbnormalID(AbnormalID::kPMU_unknown_listen_op_to_keyboard_register_3,
 					"unknown listen op to keyboard register 3");
 			}
 			break;
 		default:
-			ReportAbnormalID(0x0D06,
+			ReportAbnormalID(AbnormalID::kPMU_listen_to_unknown_keyboard_register,
 				"listen to unknown keyboard register");
 			break;
 	}
@@ -265,6 +265,6 @@ static void ADB_Flush()
 		ADB_DatBuf[0] = 0x00;
 		ADB_DatBuf[1] = 0x00;
 	} else {
-		ReportAbnormalID(0x0D07, "Unhandled ADB Flush");
+		ReportAbnormalID(AbnormalID::kPMU_Unhandled_ADB_Flush, "Unhandled ADB Flush");
 	}
 }

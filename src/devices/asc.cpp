@@ -11,6 +11,7 @@
 #include "core/machine_obj.h"
 
 #include "devices/asc.h"
+#include "core/abnormal_ids.h"
 
 /* Global singleton */
 
@@ -109,7 +110,7 @@ static void ASC_ClearFIFO()
 #endif
 					} else {
 						if (0 != (SoundReg804 & 0x02)) {
-							ReportAbnormalID(0x0F02, "ASC_Access : "
+							ReportAbnormalID(AbnormalID::kASC_full_flag_A_not_already_clear, "ASC_Access : "
 								"full flag A not already clear");
 							SoundReg804 &= ~ 0x02;
 						}
@@ -118,12 +119,12 @@ static void ASC_ClearFIFO()
 					}
 				} else {
 					if (0 == (SoundReg802 & 2)) {
-						ReportAbnormalID(0x0F03,
+						ReportAbnormalID(AbnormalID::kASC_Channel_B_for_Mono,
 							"ASC - Channel B for Mono");
 					}
 					if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x400)
 					{
-						ReportAbnormalID(0x0F04,
+						ReportAbnormalID(AbnormalID::kASC_Channel_B_Overflow,
 							"ASC - Channel B Overflow");
 						SoundReg804 |= 0x08;
 					} else {
@@ -147,7 +148,7 @@ static void ASC_ClearFIFO()
 #endif
 					} else {
 						if (0 != (SoundReg804 & 0x08)) {
-							ReportAbnormalID(0x0F05, "ASC_Access : "
+							ReportAbnormalID(AbnormalID::kASC_full_flag_B_not_already_clear, "ASC_Access : "
 								"full flag B not already clear");
 							SoundReg804 &= ~ 0x08;
 						}
@@ -177,7 +178,7 @@ static void ASC_ClearFIFO()
 		switch (addr) {
 			case 0x800: /* VERSION */
 				if (WriteMem) {
-					ReportAbnormalID(0x0F06, "ASC - writing VERSION");
+					ReportAbnormalID(AbnormalID::kASC_writing_VERSION, "ASC - writing VERSION");
 				} else {
 					Data = 0;
 				}
@@ -194,7 +195,7 @@ static void ASC_ClearFIFO()
 						}
 					} else {
 						if (Data > 2) {
-							ReportAbnormalID(0x0F07,
+							ReportAbnormalID(AbnormalID::kASC_unexpected_ENABLE,
 								"ASC - unexpected ENABLE");
 						}
 					}
@@ -230,13 +231,13 @@ static void ASC_ClearFIFO()
 					}
 #endif
 					if (0 != (Data & ~ 2)) {
-						ReportAbnormalID(0x0F09,
+						ReportAbnormalID(AbnormalID::kASC_unexpected_CONTROL_value,
 							"ASC - unexpected CONTROL value");
 					}
 					SoundReg802 = Data;
 				} else {
 					Data = SoundReg802;
-					ReportAbnormalID(0x0F0A,
+					ReportAbnormalID(AbnormalID::kASC_reading_CONTROL_value,
 						"ASC - reading CONTROL value");
 				}
 #if ASC_dolog && 1
@@ -247,12 +248,12 @@ static void ASC_ClearFIFO()
 			case 0x803:
 				if (WriteMem) {
 					if (0 != (Data & ~ 0x80)) {
-						ReportAbnormalID(0x0F0B,
+						ReportAbnormalID(AbnormalID::kASC_unexpected_FIFO_MODE,
 							"ASC - unexpected FIFO MODE");
 					}
 					if (0 != (Data & 0x80)) {
 						if (0 != (SoundReg803 & 0x80)) {
-							ReportAbnormalID(0x0F0C,
+							ReportAbnormalID(AbnormalID::kASC_set_clear_FIFO_again,
 								"ASC - set clear FIFO again");
 						} else
 						if (1 != SoundReg801) {
@@ -317,7 +318,7 @@ static void ASC_ClearFIFO()
 					/* cleared in LodeRunner */
 				} else {
 					Data = SoundReg805;
-					ReportAbnormalID(0x0F11,
+					ReportAbnormalID(AbnormalID::kASC_reading_WAVE_CONTROL_register,
 						"ASC - reading WAVE CONTROL register");
 				}
 #if ASC_dolog && 1
@@ -329,12 +330,12 @@ static void ASC_ClearFIFO()
 				if (WriteMem) {
 					SoundReg_Volume = Data >> 5;
 					if (0 != (Data & 0x1F)) {
-						ReportAbnormalID(0x0F12,
+						ReportAbnormalID(AbnormalID::kASC_unexpected_volume_value,
 							"ASC - unexpected volume value");
 					}
 				} else {
 					Data = SoundReg_Volume << 5;
-					ReportAbnormalID(0x0F13,
+					ReportAbnormalID(AbnormalID::kASC_reading_volume_register,
 						"ASC - reading volume register");
 				}
 #if ASC_dolog && 1
@@ -346,12 +347,12 @@ static void ASC_ClearFIFO()
 				if (WriteMem) {
 					/* SoundReg807 = Data; */
 					if (0 != Data) {
-						ReportAbnormalID(0x0F14,
+						ReportAbnormalID(AbnormalID::kASC_nonstandard_CLOCK_RATE,
 							"ASC - nonstandard CLOCK RATE");
 					}
 				} else {
 					/* Data = SoundReg807; */
-					ReportAbnormalID(0x0F15,
+					ReportAbnormalID(AbnormalID::kASC_reading_CLOCK_RATE,
 						"ASC - reading CLOCK RATE");
 				}
 #if ASC_dolog && 1
@@ -361,7 +362,7 @@ static void ASC_ClearFIFO()
 				break;
 			case 0x808: /* CONTROL */
 				if (WriteMem) {
-					ReportAbnormalID(0x0F16, "ASC - write to 808");
+					ReportAbnormalID(AbnormalID::kASC_write_to_808, "ASC - write to 808");
 				} else {
 					/* happens on boot System 7.5.5 */
 					Data = 0;
@@ -373,7 +374,7 @@ static void ASC_ClearFIFO()
 				break;
 			case 0x80A: /* ? */
 				if (WriteMem) {
-					ReportAbnormalID(0x0F17, "ASC - write to 80A");
+					ReportAbnormalID(AbnormalID::kASC_write_to_80A, "ASC - write to 80A");
 				} else {
 					/*
 						happens in system 6, Lunar Phantom,
@@ -391,7 +392,7 @@ static void ASC_ClearFIFO()
 				} else {
 					Data = 0;
 				}
-				ReportAbnormalID(0x0F18, "ASC - unknown ASC reg");
+				ReportAbnormalID(AbnormalID::kASC_unknown_ASC_reg, "ASC - unknown ASC reg");
 #if ASC_dolog && 1
 				dbglog_AddrAccess("ASC_Access Control (?)",
 					Data, WriteMem, addr);
@@ -443,7 +444,7 @@ static void ASC_ClearFIFO()
 			Data, WriteMem, addr);
 #endif
 
-		ReportAbnormalID(0x0F19, "unknown ASC reg");
+		ReportAbnormalID(AbnormalID::kASC_unknown_ASC_reg_2, "unknown ASC reg");
 	}
 
 	return Data;
@@ -707,7 +708,7 @@ void ASCDevice::subTick(int SubTick)
 	if ((1 == SoundReg801) && ASC_Playing) {
 		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200) {
 			if (0 != (SoundReg804 & 0x01)) {
-				ReportAbnormalID(0x0F1A,
+				ReportAbnormalID(AbnormalID::kASC_half_flag_A_not_already_clear,
 					"half flag A not already clear");
 				SoundReg804 &= ~ 0x01;
 			}
@@ -725,7 +726,7 @@ void ASCDevice::subTick(int SubTick)
 		}
 		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x400) {
 			if (0 == (SoundReg804 & 0x02)) {
-				ReportAbnormalID(0x0F1B, "full flag A not already set");
+				ReportAbnormalID(AbnormalID::kASC_full_flag_A_not_already_set, "full flag A not already set");
 				SoundReg804 |= 0x02;
 			}
 		} else {
@@ -737,7 +738,7 @@ void ASCDevice::subTick(int SubTick)
 		if (0 != (SoundReg802 & 2)) {
 			if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x200) {
 				if (0 != (SoundReg804 & 0x04)) {
-					ReportAbnormalID(0x0F1C,
+					ReportAbnormalID(AbnormalID::kASC_half_flag_B_not_already_clear,
 						"half flag B not already clear");
 					SoundReg804 &= ~ 0x04;
 				}
@@ -755,7 +756,7 @@ void ASCDevice::subTick(int SubTick)
 			}
 			if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x400) {
 				if (0 == (SoundReg804 & 0x08)) {
-					ReportAbnormalID(0x0F1D,
+					ReportAbnormalID(AbnormalID::kASC_full_flag_B_not_already_set,
 						"full flag B not already set");
 					SoundReg804 |= 0x08;
 				}
