@@ -78,8 +78,7 @@ struct MATCr {
 	uint32_t usemask;
 	uint8_t * usebase;
 };
-typedef struct MATCr MATCr;
-typedef MATCr *MATCp;
+using MATCp = MATCr *;
 
 #ifndef USE_PCLIMIT
 #define USE_PCLIMIT 1
@@ -92,7 +91,6 @@ union ArgAddrT {
 	uint32_t mem;
 	uint32_t *rga;
 };
-typedef union ArgAddrT ArgAddrT;
 
 enum {
 	kLazyFlagsDefault,
@@ -7218,7 +7216,6 @@ struct ui6r0 {
 	uint32_t hi;
 	uint32_t lo;
 };
-typedef struct ui6r0 ui6r0;
 #endif
 
 #if Use68020

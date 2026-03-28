@@ -225,27 +225,23 @@ struct DecOpXR {
 	uint16_t MainClas;
 	uint16_t Cycles;
 };
-typedef struct DecOpXR DecOpXR;
 
 struct DecArgR {
 	/* expected size : 2 bytes */
 	uint8_t AMd;
 	uint8_t ArgDat;
 };
-typedef struct DecArgR DecArgR;
 
 struct DecOpYR {
 	/* expected size : 4 bytes */
 	DecArgR v[2];
 };
-typedef struct DecOpYR DecOpYR;
 
 struct DecOpR {
 	/* expected size : 8 bytes */
 	DecOpXR x;
 	DecOpYR y;
 };
-typedef struct DecOpR DecOpR;
 
 #define GetDcoCycles(p) ((p)->x.Cycles)
 

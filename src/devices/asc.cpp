@@ -32,7 +32,6 @@ struct ASC_ChanR {
 	uint8_t freq[4];
 	uint8_t phase[4];
 };
-typedef struct ASC_ChanR ASC_ChanR;
 
 static ASC_ChanR ASC_ChanA[4];
 

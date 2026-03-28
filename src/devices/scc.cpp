@@ -325,7 +325,7 @@ static void LT_NodeAddressSet(uint8_t v)
 #define SCC_B_Tx_Empty 2 /* Tx Buffer Empty */
 #define SCC_B_Ext      1 /* External/Status Change */
 
-typedef struct {
+struct Channel_Ty {
 	bool TxEnable;
 	bool RxEnable;
 	bool TxIE; /* Transmit Interrupt Enable */
@@ -442,9 +442,9 @@ typedef struct {
 	uint8_t BaudLo;
 	uint8_t BaudHi;
 #endif
-} Channel_Ty;
+};
 
-typedef struct {
+struct SCC_Ty {
 	Channel_Ty a[2]; /* 0 = channel A, 1 = channel B */
 	int SCC_Interrupt_Type;
 	int PointerBits;
@@ -453,7 +453,7 @@ typedef struct {
 #if SCC_TrackMore
 	bool NoVectorSlct;
 #endif
-} SCC_Ty;
+};
 
 static SCC_Ty SCC;
 

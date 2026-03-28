@@ -52,7 +52,7 @@
 #define kq6  0x40
 #define kq7  0x80
 
-typedef struct
+struct IWM_Ty
 {
 	uint8_t DataIn;    /* Read Data Register */
 	uint8_t Handshake; /* Read Handshake Register */
@@ -62,7 +62,7 @@ typedef struct
 		/* Drive On  : Write Data Register */
 	uint8_t DataOut;   /* Write Data Register */
 	uint8_t Lines;     /* Used to Access Disk Drive Registers */
-} IWM_Ty;
+};
 
 IWM_Ty IWM;
 

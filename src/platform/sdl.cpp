@@ -2204,7 +2204,6 @@ struct MySoundR {
 	bool wantplaying;
 	bool HaveStartedPlaying;
 };
-typedef struct MySoundR MySoundR;
 
 #if 0 != SDL_MAJOR_VERSION
 static void my_audio_callback(void *udata, Uint8 *stream, int len)
@@ -4391,7 +4390,6 @@ struct MyWState {
 	#endif
 	*f_my_format;
 };
-typedef struct MyWState MyWState;
 #endif
 
 #if EnableRecreateW

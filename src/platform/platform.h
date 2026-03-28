@@ -260,7 +260,6 @@ struct MyEvtQEl {
 		} pos;
 	} u;
 };
-typedef struct MyEvtQEl MyEvtQEl;
 
 extern MyEvtQEl * MyEvtQOutP();
 extern void MyEvtQOutDone();

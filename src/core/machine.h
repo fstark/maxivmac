@@ -219,8 +219,7 @@ struct ATTer {
 	uint8_t Ntfy;
 	uint16_t Pad0;
 };
-typedef struct ATTer ATTer;
-typedef ATTer *ATTep;
+using ATTep = ATTer *;
 
 constexpr int kATTA_readreadybit  = 0;
 constexpr int kATTA_writereadybit = 1;

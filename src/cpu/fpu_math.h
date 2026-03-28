@@ -113,15 +113,15 @@ this file.]
 | Software IEC/IEEE floating-point types.
 *----------------------------------------------------------------------------*/
 
-typedef struct {
+struct floatx80 {
 	ui6b low;
 	unsigned short high;
-} floatx80;
+};
 
 #ifdef FLOAT128
-typedef struct {
+struct float128 {
 	ui6b low, high;
-} float128;
+};
 #endif
 
 
@@ -960,10 +960,10 @@ static void float_raise( int8_t flags )
 /*----------------------------------------------------------------------------
 | Internal canonical NaN format.
 *----------------------------------------------------------------------------*/
-typedef struct {
+struct commonNaNT {
 	flag sign;
 	ui6b high, low;
-} commonNaNT;
+};
 
 /*----------------------------------------------------------------------------
 | The pattern for a default generated extended double-precision NaN.  The

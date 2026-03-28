@@ -27,7 +27,7 @@
 #define Group1Base 0x10
 #define Group2Base 0x08
 
-typedef struct
+struct RTC_Ty
 {
 	/* RTC VIA Flags */
 	uint8_t WrProtect;
@@ -44,7 +44,7 @@ typedef struct
 	/* RTC Registers */
 	uint8_t Seconds_1[4];
 	uint8_t PARAMRAM[PARAMRAMSize];
-} RTC_Ty;
+};
 
 static RTC_Ty RTC;
 

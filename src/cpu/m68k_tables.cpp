@@ -17,7 +17,6 @@ struct WorkR {
 #endif
 	DecOpR DecOp;
 };
-typedef struct WorkR WorkR;
 
 #define b76(p) ((p->opcode >> 6) & 3)
 #define b8(p) ((p->opcode >> 8) & 1)
