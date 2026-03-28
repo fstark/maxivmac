@@ -75,6 +75,7 @@ set(MINIVMAC_SOURCES
     src/platform/common/intl_chars.cpp
     src/platform/common/param_buffers.cpp
     src/platform/common/control_mode.cpp
+    src/platform/common/mac_roman.cpp
     src/lang/localization.cpp
     src/lang/lang_english.cpp
     src/lang/lang_french.cpp
