@@ -623,21 +623,12 @@ static bool UseFullScreen = false;
 
 static bool UseMagnify = true;
 
-#ifndef UseSDLscaling
-#define UseSDLscaling 0
-#endif
 
 static bool gBackgroundFlag = false;
 static bool gTrueBackgroundFlag = false;
 static bool CurSpeedStopped = true;
 
 static int WindowScale = 2;
-
-#if ! UseSDLscaling
-#define MaxScale 2
-#else
-#define MaxScale 1
-#endif
 
 
 static SDL_Window *my_main_wind = nullptr;
@@ -651,7 +642,7 @@ static uint8_t * ScalingBuff = nullptr;
 
 static uint8_t * CLUT_final;
 
-#define CLUT_finalsz (256 * 8 * 4 * MaxScale)
+#define CLUT_finalsz (256 * 8 * 4)
 	/*
 		256 possible values of one byte
 		8 pixels per byte maximum (when black and white)
@@ -685,40 +676,6 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Map CLUT_final
 
 #include "platform/common/screen_map.h"
-
-#if ! UseSDLscaling
-
-#define ScrnMapr_DoMap UpdateBWDepth3ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 0
-#define ScrnMapr_DstDepth 3
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateBWDepth4ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 0
-#define ScrnMapr_DstDepth 4
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateBWDepth5ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 0
-#define ScrnMapr_DstDepth 5
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-
-#include "platform/common/screen_map.h"
-
-#endif /* ! UseSDLscaling */
 
 
 /* Color copy functions for runtime depths 1, 2, 3 (CLUT-indexed).
@@ -799,91 +756,6 @@ static uint8_t * CLUT_final;
 #define ScrnMapr_Map CLUT_final
 #include "platform/common/screen_map.h"
 
-#if ! UseSDLscaling
-
-#define ScrnMapr_DoMap UpdateColorSrc1Dst3ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 1
-#define ScrnMapr_DstDepth 3
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc1Dst4ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 1
-#define ScrnMapr_DstDepth 4
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc1Dst5ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 1
-#define ScrnMapr_DstDepth 5
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc2Dst3ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 2
-#define ScrnMapr_DstDepth 3
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc2Dst4ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 2
-#define ScrnMapr_DstDepth 4
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc2Dst5ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 2
-#define ScrnMapr_DstDepth 5
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc3Dst3ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 3
-#define ScrnMapr_DstDepth 3
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc3Dst4ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 3
-#define ScrnMapr_DstDepth 4
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-#include "platform/common/screen_map.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc3Dst5ScaledCopy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
-#define ScrnMapr_SrcDepth 3
-#define ScrnMapr_DstDepth 5
-#define ScrnMapr_Map CLUT_final
-#define ScrnMapr_Scale 2
-#include "platform/common/screen_map.h"
-
-#endif /* ! UseSDLscaling */
-
 
 /* Convert a dirty rectangle of the emulated framebuffer into
    host pixels and present it via the SDL texture/surface. */
@@ -960,14 +832,6 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	bottom2 = bottom;
 	right2 = right;
 
-#if ! UseSDLscaling
-	if (UseMagnify) {
-		top2 *= WindowScale;
-		left2 *= WindowScale;
-		bottom2 *= WindowScale;
-		right2 *= WindowScale;
-	}
-#endif
 
 	if (
 		!
@@ -981,11 +845,6 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	int bpp = my_format->bytes_per_pixel;
 	uint32_t ExpectedPitch = vMacScreenWidth * bpp;
 
-#if ! UseSDLscaling
-	if (UseMagnify) {
-		ExpectedPitch *= WindowScale;
-	}
-#endif
 
 	if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
 		for (i = 0; i < CLUT_size; ++i) {
@@ -1017,9 +876,6 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	{
 		int k;
 		Uint32 v;
-#if ! UseSDLscaling
-		int a;
-#endif
 		int PixPerByte =
 			(UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4)
 			? (1 << (3 - vMacScreenDepth)) : 8;
@@ -1037,9 +893,6 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 					v = BWLUT_pixel[(i >> k) & 1];
 				}
 
-#if ! UseSDLscaling
-				for (a = UseMagnify ? WindowScale : 1; --a >= 0; )
-#endif
 				{
 					switch (bpp) {
 						case 1: /* Assuming 8-bpp */
@@ -1061,15 +914,6 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		ScalingBuff = static_cast<uint8_t *>(pixels);
 
 		if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
-#if ! UseSDLscaling
-			if (UseMagnify) {
-				switch (vMacScreenDepth) {
-					case 1: switch (bpp) { case 1: UpdateColorSrc1Dst3ScaledCopy(top,left,bottom,right); break; case 2: UpdateColorSrc1Dst4ScaledCopy(top,left,bottom,right); break; case 4: UpdateColorSrc1Dst5ScaledCopy(top,left,bottom,right); break; } break;
-					case 2: switch (bpp) { case 1: UpdateColorSrc2Dst3ScaledCopy(top,left,bottom,right); break; case 2: UpdateColorSrc2Dst4ScaledCopy(top,left,bottom,right); break; case 4: UpdateColorSrc2Dst5ScaledCopy(top,left,bottom,right); break; } break;
-					case 3: switch (bpp) { case 1: UpdateColorSrc3Dst3ScaledCopy(top,left,bottom,right); break; case 2: UpdateColorSrc3Dst4ScaledCopy(top,left,bottom,right); break; case 4: UpdateColorSrc3Dst5ScaledCopy(top,left,bottom,right); break; } break;
-				}
-			} else
-#endif
 			{
 				switch (vMacScreenDepth) {
 					case 1: switch (bpp) { case 1: UpdateColorSrc1Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc1Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc1Dst5Copy(top,left,bottom,right); break; } break;
@@ -1078,24 +922,6 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 				}
 			}
 		} else {
-#if ! UseSDLscaling
-			if (UseMagnify) {
-				switch (bpp) {
-					case 1:
-						UpdateBWDepth3ScaledCopy(
-							top, left, bottom, right);
-						break;
-					case 2:
-						UpdateBWDepth4ScaledCopy(
-							top, left, bottom, right);
-						break;
-					case 4:
-						UpdateBWDepth5ScaledCopy(
-							top, left, bottom, right);
-						break;
-				}
-			} else
-#endif
 			{
 				switch (bpp) {
 					case 1:
@@ -1123,12 +949,6 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 				Uint8 *bufp = static_cast<Uint8 *>(pixels)
 					+ i * pitch + j * bpp;
 
-#if ! UseSDLscaling
-				if (UseMagnify) {
-					i0 /= WindowScale;
-					j0 /= WindowScale;
-				}
-#endif
 
 				if (UseColorMode && vMacScreenDepth > 0) {
 					if (vMacScreenDepth < 4) {
@@ -3653,11 +3473,7 @@ static bool CreateMainWindow()
 		my_renderer,
 		SDL_PIXELFORMAT_ARGB8888,
 		SDL_TEXTUREACCESS_STREAMING,
-#if UseSDLscaling
 		vMacScreenWidth, vMacScreenHeight
-#else
-		NewWindowWidth, NewWindowHeight
-#endif
 		)))
 	{
 		fprintf(stderr, "SDL_CreateTexture fails: %s\n",
