@@ -124,9 +124,8 @@ endif()
 # Common settings
 # ---------------------------------------------------------------------------
 
-# Include paths: src/config/ has all config headers (static). src/ for source headers.
+# Include paths: src/ for source headers.
 target_include_directories(maxivmac PRIVATE
-    "${CMAKE_SOURCE_DIR}/src/config"
     "${CMAKE_SOURCE_DIR}/src"
 )
 
