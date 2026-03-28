@@ -13,7 +13,7 @@
 #pragma once
 
 
-#include "CNFUIOSG.h"
+#include "platform/sdl_config.h"
 	/*
 		Configuration file independent of user options
 		for operating system glue.
