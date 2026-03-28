@@ -975,7 +975,7 @@ uint8_t * GetCurDrawBuff()
 	uint8_t * p = screencomparebuff;
 
 	if (0 != SpecialModes) {
-		MyMoveBytes(p, CntrlDisplayBuff,
+		MoveBytes(p, CntrlDisplayBuff,
 			(0 != vMacScreenDepth && UseColorMode) ? vMacScreenNumBytes :
 				vMacScreenMonoNumBytes
 			);

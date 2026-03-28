@@ -45,14 +45,14 @@ static uint16_t TheWriteOffset;
 
 static SDL_AudioStream *stream = nullptr;
 
-static void MySound_Init0()
+static void Sound_Init0()
 {
 	ThePlayOffset = 0;
 	TheFillOffset = 0;
 	TheWriteOffset = 0;
 }
 
-static void MySound_Start0()
+static void Sound_Start0()
 {
 	/* Reset variables */
 	MinFilledSoundBuffs = kSoundBuffers + 1;
@@ -61,7 +61,7 @@ static void MySound_Start0()
 #endif
 }
 
-tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL)
+tpSoundSamp Sound_BeginWrite(uint16_t n, uint16_t *actL)
 {
 	uint16_t ToFillLen = kAllBuffLen - (TheWriteOffset - ThePlayOffset);
 	uint16_t WriteBuffContig =
@@ -91,13 +91,13 @@ static void ConvertSoundBlockToNative(tpSoundSamp p)
 	}
 }
 
-static void MySound_WroteABlock()
+static void Sound_WroteABlock()
 {
 	uint16_t PrevWriteOffset = TheWriteOffset - kOneBuffLen;
 	tpSoundSamp p = TheSoundBuffer + (PrevWriteOffset & kAllBuffMask);
 
 #if dbglog_SoundStuff
-	dbglog_writeln("enter MySound_WroteABlock");
+	dbglog_writeln("enter Sound_WroteABlock");
 #endif
 
 	ConvertSoundBlockToNative(p);
@@ -117,7 +117,7 @@ static void MySound_WroteABlock()
 #endif
 }
 
-static bool MySound_EndWrite0(uint16_t actL)
+static bool Sound_EndWrite0(uint16_t actL)
 {
 	bool v;
 
@@ -128,7 +128,7 @@ static bool MySound_EndWrite0(uint16_t actL)
 	} else {
 		/* just finished a block */
 
-		MySound_WroteABlock();
+		Sound_WroteABlock();
 
 		v = true;
 	}
@@ -136,7 +136,7 @@ static bool MySound_EndWrite0(uint16_t actL)
 	return v;
 }
 
-static void MySound_SecondNotify0()
+static void Sound_SecondNotify0()
 {
 	if (MinFilledSoundBuffs <= kSoundBuffers) {
 		if (MinFilledSoundBuffs > DesiredMinFilledSoundBuffs) {
@@ -205,7 +205,7 @@ static void SoundRampTo(trSoundTemp *last_val, trSoundTemp dst_val,
 	*last_val = v1;
 }
 
-struct MySoundR {
+struct SoundR {
 	tpSoundSamp fTheSoundBuffer;
 	volatile uint16_t (*fPlayOffset);
 	volatile uint16_t (*fFillOffset);
@@ -222,7 +222,7 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 	uint16_t ToPlayLen;
 	uint16_t FilledSoundBuffs;
 	int i;
-	MySoundR *datp = (MySoundR *)udata;
+	SoundR *datp = (SoundR *)udata;
 	tpSoundSamp CurSoundBuffer = datp->fTheSoundBuffer;
 	uint16_t CurPlayOffset = *datp->fPlayOffset;
 	trSoundTemp v0 = datp->lastv;
@@ -332,14 +332,14 @@ static void SDLCALL sdl3_audio_callback(void *udata, SDL_AudioStream *stream, in
 	}
 }
 
-static MySoundR cur_audio;
+static SoundR cur_audio;
 
 static bool HaveSoundOut = false;
 
-void MySound_Stop()
+void Sound_Stop()
 {
 #if dbglog_SoundStuff
-	dbglog_writeln("enter MySound_Stop");
+	dbglog_writeln("enter Sound_Stop");
 #endif
 
 	if (cur_audio.wantplaying && HaveSoundOut) {
@@ -376,14 +376,14 @@ void MySound_Stop()
 	}
 
 #if dbglog_SoundStuff
-	dbglog_writeln("leave MySound_Stop");
+	dbglog_writeln("leave Sound_Stop");
 #endif
 }
 
-void MySound_Start()
+void Sound_Start()
 {
 	if ((! cur_audio.wantplaying) && HaveSoundOut) {
-		MySound_Start0();
+		Sound_Start0();
 		cur_audio.lastv = kCenterTempSound;
 		cur_audio.HaveStartedPlaying = false;
 		cur_audio.wantplaying = true;
@@ -394,7 +394,7 @@ void MySound_Start()
 	}
 }
 
-void MySound_UnInit()
+void Sound_UnInit()
 {
 	if (HaveSoundOut) {
 		SDL_DestroyAudioStream(stream);
@@ -403,15 +403,15 @@ void MySound_UnInit()
 
 #define SOUND_SAMPLERATE 22255 /* = round(7833600 * 2 / 704) */
 
-bool MySound_Init()
+bool Sound_Init()
 {
 #if dbglog_OSGInit
-	dbglog_writeln("enter MySound_Init");
+	dbglog_writeln("enter Sound_Init");
 #endif
 
 	SDL_AudioSpec desired;
 
-	MySound_Init0();
+	Sound_Init0();
 
 	cur_audio.fTheSoundBuffer = TheSoundBuffer;
 	cur_audio.fPlayOffset = &ThePlayOffset;
@@ -439,7 +439,7 @@ bool MySound_Init()
 	} else {
 		HaveSoundOut = true;
 
-		MySound_Start();
+		Sound_Start();
 			/*
 				This should be taken care of by LeaveSpeedStopped,
 				but since takes a while to get going properly,
@@ -450,25 +450,25 @@ bool MySound_Init()
 	return true; /* keep going, even if no sound */
 }
 
-void MySound_EndWrite(uint16_t actL)
+void Sound_EndWrite(uint16_t actL)
 {
-	if (MySound_EndWrite0(actL)) {
+	if (Sound_EndWrite0(actL)) {
 	}
 }
 
-void MySound_SecondNotify()
+void Sound_SecondNotify()
 {
 	if (HaveSoundOut) {
-		MySound_SecondNotify0();
+		Sound_SecondNotify0();
 	}
 }
 
-bool MySound_AllocBuffer()
+bool Sound_AllocBuffer()
 {
 	return AllocBlock((uint8_t **)&TheSoundBuffer, dbhBufferSize, false);
 }
 
-void MySound_FreeBuffer()
+void Sound_FreeBuffer()
 {
 	free(TheSoundBuffer);
 	TheSoundBuffer = nullptr;

@@ -15,7 +15,7 @@
 
 /* --- some simple utilities --- */
 
-void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
+void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 	(void) memcpy(reinterpret_cast<char *>(destPtr), reinterpret_cast<char *>(srcPtr), byteCount);
 }
@@ -529,7 +529,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 }
 
-static void MyDrawChangesAndClear()
+static void DrawChangesAndClear()
 {
 	if (ScreenChangedBottom > ScreenChangedTop) {
 		HaveChangedScreenBuff(ScreenChangedTop, ScreenChangedLeft,
@@ -545,7 +545,7 @@ void DoneWithDrawingForTick()
 		AutoScrollScreen();
 	}
 #endif
-	MyDrawChangesAndClear();
+	DrawChangesAndClear();
 }
 
 /* --- mouse --- */
@@ -571,7 +571,7 @@ static void ForceShowCursor()
 #endif
 
 #if EnableMoveMouse && HaveWorkingWarp
-static bool MyMoveMouse(int16_t h, int16_t v)
+static bool MoveMouse(int16_t h, int16_t v)
 {
 	/*
 		OSGLUxxx common:
@@ -921,7 +921,7 @@ static void GrabTheMachine()
 		if magnification changes, need to reset,
 		even if HaveMouseMotion already true
 	*/
-	if (MyMoveMouse(ViewHStart + (ViewHSize / 2),
+	if (MoveMouse(ViewHStart + (ViewHSize / 2),
 		ViewVStart + (ViewVSize / 2)))
 	{
 		SavedMouseH = ViewHStart + (ViewHSize / 2);
@@ -939,7 +939,7 @@ static void UngrabMachine()
 
 	if (HaveMouseMotion) {
 #if HaveWorkingWarp
-		(void) MyMoveMouse(CurMouseH, CurMouseV);
+		(void) MoveMouse(CurMouseH, CurMouseV);
 #endif
 
 		HaveMouseMotion = false;
@@ -953,7 +953,7 @@ static void UngrabMachine()
 }
 
 #if EnableFSMouseMotion && HaveWorkingWarp
-static void MyMouseConstrain()
+static void MouseConstrain()
 {
 	int16_t shiftdh;
 	int16_t shiftdv;
@@ -975,7 +975,7 @@ static void MyMouseConstrain()
 	if ((shiftdh != 0) || (shiftdv != 0)) {
 		SavedMouseH += shiftdh;
 		SavedMouseV += shiftdv;
-		if (! MyMoveMouse(SavedMouseH, SavedMouseV)) {
+		if (! MoveMouse(SavedMouseH, SavedMouseV)) {
 			HaveMouseMotion = false;
 		}
 	}
@@ -1359,7 +1359,7 @@ static bool ReCreateMainWindow()
 
 #if HaveWorkingWarp
 		if (HadCursorHidden) {
-			(void) MyMoveMouse(CurMouseH, CurMouseV);
+			(void) MoveMouse(CurMouseH, CurMouseV);
 		}
 #endif
 	}
@@ -1439,28 +1439,28 @@ static void EnterBackground()
 
 static void LeaveSpeedStopped()
 {
-	MySound_Start();
+	Sound_Start();
 
 	StartUpTimeAdjust();
 }
 
 static void EnterSpeedStopped()
 {
-	MySound_Stop();
+	Sound_Stop();
 }
 
 static void CheckForSavedTasks()
 {
-	if (MyEvtQNeedRecover) {
-		MyEvtQNeedRecover = false;
+	if (EvtQNeedRecover) {
+		EvtQNeedRecover = false;
 
-		/* attempt cleanup, MyEvtQNeedRecover may get set again */
-		MyEvtQTryRecoverFromFull();
+		/* attempt cleanup, EvtQNeedRecover may get set again */
+		EvtQTryRecoverFromFull();
 	}
 
 #if EnableFSMouseMotion && HaveWorkingWarp
 	if (HaveMouseMotion) {
-		MyMouseConstrain();
+		MouseConstrain();
 	}
 #endif
 
@@ -1698,7 +1698,7 @@ void WaitForNextTick()
 	}
 
 	if (CheckDateTime()) {
-		MySound_SecondNotify();
+		Sound_SecondNotify();
 	}
 
 	if ((! gBackgroundFlag)
@@ -1747,7 +1747,7 @@ static bool AllocMyMemory()
 #endif
 	if (!AllocBlock(&CLUT_final, CLUT_finalsz, false))
 		goto fail;
-	if (!MySound_AllocBuffer())
+	if (!Sound_AllocBuffer())
 		goto fail;
 	if (!EmulationReserveAlloc())
 		goto fail;
@@ -1766,7 +1766,7 @@ static void UnallocMyMemory()
 	free(CntrlDisplayBuff); CntrlDisplayBuff = nullptr;
 #endif
 	free(CLUT_final); CLUT_final = nullptr;
-	MySound_FreeBuffer();
+	Sound_FreeBuffer();
 	EmulationFreeAlloc();
 }
 
@@ -1803,7 +1803,7 @@ static bool InitOSGLU()
 	INIT_STEP("LoadInitialImages", LoadInitialImages())
 	INIT_STEP("InitLocationDat", InitLocationDat())
 	INIT_STEP("Screen_Init", Screen_Init())
-	INIT_STEP("MySound_Init", MySound_Init())
+	INIT_STEP("Sound_Init", Sound_Init())
 	INIT_STEP("CreateMainWindow", CreateMainWindow())
 	INIT_STEP("WaitForRom", WaitForRom())
 
@@ -1824,8 +1824,8 @@ static void UnInitOSGLU()
 
 	RestoreKeyRepeat();
 	UngrabMachine();
-	MySound_Stop();
-	MySound_UnInit();
+	Sound_Stop();
+	Sound_UnInit();
 	UnInitPbufs();
 	UnInitDrives();
 

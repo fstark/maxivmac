@@ -28,17 +28,17 @@ static void ADB_DoMouseTalk()
 	switch (ADB_CurCmd & 3) {
 		case 0:
 			{
-				MyEvtQEl *p;
+				EvtQEl *p;
 				uint16_t partH;
 				uint16_t partV;
 				bool overflow = false;
 				bool MouseButtonChange = false;
 
-				if (nullptr != (p = MyEvtQOutP())) {
+				if (nullptr != (p = EvtQOutP())) {
 					if (EvtQElKind::MouseDelta == p->kind) {
 						MouseADBDeltaH += p->u.pos.h;
 						MouseADBDeltaV += p->u.pos.v;
-						MyEvtQOutDone();
+						EvtQOutDone();
 					}
 				}
 				partH = MouseADBDeltaH;
@@ -67,11 +67,11 @@ static void ADB_DoMouseTalk()
 				MouseADBDeltaH -= partH;
 				MouseADBDeltaV -= partV;
 				if (! overflow) {
-					if (nullptr != (p = MyEvtQOutP())) {
+					if (nullptr != (p = EvtQOutP())) {
 						if (EvtQElKind::MouseButton == p->kind) {
 							SavedCurMouseButton = p->u.press.down;
 							MouseButtonChange = true;
-							MyEvtQOutDone();
+							EvtQOutDone();
 						}
 					}
 				}
@@ -211,7 +211,7 @@ static void ADB_DoKeyboardListen()
 
 static bool CheckForADBanyEvt()
 {
-	MyEvtQEl *p = MyEvtQOutP();
+	EvtQEl *p = EvtQOutP();
 	if (nullptr != p) {
 		switch (p->kind) {
 			case EvtQElKind::MouseButton:

@@ -43,8 +43,8 @@ bool Mouse_Enabled()
    for Classic keyboard models via VIA1 wire. */
 void MouseDevice::update()
 {
-	if (0 != MasterMyEvtQLock) {
-		--MasterMyEvtQLock;
+	if (0 != MasterEvtQLock) {
+		--MasterEvtQLock;
 	}
 
 	/*
@@ -58,11 +58,11 @@ void MouseDevice::update()
 		will mess up memory check
 	*/
 	if (Mouse_Enabled()) {
-		MyEvtQEl *p;
+		EvtQEl *p;
 
 		if (
-			(0 == MasterMyEvtQLock) &&
-			(nullptr != (p = MyEvtQOutP())))
+			(0 == MasterEvtQLock) &&
+			(nullptr != (p = EvtQOutP())))
 		{
 			if (g_machine->config().emClassicKbrd
 				&& EvtQElKind::MouseDelta == p->kind)
@@ -75,7 +75,7 @@ void MouseDevice::update()
 					put_ram_byte(0x08CE, get_ram_byte(0x08CF));
 						/* Tell MacOS to redraw the Mouse */
 				}
-				MyEvtQOutDone();
+				EvtQOutDone();
 			} else
 			if (EvtQElKind::MousePos == p->kind) {
 				uint32_t NewMouse = (p->u.pos.v << 16) | p->u.pos.h;
@@ -93,23 +93,23 @@ void MouseDevice::update()
 							/* Tell MacOS to redraw the Mouse */
 					}
 				}
-				MyEvtQOutDone();
+				EvtQOutDone();
 			}
 		}
 	}
 
 	if (machine_->config().emClassicKbrd)
 	{
-		MyEvtQEl *p;
+		EvtQEl *p;
 
 		if (
-			(0 == MasterMyEvtQLock) &&
-			(nullptr != (p = MyEvtQOutP())))
+			(0 == MasterEvtQLock) &&
+			(nullptr != (p = EvtQOutP())))
 		{
 			if (EvtQElKind::MouseButton == p->kind) {
 				g_wires.set(Wire_VIA1_iB3, p->u.press.down ? 0 : 1);
-				MyEvtQOutDone();
-				MasterMyEvtQLock = 4;
+				EvtQOutDone();
+				MasterEvtQLock = 4;
 			}
 		}
 	}

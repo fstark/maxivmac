@@ -186,7 +186,7 @@ static void Sony_Install()
 {
 	uint8_t * pto = Sony_DriverBase + ROM;
 
-	MyMoveBytes(const_cast<uint8_t *>(sony_driver), pto, sizeof(sony_driver));
+	MoveBytes(const_cast<uint8_t *>(sony_driver), pto, sizeof(sony_driver));
 	{
 		auto m = g_machine->config().model;
 		if (m <= MacModel::Twiggy) {
@@ -206,8 +206,8 @@ static void Sony_Install()
 	do_put_mem_long(pto, g_machine->config().extnBlockBase); /* pokeaddr */
 	pto += 4;
 
-	my_disk_icon_addr = (pto - ROM) + g_machine->config().romBase;
-	MyMoveBytes(const_cast<uint8_t *>(my_disk_icon), pto, sizeof(my_disk_icon));
+	g_diskIconAddr = (pto - ROM) + g_machine->config().romBase;
+	MoveBytes(const_cast<uint8_t *>(my_disk_icon), pto, sizeof(my_disk_icon));
 	pto += sizeof(my_disk_icon);
 
 #if UseLargeScreenHack

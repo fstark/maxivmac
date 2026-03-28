@@ -118,7 +118,7 @@ void SoundDevice::subTick(int SubTick)
 #endif
 
 	while (n > 0) {
-		p = MySound_BeginWrite(n, &actL);
+		p = Sound_BeginWrite(n, &actL);
 		if (actL <= 0) {
 			break;
 		}
@@ -190,7 +190,7 @@ void SoundDevice::subTick(int SubTick)
 			}
 		}
 
-		MySound_EndWrite(actL);
+		Sound_EndWrite(actL);
 		n -= actL;
 	}
 }

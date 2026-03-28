@@ -234,7 +234,7 @@ static void PatchHappyMac()
 			++dst;
 		}
 	} else {
-		MyMoveBytes(const_cast<uint8_t *>(my_HappyMac_icon),
+		MoveBytes(const_cast<uint8_t *>(my_HappyMac_icon),
 			(HappyMacBase + ROM),
 			sizeof(my_HappyMac_icon));
 	}

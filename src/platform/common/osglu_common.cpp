@@ -529,7 +529,7 @@ Label_2:
 		copysize = copyrows * vMacScreenMonoByteWidth;
 	}
 
-	MyMoveBytes(screencurrentbuff + copyoffset,
+	MoveBytes(screencurrentbuff + copyoffset,
 		screencomparebuff + copyoffset,
 		copysize);
 
@@ -795,13 +795,13 @@ static void dbglog_write(char *p, uint32_t L)
 			break;
 		}
 		r = dbglog_bufsz - bufposmod;
-		MyMoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), r);
+		MoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), r);
 		dbglog_write0(dbglog_bufp, dbglog_bufsz);
 		L -= r;
 		p += r;
 		dbglog_bufpos += r;
 	}
-	MyMoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), L);
+	MoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), L);
 	dbglog_bufpos = newbufpos;
 }
 
@@ -909,45 +909,45 @@ void dbglog_writelnNum(char *s, int32_t v)
 
 /* --- event queue --- */
 
-MyEvtQEl MyEvtQA[MyEvtQSz];
-uint16_t MyEvtQIn = 0;
-uint16_t MyEvtQOut = 0;
+EvtQEl EvtQA[MyEvtQSz];
+uint16_t EvtQIn = 0;
+uint16_t EvtQOut = 0;
 
-MyEvtQEl * MyEvtQOutP()
+EvtQEl * EvtQOutP()
 {
-	MyEvtQEl *p = nullptr;
-	if (MyEvtQIn != MyEvtQOut) {
-		p = &MyEvtQA[MyEvtQOut & MyEvtQIMask];
+	EvtQEl *p = nullptr;
+	if (EvtQIn != EvtQOut) {
+		p = &EvtQA[EvtQOut & MyEvtQIMask];
 	}
 	return p;
 }
 
-void MyEvtQOutDone()
+void EvtQOutDone()
 {
-	++MyEvtQOut;
+	++EvtQOut;
 }
 
-bool MyEvtQNeedRecover = false;
+bool EvtQNeedRecover = false;
 
-MyEvtQEl * MyEvtQElPreviousIn()
+EvtQEl * EvtQElPreviousIn()
 {
-	MyEvtQEl *p = nullptr;
-	if (MyEvtQIn - MyEvtQOut != 0) {
-		p = &MyEvtQA[(MyEvtQIn - 1) & MyEvtQIMask];
+	EvtQEl *p = nullptr;
+	if (EvtQIn - EvtQOut != 0) {
+		p = &EvtQA[(EvtQIn - 1) & MyEvtQIMask];
 	}
 
 	return p;
 }
 
-MyEvtQEl * MyEvtQElAlloc()
+EvtQEl * EvtQElAlloc()
 {
-	MyEvtQEl *p = nullptr;
-	if (MyEvtQIn - MyEvtQOut >= MyEvtQSz) {
-		MyEvtQNeedRecover = true;
+	EvtQEl *p = nullptr;
+	if (EvtQIn - EvtQOut >= MyEvtQSz) {
+		EvtQNeedRecover = true;
 	} else {
-		p = &MyEvtQA[MyEvtQIn & MyEvtQIMask];
+		p = &EvtQA[EvtQIn & MyEvtQIMask];
 
-		++MyEvtQIn;
+		++EvtQIn;
 	}
 
 	return p;
@@ -965,7 +965,7 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 	uint8_t *kpi = &kp[k / 8];
 	bool CurDown = ((*kpi & bit) != 0);
 	if (CurDown != down) {
-		MyEvtQEl *p = MyEvtQElAlloc();
+		EvtQEl *p = EvtQElAlloc();
 		if (nullptr != p) {
 			p->kind = EvtQElKind::Key;
 			p->u.press.key = k;
@@ -982,17 +982,17 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 	}
 }
 
-bool MyMouseButtonState = false;
+bool g_mouseButtonState = false;
 
 void MyMouseButtonSet(bool down)
 {
-	if (MyMouseButtonState != down) {
-		MyEvtQEl *p = MyEvtQElAlloc();
+	if (g_mouseButtonState != down) {
+		EvtQEl *p = EvtQElAlloc();
 		if (nullptr != p) {
 			p->kind = EvtQElKind::MouseButton;
 			p->u.press.down = down;
 
-			MyMouseButtonState = down;
+			g_mouseButtonState = down;
 		}
 
 		QuietEnds();
@@ -1003,12 +1003,12 @@ void MyMouseButtonSet(bool down)
 void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
 	if ((dh != 0) || (dv != 0)) {
-		MyEvtQEl *p = MyEvtQElPreviousIn();
+		EvtQEl *p = EvtQElPreviousIn();
 		if ((nullptr != p) && (EvtQElKind::MouseDelta == p->kind)) {
 			p->u.pos.h += dh;
 			p->u.pos.v += dv;
 		} else {
-			p = MyEvtQElAlloc();
+			p = EvtQElAlloc();
 			if (nullptr != p) {
 				p->kind = EvtQElKind::MouseDelta;
 				p->u.pos.h = dh;
@@ -1021,23 +1021,23 @@ void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 }
 #endif
 
-uint16_t MyMousePosCurV = 0;
-uint16_t MyMousePosCurH = 0;
+uint16_t g_mousePosCurV = 0;
+uint16_t g_mousePosCurH = 0;
 
 void MyMousePositionSet(uint16_t h, uint16_t v)
 {
-	if ((h != MyMousePosCurH) || (v != MyMousePosCurV)) {
-		MyEvtQEl *p = MyEvtQElPreviousIn();
+	if ((h != g_mousePosCurH) || (v != g_mousePosCurV)) {
+		EvtQEl *p = EvtQElPreviousIn();
 		if ((nullptr == p) || (EvtQElKind::MousePos != p->kind)) {
-			p = MyEvtQElAlloc();
+			p = EvtQElAlloc();
 		}
 		if (nullptr != p) {
 			p->kind = EvtQElKind::MousePos;
 			p->u.pos.h = h;
 			p->u.pos.v = v;
 
-			MyMousePosCurH = h;
-			MyMousePosCurV = v;
+			g_mousePosCurH = h;
+			g_mousePosCurV = v;
 		}
 
 		QuietEnds();
@@ -1084,7 +1084,7 @@ void DisconnectKeyCodes(uint32_t KeepMask)
 	}
 }
 
-void MyEvtQTryRecoverFromFull()
+void EvtQTryRecoverFromFull()
 {
 	MyMouseButtonSet(false);
 	DisconnectKeyCodes(0);

@@ -3,13 +3,13 @@
 
 #include <cstdint>
 
-void MySound_Start();
-void MySound_Stop();
-bool MySound_Init();
-void MySound_UnInit();
-void MySound_SecondNotify();
+void Sound_Start();
+void Sound_Stop();
+bool Sound_Init();
+void Sound_UnInit();
+void Sound_SecondNotify();
 
-bool MySound_AllocBuffer();
-void MySound_FreeBuffer();
+bool Sound_AllocBuffer();
+void Sound_FreeBuffer();
 
 #endif /* SDL_SOUND_H */

@@ -121,7 +121,7 @@ static void MyMoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
 			break;
 		}
 		contig = (contigSrc < contigDst) ? contigSrc : contigDst;
-		MyMoveBytes(src, dst, contig);
+		MoveBytes(src, dst, contig);
 		srcPtr += contig;
 		dstPtr += contig;
 		byteCount -= contig;
@@ -1265,7 +1265,7 @@ static tMacErr Sony_Control(uint32_t p)
 
 					if (get_vm_word(dvl + kQType) != 0) {
 						put_vm_long(ParamBlk + kcsParam,
-							my_disk_icon_addr);
+							g_diskIconAddr);
 						result = tMacErr::noErr;
 					} else {
 						result = tMacErr::controlErr;

@@ -34,7 +34,7 @@ extern void dbglog_writelnNum(char *s, int32_t v);
 extern void MacMsgDebugAlert(char *s);
 #endif
 
-extern void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
+extern void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
 
 extern bool AllocBlock(uint8_t **p, uint32_t n, bool FillOnes);
 
@@ -188,8 +188,8 @@ using tpSoundSamp = uint16_t *;
 #define kCenterSound 0x8000
 
 
-extern tpSoundSamp MySound_BeginWrite(uint16_t n, uint16_t *actL);
-extern void MySound_EndWrite(uint16_t actL);
+extern tpSoundSamp Sound_BeginWrite(uint16_t n, uint16_t *actL);
+extern void Sound_EndWrite(uint16_t actL);
 
 /* 370 samples per tick = 22,254.54 per second */
 
@@ -223,7 +223,7 @@ enum class EvtQElKind : uint8_t {
 	MouseDelta = 3,
 };
 
-struct MyEvtQEl {
+struct EvtQEl {
 	/* expected size : 8 bytes */
 	EvtQElKind kind;
 	uint8_t pad[3];
@@ -239,7 +239,7 @@ struct MyEvtQEl {
 	} u;
 };
 
-extern MyEvtQEl * MyEvtQOutP();
-extern void MyEvtQOutDone();
+extern EvtQEl * EvtQOutP();
+extern void EvtQOutDone();
 
 #include "keycodes.h"

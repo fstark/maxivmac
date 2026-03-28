@@ -180,7 +180,7 @@ extern uint8_t* Wires;
 #define kNumSubTicks 16
 
 
-extern uint16_t MasterMyEvtQLock;
+extern uint16_t MasterEvtQLock;
 extern bool FindKeyEvent(int *VirtualKey, bool *KeyDown);
 
 
@@ -215,7 +215,7 @@ enum {
 
 #define kcom_callcheck 0x5B17
 
-extern uint32_t my_disk_icon_addr;
+extern uint32_t g_diskIconAddr;
 
 extern void Memory_Reset();
 

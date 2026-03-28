@@ -47,7 +47,7 @@ extern void put_vm_byte(uint32_t addr, uint8_t b);
 extern void put_vm_word(uint32_t addr, uint16_t w);
 extern void put_vm_long(uint32_t addr, uint32_t l);
 
-uint32_t my_disk_icon_addr;
+uint32_t g_diskIconAddr;
 
 // Reset all emulated devices to their power-on state.
 void customreset()
@@ -1762,7 +1762,7 @@ void PowerOff_ChangeNtfy()
 
 /* user event queue utilities */
 
-uint16_t MasterMyEvtQLock = 0;
+uint16_t MasterEvtQLock = 0;
 	/*
 		Takes a few ticks to process button event because
 		of debounce code of Mac. So have this mechanism
@@ -1771,16 +1771,16 @@ uint16_t MasterMyEvtQLock = 0;
 
  bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
 {
-	MyEvtQEl *p;
+	EvtQEl *p;
 
 	if (
-		(0 == MasterMyEvtQLock) &&
-		(nullptr != (p = MyEvtQOutP())))
+		(0 == MasterEvtQLock) &&
+		(nullptr != (p = EvtQOutP())))
 	{
 		if (EvtQElKind::Key == p->kind) {
 			*VirtualKey = p->u.press.key;
 			*KeyDown = p->u.press.down;
-			MyEvtQOutDone();
+			EvtQOutDone();
 			return true;
 		}
 	}

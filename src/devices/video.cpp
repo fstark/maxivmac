@@ -284,7 +284,7 @@ static void PatchAnEndOfLst()
 	PatchAReservedOSLstEntry(pTo_sMacOS68020, 0x02 /* sMacOS68020 */);
 
 	PatchALong(4 + sizeof(VidDrvr_contents) + 8);
-	MyMoveBytes(const_cast<uint8_t *>(VidDrvr_contents),
+	MoveBytes(const_cast<uint8_t *>(VidDrvr_contents),
 		pPatch, sizeof(VidDrvr_contents));
 	pPatch += sizeof(VidDrvr_contents);
 	PatchAWord(kcom_callcheck);

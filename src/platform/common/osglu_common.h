@@ -73,20 +73,20 @@ extern uint32_t PbufSize[NumPbufs];
 #define PbufIsAllocated(i) ((PbufAllocatedMask & ((uint32_t)1 << (i))) != 0)
 
 extern uint32_t theKeys[4];
-extern bool MyMouseButtonState;
+extern bool g_mouseButtonState;
 
-extern uint16_t MyMousePosCurV;
-extern uint16_t MyMousePosCurH;
+extern uint16_t g_mousePosCurV;
+extern uint16_t g_mousePosCurH;
 
 /* event queue */
 #define MyEvtQLg2Sz 4
 #define MyEvtQSz (1 << MyEvtQLg2Sz)
 #define MyEvtQIMask (MyEvtQSz - 1)
 
-extern MyEvtQEl MyEvtQA[MyEvtQSz];
-extern uint16_t MyEvtQIn;
-extern uint16_t MyEvtQOut;
-extern bool MyEvtQNeedRecover;
+extern EvtQEl EvtQA[MyEvtQSz];
+extern uint16_t EvtQIn;
+extern uint16_t EvtQOut;
+extern bool EvtQNeedRecover;
 
 extern const char *SavedBriefMsg;
 extern const char *SavedLongMsg;
@@ -133,10 +133,10 @@ void MyMousePositionSet(uint16_t h, uint16_t v);
 
 void InitKeyCodes();
 void DisconnectKeyCodes(uint32_t KeepMask);
-void MyEvtQTryRecoverFromFull();
+void EvtQTryRecoverFromFull();
 
-MyEvtQEl * MyEvtQElPreviousIn();
-MyEvtQEl * MyEvtQElAlloc();
+EvtQEl * EvtQElPreviousIn();
+EvtQEl * EvtQElAlloc();
 
 void MacMsg(const char *briefMsg, const char *longMsg, bool fatal);
 

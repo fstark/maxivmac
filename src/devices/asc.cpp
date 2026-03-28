@@ -488,7 +488,7 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 	uint8_t SoundVolume = SoundReg_Volume;
 
 	while (n > 0) {
-		p = MySound_BeginWrite(n, &actL);
+		p = Sound_BeginWrite(n, &actL);
 		if (actL <= 0) {
 			break;
 		}
@@ -708,7 +708,7 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 			}
 		}
 
-		MySound_EndWrite(actL);
+		Sound_EndWrite(actL);
 		n -= actL;
 	}
 
