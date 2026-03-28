@@ -310,12 +310,8 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		YDest -= ViewVStart;
 	}
 
-	if (UseMagnify) {
-		XDest *= WindowScale;
-		YDest *= WindowScale;
-		DestWidth *= WindowScale;
-		DestHeight *= WindowScale;
-	}
+	/* SDL3 logical presentation handles magnification —
+	   dst_rect is in logical (unmagnified) coordinates. */
 
 	if (UseFullScreen)
 	{
@@ -615,15 +611,13 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 {
 	bool ShouldHaveCursorHidden = true;
 
+	/* SDL_ConvertEventToRenderCoordinates already maps to
+	   logical coordinates, so no manual scaling needed. */
+
 	if (UseFullScreen)
 	{
 		NewMousePosh -= hOffset;
 		NewMousePosv -= vOffset;
-	}
-
-	if (UseMagnify) {
-		NewMousePosh /= WindowScale;
-		NewMousePosv /= WindowScale;
 	}
 
 	if (UseFullScreen)
@@ -677,14 +671,7 @@ static void MousePositionNotifyRelative(int deltah, int deltav)
 {
 	bool ShouldHaveCursorHidden = true;
 
-	if (UseMagnify) {
-		/*
-			This is not really right. If only move one pixel
-			each time, emulated mouse doesn't move at all.
-		*/
-		deltah /= WindowScale;
-		deltav /= WindowScale;
-	}
+	/* SDL3 logical presentation handles coordinate scaling. */
 
 	MyMousePositionSetDelta(deltah,
 		deltav);

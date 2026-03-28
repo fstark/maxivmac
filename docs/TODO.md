@@ -20,6 +20,12 @@
 
 * Get rid of UnusedParam macro
 
+Step 9c — Extract event handling into sdl_events.cpp: HandleTheEvent() (~230 lines) is deeply coupled to sdl.cpp statics — my_renderer, UseFullScreen, RequestMacOff, gTrueBackgroundFlag, CaughtMouse, my_main_wind, plus mouse and disk-insert helpers. Extracting it would require exposing or restructuring a large number of internal globals, making the change invasive for modest payoff.
+
+Step 9d — Simplify HaveChangedScreenBuff: The plan called for removing the per-pixel slow path (including 24-bpp support) since modern displays never use it, and simplifying the CLUT loop. This touches core rendering logic and carries regression risk that wasn't worth taking without more targeted testing of color/depth modes beyond the golden-file suite.
+
+
+
 ## Future Work
 
 - Key mappings (`MKC_formac_*`) should move to their own header.
