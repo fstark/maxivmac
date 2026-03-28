@@ -89,7 +89,7 @@ static bool Sony_Insert1a(char *drivepath, bool silentfail)
 	bool v;
 
 	if (! ROM_loaded) {
-		v = (mnvm_noErr == LoadMacRomFrom(drivepath));
+		v = (tMacErr::noErr == LoadMacRomFrom(drivepath));
 	} else {
 		v = Sony_Insert1(drivepath, silentfail);
 	}
@@ -110,7 +110,7 @@ static bool Sony_Insert2(char *s)
 	{
 		char *t = nullptr;
 
-		if (mnvm_noErr == ChildPath(d, s, &t)) {
+		if (tMacErr::noErr == ChildPath(d, s, &t)) {
 			IsOk = Sony_Insert1(t, true);
 		}
 

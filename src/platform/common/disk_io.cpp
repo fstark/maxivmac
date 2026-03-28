@@ -29,7 +29,7 @@ void InitDrives()
 		Macintosh style error code, but -1
 		will do) on failure.
 	*/
-	tMacErr err = mnvm_miscErr;
+	tMacErr err = tMacErr::miscErr;
 	FILE * refnum = Drives[Drive_No];
 	uint32_t NewSony_Count = 0;
 
@@ -41,7 +41,7 @@ void InitDrives()
 		}
 
 		if (NewSony_Count == Sony_Count) {
-			err = mnvm_noErr;
+			err = tMacErr::noErr;
 		}
 	}
 
@@ -62,7 +62,7 @@ void InitDrives()
 		Macintosh style error code, but -1
 		will do) on failure.
 	*/
-	tMacErr err = mnvm_miscErr;
+	tMacErr err = tMacErr::miscErr;
 	FILE * refnum = Drives[Drive_No];
 	long v;
 
@@ -70,7 +70,7 @@ void InitDrives()
 		v = ftell(refnum);
 		if (v >= 0) {
 			*Sony_Count = v;
-			err = mnvm_noErr;
+			err = tMacErr::noErr;
 		}
 	}
 
@@ -101,7 +101,7 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	free(DriveNames[Drive_No]);
 	DriveNames[Drive_No] = nullptr;
 
-	return mnvm_noErr;
+	return tMacErr::noErr;
 }
 
  tMacErr vSonyEject(tDrive Drive_No)
@@ -118,7 +118,7 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 {
 	char *path = DriveNames[Drive_No];
 	if (nullptr == path) {
-		return mnvm_miscErr;
+		return tMacErr::miscErr;
 	}
 
 	/* extract last path component */
@@ -131,19 +131,19 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 
 	uint32_t L;
 	tMacErr err = UniCodeStrLength(name, &L);
-	if (mnvm_noErr != err) {
+	if (tMacErr::noErr != err) {
 		return err;
 	}
 
 	tPbuf t;
 	err = PbufNew(L, &t);
-	if (mnvm_noErr != err) {
+	if (tMacErr::noErr != err) {
 		return err;
 	}
 
 	UniCodeStr2MacRoman(name, static_cast<char *>(PbufDat[t]));
 	*r = t;
-	return mnvm_noErr;
+	return tMacErr::noErr;
 }
 
 void UnInitDrives()

@@ -6,7 +6,7 @@
 // Build a full path from directory x and filename y, adding separator.
 tMacErr ChildPath(char *x, char *y, char **r)
 {
-	tMacErr err = mnvm_miscErr;
+	tMacErr err = tMacErr::miscErr;
 	int nx = strlen(x);
 	int ny = strlen(y);
 	{
@@ -25,7 +25,7 @@ tMacErr ChildPath(char *x, char *y, char **r)
 				p2 += ny;
 				*p2 = 0;
 				*r = p;
-				err = mnvm_noErr;
+				err = tMacErr::noErr;
 			}
 		}
 	}

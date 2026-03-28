@@ -526,7 +526,7 @@ void HTCEexportSubstCStr(const char *s)
 #ifdef PbufHaveLock
 	int n = ClStrSizeSubstCStr(s);
 
-	if (mnvm_noErr == PbufNew(n, &j)) {
+	if (tMacErr::noErr == PbufNew(n, &j)) {
 		bool IsOk = false;
 		uint8_t * p = PbufLock(j);
 
@@ -559,7 +559,7 @@ void HTCEexportSubstCStr(const char *s)
 		ps[i] = Cell2MacAsciiMap[ps[i]];
 	}
 
-	if (mnvm_noErr == PbufNew(L, &j)) {
+	if (tMacErr::noErr == PbufNew(L, &j)) {
 		PbufTransfer(ps, j, 0, L, true);
 		HTCEexport(j);
 	}
@@ -1106,7 +1106,7 @@ tMacErr ROM_IsValid()
 	ROM_loaded = true;
 	SpeedStopped = false;
 
-	return mnvm_noErr;
+	return tMacErr::noErr;
 }
 
 void WarnMsgUnsupportedDisk()

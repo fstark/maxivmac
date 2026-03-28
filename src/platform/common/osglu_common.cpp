@@ -130,11 +130,11 @@ tMacErr CheckPbuf(tPbuf Pbuf_No)
 	tMacErr result;
 
 	if (Pbuf_No >= NumPbufs) {
-		result = mnvm_nsDrvErr;
+		result = tMacErr::nsDrvErr;
 	} else if (! PbufIsAllocated(Pbuf_No)) {
-		result = mnvm_offLinErr;
+		result = tMacErr::offLinErr;
 	} else {
-		result = mnvm_noErr;
+		result = tMacErr::noErr;
 	}
 
 	return result;
@@ -144,7 +144,7 @@ tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
 {
 	tMacErr result = CheckPbuf(Pbuf_No);
 
-	if (mnvm_noErr == result) {
+	if (tMacErr::noErr == result) {
 		*Count = PbufSize[Pbuf_No];
 	}
 

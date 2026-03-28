@@ -286,7 +286,7 @@ static tMacErr PbufTransferVM(uint32_t Buffera,
 	while (count != 0) {
 		Buffer = get_real_address0(count, ! IsWrite, Buffera, &contig);
 		if (0 == contig) {
-			return mnvm_miscErr;
+			return tMacErr::miscErr;
 		}
 		PbufTransfer(Buffer, i, offset, contig, IsWrite);
 		offset += contig;
@@ -294,7 +294,7 @@ static tMacErr PbufTransferVM(uint32_t Buffera,
 		count -= contig;
 	}
 
-	return mnvm_noErr;
+	return tMacErr::noErr;
 }
 #endif
 
@@ -316,16 +316,16 @@ static tMacErr PbufTransferVM(uint32_t Buffera,
 #if IncludeExtnPbufs
 static void ExtnParamBuffers_Access(uint32_t p)
 {
-	tMacErr result = mnvm_controlErr;
+	tMacErr result = tMacErr::controlErr;
 
 	switch (get_vm_word(p + ExtnDat_commnd)) {
 		case kCmndVersion:
 			put_vm_word(p + ExtnDat_version, 1);
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 		case kCmndPbufFeatures:
 			put_vm_long(p + ExtnDat_params + 0, 0);
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 		case kCmndPbufNew:
 			{
@@ -341,7 +341,7 @@ static void ExtnParamBuffers_Access(uint32_t p)
 				tPbuf Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
 				/* reserved word at offset 2, should be zero */
 				result = CheckPbuf(Pbuf_No);
-				if (mnvm_noErr == result) {
+				if (tMacErr::noErr == result) {
 					PbufDispose(Pbuf_No);
 				}
 			}
@@ -353,7 +353,7 @@ static void ExtnParamBuffers_Access(uint32_t p)
 				/* reserved word at offset 2, should be zero */
 
 				result = PbufGetSize(Pbuf_No, &Count);
-				if (mnvm_noErr == result) {
+				if (tMacErr::noErr == result) {
 					put_vm_long(p + ExtnDat_params + 4, Count);
 				}
 			}
@@ -369,12 +369,12 @@ static void ExtnParamBuffers_Access(uint32_t p)
 				bool IsWrite =
 					(get_vm_word(p + ExtnDat_params + 16) != 0);
 				result = PbufGetSize(Pbuf_No, &PbufCount);
-				if (mnvm_noErr == result) {
+				if (tMacErr::noErr == result) {
 					uint32_t endoff = offset + count;
 					if ((endoff < offset) /* overflow */
 						|| (endoff > PbufCount))
 					{
-						result = mnvm_eofErr;
+						result = tMacErr::eofErr;
 					} else {
 						result = PbufTransferVM(Buffera,
 							Pbuf_No, offset, count, IsWrite);
@@ -397,23 +397,23 @@ static void ExtnParamBuffers_Access(uint32_t p)
 #if IncludeExtnHostTextClipExchange
 static void ExtnHostTextClipExchange_Access(uint32_t p)
 {
-	tMacErr result = mnvm_controlErr;
+	tMacErr result = tMacErr::controlErr;
 
 	switch (get_vm_word(p + ExtnDat_commnd)) {
 		case kCmndVersion:
 			put_vm_word(p + ExtnDat_version, 1);
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 		case kCmndHTCEFeatures:
 			put_vm_long(p + ExtnDat_params + 0, 0);
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 		case kCmndHTCEExport:
 			{
 				tPbuf Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
 
 				result = CheckPbuf(Pbuf_No);
-				if (mnvm_noErr == result) {
+				if (tMacErr::noErr == result) {
 					result = HTCEexport(Pbuf_No);
 				}
 			}
@@ -453,12 +453,12 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 */
 static void ExtnFind_Access(uint32_t p)
 {
-	tMacErr result = mnvm_controlErr;
+	tMacErr result = tMacErr::controlErr;
 
 	switch (get_vm_word(p + ExtnDat_commnd)) {
 		case kCmndVersion:
 			put_vm_word(p + ExtnDat_version, 1);
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 		case kCmndFindExtnFind:
 			{
@@ -466,26 +466,26 @@ static void ExtnFind_Access(uint32_t p)
 
 				if (extn == kDiskDriverExtension) {
 					put_vm_word(p + kParamFindExtnTheId, kExtnDisk);
-					result = mnvm_noErr;
+					result = tMacErr::noErr;
 				} else
 #if IncludeExtnPbufs
 				if (extn == kHostParamBuffersExtension) {
 					put_vm_word(p + kParamFindExtnTheId,
 						kExtnParamBuffers);
-					result = mnvm_noErr;
+					result = tMacErr::noErr;
 				} else
 #endif
 #if IncludeExtnHostTextClipExchange
 				if (extn == kHostClipExchangeExtension) {
 					put_vm_word(p + kParamFindExtnTheId,
 						kExtnHostTextClipExchange);
-					result = mnvm_noErr;
+					result = tMacErr::noErr;
 				} else
 #endif
 				if (extn == kFindExtnExtension) {
 					put_vm_word(p + kParamFindExtnTheId,
 						kExtnFindExtn);
-					result = mnvm_noErr;
+					result = tMacErr::noErr;
 				} else
 				{
 					/* not found */
@@ -499,26 +499,26 @@ static void ExtnFind_Access(uint32_t p)
 				if (extn == kExtnDisk) {
 					put_vm_long(p + kParamFindExtnTheExtn,
 						kDiskDriverExtension);
-					result = mnvm_noErr;
+					result = tMacErr::noErr;
 				} else
 #if IncludeExtnPbufs
 				if (extn == kExtnParamBuffers) {
 					put_vm_long(p + kParamFindExtnTheExtn,
 						kHostParamBuffersExtension);
-					result = mnvm_noErr;
+					result = tMacErr::noErr;
 				} else
 #endif
 #if IncludeExtnHostTextClipExchange
 				if (extn == kExtnHostTextClipExchange) {
 					put_vm_long(p + kParamFindExtnTheExtn,
 						kHostClipExchangeExtension);
-					result = mnvm_noErr;
+					result = tMacErr::noErr;
 				} else
 #endif
 				if (extn == kExtnFindExtn) {
 					put_vm_long(p + kParamFindExtnTheExtn,
 						kFindExtnExtension);
-					result = mnvm_noErr;
+					result = tMacErr::noErr;
 				} else
 				{
 					/* not found */
@@ -537,7 +537,7 @@ static void ExtnFind_Access(uint32_t p)
 				}
 				put_vm_word(p + kParamFindExtnTheId, n);
 			}
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 	}
 
@@ -596,7 +596,7 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 							break;
 						default:
 							put_vm_word(p + ExtnDat_result,
-								static_cast<uint16_t>(mnvm_controlErr));
+								static_cast<uint16_t>(tMacErr::controlErr));
 							break;
 					}
 				}

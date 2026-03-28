@@ -563,7 +563,7 @@ tMacErr UniCodeStrLength(char *s, uint32_t *r)
 
 	for (;;) {
 		if (0 == (t = *p++)) {
-			err = mnvm_noErr;
+			err = tMacErr::noErr;
 			break;
 		}
 		if (0 == (0x80 & t)) {
@@ -573,16 +573,16 @@ tMacErr UniCodeStrLength(char *s, uint32_t *r)
 		}
 		if (0 == (0x40 & t)) {
 			/* continuation code, error */
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0 == (t2 = *p++)) {
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0x80 != (0xC0 & t2)) {
 			/* not a continuation code, error */
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0 == (0x20 & t)) {
@@ -591,12 +591,12 @@ tMacErr UniCodeStrLength(char *s, uint32_t *r)
 			continue;
 		}
 		if (0 == (t2 = *p++)) {
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0x80 != (0xC0 & t2)) {
 			/* not a continuation code, error */
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0 == (0x10 & t)) {
@@ -605,12 +605,12 @@ tMacErr UniCodeStrLength(char *s, uint32_t *r)
 			continue;
 		}
 		if (0 == (t2 = *p++)) {
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0x80 != (0xC0 & t2)) {
 			/* not a continuation code, error */
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0 == (0x08 & t)) {
@@ -618,7 +618,7 @@ tMacErr UniCodeStrLength(char *s, uint32_t *r)
 			L += 5;
 			continue;
 		}
-		err = mnvm_miscErr;
+		err = tMacErr::miscErr;
 		/* longer code not supported yet */
 		break;
 	}
@@ -915,7 +915,7 @@ void UniCodeStr2MacRoman(char *s, char *r)
 
 	for (;;) {
 		if (0 == (t = *p++)) {
-			err = mnvm_noErr;
+			err = tMacErr::noErr;
 			break;
 		}
 		if (0 == (0x80 & t)) {
@@ -924,16 +924,16 @@ void UniCodeStr2MacRoman(char *s, char *r)
 		}
 		if (0 == (0x40 & t)) {
 			/* continuation code, error */
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0 == (t2 = *p++)) {
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0x80 != (0xC0 & t2)) {
 			/* not a continuation code, error */
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0 == (0x20 & t)) {
@@ -944,12 +944,12 @@ void UniCodeStr2MacRoman(char *s, char *r)
 			continue;
 		}
 		if (0 == (t3 = *p++)) {
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0x80 != (0xC0 & t3)) {
 			/* not a continuation code, error */
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0 == (0x10 & t)) {
@@ -961,12 +961,12 @@ void UniCodeStr2MacRoman(char *s, char *r)
 			continue;
 		}
 		if (0 == (t4 = *p++)) {
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0x80 != (0xC0 & t4)) {
 			/* not a continuation code, error */
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 			break;
 		}
 		if (0 == (0x08 & t)) {
@@ -978,7 +978,7 @@ void UniCodeStr2MacRoman(char *s, char *r)
 			*q++ = UniCodePoint2MacRoman(v);
 			continue;
 		}
-		err = mnvm_miscErr;
+		err = tMacErr::miscErr;
 		/* longer code not supported yet */
 		break;
 	}

@@ -34,7 +34,7 @@ bool dbglog_open0()
 	else {
 		char *t = nullptr;
 
-		if (mnvm_noErr == ChildPath(app_parent, "dbglog.txt", &t)) {
+		if (tMacErr::noErr == ChildPath(app_parent, "dbglog.txt", &t)) {
 			dbglog_File = fopen(t, "w");
 		}
 

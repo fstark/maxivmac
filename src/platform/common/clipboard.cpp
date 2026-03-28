@@ -18,15 +18,15 @@ tMacErr HTCEexport(tPbuf i)
 	uint32_t sz = MacRoman2UniCodeSize(s, L);
 
 	if (nullptr == (p = static_cast<char *>(malloc(sz + 1)))) {
-		err = mnvm_miscErr;
+		err = tMacErr::miscErr;
 	} else {
 		MacRoman2UniCodeData(s, L, p);
 		p[sz] = 0;
 
 		if (0 != SDL_SetClipboardText(p)) {
-			err = mnvm_miscErr;
+			err = tMacErr::miscErr;
 		} else {
-			err = mnvm_noErr;
+			err = tMacErr::noErr;
 		}
 		free(p);
 	}
@@ -42,20 +42,20 @@ tMacErr HTCEimport(tPbuf *r)
 	tPbuf t = NotAPbuf;
 
 	if (nullptr == (s = SDL_GetClipboardText())) {
-		err = mnvm_miscErr;
+		err = tMacErr::miscErr;
 	} else
-	if (mnvm_noErr != (err =
+	if (tMacErr::noErr != (err =
 		UniCodeStrLength(s, &L)))
 	{
 		/* fail */
 	} else
-	if (mnvm_noErr != (err =
+	if (tMacErr::noErr != (err =
 		PbufNew(L, &t)))
 	{
 		/* fail */
 	} else
 	{
-		err = mnvm_noErr;
+		err = tMacErr::noErr;
 
 		UniCodeStr2MacRoman(s, static_cast<char *>(PbufDat[t]));
 		*r = t;

@@ -67,28 +67,6 @@ enum class tMacErr : uint16_t {
 	afpAccessDenied  = 0xEC78,  /* -5000 - Insufficient access privileges */
 };
 
-/* Backward-compat aliases — allow incremental migration. */
-constexpr tMacErr mnvm_noErr            = tMacErr::noErr;
-constexpr tMacErr mnvm_miscErr          = tMacErr::miscErr;
-constexpr tMacErr mnvm_controlErr       = tMacErr::controlErr;
-constexpr tMacErr mnvm_statusErr        = tMacErr::statusErr;
-constexpr tMacErr mnvm_closErr          = tMacErr::closErr;
-constexpr tMacErr mnvm_eofErr           = tMacErr::eofErr;
-constexpr tMacErr mnvm_tmfoErr          = tMacErr::tmfoErr;
-constexpr tMacErr mnvm_fnfErr           = tMacErr::fnfErr;
-constexpr tMacErr mnvm_wPrErr           = tMacErr::wPrErr;
-constexpr tMacErr mnvm_vLckdErr         = tMacErr::vLckdErr;
-constexpr tMacErr mnvm_dupFNErr         = tMacErr::dupFNErr;
-constexpr tMacErr mnvm_opWrErr          = tMacErr::opWrErr;
-constexpr tMacErr mnvm_paramErr         = tMacErr::paramErr;
-constexpr tMacErr mnvm_permErr          = tMacErr::permErr;
-constexpr tMacErr mnvm_nsDrvErr         = tMacErr::nsDrvErr;
-constexpr tMacErr mnvm_wrPermErr        = tMacErr::wrPermErr;
-constexpr tMacErr mnvm_offLinErr        = tMacErr::offLinErr;
-constexpr tMacErr mnvm_dirNFErr         = tMacErr::dirNFErr;
-constexpr tMacErr mnvm_afpAccessDenied  = tMacErr::afpAccessDenied;
-
-
 using tPbuf = uint16_t;
 
 #define NotAPbuf ((tPbuf)0xFFFF)

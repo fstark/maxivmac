@@ -417,7 +417,7 @@ static tMacErr Vid_SetMode(uint16_t v)
 			ColorMappingChanged = true;
 		}
 	}
-	return mnvm_noErr;
+	return tMacErr::noErr;
 }
 
  uint16_t VideoDevice::vidReset()
@@ -506,7 +506,7 @@ void VideoDevice::reset()
 */
 void VideoDevice::extnVideoAccess(uint32_t p)
 {
-	tMacErr result = mnvm_controlErr;
+	tMacErr result = tMacErr::controlErr;
 
 	switch (get_vm_word(p + ExtnDat_commnd)) {
 		case kCmndVersion:
@@ -514,7 +514,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 			dbglog_WriteNote("Video_Access kCmndVersion");
 #endif
 			put_vm_word(p + ExtnDat_version, 1);
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 		case kCmndVideoGetIntEnbl:
 #if VID_dolog
@@ -522,7 +522,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 			put_vm_word(p + 8,
 				Vid_VBLintunenbl ? 0 : 1);
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 		case kCmndVideoSetIntEnbl:
 #if VID_dolog
@@ -531,14 +531,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 			g_wires.set(Wire_VBLintunenbl,
 				(0 == get_vm_word(p + 8))
 					? 1 : 0);
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 		case kCmndVideoClearInt:
 #if VID_dolog && 0 /* frequent */
 			dbglog_WriteNote("Video_Access kCmndVideoClearInt");
 #endif
 			g_wires.set(Wire_VBLinterrupt, 1);
-			result = mnvm_noErr;
+			result = tMacErr::noErr;
 			break;
 		case kCmndVideoControl:
 			{
@@ -561,14 +561,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						put_vm_long(csParam + VDPageInfo_csBaseAddr,
 							VidBaseAddr);
 
-						result = mnvm_noErr;
+						result = tMacErr::noErr;
 						break;
 					case 1: /* KillIO */
 #if VID_dolog
 						dbglog_WriteNote(
 							"Video_Access kCmndVideoControl, KillIO");
 #endif
-						result = mnvm_noErr;
+						result = tMacErr::noErr;
 						break;
 					case 2: /* SetVidMode */
 #if VID_dolog
@@ -579,7 +579,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						if (0 != get_vm_word(
 							csParam + VDPageInfo_csPage))
 						{
-							/* return mnvm_controlErr, page must be 0 */
+							/* return tMacErr::controlErr, page must be 0 */
 							ReportAbnormalID(AbnormalID::kVIDEO_SetVidMode_not_page_0,
 								"SetVidMode not page 0");
 						} else {
@@ -606,7 +606,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							if (((uint16_t) 0xFFFF) == csStart) {
 								int i;
 
-								result = mnvm_noErr;
+								result = tMacErr::noErr;
 								for (i = 0; i < csCount; ++i) {
 									uint16_t j = get_vm_word(csTable + 0);
 									if (j == 0) {
@@ -617,7 +617,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									} else
 									if (j >= CLUT_size) {
 										/* out of range */
-										result = mnvm_paramErr;
+										result = tMacErr::paramErr;
 									} else
 									{
 										uint16_t r =
@@ -636,10 +636,10 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							} else
 							if (csStart + csCount < csStart) {
 								/* overflow */
-								result = mnvm_paramErr;
+								result = tMacErr::paramErr;
 							} else
 							if (csStart + csCount > CLUT_size) {
-								result = mnvm_paramErr;
+								result = tMacErr::paramErr;
 							} else
 							{
 								int i;
@@ -667,7 +667,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									csTable += 8;
 								}
 								ColorMappingChanged = true;
-								result = mnvm_noErr;
+								result = tMacErr::noErr;
 							}
 						} else {
 							/* not implemented */
@@ -680,7 +680,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 						{
 						}
-						result = mnvm_noErr;
+						result = tMacErr::noErr;
 						break;
 					case 5: /* GrayScreen */
 #if VID_dolog
@@ -690,7 +690,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 						{
 							FillScreenWithGrayPattern();
-							result = mnvm_noErr;
+							result = tMacErr::noErr;
 						}
 						break;
 					case 6: /* SetGray */
@@ -708,7 +708,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 								*/
 
 							UseGrayTones = (csMode != 0);
-							result = mnvm_noErr;
+							result = tMacErr::noErr;
 						}
 						break;
 					case 9: /* SetDefaultMode */
@@ -753,7 +753,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 				uint16_t csCode = get_vm_word(
 					CntrlParams + CntrlParam_csCode);
 
-				result = mnvm_statusErr;
+				result = tMacErr::statusErr;
 				switch (csCode) {
 					case 2: /* GetMode */
 #if VID_dolog
@@ -766,7 +766,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							/* page is always 0 */
 						put_vm_long(csParam + VDPageInfo_csBaseAddr,
 							VidBaseAddr);
-						result = mnvm_noErr;
+						result = tMacErr::noErr;
 						break;
 					case 3: /* GetEntries */
 #if VID_dolog
@@ -786,7 +786,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 						put_vm_word(csParam + VDPageInfo_csPage, 1);
 							/* always 1 page */
-						result = mnvm_noErr;
+						result = tMacErr::noErr;
 						break;
 					case 5: /* GetPageAddr */
 #if VID_dolog
@@ -799,14 +799,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 								csParam + VDPageInfo_csPage);
 							if (0 != csPage) {
 								/*
-									return mnvm_statusErr,
+									return tMacErr::statusErr,
 									page must be 0
 								*/
 							} else {
 								put_vm_long(
 									csParam + VDPageInfo_csBaseAddr,
 									VidBaseAddr);
-								result = mnvm_noErr;
+								result = tMacErr::noErr;
 							}
 						}
 						break;
@@ -822,7 +822,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 								says this is a word, but it seems
 								to be a byte.
 							*/
-						result = mnvm_noErr;
+						result = tMacErr::noErr;
 						break;
 					case 8: /* GetGamma */
 #if VID_dolog

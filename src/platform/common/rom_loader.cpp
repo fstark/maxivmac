@@ -11,7 +11,7 @@ tMacErr LoadMacRomFrom(char *path)
 
 	ROM_File = fopen(path, "rb");
 	if (nullptr == ROM_File) {
-		err = mnvm_fnfErr;
+		err = tMacErr::fnfErr;
 	} else {
 		const uint32_t romSize = g_machine->config().romSize;
 		File_Size = fread(ROM, 1, romSize, ROM_File);
@@ -20,11 +20,11 @@ tMacErr LoadMacRomFrom(char *path)
 			{
 				MacMsgOverride(Localize(kStrShortROMTitle),
 					Localize(kStrShortROMMessage));
-				err = mnvm_eofErr;
+				err = tMacErr::eofErr;
 			} else {
 				MacMsgOverride(Localize(kStrNoReadROMTitle),
 					Localize(kStrNoReadROMMessage));
-				err = mnvm_miscErr;
+				err = tMacErr::miscErr;
 			}
 		} else {
 			err = ROM_IsValid();
@@ -43,14 +43,14 @@ static tMacErr LoadMacRomFromPrefDir(char *pref_dir)
 	const char *romFileName = g_machine->config().romFileName;
 
 	if (nullptr == pref_dir) {
-		err = mnvm_fnfErr;
+		err = tMacErr::fnfErr;
 	} else
-	if (mnvm_noErr != (err =
+	if (tMacErr::noErr != (err =
 		ChildPath(pref_dir, "mnvm_rom", &t)))
 	{
 		/* fail */
 	} else
-	if (mnvm_noErr != (err =
+	if (tMacErr::noErr != (err =
 		ChildPath(t, const_cast<char*>(romFileName), &t2)))
 	{
 		/* fail */
@@ -74,12 +74,12 @@ static tMacErr LoadMacRomFromAppPar(char *d_arg, char *app_parent)
 		d_arg;
 
 	if (nullptr == d) {
-		err = mnvm_fnfErr;
+		err = tMacErr::fnfErr;
 	} else
 	{
 		char *t = nullptr;
 
-		if (mnvm_noErr != (err =
+		if (tMacErr::noErr != (err =
 			ChildPath(d, const_cast<char*>(romFileName), &t)))
 		{
 			/* fail */
@@ -99,10 +99,10 @@ bool LoadMacRom(char *d_arg, char *app_parent, char *pref_dir)
 	tMacErr err;
 
 	if ((nullptr == rom_path)
-		|| (mnvm_fnfErr == (err = LoadMacRomFrom(rom_path))))
-	if (mnvm_fnfErr == (err = LoadMacRomFromAppPar(d_arg, app_parent)))
-	if (mnvm_fnfErr == (err = LoadMacRomFromPrefDir(pref_dir)))
-	if (mnvm_fnfErr == (err = LoadMacRomFrom(const_cast<char*>(g_machine->config().romFileName))))
+		|| (tMacErr::fnfErr == (err = LoadMacRomFrom(rom_path))))
+	if (tMacErr::fnfErr == (err = LoadMacRomFromAppPar(d_arg, app_parent)))
+	if (tMacErr::fnfErr == (err = LoadMacRomFromPrefDir(pref_dir)))
+	if (tMacErr::fnfErr == (err = LoadMacRomFrom(const_cast<char*>(g_machine->config().romFileName))))
 	{
 	}
 

@@ -20,12 +20,12 @@ tMacErr PbufNewFromPtr(void *p, uint32_t count, tPbuf *r)
 
 	if (! FirstFreePbuf(&i)) {
 		free(p);
-		err = mnvm_miscErr;
+		err = tMacErr::miscErr;
 	} else {
 		*r = i;
 		PbufDat[i] = p;
 		PbufNewNotify(i, count);
-		err = mnvm_noErr;
+		err = tMacErr::noErr;
 	}
 
 	return err;
@@ -41,7 +41,7 @@ void PbufKillToPtr(void **p, uint32_t *count, tPbuf r)
 
 tMacErr PbufNew(uint32_t count, tPbuf *r)
 {
-	tMacErr err = mnvm_miscErr;
+	tMacErr err = tMacErr::miscErr;
 
 	void *p = calloc(1, count);
 	if (nullptr != p) {
