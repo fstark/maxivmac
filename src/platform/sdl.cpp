@@ -30,117 +30,10 @@ void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 static char *d_arg = nullptr;
 static char *n_arg = nullptr;
 
-static char *app_parent = nullptr;
+char *app_parent = nullptr;
 static char *pref_dir = nullptr;
 
-#ifdef _WIN32
-#define MyPathSep '\\'
-#else
-#define MyPathSep '/'
-#endif
-
 static SDL_AudioStream *stream = nullptr;
-
-// Build a full path from directory x and filename y, adding separator.
-tMacErr ChildPath(char *x, char *y, char **r)
-{
-	tMacErr err = mnvm_miscErr;
-	int nx = strlen(x);
-	int ny = strlen(y);
-	{
-		if ((nx > 0) && (MyPathSep == x[nx - 1])) {
-			--nx;
-		}
-		{
-			int nr = nx + 1 + ny;
-			char *p = static_cast<char *>(malloc(nr + 1));
-			if (p != nullptr) {
-				char *p2 = p;
-				(void) memcpy(p2, x, nx);
-				p2 += nx;
-				*p2++ = MyPathSep;
-				(void) memcpy(p2, y, ny);
-				p2 += ny;
-				*p2 = 0;
-				*r = p;
-				err = mnvm_noErr;
-			}
-		}
-	}
-
-	return err;
-}
-
-/* --- sending debugging info to file --- */
-
-#if dbglog_HAVE
-
-#ifndef dbglog_ToStdErr
-#define dbglog_ToStdErr 0
-#endif
-#ifndef dbglog_ToSDL_Log
-#define dbglog_ToSDL_Log 0
-#endif
-
-#if ! dbglog_ToStdErr
-static FILE *dbglog_File = nullptr;
-#endif
-
-bool dbglog_open0()
-{
-#if dbglog_ToStdErr || dbglog_ToSDL_Log
-	return true;
-#else
-	if (nullptr == app_parent)
-	{
-		dbglog_File = fopen("dbglog.txt", "w");
-	}
-	else {
-		char *t = nullptr;
-
-		if (mnvm_noErr == ChildPath(app_parent, "dbglog.txt", &t)) {
-			dbglog_File = fopen(t, "w");
-		}
-
-		free(t);
-	}
-
-	return (nullptr != dbglog_File);
-#endif
-}
-
-void dbglog_write0(char *s, uint32_t L)
-{
-#if dbglog_ToStdErr
-	(void) fwrite(s, 1, L, stderr);
-#elif dbglog_ToSDL_Log
-	char t[256 + 1];
-
-	if (L > 256) {
-		L = 256;
-	}
-	(void) memcpy(t, s, L);
-	t[L] = 1;
-
-	SDL_Log("%s", t);
-#else
-	if (dbglog_File != nullptr) {
-		(void) fwrite(s, 1, L, dbglog_File);
-	}
-#endif
-}
-
-void dbglog_close0()
-{
-#if ! dbglog_ToStdErr
-	if (dbglog_File != nullptr) {
-		fclose(dbglog_File);
-		dbglog_File = nullptr;
-	}
-#endif
-}
-
-#endif
 
 /* --- information about the environment --- */
 
@@ -151,6 +44,8 @@ void dbglog_close0()
 #include "platform/common/control_mode.h"
 
 #include "platform/common/mac_roman.h"
+#include "platform/common/path_utils.h"
+#include "platform/common/dbglog_platform.h"
 #include "platform/common/disk_io.h"
 #include "platform/common/rom_loader.h"
 

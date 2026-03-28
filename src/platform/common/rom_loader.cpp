@@ -1,9 +1,7 @@
 #include "platform/common/rom_loader.h"
+#include "platform/common/path_utils.h"
 
 char *rom_path = nullptr;
-
-/* Forward declaration for ChildPath (in sdl.cpp) */
-extern tMacErr ChildPath(char *x, char *y, char **r);
 
 tMacErr LoadMacRomFrom(char *path)
 {
