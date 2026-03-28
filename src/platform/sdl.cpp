@@ -189,31 +189,19 @@ static uint8_t * CLUT_final;
 	*/
 
 #define ScrnMapr_DoMap UpdateBWDepth3Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 0
 #define ScrnMapr_DstDepth 3
-#define ScrnMapr_Map CLUT_final
-
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateBWDepth4Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 0
 #define ScrnMapr_DstDepth 4
-#define ScrnMapr_Map CLUT_final
-
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateBWDepth5Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 0
 #define ScrnMapr_DstDepth 5
-#define ScrnMapr_Map CLUT_final
-
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 
 /* Color copy functions for runtime depths 1, 2, 3 (CLUT-indexed).
@@ -223,76 +211,49 @@ static uint8_t * CLUT_final;
    so they must be redefined for every instantiation. */
 
 #define ScrnMapr_DoMap UpdateColorSrc1Dst3Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 3
-#define ScrnMapr_Map CLUT_final
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc1Dst4Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 4
-#define ScrnMapr_Map CLUT_final
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc1Dst5Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 1
 #define ScrnMapr_DstDepth 5
-#define ScrnMapr_Map CLUT_final
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc2Dst3Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 2
 #define ScrnMapr_DstDepth 3
-#define ScrnMapr_Map CLUT_final
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc2Dst4Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 2
 #define ScrnMapr_DstDepth 4
-#define ScrnMapr_Map CLUT_final
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc2Dst5Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 2
 #define ScrnMapr_DstDepth 5
-#define ScrnMapr_Map CLUT_final
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc3Dst3Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 3
 #define ScrnMapr_DstDepth 3
-#define ScrnMapr_Map CLUT_final
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc3Dst4Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 3
 #define ScrnMapr_DstDepth 4
-#define ScrnMapr_Map CLUT_final
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 #define ScrnMapr_DoMap UpdateColorSrc3Dst5Copy
-#define ScrnMapr_Src GetCurDrawBuff()
-#define ScrnMapr_Dst ScalingBuff
 #define ScrnMapr_SrcDepth 3
 #define ScrnMapr_DstDepth 5
-#define ScrnMapr_Map CLUT_final
-#include "platform/common/screen_map.h"
+#include "platform/screen_map_inst.h"
 
 
 /* Convert a dirty rectangle of the emulated framebuffer into
