@@ -12,11 +12,7 @@
 		Configuration file dependent on user options
 		for operating system glue.
 	*/
-#include "CNFUDALL.h"
-	/*
-		Configuration file dependent on user options
-		for all code.
-	*/
+#include "core/emulation_config.h"
 #include "platform/platform.h"
 
 #include "lang/localization_keys.h"

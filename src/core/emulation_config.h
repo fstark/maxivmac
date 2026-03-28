@@ -26,6 +26,9 @@
 #define IncludeExtnPbufs 1
 #define IncludeExtnHostTextClipExchange 1
 
+constexpr int NumDrives = 6;
+constexpr int NumPbufs = 4;
+
 #define Sony_SupportDC42 1
 #define Sony_SupportTags 1
 #define Sony_WantChecksumsUpdated 1
