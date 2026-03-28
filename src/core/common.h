@@ -19,7 +19,7 @@
 #include "CNFUDALL.h"
 	/* see OSGCOMUD.h for comment */
 #include "platform/platform.h"
-#include "CNFUDPIC.h"
+#include "core/emulation_config.h"
 	/*
 		Configuration file dependent on user options
 		suitable for platform indendent code.

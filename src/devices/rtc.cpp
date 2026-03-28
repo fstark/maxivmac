@@ -83,6 +83,15 @@ static uint32_t LastRealDate;
 #define MouseScalingOn 0
 #endif
 
+/* PRAM defaults — only used in this file */
+#define SpeakerVol 0x07
+#define MenuBlink 0x03
+#define AutoKeyThresh 0x06
+#define AutoKeyRate 0x03
+#define pr_HilColRed 0x0000
+#define pr_HilColGreen 0x0000
+#define pr_HilColBlue 0x0000
+
 /* CaretBlinkTime: 8 for Mac II family, 3 for compact Macs (matches reference) */
 #ifndef CaretBlinkTime
 #define CaretBlinkTime (g_machine->config().isIIFamily() ? 0x08 : 0x03)
