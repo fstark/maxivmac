@@ -19,4 +19,5 @@
 	*/
 #include "platform/platform.h"
 
-#include "STRCONST.h"
+#include "lang/localization_keys.h"
+#include "lang/localization.h"

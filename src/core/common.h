@@ -13,14 +13,6 @@
 
 #include "CNFUIALL.h"
 	/* see OSGCOMUI.h for comment */
-#include "CNFUIPIC.h"
-	/*
-		Configuration file independent of user options
-		suitable for platform indendent code.
-		Usually empty, but if use different compiler for
-		operating system glue, then could define the different compiler
-		configuration here and in CNFUIOSG, instead of CNFUIALL.
-	*/
 #include "core/defaults.h"
 	/* see OSGCOMUI.h for comment */
 #include "core/endian.h"
