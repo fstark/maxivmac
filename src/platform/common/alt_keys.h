@@ -4,47 +4,47 @@
 
 #pragma once
 
-static bool AltKeysLockText = false;
-static bool AltKeysTrueCmnd = false;
-static bool AltKeysTrueOption = false;
-static bool AltKeysTrueShift = false;
-static bool AltKeysModOn = false;
-static bool AltKeysTextOn = false;
+static bool s_altKeysLockText = false;
+static bool s_altKeysTrueCmnd = false;
+static bool s_altKeysTrueOption = false;
+static bool s_altKeysTrueShift = false;
+static bool s_altKeysModOn = false;
+static bool s_altKeysTextOn = false;
 
 static void CheckAltKeyUseMode()
 {
 	bool NewAltKeysTextOn;
 
-	AltKeysModOn = AltKeysTrueCmnd
-		|| AltKeysTrueOption || AltKeysTrueShift;
-	NewAltKeysTextOn = AltKeysLockText || AltKeysModOn;
-	if (NewAltKeysTextOn != AltKeysTextOn) {
+	s_altKeysModOn = s_altKeysTrueCmnd
+		|| s_altKeysTrueOption || s_altKeysTrueShift;
+	NewAltKeysTextOn = s_altKeysLockText || s_altKeysModOn;
+	if (NewAltKeysTextOn != s_altKeysTextOn) {
 		DisconnectKeyCodes(kKeepMaskControl | kKeepMaskCapsLock
-			| (AltKeysTrueCmnd ? kKeepMaskCommand : 0)
-			| (AltKeysTrueOption ? kKeepMaskOption : 0)
-			| (AltKeysTrueShift ? kKeepMaskShift : 0));
-		AltKeysTextOn = NewAltKeysTextOn;
+			| (s_altKeysTrueCmnd ? kKeepMaskCommand : 0)
+			| (s_altKeysTrueOption ? kKeepMaskOption : 0)
+			| (s_altKeysTrueShift ? kKeepMaskShift : 0));
+		s_altKeysTextOn = NewAltKeysTextOn;
 	}
 }
 
 static void Keyboard_UpdateKeyMap1(uint8_t key, bool down)
 {
 	if (MKC_Command == key) {
-		AltKeysTrueCmnd = down;
+		s_altKeysTrueCmnd = down;
 		CheckAltKeyUseMode();
 		Keyboard_UpdateKeyMap(key, down);
 	} else if (MKC_Option == key) {
-		AltKeysTrueOption = down;
+		s_altKeysTrueOption = down;
 		CheckAltKeyUseMode();
 		Keyboard_UpdateKeyMap(key, down);
 	} else if (MKC_Shift == key) {
-		AltKeysTrueShift = down;
+		s_altKeysTrueShift = down;
 		CheckAltKeyUseMode();
 		Keyboard_UpdateKeyMap(key, down);
 	} else if (MKC_SemiColon == key) {
-		if (down && ! AltKeysModOn) {
-			if (AltKeysLockText) {
-				AltKeysLockText = false;
+		if (down && ! s_altKeysModOn) {
+			if (s_altKeysLockText) {
+				s_altKeysLockText = false;
 				NeedWholeScreenDraw = true;
 				SpecialModeClr(SpclModeAltKeyText);
 
@@ -53,12 +53,12 @@ static void Keyboard_UpdateKeyMap1(uint8_t key, bool down)
 		} else {
 			Keyboard_UpdateKeyMap(key, down);
 		}
-	} else if (AltKeysTextOn) {
+	} else if (s_altKeysTextOn) {
 		Keyboard_UpdateKeyMap(key, down);
 	} else if (MKC_M == key) {
 		if (down) {
-			if (! AltKeysLockText) {
-				AltKeysLockText = true;
+			if (! s_altKeysLockText) {
+				s_altKeysLockText = true;
 				SpecialModeSet(SpclModeAltKeyText);
 				NeedWholeScreenDraw = true;
 				CheckAltKeyUseMode();
@@ -156,17 +156,17 @@ static void DisconnectKeyCodes1(uint32_t KeepMask)
 	DisconnectKeyCodes(KeepMask);
 
 	if (! (0 != (KeepMask & kKeepMaskCommand))) {
-		AltKeysTrueCmnd = false;
+		s_altKeysTrueCmnd = false;
 	}
 	if (! (0 != (KeepMask & kKeepMaskOption))) {
-		AltKeysTrueOption = false;
+		s_altKeysTrueOption = false;
 	}
 	if (! (0 != (KeepMask & kKeepMaskShift))) {
-		AltKeysTrueShift = false;
+		s_altKeysTrueShift = false;
 	}
-	AltKeysModOn = AltKeysTrueCmnd
-		|| AltKeysTrueOption || AltKeysTrueShift;
-	AltKeysTextOn = AltKeysLockText || AltKeysModOn;
+	s_altKeysModOn = s_altKeysTrueCmnd
+		|| s_altKeysTrueOption || s_altKeysTrueShift;
+	s_altKeysTextOn = s_altKeysLockText || s_altKeysModOn;
 }
 
 static void DrawAltKeyMode()

@@ -95,14 +95,14 @@ static void SubTickNotify(int SubTick)
 #define CyclesScaledPerTick (130240UL * g_machine->config().clockMult * kCycleScale)
 #define CyclesScaledPerSubTick (CyclesScaledPerTick / kNumSubTicks)
 
-static uint16_t SubTickCounter;
+static uint16_t s_subTickCounter;
 
 // Advance sub-tick counter; reschedule unless final sub-tick.
 static void SubTickTaskDo()
 {
-	SubTickNotify(SubTickCounter);
-	++SubTickCounter;
-	if (SubTickCounter < (kNumSubTicks - 1)) {
+	SubTickNotify(s_subTickCounter);
+	++s_subTickCounter;
+	if (s_subTickCounter < (kNumSubTicks - 1)) {
 		/*
 			final SubTick handled by SubTickTaskEnd,
 			since CyclesScaledPerSubTick * kNumSubTicks
@@ -115,7 +115,7 @@ static void SubTickTaskDo()
 
 static void SubTickTaskStart()
 {
-	SubTickCounter = 0;
+	s_subTickCounter = 0;
 	ICT_add(kICT_SubTick, CyclesScaledPerSubTick);
 }
 
@@ -124,7 +124,7 @@ static void SubTickTaskEnd()
 	SubTickNotify(kNumSubTicks - 1);
 }
 
-static int ticksSinceSecond = 0;
+static int s_ticksSinceSecond = 0;
 
 /*
 	Begin-of-tick processing: advance the real-time clock,
@@ -136,8 +136,8 @@ static void SixtiethSecondNotify()
 #if dbglog_HAVE && 0
 	dbglog_WriteNote("begin new Sixtieth");
 #endif
-	if (++ticksSinceSecond >= 60) {
-		ticksSinceSecond = 0;
+	if (++s_ticksSinceSecond >= 60) {
+		s_ticksSinceSecond = 0;
 		CurMacDateInSeconds++;
 	}
 	if (auto* d = g_machine->findDevice<MouseDevice>()) d->update();
@@ -285,7 +285,7 @@ static void m68k_go_nCycles_1(uint32_t n)
 	} while (n != 0);
 }
 
-static uint32_t ExtraSubTicksToDo = 0;
+static uint32_t s_extraSubTicksToDo = 0;
 
 /*
 	Emulate one 60 Hz tick: run SixtiethSecondNotify, execute the
@@ -318,14 +318,14 @@ static void DoEmulateOneTick()
 	SixtiethEndNotify();
 
 	if ((uint8_t) -1 == SpeedValue) {
-		ExtraSubTicksToDo = (uint32_t) -1;
+		s_extraSubTicksToDo = (uint32_t) -1;
 	} else {
 		uint32_t ExtraAdd = (kNumSubTicks << SpeedValue) - kNumSubTicks;
 		uint32_t ExtraLimit = ExtraAdd << 3;
 
-		ExtraSubTicksToDo += ExtraAdd;
-		if (ExtraSubTicksToDo > ExtraLimit) {
-			ExtraSubTicksToDo = ExtraLimit;
+		s_extraSubTicksToDo += ExtraAdd;
+		if (s_extraSubTicksToDo > ExtraLimit) {
+			s_extraSubTicksToDo = ExtraLimit;
 		}
 	}
 }
@@ -338,7 +338,7 @@ static bool MoreSubTicksToDo()
 	   the number of sub-ticks vary with host speed. */
 	bool v = false;
 
-	if (ExtraSubTicksToDo > 0) {
+	if (s_extraSubTicksToDo > 0) {
 		v = true;
 	}
 
@@ -369,13 +369,13 @@ static void DoEmulateExtraTime()
 				}
 			}
 			m68k_go_nCycles_1(CyclesScaledPerSubTick);
-			--ExtraSubTicksToDo;
+			--s_extraSubTicksToDo;
 		} while (MoreSubTicksToDo());
 		ExtraTimeEndNotify();
 	}
 }
 
-static uint32_t CurEmulatedTime = 0;
+static uint32_t s_curEmulatedTime = 0;
 	/*
 		The number of ticks that have been
 		emulated so far.
@@ -395,11 +395,11 @@ static void RunEmulatedTicksToTrueTime()
 		regardless of host speed.
 	*/
 
-	int16_t n = (int16_t)(OnTrueTime - CurEmulatedTime);
+	int16_t n = (int16_t)(OnTrueTime - s_curEmulatedTime);
 
 	if (n > 0) {
 		DoEmulateOneTick();
-		++CurEmulatedTime;
+		++s_curEmulatedTime;
 
 		DoneWithDrawingForTick();
 
@@ -408,7 +408,7 @@ static void RunEmulatedTicksToTrueTime()
 
 			do {
 				DoEmulateOneTick();
-				++CurEmulatedTime;
+				++s_curEmulatedTime;
 			} while (--n > 0);
 
 			EmVideoDisable = false;

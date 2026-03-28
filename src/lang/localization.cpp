@@ -42,10 +42,10 @@ static const LangPair *g_langTables[kLangCount] = {
 
 /* --- State --- */
 
-static Language g_currentLang = kLangEnglish;
+static Language s_currentLang = kLangEnglish;
 static std::unordered_map<std::string, const char *> g_strings;
 static std::unordered_set<std::string> g_warnedKeys;
-static bool g_initialized = false;
+static bool s_initialized = false;
 
 /* --- Language metadata tables --- */
 
@@ -114,9 +114,9 @@ void SetLanguage(Language lang)
 	if (lang < 0 || lang >= kLangCount) {
 		return;
 	}
-	g_currentLang = lang;
+	s_currentLang = lang;
 	PopulateMap(g_langTables[lang]);
-	g_initialized = true;
+	s_initialized = true;
 	g_warnedKeys.clear();
 
 	/* Warn about keys present in English but missing in the selected language */
@@ -132,14 +132,14 @@ void SetLanguage(Language lang)
 
 Language GetLanguage()
 {
-	return g_currentLang;
+	return s_currentLang;
 }
 
 /* Look up a translated string by key, falling back to the
    key itself if no translation exists. Warns once per miss. */
 const char *Localize(const char *key)
 {
-	if (!g_initialized) {
+	if (!s_initialized) {
 		SetLanguage(kLangEnglish);
 	}
 	auto it = g_strings.find(key);
@@ -149,7 +149,7 @@ const char *Localize(const char *key)
 	/* Warn once per missing key at runtime */
 	if (g_warnedKeys.insert(key).second) {
 		std::fprintf(stderr, "Warning: lang '%s' no translation for '%s'\n",
-			ISOFromLanguage(g_currentLang), key);
+			ISOFromLanguage(s_currentLang), key);
 	}
 	/* fallback: return the key itself */
 	return key;

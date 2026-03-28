@@ -302,7 +302,7 @@ Label_3:
 
 uint8_t * screencomparebuff = nullptr;
 
-static uint32_t NextDrawRow = 0;
+static uint32_t s_nextDrawRow = 0;
 
 
 #if BigEndianUnaligned
@@ -365,25 +365,25 @@ static bool ScreenFindChanges(uint8_t * screencurrentbuff,
 		} else {
 			if (! FindFirstChangeInLVecs(
 				(uibb *)screencurrentbuff
-					+ NextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
+					+ s_nextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
 				(uibb *)screencomparebuff
-					+ NextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
-				((uint32_t)(vMacScreenHeight - NextDrawRow)
+					+ s_nextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
+				((uint32_t)(vMacScreenHeight - s_nextDrawRow)
 					* (uint32_t)vMacScreenBitWidth) / uiblockbitsn,
 				&j0))
 			{
-				NextDrawRow = 0;
+				s_nextDrawRow = 0;
 				return false;
 			}
 			j0v = j0 / (vMacScreenBitWidth / uiblockbitsn);
 			j0h = j0 - j0v * (vMacScreenBitWidth / uiblockbitsn);
-			j0v += NextDrawRow;
+			j0v += s_nextDrawRow;
 			LimitDrawRow = j0v + MaxRowsDrawnPerTick;
 			if (LimitDrawRow >= vMacScreenHeight) {
 				LimitDrawRow = vMacScreenHeight;
-				NextDrawRow = 0;
+				s_nextDrawRow = 0;
 			} else {
-				NextDrawRow = LimitDrawRow;
+				s_nextDrawRow = LimitDrawRow;
 			}
 			FindLastChangeInLVecs((uibb *)screencurrentbuff,
 				(uibb *)screencomparebuff,
@@ -461,25 +461,25 @@ Label_2c:
 		} else {
 			if (! FindFirstChangeInLVecs(
 				(uibb *)screencurrentbuff
-					+ NextDrawRow * (vMacScreenWidth / uiblockbitsn),
+					+ s_nextDrawRow * (vMacScreenWidth / uiblockbitsn),
 				(uibb *)screencomparebuff
-					+ NextDrawRow * (vMacScreenWidth / uiblockbitsn),
-				((uint32_t)(vMacScreenHeight - NextDrawRow)
+					+ s_nextDrawRow * (vMacScreenWidth / uiblockbitsn),
+				((uint32_t)(vMacScreenHeight - s_nextDrawRow)
 					* (uint32_t)vMacScreenWidth) / uiblockbitsn,
 				&j0))
 			{
-				NextDrawRow = 0;
+				s_nextDrawRow = 0;
 				return false;
 			}
 			j0v = j0 / (vMacScreenWidth / uiblockbitsn);
 			j0h = j0 - j0v * (vMacScreenWidth / uiblockbitsn);
-			j0v += NextDrawRow;
+			j0v += s_nextDrawRow;
 			LimitDrawRow = j0v + MaxRowsDrawnPerTick;
 			if (LimitDrawRow >= vMacScreenHeight) {
 				LimitDrawRow = vMacScreenHeight;
-				NextDrawRow = 0;
+				s_nextDrawRow = 0;
 			} else {
-				NextDrawRow = LimitDrawRow;
+				s_nextDrawRow = LimitDrawRow;
 			}
 			FindLastChangeInLVecs((uibb *)screencurrentbuff,
 				(uibb *)screencomparebuff,

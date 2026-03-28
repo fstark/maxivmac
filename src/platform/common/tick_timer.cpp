@@ -24,22 +24,22 @@ uint32_t TrueEmulatedTime = 0;
 #define MyInvTimeDivMask (MyInvTimeDiv - 1)
 #define MyInvTimeStep 1089590 /* 1000 / 60.14742 * MyInvTimeDiv */
 
-static Uint32 LastTime;
+static Uint32 s_lastTime;
 
-static Uint32 NextIntTime;
-static uint32_t NextFracTime;
+static Uint32 s_nextIntTime;
+static uint32_t s_nextFracTime;
 
 void IncrNextTime()
 {
-	NextFracTime += MyInvTimeStep;
-	NextIntTime += (NextFracTime >> MyInvTimeDivPow);
-	NextFracTime &= MyInvTimeDivMask;
+	s_nextFracTime += MyInvTimeStep;
+	s_nextIntTime += (s_nextFracTime >> MyInvTimeDivPow);
+	s_nextFracTime &= MyInvTimeDivMask;
 }
 
 static void InitNextTime()
 {
-	NextIntTime = LastTime;
-	NextFracTime = 0;
+	s_nextIntTime = s_lastTime;
+	s_nextFracTime = 0;
 	IncrNextTime();
 }
 
@@ -51,9 +51,9 @@ bool UpdateTrueEmulatedTime()
 	int32_t TimeDiff;
 
 	LatestTime = SDL_GetTicks();
-	if (LatestTime != LastTime) {
-		LastTime = LatestTime;
-		TimeDiff = (LatestTime - NextIntTime);
+	if (LatestTime != s_lastTime) {
+		s_lastTime = LatestTime;
+		TimeDiff = (LatestTime - s_nextIntTime);
 			/* this should work even when time wraps */
 		if (TimeDiff >= 0) {
 			if (TimeDiff > 256) {
@@ -69,7 +69,7 @@ bool UpdateTrueEmulatedTime()
 				do {
 					++TrueEmulatedTime;
 					IncrNextTime();
-					TimeDiff = (LatestTime - NextIntTime);
+					TimeDiff = (LatestTime - s_nextIntTime);
 				} while (TimeDiff >= 0);
 			}
 			return true;
@@ -102,7 +102,7 @@ bool CheckDateTime()
 
 void StartUpTimeAdjust()
 {
-	LastTime = SDL_GetTicks();
+	s_lastTime = SDL_GetTicks();
 	InitNextTime();
 }
 
@@ -112,7 +112,7 @@ bool InitLocationDat()
 	dbglog_writeln("enter InitLocationDat");
 #endif
 
-	LastTime = SDL_GetTicks();
+	s_lastTime = SDL_GetTicks();
 	InitNextTime();
 
 	/* Fixed date: 14 March 1990 12:00:00 UTC (Mac epoch seconds).
@@ -125,5 +125,5 @@ bool InitLocationDat()
 
 uint32_t GetTimerDelay()
 {
-	return NextIntTime - LastTime;
+	return s_nextIntTime - s_lastTime;
 }

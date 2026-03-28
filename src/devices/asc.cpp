@@ -39,13 +39,13 @@ static ASC_ChanR ASC_ChanA[4];
 static uint16_t ASC_FIFO_Out = 0;
 static uint16_t ASC_FIFO_InA = 0;
 static uint16_t ASC_FIFO_InB = 0;
-static bool ASC_Playing = false;
+static bool s_ascPlaying = false;
 
 #define ASC_dolog (dbglog_HAVE && 0)
 
 static void ASC_RecalcStatus()
 {
-	if ((1 == SoundReg801) && ASC_Playing) {
+	if ((1 == SoundReg801) && s_ascPlaying) {
 		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200) {
 			SoundReg804 &= ~ 0x01;
 		} else {
@@ -76,7 +76,7 @@ static void ASC_ClearFIFO()
 	ASC_FIFO_Out = 0;
 	ASC_FIFO_InA = 0;
 	ASC_FIFO_InB = 0;
-	ASC_Playing = false;
+	s_ascPlaying = false;
 	ASC_RecalcStatus();
 }
 
@@ -498,13 +498,13 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 
 			if (0 != (SoundReg802 & 2)) {
 
-			if (! ASC_Playing) {
+			if (! s_ascPlaying) {
 				if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200) {
 					if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x200)
 					{
 						SoundReg804 &= ~ 0x01;
 						SoundReg804 &= ~ 0x04;
-						ASC_Playing = true;
+						s_ascPlaying = true;
 #if ASC_dolog
 						dbglog_WriteNote("ASC : start stereo playing");
 #endif
@@ -528,12 +528,12 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 
 			for (i = 0; i < actL; i++) {
 				if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) == 0) {
-					ASC_Playing = false;
+					s_ascPlaying = false;
 				}
 				if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) == 0) {
-					ASC_Playing = false;
+					s_ascPlaying = false;
 				}
-				if (! ASC_Playing) {
+				if (! s_ascPlaying) {
 					*p++ = 0x80;
 				} else
 				{
@@ -566,11 +566,11 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 
 			/* mono */
 
-			if (! ASC_Playing) {
+			if (! s_ascPlaying) {
 				if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200)
 				{
 					SoundReg804 &= ~ 0x01;
-					ASC_Playing = true;
+					s_ascPlaying = true;
 #if ASC_dolog
 					dbglog_WriteNote("ASC : start mono playing");
 #endif
@@ -579,9 +579,9 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 
 			for (i = 0; i < actL; i++) {
 				if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) == 0) {
-					ASC_Playing = false;
+					s_ascPlaying = false;
 				}
-				if (! ASC_Playing) {
+				if (! s_ascPlaying) {
 					*p++ = 0x80;
 				} else
 				{
@@ -713,7 +713,7 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 	}
 
 #if 1
-	if ((1 == SoundReg801) && ASC_Playing) {
+	if ((1 == SoundReg801) && s_ascPlaying) {
 		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200) {
 			if (0 != (SoundReg804 & 0x01)) {
 				ReportAbnormalID(AbnormalID::kASC_half_flag_A_not_already_clear,

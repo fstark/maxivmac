@@ -157,7 +157,7 @@ void dbglog_WriteSetBool(char *s, bool v)
 #endif
 
 #if WantAbnormalReports
-static bool GotOneAbnormal = false;
+static bool s_gotOneAbnormal = false;
 #endif
 
 #ifndef ReportAbnormalInterrupt
@@ -178,12 +178,12 @@ void DoReportAbnormalID(uint16_t id
 	dbglog_writeReturn();
 #endif
 
-	if (! GotOneAbnormal) {
+	if (! s_gotOneAbnormal) {
 		WarnMsgAbnormalID(id);
 #if ReportAbnormalInterrupt
 		SetInterruptButton(true);
 #endif
-		GotOneAbnormal = true;
+		s_gotOneAbnormal = true;
 	}
 }
 #endif
@@ -548,7 +548,7 @@ static void ExtnFind_Access(uint32_t p)
 #define kDSK_Params_Lo 1
 #define kDSK_QuitOnEject 3 /* obsolete */
 
-static uint16_t ParamAddrHi;
+static uint16_t s_paramAddrHi;
 
 /*
 	Main extension dispatch.  Called when the guest writes the
@@ -560,13 +560,13 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 {
 	switch (addr) {
 		case kDSK_Params_Hi:
-			ParamAddrHi = Data;
+			s_paramAddrHi = Data;
 			break;
 		case kDSK_Params_Lo:
 			{
-				uint32_t p = ParamAddrHi << 16 | Data;
+				uint32_t p = s_paramAddrHi << 16 | Data;
 
-				ParamAddrHi = (uint16_t) - 1;
+				s_paramAddrHi = (uint16_t) - 1;
 				if (kcom_callcheck == get_vm_word(p + ExtnDat_checkval))
 				{
 					put_vm_word(p + ExtnDat_checkval, 0);
@@ -627,7 +627,7 @@ static ExtnDevice g_extnDevice;
 
 void Extn_Reset()
 {
-	ParamAddrHi = (uint16_t) - 1;
+	s_paramAddrHi = (uint16_t) - 1;
 }
 
 /* implementation of read/write for everything but RAM and ROM */
@@ -698,24 +698,24 @@ enum {
 /* Max ATT entries — generous fixed size, checked at runtime */
 #define kATTListMax 64
 static ATTer ATTListA[kATTListMax];
-static uint16_t LastATTel;
+static uint16_t s_lastATTel;
 
 
 // Append an entry to the address translation table.
 static void AddToATTList(ATTep p)
 {
-	uint16_t NewLast = LastATTel + 1;
+	uint16_t NewLast = s_lastATTel + 1;
 	if (NewLast >= kATTListMax) {
 		ReportAbnormalID(AbnormalID::kMACH_ATT_list_not_big_enough, "ATT list not big enough");
 	} else {
-		ATTListA[LastATTel] = *p;
-		LastATTel = NewLast;
+		ATTListA[s_lastATTel] = *p;
+		s_lastATTel = NewLast;
 	}
 }
 
 static void InitATTList()
 {
-	LastATTel = 0;
+	s_lastATTel = 0;
 }
 
 static void FinishATTList()
@@ -733,8 +733,8 @@ static void FinishATTList()
 	}
 
 	{
-		uint16_t i = LastATTel;
-		ATTep p = &ATTListA[LastATTel];
+		uint16_t i = s_lastATTel;
+		ATTep p = &ATTListA[s_lastATTel];
 		ATTep h = nullptr;
 
 		while (0 != i) {
@@ -1644,7 +1644,7 @@ void SetInterruptButton(bool v)
 	}
 }
 
-static uint8_t CurIPL = 0;
+static uint8_t s_curIPL = 0;
 
 /*
 	Recalculate the CPU interrupt priority level from
@@ -1677,8 +1677,8 @@ void VIAorSCCinterruptChngNtfy()
 			| (SCCInterruptRequest << 1)
 			| (InterruptButton << 2);
 	}
-	if (NewIPL != CurIPL) {
-		CurIPL = NewIPL;
+	if (NewIPL != s_curIPL) {
+		s_curIPL = NewIPL;
 		g_cpu.iplChangeNotify();
 	}
 }
@@ -1741,7 +1741,7 @@ void VIAorSCCinterruptChngNtfy()
 	}
 
 	g_cpu.init(
-		&CurIPL, &g_machine->config());
+		&s_curIPL, &g_machine->config());
 	return true;
 }
 

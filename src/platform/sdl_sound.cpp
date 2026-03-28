@@ -34,14 +34,14 @@
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 #define dbglog_OSGInit (0 && dbglog_HAVE)
 
-static SoundSamplePtr TheSoundBuffer = nullptr;
+static SoundSamplePtr s_soundBuffer = nullptr;
 volatile static uint16_t ThePlayOffset;
 volatile static uint16_t TheFillOffset;
 volatile static uint16_t MinFilledSoundBuffs;
 #if dbglog_SoundBuffStats
-static uint16_t MaxFilledSoundBuffs;
+static uint16_t s_maxFilledSoundBuffs;
 #endif
-static uint16_t TheWriteOffset;
+static uint16_t s_writeOffset;
 
 static SDL_AudioStream *stream = nullptr;
 
@@ -49,7 +49,7 @@ static void Sound_Init0()
 {
 	ThePlayOffset = 0;
 	TheFillOffset = 0;
-	TheWriteOffset = 0;
+	s_writeOffset = 0;
 }
 
 static void Sound_Start0()
@@ -57,15 +57,15 @@ static void Sound_Start0()
 	/* Reset variables */
 	MinFilledSoundBuffs = kSoundBuffers + 1;
 #if dbglog_SoundBuffStats
-	MaxFilledSoundBuffs = 0;
+	s_maxFilledSoundBuffs = 0;
 #endif
 }
 
 SoundSamplePtr Sound_BeginWrite(uint16_t n, uint16_t *actL)
 {
-	uint16_t ToFillLen = kAllBuffLen - (TheWriteOffset - ThePlayOffset);
+	uint16_t ToFillLen = kAllBuffLen - (s_writeOffset - ThePlayOffset);
 	uint16_t WriteBuffContig =
-		kOneBuffLen - (TheWriteOffset & kOneBuffMask);
+		kOneBuffLen - (s_writeOffset & kOneBuffMask);
 
 	if (WriteBuffContig < n) {
 		n = WriteBuffContig;
@@ -75,11 +75,11 @@ SoundSamplePtr Sound_BeginWrite(uint16_t n, uint16_t *actL)
 #if dbglog_SoundStuff
 		dbglog_writeln("sound buffer over flow");
 #endif
-		TheWriteOffset -= kOneBuffLen;
+		s_writeOffset -= kOneBuffLen;
 	}
 
 	*actL = n;
-	return TheSoundBuffer + (TheWriteOffset & kAllBuffMask);
+	return s_soundBuffer + (s_writeOffset & kAllBuffMask);
 }
 
 static void ConvertSoundBlockToNative(SoundSamplePtr p)
@@ -93,8 +93,8 @@ static void ConvertSoundBlockToNative(SoundSamplePtr p)
 
 static void Sound_WroteABlock()
 {
-	uint16_t PrevWriteOffset = TheWriteOffset - kOneBuffLen;
-	SoundSamplePtr p = TheSoundBuffer + (PrevWriteOffset & kAllBuffMask);
+	uint16_t PrevWriteOffset = s_writeOffset - kOneBuffLen;
+	SoundSamplePtr p = s_soundBuffer + (PrevWriteOffset & kAllBuffMask);
 
 #if dbglog_SoundStuff
 	dbglog_writeln("enter Sound_WroteABlock");
@@ -102,7 +102,7 @@ static void Sound_WroteABlock()
 
 	ConvertSoundBlockToNative(p);
 
-	TheFillOffset = TheWriteOffset;
+	TheFillOffset = s_writeOffset;
 
 #if dbglog_SoundBuffStats
 	{
@@ -110,8 +110,8 @@ static void Sound_WroteABlock()
 			- ThePlayOffset;
 		uint16_t ToPlayBuffs = ToPlayLen >> kLnOneBuffLen;
 
-		if (ToPlayBuffs > MaxFilledSoundBuffs) {
-			MaxFilledSoundBuffs = ToPlayBuffs;
+		if (ToPlayBuffs > s_maxFilledSoundBuffs) {
+			s_maxFilledSoundBuffs = ToPlayBuffs;
 		}
 	}
 #endif
@@ -121,9 +121,9 @@ static bool Sound_EndWrite0(uint16_t actL)
 {
 	bool v;
 
-	TheWriteOffset += actL;
+	s_writeOffset += actL;
 
-	if (0 != (TheWriteOffset & kOneBuffMask)) {
+	if (0 != (s_writeOffset & kOneBuffMask)) {
 		v = false;
 	} else {
 		/* just finished a block */
@@ -153,9 +153,9 @@ static void Sound_SecondNotify0()
 #if dbglog_SoundBuffStats
 		dbglog_writelnNum("MinFilledSoundBuffs",
 			MinFilledSoundBuffs);
-		dbglog_writelnNum("MaxFilledSoundBuffs",
-			MaxFilledSoundBuffs);
-		MaxFilledSoundBuffs = 0;
+		dbglog_writelnNum("s_maxFilledSoundBuffs",
+			s_maxFilledSoundBuffs);
+		s_maxFilledSoundBuffs = 0;
 #endif
 		MinFilledSoundBuffs = kSoundBuffers + 1;
 	}
@@ -334,7 +334,7 @@ static void SDLCALL sdl3_audio_callback(void *udata, SDL_AudioStream *stream, in
 
 static SoundR cur_audio;
 
-static bool HaveSoundOut = false;
+static bool s_haveSoundOut = false;
 
 void Sound_Stop()
 {
@@ -342,7 +342,7 @@ void Sound_Stop()
 	dbglog_writeln("enter Sound_Stop");
 #endif
 
-	if (cur_audio.wantplaying && HaveSoundOut) {
+	if (cur_audio.wantplaying && s_haveSoundOut) {
 		uint16_t retry_limit = 50; /* half of a second */
 
 		cur_audio.wantplaying = false;
@@ -382,7 +382,7 @@ void Sound_Stop()
 
 void Sound_Start()
 {
-	if ((! cur_audio.wantplaying) && HaveSoundOut) {
+	if ((! cur_audio.wantplaying) && s_haveSoundOut) {
 		Sound_Start0();
 		cur_audio.lastv = kCenterTempSound;
 		cur_audio.HaveStartedPlaying = false;
@@ -396,7 +396,7 @@ void Sound_Start()
 
 void Sound_UnInit()
 {
-	if (HaveSoundOut) {
+	if (s_haveSoundOut) {
 		SDL_DestroyAudioStream(stream);
 	}
 }
@@ -413,7 +413,7 @@ bool Sound_Init()
 
 	Sound_Init0();
 
-	cur_audio.fTheSoundBuffer = TheSoundBuffer;
+	cur_audio.fTheSoundBuffer = s_soundBuffer;
 	cur_audio.fPlayOffset = &ThePlayOffset;
 	cur_audio.fFillOffset = &TheFillOffset;
 	cur_audio.fMinFilledSoundBuffs = &MinFilledSoundBuffs;
@@ -437,7 +437,7 @@ bool Sound_Init()
 	) {
 		fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
 	} else {
-		HaveSoundOut = true;
+		s_haveSoundOut = true;
 
 		Sound_Start();
 			/*
@@ -458,18 +458,18 @@ void Sound_EndWrite(uint16_t actL)
 
 void Sound_SecondNotify()
 {
-	if (HaveSoundOut) {
+	if (s_haveSoundOut) {
 		Sound_SecondNotify0();
 	}
 }
 
 bool Sound_AllocBuffer()
 {
-	return AllocBlock((uint8_t **)&TheSoundBuffer, dbhBufferSize, false);
+	return AllocBlock((uint8_t **)&s_soundBuffer, dbhBufferSize, false);
 }
 
 void Sound_FreeBuffer()
 {
-	free(TheSoundBuffer);
-	TheSoundBuffer = nullptr;
+	free(s_soundBuffer);
+	s_soundBuffer = nullptr;
 }

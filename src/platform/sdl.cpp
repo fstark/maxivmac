@@ -155,16 +155,16 @@ static bool LoadInitialImages()
 static int hOffset;
 static int vOffset;
 
-static bool UseFullScreen = false;
+static bool s_useFullScreen = false;
 
-static bool UseMagnify = true;
+static bool s_useMagnify = true;
 
 
-static bool gBackgroundFlag = false;
-static bool gTrueBackgroundFlag = false;
-static bool CurSpeedStopped = true;
+static bool s_backgroundFlag = false;
+static bool s_trueBackgroundFlag = false;
+static bool s_curSpeedStopped = true;
 
-static int WindowScale = 2;
+static int s_windowScale = 2;
 
 
 static SDL_Window *my_main_wind = nullptr;
@@ -183,7 +183,7 @@ static uint8_t * CLUT_final;
 		256 possible values of one byte
 		8 pixels per byte maximum (when black and white)
 		4 bytes per destination pixel maximum
-			multiplied by WindowScale when magnified
+			multiplied by s_windowScale when magnified
 	*/
 
 #define ScrnMapr_DoMap UpdateBWDepth3Copy
@@ -279,7 +279,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	int DestWidth;
 	int DestHeight;
 
-	if (UseFullScreen)
+	if (s_useFullScreen)
 	{
 		if (top < ViewVStart) {
 			top = ViewVStart;
@@ -304,7 +304,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	DestWidth = (right - left);
 	DestHeight = (bottom - top);
 
-	if (UseFullScreen)
+	if (s_useFullScreen)
 	{
 		XDest -= ViewHStart;
 		YDest -= ViewVStart;
@@ -313,7 +313,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	/* SDL3 logical presentation handles magnification —
 	   dst_rect is in logical (unmagnified) coordinates. */
 
-	if (UseFullScreen)
+	if (s_useFullScreen)
 	{
 		XDest += hOffset;
 		YDest += vOffset;
@@ -552,13 +552,13 @@ void DoneWithDrawingForTick()
 
 /* cursor hiding */
 
-static bool HaveCursorHidden = false;
-static bool WantCursorHidden = false;
+static bool s_haveCursorHidden = false;
+static bool s_wantCursorHidden = false;
 
 static void ForceShowCursor()
 {
-	if (HaveCursorHidden) {
-		HaveCursorHidden = false;
+	if (s_haveCursorHidden) {
+		s_haveCursorHidden = false;
 		SDL_ShowCursor();
 	}
 }
@@ -582,18 +582,18 @@ static bool MoveMouse(int16_t h, int16_t v)
 			but there is no way to detect failure.)
 	*/
 
-	if (UseFullScreen)
+	if (s_useFullScreen)
 	{
 		h -= ViewHStart;
 		v -= ViewVStart;
 	}
 
-	if (UseMagnify) {
-		h *= WindowScale;
-		v *= WindowScale;
+	if (s_useMagnify) {
+		h *= s_windowScale;
+		v *= s_windowScale;
 	}
 
-	if (UseFullScreen)
+	if (s_useFullScreen)
 	{
 		h += hOffset;
 		v += vOffset;
@@ -614,13 +614,13 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 	/* SDL_ConvertEventToRenderCoordinates already maps to
 	   logical coordinates, so no manual scaling needed. */
 
-	if (UseFullScreen)
+	if (s_useFullScreen)
 	{
 		NewMousePosh -= hOffset;
 		NewMousePosv -= vOffset;
 	}
 
-	if (UseFullScreen)
+	if (s_useFullScreen)
 	{
 		NewMousePosh += ViewHStart;
 		NewMousePosv += ViewVStart;
@@ -650,7 +650,7 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 			ShouldHaveCursorHidden = false;
 		}
 
-		if (UseFullScreen)
+		if (s_useFullScreen)
 		{
 			ShouldHaveCursorHidden = true;
 		}
@@ -663,7 +663,7 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 		MyMousePositionSet(NewMousePosh, NewMousePosv);
 	}
 
-	WantCursorHidden = ShouldHaveCursorHidden;
+	s_wantCursorHidden = ShouldHaveCursorHidden;
 }
 
 #if EnableFSMouseMotion && ! HaveWorkingWarp
@@ -676,7 +676,7 @@ static void MousePositionNotifyRelative(int deltah, int deltav)
 	MyMousePositionSetDelta(deltah,
 		deltav);
 
-	WantCursorHidden = ShouldHaveCursorHidden;
+	s_wantCursorHidden = ShouldHaveCursorHidden;
 }
 #endif
 
@@ -745,14 +745,14 @@ static void CheckSavedMacMsg()
 #define UseMotionEvents 1
 
 #if UseMotionEvents
-static bool CaughtMouse = false;
+static bool s_caughtMouse = false;
 #endif
 
 /* Dispatch an SDL event: quit, keyboard, mouse, window resize,
    drag-and-drop, etc. */
 static void HandleTheEvent(SDL_Event *event)
 {
-	if (!UseFullScreen) {
+	if (!s_useFullScreen) {
 		SDL_ConvertEventToRenderCoordinates(
 			my_renderer,
 			event
@@ -768,22 +768,22 @@ static void HandleTheEvent(SDL_Event *event)
 				case
 					SDL_EVENT_WINDOW_FOCUS_GAINED
 					:
-					gTrueBackgroundFlag = 0;
+					s_trueBackgroundFlag = 0;
 					break;
 				case
 					SDL_EVENT_WINDOW_FOCUS_LOST
 					:
-					gTrueBackgroundFlag = 1;
+					s_trueBackgroundFlag = 1;
 					break;
 				case
 					SDL_EVENT_WINDOW_MOUSE_ENTER
 					:
-					CaughtMouse = 1;
+					s_caughtMouse = 1;
 					break;
 				case
 					SDL_EVENT_WINDOW_MOUSE_LEAVE
 					:
-					CaughtMouse = 0;
+					s_caughtMouse = 0;
 					break;
 				case SDL_EVENT_WINDOW_RESIZED:
 					SDL_RenderClear(my_renderer);
@@ -906,7 +906,7 @@ static bool Screen_Init()
 	return v;
 }
 
-static bool GrabMachine = false;
+static bool s_grabMachine = false;
 
 static void GrabTheMachine()
 {
@@ -991,7 +991,7 @@ enum {
 
 #define kMagStateAuto kNumMagStates
 
-static int CurWinIndx;
+static int s_curWinIndx;
 static bool HavePositionWins[kNumMagStates];
 static int WinPositionsX[kNumMagStates];
 static int WinPositionsY[kNumMagStates];
@@ -1006,8 +1006,8 @@ static bool CreateMainWindow()
 
 		The window should not be resizeable.
 
-		Should look at the current value of UseMagnify and
-		UseFullScreen.
+		Should look at the current value of s_useMagnify and
+		s_useFullScreen.
 	*/
 
 	int NewWindowX;
@@ -1020,13 +1020,13 @@ static bool CreateMainWindow()
 	bool v = false;
 
 #if 1
-	if (UseMagnify) {
-		NewWindowHeight *= WindowScale;
-		NewWindowWidth *= WindowScale;
+	if (s_useMagnify) {
+		NewWindowHeight *= s_windowScale;
+		NewWindowWidth *= s_windowScale;
 	}
 #endif
 
-	if (UseFullScreen)
+	if (s_useFullScreen)
 	{
 		/*
 			We don't want physical screen mode to be changed in modern
@@ -1041,7 +1041,7 @@ static bool CreateMainWindow()
 	{
 		int WinIndx;
 
-		if (UseMagnify) {
+		if (s_useMagnify) {
 			WinIndx = kMagStateMagnifgy;
 		} else
 		{
@@ -1056,7 +1056,7 @@ static bool CreateMainWindow()
 			NewWindowY = WinPositionsY[WinIndx];
 		}
 
-		CurWinIndx = WinIndx;
+		s_curWinIndx = WinIndx;
 	}
 
 
@@ -1138,7 +1138,7 @@ static bool CreateMainWindow()
 		SDL_RenderClear(my_renderer);
 
 
-		if (UseFullScreen)
+		if (s_useFullScreen)
 		{
 			int wr;
 			int hr;
@@ -1149,9 +1149,9 @@ static bool CreateMainWindow()
 
 			ViewHSize = wr;
 			ViewVSize = hr;
-			if (UseMagnify) {
-				ViewHSize /= WindowScale;
-				ViewVSize /= WindowScale;
+			if (s_useMagnify) {
+				ViewHSize /= s_windowScale;
+				ViewVSize /= s_windowScale;
 			}
 			if (ViewHSize >= vMacScreenWidth) {
 				ViewHStart = 0;
@@ -1251,9 +1251,9 @@ static void GetMyWState(MyWState *r)
 	r->f_ViewVStart = ViewVStart;
 	r->f_hOffset = hOffset;
 	r->f_vOffset = vOffset;
-	r->f_UseFullScreen = UseFullScreen;
-	r->f_UseMagnify = UseMagnify;
-	r->f_CurWinIndx = CurWinIndx;
+	r->f_UseFullScreen = s_useFullScreen;
+	r->f_UseMagnify = s_useMagnify;
+	r->f_CurWinIndx = s_curWinIndx;
 	r->f_my_main_wind = my_main_wind;
 	r->f_my_renderer = my_renderer;
 	r->f_my_texture = my_texture;
@@ -1270,9 +1270,9 @@ static void SetMyWState(MyWState *r)
 	ViewVStart = r->f_ViewVStart;
 	hOffset = r->f_hOffset;
 	vOffset = r->f_vOffset;
-	UseFullScreen = r->f_UseFullScreen;
-	UseMagnify = r->f_UseMagnify;
-	CurWinIndx = r->f_CurWinIndx;
+	s_useFullScreen = r->f_UseFullScreen;
+	s_useMagnify = r->f_UseMagnify;
+	s_curWinIndx = r->f_CurWinIndx;
 	my_main_wind = r->f_my_main_wind;
 	my_renderer = r->f_my_renderer;
 	my_texture = r->f_my_texture;
@@ -1311,28 +1311,28 @@ static bool ReCreateMainWindow()
 	MyWState old_state;
 	MyWState new_state;
 #if HaveWorkingWarp
-	bool HadCursorHidden = HaveCursorHidden;
+	bool HadCursorHidden = s_haveCursorHidden;
 #endif
 	int OldWinState =
-		UseFullScreen ? kWinStateFullScreen : kWinStateWindowed;
+		s_useFullScreen ? kWinStateFullScreen : kWinStateWindowed;
 	int OldMagState =
-		UseMagnify ? kMagStateMagnifgy : kMagStateNormal;
+		s_useMagnify ? kMagStateMagnifgy : kMagStateNormal;
 
 	WinMagStates[OldWinState] =
 		OldMagState;
 
-	if (! UseFullScreen)
+	if (! s_useFullScreen)
 	{
 		SDL_GetWindowPosition(my_main_wind,
-			&WinPositionsX[CurWinIndx],
-			&WinPositionsY[CurWinIndx]);
-		HavePositionWins[CurWinIndx] = true;
+			&WinPositionsX[s_curWinIndx],
+			&WinPositionsY[s_curWinIndx]);
+		HavePositionWins[s_curWinIndx] = true;
 	}
 
 	ForceShowCursor(); /* hide/show cursor api is per window */
 
-	if (GrabMachine) {
-		GrabMachine = false;
+	if (s_grabMachine) {
+		s_grabMachine = false;
 		UngrabMachine();
 	}
 
@@ -1340,16 +1340,16 @@ static bool ReCreateMainWindow()
 
 	ZapMyWState();
 
-	UseMagnify = WantMagnify;
-	UseFullScreen = WantFullScreen;
+	s_useMagnify = WantMagnify;
+	s_useFullScreen = WantFullScreen;
 
 	if (! CreateMainWindow()) {
 		CloseMainWindow();
 		SetMyWState(&old_state);
 
 		/* avoid retry */
-		WantFullScreen = UseFullScreen;
-		WantMagnify = UseMagnify;
+		WantFullScreen = s_useFullScreen;
+		WantMagnify = s_useMagnify;
 
 	} else {
 		GetMyWState(&new_state);
@@ -1393,9 +1393,9 @@ void ToggleWantFullScreen()
 
 	{
 		int OldWinState =
-			UseFullScreen ? kWinStateFullScreen : kWinStateWindowed;
+			s_useFullScreen ? kWinStateFullScreen : kWinStateWindowed;
 		int OldMagState =
-			UseMagnify ? kMagStateMagnifgy : kMagStateNormal;
+			s_useMagnify ? kMagStateMagnifgy : kMagStateNormal;
 		int NewWinState =
 			WantFullScreen ? kWinStateFullScreen : kWinStateWindowed;
 		int NewMagState = WinMagStates[NewWinState];
@@ -1409,8 +1409,8 @@ void ToggleWantFullScreen()
 				SDL_Rect r;
 
 				if (0 == SDL_GetDisplayBounds(0, &r)) {
-					if ((r.w >= vMacScreenWidth * WindowScale)
-						&& (r.h >= vMacScreenHeight * WindowScale)
+					if ((r.w >= vMacScreenWidth * s_windowScale)
+						&& (r.h >= vMacScreenHeight * s_windowScale)
 						)
 					{
 						WantMagnify = true;
@@ -1478,21 +1478,21 @@ static void CheckForSavedTasks()
 		return;
 	}
 
-	if (gTrueBackgroundFlag != gBackgroundFlag) {
-		gBackgroundFlag = gTrueBackgroundFlag;
-		if (gTrueBackgroundFlag) {
+	if (s_trueBackgroundFlag != s_backgroundFlag) {
+		s_backgroundFlag = s_trueBackgroundFlag;
+		if (s_trueBackgroundFlag) {
 			EnterBackground();
 		} else {
 			LeaveBackground();
 		}
 	}
 
-	if (CurSpeedStopped != (SpeedStopped ||
-		(gBackgroundFlag && ! RunInBackground
+	if (s_curSpeedStopped != (SpeedStopped ||
+		(s_backgroundFlag && ! RunInBackground
 		)))
 	{
-		CurSpeedStopped = ! CurSpeedStopped;
-		if (CurSpeedStopped) {
+		s_curSpeedStopped = ! s_curSpeedStopped;
+		if (s_curSpeedStopped) {
 			EnterSpeedStopped();
 		} else {
 			LeaveSpeedStopped();
@@ -1505,20 +1505,20 @@ static void CheckForSavedTasks()
 
 #if EnableRecreateW
 	if (0
-		|| (UseMagnify != WantMagnify)
-		|| (UseFullScreen != WantFullScreen)
+		|| (s_useMagnify != WantMagnify)
+		|| (s_useFullScreen != WantFullScreen)
 		)
 	{
 		(void) ReCreateMainWindow();
 	}
 #endif
 
-	if (GrabMachine != (
-		UseFullScreen &&
-		! (gTrueBackgroundFlag || CurSpeedStopped)))
+	if (s_grabMachine != (
+		s_useFullScreen &&
+		! (s_trueBackgroundFlag || s_curSpeedStopped)))
 	{
-		GrabMachine = ! GrabMachine;
-		if (GrabMachine) {
+		s_grabMachine = ! s_grabMachine;
+		if (s_grabMachine) {
 			GrabTheMachine();
 		} else {
 			UngrabMachine();
@@ -1573,11 +1573,11 @@ static void CheckForSavedTasks()
 		vSonyNewDiskWanted = false;
 	}
 
-	if (HaveCursorHidden != (WantCursorHidden
-		&& ! (gTrueBackgroundFlag || CurSpeedStopped)))
+	if (s_haveCursorHidden != (s_wantCursorHidden
+		&& ! (s_trueBackgroundFlag || s_curSpeedStopped)))
 	{
-		HaveCursorHidden = ! HaveCursorHidden;
-		HaveCursorHidden ? SDL_HideCursor() : SDL_ShowCursor();
+		s_haveCursorHidden = ! s_haveCursorHidden;
+		s_haveCursorHidden ? SDL_HideCursor() : SDL_ShowCursor();
 	}
 }
 
@@ -1682,7 +1682,7 @@ void WaitForNextTick()
 			return;
 		}
 
-		if (CurSpeedStopped) {
+		if (s_curSpeedStopped) {
 			DoneWithDrawingForTick();
 			WaitForTheNextEvent();
 			continue;
@@ -1701,9 +1701,9 @@ void WaitForNextTick()
 		Sound_SecondNotify();
 	}
 
-	if ((! gBackgroundFlag)
+	if ((! s_backgroundFlag)
 #if UseMotionEvents
-		&& (! CaughtMouse)
+		&& (! s_caughtMouse)
 #endif
 		)
 	{
@@ -1854,7 +1854,7 @@ int main(int argc, char **argv)
 
 	ProgramEarlyInit(argc, argv);
 
-	WindowScale = GetEmulatorConfig().windowScale;
+	s_windowScale = GetEmulatorConfig().windowScale;
 	SpeedValue = GetEmulatorConfig().speed;
 
 	const LaunchConfig& lc = GetLaunchConfig();

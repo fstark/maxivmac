@@ -42,7 +42,7 @@ void ADBDevice::doNewState()
 					ADB_SzDatBuf = ADB_IndexDatBuf;
 					ADB_EndListen();
 				}
-				ADB_TalkDatBuf = false;
+				s_adbTalkDatBuf = false;
 				ADB_IndexDatBuf = 0;
 				ADB_CurCmd = machine_->findDevice<VIA1Device>()->shiftOutData();
 					/* which sets interrupt, acknowleding command */
@@ -89,7 +89,7 @@ void ADBDevice::doNewState()
 						other than the one polled by the last talk
 						command. this probably indicates a bug.
 					*/
-					if ((! ADB_TalkDatBuf)
+					if ((! s_adbTalkDatBuf)
 						|| (ADB_IndexDatBuf >= ADB_SzDatBuf))
 					{
 						machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
@@ -122,7 +122,7 @@ void ADBDevice::doNewState()
 					ReportAbnormalID(AbnormalID::kADB_ADB_idle_follows_listen, "ADB idle follows listen");
 					/* apparently doesn't happen */
 				}
-				if (ADB_TalkDatBuf) {
+				if (s_adbTalkDatBuf) {
 					if (ADB_IndexDatBuf != 0) {
 						ReportAbnormalID(AbnormalID::kADB_idle_when_not_done_talking,
 							"idle when not done talking");
@@ -175,7 +175,7 @@ void ADBDevice::update()
 	uint8_t state = ADB_st1 * 2 + ADB_st0;
 
 	if (state == 3) { /* idle */
-		if (ADB_TalkDatBuf) {
+		if (s_adbTalkDatBuf) {
 			/* ignore, presumably being taken care of */
 		} else if (CheckForADBanyEvt())
 		{

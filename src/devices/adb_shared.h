@@ -13,15 +13,15 @@
 #define ADB_MaxSzDatBuf 8
 
 static uint8_t ADB_SzDatBuf;
-static bool ADB_TalkDatBuf = false;
+static bool s_adbTalkDatBuf = false;
 static uint8_t ADB_DatBuf[ADB_MaxSzDatBuf];
 static uint8_t ADB_CurCmd = 0;
-static uint8_t NotSoRandAddr = 1;
+static uint8_t s_notSoRandAddr = 1;
 
-static uint8_t MouseADBAddress;
-static bool SavedCurMouseButton = false;
-static uint16_t MouseADBDeltaH = 0;
-static uint16_t MouseADBDeltaV = 0;
+static uint8_t s_mouseADBAddress;
+static bool s_savedCurMouseButton = false;
+static uint16_t s_mouseADBDeltaH = 0;
+static uint16_t s_mouseADBDeltaV = 0;
 
 static void ADB_DoMouseTalk()
 {
@@ -36,18 +36,18 @@ static void ADB_DoMouseTalk()
 
 				if (nullptr != (p = EvtQOutP())) {
 					if (EvtQElKind::MouseDelta == p->kind) {
-						MouseADBDeltaH += p->u.pos.h;
-						MouseADBDeltaV += p->u.pos.v;
+						s_mouseADBDeltaH += p->u.pos.h;
+						s_mouseADBDeltaV += p->u.pos.v;
 						EvtQOutDone();
 					}
 				}
-				partH = MouseADBDeltaH;
-				partV = MouseADBDeltaV;
+				partH = s_mouseADBDeltaH;
+				partV = s_mouseADBDeltaV;
 
-				if ((int16_t)MouseADBDeltaH < 0) {
+				if ((int16_t)s_mouseADBDeltaH < 0) {
 					partH = - partH;
 				}
-				if ((int16_t)MouseADBDeltaV < 0) {
+				if ((int16_t)s_mouseADBDeltaV < 0) {
 					partV = - partV;
 				}
 				if ((partH >> 6) > 0) {
@@ -58,18 +58,18 @@ static void ADB_DoMouseTalk()
 					overflow = true;
 					partV = (1 << 6) - 1;
 				}
-				if ((int16_t)MouseADBDeltaH < 0) {
+				if ((int16_t)s_mouseADBDeltaH < 0) {
 					partH = - partH;
 				}
-				if ((int16_t)MouseADBDeltaV < 0) {
+				if ((int16_t)s_mouseADBDeltaV < 0) {
 					partV = - partV;
 				}
-				MouseADBDeltaH -= partH;
-				MouseADBDeltaV -= partV;
+				s_mouseADBDeltaH -= partH;
+				s_mouseADBDeltaV -= partV;
 				if (! overflow) {
 					if (nullptr != (p = EvtQOutP())) {
 						if (EvtQElKind::MouseButton == p->kind) {
-							SavedCurMouseButton = p->u.press.down;
+							s_savedCurMouseButton = p->u.press.down;
 							MouseButtonChange = true;
 							EvtQOutDone();
 						}
@@ -77,8 +77,8 @@ static void ADB_DoMouseTalk()
 				}
 				if ((0 != partH) || (0 != partV) || MouseButtonChange) {
 					ADB_SzDatBuf = 2;
-					ADB_TalkDatBuf = true;
-					ADB_DatBuf[0] = (SavedCurMouseButton ? 0x00 : 0x80)
+					s_adbTalkDatBuf = true;
+					ADB_DatBuf[0] = (s_savedCurMouseButton ? 0x00 : 0x80)
 						| (partV & 127);
 					ADB_DatBuf[1] = /* 0x00 */ 0x80 | (partH & 127);
 				}
@@ -87,10 +87,10 @@ static void ADB_DoMouseTalk()
 			break;
 		case 3:
 			ADB_SzDatBuf = 2;
-			ADB_TalkDatBuf = true;
-			ADB_DatBuf[0] = 0x60 | (NotSoRandAddr & 0x0f);
+			s_adbTalkDatBuf = true;
+			ADB_DatBuf[0] = 0x60 | (s_notSoRandAddr & 0x0f);
 			ADB_DatBuf[1] = 0x01;
-			NotSoRandAddr += 1;
+			s_notSoRandAddr += 1;
 			break;
 		default:
 			ReportAbnormalID(AbnormalID::kPMU_Talk_to_unknown_mouse_register, "Talk to unknown mouse register");
@@ -104,7 +104,7 @@ static void ADB_DoMouseListen()
 		case 3:
 			if (ADB_DatBuf[1] == 0xFE) {
 				/* change address */
-				MouseADBAddress = (ADB_DatBuf[0] & 0x0F);
+				s_mouseADBAddress = (ADB_DatBuf[0] & 0x0F);
 			} else {
 				ReportAbnormalID(AbnormalID::kPMU_unknown_listen_op_to_mouse_register_3,
 					"unknown listen op to mouse register 3");
@@ -117,7 +117,7 @@ static void ADB_DoMouseListen()
 	}
 }
 
-static uint8_t KeyboardADBAddress;
+static uint8_t s_keyboardADBAddress;
 
 static bool CheckForADBkeyEvt(uint8_t *NextADBkeyevt)
 {
@@ -166,7 +166,7 @@ static void ADB_DoKeyboardTalk()
 
 				if (CheckForADBkeyEvt(&NextADBkeyevt)) {
 					ADB_SzDatBuf = 2;
-					ADB_TalkDatBuf = true;
+					s_adbTalkDatBuf = true;
 					ADB_DatBuf[0] = NextADBkeyevt;
 					if (! CheckForADBkeyEvt(&NextADBkeyevt)) {
 						ADB_DatBuf[1] = 0xFF;
@@ -178,10 +178,10 @@ static void ADB_DoKeyboardTalk()
 			break;
 		case 3:
 			ADB_SzDatBuf = 2;
-			ADB_TalkDatBuf = true;
-			ADB_DatBuf[0] = 0x60 | (NotSoRandAddr & 0x0f);
+			s_adbTalkDatBuf = true;
+			ADB_DatBuf[0] = 0x60 | (s_notSoRandAddr & 0x0f);
 			ADB_DatBuf[1] = 0x01;
-			NotSoRandAddr += 1;
+			s_notSoRandAddr += 1;
 			break;
 		default:
 			ReportAbnormalID(AbnormalID::kPMU_Talk_to_unknown_keyboard_register,
@@ -196,7 +196,7 @@ static void ADB_DoKeyboardListen()
 		case 3:
 			if (ADB_DatBuf[1] == 0xFE) {
 				/* change address */
-				KeyboardADBAddress = (ADB_DatBuf[0] & 0x0F);
+				s_keyboardADBAddress = (ADB_DatBuf[0] & 0x0F);
 			} else {
 				ReportAbnormalID(AbnormalID::kPMU_unknown_listen_op_to_keyboard_register_3,
 					"unknown listen op to keyboard register 3");
@@ -224,15 +224,15 @@ static bool CheckForADBanyEvt()
 		}
 	}
 
-	return (0 != MouseADBDeltaH) && (0 != MouseADBDeltaV);
+	return (0 != s_mouseADBDeltaH) && (0 != s_mouseADBDeltaV);
 }
 
 static void ADB_DoTalk()
 {
 	uint8_t Address = ADB_CurCmd >> 4;
-	if (Address == MouseADBAddress) {
+	if (Address == s_mouseADBAddress) {
 		ADB_DoMouseTalk();
-	} else if (Address == KeyboardADBAddress) {
+	} else if (Address == s_keyboardADBAddress) {
 		ADB_DoKeyboardTalk();
 	}
 }
@@ -240,28 +240,28 @@ static void ADB_DoTalk()
 static void ADB_EndListen()
 {
 	uint8_t Address = ADB_CurCmd >> 4;
-	if (Address == MouseADBAddress) {
+	if (Address == s_mouseADBAddress) {
 		ADB_DoMouseListen();
-	} else if (Address == KeyboardADBAddress) {
+	} else if (Address == s_keyboardADBAddress) {
 		ADB_DoKeyboardListen();
 	}
 }
 
 static void ADB_DoReset()
 {
-	MouseADBAddress = 3;
-	KeyboardADBAddress = 2;
+	s_mouseADBAddress = 3;
+	s_keyboardADBAddress = 2;
 }
 
 static void ADB_Flush()
 {
 	uint8_t Address = ADB_CurCmd >> 4;
 
-	if ((Address == KeyboardADBAddress)
-		|| (Address == MouseADBAddress))
+	if ((Address == s_keyboardADBAddress)
+		|| (Address == s_mouseADBAddress))
 	{
 		ADB_SzDatBuf = 2;
-		ADB_TalkDatBuf = true;
+		s_adbTalkDatBuf = true;
 		ADB_DatBuf[0] = 0x00;
 		ADB_DatBuf[1] = 0x00;
 	} else {

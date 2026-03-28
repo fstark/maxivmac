@@ -452,7 +452,7 @@ static tMacErr Vid_SetMode(uint16_t v)
 #define VidBaseAddr 0xF9900000
 	/* appears to be completely ignored */
 
-static bool UseGrayTones = false;
+static bool s_useGrayTones = false;
 
 static void FillScreenWithGrayPattern()
 {
@@ -707,7 +707,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									to be a byte.
 								*/
 
-							UseGrayTones = (csMode != 0);
+							s_useGrayTones = (csMode != 0);
 							result = tMacErr::noErr;
 						}
 						break;
@@ -816,7 +816,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, GetGray");
 #endif
 						put_vm_word(csParam + VDPageInfo_csMode,
-							UseGrayTones ? 0x0100 : 0);
+							s_useGrayTones ? 0x0100 : 0);
 							/*
 								"Designing Cards and Drivers" book
 								says this is a word, but it seems

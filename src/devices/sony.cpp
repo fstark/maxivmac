@@ -26,17 +26,17 @@
 */
 
 
-static uint32_t vSonyMountedMask = 0;
+static uint32_t s_sonyMountedMask = 0;
 
 #define vSonyIsLocked(Drive_No) \
 	((vSonyWritableMask & ((uint32_t)1 << (Drive_No))) == 0)
 #define vSonyIsMounted(Drive_No) \
-	((vSonyMountedMask & ((uint32_t)1 << (Drive_No))) != 0)
+	((s_sonyMountedMask & ((uint32_t)1 << (Drive_No))) != 0)
 
 static bool vSonyNextPendingInsert0(DriveIndex *Drive_No)
 {
 	/* find next drive to Mount */
-	uint32_t MountPending = vSonyInsertedMask & (~ vSonyMountedMask);
+	uint32_t MountPending = vSonyInsertedMask & (~ s_sonyMountedMask);
 	if (MountPending != 0) {
 		DriveIndex i;
 		for (i = 0; i < NumDrives; ++i) {
@@ -430,7 +430,7 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 			}
 			if (tMacErr::noErr == result)
 			{
-				vSonyMountedMask |= ((uint32_t)1 << i);
+				s_sonyMountedMask |= ((uint32_t)1 << i);
 
 				ImageDataOffset[i] = DataOffset;
 				ImageDataSize[i] = DataSize;
@@ -455,17 +455,17 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 		if call PostEvent too frequently, insert events seem to get lost
 	*/
 
-static uint16_t DelayUntilNextInsert;
+static uint16_t s_delayUntilNextInsert;
 
-static uint32_t MountCallBack = 0;
+static uint32_t s_mountCallBack = 0;
 
 /* This checks to see if a disk (image) has been inserted */
 void SonyDevice::update()
 {
-	if (DelayUntilNextInsert != 0) {
-		--DelayUntilNextInsert;
+	if (s_delayUntilNextInsert != 0) {
+		--s_delayUntilNextInsert;
 	} else {
-		if (MountCallBack != 0) {
+		if (s_mountCallBack != 0) {
 			DriveIndex i;
 
 			if (tMacErr::noErr == vSonyNextPendingInsert(&i)) {
@@ -475,11 +475,11 @@ void SonyDevice::update()
 					data |= ((uint32_t)0x00FF) << 16;
 				}
 
-				g_cpu.diskInsertedPseudoException(MountCallBack, data);
+				g_cpu.diskInsertedPseudoException(s_mountCallBack, data);
 
 				if (! vSonyRawMode)
 				{
-					DelayUntilNextInsert = MinTicksBetweenInsert;
+					s_delayUntilNextInsert = MinTicksBetweenInsert;
 					/*
 						but usually will reach kDriveStatus first,
 						where shorten delay.
@@ -531,11 +531,11 @@ static tMacErr Drive_Transfer(bool IsWrite, uint32_t Buffera,
 	return result;
 }
 
-static bool QuitOnEject = false;
+static bool s_quitOnEject = false;
 
 void SonyDevice::setQuitOnEject()
 {
-	QuitOnEject = true;
+	s_quitOnEject = true;
 }
 
 static tMacErr Drive_Eject(DriveIndex Drive_No)
@@ -544,12 +544,12 @@ static tMacErr Drive_Eject(DriveIndex Drive_No)
 
 	result = CheckReadableDrive(Drive_No);
 	if (tMacErr::noErr == result) {
-		vSonyMountedMask &= ~ ((uint32_t)1 << Drive_No);
+		s_sonyMountedMask &= ~ ((uint32_t)1 << Drive_No);
 #if Sony_WantChecksumsUpdated
 		Drive_UpdateChecksums(Drive_No);
 #endif
 		result = vSonyEject(Drive_No);
-		if (QuitOnEject != 0) {
+		if (s_quitOnEject != 0) {
 			if (! AnyDiskInserted()) {
 				ForceMacOff = true;
 			}
@@ -568,7 +568,7 @@ static tMacErr Drive_EjectDelete(DriveIndex Drive_No)
 		if (vSonyIsLocked(Drive_No)) {
 			result = tMacErr::vLckdErr;
 		} else {
-			vSonyMountedMask &= ~ ((uint32_t)1 << Drive_No);
+			s_sonyMountedMask &= ~ ((uint32_t)1 << Drive_No);
 			result = vSonyEjectDelete(Drive_No);
 		}
 	}
@@ -580,7 +580,7 @@ void SonyDevice::ejectAllDisks()
 {
 	DriveIndex i;
 
-	vSonyMountedMask = 0;
+	s_sonyMountedMask = 0;
 	for (i = 0; i < NumDrives; ++i) {
 		if (vSonyIsInserted(i)) {
 #if Sony_WantChecksumsUpdated
@@ -593,9 +593,9 @@ void SonyDevice::ejectAllDisks()
 
 void SonyDevice::reset()
 {
-	DelayUntilNextInsert = 0;
-	QuitOnEject = false;
-	MountCallBack = 0;
+	s_delayUntilNextInsert = 0;
+	s_quitOnEject = false;
+	s_mountCallBack = 0;
 }
 
 /*
@@ -695,15 +695,15 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			}
 			break;
 		case kCmndDiskGetCallBack:
-			put_vm_long(p + kParamDiskBuffer, MountCallBack);
+			put_vm_long(p + kParamDiskBuffer, s_mountCallBack);
 			result = tMacErr::noErr;
 			break;
 		case kCmndDiskSetCallBack:
-			MountCallBack = get_vm_long(p + kParamDiskBuffer);
+			s_mountCallBack = get_vm_long(p + kParamDiskBuffer);
 			result = tMacErr::noErr;
 			break;
 		case kCmndDiskQuitOnEject:
-			QuitOnEject = true;
+			s_quitOnEject = true;
 			result = tMacErr::noErr;
 			break;
 		case kCmndDiskFeatures:
@@ -916,7 +916,7 @@ static uint32_t sony_MinSonVarsSize() {
 #define Sony_dolog (dbglog_HAVE && 0)
 
 #if Sony_SupportTags
-static uint32_t TheTagBuffer;
+static uint32_t s_tagBuffer;
 #endif
 
 static uint32_t DriveVarsLocation(DriveIndex Drive_No)
@@ -1031,12 +1031,12 @@ static tMacErr Sony_PrimeTags(DriveIndex Drive_No,
 
 		TagOffset += block * 12;
 
-		if (0 != TheTagBuffer) {
+		if (0 != s_tagBuffer) {
 			uint32_t count = 12 * n;
-			result = vSonyTransferVM(IsWrite, TheTagBuffer, Drive_No,
+			result = vSonyTransferVM(IsWrite, s_tagBuffer, Drive_No,
 				TagOffset, count, nullptr);
 			if (tMacErr::noErr == result) {
-				MyMoveBytesVM(TheTagBuffer + count - 12, 0x02FC, 12);
+				MyMoveBytesVM(s_tagBuffer + count - 12, 0x02FC, 12);
 			}
 		} else {
 			if (! IsWrite) {
@@ -1187,7 +1187,7 @@ static tMacErr Sony_Control(uint32_t p)
 #endif
 
 #if Sony_SupportTags
-		TheTagBuffer = get_vm_long(ParamBlk + kcsParam);
+		s_tagBuffer = get_vm_long(ParamBlk + kcsParam);
 		result = tMacErr::noErr;
 #else
 		result = tMacErr::controlErr;
@@ -1362,8 +1362,8 @@ static tMacErr Sony_Status(uint32_t p)
 		if (Src == 0) {
 			result = tMacErr::nsDrvErr;
 		} else {
-			if (DelayUntilNextInsert > 4) {
-				DelayUntilNextInsert = 4;
+			if (s_delayUntilNextInsert > 4) {
+				s_delayUntilNextInsert = 4;
 			}
 			MyMoveBytesVM(Src, ParamBlk + kcsParam, 22);
 			result = tMacErr::noErr;
@@ -1398,7 +1398,7 @@ static tMacErr Sony_OpenA(uint32_t p)
 	dbglog_WriteNote("Sony : OpenA");
 #endif
 
-	if (MountCallBack != 0) {
+	if (s_mountCallBack != 0) {
 		return tMacErr::opWrErr; /* driver already open */
 	} else {
 		uint32_t L = FirstDriveVarsOffset + EachDriveVarsSize * NumDrives;
@@ -1483,7 +1483,7 @@ static tMacErr Sony_OpenB(uint32_t p)
 	}
 
 #if Sony_SupportTags
-	TheTagBuffer = 0;
+	s_tagBuffer = 0;
 #endif
 
 	return tMacErr::noErr;
@@ -1495,9 +1495,9 @@ static tMacErr Sony_OpenC(uint32_t p)
 	dbglog_WriteNote("Sony : OpenC");
 #endif
 
-	MountCallBack = get_vm_long(p + ExtnDat_params + 0);
+	s_mountCallBack = get_vm_long(p + ExtnDat_params + 0);
 	if (g_machine->config().isIIFamily()) {
-		MountCallBack |= 0x40000000;
+		s_mountCallBack |= 0x40000000;
 	}
 	return tMacErr::noErr;
 }

@@ -13,7 +13,7 @@
 		connected to the serial ports.
 		(and not even that much is complete yet)
 
-	This code adapted from "SCC.c" in vMac by Philip Cummins.
+	This code adapted from "s_scc.c" in vMac by Philip Cummins.
 	With additional code by Weston Pawlowski from the Windows
 	port of vMac.
 
@@ -39,11 +39,11 @@
 
 #if EmLocalTalk
 
-static bool CTSpacketPending = false;
-static uint8_t CTSpacketRxDA;
-static uint8_t CTSpacketRxSA;
+static bool s_ctsPacketPending = false;
+static uint8_t s_ctsPacketRxDA;
+static uint8_t s_ctsPacketRxSA;
 
-static bool IsFindingNode = false;
+static bool s_isFindingNode = false;
 
 /*
 	Function used when all the tx data is sent to the SCC as indicated
@@ -82,7 +82,7 @@ static void LT_TransmitPacket1()
 		if (type < 0x80) {
 			/* data packet */
 #if LT_MayHaveEcho
-			IsFindingNode = false;
+			s_isFindingNode = false;
 #endif
 			LT_TransmitPacket();
 		} else {
@@ -100,7 +100,7 @@ static void LT_TransmitPacket1()
 					"SCC LLAP packet lapENQ");
 #endif
 #if LT_MayHaveEcho
-				IsFindingNode = true;
+				s_isFindingNode = true;
 #endif
 				LT_TransmitPacket();
 			} else
@@ -119,9 +119,9 @@ static void LT_TransmitPacket1()
 						"SCC LLAP packet ignore broadcast lapRTS");
 #endif
 				} else
-				if (CTSpacketPending) {
+				if (s_ctsPacketPending) {
 					ReportAbnormalID(AbnormalID::kSCC_Already_CTSpacketPending,
-						"Already CTSpacketPending "
+						"Already s_ctsPacketPending "
 							"in LT_TransmitPacket1");
 				} else
 				{
@@ -129,9 +129,9 @@ static void LT_TransmitPacket1()
 					dbglog_WriteNote(
 						"SCC LLAP packet lapRTS");
 #endif
-					CTSpacketRxDA = LT_TxBuffer[1]; /* rx da = tx sa */
-					CTSpacketRxSA = LT_TxBuffer[0]; /* rx sa = tx da */
-					CTSpacketPending = true;
+					s_ctsPacketRxDA = LT_TxBuffer[1]; /* rx da = tx sa */
+					s_ctsPacketRxSA = LT_TxBuffer[0]; /* rx sa = tx da */
+					s_ctsPacketPending = true;
 				}
 			} else
 			if (0x85 == type) {
@@ -164,21 +164,21 @@ static void GetCTSpacket()
 	dbglog_WriteNote("SCC receiving CTS packet");
 #endif
 	/* Create the fake response from the other node */
-	device_buffer[0] = CTSpacketRxDA;
-	device_buffer[1] = CTSpacketRxSA;
+	device_buffer[0] = s_ctsPacketRxDA;
+	device_buffer[1] = s_ctsPacketRxSA;
 	device_buffer[2] = 0x85;          /* llap cts */
 
 	/* Start the receiver */
 	LT_RxBuffer = device_buffer;
 	LT_RxBuffSz = 3;
 
-	CTSpacketPending = false;
+	s_ctsPacketPending = false;
 }
 
 /* LLAP/SDLC address */
 static uint8_t my_node_address = 0;
 
-static bool LTAddrSrchMd = false;
+static bool s_ltAddrSrchMd = false;
 
 static void GetNextPacketForMe()
 {
@@ -209,7 +209,7 @@ static void GetNextPacketForMe()
 
 		if ((dst != my_node_address)
 			&& (dst != 0xFF)
-			&& LTAddrSrchMd)
+			&& s_ltAddrSrchMd)
 		{
 #if SCC_dolog
 			dbglog_WriteNote("SCC ignore packet not for me");
@@ -232,7 +232,7 @@ static void GetNextPacketForMe()
 			and ENQ packets which tell me I might be about to
 		*/
 		if (0x81 == type) {
-			if (! IsFindingNode) {
+			if (! s_isFindingNode) {
 				/* pass it on for lapACK reply */
 #if SCC_dolog
 				dbglog_WriteNote("received lapENQ to us");
@@ -247,7 +247,7 @@ static void GetNextPacketForMe()
 			}
 		} else
 		if (0x82 == type) {
-			if (! IsFindingNode) {
+			if (! s_isFindingNode) {
 #if SCC_dolog
 				dbglog_WriteNote("received lapACK probably from us");
 #endif
@@ -285,7 +285,7 @@ static void GetNextPacketForMe()
 
 static void LT_ReceivePacket1()
 {
-	if (CTSpacketPending)  {
+	if (s_ctsPacketPending)  {
 		GetCTSpacket();
 	} else {
 		GetNextPacketForMe();
@@ -298,7 +298,7 @@ static void LT_AddrSrchMdSet(bool v)
 	dbglog_StartLine();
 	dbglog_writelnNum("LT_AddrSrchMdSet", v);
 #endif
-	LTAddrSrchMd = v;
+	s_ltAddrSrchMd = v;
 }
 
 static void LT_NodeAddressSet(uint8_t v)
@@ -456,7 +456,7 @@ struct SCC_Ty {
 #endif
 };
 
-static SCC_Ty SCC;
+static SCC_Ty s_scc;
 
 
 #if EmLocalTalk
@@ -466,7 +466,7 @@ static int rx_data_offset = 0;
 
 bool SCCDevice::interruptsEnabled()
 {
-	return SCC.MIE;
+	return s_scc.MIE;
 }
 
 /* ---- */
@@ -480,25 +480,25 @@ static void CheckSCCInterruptFlag()
 	bool ReceiveBInterrupt = false;
 	bool RxSpclBInterrupt = false
 		/* otherwise EndOfFrame always false */
-		| SCC.a[1].EndOfFrame
+		| s_scc.a[1].EndOfFrame
 		;
 #endif
 
 #if EmLocalTalk
-	switch (SCC.a[1].RxIntMode) {
+	switch (s_scc.a[1].RxIntMode) {
 		case 0:
 			/* disabled */
 			RxSpclBInterrupt = false;
 			break;
 		case 1:
 			/* Rx INT on 1st char or special condition */
-			if (SCC.a[1].RxChrAvail && SCC.a[1].FirstChar) {
+			if (s_scc.a[1].RxChrAvail && s_scc.a[1].FirstChar) {
 				ReceiveBInterrupt = true;
 			}
 			break;
 		case 2:
 			/* INT on all Rx char or special condition */
-			if (SCC.a[1].RxChrAvail) {
+			if (s_scc.a[1].RxChrAvail) {
 				ReceiveBInterrupt = true;
 			}
 			break;
@@ -509,36 +509,36 @@ static void CheckSCCInterruptFlag()
 #endif
 
 	/* Master Interrupt Enable */
-	if (! SCC.MIE) {
-		SCC.SCC_Interrupt_Type = 0;
+	if (! s_scc.MIE) {
+		s_scc.SCC_Interrupt_Type = 0;
 	} else
-	if (SCC.a[0].TxIP && SCC.a[0].TxIE) {
-		SCC.SCC_Interrupt_Type = SCC_A_Tx_Empty;
+	if (s_scc.a[0].TxIP && s_scc.a[0].TxIE) {
+		s_scc.SCC_Interrupt_Type = SCC_A_Tx_Empty;
 	} else
 #if EmLocalTalk
 	if (ReceiveBInterrupt) {
-		SCC.SCC_Interrupt_Type = SCC_B_Rx;
+		s_scc.SCC_Interrupt_Type = SCC_B_Rx;
 	} else
 	if (RxSpclBInterrupt) {
-		SCC.SCC_Interrupt_Type = SCC_B_Rx_Spec;
+		s_scc.SCC_Interrupt_Type = SCC_B_Rx_Spec;
 	} else
 #endif
-	if (SCC.a[1].TxIP && SCC.a[1].TxIE) {
-		SCC.SCC_Interrupt_Type = SCC_B_Tx_Empty;
+	if (s_scc.a[1].TxIP && s_scc.a[1].TxIE) {
+		s_scc.SCC_Interrupt_Type = SCC_B_Tx_Empty;
 	} else
 	{
-		SCC.SCC_Interrupt_Type = 0;
+		s_scc.SCC_Interrupt_Type = 0;
 	}
 
-	NewSCCInterruptRequest = (SCC.SCC_Interrupt_Type != 0) ? 1 : 0;
+	NewSCCInterruptRequest = (s_scc.SCC_Interrupt_Type != 0) ? 1 : 0;
 	if (NewSCCInterruptRequest != SCCInterruptRequest) {
 #if SCC_dolog
 		dbglog_WriteSetBool("SCCInterruptRequest change",
 			NewSCCInterruptRequest);
 
 		dbglog_StartLine();
-		dbglog_writeCStr("SCC.SCC_Interrupt_Type <- ");
-		dbglog_writeHex(SCC.SCC_Interrupt_Type);
+		dbglog_writeCStr("s_scc.SCC_Interrupt_Type <- ");
+		dbglog_writeHex(s_scc.SCC_Interrupt_Type);
 		dbglog_writeReturn();
 #endif
 		g_wires.set(Wire_SCCInterruptRequest, NewSCCInterruptRequest);
@@ -549,22 +549,22 @@ static void SCC_InitChannel(int chan)
 {
 	/* anything not done by ResetChannel */
 
-	SCC.a[chan].SyncHunt = true;
+	s_scc.a[chan].SyncHunt = true;
 #if SCC_TrackMore /* don't care about Baud */
-	SCC.a[chan].BaudLo = 0;
-	SCC.a[chan].BaudHi = 0;
+	s_scc.a[chan].BaudLo = 0;
+	s_scc.a[chan].BaudHi = 0;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].BRGEnbl = false;
+	s_scc.a[chan].BRGEnbl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].TRxCsrc = 0;
+	s_scc.a[chan].TRxCsrc = 0;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].TClkSlct = 1;
+	s_scc.a[chan].TClkSlct = 1;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].RClkSlct = 0;
+	s_scc.a[chan].RClkSlct = 0;
 #endif
 }
 
@@ -573,112 +573,112 @@ static void SCC_ResetChannel(int chan)
 {
 /* RR 0 */
 #if EmLocalTalk
-	SCC.a[chan].RxBuff = 0;
+	s_scc.a[chan].RxBuff = 0;
 #endif
 #if EmLocalTalk
 	/* otherwise RxChrAvail always false */
-	SCC.a[chan].RxChrAvail = false;
+	s_scc.a[chan].RxChrAvail = false;
 #endif
 #if EmLocalTalk
 	/* otherwise TxBufferEmpty always true */
-	SCC.a[chan].TxBufferEmpty = true;
+	s_scc.a[chan].TxBufferEmpty = true;
 #endif
-	SCC.a[chan].TxUnderrun = true;
+	s_scc.a[chan].TxUnderrun = true;
 /* RR 1 */
 #if EmLocalTalk
 	/* otherwise EndOfFrame always false */
-	SCC.a[chan].EndOfFrame = false;
+	s_scc.a[chan].EndOfFrame = false;
 #endif
 /* RR 3 */
 #if EmLocalTalk || SCC_TrackMore
-	SCC.a[chan].ExtIE = false;
+	s_scc.a[chan].ExtIE = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].RxCRCEnbl = false;
+	s_scc.a[chan].RxCRCEnbl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].TxCRCEnbl = false;
+	s_scc.a[chan].TxCRCEnbl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].RTSctrl = false;
+	s_scc.a[chan].RTSctrl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].SndBrkCtrl = false;
+	s_scc.a[chan].SndBrkCtrl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].DTRctrl = false;
+	s_scc.a[chan].DTRctrl = false;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	SCC.a[chan].AddrSrchMd = false;
+	s_scc.a[chan].AddrSrchMd = false;
 	if (0 != chan) {
 		LT_AddrSrchMdSet(false);
 	}
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].SyncChrLdInhb = false;
+	s_scc.a[chan].SyncChrLdInhb = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].WaitRqstEnbl = false;
+	s_scc.a[chan].WaitRqstEnbl = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].WaitRqstSlct = false;
+	s_scc.a[chan].WaitRqstSlct = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].WaitRqstRT = false;
+	s_scc.a[chan].WaitRqstRT = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].PrtySpclCond = false;
+	s_scc.a[chan].PrtySpclCond = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].PrtyEnable = false;
+	s_scc.a[chan].PrtyEnable = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].PrtyEven = false;
+	s_scc.a[chan].PrtyEven = false;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].ClockRate = 0;
+	s_scc.a[chan].ClockRate = 0;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].DataEncoding = 0;
+	s_scc.a[chan].DataEncoding = 0;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].RBitsPerChar = 0;
+	s_scc.a[chan].RBitsPerChar = 0;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].TBitsPerChar = 0;
+	s_scc.a[chan].TBitsPerChar = 0;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	SCC.a[chan].RxIntMode = 0;
+	s_scc.a[chan].RxIntMode = 0;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	SCC.a[chan].FirstChar = false;
+	s_scc.a[chan].FirstChar = false;
 #endif
 #if EmLocalTalk || SCC_TrackMore
-	SCC.a[chan].SyncMode = 0;
+	s_scc.a[chan].SyncMode = 0;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].StopBits = 0;
+	s_scc.a[chan].StopBits = 0;
 #endif
 #if SCC_TrackMore
-	SCC.NoVectorSlct = false;
+	s_scc.NoVectorSlct = false;
 #endif
-	SCC.a[chan].TxIP = false;
+	s_scc.a[chan].TxIP = false;
 
-	SCC.a[chan].TxEnable = false;
-	SCC.a[chan].RxEnable = false;
-	SCC.a[chan].TxIE = false;
+	s_scc.a[chan].TxEnable = false;
+	s_scc.a[chan].RxEnable = false;
+	s_scc.a[chan].TxIE = false;
 
 #if SCC_TrackMore /* don't care about CTS_IE */
-	SCC.a[chan].CTS_IE = true;
+	s_scc.a[chan].CTS_IE = true;
 #endif
 #if SCC_TrackMore
-	SCC.a[chan].CRCPreset = false;
+	s_scc.a[chan].CRCPreset = false;
 #endif
 #if SCC_TrackMore /* don't care about BreakAbortIE */
-	SCC.a[chan].BreakAbortIE = true;
+	s_scc.a[chan].BreakAbortIE = true;
 #endif
 
-	SCC.PointerBits = 0;
+	s_scc.PointerBits = 0;
 
 }
 
@@ -688,12 +688,12 @@ void SCCDevice::reset()
 {
 	g_wires.set(Wire_VIA1_iA7_SCCwaitrq, 1);
 
-	SCC.SCC_Interrupt_Type = 0;
+	s_scc.SCC_Interrupt_Type = 0;
 
 	g_wires.set(Wire_SCCInterruptRequest, 0);
-	SCC.PointerBits = 0;
-	SCC.MIE = false;
-	SCC.InterruptVector = 0;
+	s_scc.PointerBits = 0;
+	s_scc.MIE = false;
+	s_scc.InterruptVector = 0;
 
 	SCC_InitChannel(1);
 	SCC_InitChannel(0);
@@ -720,13 +720,13 @@ static void SCC_TxBuffPut(uint8_t Data)
 */
 static void rx_complete()
 {
-	if (SCC.a[1].EndOfFrame) {
+	if (s_scc.a[1].EndOfFrame) {
 		ReportAbnormalID(AbnormalID::kSCC_EndOfFrame_true_in_rx_complete, "EndOfFrame true in rx_complete");
 	}
-	if (! SCC.a[1].RxChrAvail) {
+	if (! s_scc.a[1].RxChrAvail) {
 		ReportAbnormalID(AbnormalID::kSCC_RxChrAvail_false_in_rx_complete, "RxChrAvail false in rx_complete");
 	}
-	if (SCC.a[1].SyncHunt) {
+	if (s_scc.a[1].SyncHunt) {
 		ReportAbnormalID(AbnormalID::kSCC_SyncHunt_true_in_rx_complete, "SyncHunt true in rx_complete");
 	}
 
@@ -736,7 +736,7 @@ static void rx_complete()
 	*/
 	LT_RxBuffer = nullptr;
 
-	SCC.a[1].EndOfFrame = true;
+	s_scc.a[1].EndOfFrame = true;
 }
 
 static void SCC_RxBuffAdvance()
@@ -752,7 +752,7 @@ static void SCC_RxBuffAdvance()
 
 	if (nullptr == LT_RxBuffer) {
 		value = 0x7E;
-		SCC.a[1].RxChrAvail = false;
+		s_scc.a[1].RxChrAvail = false;
 	} else {
 		if (rx_data_offset < LT_RxBuffSz) {
 			value = LT_RxBuffer[rx_data_offset];
@@ -769,7 +769,7 @@ static void SCC_RxBuffAdvance()
 		++rx_data_offset;
 	}
 
-	SCC.a[1].RxBuff = value;
+	s_scc.a[1].RxBuff = value;
 }
 
 /*
@@ -778,8 +778,8 @@ static void SCC_RxBuffAdvance()
 */
 void SCCDevice::localTalkTick()
 {
-	if (SCC.a[1].RxEnable
-		&& (! SCC.a[1].RxChrAvail))
+	if (s_scc.a[1].RxEnable
+		&& (! s_scc.a[1].RxChrAvail))
 	{
 		if (nullptr != LT_RxBuffer) {
 #if SCC_dolog
@@ -791,9 +791,9 @@ void SCCDevice::localTalkTick()
 
 		if (nullptr != LT_RxBuffer) {
 			rx_data_offset  = 0;
-			SCC.a[1].EndOfFrame = false;
-			SCC.a[1].RxChrAvail = true;
-			SCC.a[1].SyncHunt = false;
+			s_scc.a[1].EndOfFrame = false;
+			s_scc.a[1].RxChrAvail = true;
+			s_scc.a[1].SyncHunt = false;
 
 			SCC_RxBuffAdvance();
 			/* We can update the rx interrupt if enabled */
@@ -827,17 +827,17 @@ static uint8_t SCC_GetRR0(int chan)
 	/* happens on boot always */
 
 	return 0
-		| (SCC.a[chan].TxUnderrun ? (1 << 6) : 0)
-		| (SCC.a[chan].SyncHunt ? (1 << 4) : 0)
+		| (s_scc.a[chan].TxUnderrun ? (1 << 6) : 0)
+		| (s_scc.a[chan].SyncHunt ? (1 << 4) : 0)
 #if EmLocalTalk
-		| (SCC.a[chan].TxBufferEmpty ? (1 << 2) : 0)
+		| (s_scc.a[chan].TxBufferEmpty ? (1 << 2) : 0)
 #else
 		/* otherwise TxBufferEmpty always true */
 		| (1 << 2)
 #endif
 #if EmLocalTalk
 		/* otherwise RxChrAvail always false */
-		| (SCC.a[chan].RxChrAvail ? (1 << 0) : 0)
+		| (s_scc.a[chan].RxChrAvail ? (1 << 0) : 0)
 #endif
 		;
 }
@@ -855,7 +855,7 @@ static uint8_t SCC_GetRR1(int chan)
 		| (1 << 0)
 #if EmLocalTalk
 		/* otherwise EndOfFrame always false */
-		| (SCC.a[chan].EndOfFrame ? (1 << 7) : 0)
+		| (s_scc.a[chan].EndOfFrame ? (1 << 7) : 0)
 #endif
 		;
 
@@ -867,7 +867,7 @@ static uint8_t SCC_GetRR2(int chan)
 	/* happens in MacCheck */
 	/* happens in Print to ImageWriter */
 
-	uint8_t value = SCC.InterruptVector;
+	uint8_t value = s_scc.InterruptVector;
 
 	if (0 != chan) { /* B Channel */
 		{
@@ -875,7 +875,7 @@ static uint8_t SCC_GetRR2(int chan)
 			value = value
 				& ((1 << 0) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7));
 
-			switch (SCC.SCC_Interrupt_Type) {
+			switch (s_scc.SCC_Interrupt_Type) {
 				case SCC_A_Rx:
 					value |= (1 << 3) | (1 << 2);
 					break;
@@ -914,7 +914,7 @@ static uint8_t SCC_GetRR2(int chan)
 			}
 		}
 
-		/* SCC.SCC_Interrupt_Type = 0; */
+		/* s_scc.SCC_Interrupt_Type = 0; */
 	}
 
 	return value;
@@ -937,15 +937,15 @@ static uint8_t SCC_GetRR8(int chan)
 
 	/* Receive Buffer */
 	/* happens on boot with appletalk on */
-	if (SCC.a[chan].RxEnable) {
+	if (s_scc.a[chan].RxEnable) {
 #if EmLocalTalk
 		if (0 != chan) {
 			/*
 				Check the receive state, handling a complete rx
 				if necessary
 			*/
-			value = SCC.a[1].RxBuff;
-			SCC.a[1].FirstChar = false;
+			value = s_scc.a[1].RxBuff;
+			s_scc.a[1].FirstChar = false;
 			SCC_RxBuffAdvance();
 		} else {
 			value = 0x7E;
@@ -986,7 +986,7 @@ static uint8_t SCC_GetRR12(int chan)
 	ReportAbnormalID(AbnormalID::kSCC_RR_12, "RR 12");
 
 #if SCC_TrackMore /* don't care about Baud */
-	value = SCC.a[chan].BaudLo;
+	value = s_scc.a[chan].BaudLo;
 #endif
 
 	return value;
@@ -1002,7 +1002,7 @@ static uint8_t SCC_GetRR13(int chan)
 	ReportAbnormalID(AbnormalID::kSCC_RR_13, "RR 13");
 
 #if SCC_TrackMore /* don't care about Baud */
-	value = SCC.a[chan].BaudHi;
+	value = s_scc.a[chan].BaudHi;
 #endif
 
 	return value;
@@ -1082,22 +1082,22 @@ static void SCC_PutWR0(uint8_t Data, int chan)
 			/* Null Code */
 			break;
 	}
-	SCC.PointerBits = Data & 0x07;
+	s_scc.PointerBits = Data & 0x07;
 	switch ((Data >> 3) & 7) {
 		case 1: /* Point High */
-			SCC.PointerBits |= 8;
+			s_scc.PointerBits |= 8;
 			break;
 		case 2:
 #if SCC_dolog
 			SCC_DbgLogChanCmnd(chan, "Reset Ext/Status Ints");
 #endif
 			/* happens on boot always */
-			SCC.a[chan].SyncHunt = false;
+			s_scc.a[chan].SyncHunt = false;
 			break;
 		case 3:
 			ReportAbnormalID(AbnormalID::kSCC_Send_Abort_SDLC, "Send Abort (SDLC)");
 #if EmLocalTalk
-			SCC.a[chan].TxBufferEmpty = true;
+			s_scc.a[chan].TxBufferEmpty = true;
 #endif
 			break;
 		case 4:
@@ -1106,7 +1106,7 @@ static void SCC_PutWR0(uint8_t Data, int chan)
 				"Enable Int on next Rx char");
 #endif
 #if EmLocalTalk || SCC_TrackMore
-			SCC.a[chan].FirstChar = true;
+			s_scc.a[chan].FirstChar = true;
 #endif
 			/* happens in MacCheck */
 			break;
@@ -1116,7 +1116,7 @@ static void SCC_PutWR0(uint8_t Data, int chan)
 #endif
 			/* happens in MacCheck */
 			/* happens in Print to ImageWriter */
-			SCC.a[chan].TxIP = false;
+			s_scc.a[chan].TxIP = false;
 			CheckSCCInterruptFlag();
 			break;
 		case 6:
@@ -1125,7 +1125,7 @@ static void SCC_PutWR0(uint8_t Data, int chan)
 #endif
 			/* happens on boot with appletalk on */
 #if EmLocalTalk
-			SCC.a[chan].EndOfFrame = false;
+			s_scc.a[chan].EndOfFrame = false;
 #endif
 			break;
 		case 7:
@@ -1149,8 +1149,8 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 #if EmLocalTalk || SCC_TrackMore
 	{
 		bool NewExtIE = (Data & (1 << 0)) != 0;
-		if (SCC.a[chan].ExtIE != NewExtIE) {
-			SCC.a[chan].ExtIE = NewExtIE;
+		if (s_scc.a[chan].ExtIE != NewExtIE) {
+			s_scc.a[chan].ExtIE = NewExtIE;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan, "EXT INT Enable",
 				NewExtIE);
@@ -1165,14 +1165,14 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 
 	{
 		bool NewTxIE = (Data & (1 << 1)) != 0;
-		if (SCC.a[chan].TxIE != NewTxIE) {
+		if (s_scc.a[chan].TxIE != NewTxIE) {
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan, "Tx Int Enable",
 				NewTxIE);
 #endif
 			/* happens in MacCheck */
 			/* happens in Print to ImageWriter */
-			SCC.a[chan].TxIE = NewTxIE;
+			s_scc.a[chan].TxIE = NewTxIE;
 			CheckSCCInterruptFlag();
 		}
 	}
@@ -1180,8 +1180,8 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewPrtySpclCond = (Data & (1 << 2)) != 0;
-		if (SCC.a[chan].PrtySpclCond != NewPrtySpclCond) {
-			SCC.a[chan].PrtySpclCond = NewPrtySpclCond;
+		if (s_scc.a[chan].PrtySpclCond != NewPrtySpclCond) {
+			s_scc.a[chan].PrtySpclCond = NewPrtySpclCond;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Parity is special condition", NewPrtySpclCond);
@@ -1197,8 +1197,8 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 #if EmLocalTalk || SCC_TrackMore
 	{
 		uint8_t NewRxIntMode = (Data >> 3) & 3;
-		if (SCC.a[chan].RxIntMode != NewRxIntMode) {
-			SCC.a[chan].RxIntMode = NewRxIntMode;
+		if (s_scc.a[chan].RxIntMode != NewRxIntMode) {
+			s_scc.a[chan].RxIntMode = NewRxIntMode;
 
 			switch (NewRxIntMode) {
 				case 0:
@@ -1213,7 +1213,7 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 						"Rx INT on 1st char"
 						" or special condition");
 #endif
-					SCC.a[chan].FirstChar = true;
+					s_scc.a[chan].FirstChar = true;
 					/* happens on boot with appletalk on */
 					break;
 				case 2:
@@ -1237,8 +1237,8 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewWaitRqstRT = (Data & (1 << 5)) != 0;
-		if (SCC.a[chan].WaitRqstRT != NewWaitRqstRT) {
-			SCC.a[chan].WaitRqstRT = NewWaitRqstRT;
+		if (s_scc.a[chan].WaitRqstRT != NewWaitRqstRT) {
+			s_scc.a[chan].WaitRqstRT = NewWaitRqstRT;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Wait/DMA request on receive/transmit",
@@ -1252,8 +1252,8 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewWaitRqstSlct = (Data & (1 << 6)) != 0;
-		if (SCC.a[chan].WaitRqstSlct != NewWaitRqstSlct) {
-			SCC.a[chan].WaitRqstSlct = NewWaitRqstSlct;
+		if (s_scc.a[chan].WaitRqstSlct != NewWaitRqstSlct) {
+			s_scc.a[chan].WaitRqstSlct = NewWaitRqstSlct;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Wait/DMA request function", NewWaitRqstSlct);
@@ -1266,8 +1266,8 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewWaitRqstEnbl = (Data & (1 << 7)) != 0;
-		if (SCC.a[chan].WaitRqstEnbl != NewWaitRqstEnbl) {
-			SCC.a[chan].WaitRqstEnbl = NewWaitRqstEnbl;
+		if (s_scc.a[chan].WaitRqstEnbl != NewWaitRqstEnbl) {
+			s_scc.a[chan].WaitRqstEnbl = NewWaitRqstEnbl;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Wait/DMA request enable", NewWaitRqstEnbl);
@@ -1293,14 +1293,14 @@ static void SCC_PutWR2(uint8_t Data, int chan)
 	UnusedParam(chan);
 #endif
 
-	if (SCC.InterruptVector != Data) {
+	if (s_scc.InterruptVector != Data) {
 #if SCC_dolog
 		SCC_DbgLogChanStartLine(chan);
 		dbglog_writeCStr(" InterruptVector <- ");
 		dbglog_writeHex(Data);
 		dbglog_writeReturn();
 #endif
-		SCC.InterruptVector = Data;
+		s_scc.InterruptVector = Data;
 	}
 	if ((Data & (1 << 0)) != 0) { /* interrupt vector 0 */
 		ReportAbnormalID(AbnormalID::kSCC_interrupt_vector_0, "interrupt vector 0");
@@ -1334,8 +1334,8 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		uint8_t NewRBitsPerChar = (Data >> 6) & 3;
-		if (SCC.a[chan].RBitsPerChar != NewRBitsPerChar) {
-			SCC.a[chan].RBitsPerChar = NewRBitsPerChar;
+		if (s_scc.a[chan].RBitsPerChar != NewRBitsPerChar) {
+			s_scc.a[chan].RBitsPerChar = NewRBitsPerChar;
 
 			switch (NewRBitsPerChar) {
 				case 0:
@@ -1380,8 +1380,8 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 		SCC_DbgLogChanCmnd(chan, "Enter Hunt Mode");
 #endif
 		/* happens on boot with appletalk on */
-		if (! (SCC.a[chan].SyncHunt)) {
-			SCC.a[chan].SyncHunt = true;
+		if (! (s_scc.a[chan].SyncHunt)) {
+			s_scc.a[chan].SyncHunt = true;
 
 		}
 	}
@@ -1389,8 +1389,8 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewRxCRCEnbl = (Data & (1 << 3)) != 0;
-		if (SCC.a[chan].RxCRCEnbl != NewRxCRCEnbl) {
-			SCC.a[chan].RxCRCEnbl = NewRxCRCEnbl;
+		if (s_scc.a[chan].RxCRCEnbl != NewRxCRCEnbl) {
+			s_scc.a[chan].RxCRCEnbl = NewRxCRCEnbl;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Rx CRC Enable", NewRxCRCEnbl);
@@ -1403,8 +1403,8 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 #if EmLocalTalk || SCC_TrackMore
 	{
 		bool NewAddrSrchMd = (Data & (1 << 2)) != 0;
-		if (SCC.a[chan].AddrSrchMd != NewAddrSrchMd) {
-			SCC.a[chan].AddrSrchMd = NewAddrSrchMd;
+		if (s_scc.a[chan].AddrSrchMd != NewAddrSrchMd) {
+			s_scc.a[chan].AddrSrchMd = NewAddrSrchMd;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Addr Search Mode (SDLC)", NewAddrSrchMd);
@@ -1420,8 +1420,8 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewSyncChrLdInhb = (Data & (1 << 1)) != 0;
-		if (SCC.a[chan].SyncChrLdInhb != NewSyncChrLdInhb) {
-			SCC.a[chan].SyncChrLdInhb = NewSyncChrLdInhb;
+		if (s_scc.a[chan].SyncChrLdInhb != NewSyncChrLdInhb) {
+			s_scc.a[chan].SyncChrLdInhb = NewSyncChrLdInhb;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Sync Char Load Inhibit", NewSyncChrLdInhb);
@@ -1433,8 +1433,8 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 
 	{
 		bool NewRxEnable = (Data & (1 << 0)) != 0;
-		if (SCC.a[chan].RxEnable != NewRxEnable) {
-			SCC.a[chan].RxEnable = NewRxEnable;
+		if (s_scc.a[chan].RxEnable != NewRxEnable) {
+			s_scc.a[chan].RxEnable = NewRxEnable;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Rx Enable", NewRxEnable);
@@ -1454,9 +1454,9 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 					Go back into the idle state if we were
 					waiting for EOF
 				*/
-				SCC.a[chan].EndOfFrame = false;
-				SCC.a[chan].RxChrAvail = false;
-				SCC.a[chan].SyncHunt = true;
+				s_scc.a[chan].EndOfFrame = false;
+				s_scc.a[chan].RxChrAvail = false;
+				s_scc.a[chan].SyncHunt = true;
 			} else {
 				/* look for a packet */
 				if (0 != chan) {
@@ -1479,8 +1479,8 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewPrtyEnable = (Data & (1 << 0)) != 0;
-		if (SCC.a[chan].PrtyEnable != NewPrtyEnable) {
-			SCC.a[chan].PrtyEnable = NewPrtyEnable;
+		if (s_scc.a[chan].PrtyEnable != NewPrtyEnable) {
+			s_scc.a[chan].PrtyEnable = NewPrtyEnable;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Parity Enable", NewPrtyEnable);
@@ -1492,8 +1492,8 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewPrtyEven = (Data & (1 << 1)) != 0;
-		if (SCC.a[chan].PrtyEven != NewPrtyEven) {
-			SCC.a[chan].PrtyEven = NewPrtyEven;
+		if (s_scc.a[chan].PrtyEven != NewPrtyEven) {
+			s_scc.a[chan].PrtyEven = NewPrtyEven;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Parity Enable", NewPrtyEven);
@@ -1505,8 +1505,8 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		uint8_t NewStopBits = (Data >> 2) & 3;
-		if (SCC.a[chan].StopBits != NewStopBits) {
-			SCC.a[chan].StopBits = NewStopBits;
+		if (s_scc.a[chan].StopBits != NewStopBits) {
+			s_scc.a[chan].StopBits = NewStopBits;
 
 			/* SCC_SetStopBits(chan, NewStopBits); */
 			switch (NewStopBits) {
@@ -1539,8 +1539,8 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 #if EmLocalTalk || SCC_TrackMore
 	{
 		uint8_t NewSyncMode = (Data >> 4) & 3;
-		if (SCC.a[chan].SyncMode != NewSyncMode) {
-			SCC.a[chan].SyncMode = NewSyncMode;
+		if (s_scc.a[chan].SyncMode != NewSyncMode) {
+			s_scc.a[chan].SyncMode = NewSyncMode;
 
 			switch (NewSyncMode) {
 				case 0:
@@ -1558,7 +1558,7 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 #endif
 					/* happens on boot with appletalk on */
 #if EmLocalTalk
-					SCC.a[chan].TxBufferEmpty = true;
+					s_scc.a[chan].TxBufferEmpty = true;
 #endif
 					break;
 				case 3:
@@ -1572,8 +1572,8 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		uint8_t NewClockRate = (Data >> 6) & 3;
-		if (SCC.a[chan].ClockRate != NewClockRate) {
-			SCC.a[chan].ClockRate = NewClockRate;
+		if (s_scc.a[chan].ClockRate != NewClockRate) {
+			s_scc.a[chan].ClockRate = NewClockRate;
 
 			switch (NewClockRate) {
 				case 0:
@@ -1611,8 +1611,8 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewTxCRCEnbl = (Data & (1 << 0)) != 0;
-		if (SCC.a[chan].TxCRCEnbl != NewTxCRCEnbl) {
-			SCC.a[chan].TxCRCEnbl = NewTxCRCEnbl;
+		if (s_scc.a[chan].TxCRCEnbl != NewTxCRCEnbl) {
+			s_scc.a[chan].TxCRCEnbl = NewTxCRCEnbl;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Tx CRC Enable", NewTxCRCEnbl);
@@ -1625,8 +1625,8 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewRTSctrl = (Data & (1 << 1)) != 0;
-		if (SCC.a[chan].RTSctrl != NewRTSctrl) {
-			SCC.a[chan].RTSctrl = NewRTSctrl;
+		if (s_scc.a[chan].RTSctrl != NewRTSctrl) {
+			s_scc.a[chan].RTSctrl = NewRTSctrl;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"RTS Control", NewRTSctrl);
@@ -1646,8 +1646,8 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 
 	{
 		bool NewTxEnable = (Data & (1 << 3)) != 0;
-		if (SCC.a[chan].TxEnable != NewTxEnable) {
-			SCC.a[chan].TxEnable = NewTxEnable;
+		if (s_scc.a[chan].TxEnable != NewTxEnable) {
+			s_scc.a[chan].TxEnable = NewTxEnable;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Tx Enable", NewTxEnable);
@@ -1663,7 +1663,7 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 #endif
 			} else {
 #if EmLocalTalk
-				SCC.a[chan].TxBufferEmpty = true;
+				s_scc.a[chan].TxBufferEmpty = true;
 #endif
 			}
 		}
@@ -1672,8 +1672,8 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewSndBrkCtrl = (Data & (1 << 4)) != 0;
-		if (SCC.a[chan].SndBrkCtrl != NewSndBrkCtrl) {
-			SCC.a[chan].SndBrkCtrl = NewSndBrkCtrl;
+		if (s_scc.a[chan].SndBrkCtrl != NewSndBrkCtrl) {
+			s_scc.a[chan].SndBrkCtrl = NewSndBrkCtrl;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Send Break Control", NewSndBrkCtrl);
@@ -1686,8 +1686,8 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		uint8_t NewTBitsPerChar = (Data >> 5) & 3;
-		if (SCC.a[chan].TBitsPerChar != NewTBitsPerChar) {
-			SCC.a[chan].TBitsPerChar = NewTBitsPerChar;
+		if (s_scc.a[chan].TBitsPerChar != NewTBitsPerChar) {
+			s_scc.a[chan].TBitsPerChar = NewTBitsPerChar;
 
 			switch (NewTBitsPerChar) {
 				case 0:
@@ -1715,8 +1715,8 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewDTRctrl = (Data & (1 << 7)) != 0;
-		if (SCC.a[chan].DTRctrl != NewDTRctrl) {
-			SCC.a[chan].DTRctrl = NewDTRctrl;
+		if (s_scc.a[chan].DTRctrl != NewDTRctrl) {
+			s_scc.a[chan].DTRctrl = NewDTRctrl;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"Data Terminal Ready Control", NewDTRctrl);
@@ -1768,7 +1768,7 @@ static void SCC_PutWR7(uint8_t Data, int chan)
 #endif
 
 #if SCC_TrackMore
-	if (2 == SCC.a[chan].SyncMode) {
+	if (2 == s_scc.a[chan].SyncMode) {
 		if (0x7E != Data) {
 			ReportAbnormalID(AbnormalID::kSCC_unexpect_flag_character_for_SDLC,
 				"unexpect flag character for SDLC");
@@ -1800,7 +1800,7 @@ static void SCC_PutWR8(uint8_t Data, int chan)
 	dbglog_writeReturn();
 #endif
 
-	if (SCC.a[chan].TxEnable) { /* Tx Enable */
+	if (s_scc.a[chan].TxEnable) { /* Tx Enable */
 		/* Output (Data) to Modem(B) or Printer(A) Port */
 
 		/* happens on boot with appletalk on */
@@ -1809,10 +1809,10 @@ static void SCC_PutWR8(uint8_t Data, int chan)
 			SCC_TxBuffPut(Data);
 		}
 #else
-		SCC.a[chan].TxUnderrun = true; /* underrun ? */
+		s_scc.a[chan].TxUnderrun = true; /* underrun ? */
 #endif
 
-		SCC.a[chan].TxIP = true;
+		s_scc.a[chan].TxIP = true;
 		CheckSCCInterruptFlag();
 	} else {
 		ReportAbnormalID(AbnormalID::kSCC_write_when_Transmit_Buffer_not_Enabled,
@@ -1837,8 +1837,8 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewNoVectorSlct = (Data & (1 << 1)) != 0;
-		if (SCC.NoVectorSlct != NewNoVectorSlct) {
-			SCC.NoVectorSlct = NewNoVectorSlct;
+		if (s_scc.NoVectorSlct != NewNoVectorSlct) {
+			s_scc.NoVectorSlct = NewNoVectorSlct;
 #if SCC_dolog
 			dbglog_WriteSetBool("SCC No Vector select",
 				NewNoVectorSlct);
@@ -1855,8 +1855,8 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 	{
 		bool NewMIE = (Data & (1 << 3)) != 0;
 			/* has both values on boot always */
-		if (SCC.MIE != NewMIE) {
-			SCC.MIE = NewMIE;
+		if (s_scc.MIE != NewMIE) {
+			s_scc.MIE = NewMIE;
 #if SCC_dolog
 			dbglog_WriteSetBool("SCC Master Interrupt Enable",
 				NewMIE);
@@ -1934,8 +1934,8 @@ static void SCC_PutWR10(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		uint8_t NewDataEncoding = (Data >> 5) & 3;
-		if (SCC.a[chan].DataEncoding != NewDataEncoding) {
-			SCC.a[chan].DataEncoding = NewDataEncoding;
+		if (s_scc.a[chan].DataEncoding != NewDataEncoding) {
+			s_scc.a[chan].DataEncoding = NewDataEncoding;
 
 			switch (NewDataEncoding) {
 				case 0:
@@ -1967,8 +1967,8 @@ static void SCC_PutWR10(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewCRCPreset = (Data & (1 << 7)) != 0;
-		if (SCC.a[chan].CRCPreset != NewCRCPreset) {
-			SCC.a[chan].CRCPreset = NewCRCPreset;
+		if (s_scc.a[chan].CRCPreset != NewCRCPreset) {
+			s_scc.a[chan].CRCPreset = NewCRCPreset;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"CRC preset I/O", NewCRCPreset);
@@ -1995,8 +1995,8 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 	/* Transmit External Control Selection */
 	{
 		uint8_t NewTRxCsrc = Data & 3;
-		if (SCC.a[chan].TRxCsrc != NewTRxCsrc) {
-			SCC.a[chan].TRxCsrc = NewTRxCsrc;
+		if (s_scc.a[chan].TRxCsrc != NewTRxCsrc) {
+			s_scc.a[chan].TRxCsrc = NewTRxCsrc;
 
 			switch (NewTRxCsrc) {
 				case 0:
@@ -2031,8 +2031,8 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		uint8_t NewTClkSlct = (Data >> 3) & 3;
-		if (SCC.a[chan].TClkSlct != NewTClkSlct) {
-			SCC.a[chan].TClkSlct = NewTClkSlct;
+		if (s_scc.a[chan].TClkSlct != NewTClkSlct) {
+			s_scc.a[chan].TClkSlct = NewTClkSlct;
 
 			switch (NewTClkSlct) {
 				case 0:
@@ -2067,8 +2067,8 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		uint8_t NewRClkSlct = (Data >> 5) & 3;
-		if (SCC.a[chan].RClkSlct != NewRClkSlct) {
-			SCC.a[chan].RClkSlct = NewRClkSlct;
+		if (s_scc.a[chan].RClkSlct != NewRClkSlct) {
+			s_scc.a[chan].RClkSlct = NewRClkSlct;
 
 			switch (NewRClkSlct) {
 				case 0:
@@ -2119,8 +2119,8 @@ static void SCC_PutWR12(uint8_t Data, int chan)
 #endif
 
 #if SCC_TrackMore /* don't care about Baud */
-	if (SCC.a[chan].BaudLo != Data) {
-		SCC.a[chan].BaudLo = Data;
+	if (s_scc.a[chan].BaudLo != Data) {
+		s_scc.a[chan].BaudLo = Data;
 
 #if SCC_dolog
 		SCC_DbgLogChanStartLine(chan);
@@ -2145,8 +2145,8 @@ static void SCC_PutWR13(uint8_t Data, int chan)
 #endif
 
 #if SCC_TrackMore /* don't care about Baud */
-	if (SCC.a[chan].BaudHi != Data) {
-		SCC.a[chan].BaudHi = Data;
+	if (s_scc.a[chan].BaudHi != Data) {
+		s_scc.a[chan].BaudHi = Data;
 
 #if SCC_dolog
 		SCC_DbgLogChanStartLine(chan);
@@ -2171,8 +2171,8 @@ static void SCC_PutWR14(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewBRGEnbl = (Data & (1 << 0)) != 0;
-		if (SCC.a[chan].BRGEnbl != NewBRGEnbl) {
-			SCC.a[chan].BRGEnbl = NewBRGEnbl;
+		if (s_scc.a[chan].BRGEnbl != NewBRGEnbl) {
+			s_scc.a[chan].BRGEnbl = NewBRGEnbl;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"BR generator enable", NewBRGEnbl);
@@ -2276,8 +2276,8 @@ static void SCC_PutWR15(uint8_t Data, int chan)
 #if SCC_TrackMore /* don't care about CTS_IE */
 	{
 		bool NewCTS_IE = (Data & (1 << 5)) != 0;
-		if (SCC.a[chan].CTS_IE != NewCTS_IE) {
-			SCC.a[chan].CTS_IE = NewCTS_IE;
+		if (s_scc.a[chan].CTS_IE != NewCTS_IE) {
+			s_scc.a[chan].CTS_IE = NewCTS_IE;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"CTS IE", NewCTS_IE);
@@ -2295,8 +2295,8 @@ static void SCC_PutWR15(uint8_t Data, int chan)
 #if SCC_TrackMore
 	{
 		bool NewBreakAbortIE = (Data & (1 << 7)) != 0;
-		if (SCC.a[chan].BreakAbortIE != NewBreakAbortIE) {
-			SCC.a[chan].BreakAbortIE = NewBreakAbortIE;
+		if (s_scc.a[chan].BreakAbortIE != NewBreakAbortIE) {
+			s_scc.a[chan].BreakAbortIE = NewBreakAbortIE;
 #if SCC_dolog
 			SCC_DbgLogChanChngBit(chan,
 				"BreakAbort IE", NewBreakAbortIE);
@@ -2492,8 +2492,8 @@ static void SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 	int chan = (~ addr) & 1; /* 0=modem, 1=printer */
 	if (((addr >> 1) & 1) == 0) {
 		/* Channel Control */
-		SCC_Reg = SCC.PointerBits;
-		SCC.PointerBits = 0;
+		SCC_Reg = s_scc.PointerBits;
+		s_scc.PointerBits = 0;
 	} else {
 		/* Channel Data */
 		SCC_Reg = 8;
