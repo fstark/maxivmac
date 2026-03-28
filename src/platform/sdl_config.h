@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +13,6 @@
 
 #define EnableDragDrop 1
 #define MyAppIsBundle 0
-#define WantOSGLUSDL 1
 
 #define kStrAppName "Maxi vMac"
 #define kAppVariationStr "maxivmac-sdl"

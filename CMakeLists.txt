@@ -96,16 +96,10 @@ list(APPEND MINIVMAC_SOURCES src/platform/sdl.cpp)
 
 add_executable(maxivmac ${MINIVMAC_SOURCES})
 
-# Try SDL3 first, fall back to SDL2
-find_package(SDL3 QUIET)
-if(SDL3_FOUND)
-    message(STATUS "Found SDL3")
-    target_link_libraries(maxivmac PRIVATE SDL3::SDL3)
-else()
-    find_package(SDL2 REQUIRED)
-    message(STATUS "Found SDL2")
-    target_link_libraries(maxivmac PRIVATE SDL2::SDL2)
-endif()
+# Try SDL3
+find_package(SDL3 REQUIRED)
+message(STATUS "Found SDL3")
+target_link_libraries(maxivmac PRIVATE SDL3::SDL3)
 
 # On Linux, we may need X11
 if(UNIX AND NOT APPLE)
