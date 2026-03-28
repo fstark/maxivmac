@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "CNFUDOSG.h"
+#include "platform/platform_config.h"
 	/*
 		Configuration file dependent on user options
 		for operating system glue.
