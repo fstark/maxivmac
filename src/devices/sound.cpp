@@ -83,6 +83,8 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 	writing offset 0 before it is read.
 */
 
+/* Copy one sub-tick slice of the sound buffer from Mac RAM,
+   applying volume scaling and phase inversion as needed. */
 void SoundDevice::subTick(int SubTick)
 {
 	uint16_t actL;

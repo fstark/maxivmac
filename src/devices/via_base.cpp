@@ -230,6 +230,11 @@ uint8_t VIABase::shiftOutData()
 #define CyclesPerViaTime (10 * machine_->config().clockMult)
 #define CyclesScaledPerViaTime (kCycleScale * CyclesPerViaTime)
 
+/*
+	Update Timer 1: subtract elapsed cycles, fire interrupt
+	if countdown expires.  In free-running mode, reload from
+	latch and optionally toggle port B bit 7.
+*/
 void VIABase::doTimer1Check()
 {
 	if (T1Running) {
@@ -371,6 +376,11 @@ void VIABase::doTimer2Check()
 #define kIER    0x0E
 #define kORA    0x0F
 
+/*
+	VIA register read/write dispatcher.
+	Handles all 16 registers: data ports, DDR, timers,
+	shift register, ACR, PCR, IFR, and IER.
+*/
 uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 	const auto& acfg = viaConfig();

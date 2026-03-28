@@ -20,6 +20,7 @@ static std::string toLower(const std::string& s)
 	return result;
 }
 
+// Map a model name string to MacModel enum (case-insensitive).
 bool ParseModelName(const std::string& name, MacModel& out)
 {
 	std::string lower = toLower(name);
@@ -134,6 +135,10 @@ void PrintUsage(const char* progname)
 		progname, langCodes.c_str(), progname, progname);
 }
 
+/*
+	Parse all command-line arguments into a LaunchConfig.
+	Unrecognised arguments are treated as disk image paths.
+*/
 LaunchConfig ParseCommandLine(int argc, char* argv[])
 {
 	LaunchConfig lc;
@@ -326,6 +331,7 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 	return lc;
 }
 
+// Apply launch overrides (RAM, screen, depth) to the base model config.
 MachineConfig BuildMachineConfig(const LaunchConfig& launch)
 {
 	MachineConfig config = MachineConfigForModel(launch.model);
@@ -396,6 +402,10 @@ static bool fileExists(const std::string& path)
 	return false;
 }
 
+/*
+	Search CWD, romDir, and ~/roms/ for the ROM file.
+	Returns the model-default filename if no explicit path given.
+*/
 std::string ResolveRomPath(const std::string& romPath, MacModel model, const std::string& romDir)
 {
 	if (!romPath.empty())

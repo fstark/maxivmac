@@ -270,6 +270,11 @@ static void Drive_UpdateChecksums(tDrive Drive_No)
 
 #define Sony_SupportOtherFormats Sony_SupportDC42
 
+/*
+	Find the next pending disk, read its header, detect
+	format (raw, DC42, or with tags), and configure the
+	drive's data/tag offsets and image size.
+*/
 static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
 {
 	tDrive i;
@@ -625,6 +630,11 @@ void SonyDevice::reset()
 #define kParamDiskBuffer 16
 #define kParamDiskDrive_No 20
 
+/*
+	Extension trap: handle low-level disk commands
+	(NDrives, Insert, Eject, GetSize, GetName, etc.)
+	from the guest via the parameter block at p.
+*/
 void SonyDevice::extnDiskAccess(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
@@ -1501,6 +1511,11 @@ static tMacErr Sony_OpenC(uint32_t p)
 #define kCmndSonyOpenC 7
 #define kCmndSonyMount 8
 
+/*
+	Extension trap: dispatch the Sony replacement driver.
+	Handles Open (three phases), Prime, Control, Status,
+	and Close through the parameter block at p.
+*/
 void SonyDevice::extnSonyAccess(uint32_t p)
 {
 	tMacErr result;

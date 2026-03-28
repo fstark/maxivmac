@@ -84,6 +84,10 @@ bool KeyboardDevice::attemptToFinishInquiry()
 		to keep connection.
 	*/
 
+/*
+	ICT callback: read the command byte from VIA1 shift register.
+	Dispatches Inquiry, Instant, and Model commands.
+*/
 void KeyboardDevice::receiveCommand()
 {
 	if (kybdState_ != kKybdStateRecievingCommand) {
@@ -147,6 +151,10 @@ void KeyboardDevice::receiveEndCommand()
 	}
 }
 
+/*
+	VIA1 CB2 edge handler.  Drives the keyboard protocol
+	state machine: idle → receiving → received → end.
+*/
 void KeyboardDevice::dataLineChngNtfy()
 {
 	switch (kybdState_) {

@@ -1,3 +1,7 @@
+/*
+	Sound — Audio output via square-wave inversion (compact Macs)
+	or ASC (Mac II family)
+*/
 #pragma once
 
 #include "devices/device.h"

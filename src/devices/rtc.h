@@ -1,3 +1,6 @@
+/*
+	RTC — Real-Time Clock (serial bit-bang protocol via VIA)
+*/
 #pragma once
 
 #include "devices/device.h"
@@ -12,7 +15,11 @@ public:
 	const char* name() const override { return "RTC"; }
 
 	bool init();
+
+	// One-second tick: advance the clock counter.
 	void interrupt();
+
+	// VIA wire callbacks for the serial bit-bang protocol.
 	void unEnabledChangeNtfy();
 	void clockChangeNtfy();
 	void dataLineChangeNtfy();

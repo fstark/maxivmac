@@ -80,6 +80,11 @@ static void ASC_ClearFIFO()
 	ASC_RecalcStatus();
 }
 
+/*
+	ASC register read/write.  Handles the 2K FIFO sample
+	buffers, control/mode/volume registers, and wavetable
+	frequency/phase parameters.
+*/
  uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 	if (addr < 0x800) {
@@ -470,8 +475,11 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 	23,  23,  23,  23,  23,  23,  23,  24,
 	23,  23,  23,  23,  23,  23,  23,  24
 };
-
-void ASCDevice::subTick(int SubTick)
+/*
+	Generate audio samples for one sub-tick.  In FIFO mode,
+	drains the sample buffer; in wavetable mode, steps
+	through the 512-byte wave at the programmed frequency.
+*/void ASCDevice::subTick(int SubTick)
 {
 	uint16_t actL;
 	tpSoundSamp p;

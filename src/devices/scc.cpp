@@ -568,6 +568,7 @@ static void SCC_InitChannel(int chan)
 #endif
 }
 
+/* Clear all per-channel register state to post-reset defaults. */
 static void SCC_ResetChannel(int chan)
 {
 /* RR 0 */
@@ -681,6 +682,8 @@ static void SCC_ResetChannel(int chan)
 
 }
 
+/* Reset all SCC state: clear interrupt vector, pointer bits, and
+   reinitialise both channels to power-on defaults. */
 void SCCDevice::reset()
 {
 	g_wires.set(Wire_VIA1_iA7_SCCwaitrq, 1);

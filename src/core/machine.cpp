@@ -49,6 +49,7 @@ extern void put_vm_long(uint32_t addr, uint32_t l);
 
 uint32_t my_disk_icon_addr;
 
+// Reset all emulated devices to their power-on state.
 void customreset()
 {
 	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
@@ -307,6 +308,11 @@ static tMacErr PbufTransferVM(uint32_t Buffera,
 #define kCmndPbufTransfer 5
 #endif
 
+/*
+	Handle extension parameter-buffer commands from guest.
+	Dispatches New, Dispose, GetSize, and Transfer operations
+	on host-side parameter buffers.
+*/
 #if IncludeExtnPbufs
 static void ExtnParamBuffers_Access(uint32_t p)
 {
@@ -441,6 +447,10 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 #define kParamFindExtnTheExtn 8
 #define kParamFindExtnTheId 12
 
+/*
+	Look up a ROM extension by its four-byte signature.
+	Returns the extension slot index to the guest.
+*/
 static void ExtnFind_Access(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;
@@ -540,6 +550,12 @@ static void ExtnFind_Access(uint32_t p)
 
 static uint16_t ParamAddrHi;
 
+/*
+	Main extension dispatch.  Called when the guest writes the
+	parameter-block address to the extension I/O ports.
+	Routes to the handler for the extension ID stored in
+	the parameter block.
+*/
 static void Extn_Access(uint32_t Data, uint32_t addr)
 {
 	switch (addr) {
@@ -685,6 +701,7 @@ static ATTer ATTListA[kATTListMax];
 static uint16_t LastATTel;
 
 
+// Append an entry to the address translation table.
 static void AddToATTList(ATTep p)
 {
 	uint16_t NewLast = LastATTel + 1;
@@ -1292,6 +1309,11 @@ static void SetUpMemBanks()
 }
 
 
+/*
+	Dispatch a memory-mapped device access.  Routes the
+	read/write to the correct device handler based on
+	the MMDV tag in the ATT entry.
+*/
  uint32_t MMDV_Access(ATTep p, uint32_t Data,
 	bool WriteMem, bool ByteSize, uint32_t addr)
 {
@@ -1624,6 +1646,12 @@ void SetInterruptButton(bool v)
 
 static uint8_t CurIPL = 0;
 
+/*
+	Recalculate the CPU interrupt priority level from
+	VIA1, VIA2, SCC, and NMI button state.
+	Mac II uses a 3-bit priority scheme; compact Macs
+	use a simpler two-source encoding.
+*/
 void VIAorSCCinterruptChngNtfy()
 {
 	uint8_t NewIPL;

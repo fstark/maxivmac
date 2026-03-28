@@ -248,6 +248,8 @@ static void FindLastChangeInLVecs(uibb *ptr1, uibb *ptr2,
 	*j = p1 - ptr1;
 }
 
+/* Scan left/right within changed rows to find the narrowest
+   bounding box of differing pixels per scanline. */
 static void FindLeftRightChangeInLMat(uibb *ptr1, uibb *ptr2,
 	uint32_t width, uint32_t top, uint32_t bottom,
 	uint32_t *LeftMin0, uibr *LeftMask0,
@@ -319,6 +321,9 @@ static uint32_t NextDrawRow = 0;
 bool ColorTransValid = false;
 #endif
 
+/* Compare current and previous screen buffers row-by-row to
+   find the dirty rectangle, limiting work per tick for smooth
+   animation.  Copies changed rows to the shadow buffer. */
 static bool ScreenFindChanges(uint8_t * screencurrentbuff,
 	int8_t TimeAdjust, int16_t *top, int16_t *left, int16_t *bottom, int16_t *right)
 {
@@ -564,6 +569,8 @@ int16_t ScreenChangedQuietLeft = vMacScreenWidth;
 int16_t ScreenChangedQuietBottom = 0;
 int16_t ScreenChangedQuietRight = 0;
 
+/* Find the changed region since last frame and notify the
+   platform layer (HaveChangedScreenBuff) for display update. */
 void Screen_OutputFrame(uint8_t * screencurrentbuff)
 {
 	int16_t top;

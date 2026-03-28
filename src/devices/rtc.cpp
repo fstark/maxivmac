@@ -124,7 +124,11 @@ void DumpRTC()
 }
 #endif
 
- bool RTCDevice::init()
+ /*
+	Initialize PRAM with model-specific defaults and
+	set the clock from the host system date.
+*/
+bool RTCDevice::init()
 {
 	int Counter;
 	uint32_t secs;
@@ -300,6 +304,7 @@ void DumpRTC()
 	return true;
 }
 
+// Advance the RTC seconds counter by the host-time delta.
 void RTCDevice::interrupt()
 {
 	uint32_t Seconds = 0;
@@ -373,6 +378,11 @@ static uint8_t RTC_Access_Reg(uint8_t Data, bool WriteReg, uint8_t TheCmd)
 	return Data;
 }
 
+/*
+	Process a complete RTC serial command.  Decodes standard
+	and extended commands, then reads/writes the target
+	register or PRAM byte.
+*/
 static void RTC_DoCmd()
 {
 	switch (RTC.Mode) {

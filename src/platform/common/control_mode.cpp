@@ -21,6 +21,8 @@ bool NeedWholeScreenDraw = false;
 
 uint8_t * CntrlDisplayBuff = nullptr;
 
+/* Render an 8x16 character bitmap at screen coordinates (h, v),
+   handling all supported color depths (1-bit through 32-bit). */
 void DrawCell(unsigned int h, unsigned int v, int x)
 {
 #if 1
@@ -156,6 +158,8 @@ void DrawCellsBlankLine()
 	DrawCellsEndLine();
 }
 
+/* Render a string with automatic word-wrapping at the control
+   panel width boundary. */
 void DrawCellsFromStr(const char *s)
 {
 	uint8_t ps[ClStrMaxLength];
@@ -231,6 +235,8 @@ void DrawCellsKeyCommand(const char *k, const char *s)
 
 typedef void (*SpclModeBody) ();
 
+/* Draw a special-mode frame with icon strip, title, body
+   content, and bottom border. */
 void DrawSpclMode0(const char *Title, SpclModeBody Body)
 {
 	int i;
@@ -367,6 +373,8 @@ void DoMessageModeKey(uint8_t key)
 	}
 }
 
+/* Activate the message overlay, replacing any currently
+   displayed message. */
 void MacMsgOverride(const char *briefMsg, const char *longMsg)
 {
 	if (MacMsgDisplayed) {

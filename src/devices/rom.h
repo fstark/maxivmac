@@ -1,3 +1,6 @@
+/*
+	ROM — Read-only memory device
+*/
 #pragma once
 
 #include "devices/device.h"

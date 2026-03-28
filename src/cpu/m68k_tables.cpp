@@ -49,6 +49,7 @@ enum {
 
 #define kMyAvgCycPerInstr (10 * kCycleScale + (40 * kCycleScale / 64))
 
+// Map operation size (1/2/4) to the register addressing mode.
 static uint8_t GetAMdRegSz(WorkR *p)
 {
 	uint8_t CurAMd;
@@ -69,6 +70,7 @@ static uint8_t GetAMdRegSz(WorkR *p)
 	return CurAMd;
 }
 
+// Map operation size (1/2/4) to the indirect addressing mode.
 static uint8_t GetAMdIndirectSz(WorkR *p)
 {
 	uint8_t CurAMd;
@@ -89,6 +91,8 @@ static uint8_t GetAMdIndirectSz(WorkR *p)
 	return CurAMd;
 }
 
+/* Calculate the read cycle penalty for the given effective
+   address mode and register combination. */
 #if WantCycByPriOp
 static uint16_t OpEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
@@ -242,6 +246,8 @@ static void SetDcoArgFields(WorkR *p, bool src,
 	}
 }
 
+/* Validate an addressing mode against the set of modes allowed
+   by the current instruction, and populate the decoded-op fields. */
 static bool CheckValidAddrMode(WorkR *p,
 	uint8_t m, uint8_t r, uint8_t v, bool src)
 {
@@ -585,6 +591,8 @@ static uint32_t octdat(uint32_t x)
 	}
 }
 
+/* Decode an opcode class 0 instruction: bit operations, MOVEP,
+   immediate arithmetic, and static/dynamic bit test/modify. */
 static inline void DeCode0(WorkR *p)
 {
 	if (b8(p) == 1) {
@@ -2857,6 +2865,8 @@ static inline void DeCodeF(WorkR *p)
 #endif
 }
 
+/* Dispatch opcode to one of the 16 class decoders (0-F) and
+   finalise the decoded instruction record. */
 static void DeCodeOneOp(WorkR *p)
 {
 	switch (p->opcode >> 12) {
@@ -2983,6 +2993,8 @@ static bool isFPUKind(uint8_t kind)
 	}
 }
 
+/* Build the full 64K instruction decode table, then patch out
+   instructions not supported by the configured CPU model. */
 void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 {
 	uint32_t i;

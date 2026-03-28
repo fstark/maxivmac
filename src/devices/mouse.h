@@ -1,3 +1,6 @@
+/*
+	Mouse — Mouse position and button tracking
+*/
 #pragma once
 
 #include "devices/device.h"

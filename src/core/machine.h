@@ -1,5 +1,13 @@
+/*
+	machine — Legacy global hardware definitions
+
+	Model constants, memory globals (RAM, ROM, VidMem), address
+	translation table (ATT), device memory dispatch, interrupt
+	scheduling, wires, and extension definitions.
+*/
 #pragma once
 
+/* --- Mac model IDs --- */
 
 #define kEmMd_Twig43      0
 #define kEmMd_Twiggy      1
@@ -16,6 +24,8 @@
 
 #define RAMSafetyMarginFudge 4
 
+/* --- Memory globals --- */
+
 extern uint8_t * RAM;
 	/*
 		allocated by OSGLUxxx to be at least
@@ -27,6 +37,7 @@ extern uint8_t * RAM;
 extern uint8_t * VidROM;
 extern uint8_t * VidMem;
 
+// Rebuild the address translation table after overlay/32-bit mode change.
 extern void MemOverlay_ChangeNtfy();
 
 extern void Addr32_ChangeNtfy();
@@ -40,6 +51,7 @@ extern void Addr32_ChangeNtfy();
 	mapping of address space to real memory
 */
 
+// Map a guest address to a host pointer.  Returns nullptr on failure.
 extern uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
 	uint32_t *actL);
 
@@ -78,6 +90,7 @@ extern uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
 	real memory, i.e. memory mapped devices
 */
 
+// Initialize the address space (build ATT from machine config).
 extern bool AddrSpac_Init();
 
 
@@ -131,6 +144,8 @@ extern void VIAorSCCinterruptChngNtfy();
 extern bool InterruptButton;
 extern void SetInterruptButton(bool v);
 
+/* --- Interrupt scheduling (ICT) --- */
+
 enum {
 	kICT_SubTick,
 	kICT_Kybd_ReceiveCommand,
@@ -145,6 +160,7 @@ enum {
 	kNumICTs
 };
 
+// Schedule a task to fire after n cycles.
 extern void ICT_add(int taskid, uint32_t n);
 
 using iCountt = uint32_t;
@@ -169,6 +185,8 @@ extern bool FindKeyEvent(int *VirtualKey, bool *KeyDown);
 
 
 /* maxivmac extensions */
+
+/* --- Extension IDs (guest-to-host trap interface) --- */
 
 #define ExtnDat_checkval 0
 #define ExtnDat_extension 2
@@ -205,6 +223,10 @@ extern void Extn_Reset();
 
 extern void customreset();
 
+/*
+	Address Translation Table entry.
+	Maps a guest address range to host memory or a device handler.
+*/
 class Device; // forward declaration for ATT Device* dispatch
 
 struct ATTer {
@@ -233,6 +255,9 @@ constexpr int kATTA_writereadymask = (1 << kATTA_writereadybit);
 constexpr int kATTA_mmdvmask       = (1 << kATTA_mmdvbit);
 constexpr int kATTA_ntfymask       = (1 << kATTA_ntfybit);
 
+// Dispatch a memory-mapped device access through the ATT entry.
 extern uint32_t MMDV_Access(ATTep p, uint32_t Data,
 	bool WriteMem, bool ByteSize, uint32_t addr);
+
+// Notify callback when a memory region is first accessed.
 extern bool MemAccessNtfy(ATTep pT);

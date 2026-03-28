@@ -44,6 +44,8 @@ void SCSIDevice::reset()
 	}
 }
 
+/* Reset all NCR5380 registers to post-RST defaults and poke
+   the Mac RAM SCSI flag so the driver knows reset occurred. */
 static void SCSI_BusReset()
 {
 	SCSI[scsiRd + sCDR] = 0;
@@ -67,6 +69,8 @@ static void SCSI_BusReset()
 	put_ram_word(0xb22, get_ram_word(0xb22) | 0x8000);
 }
 
+/* Run the NCR5380 state machine: handle arbitration, selection,
+   and bus-free phases based on written register values. */
 static void SCSI_Check()
 {
 	/*

@@ -1,3 +1,7 @@
+/*
+	VIA1 — Versatile Interface Adapter (primary) implementation
+*/
+
 #include "core/common.h"
 #include "devices/via.h"
 #include "core/machine_obj.h"

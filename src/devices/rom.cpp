@@ -176,6 +176,11 @@ static uint32_t getSonyDriverBase() {
 }
 #define Sony_DriverBase getSonyDriverBase()
 
+/*
+	Patch the Sony disk driver into ROM at the model-specific
+	base address, followed by the extension trap, disk icon,
+	and optional screen-size hack.
+*/
 #if UseSonyPatch
 static void Sony_Install()
 {
@@ -248,6 +253,11 @@ static void ROMscrambleForMTB()
 }
 #endif
 
+/*
+	Patch the ROM image: disable checksum/RAM test, install
+	the Sony replacement driver, apply Happy Mac hack,
+	and scramble for multi-bank configurations.
+*/
  bool ROMDevice::init()
 {
 #if DisableRomCheck

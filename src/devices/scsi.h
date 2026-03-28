@@ -1,3 +1,6 @@
+/*
+	SCSI — SCSI bus controller
+*/
 #pragma once
 
 #include "devices/device.h"

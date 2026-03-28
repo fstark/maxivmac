@@ -1,3 +1,6 @@
+/*
+	IWM — Integrated Woz Machine floppy disk controller
+*/
 #pragma once
 
 #include "devices/device.h"

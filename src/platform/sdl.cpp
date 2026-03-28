@@ -1,4 +1,9 @@
+/*
+	SDL platform backend
 
+	Window management, audio, input, file I/O, screen rendering,
+	and event loop for macOS / Linux / Windows via SDL2.
+*/
 
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
@@ -53,6 +58,7 @@ static char *pref_dir = nullptr;
 static SDL_AudioStream *stream = nullptr;
 #endif
 
+// Build a full path from directory x and filename y, adding separator.
 static tMacErr ChildPath(char *x, char *y, char **r)
 {
 	tMacErr err = mnvm_miscErr;
@@ -167,6 +173,7 @@ void dbglog_close0()
 
 /* --- text translation --- */
 
+// Convert a macro-expansion string to native ASCII for platform use.
 static void NativeStrFromCStr(char *r, const char *s)
 {
 	uint8_t ps[ClStrMaxLength];
@@ -343,6 +350,8 @@ static void UnInitDrives()
 	}
 }
 
+/* Register an open file as an inserted disk image.
+   Finds a free drive slot and marks it inserted. */
 static bool Sony_Insert0(FILE * refnum, bool locked,
 	char *drivepath)
 {
@@ -378,6 +387,7 @@ static bool Sony_Insert0(FILE * refnum, bool locked,
 	return IsOk;
 }
 
+// Open a disk image (read-write if possible, else read-only).
 static bool Sony_Insert1(char *drivepath, bool silentfail)
 {
 	bool locked = false;
@@ -444,6 +454,8 @@ static void MakeNewDisk(uint32_t L, char *drivename)
 	fprintf(stderr, "Exported file: %s\n", s);
 }
 
+/* Open a ROM file, validate its size, and copy into the emulator
+   ROM buffer.  Reports user-visible errors on failure. */
 static tMacErr LoadMacRomFrom(char *path)
 {
 	tMacErr err;
@@ -492,6 +504,8 @@ static bool Sony_Insert1a(char *drivepath, bool silentfail)
 }
 #endif
 
+/* Resolve a disk path relative to the working directory or
+   app parent, then attempt to insert it. */
 static bool Sony_Insert2(char *s)
 {
 	char *d =
@@ -913,6 +927,8 @@ static uint8_t * CLUT_final;
 #endif /* ! UseSDLscaling */
 
 
+/* Convert a dirty rectangle of the emulated framebuffer into
+   host pixels and present it via the SDL texture/surface. */
 static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	uint16_t bottom, uint16_t right)
 {
@@ -1482,6 +1498,7 @@ static void CheckMouseState()
 /* --- keyboard input --- */
 
 #if 1 == SDL_MAJOR_VERSION
+// Map an SDL key symbol to the corresponding Mac key code.
 static uint8_t SDLKey2MacKeyCode(SDLKey i)
 {
 	uint8_t v = MKC_None;
@@ -3621,6 +3638,8 @@ static bool CaughtMouse = false;
 #endif
 
 #if 0 != SDL_MAJOR_VERSION
+/* Dispatch an SDL event: quit, keyboard, mouse, window resize,
+   drag-and-drop, etc. */
 static void HandleTheEvent(SDL_Event *event)
 {
 	#if SDL_MAJOR_VERSION >= 3
@@ -4968,6 +4987,8 @@ static void UninitWhereAmI()
 }
 #endif
 
+/* Perform all platform initialisation in order: allocate memory,
+   parse arguments, load ROM and disks, create window and sound. */
 static bool InitOSGLU()
 {
 #define INIT_STEP(name, expr) \

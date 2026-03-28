@@ -1,3 +1,7 @@
+/*
+	VIA2 — Versatile Interface Adapter (Mac II family) implementation
+*/
+
 #include "core/common.h"
 #include "devices/via2.h"
 #include "core/machine_obj.h"

@@ -1,3 +1,6 @@
+/*
+	Video — Display output and video mode management
+*/
 #pragma once
 
 #include "devices/device.h"

@@ -134,6 +134,12 @@ static void PatchAnEndOfLst()
 	PatchADatLstEntry(0xFF /* endOfList */, 0x00000000);
 }
 
+/*
+	Build the Mac II slot ROM image in VidROM.
+	Constructs sResource directory, board/video type entries,
+	video driver code, and mode parameter blocks for mono
+	and (optionally) color modes.
+*/
  bool VideoDevice::init()
 {
 	int i;
@@ -492,6 +498,12 @@ void VideoDevice::reset()
 	vidReset();
 }
 
+/*
+	Handle video extension trap from the guest driver.
+	Dispatches control (SetVidMode, SetEntries, SetGamma,
+	GrayScreen) and status (GetMode, GetPages, GetGray)
+	commands.
+*/
 void VideoDevice::extnVideoAccess(uint32_t p)
 {
 	tMacErr result = mnvm_controlErr;

@@ -150,6 +150,10 @@ bool StateRecorder::readHeader(const std::string& path, HeaderInfo& out)
 
 // ── init ───────────────────────────────────────────────
 
+/*
+	Open golden file for record or verify, set up text logs,
+	and validate header (model, snapshot count, interval).
+*/
 bool StateRecorder::init(const Config& cfg)
 {
 	mode_             = cfg.mode;

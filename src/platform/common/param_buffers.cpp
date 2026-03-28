@@ -12,6 +12,7 @@
 
 void *PbufDat[NumPbufs];
 
+/* Allocate a Pbuf descriptor for an existing memory pointer. */
 tMacErr PbufNewFromPtr(void *p, uint32_t count, tPbuf *r)
 {
 	tPbuf i;
@@ -76,6 +77,7 @@ uint8_t * PbufLock(tPbuf i)
 	return static_cast<uint8_t *>(PbufDat[i]);
 }
 
+/* Copy data between a Pbuf and host memory at the given offset. */
 void PbufTransfer(uint8_t * Buffer,
 	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
 {

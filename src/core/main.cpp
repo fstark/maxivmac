@@ -40,6 +40,7 @@
 
 ICTScheduler g_ict;
 
+// Reset memory, scheduler, and all devices to power-on state.
 static void EmulatedHardwareZap()
 {
 	Memory_Reset();
@@ -60,6 +61,7 @@ static void DoMacReset()
 	EmulatedHardwareZap();
 }
 
+// Process interrupt-button and reset-button requests once per tick.
 static void InterruptReset_Update()
 {
 	SetInterruptButton(false);
@@ -78,6 +80,7 @@ static void InterruptReset_Update()
 	}
 }
 
+// Route audio sub-tick to the active sound device.
 static void SubTickNotify(int SubTick)
 {
 	if (g_machine->config().emClassicSnd) {
@@ -94,6 +97,7 @@ static void SubTickNotify(int SubTick)
 
 static uint16_t SubTickCounter;
 
+// Advance sub-tick counter; reschedule unless final sub-tick.
 static void SubTickTaskDo()
 {
 	SubTickNotify(SubTickCounter);
@@ -122,6 +126,11 @@ static void SubTickTaskEnd()
 
 static int ticksSinceSecond = 0;
 
+/*
+	Begin-of-tick processing: advance the real-time clock,
+	poll mouse/keyboard/ADB, fire VBI, update Sony,
+	and start the sub-tick chain.
+*/
 static void SixtiethSecondNotify()
 {
 #if dbglog_HAVE && 0
@@ -151,6 +160,7 @@ static void SixtiethSecondNotify()
 	SubTickTaskStart();
 }
 
+// End-of-tick: flush final sub-tick, update mouse and screen.
 static void SixtiethEndNotify()
 {
 	SubTickTaskEnd();
@@ -173,6 +183,7 @@ static void ExtraTimeEndNotify()
 	if (auto* d = g_machine->findDevice<VIA2Device>()) d->extraTimeEnd();
 }
 
+// Allocate RAM, VidROM, and VidMem buffers per machine config.
 bool EmulationReserveAlloc()
 {
 	const auto& cfg = g_machine->config();
@@ -196,6 +207,11 @@ void EmulationFreeAlloc()
 	free(VidMem); VidMem = nullptr;
 }
 
+/*
+	Wire the ICT scheduler to the CPU, register all device
+	task handlers, initialize RTC/ROM/Video, build the
+	address space, and perform hardware zap.
+*/
 static bool InitEmulation()
 {
 	/* Wire ICT scheduler to CPU cycle counters */
@@ -241,6 +257,11 @@ static bool InitEmulation()
 	return false;
 }
 
+/*
+	Run the CPU for n cycles, interleaving ICT task dispatch.
+	Each iteration runs until the next scheduled task, then
+	checks and dispatches due tasks before continuing.
+*/
 static void m68k_go_nCycles_1(uint32_t n)
 {
 	uint32_t n2;
@@ -266,6 +287,11 @@ static void m68k_go_nCycles_1(uint32_t n)
 
 static uint32_t ExtraSubTicksToDo = 0;
 
+/*
+	Emulate one 60 Hz tick: run SixtiethSecondNotify, execute the
+	cycle budget, then SixtiethEndNotify.  Extra sub-ticks are
+	accumulated for speed multipliers.
+*/
 static void DoEmulateOneTick()
 {
 	{
@@ -392,6 +418,7 @@ static void RunEmulatedTicksToTrueTime()
 	}
 }
 
+// Main run loop: wait for host tick, run emulation, repeat.
 static void MainEventLoop()
 {
 	for (; ; ) {
@@ -426,6 +453,10 @@ EmulatorConfig& GetEmulatorConfigMut()
 	return s_emulatorConfig;
 }
 
+/*
+	Parse CLI args, configure machine and emulator, set up
+	the state recorder, and resolve ROM/disk paths.
+*/
 void ProgramEarlyInit(int argc, char* argv[])
 {
 	s_launchConfig = ParseCommandLine(argc, argv);

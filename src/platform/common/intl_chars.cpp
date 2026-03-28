@@ -1427,6 +1427,8 @@ bool ControlKeyPressed = false;
 
 /* kStrCntrlKyName, kControlModeKey, kUnMappedKey provided by intl_chars.h */
 
+/* Return the localised / config-derived string for a
+   substitution escape code (e.g. ^p = app name). */
 const char * GetSubstitutionStr(char x)
 {
 	const char *s;
@@ -1592,6 +1594,8 @@ void ClStrAppendChar(int *L0, uint8_t *r, uint8_t c)
 	*L0 = L;
 }
 
+/* Expand a substitution-encoded string (^x and ;x escapes)
+   into a cell-character buffer for UI rendering. */
 void ClStrAppendSubstCStr(int *L, uint8_t *r, const char *s)
 {
 	/* must match ClStrSizeSubstCStr ! */

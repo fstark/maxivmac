@@ -1,3 +1,6 @@
+/*
+	Screen — Framebuffer-to-host display refresh
+*/
 #pragma once
 
 #include "devices/device.h"

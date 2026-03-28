@@ -26,6 +26,7 @@ static uint8_t Disasm_pcp_dummy[2] = {
 
 extern ATTep FindATTel(uint32_t addr);
 
+// Locate the memory block containing the disassembly PC.
 static void Disasm_Find_pcp()
 {
 	ATTep p;
@@ -105,6 +106,8 @@ static void DisasmOpSizeFromb76()
 	}
 }
 
+/* Disassemble an addressing mode and register pair,
+   printing the operand in m68k assembly syntax. */
 static void DisasmModeRegister(uint32_t themode, uint32_t thereg)
 {
 	switch (themode) {

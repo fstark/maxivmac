@@ -1,8 +1,11 @@
+/*
+	VIA1 — Versatile Interface Adapter (primary)
+*/
 #pragma once
 
 #include "devices/via_base.h"
 
-// VIA1 Device — thin subclass of the shared VIA implementation
+// Thin subclass of the shared VIA implementation.
 class VIA1Device : public VIABase {
 public:
 	VIA1Device();

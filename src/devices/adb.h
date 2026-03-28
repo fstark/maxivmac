@@ -1,3 +1,6 @@
+/*
+	ADB — Apple Desktop Bus controller (Mac II family)
+*/
 #pragma once
 
 #include "devices/device.h"

@@ -38,6 +38,9 @@ bool Mouse_Enabled()
 
 /* Global singleton */
 
+/* Process queued mouse events: apply position deltas or absolute
+   coordinates into Mac low-memory globals, and handle button state
+   for Classic keyboard models via VIA1 wire. */
 void MouseDevice::update()
 {
 	if (0 != MasterMyEvtQLock) {
@@ -112,6 +115,8 @@ void MouseDevice::update()
 	}
 }
 
+/* Feed current mouse position from Mac RAM back to the platform
+   layer so the host cursor can track the emulated pointer. */
 void MouseDevice::endTickNotify()
 {
 	if (Mouse_Enabled()) {

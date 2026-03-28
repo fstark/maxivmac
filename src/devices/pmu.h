@@ -1,3 +1,6 @@
+/*
+	PMU — Power Manager Unit (Portable Mac)
+*/
 #pragma once
 
 #include "devices/device.h"
@@ -11,7 +14,10 @@ public:
 	void reset() override;
 	const char* name() const override { return "PMU"; }
 
+	// Respond to VIA-driven ready-line transitions.
 	void toReadyChangeNtfy();
+
+	// ICT callback: process the current PMU command/response.
 	void doTask();
 
 private:

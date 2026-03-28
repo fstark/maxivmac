@@ -75,6 +75,7 @@ void IWMDevice::reset()
 
 typedef enum {On, Off} Mode_Ty;
 
+// Set or clear a control line bit in IWM.Lines.
 static void IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
 {
 	if (the_mode == Off) {
@@ -84,6 +85,8 @@ static void IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
 	}
 }
 
+/* Read an IWM register selected by the Q6/Q7 line state:
+   data, status, or handshake. */
 static uint8_t IWM_Read_Reg()
 {
 	switch ((IWM.Lines & (kq6 + kq7)) >> 6) {
@@ -120,6 +123,7 @@ static uint8_t IWM_Read_Reg()
 	}
 }
 
+// Write the mode register (only when motor is off).
 static void IWM_Write_Reg(uint8_t in)
 {
 	if (((IWM.Lines & kmtr) >> 4) == 0) {
@@ -131,6 +135,8 @@ static void IWM_Write_Reg(uint8_t in)
 	}
 }
 
+/* Dispatch a memory-mapped IWM register access.
+   Decodes the address into a control-line toggle, read, or write. */
  uint32_t IWMDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 #if IWM_dolog

@@ -1,3 +1,6 @@
+/*
+	Keyboard — Mac keyboard I/O via VIA1 shift register
+*/
 #pragma once
 
 #include "devices/device.h"
@@ -13,9 +16,14 @@ public:
 	void reset() override;
 	const char* name() const override { return "Keyboard"; }
 
+	// VIA1 data-line change: start receiving a command byte.
 	void dataLineChngNtfy();
+
+	// ICT callbacks for keyboard command protocol phases.
 	void receiveEndCommand();
 	void receiveCommand();
+
+	// Poll for pending key events during inquiry.
 	void update();
 
 private:

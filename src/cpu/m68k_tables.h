@@ -1,3 +1,9 @@
+/*
+	m68k_tables — Instruction decode tables for the 68K emulator
+
+	Defines instruction kinds, addressing modes, and decoded-opcode
+	structures used by the CPU interpreter loop.
+*/
 #pragma once
 
 enum {
@@ -220,12 +226,16 @@ enum {
 	kNumAMds
 };
 
+/* --- Decoded instruction structures --- */
+
+// Instruction class ID and cycle count.
 struct DecOpXR {
 	/* expected size : 4 bytes */
 	uint16_t MainClas;
 	uint16_t Cycles;
 };
 
+// Addressing mode and operand data for one argument.
 struct DecArgR {
 	/* expected size : 2 bytes */
 	uint8_t AMd;
@@ -237,6 +247,7 @@ struct DecOpYR {
 	DecArgR v[2];
 };
 
+// Complete decoded instruction record (class + two operands).
 struct DecOpR {
 	/* expected size : 8 bytes */
 	DecOpXR x;
@@ -248,5 +259,6 @@ struct DecOpR {
 #define SetDcoMainClas(p, xx) ((p)->x.MainClas = (xx))
 #define SetDcoCycles(p, xx) ((p)->x.Cycles = (xx))
 
+// Populate the 64K decode table for the given machine config.
 struct MachineConfig;
 extern void M68KITAB_setup(DecOpR *p, const MachineConfig *config);

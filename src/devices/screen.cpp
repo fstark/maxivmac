@@ -16,6 +16,8 @@
 #define kMain_Offset      0x5900
 #define kAlternate_Offset 0xD900
 
+/* Select the active framebuffer (VRAM for NuBus Macs, main RAM
+   for compacts) and push the frame to the platform display layer. */
 void ScreenDevice::endTickNotify()
 {
 	uint8_t * screencurrentbuff;

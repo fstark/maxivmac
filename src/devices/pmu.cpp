@@ -47,6 +47,11 @@ void PMUDevice::startSendResult(uint8_t resultCode, uint8_t len)
 	state_ = kPMUStateSendLength;
 }
 
+/*
+	Process the current PMU command byte.  Handles power control,
+	XPRAM read/write, clock, ADB, and param RAM operations.
+	May transition to send-result or receive-buffer states.
+*/
 void PMUDevice::checkCommandOp()
 {
 	switch (curCommand_) {
@@ -304,6 +309,11 @@ void PMUDevice::checkCommandCompletion()
 	}
 }
 
+/*
+	PMU ready-line state machine.  Drives the handshake protocol:
+	receive command byte → receive length → receive buffer →
+	send length → send buffer, triggered by VIA ready-line edges.
+*/
 void PMUDevice::toReadyChangeNtfy()
 {
 	if (sending_) {

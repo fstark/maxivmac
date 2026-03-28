@@ -1,3 +1,6 @@
+/*
+	Sony — Floppy / disk image access device
+*/
 #pragma once
 
 #include "devices/device.h"
@@ -12,6 +15,7 @@ public:
 	void reset() override;
 	const char* name() const override { return "Sony"; }
 
+	// Extension trap handlers for disk/Sony toolbox calls.
 	void extnDiskAccess(uint32_t p);
 	void extnSonyAccess(uint32_t p);
 	void setQuitOnEject();

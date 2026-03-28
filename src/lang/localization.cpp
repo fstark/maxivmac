@@ -68,6 +68,7 @@ static const LangMeta g_langMeta[kLangCount] = {
 	{"ca", "Catalan"},
 };
 
+// Map a 2-char ISO 639 code to the Language enum.
 bool LanguageFromISO(const char *code, Language &out)
 {
 	for (int i = 0; i < kLangCount; ++i) {
@@ -106,6 +107,8 @@ static void PopulateMap(const LangPair *pairs)
 	}
 }
 
+/* Switch the active language: repopulate the string map from
+   the language table and warn about missing translations. */
 void SetLanguage(Language lang)
 {
 	if (lang < 0 || lang >= kLangCount) {
@@ -132,6 +135,8 @@ Language GetLanguage()
 	return g_currentLang;
 }
 
+/* Look up a translated string by key, falling back to the
+   key itself if no translation exists. Warns once per miss. */
 const char *Localize(const char *key)
 {
 	if (!g_initialized) {
