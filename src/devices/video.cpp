@@ -355,7 +355,7 @@ static void PatchAnEndOfLst()
 	const auto& vidCfg = g_machine->config();
 	UsedSoFar = (pPatch - VidROM) + 20;
 	if (UsedSoFar > vidCfg.vidROMSize) {
-		ReportAbnormalID(AbnormalID::kIWM_vidROMSize_too_small, "vidROMSize too small");
+		ReportAbnormalID(AbnormalID::kVIDEO_vidROMSize_too_small, "vidROMSize too small");
 		return false;
 	}
 
@@ -568,7 +568,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							csParam + VDPageInfo_csPage))
 						{
 							/* return mnvm_controlErr, page must be 0 */
-							ReportAbnormalID(AbnormalID::kIWM_SetVidMode_not_page_0,
+							ReportAbnormalID(AbnormalID::kVIDEO_SetVidMode_not_page_0,
 								"SetVidMode not page 0");
 						} else {
 							result = Vid_SetMode(get_vm_word(
@@ -724,7 +724,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						*/
 						break;
 					default:
-						ReportAbnormalID(AbnormalID::kIWM_kCmndVideoControl_unknown_csCode,
+						ReportAbnormalID(AbnormalID::kVIDEO_kCmndVideoControl_unknown_csCode,
 							"kCmndVideoControl, unknown csCode");
 #if dbglog_HAVE
 						dbglog_writelnNum("csCode", csCode);
@@ -763,7 +763,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"GetEntries");
 #endif
 						{
-							ReportAbnormalID(AbnormalID::kIWM_GetEntries_not_implemented,
+								ReportAbnormalID(AbnormalID::kVIDEO_GetEntries_not_implemented,
 								"GetEntries not implemented");
 						}
 						break;
@@ -900,7 +900,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						/* seen in System 7.5.5 boot */
 						break;
 					default:
-						ReportAbnormalID(AbnormalID::kIWM_Video_Access_kCmndVideoStatus,
+						ReportAbnormalID(AbnormalID::kVIDEO_Video_Access_kCmndVideoStatus,
 							"Video_Access kCmndVideoStatus, "
 								"unknown csCode");
 #if dbglog_HAVE
@@ -911,7 +911,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 			}
 			break;
 		default:
-			ReportAbnormalID(AbnormalID::kIWM_Video_Access_unknown_commnd,
+			ReportAbnormalID(AbnormalID::kVIDEO_Video_Access_unknown_commnd,
 				"Video_Access, unknown commnd");
 			break;
 	}

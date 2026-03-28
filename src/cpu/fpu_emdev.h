@@ -204,7 +204,7 @@ static int CheckFPCondition(uint16_t predicate)
 
 static void DoCodeFPU_dflt()
 {
-	ReportAbnormalID(AbnormalID::kDISK_unimplemented_Floating_Point_Instruction,
+	ReportAbnormalID(AbnormalID::kFPU_unimplemented_Floating_Point_Instruction,
 		"unimplemented Floating Point Instruction");
 #if dbglog_HAVE
 	{
@@ -357,11 +357,11 @@ static void DoCodeFPU_Trapcc()
 		(void) nextilong();
 	} else if (thereg == 4) {
 	} else {
-		ReportAbnormalID(AbnormalID::kDISK_Invalid_FTRAPcc, "Invalid FTRAPcc (?");
+		ReportAbnormalID(AbnormalID::kFPU_Invalid_FTRAPcc, "Invalid FTRAPcc (?");
 	}
 
 	if (condition_true) {
-		ReportAbnormalID(AbnormalID::kDISK_FTRAPcc_trapping, "FTRAPcc trapping");
+		ReportAbnormalID(AbnormalID::kFPU_FTRAPcc_trapping, "FTRAPcc trapping");
 		Exception(7);
 	}
 }
@@ -1011,7 +1011,7 @@ static void DoCodeFPU_GenOpEA(uint16_t word2)
 					"DecodeAddrModeRegister fails GetFPSource P");
 #endif
 			} else {
-				ReportAbnormalID(AbnormalID::kDISK_Packed_Decimal_in_GetFPSource,
+				ReportAbnormalID(AbnormalID::kFPU_Packed_Decimal_in_GetFPSource,
 					"Packed Decimal in GetFPSource");
 					/* correct? just set to a constant for now */
 				/* *r = 9123456789.0; */
@@ -1108,7 +1108,7 @@ static void DoCodeFPU_Move_FP_EA(uint16_t word2)
 				dbglog_writeln("DecodeAddrModeRegister fails FMOVE P");
 #endif
 			} else {
-				ReportAbnormalID(AbnormalID::kDISK_Packed_Decimal_in_FMOVE, "Packed Decimal in FMOVE");
+				ReportAbnormalID(AbnormalID::kFPU_Packed_Decimal_in_FMOVE, "Packed Decimal in FMOVE");
 				/* ? */
 			}
 			break;

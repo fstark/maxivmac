@@ -59,7 +59,7 @@ void PMUDevice::checkCommandOp()
 						p_ = buffA_;
 						rem_ = 2;
 					} else {
-						ReportAbnormalID(AbnormalID::kMOUSE_PMU_BuffL_too_small_for_kPMUxPramWrite,
+						ReportAbnormalID(AbnormalID::kPMU_PMU_BuffL_too_small_for_kPMUxPramWrite,
 							"PMU_BuffL too small for kPMUxPramWrite");
 					}
 				} else if (2 == i_) {
@@ -69,11 +69,11 @@ void PMUDevice::checkCommandOp()
 						p_ = &paramRAM_[buffA_[0]];
 						rem_ = buffA_[1];
 					} else {
-						ReportAbnormalID(AbnormalID::kMOUSE_bad_range_for_kPMUxPramWrite,
+						ReportAbnormalID(AbnormalID::kPMU_bad_range_for_kPMUxPramWrite,
 							"bad range for kPMUxPramWrite");
 					}
 				} else {
-					ReportAbnormalID(AbnormalID::kMOUSE_Wrong_PMU_i_for_kPMUpramWrite,
+					ReportAbnormalID(AbnormalID::kPMU_Wrong_PMU_i_for_kPMUpramWrite,
 						"Wrong PMU_i for kPMUpramWrite");
 				}
 			} else if (kPMUStateRecievedCommand == state_) {
@@ -85,7 +85,7 @@ void PMUDevice::checkCommandOp()
 		case 0x21: /* kPMUpMgrADBoff - turn ADB auto-poll off */
 			if (kPMUStateRecievedCommand == state_) {
 				if (0 != buffL_) {
-					ReportAbnormalID(AbnormalID::kMOUSE_kPMUpMgrADBoff_nonzero_length,
+					ReportAbnormalID(AbnormalID::kPMU_kPMUpMgrADBoff_nonzero_length,
 						"kPMUpMgrADBoff nonzero length");
 				}
 			}
@@ -135,7 +135,7 @@ void PMUDevice::checkCommandOp()
 					rem_ = buffA_[1];
 					startSendResult(0, rem_);
 				} else {
-					ReportAbnormalID(AbnormalID::kMOUSE_Unknown_kPMUxPramRead_op,
+					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUxPramRead_op,
 						"Unknown kPMUxPramRead op");
 				}
 			}
@@ -150,7 +150,7 @@ void PMUDevice::checkCommandOp()
 					buffA_[3] = 0;
 					startSendResult(0, 4);
 				} else {
-					ReportAbnormalID(AbnormalID::kMOUSE_Unknown_kPMUtimeRead_op, "Unknown kPMUtimeRead op");
+					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUtimeRead_op, "Unknown kPMUtimeRead op");
 				}
 			}
 			break;
@@ -163,7 +163,7 @@ void PMUDevice::checkCommandOp()
 				if (20 == buffL_) {
 					/* done */
 				} else {
-					ReportAbnormalID(AbnormalID::kMOUSE_Unknown_kPMUpramWrite_op,
+					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUpramWrite_op,
 						"Unknown kPMUpramWrite op");
 				}
 			} else if (kPMUStateRecievingBuffer == state_) {
@@ -175,7 +175,7 @@ void PMUDevice::checkCommandOp()
 						p_ = &paramRAM_[8];
 						rem_ = 4;
 					} else {
-						ReportAbnormalID(AbnormalID::kMOUSE_Wrong_PMU_i_for_kPMUpramWrite_2,
+						ReportAbnormalID(AbnormalID::kPMU_Wrong_PMU_i_for_kPMUpramWrite_2,
 							"Wrong PMU_i for kPMUpramWrite");
 					}
 				}
@@ -190,7 +190,7 @@ void PMUDevice::checkCommandOp()
 				if (0 == buffL_) {
 					startSendResult(0, 20);
 				} else {
-					ReportAbnormalID(AbnormalID::kMOUSE_Unknown_kPMUpramRead_op, "Unknown kPMUpramRead op");
+					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUpramRead_op, "Unknown kPMUpramRead op");
 				}
 			} else if (kPMUStateSendBuffer == state_) {
 				if (0 == i_) {
@@ -200,14 +200,14 @@ void PMUDevice::checkCommandOp()
 					p_ = &paramRAM_[8];
 					rem_ = 4;
 				} else {
-					ReportAbnormalID(AbnormalID::kMOUSE_Wrong_PMU_i_for_kPMUpramRead,
+					ReportAbnormalID(AbnormalID::kPMU_Wrong_PMU_i_for_kPMUpramRead,
 						"Wrong PMU_i for kPMUpramRead");
 				}
 			}
 			break;
 		default:
 			if (kPMUStateRecievedCommand == state_) {
-				ReportAbnormalID(AbnormalID::kMOUSE_Unknown_PMU_op, "Unknown PMU op");
+				ReportAbnormalID(AbnormalID::kPMU_Unknown_PMU_op, "Unknown PMU op");
 #if dbglog_HAVE
 				dbglog_writeCStr("Unknown PMU op ");
 				dbglog_writeHex(curCommand_);
@@ -308,7 +308,7 @@ void PMUDevice::toReadyChangeNtfy()
 {
 	if (sending_) {
 		sending_ = false;
-		ReportAbnormalID(AbnormalID::kMOUSE_PmuToReady_ChangeNtfy_while_PMU_Sending,
+		ReportAbnormalID(AbnormalID::kPMU_PmuToReady_ChangeNtfy_while_PMU_Sending,
 			"PmuToReady_ChangeNtfy while PMU_Sending");
 		g_wires.set(Wire_PMU_FromReady, 0);
 	}
@@ -349,7 +349,7 @@ void PMUDevice::toReadyChangeNtfy()
 				}
 				if (nullptr == p_) {
 					/* mini vmac bug if ever happens */
-					ReportAbnormalID(AbnormalID::kMOUSE_PMU_p_null_while_kPMUStateRecievingBuffe,
+					ReportAbnormalID(AbnormalID::kPMU_PMU_p_null_while_kPMUStateRecievingBuffe,
 						"PMU_p null while kPMUStateRecievingBuffer");
 				}
 				*p_++ = v;

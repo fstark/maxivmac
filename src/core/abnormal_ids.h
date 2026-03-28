@@ -82,20 +82,20 @@ inline constexpr uint16_t kCPU_Bad_rounding_precision_in_myfp_SetFPCR = 0x0201;
 inline constexpr uint16_t kCPU_Reserved_bits_not_zero_in_myfp_SetFPCR = 0x0202;
 inline constexpr uint16_t kCPU_Bad_rounding_precision_in_myfp_GetFPCR = 0x0203;
 
-/* DISK */
-inline constexpr uint16_t kDISK_unimplemented_Floating_Point_Instruction = 0x0301;
-inline constexpr uint16_t kDISK_Invalid_FTRAPcc = 0x0302;
-inline constexpr uint16_t kDISK_FTRAPcc_trapping = 0x0303;
-inline constexpr uint16_t kDISK_Packed_Decimal_in_GetFPSource = 0x0304;
-inline constexpr uint16_t kDISK_Packed_Decimal_in_FMOVE = 0x0305;
+/* FPU */
+inline constexpr uint16_t kFPU_unimplemented_Floating_Point_Instruction = 0x0301;
+inline constexpr uint16_t kFPU_Invalid_FTRAPcc = 0x0302;
+inline constexpr uint16_t kFPU_FTRAPcc_trapping = 0x0303;
+inline constexpr uint16_t kFPU_Packed_Decimal_in_GetFPSource = 0x0304;
+inline constexpr uint16_t kFPU_Packed_Decimal_in_FMOVE = 0x0305;
 
-/* IWM */
-inline constexpr uint16_t kIWM_vidROMSize_too_small = 0x0A01;
-inline constexpr uint16_t kIWM_SetVidMode_not_page_0 = 0x0A02;
-inline constexpr uint16_t kIWM_kCmndVideoControl_unknown_csCode = 0x0A04;
-inline constexpr uint16_t kIWM_GetEntries_not_implemented = 0x0A05;
-inline constexpr uint16_t kIWM_Video_Access_kCmndVideoStatus = 0x0A06;
-inline constexpr uint16_t kIWM_Video_Access_unknown_commnd = 0x0A07;
+/* VIDEO */
+inline constexpr uint16_t kVIDEO_vidROMSize_too_small = 0x0A01;
+inline constexpr uint16_t kVIDEO_SetVidMode_not_page_0 = 0x0A02;
+inline constexpr uint16_t kVIDEO_kCmndVideoControl_unknown_csCode = 0x0A04;
+inline constexpr uint16_t kVIDEO_GetEntries_not_implemented = 0x0A05;
+inline constexpr uint16_t kVIDEO_Video_Access_kCmndVideoStatus = 0x0A06;
+inline constexpr uint16_t kVIDEO_Video_Access_unknown_commnd = 0x0A07;
 
 /* MACH */
 inline constexpr uint16_t kMACH_ATT_list_not_big_enough = 0x1101;
@@ -123,20 +123,20 @@ inline constexpr uint16_t kMACH_IWM_odd = 0x111A;
 inline constexpr uint16_t kMACH_IWM_even = 0x111B;
 inline constexpr uint16_t kMACH_IWM_nonstandard_address = 0x111C;
 
-/* MOUSE */
-inline constexpr uint16_t kMOUSE_PMU_BuffL_too_small_for_kPMUxPramWrite = 0x0E01;
-inline constexpr uint16_t kMOUSE_bad_range_for_kPMUxPramWrite = 0x0E02;
-inline constexpr uint16_t kMOUSE_Wrong_PMU_i_for_kPMUpramWrite = 0x0E03;
-inline constexpr uint16_t kMOUSE_kPMUpMgrADBoff_nonzero_length = 0x0E04;
-inline constexpr uint16_t kMOUSE_Unknown_kPMUxPramRead_op = 0x0E05;
-inline constexpr uint16_t kMOUSE_Unknown_kPMUtimeRead_op = 0x0E06;
-inline constexpr uint16_t kMOUSE_Unknown_kPMUpramWrite_op = 0x0E07;
-inline constexpr uint16_t kMOUSE_Wrong_PMU_i_for_kPMUpramWrite_2 = 0x0E08;
-inline constexpr uint16_t kMOUSE_Unknown_kPMUpramRead_op = 0x0E09;
-inline constexpr uint16_t kMOUSE_Wrong_PMU_i_for_kPMUpramRead = 0x0E0A;
-inline constexpr uint16_t kMOUSE_Unknown_PMU_op = 0x0E0B;
-inline constexpr uint16_t kMOUSE_PmuToReady_ChangeNtfy_while_PMU_Sending = 0x0E0C;
-inline constexpr uint16_t kMOUSE_PMU_p_null_while_kPMUStateRecievingBuffe = 0x0E0D;
+/* PMU */
+inline constexpr uint16_t kPMU_PMU_BuffL_too_small_for_kPMUxPramWrite = 0x0E01;
+inline constexpr uint16_t kPMU_bad_range_for_kPMUxPramWrite = 0x0E02;
+inline constexpr uint16_t kPMU_Wrong_PMU_i_for_kPMUpramWrite = 0x0E03;
+inline constexpr uint16_t kPMU_kPMUpMgrADBoff_nonzero_length = 0x0E04;
+inline constexpr uint16_t kPMU_Unknown_kPMUxPramRead_op = 0x0E05;
+inline constexpr uint16_t kPMU_Unknown_kPMUtimeRead_op = 0x0E06;
+inline constexpr uint16_t kPMU_Unknown_kPMUpramWrite_op = 0x0E07;
+inline constexpr uint16_t kPMU_Wrong_PMU_i_for_kPMUpramWrite_2 = 0x0E08;
+inline constexpr uint16_t kPMU_Unknown_kPMUpramRead_op = 0x0E09;
+inline constexpr uint16_t kPMU_Wrong_PMU_i_for_kPMUpramRead = 0x0E0A;
+inline constexpr uint16_t kPMU_Unknown_PMU_op = 0x0E0B;
+inline constexpr uint16_t kPMU_PmuToReady_ChangeNtfy_while_PMU_Sending = 0x0E0C;
+inline constexpr uint16_t kPMU_PMU_p_null_while_kPMUStateRecievingBuffe = 0x0E0D;
 
 /* PMU */
 inline constexpr uint16_t kPMU_Talk_to_unknown_mouse_register = 0x0D01;
@@ -230,9 +230,9 @@ inline constexpr uint16_t kSCC_RR_14 = 0x074A;
 inline constexpr uint16_t kSCC_unexpected_SCC_Reg_in_SCC_GetReg = 0x074B;
 inline constexpr uint16_t kSCC_unexpected_SCC_Reg_in_SCC_PutReg = 0x074C;
 
-/* SCSI */
-inline constexpr uint16_t kSCSI_KybdState_kKybdStateRecievingCommand = 0x0B01;
-inline constexpr uint16_t kSCSI_KybdState_kKybdStateRecievingEndCommand = 0x0B02;
+/* KYBD */
+inline constexpr uint16_t kKYBD_KybdState_kKybdStateRecievingCommand = 0x0B01;
+inline constexpr uint16_t kKYBD_KybdState_kKybdStateRecievingEndCommand = 0x0B02;
 
 /* SONY */
 inline constexpr uint16_t kSONY_MyMoveBytesVM_fails = 0x0901;
