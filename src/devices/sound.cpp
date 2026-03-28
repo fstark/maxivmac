@@ -44,7 +44,7 @@ static const uint16_t vol_mult[] = {
 	8192, 9362, 10922, 13107, 16384, 21845, 32768
 };
 
-static const trSoundSamp vol_offset[] = {
+static const RawSoundSample vol_offset[] = {
 	28672, 28087, 27307, 26215, 24576, 21846, 16384, 0
 };
 
@@ -88,7 +88,7 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 void SoundDevice::subTick(int SubTick)
 {
 	uint16_t actL;
-	tpSoundSamp p;
+	SoundSamplePtr p;
 	uint16_t i;
 	uint32_t StartOffset = SubTick_offset[SubTick];
 	uint16_t n = SubTick_n[SubTick];
@@ -181,11 +181,11 @@ void SoundDevice::subTick(int SubTick)
 				is just for completeness.
 			*/
 			uint32_t mult = (uint32_t)vol_mult[SoundVolume];
-			trSoundSamp offset = vol_offset[SoundVolume];
+			RawSoundSample offset = vol_offset[SoundVolume];
 
 			p -= actL;
 			for (i = 0; i < actL; i++) {
-				*p = (trSoundSamp)((uint32_t)(*p) * mult >> 16) + offset;
+				*p = (RawSoundSample)((uint32_t)(*p) * mult >> 16) + offset;
 				++p;
 			}
 		}

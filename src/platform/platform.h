@@ -67,20 +67,20 @@ enum class tMacErr : uint16_t {
 	afpAccessDenied  = 0xEC78,  /* -5000 - Insufficient access privileges */
 };
 
-using tPbuf = uint16_t;
+using PbufIndex = uint16_t;
 
-#define NotAPbuf ((tPbuf)0xFFFF)
+#define NOT_A_PBUF ((PbufIndex)0xFFFF)
 
-extern tMacErr CheckPbuf(tPbuf Pbuf_No);
-extern tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count);
+extern tMacErr CheckPbuf(PbufIndex Pbuf_No);
+extern tMacErr PbufGetSize(PbufIndex Pbuf_No, uint32_t *Count);
 
-extern tMacErr PbufNew(uint32_t count, tPbuf *r);
-extern void PbufDispose(tPbuf i);
+extern tMacErr PbufNew(uint32_t count, PbufIndex *r);
+extern void PbufDispose(PbufIndex i);
 extern void PbufTransfer(uint8_t * Buffer,
-	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite);
+	PbufIndex i, uint32_t offset, uint32_t count, bool IsWrite);
 
 
-using tDrive = uint16_t;
+using DriveIndex = uint16_t;
 
 extern uint32_t vSonyWritableMask;
 extern uint32_t vSonyInsertedMask;
@@ -89,26 +89,26 @@ extern uint32_t vSonyInsertedMask;
 	((vSonyInsertedMask & ((uint32_t)1 << (Drive_No))) != 0)
 
 extern tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
-	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
+	DriveIndex Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount);
-extern tMacErr vSonyEject(tDrive Drive_No);
-extern tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count);
+extern tMacErr vSonyEject(DriveIndex Drive_No);
+extern tMacErr vSonyGetSize(DriveIndex Drive_No, uint32_t *Sony_Count);
 
 extern bool AnyDiskInserted();
-extern void DiskRevokeWritable(tDrive Drive_No);
+extern void DiskRevokeWritable(DriveIndex Drive_No);
 
 extern bool vSonyRawMode;
 
 extern bool vSonyNewDiskWanted;
 extern uint32_t vSonyNewDiskSize;
-extern tMacErr vSonyEjectDelete(tDrive Drive_No);
+extern tMacErr vSonyEjectDelete(DriveIndex Drive_No);
 
-extern tPbuf vSonyNewDiskName;
+extern PbufIndex vSonyNewDiskName;
 
-extern tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r);
+extern tMacErr vSonyGetName(DriveIndex Drive_No, PbufIndex *r);
 
-extern tMacErr HTCEexport(tPbuf i);
-extern tMacErr HTCEimport(tPbuf *r);
+extern tMacErr HTCEexport(PbufIndex i);
+extern tMacErr HTCEimport(PbufIndex *r);
 
 extern uint32_t OnTrueTime;
 
@@ -182,13 +182,13 @@ extern uint32_t QuietSubTicks;
 	QuietSubTicks = 0; \
 }
 
-using trSoundSamp = uint16_t;
-using tbSoundSamp = uint16_t;
-using tpSoundSamp = uint16_t *;
+using RawSoundSample = uint16_t;
+using BufferedSoundSample = uint16_t;
+using SoundSamplePtr = uint16_t *;
 #define kCenterSound 0x8000
 
 
-extern tpSoundSamp Sound_BeginWrite(uint16_t n, uint16_t *actL);
+extern SoundSamplePtr Sound_BeginWrite(uint16_t n, uint16_t *actL);
 extern void Sound_EndWrite(uint16_t actL);
 
 /* 370 samples per tick = 22,254.54 per second */

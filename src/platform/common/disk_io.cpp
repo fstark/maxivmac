@@ -11,7 +11,7 @@ void InitDrives()
 		This isn't really needed, Drives[i] and DriveNames[i]
 		need not have valid values when not vSonyIsInserted[i].
 	*/
-	tDrive i;
+	DriveIndex i;
 
 	for (i = 0; i < NumDrives; ++i) {
 		Drives[i] = nullptr;
@@ -20,7 +20,7 @@ void InitDrives()
 }
 
  tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
-	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
+	DriveIndex Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount)
 {
 	/*
@@ -52,7 +52,7 @@ void InitDrives()
 	return err; /*& figure out what really to return &*/
 }
 
- tMacErr vSonyGetSize(tDrive Drive_No, uint32_t *Sony_Count)
+ tMacErr vSonyGetSize(DriveIndex Drive_No, uint32_t *Sony_Count)
 {
 	/*
 		OSGLUxxx common:
@@ -77,7 +77,7 @@ void InitDrives()
 	return err; /*& figure out what really to return &*/
 }
 
-static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
+static tMacErr vSonyEject0(DriveIndex Drive_No, bool deleteit)
 {
 	/*
 		OSGLUxxx common:
@@ -104,17 +104,17 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 	return tMacErr::noErr;
 }
 
- tMacErr vSonyEject(tDrive Drive_No)
+ tMacErr vSonyEject(DriveIndex Drive_No)
 {
 	return vSonyEject0(Drive_No, false);
 }
 
- tMacErr vSonyEjectDelete(tDrive Drive_No)
+ tMacErr vSonyEjectDelete(DriveIndex Drive_No)
 {
 	return vSonyEject0(Drive_No, true);
 }
 
- tMacErr vSonyGetName(tDrive Drive_No, tPbuf *r)
+ tMacErr vSonyGetName(DriveIndex Drive_No, PbufIndex *r)
 {
 	char *path = DriveNames[Drive_No];
 	if (nullptr == path) {
@@ -135,7 +135,7 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 		return err;
 	}
 
-	tPbuf t;
+	PbufIndex t;
 	err = PbufNew(L, &t);
 	if (tMacErr::noErr != err) {
 		return err;
@@ -148,7 +148,7 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 
 void UnInitDrives()
 {
-	tDrive i;
+	DriveIndex i;
 
 	for (i = 0; i < NumDrives; ++i) {
 		if (vSonyIsInserted(i)) {
@@ -166,7 +166,7 @@ bool Sony_Insert0(FILE * refnum, bool locked,
 		if "locked", then mount it as a locked disk.
 	*/
 
-	tDrive Drive_No;
+	DriveIndex Drive_No;
 	bool IsOk = false;
 
 	if (! FirstFreeDisk(&Drive_No)) {

@@ -27,7 +27,7 @@ bool vSonyRawMode = false;
 bool vSonyNewDiskWanted = false;
 uint32_t vSonyNewDiskSize;
 
-tPbuf vSonyNewDiskName = NotAPbuf;
+PbufIndex vSonyNewDiskName = NOT_A_PBUF;
 
 uint32_t CurMacDateInSeconds = 0;
 uint32_t CurMacLatitude = 0;
@@ -101,9 +101,9 @@ uint32_t OnTrueTime = 0;
 uint32_t PbufAllocatedMask;
 uint32_t PbufSize[NumPbufs];
 
-bool FirstFreePbuf(tPbuf *r)
+bool FirstFreePbuf(PbufIndex *r)
 {
-	tPbuf i;
+	PbufIndex i;
 
 	for (i = 0; i < NumPbufs; ++i) {
 		if (! PbufIsAllocated(i)) {
@@ -114,18 +114,18 @@ bool FirstFreePbuf(tPbuf *r)
 	return false;
 }
 
-void PbufNewNotify(tPbuf Pbuf_No, uint32_t count)
+void PbufNewNotify(PbufIndex Pbuf_No, uint32_t count)
 {
 	PbufSize[Pbuf_No] = count;
 	PbufAllocatedMask |= ((uint32_t)1 << Pbuf_No);
 }
 
-void PbufDisposeNotify(tPbuf Pbuf_No)
+void PbufDisposeNotify(PbufIndex Pbuf_No)
 {
 	PbufAllocatedMask &= ~ ((uint32_t)1 << Pbuf_No);
 }
 
-tMacErr CheckPbuf(tPbuf Pbuf_No)
+tMacErr CheckPbuf(PbufIndex Pbuf_No)
 {
 	tMacErr result;
 
@@ -140,7 +140,7 @@ tMacErr CheckPbuf(tPbuf Pbuf_No)
 	return result;
 }
 
-tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
+tMacErr PbufGetSize(PbufIndex Pbuf_No, uint32_t *Count)
 {
 	tMacErr result = CheckPbuf(Pbuf_No);
 
@@ -153,9 +153,9 @@ tMacErr PbufGetSize(tPbuf Pbuf_No, uint32_t *Count)
 
 /* --- Disk support --- */
 
-bool FirstFreeDisk(tDrive *Drive_No)
+bool FirstFreeDisk(DriveIndex *Drive_No)
 {
-	tDrive i;
+	DriveIndex i;
 
 	for (i = 0; i < NumDrives; ++i) {
 		if (! vSonyIsInserted(i)) {
@@ -173,12 +173,12 @@ bool AnyDiskInserted()
 	return 0 != vSonyInsertedMask;
 }
 
-void DiskRevokeWritable(tDrive Drive_No)
+void DiskRevokeWritable(DriveIndex Drive_No)
 {
 	vSonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
 }
 
-void DiskInsertNotify(tDrive Drive_No, bool locked)
+void DiskInsertNotify(DriveIndex Drive_No, bool locked)
 {
 	fprintf(stderr, "DISK_INSERT drive=%d locked=%d\n", (int)Drive_No, (int)locked);
 	vSonyInsertedMask |= ((uint32_t)1 << Drive_No);
@@ -189,7 +189,7 @@ void DiskInsertNotify(tDrive Drive_No, bool locked)
 	QuietEnds();
 }
 
-void DiskEjectedNotify(tDrive Drive_No)
+void DiskEjectedNotify(DriveIndex Drive_No)
 {
 	vSonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
 	vSonyInsertedMask &= ~ ((uint32_t)1 << Drive_No);

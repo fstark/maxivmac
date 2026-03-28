@@ -13,9 +13,9 @@
 void *PbufDat[NumPbufs];
 
 /* Allocate a Pbuf descriptor for an existing memory pointer. */
-tMacErr PbufNewFromPtr(void *p, uint32_t count, tPbuf *r)
+tMacErr PbufNewFromPtr(void *p, uint32_t count, PbufIndex *r)
 {
-	tPbuf i;
+	PbufIndex i;
 	tMacErr err;
 
 	if (! FirstFreePbuf(&i)) {
@@ -31,7 +31,7 @@ tMacErr PbufNewFromPtr(void *p, uint32_t count, tPbuf *r)
 	return err;
 }
 
-void PbufKillToPtr(void **p, uint32_t *count, tPbuf r)
+void PbufKillToPtr(void **p, uint32_t *count, PbufIndex r)
 {
 	*p = PbufDat[r];
 	*count = PbufSize[r];
@@ -39,7 +39,7 @@ void PbufKillToPtr(void **p, uint32_t *count, tPbuf r)
 	PbufDisposeNotify(r);
 }
 
-tMacErr PbufNew(uint32_t count, tPbuf *r)
+tMacErr PbufNew(uint32_t count, PbufIndex *r)
 {
 	tMacErr err = tMacErr::miscErr;
 
@@ -51,7 +51,7 @@ tMacErr PbufNew(uint32_t count, tPbuf *r)
 	return err;
 }
 
-void PbufDispose(tPbuf i)
+void PbufDispose(PbufIndex i)
 {
 	void *p;
 	uint32_t count;
@@ -63,7 +63,7 @@ void PbufDispose(tPbuf i)
 
 void UnInitPbufs()
 {
-	tPbuf i;
+	PbufIndex i;
 
 	for (i = 0; i < NumPbufs; ++i) {
 		if (PbufIsAllocated(i)) {
@@ -72,14 +72,14 @@ void UnInitPbufs()
 	}
 }
 
-uint8_t * PbufLock(tPbuf i)
+uint8_t * PbufLock(PbufIndex i)
 {
 	return static_cast<uint8_t *>(PbufDat[i]);
 }
 
 /* Copy data between a Pbuf and host memory at the given offset. */
 void PbufTransfer(uint8_t * Buffer,
-	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
+	PbufIndex i, uint32_t offset, uint32_t count, bool IsWrite)
 {
 	void *p = static_cast<uint8_t *>(PbufDat[i]) + offset;
 	if (IsWrite) {

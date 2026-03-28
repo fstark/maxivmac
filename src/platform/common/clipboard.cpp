@@ -9,7 +9,7 @@
 
 #include <cstdlib>
 
-tMacErr HTCEexport(tPbuf i)
+tMacErr HTCEexport(PbufIndex i)
 {
 	tMacErr err;
 	char *p;
@@ -34,12 +34,12 @@ tMacErr HTCEexport(tPbuf i)
 	return err;
 }
 
-tMacErr HTCEimport(tPbuf *r)
+tMacErr HTCEimport(PbufIndex *r)
 {
 	tMacErr err;
 	uint32_t L;
 	char *s = nullptr;
-	tPbuf t = NotAPbuf;
+	PbufIndex t = NOT_A_PBUF;
 
 	if (nullptr == (s = SDL_GetClipboardText())) {
 		err = tMacErr::miscErr;
@@ -59,10 +59,10 @@ tMacErr HTCEimport(tPbuf *r)
 
 		UniCodeStr2MacRoman(s, static_cast<char *>(PbufDat[t]));
 		*r = t;
-		t = NotAPbuf;
+		t = NOT_A_PBUF;
 	}
 
-	if (NotAPbuf != t) {
+	if (NOT_A_PBUF != t) {
 		PbufDispose(t);
 	}
 	if (nullptr != s) {

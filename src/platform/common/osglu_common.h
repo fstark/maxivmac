@@ -116,13 +116,13 @@ void ScreenChangedAll();
 void AutoScrollScreen();
 #endif
 
-bool FirstFreeDisk(tDrive *Drive_No);
-void DiskInsertNotify(tDrive Drive_No, bool locked);
-void DiskEjectedNotify(tDrive Drive_No);
+bool FirstFreeDisk(DriveIndex *Drive_No);
+void DiskInsertNotify(DriveIndex Drive_No, bool locked);
+void DiskEjectedNotify(DriveIndex Drive_No);
 
-bool FirstFreePbuf(tPbuf *r);
-void PbufNewNotify(tPbuf Pbuf_No, uint32_t count);
-void PbufDisposeNotify(tPbuf Pbuf_No);
+bool FirstFreePbuf(PbufIndex *r);
+void PbufNewNotify(PbufIndex Pbuf_No, uint32_t count);
+void PbufDisposeNotify(PbufIndex Pbuf_No);
 
 void Keyboard_UpdateKeyMap(uint8_t key, bool down);
 void MyMouseButtonSet(bool down);

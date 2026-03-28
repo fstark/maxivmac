@@ -33,12 +33,12 @@ static uint32_t vSonyMountedMask = 0;
 #define vSonyIsMounted(Drive_No) \
 	((vSonyMountedMask & ((uint32_t)1 << (Drive_No))) != 0)
 
-static bool vSonyNextPendingInsert0(tDrive *Drive_No)
+static bool vSonyNextPendingInsert0(DriveIndex *Drive_No)
 {
 	/* find next drive to Mount */
 	uint32_t MountPending = vSonyInsertedMask & (~ vSonyMountedMask);
 	if (MountPending != 0) {
-		tDrive i;
+		DriveIndex i;
 		for (i = 0; i < NumDrives; ++i) {
 			if ((MountPending & ((uint32_t)1 << i)) != 0) {
 				*Drive_No = i;
@@ -50,7 +50,7 @@ static bool vSonyNextPendingInsert0(tDrive *Drive_No)
 	return false;
 }
 
-static tMacErr CheckReadableDrive(tDrive Drive_No)
+static tMacErr CheckReadableDrive(DriveIndex Drive_No)
 {
 	tMacErr result;
 
@@ -66,7 +66,7 @@ static tMacErr CheckReadableDrive(tDrive Drive_No)
 }
 
 static tMacErr vSonyTransferVM(bool IsWrite,
-	uint32_t Buffera, tDrive Drive_No,
+	uint32_t Buffera, DriveIndex Drive_No,
 	uint32_t Sony_Start, uint32_t Sony_Count, uint32_t *Sony_ActCount)
 {
 	/*
@@ -153,7 +153,7 @@ static uint32_t ImageTagOffset[NumDrives];
 #define ChecksumBlockSize 1024
 
 #if Sony_SupportDC42 && Sony_WantChecksumsUpdated
-static tMacErr DC42BlockChecksum(tDrive Drive_No,
+static tMacErr DC42BlockChecksum(DriveIndex Drive_No,
 	uint32_t Sony_Start, uint32_t Sony_Count, uint32_t *r)
 {
 	tMacErr result;
@@ -207,7 +207,7 @@ static tMacErr DC42BlockChecksum(tDrive Drive_No,
 #endif
 
 #if Sony_WantChecksumsUpdated
-static void Drive_UpdateChecksums(tDrive Drive_No)
+static void Drive_UpdateChecksums(DriveIndex Drive_No)
 {
 	if (! vSonyIsLocked(Drive_No)) {
 		uint32_t DataOffset = ImageDataOffset[Drive_No];
@@ -275,9 +275,9 @@ static void Drive_UpdateChecksums(tDrive Drive_No)
 	format (raw, DC42, or with tags), and configure the
 	drive's data/tag offsets and image size.
 */
-static tMacErr vSonyNextPendingInsert(tDrive *Drive_No)
+static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 {
-	tDrive i;
+	DriveIndex i;
 	tMacErr result;
 	uint32_t L;
 
@@ -466,7 +466,7 @@ void SonyDevice::update()
 		--DelayUntilNextInsert;
 	} else {
 		if (MountCallBack != 0) {
-			tDrive i;
+			DriveIndex i;
 
 			if (tMacErr::noErr == vSonyNextPendingInsert(&i)) {
 				uint32_t data = i;
@@ -491,7 +491,7 @@ void SonyDevice::update()
 }
 
 static tMacErr Drive_Transfer(bool IsWrite, uint32_t Buffera,
-	tDrive Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
+	DriveIndex Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
 	uint32_t *Sony_ActCount)
 {
 	tMacErr result;
@@ -538,7 +538,7 @@ void SonyDevice::setQuitOnEject()
 	QuitOnEject = true;
 }
 
-static tMacErr Drive_Eject(tDrive Drive_No)
+static tMacErr Drive_Eject(DriveIndex Drive_No)
 {
 	tMacErr result;
 
@@ -559,7 +559,7 @@ static tMacErr Drive_Eject(tDrive Drive_No)
 	return result;
 }
 
-static tMacErr Drive_EjectDelete(tDrive Drive_No)
+static tMacErr Drive_EjectDelete(DriveIndex Drive_No)
 {
 	tMacErr result;
 
@@ -578,7 +578,7 @@ static tMacErr Drive_EjectDelete(tDrive Drive_No)
 
 void SonyDevice::ejectAllDisks()
 {
-	tDrive i;
+	DriveIndex i;
 
 	vSonyMountedMask = 0;
 	for (i = 0; i < NumDrives; ++i) {
@@ -652,7 +652,7 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			{
 				uint32_t Sony_ActCount;
 				uint32_t Buffera = get_vm_long(p + kParamDiskBuffer);
-				tDrive Drive_No = get_vm_word(p + kParamDiskDrive_No);
+				DriveIndex Drive_No = get_vm_word(p + kParamDiskDrive_No);
 				uint32_t Sony_Start = get_vm_long(p + kParamDiskStart);
 				uint32_t Sony_Count = get_vm_long(p + kParamDiskCount);
 
@@ -666,7 +666,7 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			{
 				uint32_t Sony_ActCount;
 				uint32_t Buffera = get_vm_long(p + kParamDiskBuffer);
-				tDrive Drive_No = get_vm_word(p + kParamDiskDrive_No);
+				DriveIndex Drive_No = get_vm_word(p + kParamDiskDrive_No);
 				uint32_t Sony_Start = get_vm_long(p + kParamDiskStart);
 				uint32_t Sony_Count = get_vm_long(p + kParamDiskCount);
 
@@ -678,13 +678,13 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			break;
 		case kCmndDiskEject:
 			{
-				tDrive Drive_No = get_vm_word(p + kParamDiskDrive_No);
+				DriveIndex Drive_No = get_vm_word(p + kParamDiskDrive_No);
 				result = Drive_Eject(Drive_No);
 			}
 			break;
 		case kCmndDiskGetSize:
 			{
-				tDrive Drive_No = get_vm_word(p + kParamDiskDrive_No);
+				DriveIndex Drive_No = get_vm_word(p + kParamDiskDrive_No);
 
 				result = CheckReadableDrive(Drive_No);
 				if (tMacErr::noErr == result) {
@@ -721,7 +721,7 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			break;
 		case kCmndDiskNextPendingInsert:
 			{
-				tDrive i;
+				DriveIndex i;
 
 				result = vSonyNextPendingInsert(&i);
 				if (tMacErr::noErr == result) {
@@ -740,17 +740,17 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 		case kCmndDiskNew:
 			{
 				uint32_t count = get_vm_long(p + ExtnDat_params + 0);
-				tPbuf Pbuf_No = get_vm_word(p + ExtnDat_params + 4);
+				PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 4);
 				/* reserved word at offset 6, should be zero */
 
 				result = tMacErr::noErr;
 
-				if (Pbuf_No != NotAPbuf) {
+				if (Pbuf_No != NOT_A_PBUF) {
 					result = CheckPbuf(Pbuf_No);
 					if (tMacErr::noErr == result) {
 						vSonyNewDiskWanted = true;
 						vSonyNewDiskSize = count;
-						if (vSonyNewDiskName != NotAPbuf) {
+						if (vSonyNewDiskName != NOT_A_PBUF) {
 							PbufDispose(vSonyNewDiskName);
 						}
 						vSonyNewDiskName = Pbuf_No;
@@ -768,17 +768,17 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			break;
 		case kCmndDiskEjectDelete:
 			{
-				tDrive Drive_No = get_vm_word(p + kParamDiskDrive_No);
+				DriveIndex Drive_No = get_vm_word(p + kParamDiskDrive_No);
 				result = Drive_EjectDelete(Drive_No);
 			}
 			break;
 		case kCmndDiskGetName:
 			{
-				tDrive Drive_No = get_vm_word(p + ExtnDat_params + 0);
+				DriveIndex Drive_No = get_vm_word(p + ExtnDat_params + 0);
 				/* reserved word at offset 2, should be zero */
 				result = CheckReadableDrive(Drive_No);
 				if (tMacErr::noErr == result) {
-					tPbuf Pbuf_No;
+					PbufIndex Pbuf_No;
 					result = vSonyGetName(Drive_No, &Pbuf_No);
 					put_vm_word(p + ExtnDat_params + 4, Pbuf_No);
 				}
@@ -919,7 +919,7 @@ static uint32_t sony_MinSonVarsSize() {
 static uint32_t TheTagBuffer;
 #endif
 
-static uint32_t DriveVarsLocation(tDrive Drive_No)
+static uint32_t DriveVarsLocation(DriveIndex Drive_No)
 {
 	uint32_t SonyVars = get_vm_long(SonyVarsPtr);
 
@@ -935,7 +935,7 @@ static tMacErr Sony_Mount(uint32_t p)
 {
 	uint32_t data = get_vm_long(p + ExtnDat_params + 0);
 	tMacErr result = tMacErr::miscErr;
-	tDrive i = data & 0x0000FFFF;
+	DriveIndex i = data & 0x0000FFFF;
 	uint32_t dvl = DriveVarsLocation(i);
 
 	if (0 == dvl) {
@@ -1019,7 +1019,7 @@ static tMacErr Sony_Mount(uint32_t p)
 }
 
 #if Sony_SupportTags
-static tMacErr Sony_PrimeTags(tDrive Drive_No,
+static tMacErr Sony_PrimeTags(DriveIndex Drive_No,
 	uint32_t Sony_Start, uint32_t Sony_Count, bool IsWrite)
 {
 	tMacErr result = tMacErr::noErr;
@@ -1075,7 +1075,7 @@ static tMacErr Sony_Prime(uint32_t p)
 	uint32_t Sony_ActCount = 0;
 	uint32_t ParamBlk = get_vm_long(p + ExtnDat_params + 0);
 	uint32_t DeviceCtl = get_vm_long(p + ExtnDat_params + 4);
-	tDrive Drive_No = get_vm_word(ParamBlk + kioVRefNum) - 1;
+	DriveIndex Drive_No = get_vm_word(ParamBlk + kioVRefNum) - 1;
 	uint16_t IOTrap = get_vm_word(ParamBlk + kioTrap);
 	uint32_t dvl = DriveVarsLocation(Drive_No);
 
@@ -1204,7 +1204,7 @@ static tMacErr Sony_Control(uint32_t p)
 			/* not implemented, but pretend we did it */
 		}
 	} else {
-		tDrive Drive_No = get_vm_word(ParamBlk + kioVRefNum) - 1;
+		DriveIndex Drive_No = get_vm_word(ParamBlk + kioVRefNum) - 1;
 		uint32_t dvl = DriveVarsLocation(Drive_No);
 
 		if (0 == dvl) {
@@ -1357,7 +1357,7 @@ static tMacErr Sony_Status(uint32_t p)
 #endif
 
 	if (kDriveStatus == OpCode) {
-		tDrive Drive_No = get_vm_word(ParamBlk + kioVRefNum) - 1;
+		DriveIndex Drive_No = get_vm_word(ParamBlk + kioVRefNum) - 1;
 		uint32_t Src = DriveVarsLocation(Drive_No);
 		if (Src == 0) {
 			result = tMacErr::nsDrvErr;

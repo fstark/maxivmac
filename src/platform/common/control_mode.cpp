@@ -522,7 +522,7 @@ void HTCEexportSubstCStr(const char *s)
 {
 	int i;
 	int L;
-	tPbuf j;
+	PbufIndex j;
 #ifdef PbufHaveLock
 	int n = ClStrSizeSubstCStr(s);
 

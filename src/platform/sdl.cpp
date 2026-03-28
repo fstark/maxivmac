@@ -1538,7 +1538,7 @@ static void CheckForSavedTasks()
 #endif
 
 	if (vSonyNewDiskWanted) {
-		if (vSonyNewDiskName != NotAPbuf) {
+		if (vSonyNewDiskName != NOT_A_PBUF) {
 			uint8_t *p = static_cast<uint8_t *>(PbufDat[vSonyNewDiskName]);
 			uint32_t L = PbufSize[vSonyNewDiskName];
 			char drivename[256];
@@ -1564,7 +1564,7 @@ static void CheckForSavedTasks()
 			}
 			MakeNewDisk(vSonyNewDiskSize, drivename);
 			PbufDispose(vSonyNewDiskName);
-			vSonyNewDiskName = NotAPbuf;
+			vSonyNewDiskName = NOT_A_PBUF;
 		} else
 		{
 			char defaultName[] = "untitled.dsk";

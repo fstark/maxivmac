@@ -34,7 +34,7 @@
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
 #define dbglog_OSGInit (0 && dbglog_HAVE)
 
-static tpSoundSamp TheSoundBuffer = nullptr;
+static SoundSamplePtr TheSoundBuffer = nullptr;
 volatile static uint16_t ThePlayOffset;
 volatile static uint16_t TheFillOffset;
 volatile static uint16_t MinFilledSoundBuffs;
@@ -61,7 +61,7 @@ static void Sound_Start0()
 #endif
 }
 
-tpSoundSamp Sound_BeginWrite(uint16_t n, uint16_t *actL)
+SoundSamplePtr Sound_BeginWrite(uint16_t n, uint16_t *actL)
 {
 	uint16_t ToFillLen = kAllBuffLen - (TheWriteOffset - ThePlayOffset);
 	uint16_t WriteBuffContig =
@@ -82,7 +82,7 @@ tpSoundSamp Sound_BeginWrite(uint16_t n, uint16_t *actL)
 	return TheSoundBuffer + (TheWriteOffset & kAllBuffMask);
 }
 
-static void ConvertSoundBlockToNative(tpSoundSamp p)
+static void ConvertSoundBlockToNative(SoundSamplePtr p)
 {
 	int i;
 
@@ -94,7 +94,7 @@ static void ConvertSoundBlockToNative(tpSoundSamp p)
 static void Sound_WroteABlock()
 {
 	uint16_t PrevWriteOffset = TheWriteOffset - kOneBuffLen;
-	tpSoundSamp p = TheSoundBuffer + (PrevWriteOffset & kAllBuffMask);
+	SoundSamplePtr p = TheSoundBuffer + (PrevWriteOffset & kAllBuffMask);
 
 #if dbglog_SoundStuff
 	dbglog_writeln("enter Sound_WroteABlock");
@@ -161,7 +161,7 @@ static void Sound_SecondNotify0()
 	}
 }
 
-typedef uint16_t trSoundTemp;
+typedef uint16_t SoundTemp;
 
 #define kCenterTempSound 0x8000
 
@@ -171,13 +171,13 @@ typedef uint16_t trSoundTemp;
 
 #define ConvertTempSoundSampleToNative(v) ((v) - kCenterSound)
 
-static void SoundRampTo(trSoundTemp *last_val, trSoundTemp dst_val,
-	tpSoundSamp *stream, int *len)
+static void SoundRampTo(SoundTemp *last_val, SoundTemp dst_val,
+	SoundSamplePtr *stream, int *len)
 {
-	trSoundTemp diff;
-	tpSoundSamp p = *stream;
+	SoundTemp diff;
+	SoundSamplePtr p = *stream;
 	int n = *len;
-	trSoundTemp v1 = *last_val;
+	SoundTemp v1 = *last_val;
 
 	while ((v1 != dst_val) && (0 != n)) {
 		if (v1 > dst_val) {
@@ -206,12 +206,12 @@ static void SoundRampTo(trSoundTemp *last_val, trSoundTemp dst_val,
 }
 
 struct SoundR {
-	tpSoundSamp fTheSoundBuffer;
+	SoundSamplePtr fTheSoundBuffer;
 	volatile uint16_t (*fPlayOffset);
 	volatile uint16_t (*fFillOffset);
 	volatile uint16_t (*fMinFilledSoundBuffs);
 
-	volatile trSoundTemp lastv;
+	volatile SoundTemp lastv;
 
 	bool wantplaying;
 	bool HaveStartedPlaying;
@@ -223,11 +223,11 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 	uint16_t FilledSoundBuffs;
 	int i;
 	SoundR *datp = (SoundR *)udata;
-	tpSoundSamp CurSoundBuffer = datp->fTheSoundBuffer;
+	SoundSamplePtr CurSoundBuffer = datp->fTheSoundBuffer;
 	uint16_t CurPlayOffset = *datp->fPlayOffset;
-	trSoundTemp v0 = datp->lastv;
-	trSoundTemp v1 = v0;
-	tpSoundSamp dst = (tpSoundSamp)stream;
+	SoundTemp v0 = datp->lastv;
+	SoundTemp v1 = v0;
+	SoundSamplePtr dst = (SoundSamplePtr)stream;
 
 	len >>= 1; /* convert byte length to sample count (16-bit samples) */
 
@@ -256,9 +256,9 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 			if ((ToPlayLen >> kLnOneBuffLen) < 8) {
 				ToPlayLen = 0;
 			} else {
-				tpSoundSamp p = datp->fTheSoundBuffer
+				SoundSamplePtr p = datp->fTheSoundBuffer
 					+ (CurPlayOffset & kAllBuffMask);
-				trSoundTemp v2 = ConvertTempSoundSampleFromNative(*p);
+				SoundTemp v2 = ConvertTempSoundSampleFromNative(*p);
 
 #if dbglog_SoundStuff
 				dbglog_writeln("have enough samples to start");
@@ -296,7 +296,7 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 		} else {
 			uint16_t PlayBuffContig = kAllBuffLen
 				- (CurPlayOffset & kAllBuffMask);
-			tpSoundSamp p = CurSoundBuffer
+			SoundSamplePtr p = CurSoundBuffer
 				+ (CurPlayOffset & kAllBuffMask);
 
 			if (ToPlayLen > PlayBuffContig) {

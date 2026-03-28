@@ -278,7 +278,7 @@ static uint32_t addrmap_kASC_ln2Spc() {
 
 #if IncludeExtnPbufs
 static tMacErr PbufTransferVM(uint32_t Buffera,
-	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
+	PbufIndex i, uint32_t offset, uint32_t count, bool IsWrite)
 {
 	uint32_t contig;
 	uint8_t * Buffer;
@@ -329,7 +329,7 @@ static void ExtnParamBuffers_Access(uint32_t p)
 			break;
 		case kCmndPbufNew:
 			{
-				tPbuf Pbuf_No;
+				PbufIndex Pbuf_No;
 				uint32_t count = get_vm_long(p + ExtnDat_params + 4);
 				/* reserved word at offset 2, should be zero */
 				result = PbufNew(count, &Pbuf_No);
@@ -338,7 +338,7 @@ static void ExtnParamBuffers_Access(uint32_t p)
 			break;
 		case kCmndPbufDispose:
 			{
-				tPbuf Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
+				PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
 				/* reserved word at offset 2, should be zero */
 				result = CheckPbuf(Pbuf_No);
 				if (tMacErr::noErr == result) {
@@ -349,7 +349,7 @@ static void ExtnParamBuffers_Access(uint32_t p)
 		case kCmndPbufGetSize:
 			{
 				uint32_t Count;
-				tPbuf Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
+				PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
 				/* reserved word at offset 2, should be zero */
 
 				result = PbufGetSize(Pbuf_No, &Count);
@@ -361,7 +361,7 @@ static void ExtnParamBuffers_Access(uint32_t p)
 		case kCmndPbufTransfer:
 			{
 				uint32_t PbufCount;
-				tPbuf Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
+				PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
 				/* reserved word at offset 2, should be zero */
 				uint32_t offset = get_vm_long(p + ExtnDat_params + 4);
 				uint32_t count = get_vm_long(p + ExtnDat_params + 8);
@@ -410,7 +410,7 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 			break;
 		case kCmndHTCEExport:
 			{
-				tPbuf Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
+				PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
 
 				result = CheckPbuf(Pbuf_No);
 				if (tMacErr::noErr == result) {
@@ -420,7 +420,7 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 			break;
 		case kCmndHTCEImport:
 			{
-				tPbuf Pbuf_No;
+				PbufIndex Pbuf_No;
 				result = HTCEimport(&Pbuf_No);
 				put_vm_word(p + ExtnDat_params + 0, Pbuf_No);
 			}
