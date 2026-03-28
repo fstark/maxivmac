@@ -935,142 +935,7 @@ static void DisconnectKeyCodes3()
 
 /* --- time, date, location --- */
 
-#define dbglog_TimeStuff (0 && dbglog_HAVE)
-
-static uint32_t TrueEmulatedTime = 0;
-	/*
-		OSGLUxxx common:
-		The amount of time the program has
-		been running, measured in Macintosh
-		"ticks". There are 60.14742 ticks per
-		second.
-
-		(time when the emulation is
-		stopped for more than a few ticks
-		should not be counted.)
-	*/
-
-
-#define MyInvTimeDivPow 16
-#define MyInvTimeDiv (1 << MyInvTimeDivPow)
-#define MyInvTimeDivMask (MyInvTimeDiv - 1)
-#define MyInvTimeStep 1089590 /* 1000 / 60.14742 * MyInvTimeDiv */
-
-static Uint32 LastTime;
-
-static Uint32 NextIntTime;
-static uint32_t NextFracTime;
-
-
-static void IncrNextTime()
-{
-	NextFracTime += MyInvTimeStep;
-	NextIntTime += (NextFracTime >> MyInvTimeDivPow);
-	NextFracTime &= MyInvTimeDivMask;
-}
-
-static void InitNextTime()
-{
-	NextIntTime = LastTime;
-	NextFracTime = 0;
-	IncrNextTime();
-}
-
-static uint32_t NewMacDateInSeconds;
-
-static bool UpdateTrueEmulatedTime()
-{
-	/*
-		OSGLUxxx common:
-		Update TrueEmulatedTime. Needs to convert between how the host
-		operating system measures time and Macintosh ticks.
-	*/
-
-	Uint32 LatestTime;
-	int32_t TimeDiff;
-
-	LatestTime = SDL_GetTicks();
-	if (LatestTime != LastTime) {
-		LastTime = LatestTime;
-		TimeDiff = (LatestTime - NextIntTime);
-			/* this should work even when time wraps */
-		if (TimeDiff >= 0) {
-			if (TimeDiff > 256) {
-				/* emulation interrupted, forget it */
-				++TrueEmulatedTime;
-				InitNextTime();
-
-#if dbglog_TimeStuff
-				dbglog_writelnNum("emulation interrupted",
-					TrueEmulatedTime);
-#endif
-			} else {
-				do {
-					++TrueEmulatedTime;
-					IncrNextTime();
-					TimeDiff = (LatestTime - NextIntTime);
-				} while (TimeDiff >= 0);
-			}
-			return true;
-		} else {
-			if (TimeDiff < -256) {
-#if dbglog_TimeStuff
-				dbglog_writeln("clock set back");
-#endif
-				/* clock goofed if ever get here, reset */
-				InitNextTime();
-			}
-		}
-	}
-
-	return false;
-}
-
-
-static bool CheckDateTime()
-{
-	/* CurMacDateInSeconds is driven by tick counter in
-	   SixtiethSecondNotify (60 ticks = 1 second), not wall clock.
-	   Just detect transitions for sound/demo notifications. */
-	static uint32_t lastSeenDate = 0;
-	if (CurMacDateInSeconds != lastSeenDate) {
-		lastSeenDate = CurMacDateInSeconds;
-		return true;
-	}
-	return false;
-}
-
-static void StartUpTimeAdjust()
-{
-	/*
-		OSGLUxxx common:
-		prepare to call UpdateTrueEmulatedTime.
-
-		will be called again when haven't been
-		regularly calling UpdateTrueEmulatedTime,
-		(such as the emulation has been stopped).
-	*/
-
-	LastTime = SDL_GetTicks();
-	InitNextTime();
-}
-
-static bool InitLocationDat()
-{
-#if dbglog_OSGInit
-	dbglog_writeln("enter InitLocationDat");
-#endif
-
-	LastTime = SDL_GetTicks();
-	InitNextTime();
-
-	/* Fixed date: 14 March 1990 12:00:00 UTC (Mac epoch seconds).
-	   Deterministic so emulated RTC doesn't depend on host clock. */
-	NewMacDateInSeconds = UINT32_C(0xA223E2C0);
-	CurMacDateInSeconds = NewMacDateInSeconds;
-
-	return true;
-}
+#include "platform/common/tick_timer.h"
 
 /* --- sound --- */
 
@@ -2614,7 +2479,7 @@ void WaitForNextTick()
 
 
 		if (ExtraTimeNotOver()) {
-			(void) SDL_Delay(NextIntTime - LastTime);
+			(void) SDL_Delay(GetTimerDelay());
 			continue;
 		}
 
@@ -2635,10 +2500,6 @@ void WaitForNextTick()
 	}
 
 	OnTrueTime = TrueEmulatedTime;
-
-#if dbglog_TimeStuff
-	dbglog_writelnNum("WaitForNextTick, OnTrueTime", OnTrueTime);
-#endif
 }
 
 /* --- platform independent code can be thought of as going here --- */
