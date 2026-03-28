@@ -167,138 +167,56 @@ refactoring, which lets the debt compound.
 
 ---
 
-## The 9 Easiest "Most Buck for the Bang" Wins
+## ~~The 9 Easiest "Most Buck for the Bang" Wins~~ — ALL RESOLVED
 
-Ordered roughly by effort (easiest first).
+All 9 easy wins have been implemented and committed.
 
-### 1. Merge `via.cpp` / `via2.cpp` into a single parameterized class
+### ~~1. Merge `via.cpp` / `via2.cpp` into a single parameterized class~~ — DONE
 
-*Effort: ~2 hours.  Eliminates ~800 lines of duplication.*
+Created `VIABase` class in `via_base.h`/`via_base.cpp` with
+`VIA1Device`/`VIA2Device` thin subclasses. Eliminated ~800 lines of
+duplication.
 
-The two files are **95% identical** — only ~144 lines differ, and those are
-pure name substitutions (`VIA1` → `VIA2`, `kICT_VIA1_Timer1Check` →
-`kICT_VIA2_Timer1Check`, etc.).  Make one `VIADevice` class that takes a VIA
-number as a constructor parameter and uses it for ICT IDs and wire IDs.
+### ~~2. Name the I/O address constants~~ — DONE
 
-### 2. Name the I/O address constants
+Created `namespace io32` and `namespace io24` with named constants.
+Replaced all raw hex in `SetUp_io()`.
 
-*Effort: ~1–2 hours.  Huge readability gain in `machine.cpp`.*
+### ~~3. Make `MyEvtQElKind` an `enum class`~~ — DONE
 
-```cpp
-namespace io {
-    constexpr uint32_t kBase  = 0x50000000;
-    constexpr uint32_t kVIA1  = 0x00000;
-    constexpr uint32_t kVIA2  = 0x02000;
-    constexpr uint32_t kSCC   = 0x04000;
-    constexpr uint32_t kDisk  = 0x08000;
-    constexpr uint32_t kSCSI  = 0x10000;
-    constexpr uint32_t kSound = 0x14000;
-    constexpr uint32_t kIWM   = 0x16000;
-}
-```
+Replaced 4 `#define` constants with `enum class EvtQElKind : uint8_t`.
+Updated 13 usage sites across 5 files.
 
-Replace all raw hex in ATT setup.  Mechanical, safe, massive clarity boost
-for the most confusing part of the codebase.
+### ~~4. Convert `MKC_*` keycode defines to `constexpr`~~ — DONE
 
-### 3. Make `MyEvtQElKind` an `enum class`
+Converted ~100 `#define` macros in `keycodes.h` to
+`inline constexpr uint8_t`. Rewrote `Keyboard_RemapMac()` with
+`if constexpr`.
 
-*Effort: ~30 minutes.  4 `#define` constants, ~50 use sites.*
+### ~~5. Turn `screen_hack.h` into a proper function~~ — DONE
 
-```cpp
-// Before (platform.h)
-#define MyEvtQElKindKey 0
-#define MyEvtQElKindMouseButton 1
-#define MyEvtQElKindMousePos 2
-#define MyEvtQElKindMouseDelta 3
+Wrapped code fragment as `static void ApplyScreenHack(uint8_t *pto)`.
 
-// After
-enum class EvtKind : uint8_t {
-    Key = 0,
-    MouseButton = 1,
-    MousePos = 2,
-    MouseDelta = 3,
-};
-```
+### ~~6. Promote `ReportAbnormalID` hex codes to a central registry~~ — DONE
 
-Also rename `MyEvtQEl` → `InputEvent` while you're there.  The `My` prefix
-is a minivmac-ism that adds nothing.
+Created `src/core/abnormal_ids.h` with 211 named `constexpr uint16_t`
+constants in the `AbnormalID` namespace. Replaced all 211 raw hex literals
+at call sites across 14 source files.
 
-### 4. Convert `MKC_*` keycode defines to a `constexpr` table or `enum`
+### ~~7. Replace `goto label_N` with loops~~ — DONE
 
-*Effort: ~1 hour.  ~100 `#define` constants in `keycodes.h`.*
+Converted 17 goto/label sites across 7 files to `while`, `for(;;)`, or
+early returns. Remaining gotos in m68k.cpp (CPU core) and macsrc/
+(Mac-side code) left as-is.
 
-Already extracted into their own `keycodes.h` header.  Still `#define`s that
-pollute the global namespace.  Convert to `enum class MKC : uint8_t` or
-`constexpr` constants.
+### ~~8. Remove the C-style `typedef struct` pattern~~ — DONE
 
-### 5. Turn `screen_hack.h` / `hpmac_hack.h` into proper functions
+Removed 12 redundant `typedef struct X X;` forward declarations and
+converted 6 anonymous `typedef struct { } Name;` to named
+`struct Name { };`.
 
-*Effort: ~1 hour.  403 + 255 = 658 lines of `.h` files `#include`d as code.*
+### ~~9. Replace C-style casts with `static_cast` / `reinterpret_cast`~~ — DONE
 
-These headers are `#include`d inside functions in `rom.cpp` — they're code
-fragments, not headers.  Convert each to a proper function in `rom.cpp` (or
-its own `.cpp`).  This eliminates a confusing anti-pattern where headers
-contain raw executable statements.
-
-### 6. Promote `ReportAbnormalID` hex codes to a central `enum`
-
-*Effort: ~2 hours.  276 call sites with raw hex IDs like `0x1108`, `0x074C`.*
-
-Create a single `enum class AbnormalID : uint16_t` with named members:
-
-```cpp
-enum class AbnormalID : uint16_t {
-    VIA1_NonStandardAddress = 0x1108,
-    SCC_AutoEnables         = 0x0714,
-    ...
-};
-```
-
-Right now a collision between two IDs in different files would be invisible.
-A central enum makes them searchable and unique.
-
-### 7. Replace `label_N:` / `goto label_N` with loops
-
-*Effort: ~2 hours.  43 instances across `osglu_common.cpp`, `sony.cpp`,
-`asc.cpp`, `scc.cpp`, and others.*
-
-```cpp
-// Before (machine.cpp:299)
-label_1:
-    if (0 == count) {
-        result = mnvm_noErr;
-    } else {
-        ...
-        goto label_1;
-    }
-
-// After
-while (count != 0) {
-    ...
-}
-result = mnvm_noErr;
-```
-
-These are all simple retry loops disguised as gotos.
-
-### 8. Remove the C-style `typedef struct` pattern
-
-*Effort: ~30 minutes.  19 instances across `rtc.cpp`, `asc.cpp`, `scc.cpp`,
-`iwm.cpp`, `m68k.cpp`, `machine.h`, `sdl.cpp`, `platform.h`, etc.*
-
-```cpp
-// Before (platform.h)
-struct MyEvtQEl { ... };
-typedef struct MyEvtQEl MyEvtQEl;
-
-// After — in C++ the typedef is redundant
-struct InputEvent { ... };
-```
-
-### 9. Replace C-style casts with `static_cast` / `reinterpret_cast`
-
-*Effort: ~2–3 hours.  ~80 C-style pointer casts across the codebase.*
-
-Most are `(uint8_t *)`, `(char *)`, `(void *)`.  Converting to explicit C++
-casts makes intent clear (is this a reinterpret, a const_cast, or a
-safe numeric conversion?) and makes them grep-able.  Can be done file by file.
+Converted ~50 C-style casts across 11 files to `static_cast`,
+`reinterpret_cast`, or `const_cast`. Removed no-op casts and
+`(uint8_t *)nullptr` patterns. Left endian.h macros unchanged.
