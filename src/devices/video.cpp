@@ -277,7 +277,7 @@ static void PatchAnEndOfLst()
 	PatchAReservedOSLstEntry(pTo_sMacOS68020, 0x02 /* sMacOS68020 */);
 
 	PatchALong(4 + sizeof(VidDrvr_contents) + 8);
-	MyMoveBytes((uint8_t *)VidDrvr_contents,
+	MyMoveBytes(const_cast<uint8_t *>(VidDrvr_contents),
 		pPatch, sizeof(VidDrvr_contents));
 	pPatch += sizeof(VidDrvr_contents);
 	PatchAWord(kcom_callcheck);
@@ -451,7 +451,7 @@ static void FillScreenWithGrayPattern()
 {
 	int i;
 	int j;
-	uint32_t *p1 = (uint32_t *)VidMem;
+	uint32_t *p1 = reinterpret_cast<uint32_t *>(VidMem);
 
 	if (0 != vMacScreenDepth && UseColorMode) {
 		uint32_t pat;

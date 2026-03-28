@@ -73,13 +73,13 @@ void UnInitPbufs()
 
 uint8_t * PbufLock(tPbuf i)
 {
-	return (uint8_t *)PbufDat[i];
+	return static_cast<uint8_t *>(PbufDat[i]);
 }
 
 void PbufTransfer(uint8_t * Buffer,
 	tPbuf i, uint32_t offset, uint32_t count, bool IsWrite)
 {
-	void *p = ((uint8_t *)PbufDat[i]) + offset;
+	void *p = static_cast<uint8_t *>(PbufDat[i]) + offset;
 	if (IsWrite) {
 		(void) memcpy(p, Buffer, count);
 	} else {

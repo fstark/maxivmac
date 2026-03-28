@@ -30,7 +30,7 @@ void DrawCell(unsigned int h, unsigned int v, int x)
 #endif
 	{
 		int i;
-		uint8_t * p0 = ((uint8_t *)CellData) + 16 * x;
+		uint8_t * p0 = const_cast<uint8_t *>(CellData) + 16 * x;
 
 	if (0 != vMacScreenDepth && UseColorMode) {
 			uint8_t * p = CntrlDisplayBuff
@@ -967,7 +967,7 @@ uint8_t * GetCurDrawBuff()
 	uint8_t * p = screencomparebuff;
 
 	if (0 != SpecialModes) {
-		MyMoveBytes((uint8_t *)p, (uint8_t *)CntrlDisplayBuff,
+		MyMoveBytes(p, CntrlDisplayBuff,
 			(0 != vMacScreenDepth && UseColorMode) ? vMacScreenNumBytes :
 				vMacScreenMonoNumBytes
 			);

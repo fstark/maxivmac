@@ -80,9 +80,9 @@ static void ScrnMapr_DoMap(int16_t top, int16_t left,
 		>> (3 - ScrnMapr_SrcDepth);
 	uint16_t jn = rightB - leftB;
 	uint16_t SrcSkip = ScrnMapr_ScrnWB - jn;
-	uint8_t *pSrc = ((uint8_t *)ScrnMapr_Src)
+	uint8_t *pSrc = (static_cast<uint8_t *>(ScrnMapr_Src))
 		+ leftB + ScrnMapr_ScrnWB * (uint32_t)top;
-	ScrnMapr_TranT *pDst = ((ScrnMapr_TranT *)ScrnMapr_Dst)
+	ScrnMapr_TranT *pDst = (reinterpret_cast<ScrnMapr_TranT *>(ScrnMapr_Dst))
 		+ ((leftB + ScrnMapr_ScrnWB * ScrnMapr_Scale * (uint32_t)top)
 			* ScrnMapr_TranN);
 	uint32_t DstSkip = SrcSkip * ScrnMapr_TranN;

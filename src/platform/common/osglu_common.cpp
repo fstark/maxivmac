@@ -524,8 +524,8 @@ Label_2:
 		copysize = copyrows * vMacScreenMonoByteWidth;
 	}
 
-	MyMoveBytes((uint8_t *)screencurrentbuff + copyoffset,
-		(uint8_t *)screencomparebuff + copyoffset,
+	MyMoveBytes(screencurrentbuff + copyoffset,
+		screencomparebuff + copyoffset,
 		copysize);
 
 	*top = j0v;
@@ -724,12 +724,12 @@ static void SetLongs(uint32_t *p, long n)
 
 bool AllocBlock(uint8_t **p, uint32_t n, bool FillOnes)
 {
-	*p = (uint8_t *)calloc(1, n);
+	*p = static_cast<uint8_t *>(calloc(1, n));
 	if (*p == nullptr) {
 		return false;
 	}
 	if (FillOnes) {
-		SetLongs((uint32_t *)*p, n / 4);
+		SetLongs(reinterpret_cast<uint32_t *>(*p), n / 4);
 	}
 	return true;
 }
@@ -788,13 +788,13 @@ static void dbglog_write(char *p, uint32_t L)
 			break;
 		}
 		r = dbglog_bufsz - bufposmod;
-		MyMoveBytes((uint8_t *)p, (uint8_t *)(dbglog_bufp + bufposmod), r);
+		MyMoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), r);
 		dbglog_write0(dbglog_bufp, dbglog_bufsz);
 		L -= r;
 		p += r;
 		dbglog_bufpos += r;
 	}
-	MyMoveBytes((uint8_t *)p, (uint8_t *)dbglog_bufp + bufposmod, L);
+	MyMoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), L);
 	dbglog_bufpos = newbufpos;
 }
 
@@ -954,7 +954,7 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 {
 	uint8_t k = key & 127;
 	uint8_t bit = 1 << (k & 7);
-	uint8_t *kp = (uint8_t *)theKeys;
+	uint8_t *kp = reinterpret_cast<uint8_t *>(theKeys);
 	uint8_t *kpi = &kp[k / 8];
 	bool CurDown = ((*kpi & bit) != 0);
 	if (CurDown != down) {
@@ -1053,7 +1053,7 @@ void DisconnectKeyCodes(uint32_t KeepMask)
 	uint32_t m;
 
 	for (j = 0; j < 16; ++j) {
-		uint8_t k1 = ((uint8_t *)theKeys)[j];
+		uint8_t k1 = (reinterpret_cast<uint8_t *>(theKeys))[j];
 		if (0 != k1) {
 			uint8_t bit = 1;
 			for (b = 0; b < 8; ++b) {

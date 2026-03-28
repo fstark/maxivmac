@@ -13,7 +13,7 @@
 
 void MyMoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
-	(void) memcpy((char *)destPtr, (char *)srcPtr, byteCount);
+	(void) memcpy(reinterpret_cast<char *>(destPtr), reinterpret_cast<char *>(srcPtr), byteCount);
 }
 
 /* --- control mode and internationalization --- */
@@ -64,7 +64,7 @@ static tMacErr ChildPath(char *x, char *y, char **r)
 		}
 		{
 			int nr = nx + 1 + ny;
-			char *p = (char *)malloc(nr + 1);
+			char *p = static_cast<char *>(malloc(nr + 1));
 			if (p != nullptr) {
 				char *p2 = p;
 				(void) memcpy(p2, x, nx);
@@ -327,7 +327,7 @@ static tMacErr vSonyEject0(tDrive Drive_No, bool deleteit)
 		return err;
 	}
 
-	UniCodeStr2MacRoman(name, (char *)PbufDat[t]);
+	UniCodeStr2MacRoman(name, static_cast<char *>(PbufDat[t]));
 	*r = t;
 	return mnvm_noErr;
 }
@@ -1081,7 +1081,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		int PixPerByte =
 			(UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4)
 			? (1 << (3 - vMacScreenDepth)) : 8;
-		Uint8 *p4 = (Uint8 *)CLUT_final;
+		Uint8 *p4 = CLUT_final;
 
 		for (i = 0; i < 256; ++i) {
 			for (k = PixPerByte; --k >= 0; ) {
@@ -1116,7 +1116,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 			}
 		}
 
-		ScalingBuff = (uint8_t *)pixels;
+		ScalingBuff = static_cast<uint8_t *>(pixels);
 
 		if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
 #if ! UseSDLscaling
@@ -1170,7 +1170,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 		}
 
 	} else {
-		uint8_t *the_data = (uint8_t *)GetCurDrawBuff();
+		uint8_t *the_data = GetCurDrawBuff();
 
 		/* adapted from putpixel in SDL documentation */
 
@@ -1178,7 +1178,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 			for (j = left2; j < (int)right2; ++j) {
 				int i0 = i;
 				int j0 = j;
-				Uint8 *bufp = (Uint8 *)pixels
+				Uint8 *bufp = static_cast<Uint8 *>(pixels)
 					+ i * pitch + j * bpp;
 
 #if ! UseSDLscaling
@@ -2453,7 +2453,7 @@ static bool MySound_Init()
 	#else
 	desired.samples = 1024;
 	desired.callback = my_audio_callback;
-	desired.userdata = (void *)&cur_audio;
+	desired.userdata = static_cast<void *>(&cur_audio);
 	#endif
 
 	/* Open the audio device */
@@ -3111,11 +3111,11 @@ static void MacRoman2UniCodeData(uint8_t *s, uint32_t L, char *t)
 	*/
 	tMacErr err;
 	char *p;
-	uint8_t * s = (uint8_t *)PbufDat[i];
+	uint8_t * s = static_cast<uint8_t *>(PbufDat[i]);
 	uint32_t L = PbufSize[i];
 	uint32_t sz = MacRoman2UniCodeSize(s, L);
 
-	if (nullptr == (p = (char *)malloc(sz + 1))) {
+	if (nullptr == (p = static_cast<char *>(malloc(sz + 1)))) {
 		err = mnvm_miscErr;
 	} else {
 		MacRoman2UniCodeData(s, L, p);
@@ -3597,7 +3597,7 @@ static void UniCodeStr2MacRoman(char *s, char *r)
 	{
 		err = mnvm_noErr;
 
-		UniCodeStr2MacRoman(s, (char *)PbufDat[t]);
+		UniCodeStr2MacRoman(s, static_cast<char *>(PbufDat[t]));
 		*r = t;
 		t = NotAPbuf;
 	}
@@ -4695,7 +4695,7 @@ static void CheckForSavedTasks()
 
 	if (vSonyNewDiskWanted) {
 		if (vSonyNewDiskName != NotAPbuf) {
-			uint8_t *p = (uint8_t *)PbufDat[vSonyNewDiskName];
+			uint8_t *p = static_cast<uint8_t *>(PbufDat[vSonyNewDiskName]);
 			uint32_t L = PbufSize[vSonyNewDiskName];
 			char drivename[256];
 			uint32_t j = 0;
@@ -4949,7 +4949,7 @@ static void UnallocMyMemory()
 #if CanGetAppPath
 static bool InitWhereAmI()
 {
-	app_parent = (char *)SDL_GetBasePath();
+	app_parent = static_cast<char *>(SDL_GetBasePath());
 
 	pref_dir = SDL_GetPrefPath("gryphel", "maxivmac");
 

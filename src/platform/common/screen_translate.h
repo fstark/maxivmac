@@ -52,10 +52,10 @@ static void ScrnTrns_DoTrans(int16_t top, int16_t left,
 	uint16_t jn = right - left;
 	uint16_t SrcSkip = vMacScreenByteWidth
 		- (jn << (ScrnTrns_SrcDepth - 3));
-	uint8_t *pSrc = ((uint8_t *)ScrnTrns_Src)
+	uint8_t *pSrc = (static_cast<uint8_t *>(ScrnTrns_Src))
 		+ (left << (ScrnTrns_SrcDepth - 3))
 		+ vMacScreenByteWidth * (uint32_t)top;
-	uint32_t *pDst = ((uint32_t *)ScrnTrns_Dst)
+	uint32_t *pDst = (reinterpret_cast<uint32_t *>(ScrnTrns_Dst))
 		+ left * ScrnTrns_Scale
 		+ (uint32_t)vMacScreenWidth * ScrnTrns_Scale * ScrnTrns_Scale * top;
 	uint16_t DstSkip = (vMacScreenWidth - jn) * ScrnTrns_Scale;

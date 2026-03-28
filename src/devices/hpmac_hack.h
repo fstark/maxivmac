@@ -225,7 +225,7 @@ static void PatchHappyMac()
 	if (m == MacModel::PB100 || m == MacModel::II || m == MacModel::IIx) {
 		int i;
 		uint8_t *dst = HappyMacBase + ROM + 0x18;
-		uint8_t *src = (uint8_t *)my_HappyMac_icon;
+		uint8_t *src = const_cast<uint8_t *>(my_HappyMac_icon);
 
 		for (i = 10; --i >= 0; ) {
 			++dst;
@@ -234,8 +234,8 @@ static void PatchHappyMac()
 			++dst;
 		}
 	} else {
-		MyMoveBytes((uint8_t *)my_HappyMac_icon,
-			(uint8_t *)(HappyMacBase + ROM),
+		MyMoveBytes(const_cast<uint8_t *>(my_HappyMac_icon),
+			(HappyMacBase + ROM),
 			sizeof(my_HappyMac_icon));
 	}
 }

@@ -1525,7 +1525,7 @@ static void DecodeSetSrcDst_RegB(uint32_t v, uint8_t ArgDat)
 	uint32_t *p = &V_regs.regs[ArgDat];
 
 #if LittleEndianUnaligned
-	*(uint8_t *)p = v;
+	*reinterpret_cast<uint8_t *>(p) = v;
 #else
 	*p = (*p & ~ 0xff) | ((v) & 0xff);
 #endif
@@ -1536,7 +1536,7 @@ static void DecodeSetSrcDst_RegW(uint32_t v, uint8_t ArgDat)
 	uint32_t *p = &V_regs.regs[ArgDat];
 
 #if LittleEndianUnaligned
-	*(uint16_t *)p = v;
+	*reinterpret_cast<uint16_t *>(p) = v;
 #else
 	*p = (*p & ~ 0xffff) | ((v) & 0xffff);
 #endif
@@ -1786,7 +1786,7 @@ static void ArgSetDstRegBValue(uint32_t v)
 	uint32_t *p = V_regs.ArgAddr.rga;
 
 #if LittleEndianUnaligned
-	*(uint8_t *)p = v;
+	*reinterpret_cast<uint8_t *>(p) = v;
 #else
 	*p = (*p & ~ 0xff) | ((v) & 0xff);
 #endif
@@ -1797,7 +1797,7 @@ static void ArgSetDstRegWValue(uint32_t v)
 	uint32_t *p = V_regs.ArgAddr.rga;
 
 #if LittleEndianUnaligned
-	*(uint16_t *)p = v;
+	*reinterpret_cast<uint16_t *>(p) = v;
 #else
 	*p = (*p & ~ 0xffff) | ((v) & 0xffff);
 #endif
@@ -4106,12 +4106,12 @@ static void DoCodeDBF()
 
 	--dstvalue;
 #if LittleEndianUnaligned
-	*(uint16_t *)dstp = dstvalue;
+	*reinterpret_cast<uint16_t *>(dstp) = dstvalue;
 #else
 	*dstp = (*dstp & ~ 0xffff) | ((dstvalue) & 0xffff);
 #endif
 
-	if ((int32_t)dstvalue == -1) {
+	if (static_cast<int32_t>(dstvalue) == -1) {
 #if WantCloserCyc
 		V_MaxCyclesToGo -= (14 * kCycleScale + 3 * RdAvgXtraCyc);
 #endif
@@ -5918,7 +5918,7 @@ static void DoCodeEXTW()
 	HaveSetUpFlags();
 
 #if LittleEndianUnaligned
-	*(uint16_t *)dstp = dstvalue;
+	*reinterpret_cast<uint16_t *>(dstp) = dstvalue;
 #else
 	*dstp = (*dstp & ~ 0xffff) | (dstvalue & 0xffff);
 #endif
@@ -8808,9 +8808,9 @@ void m68k_reset()
 	V_MaxCyclesToGo = 0;
 	V_regs.MoreCyclesToGo = 0;
 	V_regs.ResidualCycles = 0;
-	V_pc_p = (uint8_t *)nullptr;
-	V_pc_pHi = (uint8_t *)nullptr;
-	V_regs.pc_pLo = (uint8_t *)nullptr;
+	V_pc_p = nullptr;
+	V_pc_pHi = nullptr;
+	V_regs.pc_pLo = nullptr;
 
 	do_put_mem_word(V_regs.fakeword, 0x4AFC);
 		/* illegal instruction opcode */
