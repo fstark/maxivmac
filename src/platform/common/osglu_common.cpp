@@ -634,10 +634,6 @@ int16_t g_savedMouseH;
 int16_t g_savedMouseV;
 #endif
 
-#ifndef WantAutoScrollBorder
-#define WantAutoScrollBorder 0
-#endif
-
 #if ENABLE_FS_MOUSE_MOTION
 void AutoScrollScreen()
 {
@@ -647,10 +643,7 @@ void AutoScrollScreen()
 	if (vMacScreenWidth != g_viewHSize) {
 		Shift = 0;
 		Limit = g_viewHStart
-#if WantAutoScrollBorder
-			+ (g_viewHSize / 16)
-#endif
-			;
+			+ (g_viewHSize / 16);
 		if (g_curMouseH < Limit) {
 			Shift = (Limit - g_curMouseH + 1) & (~ 1);
 			Limit = g_viewHStart;
@@ -660,10 +653,7 @@ void AutoScrollScreen()
 			Shift = - Shift;
 		} else {
 			Limit = g_viewHStart + g_viewHSize
-#if WantAutoScrollBorder
-				- (g_viewHSize / 16)
-#endif
-				;
+				- (g_viewHSize / 16);
 			if (g_curMouseH > Limit) {
 				Shift = (g_curMouseH - Limit + 1) & (~ 1);
 				Limit = vMacScreenWidth - g_viewHSize - g_viewHStart;
@@ -683,10 +673,7 @@ void AutoScrollScreen()
 	if (vMacScreenHeight != g_viewVSize) {
 		Shift = 0;
 		Limit = g_viewVStart
-#if WantAutoScrollBorder
-			+ (g_viewVSize / 16)
-#endif
-			;
+			+ (g_viewVSize / 16);
 		if (g_curMouseV < Limit) {
 			Shift = (Limit - g_curMouseV + 1) & (~ 1);
 			Limit = g_viewVStart;
@@ -696,10 +683,7 @@ void AutoScrollScreen()
 			Shift = - Shift;
 		} else {
 			Limit = g_viewVStart + g_viewVSize
-#if WantAutoScrollBorder
-				- (g_viewVSize / 16)
-#endif
-				;
+				- (g_viewVSize / 16);
 			if (g_curMouseV > Limit) {
 				Shift = (g_curMouseV - Limit + 1) & (~ 1);
 				Limit = vMacScreenHeight - g_viewVSize - g_viewVStart;
