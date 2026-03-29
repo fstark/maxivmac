@@ -69,69 +69,69 @@ uint8_t VIABase::getORB(uint8_t Selection)
 	return Value;
 }
 
-void VIABase::putORA(uint8_t Selection, uint8_t Data)
+void VIABase::putORA(uint8_t selection, uint8_t data)
 {
 	const auto& cfg = viaConfig();
 
 	/* Iterate bits 7→0 to match the reference build's callback ordering */
 	for (int bit = 7; bit >= 0; bit--) {
-		if (TEST_BIT(cfg.oraCanOut, bit) && TEST_BIT(Selection, bit)) {
+		if (TEST_BIT(cfg.oraCanOut, bit) && TEST_BIT(selection, bit)) {
 			int wireId = cfg.portAWires[bit];
 			if (wireId >= 0) {
-				g_wires.set(wireId, (Data >> bit) & 1);
+				g_wires.set(wireId, (data >> bit) & 1);
 			}
 		}
 	}
 }
 
-void VIABase::putORB(uint8_t Selection, uint8_t Data)
+void VIABase::putORB(uint8_t selection, uint8_t data)
 {
 	const auto& cfg = viaConfig();
 
 	/* Iterate bits 7→0 to match the reference build's callback ordering */
 	for (int bit = 7; bit >= 0; bit--) {
-		if (TEST_BIT(cfg.orbCanOut, bit) && TEST_BIT(Selection, bit)) {
+		if (TEST_BIT(cfg.orbCanOut, bit) && TEST_BIT(selection, bit)) {
 			int wireId = cfg.portBWires[bit];
 			if (wireId >= 0) {
-				g_wires.set(wireId, (Data >> bit) & 1);
+				g_wires.set(wireId, (data >> bit) & 1);
 			}
 		}
 	}
 }
 
-void VIABase::setDDR_A(uint8_t Data)
+void VIABase::setDDR_A(uint8_t data)
 {
 	const auto& cfg = viaConfig();
-	uint8_t floatbits = d_.DDR_A & ~ Data;
-	uint8_t unfloatbits = Data & ~ d_.DDR_A;
+	uint8_t floatbits = d_.DDR_A & ~ data;
+	uint8_t unfloatbits = data & ~ d_.DDR_A;
 
 	if (floatbits != 0) {
 		putORA(floatbits, cfg.oraFloatVal);
 	}
-	d_.DDR_A = Data;
+	d_.DDR_A = data;
 	if (unfloatbits != 0) {
 		putORA(unfloatbits, d_.ORA);
 	}
-	if ((Data & ~ cfg.oraCanOut) != 0) {
+	if ((data & ~ cfg.oraCanOut) != 0) {
 		ReportAbnormalID(abnormalBase_ | 0x01,
 			"Set d_.DDR_A unexpected direction");
 	}
 }
 
-void VIABase::setDDR_B(uint8_t Data)
+void VIABase::setDDR_B(uint8_t data)
 {
 	const auto& cfg = viaConfig();
-	uint8_t floatbits = d_.DDR_B & ~ Data;
-	uint8_t unfloatbits = Data & ~ d_.DDR_B;
+	uint8_t floatbits = d_.DDR_B & ~ data;
+	uint8_t unfloatbits = data & ~ d_.DDR_B;
 
 	if (floatbits != 0) {
 		putORB(floatbits, cfg.orbFloatVal);
 	}
-	d_.DDR_B = Data;
+	d_.DDR_B = data;
 	if (unfloatbits != 0) {
 		putORB(unfloatbits, d_.ORB);
 	}
-	if ((Data & ~ cfg.orbCanOut) != 0) {
+	if ((data & ~ cfg.orbCanOut) != 0) {
 		ReportAbnormalID(abnormalBase_ | 0x02,
 			"Set d_.DDR_B unexpected direction");
 	}
@@ -148,15 +148,15 @@ void VIABase::checkInterruptFlag()
 	}
 }
 
-void VIABase::setInterruptFlag(uint8_t VIA_Int)
+void VIABase::setInterruptFlag(uint8_t viaInt)
 {
-	d_.IFR |= ((uint8_t)1 << VIA_Int);
+	d_.IFR |= ((uint8_t)1 << viaInt);
 	checkInterruptFlag();
 }
 
-void VIABase::clrInterruptFlag(uint8_t VIA_Int)
+void VIABase::clrInterruptFlag(uint8_t viaInt)
 {
-	d_.IFR &= ~ ((uint8_t)1 << VIA_Int);
+	d_.IFR &= ~ ((uint8_t)1 << viaInt);
 	checkInterruptFlag();
 }
 
