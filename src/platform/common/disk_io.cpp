@@ -19,9 +19,9 @@ void InitDrives()
 	}
 }
 
- tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
-	DriveIndex Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
-	uint32_t *Sony_ActCount)
+ tMacErr vSonyTransfer(bool isWrite, uint8_t * buffer,
+	DriveIndex driveNo, uint32_t sonyStart, uint32_t sonyCount,
+	uint32_t *sonyActCount)
 {
 	/*
 		OSGLUxxx common:
@@ -30,46 +30,46 @@ void InitDrives()
 		will do) on failure.
 	*/
 	tMacErr err = tMacErr::miscErr;
-	FILE * refnum = Drives[Drive_No];
-	uint32_t NewSony_Count = 0;
+	FILE * refnum = Drives[driveNo];
+	uint32_t newSonyCount = 0;
 
-	if (fseek(refnum, Sony_Start, SEEK_SET) >= 0) {
-		if (IsWrite) {
-			NewSony_Count = fwrite(Buffer, 1, Sony_Count, refnum);
+	if (fseek(refnum, sonyStart, SEEK_SET) >= 0) {
+		if (isWrite) {
+			newSonyCount = fwrite(buffer, 1, sonyCount, refnum);
 		} else {
-			NewSony_Count = fread(Buffer, 1, Sony_Count, refnum);
+			newSonyCount = fread(buffer, 1, sonyCount, refnum);
 		}
 
-		if (NewSony_Count == Sony_Count) {
+		if (newSonyCount == sonyCount) {
 			err = tMacErr::noErr;
 		}
 	}
 
-	if (nullptr != Sony_ActCount) {
-		*Sony_ActCount = NewSony_Count;
+	if (nullptr != sonyActCount) {
+		*sonyActCount = newSonyCount;
 	}
 
 	return err; /*& figure out what really to return &*/
 }
 
- tMacErr vSonyGetSize(DriveIndex Drive_No, uint32_t *Sony_Count)
+ tMacErr vSonyGetSize(DriveIndex driveNo, uint32_t *sonyCount)
 {
 	/*
 		OSGLUxxx common:
-		set Sony_Count to the size of disk image number Drive_No.
+		set sonyCount to the size of disk image number driveNo.
 
 		return 0 if it succeeds, nonzero (a
 		Macintosh style error code, but -1
 		will do) on failure.
 	*/
 	tMacErr err = tMacErr::miscErr;
-	FILE * refnum = Drives[Drive_No];
+	FILE * refnum = Drives[driveNo];
 	long v;
 
 	if (fseek(refnum, 0, SEEK_END) >= 0) {
 		v = ftell(refnum);
 		if (v >= 0) {
-			*Sony_Count = v;
+			*sonyCount = v;
 			err = tMacErr::noErr;
 		}
 	}
@@ -77,46 +77,46 @@ void InitDrives()
 	return err; /*& figure out what really to return &*/
 }
 
-static tMacErr vSonyEject0(DriveIndex Drive_No, bool deleteit)
+static tMacErr vSonyEject0(DriveIndex driveNo, bool deleteit)
 {
 	/*
 		OSGLUxxx common:
-		close disk image number Drive_No.
+		close disk image number driveNo.
 
 		return 0 if it succeeds, nonzero (a
 		Macintosh style error code, but -1
 		will do) on failure.
 	*/
-	FILE * refnum = Drives[Drive_No];
+	FILE * refnum = Drives[driveNo];
 
-	DiskEjectedNotify(Drive_No);
+	DiskEjectedNotify(driveNo);
 
-	if (deleteit && DriveNames[Drive_No] != nullptr) {
-		(void) remove(DriveNames[Drive_No]);
+	if (deleteit && DriveNames[driveNo] != nullptr) {
+		(void) remove(DriveNames[driveNo]);
 	}
 
 	fclose(refnum);
-	Drives[Drive_No] = nullptr; /* not really needed */
+	Drives[driveNo] = nullptr; /* not really needed */
 
-	free(DriveNames[Drive_No]);
-	DriveNames[Drive_No] = nullptr;
+	free(DriveNames[driveNo]);
+	DriveNames[driveNo] = nullptr;
 
 	return tMacErr::noErr;
 }
 
- tMacErr vSonyEject(DriveIndex Drive_No)
+ tMacErr vSonyEject(DriveIndex driveNo)
 {
-	return vSonyEject0(Drive_No, false);
+	return vSonyEject0(driveNo, false);
 }
 
- tMacErr vSonyEjectDelete(DriveIndex Drive_No)
+ tMacErr vSonyEjectDelete(DriveIndex driveNo)
 {
-	return vSonyEject0(Drive_No, true);
+	return vSonyEject0(driveNo, true);
 }
 
- tMacErr vSonyGetName(DriveIndex Drive_No, PbufIndex *r)
+ tMacErr vSonyGetName(DriveIndex driveNo, PbufIndex *r)
 {
-	char *path = DriveNames[Drive_No];
+	char *path = DriveNames[driveNo];
 	if (nullptr == path) {
 		return tMacErr::miscErr;
 	}
@@ -166,20 +166,20 @@ bool Sony_Insert0(FILE * refnum, bool locked,
 		if "locked", then mount it as a locked disk.
 	*/
 
-	DriveIndex Drive_No;
+	DriveIndex driveNo;
 	bool IsOk = false;
 
-	if (! FirstFreeDisk(&Drive_No)) {
+	if (! FirstFreeDisk(&driveNo)) {
 		MacMsg(Localize(kStrTooManyImagesTitle), Localize(kStrTooManyImagesMessage),
 			false);
 	} else {
-		/* printf("Sony_Insert0 %d\n", (int)Drive_No); */
+		/* printf("Sony_Insert0 %d\n", (int)driveNo); */
 
 		{
-			Drives[Drive_No] = refnum;
-			DriveNames[Drive_No] = (drivepath != nullptr)
+			Drives[driveNo] = refnum;
+			DriveNames[driveNo] = (drivepath != nullptr)
 				? strdup(drivepath) : nullptr;
-			DiskInsertNotify(Drive_No, locked);
+			DiskInsertNotify(driveNo, locked);
 
 			IsOk = true;
 		}

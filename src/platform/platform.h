@@ -36,7 +36,7 @@ extern void MacMsgDebugAlert(char *s);
 
 extern void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
 
-extern bool AllocBlock(uint8_t **p, uint32_t n, bool FillOnes);
+extern bool AllocBlock(uint8_t **p, uint32_t n, bool fillOnes);
 
 extern uint8_t * g_rom;
 
@@ -71,13 +71,13 @@ using PbufIndex = uint16_t;
 
 #define NOT_A_PBUF ((PbufIndex)0xFFFF)
 
-extern tMacErr CheckPbuf(PbufIndex Pbuf_No);
-extern tMacErr PbufGetSize(PbufIndex Pbuf_No, uint32_t *Count);
+extern tMacErr CheckPbuf(PbufIndex pbufNo);
+extern tMacErr PbufGetSize(PbufIndex pbufNo, uint32_t *count);
 
 extern tMacErr PbufNew(uint32_t count, PbufIndex *r);
 extern void PbufDispose(PbufIndex i);
-extern void PbufTransfer(uint8_t * Buffer,
-	PbufIndex i, uint32_t offset, uint32_t count, bool IsWrite);
+extern void PbufTransfer(uint8_t * buffer,
+	PbufIndex i, uint32_t offset, uint32_t count, bool isWrite);
 
 
 using DriveIndex = uint16_t;
@@ -85,27 +85,27 @@ using DriveIndex = uint16_t;
 extern uint32_t g_sonyWritableMask;
 extern uint32_t g_sonyInsertedMask;
 
-#define vSonyIsInserted(Drive_No) \
-	((g_sonyInsertedMask & ((uint32_t)1 << (Drive_No))) != 0)
+#define vSonyIsInserted(driveNo) \
+	((g_sonyInsertedMask & ((uint32_t)1 << (driveNo))) != 0)
 
-extern tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
-	DriveIndex Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
-	uint32_t *Sony_ActCount);
-extern tMacErr vSonyEject(DriveIndex Drive_No);
-extern tMacErr vSonyGetSize(DriveIndex Drive_No, uint32_t *Sony_Count);
+extern tMacErr vSonyTransfer(bool isWrite, uint8_t * buffer,
+	DriveIndex driveNo, uint32_t sonyStart, uint32_t sonyCount,
+	uint32_t *sonyActCount);
+extern tMacErr vSonyEject(DriveIndex driveNo);
+extern tMacErr vSonyGetSize(DriveIndex driveNo, uint32_t *sonyCount);
 
 extern bool AnyDiskInserted();
-extern void DiskRevokeWritable(DriveIndex Drive_No);
+extern void DiskRevokeWritable(DriveIndex driveNo);
 
 extern bool g_sonyRawMode;
 
 extern bool g_sonyNewDiskWanted;
 extern uint32_t g_sonyNewDiskSize;
-extern tMacErr vSonyEjectDelete(DriveIndex Drive_No);
+extern tMacErr vSonyEjectDelete(DriveIndex driveNo);
 
 extern PbufIndex g_sonyNewDiskName;
 
-extern tMacErr vSonyGetName(DriveIndex Drive_No, PbufIndex *r);
+extern tMacErr vSonyGetName(DriveIndex driveNo, PbufIndex *r);
 
 extern tMacErr HTCEexport(PbufIndex i);
 extern tMacErr HTCEimport(PbufIndex *r);

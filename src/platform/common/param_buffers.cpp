@@ -78,13 +78,13 @@ uint8_t * PbufLock(PbufIndex i)
 }
 
 /* Copy data between a Pbuf and host memory at the given offset. */
-void PbufTransfer(uint8_t * Buffer,
-	PbufIndex i, uint32_t offset, uint32_t count, bool IsWrite)
+void PbufTransfer(uint8_t * buffer,
+	PbufIndex i, uint32_t offset, uint32_t count, bool isWrite)
 {
 	void *p = static_cast<uint8_t *>(PbufDat[i]) + offset;
-	if (IsWrite) {
-		(void) memcpy(p, Buffer, count);
+	if (isWrite) {
+		(void) memcpy(p, buffer, count);
 	} else {
-		(void) memcpy(Buffer, p, count);
+		(void) memcpy(buffer, p, count);
 	}
 }

@@ -114,24 +114,24 @@ bool FirstFreePbuf(PbufIndex *r)
 	return false;
 }
 
-void PbufNewNotify(PbufIndex Pbuf_No, uint32_t count)
+void PbufNewNotify(PbufIndex pbufNo, uint32_t count)
 {
-	PbufSize[Pbuf_No] = count;
-	g_pbufAllocatedMask |= ((uint32_t)1 << Pbuf_No);
+	PbufSize[pbufNo] = count;
+	g_pbufAllocatedMask |= ((uint32_t)1 << pbufNo);
 }
 
-void PbufDisposeNotify(PbufIndex Pbuf_No)
+void PbufDisposeNotify(PbufIndex pbufNo)
 {
-	g_pbufAllocatedMask &= ~ ((uint32_t)1 << Pbuf_No);
+	g_pbufAllocatedMask &= ~ ((uint32_t)1 << pbufNo);
 }
 
-tMacErr CheckPbuf(PbufIndex Pbuf_No)
+tMacErr CheckPbuf(PbufIndex pbufNo)
 {
 	tMacErr result;
 
-	if (Pbuf_No >= NumPbufs) {
+	if (pbufNo >= NumPbufs) {
 		result = tMacErr::nsDrvErr;
-	} else if (! PbufIsAllocated(Pbuf_No)) {
+	} else if (! PbufIsAllocated(pbufNo)) {
 		result = tMacErr::offLinErr;
 	} else {
 		result = tMacErr::noErr;
@@ -140,12 +140,12 @@ tMacErr CheckPbuf(PbufIndex Pbuf_No)
 	return result;
 }
 
-tMacErr PbufGetSize(PbufIndex Pbuf_No, uint32_t *Count)
+tMacErr PbufGetSize(PbufIndex pbufNo, uint32_t *count)
 {
-	tMacErr result = CheckPbuf(Pbuf_No);
+	tMacErr result = CheckPbuf(pbufNo);
 
 	if (tMacErr::noErr == result) {
-		*Count = PbufSize[Pbuf_No];
+		*count = PbufSize[pbufNo];
 	}
 
 	return result;
@@ -153,14 +153,14 @@ tMacErr PbufGetSize(PbufIndex Pbuf_No, uint32_t *Count)
 
 /* --- Disk support --- */
 
-bool FirstFreeDisk(DriveIndex *Drive_No)
+bool FirstFreeDisk(DriveIndex *driveNo)
 {
 	DriveIndex i;
 
 	for (i = 0; i < NumDrives; ++i) {
 		if (! vSonyIsInserted(i)) {
-			if (nullptr != Drive_No) {
-				*Drive_No = i;
+			if (nullptr != driveNo) {
+				*driveNo = i;
 			}
 			return true;
 		}
@@ -173,26 +173,26 @@ bool AnyDiskInserted()
 	return 0 != g_sonyInsertedMask;
 }
 
-void DiskRevokeWritable(DriveIndex Drive_No)
+void DiskRevokeWritable(DriveIndex driveNo)
 {
-	g_sonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
+	g_sonyWritableMask &= ~ ((uint32_t)1 << driveNo);
 }
 
-void DiskInsertNotify(DriveIndex Drive_No, bool locked)
+void DiskInsertNotify(DriveIndex driveNo, bool locked)
 {
-	fprintf(stderr, "DISK_INSERT drive=%d locked=%d\n", (int)Drive_No, (int)locked);
-	g_sonyInsertedMask |= ((uint32_t)1 << Drive_No);
+	fprintf(stderr, "DISK_INSERT drive=%d locked=%d\n", (int)driveNo, (int)locked);
+	g_sonyInsertedMask |= ((uint32_t)1 << driveNo);
 	if (! locked) {
-		g_sonyWritableMask |= ((uint32_t)1 << Drive_No);
+		g_sonyWritableMask |= ((uint32_t)1 << driveNo);
 	}
 
 	QuietEnds();
 }
 
-void DiskEjectedNotify(DriveIndex Drive_No)
+void DiskEjectedNotify(DriveIndex driveNo)
 {
-	g_sonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
-	g_sonyInsertedMask &= ~ ((uint32_t)1 << Drive_No);
+	g_sonyWritableMask &= ~ ((uint32_t)1 << driveNo);
+	g_sonyInsertedMask &= ~ ((uint32_t)1 << driveNo);
 }
 
 /* --- Screen change detection --- */
@@ -729,13 +729,13 @@ static void SetLongs(uint32_t *p, long n)
 	}
 }
 
-bool AllocBlock(uint8_t **p, uint32_t n, bool FillOnes)
+bool AllocBlock(uint8_t **p, uint32_t n, bool fillOnes)
 {
 	*p = static_cast<uint8_t *>(calloc(1, n));
 	if (*p == nullptr) {
 		return false;
 	}
-	if (FillOnes) {
+	if (fillOnes) {
 		SetLongs(reinterpret_cast<uint32_t *>(*p), n / 4);
 	}
 	return true;
@@ -1052,7 +1052,7 @@ void InitKeyCodes()
 	theKeys[3] = 0;
 }
 
-void DisconnectKeyCodes(uint32_t KeepMask)
+void DisconnectKeyCodes(uint32_t keepMask)
 {
 	int j;
 	int b;
@@ -1074,7 +1074,7 @@ void DisconnectKeyCodes(uint32_t KeepMask)
 						case MKC_Shift: m = kKeepMaskShift; break;
 						default: m = 0; break;
 					}
-					if (0 == (KeepMask & m)) {
+					if (0 == (keepMask & m)) {
 						Keyboard_UpdateKeyMap(key, false);
 					}
 				}

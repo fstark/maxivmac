@@ -116,13 +116,13 @@ void ScreenChangedAll();
 void AutoScrollScreen();
 #endif
 
-bool FirstFreeDisk(DriveIndex *Drive_No);
-void DiskInsertNotify(DriveIndex Drive_No, bool locked);
-void DiskEjectedNotify(DriveIndex Drive_No);
+bool FirstFreeDisk(DriveIndex *driveNo);
+void DiskInsertNotify(DriveIndex driveNo, bool locked);
+void DiskEjectedNotify(DriveIndex driveNo);
 
 bool FirstFreePbuf(PbufIndex *r);
-void PbufNewNotify(PbufIndex Pbuf_No, uint32_t count);
-void PbufDisposeNotify(PbufIndex Pbuf_No);
+void PbufNewNotify(PbufIndex pbufNo, uint32_t count);
+void PbufDisposeNotify(PbufIndex pbufNo);
 
 void Keyboard_UpdateKeyMap(uint8_t key, bool down);
 void MyMouseButtonSet(bool down);
@@ -132,7 +132,7 @@ void MyMousePositionSetDelta(uint16_t dh, uint16_t dv);
 void MyMousePositionSet(uint16_t h, uint16_t v);
 
 void InitKeyCodes();
-void DisconnectKeyCodes(uint32_t KeepMask);
+void DisconnectKeyCodes(uint32_t keepMask);
 void EvtQTryRecoverFromFull();
 
 EvtQEl * EvtQElPreviousIn();

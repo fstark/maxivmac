@@ -17,13 +17,13 @@ extern char *DriveNames[];
 void InitDrives();
 void UnInitDrives();
 
-tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
-	DriveIndex Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
-	uint32_t *Sony_ActCount);
-tMacErr vSonyGetSize(DriveIndex Drive_No, uint32_t *Sony_Count);
-tMacErr vSonyEject(DriveIndex Drive_No);
-tMacErr vSonyEjectDelete(DriveIndex Drive_No);
-tMacErr vSonyGetName(DriveIndex Drive_No, PbufIndex *r);
+tMacErr vSonyTransfer(bool isWrite, uint8_t * buffer,
+	DriveIndex driveNo, uint32_t sonyStart, uint32_t sonyCount,
+	uint32_t *sonyActCount);
+tMacErr vSonyGetSize(DriveIndex driveNo, uint32_t *sonyCount);
+tMacErr vSonyEject(DriveIndex driveNo);
+tMacErr vSonyEjectDelete(DriveIndex driveNo);
+tMacErr vSonyGetName(DriveIndex driveNo, PbufIndex *r);
 
 bool Sony_Insert0(FILE * refnum, bool locked, char *drivepath);
 bool Sony_Insert1(char *drivepath, bool silentfail);
