@@ -18,10 +18,6 @@
 /* Sony driver patch is used for all models except PB100 */
 #define UseSonyPatch 1
 
-#ifndef UseLargeScreenHack
-#define UseLargeScreenHack 0
-#endif
-
 #if UseSonyPatch
 static const uint8_t sony_driver[] = {
 /*
@@ -181,6 +177,7 @@ static uint32_t getSonyDriverBase() {
 	base address, followed by the extension trap, disk icon,
 	and optional screen-size hack.
 */
+#include "devices/screen_hack.h"
 #if UseSonyPatch
 static void Sony_Install()
 {
@@ -210,9 +207,7 @@ static void Sony_Install()
 	MoveBytes(const_cast<uint8_t *>(my_disk_icon), pto, sizeof(my_disk_icon));
 	pto += sizeof(my_disk_icon);
 
-#if UseLargeScreenHack
 	ApplyScreenHack(pto);
-#endif
 
 	(void) pto; /* avoid warning about unused */
 }

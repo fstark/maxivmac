@@ -8,7 +8,15 @@
 
 static void ApplyScreenHack(uint8_t *pto)
 {
+/* Only patch ROM when screen differs from the model's default 512x342 */
+if (vMacScreenWidth == 512 && vMacScreenHeight == 342) {
+	return;
+}
+
 uint8_t *patchp = pto;
+const uint32_t kVidMem_Base =
+	(g_machine->config().model == MacModel::PB100)
+		? 0x00FA0000u : 0x00540000u;
 
 if (g_machine->config().model
 	<= MacModel::Mac128K)
