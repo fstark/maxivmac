@@ -14,10 +14,6 @@
 #define GRAB_KEYS_FULL_SCREEN 1
 #endif
 
-#ifndef GRAB_KEYS_MAX_FULL_SCREEN
-#define GRAB_KEYS_MAX_FULL_SCREEN 0
-#endif
-
 /* --- power-of-2 helper macros --- */
 
 #define POW_OF_2(p) ((uint32_t)1 << (p))
