@@ -6,7 +6,6 @@
 
 #include "platform/keycodes.h"
 
-#define SaveDialogEnable 1
 inline constexpr uint8_t MKC_formac_Control = MKC_CM;
 inline constexpr uint8_t MKC_formac_Command = MKC_Command;
 inline constexpr uint8_t MKC_formac_Option = MKC_Option;
