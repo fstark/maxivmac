@@ -34,39 +34,6 @@
 	ReportAbnormalID unused 0x0123 - 0x01FF
 */
 
-#ifndef DisableLazyFlagAll
-#define DisableLazyFlagAll 0
-#endif
-	/*
-		useful for debugging, to tell if an observed bug is
-		being cause by lazy flag evaluation stuff.
-		Can also disable parts of it individually:
-	*/
-
-#ifndef ForceFlagsEval
-#if DisableLazyFlagAll
-#define ForceFlagsEval 1
-#else
-#define ForceFlagsEval 0
-#endif
-#endif
-
-#ifndef UseLazyZ
-#if DisableLazyFlagAll || ForceFlagsEval
-#define UseLazyZ 0
-#else
-#define UseLazyZ 1
-#endif
-#endif
-
-#ifndef UseLazyCC
-#if DisableLazyFlagAll
-#define UseLazyCC 0
-#else
-#define UseLazyCC 1
-#endif
-#endif
-
 
 typedef unsigned char flagtype; /* must be 0 or 1, not boolean */
 
@@ -116,9 +83,7 @@ enum {
 	kLazyFlagsAslB,
 	kLazyFlagsAslW,
 	kLazyFlagsAslL,
-#if UseLazyZ
 	kLazyFlagsZSet,
-#endif
 
 	kNumLazyFlagsKinds
 };
@@ -152,9 +117,7 @@ static struct regstruct
 
 	uint8_t LazyFlagKind;
 	uint8_t LazyXFlagKind;
-#if UseLazyZ
 	uint8_t LazyFlagZSavedKind;
-#endif
 	uint32_t LazyFlagArgSrc;
 	uint32_t LazyFlagArgDst;
 	uint32_t LazyXFlagArgSrc;
@@ -2319,8 +2282,6 @@ static uint32_t Ui5rASR(uint32_t x, uint32_t s)
 }
 #endif
 
-#if UseLazyCC
-
 static void cctrue_TstL_HI(cond_actP t_act, cond_actP f_act)
 {
 	if (((uint32_t)V_regs.LazyFlagArgDst) > ((uint32_t)0)) {
@@ -2918,13 +2879,7 @@ static void cctrue_AslL_VS(cond_actP t_act, cond_actP f_act)
 
 static void cctrue_Dflt(cond_actP t_act, cond_actP f_act);
 
-#endif /* UseLazyCC */
-
-#if UseLazyCC
 #define CCdispSz (16 * kNumLazyFlagsKinds)
-#else
-#define CCdispSz 16
-#endif
 
 typedef void (*cctrueP)(cond_actP t_act, cond_actP f_act);
 
@@ -2946,7 +2901,6 @@ static const cctrueP cctrueDispatch[CCdispSz + 1] = {
 	cctrue_GT /* kLazyFlagsDefault GT */,
 	cctrue_LE /* kLazyFlagsDefault LE */,
 
-#if UseLazyCC
 	cctrue_T /* kLazyFlagsTstB T */,
 	cctrue_F /* kLazyFlagsTstB F */,
 	cctrue_Dflt /* kLazyFlagsTstB HI */,
@@ -3304,7 +3258,6 @@ static const cctrueP cctrueDispatch[CCdispSz + 1] = {
 	cctrue_Dflt /* kLazyFlagsAslL GT */,
 	cctrue_Dflt /* kLazyFlagsAslL LE */,
 
-#if UseLazyZ
 	cctrue_T /* kLazyFlagsZSet T */,
 	cctrue_F /* kLazyFlagsZSet F */,
 	cctrue_Dflt /* kLazyFlagsZSet HI */,
@@ -3321,19 +3274,15 @@ static const cctrueP cctrueDispatch[CCdispSz + 1] = {
 	cctrue_Dflt /* kLazyFlagsZSet LT */,
 	cctrue_Dflt /* kLazyFlagsZSet GT */,
 	cctrue_Dflt /* kLazyFlagsZSet LE */,
-#endif
-#endif /* UseLazyCC */
 
 	0
 };
 
-#if UseLazyCC
 static inline void cctrue(cond_actP t_act, cond_actP f_act)
 {
 	(cctrueDispatch[V_regs.LazyFlagKind * 16
 		+ V_regs.CurDecOpY.v[0].ArgDat])(t_act, f_act);
 }
-#endif
 
 
 static void NeedDefaultLazyXFlagSubB()
@@ -3470,23 +3419,14 @@ static const NeedLazyFlagP
 	NeedDefaultLazyXFlagAslB /* kLazyFlagsAslB */,
 	NeedDefaultLazyXFlagAslW /* kLazyFlagsAslW */,
 	NeedDefaultLazyXFlagAslL /* kLazyFlagsAslL */,
-#if UseLazyZ
 	0 /* kLazyFlagsZSet */,
-#endif
 
 	0
 };
 
 static void NeedDefaultLazyXFlag()
 {
-#if ForceFlagsEval
-	if (kLazyFlagsDefault != V_regs.LazyXFlagKind) {
-		ReportAbnormalID(AbnormalID::kCPU_not_kLazyFlagsDefault_in_NeedDefaultLazy,
-			"not kLazyFlagsDefault in NeedDefaultLazyXFlag");
-	}
-#else
 	(NeedLazyXFlagDispatch[V_regs.LazyXFlagKind])();
-#endif
 }
 
 static void NeedDefaultLazyFlagsTstL()
@@ -3829,9 +3769,7 @@ static void NeedDefaultLazyFlagsAslL()
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-#if UseLazyZ
 static void NeedDefaultLazyFlagsZSet();
-#endif
 
 static const NeedLazyFlagP
 	NeedLazyFlagDispatch[kNumLazyFlagsKinds + 1] =
@@ -3858,9 +3796,7 @@ static const NeedLazyFlagP
 	NeedDefaultLazyFlagsAslB /* kLazyFlagsAslB */,
 	NeedDefaultLazyFlagsAslW /* kLazyFlagsAslW */,
 	NeedDefaultLazyFlagsAslL /* kLazyFlagsAslL */,
-#if UseLazyZ
 	NeedDefaultLazyFlagsZSet /* kLazyFlagsZSet */,
-#endif
 
 	0
 };
@@ -3870,28 +3806,10 @@ static void NeedDefaultLazyAllFlags0()
 	(NeedLazyFlagDispatch[V_regs.LazyFlagKind])();
 }
 
-#if ForceFlagsEval
-static void NeedDefaultLazyAllFlags()
-{
-	if (kLazyFlagsDefault != V_regs.LazyFlagKind) {
-		ReportAbnormalID(AbnormalID::kCPU_not_kLazyFlagsDefault_in_NeedDefaultLazy_2,
-			"not kLazyFlagsDefault in NeedDefaultLazyAllFlags");
-#if dbglog_HAVE
-		dbglog_writelnNum("LazyFlagKind", V_regs.LazyFlagKind);
-#endif
-	}
-}
-#else
 #define NeedDefaultLazyAllFlags NeedDefaultLazyAllFlags0
-#endif
 
-#if ForceFlagsEval
-#define HaveSetUpFlags NeedDefaultLazyAllFlags0
-#else
 #define HaveSetUpFlags()
-#endif
 
-#if UseLazyZ
 static void NeedDefaultLazyFlagsZSet()
 {
 	flagtype SaveZFLG = ZFLG;
@@ -3901,23 +3819,12 @@ static void NeedDefaultLazyFlagsZSet()
 
 	ZFLG = SaveZFLG;
 }
-#endif
 
-#if UseLazyCC
 static void cctrue_Dflt(cond_actP t_act, cond_actP f_act)
 {
 	NeedDefaultLazyAllFlags();
 	cctrue(t_act, f_act);
 }
-#endif
-
-#if ! UseLazyCC
-static inline void cctrue(cond_actP t_act, cond_actP f_act)
-{
-	NeedDefaultLazyAllFlags();
-	(cctrueDispatch[V_regs.CurDecOpY.v[0].ArgDat])(t_act, f_act);
-}
-#endif
 
 
 
@@ -5685,7 +5592,6 @@ static void DoCodeRorL()
 }
 
 
-#if UseLazyZ
 static void WillSetZFLG()
 {
 	if (kLazyFlagsZSet == V_regs.LazyFlagKind) {
@@ -5697,9 +5603,6 @@ static void WillSetZFLG()
 		V_regs.LazyFlagKind = kLazyFlagsZSet;
 	}
 }
-#else
-#define WillSetZFLG NeedDefaultLazyAllFlags
-#endif
 
 static inline uint32_t DecodeGetSrcGetDstValueSetZ()
 {

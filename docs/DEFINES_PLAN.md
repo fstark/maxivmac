@@ -256,7 +256,8 @@ the `#if`/`#else`/`#endif` scaffolding. Keep only the "false"/"else" branch
 
 - **Defined:** `emulation_config.h:35`
 - **Used in:** `sony.cpp`
-- **Action:** Remove guard and the checksum-verification code.
+- **Action:** Remove guard and compile in the checksum-verification code
+  unconditionally. Replace `ReportAbnormalID` calls with warning log messages.
 
 ### 3.3 `GRAB_KEYS_MAX_FULL_SCREEN` — always 0 (1 `#if` site)
 
@@ -297,7 +298,8 @@ the `#if`/`#else`/`#endif` scaffolding. Keep only the "false"/"else" branch
 
 - **Defined:** `rom.cpp:22`
 - **Used in:** `rom.cpp`
-- **Action:** Remove guards and the large-screen hack code.
+- **Action:** Remove guards and keep the code — compile in unconditionally
+  so the screen hack executes when the screen differs from default.
 
 ### 3.10 `HaveGlbReg` — always 0 (6 `#if` sites)
 
@@ -511,5 +513,5 @@ after every phase.
 
 After each step:
 1. `cmake --build build` — must compile clean (no warnings from removed code).
-2. `./selftest.sh` — golden-file regression tests must pass.
+2. `cd test && ./verify.sh` — golden-file regression tests must pass.
 3. `grep -rn '#if.*REMOVED_DEFINE' src/` — verify no stale references.
