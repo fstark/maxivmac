@@ -9,8 +9,6 @@
 
 extern void *PbufDat[NumPbufs];
 
-#define PbufHaveLock 1
-
 tMacErr PbufNewFromPtr(void *p, uint32_t count, PbufIndex *r);
 void PbufKillToPtr(void **p, uint32_t *count, PbufIndex r);
 tMacErr PbufNew(uint32_t count, PbufIndex *r);

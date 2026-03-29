@@ -566,11 +566,7 @@ static void ForceShowCursor()
 /* cursor moving */
 
 
-#ifndef HAVE_WORKING_WARP
-#define HAVE_WORKING_WARP 1
-#endif
 
-#if ENABLE_MOVE_MOUSE && HAVE_WORKING_WARP
 static bool MoveMouse(int16_t h, int16_t v)
 {
 	/*
@@ -603,7 +599,6 @@ static bool MoveMouse(int16_t h, int16_t v)
 
 	return true;
 }
-#endif
 
 /* cursor state */
 
@@ -666,19 +661,6 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 	s_wantCursorHidden = ShouldHaveCursorHidden;
 }
 
-#if ENABLE_FS_MOUSE_MOTION && ! HAVE_WORKING_WARP
-static void MousePositionNotifyRelative(int deltah, int deltav)
-{
-	bool ShouldHaveCursorHidden = true;
-
-	/* SDL3 logical presentation handles coordinate scaling. */
-
-	MyMousePositionSetDelta(deltah,
-		deltav);
-
-	s_wantCursorHidden = ShouldHaveCursorHidden;
-}
-#endif
 
 static void CheckMouseState()
 {
@@ -742,11 +724,8 @@ static void CheckSavedMacMsg()
 
 /* --- event handling for main window --- */
 
-#define USE_MOTION_EVENTS 1
 
-#if USE_MOTION_EVENTS
 static bool s_caughtMouse = false;
-#endif
 
 /* Dispatch an SDL event: quit, keyboard, mouse, window resize,
    drag-and-drop, etc. */
@@ -791,12 +770,6 @@ static void HandleTheEvent(SDL_Event *event)
 		case
 			SDL_EVENT_MOUSE_MOTION
 			:
-#if ENABLE_FS_MOUSE_MOTION && ! HAVE_WORKING_WARP
-			if (g_haveMouseMotion) {
-				MousePositionNotifyRelative(
-					event->motion.xrel, event->motion.yrel);
-			} else
-#endif
 			{
 				MousePositionNotify(
 					event->motion.x, event->motion.y);
@@ -806,11 +779,6 @@ static void HandleTheEvent(SDL_Event *event)
 			SDL_EVENT_MOUSE_BUTTON_DOWN
 			:
 			/* any mouse button, we don't care which */
-#if ENABLE_FS_MOUSE_MOTION && ! HAVE_WORKING_WARP
-			if (g_haveMouseMotion) {
-				/* ignore position */
-			} else
-#endif
 			{
 				MousePositionNotify(
 					event->button.x, event->button.y);
@@ -820,11 +788,6 @@ static void HandleTheEvent(SDL_Event *event)
 		case
 			SDL_EVENT_MOUSE_BUTTON_UP
 			:
-#if ENABLE_FS_MOUSE_MOTION && ! HAVE_WORKING_WARP
-			if (g_haveMouseMotion) {
-				/* ignore position */
-			} else
-#endif
 			{
 				MousePositionNotify(
 					event->button.x, event->button.y);
@@ -916,7 +879,6 @@ static void GrabTheMachine()
 
 #if ENABLE_FS_MOUSE_MOTION
 
-#if HAVE_WORKING_WARP
 	/*
 		if magnification changes, need to reset,
 		even if g_haveMouseMotion already true
@@ -928,7 +890,6 @@ static void GrabTheMachine()
 		g_savedMouseV = g_viewVStart + (g_viewVSize / 2);
 		g_haveMouseMotion = true;
 	}
-#endif
 
 #endif /* ENABLE_FS_MOUSE_MOTION */
 }
@@ -938,9 +899,7 @@ static void UngrabMachine()
 #if ENABLE_FS_MOUSE_MOTION
 
 	if (g_haveMouseMotion) {
-#if HAVE_WORKING_WARP
 		(void) MoveMouse(g_curMouseH, g_curMouseV);
-#endif
 
 		g_haveMouseMotion = false;
 	}
@@ -952,7 +911,6 @@ static void UngrabMachine()
 #endif
 }
 
-#if ENABLE_FS_MOUSE_MOTION && HAVE_WORKING_WARP
 static void MouseConstrain()
 {
 	int16_t shiftdh;
@@ -980,7 +938,6 @@ static void MouseConstrain()
 		}
 	}
 }
-#endif
 
 
 enum {
@@ -1310,9 +1267,7 @@ static bool ReCreateMainWindow()
 
 	MyWState old_state;
 	MyWState new_state;
-#if HAVE_WORKING_WARP
 	bool HadCursorHidden = s_haveCursorHidden;
-#endif
 	int OldWinState =
 		s_useFullScreen ? kWinStateFullScreen : kWinStateWindowed;
 	int OldMagState =
@@ -1357,11 +1312,9 @@ static bool ReCreateMainWindow()
 		CloseMainWindow();
 		SetMyWState(&new_state);
 
-#if HAVE_WORKING_WARP
 		if (HadCursorHidden) {
 			(void) MoveMouse(g_curMouseH, g_curMouseV);
 		}
-#endif
 	}
 
 	return true;
@@ -1458,11 +1411,9 @@ static void CheckForSavedTasks()
 		EvtQTryRecoverFromFull();
 	}
 
-#if ENABLE_FS_MOUSE_MOTION && HAVE_WORKING_WARP
 	if (g_haveMouseMotion) {
 		MouseConstrain();
 	}
-#endif
 
 	if (g_requestMacOff) {
 		g_requestMacOff = false;
@@ -1702,9 +1653,7 @@ void WaitForNextTick()
 	}
 
 	if ((! s_backgroundFlag)
-#if USE_MOTION_EVENTS
 		&& (! s_caughtMouse)
-#endif
 		)
 	{
 		CheckMouseState();

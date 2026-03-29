@@ -520,7 +520,6 @@ void HTCEexportSubstCStr(const char *s)
 	int i;
 	int L;
 	PbufIndex j;
-#ifdef PbufHaveLock
 	int n = ClStrSizeSubstCStr(s);
 
 	if (tMacErr::noErr == PbufNew(n, &j)) {
@@ -547,20 +546,6 @@ void HTCEexportSubstCStr(const char *s)
 			PbufDispose(j);
 		}
 	}
-#else
-	uint8_t ps[ClStrMaxLength];
-
-	ClStrFromSubstCStr(&L, ps, s);
-
-	for (i = 0; i < L; ++i) {
-		ps[i] = Cell2MacAsciiMap[ps[i]];
-	}
-
-	if (tMacErr::noErr == PbufNew(L, &j)) {
-		PbufTransfer(ps, j, 0, L, true);
-		HTCEexport(j);
-	}
-#endif
 }
 
 void CopyOptionsStr()
