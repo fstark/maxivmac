@@ -65,9 +65,7 @@ bool g_wantNotAutoSlow = false;
 uint16_t g_curMouseV = 0;
 uint16_t g_curMouseH = 0;
 
-#if ENABLE_FS_MOUSE_MOTION
 bool g_haveMouseMotion = false;
-#endif
 
 uint32_t g_quietTime = 0;
 uint32_t g_quietSubTicks = 0;
@@ -317,9 +315,7 @@ static uint32_t s_nextDrawRow = 0;
 
 #define FlipCheckBits (FlipCheckMonoBits >> vMacScreenDepth)
 
-#if WantColorTransValid
 bool g_colorTransValid = false;
-#endif
 
 /* Compare current and previous screen buffers row-by-row to
    find the dirty rectangle, limiting work per tick for smooth
@@ -359,9 +355,7 @@ static bool ScreenFindChanges(uint8_t * screencurrentbuff,
 			j1h = vMacScreenWidth;
 			j0v = 0;
 			j1v = vMacScreenHeight;
-#if WantColorTransValid
 			g_colorTransValid = false;
-#endif
 		} else {
 			if (! FindFirstChangeInLVecs(
 				(uibb *)screencurrentbuff
@@ -455,9 +449,7 @@ Label_2c:
 			j1h = vMacScreenWidth;
 			j0v = 0;
 			j1v = vMacScreenHeight;
-#if WantColorTransValid
 			g_colorTransValid = false;
-#endif
 		} else {
 			if (! FindFirstChangeInLVecs(
 				(uibb *)screencurrentbuff
@@ -629,12 +621,9 @@ uint16_t g_viewHSize;
 uint16_t g_viewVSize;
 uint16_t g_viewHStart = 0;
 uint16_t g_viewVStart = 0;
-#if ENABLE_FS_MOUSE_MOTION
 int16_t g_savedMouseH;
 int16_t g_savedMouseV;
-#endif
 
-#if ENABLE_FS_MOUSE_MOTION
 void AutoScrollScreen()
 {
 	int16_t Shift;
@@ -700,7 +689,6 @@ void AutoScrollScreen()
 		}
 	}
 }
-#endif
 
 /* --- Memory allocation --- */
 
@@ -983,7 +971,6 @@ void MyMouseButtonSet(bool down)
 	}
 }
 
-#if ENABLE_FS_MOUSE_MOTION
 void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
 	if ((dh != 0) || (dv != 0)) {
@@ -1003,7 +990,6 @@ void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 		QuietEnds();
 	}
 }
-#endif
 
 uint16_t g_mousePosCurV = 0;
 uint16_t g_mousePosCurH = 0;

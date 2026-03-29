@@ -4,16 +4,6 @@
 
 #pragma once
 
-/* --- feature computation macros --- */
-
-#define ENABLE_FS_MOUSE_MOTION 1
-#define ENABLE_RECREATE_W 1
-#define ENABLE_MOVE_MOUSE 1
-
-#ifndef GRAB_KEYS_FULL_SCREEN
-#define GRAB_KEYS_FULL_SCREEN 1
-#endif
-
 /* --- power-of-2 helper macros --- */
 
 #define POW_OF_2(p) ((uint32_t)1 << (p))
@@ -55,14 +45,10 @@ extern uint16_t g_viewHSize;
 extern uint16_t g_viewVSize;
 extern uint16_t g_viewHStart;
 extern uint16_t g_viewVStart;
-#if ENABLE_FS_MOUSE_MOTION
 extern int16_t g_savedMouseH;
 extern int16_t g_savedMouseV;
-#endif
 
-#if ENABLE_FS_MOUSE_MOTION
 extern bool g_haveMouseMotion;
-#endif
 
 extern uint32_t g_pbufAllocatedMask;
 extern uint32_t PbufSize[NumPbufs];
@@ -91,10 +77,7 @@ extern uint16_t g_savedIDMsg;
 #endif
 extern bool g_savedFatalMsg;
 
-#define WantColorTransValid 1
-#if WantColorTransValid
 extern bool g_colorTransValid;
-#endif
 
 #if EmLocalTalk
 extern uint32_t e_p[2];
@@ -108,9 +91,7 @@ extern uint32_t g_ltMyStamp;
 void ScreenClearChanges();
 void ScreenChangedAll();
 
-#if ENABLE_FS_MOUSE_MOTION
 void AutoScrollScreen();
-#endif
 
 bool FirstFreeDisk(DriveIndex *driveNo);
 void DiskInsertNotify(DriveIndex driveNo, bool locked);
@@ -122,9 +103,7 @@ void PbufDisposeNotify(PbufIndex pbufNo);
 
 void Keyboard_UpdateKeyMap(uint8_t key, bool down);
 void MyMouseButtonSet(bool down);
-#if ENABLE_FS_MOUSE_MOTION
 void MyMousePositionSetDelta(uint16_t dh, uint16_t dv);
-#endif
 void MyMousePositionSet(uint16_t h, uint16_t v);
 
 void InitKeyCodes();

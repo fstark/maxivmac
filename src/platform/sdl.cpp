@@ -540,11 +540,9 @@ static void DrawChangesAndClear()
 
 void DoneWithDrawingForTick()
 {
-#if ENABLE_FS_MOUSE_MOTION
 	if (g_haveMouseMotion) {
 		AutoScrollScreen();
 	}
-#endif
 	DrawChangesAndClear();
 }
 
@@ -621,14 +619,12 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 		NewMousePosv += g_viewVStart;
 	}
 
-#if ENABLE_FS_MOUSE_MOTION
 	if (g_haveMouseMotion) {
 		MyMousePositionSetDelta(NewMousePosh - g_savedMouseH,
 			NewMousePosv - g_savedMouseV);
 		g_savedMouseH = NewMousePosh;
 		g_savedMouseV = NewMousePosv;
 	} else
-#endif
 	{
 		if (NewMousePosh < 0) {
 			NewMousePosh = 0;
@@ -873,11 +869,8 @@ static bool s_grabMachine = false;
 
 static void GrabTheMachine()
 {
-#if GRAB_KEYS_FULL_SCREEN
 	SDL_SetWindowMouseGrab(my_main_wind, true);
-#endif
 
-#if ENABLE_FS_MOUSE_MOTION
 
 	/*
 		if magnification changes, need to reset,
@@ -891,12 +884,10 @@ static void GrabTheMachine()
 		g_haveMouseMotion = true;
 	}
 
-#endif /* ENABLE_FS_MOUSE_MOTION */
 }
 
 static void UngrabMachine()
 {
-#if ENABLE_FS_MOUSE_MOTION
 
 	if (g_haveMouseMotion) {
 		(void) MoveMouse(g_curMouseH, g_curMouseV);
@@ -904,11 +895,7 @@ static void UngrabMachine()
 		g_haveMouseMotion = false;
 	}
 
-#endif /* ENABLE_FS_MOUSE_MOTION */
-
-#if GRAB_KEYS_FULL_SCREEN
 	SDL_SetWindowMouseGrab(my_main_wind, false);
-#endif
 }
 
 static void MouseConstrain()
@@ -1170,7 +1157,6 @@ static void CloseMainWindow()
 	}
 }
 
-#if ENABLE_RECREATE_W
 static void ZapMyWState()
 {
 	my_main_wind = nullptr;
@@ -1178,9 +1164,7 @@ static void ZapMyWState()
 	my_texture = nullptr;
 	my_format = nullptr;
 }
-#endif
 
-#if ENABLE_RECREATE_W
 struct MyWState {
 	uint16_t f_ViewHSize;
 	uint16_t f_ViewVSize;
@@ -1197,9 +1181,7 @@ struct MyWState {
 	const SDL_PixelFormatDetails
 	*f_my_format;
 };
-#endif
 
-#if ENABLE_RECREATE_W
 static void GetMyWState(MyWState *r)
 {
 	r->f_ViewHSize = g_viewHSize;
@@ -1216,9 +1198,7 @@ static void GetMyWState(MyWState *r)
 	r->f_my_texture = my_texture;
 	r->f_my_format = my_format;
 }
-#endif
 
-#if ENABLE_RECREATE_W
 static void SetMyWState(MyWState *r)
 {
 	g_viewHSize = r->f_ViewHSize;
@@ -1235,7 +1215,6 @@ static void SetMyWState(MyWState *r)
 	my_texture = r->f_my_texture;
 	my_format = r->f_my_format;
 }
-#endif
 
 enum {
 	kWinStateWindowed,
@@ -1245,7 +1224,6 @@ enum {
 
 static int WinMagStates[kNumWinStates];
 
-#if ENABLE_RECREATE_W
 static bool ReCreateMainWindow()
 {
 	/*
@@ -1319,7 +1297,6 @@ static bool ReCreateMainWindow()
 
 	return true;
 }
-#endif
 
 
 static void ZapWinStateVars()
@@ -1454,7 +1431,6 @@ static void CheckForSavedTasks()
 		MacMsgDisplayOn();
 	}
 
-#if ENABLE_RECREATE_W
 	if (0
 		|| (s_useMagnify != g_wantMagnify)
 		|| (s_useFullScreen != g_wantFullScreen)
@@ -1462,7 +1438,6 @@ static void CheckForSavedTasks()
 	{
 		(void) ReCreateMainWindow();
 	}
-#endif
 
 	if (s_grabMachine != (
 		s_useFullScreen &&
