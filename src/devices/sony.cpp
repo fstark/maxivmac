@@ -250,8 +250,6 @@ static void Drive_UpdateChecksums(DriveIndex driveNo)
 #define checkheaderoffset 0
 #define checkheadersize (checkheaderblocks * 512)
 
-#define Sony_SupportOtherFormats 1
-
 /*
 	Find the next pending disk, read its header, detect
 	format (raw, DC42, or with tags), and configure the
