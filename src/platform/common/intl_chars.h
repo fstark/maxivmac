@@ -149,14 +149,6 @@ extern const char Cell2PlainAsciiMap[];
 extern const uint16_t Cell2UnicodeMap[];
 #endif
 
-#ifndef NeedCell2WinAsciiMap
-#define NeedCell2WinAsciiMap 0
-#endif
-
-#if NeedCell2WinAsciiMap
-extern const char Cell2WinAsciiMap[];
-#endif
-
 /* --- State variables --- */
 
 extern bool g_speedStopped;
