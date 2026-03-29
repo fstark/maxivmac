@@ -27,9 +27,7 @@
 constexpr int NumDrives = 6;
 constexpr int NumPbufs = 4;
 
-#define SONY_SUPPORT_DC42 1
-#define SONY_SUPPORT_TAGS 1
-#define SONY_WANT_CHECKSUMS_UPDATED 1
+
 /* CaretBlinkTime and DoubleClickTime are model-dependent, set in rtc.cpp */
 
 #include "core/wire_macros.h"
