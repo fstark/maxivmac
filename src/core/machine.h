@@ -115,13 +115,13 @@ extern void dbglog_StartLine();
 #endif
 
 #if dbglog_HAVE
-extern void dbglog_WriteMemArrow(bool WriteMem);
+extern void dbglog_WriteMemArrow(bool writeMem);
 
 extern void dbglog_WriteNote(char *s);
 extern void dbglog_WriteSetBool(char *s, bool v);
 extern void dbglog_AddrAccess(char *s,
-	uint32_t Data, bool WriteMem, uint32_t addr);
-extern void dbglog_Access(char *s, uint32_t Data, bool WriteMem);
+	uint32_t data, bool writeMem, uint32_t addr);
+extern void dbglog_Access(char *s, uint32_t data, bool writeMem);
 #endif
 
 #if ! WantAbnormalReports

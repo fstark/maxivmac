@@ -92,9 +92,9 @@ void dbglog_StartLine()
 #endif
 
 #if dbglog_HAVE
-void dbglog_WriteMemArrow(bool WriteMem)
+void dbglog_WriteMemArrow(bool writeMem)
 {
-	if (WriteMem) {
+	if (writeMem) {
 		dbglog_writeCStr(" <- ");
 	} else {
 		dbglog_writeCStr(" -> ");
@@ -103,8 +103,8 @@ void dbglog_WriteMemArrow(bool WriteMem)
 #endif
 
 #if dbglog_HAVE
-void dbglog_AddrAccess(char *s, uint32_t Data,
-	bool WriteMem, uint32_t addr)
+void dbglog_AddrAccess(char *s, uint32_t data,
+	bool writeMem, uint32_t addr)
 {
 	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
@@ -112,20 +112,20 @@ void dbglog_AddrAccess(char *s, uint32_t Data,
 	dbglog_writeCStr("[");
 	dbglog_writeHex(addr);
 	dbglog_writeCStr("]");
-	dbglog_WriteMemArrow(WriteMem);
-	dbglog_writeHex(Data);
+	dbglog_WriteMemArrow(writeMem);
+	dbglog_writeHex(data);
 	dbglog_writeReturn();
 }
 #endif
 
 #if dbglog_HAVE
-void dbglog_Access(char *s, uint32_t Data, bool WriteMem)
+void dbglog_Access(char *s, uint32_t data, bool writeMem)
 {
 	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
 	dbglog_StartLine();
 	dbglog_writeCStr(s);
-	dbglog_WriteMemArrow(WriteMem);
-	dbglog_writeHex(Data);
+	dbglog_WriteMemArrow(writeMem);
+	dbglog_writeHex(data);
 	dbglog_writeReturn();
 }
 #endif
