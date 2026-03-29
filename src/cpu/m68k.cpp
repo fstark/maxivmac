@@ -98,10 +98,6 @@ typedef void (*ArgSetDstP)(uint32_t f);
 		unpredictable branch slows it down.
 	*/
 
-#ifndef HaveGlbReg
-#define HaveGlbReg 0
-#endif
-
 static struct regstruct
 {
 	uint32_t regs[16]; /* Data and Address registers */
@@ -8070,82 +8066,13 @@ static void DoCodeFPU_Restore(){ DoCodeFdefault(); }
 static void DoCodeFPU_dflt()   { DoCodeFdefault(); }
 #endif
 
-#if HaveGlbReg
-static void Em_Swap()
-{
-#ifdef r_pc_p
-	{
-		uint8_t * t = g_pc_p;
-		g_pc_p = regs.pc_p;
-		regs.pc_p = t;
-	}
-#endif
-#ifdef r_MaxCyclesToGo
-	{
-		int32_t t = g_MaxCyclesToGo;
-		g_MaxCyclesToGo = regs.MaxCyclesToGo;
-		regs.MaxCyclesToGo = t;
-	}
-#endif
-#ifdef r_pc_pHi
-	{
-		uint8_t * t = g_pc_pHi;
-		g_pc_pHi = regs.pc_pHi;
-		regs.pc_pHi = t;
-	}
-#endif
-#ifdef r_regs
-	{
-		struct regstruct *t = g_regs;
-		g_regs = regs.save_regs;
-		regs.save_regs = t;
-	}
-#endif
-}
-#endif
-
-#if HaveGlbReg
-#define Em_Enter Em_Swap
-#else
 #define Em_Enter()
-#endif
 
-#if HaveGlbReg
-#define Em_Exit Em_Swap
-#else
 #define Em_Exit()
-#endif
 
-#if HaveGlbReg
-static bool LocalMemAccessNtfy(ATTep pT)
-{
-	bool v;
-
-	Em_Exit();
-	v = MemAccessNtfy(pT);
-	Em_Enter();
-
-	return v;
-}
-#else
 #define LocalMemAccessNtfy MemAccessNtfy
-#endif
 
-#if HaveGlbReg
-static uint32_t LocalMMDV_Access(ATTep p, uint32_t Data,
-	bool WriteMem, bool ByteSize, uint32_t addr)
-{
-	uint32_t v;
-
-	Em_Exit();
-	v = MMDV_Access(p, Data, WriteMem, ByteSize, addr);
-	Em_Enter();
-
-	return v;
-}
-#else
 #define LocalMMDV_Access MMDV_Access
-#endif
 
 static void local_customreset()
 {
