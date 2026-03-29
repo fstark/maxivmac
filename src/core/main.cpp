@@ -70,13 +70,13 @@ static void InterruptReset_Update()
 			for 60th of a second.
 		*/
 
-	if (WantMacInterrupt) {
+	if (g_wantMacInterrupt) {
 		SetInterruptButton(true);
-		WantMacInterrupt = false;
+		g_wantMacInterrupt = false;
 	}
-	if (WantMacReset) {
+	if (g_wantMacReset) {
 		DoMacReset();
-		WantMacReset = false;
+		g_wantMacReset = false;
 	}
 }
 
@@ -138,7 +138,7 @@ static void SixtiethSecondNotify()
 #endif
 	if (++s_ticksSinceSecond >= 60) {
 		s_ticksSinceSecond = 0;
-		CurMacDateInSeconds++;
+		g_curMacDateInSeconds++;
 	}
 	if (auto* d = g_machine->findDevice<MouseDevice>()) d->update();
 	InterruptReset_Update();
@@ -187,14 +187,14 @@ static void ExtraTimeEndNotify()
 bool EmulationReserveAlloc()
 {
 	const auto& cfg = g_machine->config();
-	if (!AllocBlock(&RAM,
+	if (!AllocBlock(&g_ram,
 		cfg.ramSize() + RAMSafetyMarginFudge, false))
 		return false;
 	if (cfg.emVidCard)
-		if (!AllocBlock(&VidROM, cfg.vidROMSize, false))
+		if (!AllocBlock(&g_vidROM, cfg.vidROMSize, false))
 			return false;
 	if (cfg.includeVidMem)
-		if (!AllocBlock(&VidMem,
+		if (!AllocBlock(&g_vidMem,
 			cfg.vidMemSize + RAMSafetyMarginFudge, true))
 			return false;
 	return true;
@@ -202,14 +202,14 @@ bool EmulationReserveAlloc()
 
 void EmulationFreeAlloc()
 {
-	free(RAM); RAM = nullptr;
-	free(VidROM); VidROM = nullptr;
-	free(VidMem); VidMem = nullptr;
+	free(g_ram); g_ram = nullptr;
+	free(g_vidROM); g_vidROM = nullptr;
+	free(g_vidMem); g_vidMem = nullptr;
 }
 
 /*
 	Wire the ICT scheduler to the CPU, register all device
-	task handlers, initialize RTC/ROM/Video, build the
+	task handlers, initialize RTC/g_rom/Video, build the
 	address space, and perform hardware zap.
 */
 static bool InitEmulation()
@@ -295,19 +295,19 @@ static uint32_t s_extraSubTicksToDo = 0;
 static void DoEmulateOneTick()
 {
 	{
-		uint32_t NewQuietTime = QuietTime + 1;
+		uint32_t NewQuietTime = g_quietTime + 1;
 
-		if (NewQuietTime > QuietTime) {
+		if (NewQuietTime > g_quietTime) {
 			/* if not overflow */
-			QuietTime = NewQuietTime;
+			g_quietTime = NewQuietTime;
 		}
 	}
 	{
-		uint32_t NewQuietSubTicks = QuietSubTicks + kNumSubTicks;
+		uint32_t NewQuietSubTicks = g_quietSubTicks + kNumSubTicks;
 
-		if (NewQuietSubTicks > QuietSubTicks) {
+		if (NewQuietSubTicks > g_quietSubTicks) {
 			/* if not overflow */
-			QuietSubTicks = NewQuietSubTicks;
+			g_quietSubTicks = NewQuietSubTicks;
 		}
 	}
 
@@ -317,10 +317,10 @@ static void DoEmulateOneTick()
 
 	SixtiethEndNotify();
 
-	if ((uint8_t) -1 == SpeedValue) {
+	if ((uint8_t) -1 == g_speedValue) {
 		s_extraSubTicksToDo = (uint32_t) -1;
 	} else {
-		uint32_t ExtraAdd = (kNumSubTicks << SpeedValue) - kNumSubTicks;
+		uint32_t ExtraAdd = (kNumSubTicks << g_speedValue) - kNumSubTicks;
 		uint32_t ExtraLimit = ExtraAdd << 3;
 
 		s_extraSubTicksToDo += ExtraAdd;
@@ -361,11 +361,11 @@ static void DoEmulateExtraTime()
 		ExtraTimeBeginNotify();
 		do {
 			{
-				uint32_t NewQuietSubTicks = QuietSubTicks + 1;
+				uint32_t NewQuietSubTicks = g_quietSubTicks + 1;
 
-				if (NewQuietSubTicks > QuietSubTicks) {
+				if (NewQuietSubTicks > g_quietSubTicks) {
 					/* if not overflow */
-					QuietSubTicks = NewQuietSubTicks;
+					g_quietSubTicks = NewQuietSubTicks;
 				}
 			}
 			m68k_go_nCycles_1(CyclesScaledPerSubTick);
@@ -388,14 +388,14 @@ static void RunEmulatedTicksToTrueTime()
 {
 	/*
 		Always emulate exactly the number of ticks
-		that TrueEmulatedTime says are due, without
+		that g_trueEmulatedTime says are due, without
 		any cap or wall-clock gating.  This ensures
 		the emulated tick count (and therefore the
 		entire instruction stream) is deterministic
 		regardless of host speed.
 	*/
 
-	int16_t n = (int16_t)(OnTrueTime - s_curEmulatedTime);
+	int16_t n = (int16_t)(g_onTrueTime - s_curEmulatedTime);
 
 	if (n > 0) {
 		DoEmulateOneTick();
@@ -404,17 +404,17 @@ static void RunEmulatedTicksToTrueTime()
 		DoneWithDrawingForTick();
 
 		if (--n > 0) {
-			EmVideoDisable = true;
+			g_emVideoDisable = true;
 
 			do {
 				DoEmulateOneTick();
 				++s_curEmulatedTime;
 			} while (--n > 0);
 
-			EmVideoDisable = false;
+			g_emVideoDisable = false;
 		}
 
-		EmLagTime = 0;
+		g_emLagTime = 0;
 	}
 }
 
@@ -423,7 +423,7 @@ static void MainEventLoop()
 {
 	for (; ; ) {
 		WaitForNextTick();
-		if (ForceMacOff) {
+		if (g_forceMacOff) {
 			return;
 		}
 
@@ -455,7 +455,7 @@ EmulatorConfig& GetEmulatorConfigMut()
 
 /*
 	Parse CLI args, configure machine and emulator, set up
-	the state recorder, and resolve ROM/disk paths.
+	the state recorder, and resolve g_rom/disk paths.
 */
 void ProgramEarlyInit(int argc, char* argv[])
 {
@@ -487,7 +487,7 @@ void ProgramEarlyInit(int argc, char* argv[])
 		}
 		haveGoldenHdr = true;
 		s_launchConfig.model = static_cast<MacModel>(goldenHdr.modelId);
-		SpeedValue = goldenHdr.speedValue;
+		g_speedValue = goldenHdr.speedValue;
 		g_SkipThrottle = true;
 	}
 
@@ -533,7 +533,7 @@ void ProgramEarlyInit(int argc, char* argv[])
 			rc.maxInstructions = s_launchConfig.maxInstructions;
 
 		rc.modelId = static_cast<uint32_t>(s_launchConfig.model);
-		rc.speedValue = SpeedValue;
+		rc.speedValue = g_speedValue;
 		rc.ramSize = s_machineConfig.ramSize();
 		rc.screenWidth = s_machineConfig.screenWidth;
 		rc.screenHeight = s_machineConfig.screenHeight;

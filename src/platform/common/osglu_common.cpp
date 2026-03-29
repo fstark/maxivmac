@@ -16,89 +16,89 @@ extern void dbglog_close0();
 
 /* --- global variables --- */
 
-uint8_t * ROM = nullptr;
-bool ROM_loaded = false;
+uint8_t * g_rom = nullptr;
+bool g_romLoaded = false;
 
-uint32_t vSonyWritableMask = 0;
-uint32_t vSonyInsertedMask = 0;
+uint32_t g_sonyWritableMask = 0;
+uint32_t g_sonyInsertedMask = 0;
 
-bool vSonyRawMode = false;
+bool g_sonyRawMode = false;
 
-bool vSonyNewDiskWanted = false;
-uint32_t vSonyNewDiskSize;
+bool g_sonyNewDiskWanted = false;
+uint32_t g_sonyNewDiskSize;
 
-PbufIndex vSonyNewDiskName = NOT_A_PBUF;
+PbufIndex g_sonyNewDiskName = NOT_A_PBUF;
 
-uint32_t CurMacDateInSeconds = 0;
-uint32_t CurMacLatitude = 0;
-uint32_t CurMacLongitude = 0;
-uint32_t CurMacDelta = 0;
+uint32_t g_curMacDateInSeconds = 0;
+uint32_t g_curMacLatitude = 0;
+uint32_t g_curMacLongitude = 0;
+uint32_t g_curMacDelta = 0;
 
 /* Runtime screen dimensions — initialized from MachineConfig */
 uint16_t g_screenWidth  = 640;
 uint16_t g_screenHeight = 480;
 uint8_t  g_screenDepth  = 3;
 
-bool UseColorMode = false;
-bool ColorModeWorks = false;
+bool g_useColorMode = false;
+bool g_colorModeWorks = false;
 
-bool ColorMappingChanged = false;
+bool g_colorMappingChanged = false;
 
 uint16_t CLUT_reds[CLUT_size];
 uint16_t CLUT_greens[CLUT_size];
 uint16_t CLUT_blues[CLUT_size];
 
-bool RequestMacOff = false;
+bool g_requestMacOff = false;
 
-bool ForceMacOff = false;
+bool g_forceMacOff = false;
 
-bool WantMacInterrupt = false;
+bool g_wantMacInterrupt = false;
 
-bool WantMacReset = false;
+bool g_wantMacReset = false;
 
-uint8_t SpeedValue = 4;
+uint8_t g_speedValue = 4;
 
 bool g_SkipThrottle = false;
 
-bool WantNotAutoSlow = false;
+bool g_wantNotAutoSlow = false;
 
-uint16_t CurMouseV = 0;
-uint16_t CurMouseH = 0;
+uint16_t g_curMouseV = 0;
+uint16_t g_curMouseH = 0;
 
 #if EnableFSMouseMotion
-bool HaveMouseMotion = false;
+bool g_haveMouseMotion = false;
 #endif
 
-uint32_t QuietTime = 0;
-uint32_t QuietSubTicks = 0;
+uint32_t g_quietTime = 0;
+uint32_t g_quietSubTicks = 0;
 
 #if EmLocalTalk
 
-uint8_t LT_NodeHint = 0;
+uint8_t g_ltNodeHint = 0;
 
 #if LT_MayHaveEcho
-bool CertainlyNotMyPacket = false;
+bool g_certainlyNotMyPacket = false;
 #endif
 
-uint8_t * LT_TxBuffer = nullptr;
+uint8_t * g_ltTxBuffer = nullptr;
 
 /* Transmit state */
-uint16_t LT_TxBuffSz = 0;
+uint16_t g_ltTxBuffSz = 0;
 
 /* Receive state */
-uint8_t * LT_RxBuffer = nullptr;
-uint32_t LT_RxBuffSz = 0;
+uint8_t * g_ltRxBuffer = nullptr;
+uint32_t g_ltRxBuffSz = 0;
 
 #endif
 
-bool EmVideoDisable = false;
-int8_t EmLagTime = 0;
+bool g_emVideoDisable = false;
+int8_t g_emLagTime = 0;
 
-uint32_t OnTrueTime = 0;
+uint32_t g_onTrueTime = 0;
 
 /* --- Pbuf support --- */
 
-uint32_t PbufAllocatedMask;
+uint32_t g_pbufAllocatedMask;
 uint32_t PbufSize[NumPbufs];
 
 bool FirstFreePbuf(PbufIndex *r)
@@ -117,12 +117,12 @@ bool FirstFreePbuf(PbufIndex *r)
 void PbufNewNotify(PbufIndex Pbuf_No, uint32_t count)
 {
 	PbufSize[Pbuf_No] = count;
-	PbufAllocatedMask |= ((uint32_t)1 << Pbuf_No);
+	g_pbufAllocatedMask |= ((uint32_t)1 << Pbuf_No);
 }
 
 void PbufDisposeNotify(PbufIndex Pbuf_No)
 {
-	PbufAllocatedMask &= ~ ((uint32_t)1 << Pbuf_No);
+	g_pbufAllocatedMask &= ~ ((uint32_t)1 << Pbuf_No);
 }
 
 tMacErr CheckPbuf(PbufIndex Pbuf_No)
@@ -170,20 +170,20 @@ bool FirstFreeDisk(DriveIndex *Drive_No)
 
 bool AnyDiskInserted()
 {
-	return 0 != vSonyInsertedMask;
+	return 0 != g_sonyInsertedMask;
 }
 
 void DiskRevokeWritable(DriveIndex Drive_No)
 {
-	vSonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
+	g_sonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
 }
 
 void DiskInsertNotify(DriveIndex Drive_No, bool locked)
 {
 	fprintf(stderr, "DISK_INSERT drive=%d locked=%d\n", (int)Drive_No, (int)locked);
-	vSonyInsertedMask |= ((uint32_t)1 << Drive_No);
+	g_sonyInsertedMask |= ((uint32_t)1 << Drive_No);
 	if (! locked) {
-		vSonyWritableMask |= ((uint32_t)1 << Drive_No);
+		g_sonyWritableMask |= ((uint32_t)1 << Drive_No);
 	}
 
 	QuietEnds();
@@ -191,8 +191,8 @@ void DiskInsertNotify(DriveIndex Drive_No, bool locked)
 
 void DiskEjectedNotify(DriveIndex Drive_No)
 {
-	vSonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
-	vSonyInsertedMask &= ~ ((uint32_t)1 << Drive_No);
+	g_sonyWritableMask &= ~ ((uint32_t)1 << Drive_No);
+	g_sonyInsertedMask &= ~ ((uint32_t)1 << Drive_No);
 }
 
 /* --- Screen change detection --- */
@@ -300,7 +300,7 @@ Label_3:
 	*RightMask0 = RightMask;
 }
 
-uint8_t * screencomparebuff = nullptr;
+uint8_t * g_screenCompareBuff = nullptr;
 
 static uint32_t s_nextDrawRow = 0;
 
@@ -318,7 +318,7 @@ static uint32_t s_nextDrawRow = 0;
 #define FlipCheckBits (FlipCheckMonoBits >> vMacScreenDepth)
 
 #if WantColorTransValid
-bool ColorTransValid = false;
+bool g_colorTransValid = false;
 #endif
 
 /* Compare current and previous screen buffers row-by-row to
@@ -352,21 +352,21 @@ static bool ScreenFindChanges(uint8_t * screencurrentbuff,
 		MaxRowsDrawnPerTick = vMacScreenHeight / 4;
 	}
 
-	if (vMacScreenDepth != 0 && UseColorMode) {
-		if (ColorMappingChanged) {
-			ColorMappingChanged = false;
+	if (vMacScreenDepth != 0 && g_useColorMode) {
+		if (g_colorMappingChanged) {
+			g_colorMappingChanged = false;
 			j0h = 0;
 			j1h = vMacScreenWidth;
 			j0v = 0;
 			j1v = vMacScreenHeight;
 #if WantColorTransValid
-			ColorTransValid = false;
+			g_colorTransValid = false;
 #endif
 		} else {
 			if (! FindFirstChangeInLVecs(
 				(uibb *)screencurrentbuff
 					+ s_nextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
-				(uibb *)screencomparebuff
+				(uibb *)g_screenCompareBuff
 					+ s_nextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
 				((uint32_t)(vMacScreenHeight - s_nextDrawRow)
 					* (uint32_t)vMacScreenBitWidth) / uiblockbitsn,
@@ -386,7 +386,7 @@ static bool ScreenFindChanges(uint8_t * screencurrentbuff,
 				s_nextDrawRow = LimitDrawRow;
 			}
 			FindLastChangeInLVecs((uibb *)screencurrentbuff,
-				(uibb *)screencomparebuff,
+				(uibb *)g_screenCompareBuff,
 				((uint32_t)LimitDrawRow
 					* (uint32_t)vMacScreenBitWidth) / uiblockbitsn,
 				&j1);
@@ -403,7 +403,7 @@ static bool ScreenFindChanges(uint8_t * screencurrentbuff,
 			}
 
 			FindLeftRightChangeInLMat((uibb *)screencurrentbuff,
-				(uibb *)screencomparebuff,
+				(uibb *)g_screenCompareBuff,
 				(vMacScreenBitWidth / uiblockbitsn),
 				j0v, j1v, &LeftMin, &LeftMask, &RightMax, &RightMask);
 
@@ -449,20 +449,20 @@ Label_2c:
 		copyoffset = j0v * vMacScreenByteWidth;
 		copysize = copyrows * vMacScreenByteWidth;
 	} else {
-		if (vMacScreenDepth != 0 && ColorMappingChanged) {
-			ColorMappingChanged = false;
+		if (vMacScreenDepth != 0 && g_colorMappingChanged) {
+			g_colorMappingChanged = false;
 			j0h = 0;
 			j1h = vMacScreenWidth;
 			j0v = 0;
 			j1v = vMacScreenHeight;
 #if WantColorTransValid
-			ColorTransValid = false;
+			g_colorTransValid = false;
 #endif
 		} else {
 			if (! FindFirstChangeInLVecs(
 				(uibb *)screencurrentbuff
 					+ s_nextDrawRow * (vMacScreenWidth / uiblockbitsn),
-				(uibb *)screencomparebuff
+				(uibb *)g_screenCompareBuff
 					+ s_nextDrawRow * (vMacScreenWidth / uiblockbitsn),
 				((uint32_t)(vMacScreenHeight - s_nextDrawRow)
 					* (uint32_t)vMacScreenWidth) / uiblockbitsn,
@@ -482,7 +482,7 @@ Label_2c:
 				s_nextDrawRow = LimitDrawRow;
 			}
 			FindLastChangeInLVecs((uibb *)screencurrentbuff,
-				(uibb *)screencomparebuff,
+				(uibb *)g_screenCompareBuff,
 				((uint32_t)LimitDrawRow
 					* (uint32_t)vMacScreenWidth) / uiblockbitsn,
 				&j1);
@@ -499,7 +499,7 @@ Label_2c:
 			}
 
 			FindLeftRightChangeInLMat((uibb *)screencurrentbuff,
-				(uibb *)screencomparebuff,
+				(uibb *)g_screenCompareBuff,
 				(vMacScreenWidth / uiblockbitsn),
 				j0v, j1v, &LeftMin, &LeftMask, &RightMax, &RightMask);
 
@@ -530,7 +530,7 @@ Label_2:
 	}
 
 	MoveBytes(screencurrentbuff + copyoffset,
-		screencomparebuff + copyoffset,
+		g_screenCompareBuff + copyoffset,
 		copysize);
 
 	*top = j0v;
@@ -543,31 +543,31 @@ Label_2:
 
 /* --- Screen frame output --- */
 
-int16_t ScreenChangedTop;
-int16_t ScreenChangedLeft;
-int16_t ScreenChangedBottom;
-int16_t ScreenChangedRight;
+int16_t g_screenChangedTop;
+int16_t g_screenChangedLeft;
+int16_t g_screenChangedBottom;
+int16_t g_screenChangedRight;
 
 void ScreenClearChanges()
 {
-	ScreenChangedTop = 0;
-	ScreenChangedBottom = vMacScreenHeight;
-	ScreenChangedLeft = 0;
-	ScreenChangedRight = vMacScreenWidth;
+	g_screenChangedTop = 0;
+	g_screenChangedBottom = vMacScreenHeight;
+	g_screenChangedLeft = 0;
+	g_screenChangedRight = vMacScreenWidth;
 }
 
 void ScreenChangedAll()
 {
-	ScreenChangedTop = 0;
-	ScreenChangedBottom = vMacScreenHeight;
-	ScreenChangedLeft = 0;
-	ScreenChangedRight = vMacScreenWidth;
+	g_screenChangedTop = 0;
+	g_screenChangedBottom = vMacScreenHeight;
+	g_screenChangedLeft = 0;
+	g_screenChangedRight = vMacScreenWidth;
 }
 
-int16_t ScreenChangedQuietTop = vMacScreenHeight;
-int16_t ScreenChangedQuietLeft = vMacScreenWidth;
-int16_t ScreenChangedQuietBottom = 0;
-int16_t ScreenChangedQuietRight = 0;
+int16_t g_screenChangedQuietTop = vMacScreenHeight;
+int16_t g_screenChangedQuietLeft = vMacScreenWidth;
+int16_t g_screenChangedQuietBottom = 0;
+int16_t g_screenChangedQuietRight = 0;
 
 /* Find the changed region since last frame and notify the
    platform layer (HaveChangedScreenBuff) for display update. */
@@ -578,44 +578,44 @@ void Screen_OutputFrame(uint8_t * screencurrentbuff)
 	int16_t bottom;
 	int16_t right;
 
-	if (! EmVideoDisable) {
-		if (ScreenFindChanges(screencurrentbuff, EmLagTime,
+	if (! g_emVideoDisable) {
+		if (ScreenFindChanges(screencurrentbuff, g_emLagTime,
 			&top, &left, &bottom, &right))
 		{
-			if (top < ScreenChangedTop) {
-				ScreenChangedTop = top;
+			if (top < g_screenChangedTop) {
+				g_screenChangedTop = top;
 			}
-			if (bottom > ScreenChangedBottom) {
-				ScreenChangedBottom = bottom;
+			if (bottom > g_screenChangedBottom) {
+				g_screenChangedBottom = bottom;
 			}
-			if (left < ScreenChangedLeft) {
-				ScreenChangedLeft = left;
+			if (left < g_screenChangedLeft) {
+				g_screenChangedLeft = left;
 			}
-			if (right > ScreenChangedRight) {
-				ScreenChangedRight = right;
-			}
-
-			if (top < ScreenChangedQuietTop) {
-				ScreenChangedQuietTop = top;
-			}
-			if (bottom > ScreenChangedQuietBottom) {
-				ScreenChangedQuietBottom = bottom;
-			}
-			if (left < ScreenChangedQuietLeft) {
-				ScreenChangedQuietLeft = left;
-			}
-			if (right > ScreenChangedQuietRight) {
-				ScreenChangedQuietRight = right;
+			if (right > g_screenChangedRight) {
+				g_screenChangedRight = right;
 			}
 
-			if (((ScreenChangedQuietRight - ScreenChangedQuietLeft) > 1)
-				|| ((ScreenChangedQuietBottom
-					- ScreenChangedQuietTop) > 32))
+			if (top < g_screenChangedQuietTop) {
+				g_screenChangedQuietTop = top;
+			}
+			if (bottom > g_screenChangedQuietBottom) {
+				g_screenChangedQuietBottom = bottom;
+			}
+			if (left < g_screenChangedQuietLeft) {
+				g_screenChangedQuietLeft = left;
+			}
+			if (right > g_screenChangedQuietRight) {
+				g_screenChangedQuietRight = right;
+			}
+
+			if (((g_screenChangedQuietRight - g_screenChangedQuietLeft) > 1)
+				|| ((g_screenChangedQuietBottom
+					- g_screenChangedQuietTop) > 32))
 			{
-				ScreenChangedQuietTop = vMacScreenHeight;
-				ScreenChangedQuietLeft = vMacScreenWidth;
-				ScreenChangedQuietBottom = 0;
-				ScreenChangedQuietRight = 0;
+				g_screenChangedQuietTop = vMacScreenHeight;
+				g_screenChangedQuietLeft = vMacScreenWidth;
+				g_screenChangedQuietBottom = 0;
+				g_screenChangedQuietRight = 0;
 
 				QuietEnds();
 			}
@@ -625,13 +625,13 @@ void Screen_OutputFrame(uint8_t * screencurrentbuff)
 
 /* --- Full screen view support --- */
 
-uint16_t ViewHSize;
-uint16_t ViewVSize;
-uint16_t ViewHStart = 0;
-uint16_t ViewVStart = 0;
+uint16_t g_viewHSize;
+uint16_t g_viewVSize;
+uint16_t g_viewHStart = 0;
+uint16_t g_viewVStart = 0;
 #if EnableFSMouseMotion
-int16_t SavedMouseH;
-int16_t SavedMouseV;
+int16_t g_savedMouseH;
+int16_t g_savedMouseV;
 #endif
 
 #ifndef WantAutoScrollBorder
@@ -644,29 +644,29 @@ void AutoScrollScreen()
 	int16_t Shift;
 	int16_t Limit;
 
-	if (vMacScreenWidth != ViewHSize) {
+	if (vMacScreenWidth != g_viewHSize) {
 		Shift = 0;
-		Limit = ViewHStart
+		Limit = g_viewHStart
 #if WantAutoScrollBorder
-			+ (ViewHSize / 16)
+			+ (g_viewHSize / 16)
 #endif
 			;
-		if (CurMouseH < Limit) {
-			Shift = (Limit - CurMouseH + 1) & (~ 1);
-			Limit = ViewHStart;
+		if (g_curMouseH < Limit) {
+			Shift = (Limit - g_curMouseH + 1) & (~ 1);
+			Limit = g_viewHStart;
 			if (Shift >= Limit) {
 				Shift = Limit;
 			}
 			Shift = - Shift;
 		} else {
-			Limit = ViewHStart + ViewHSize
+			Limit = g_viewHStart + g_viewHSize
 #if WantAutoScrollBorder
-				- (ViewHSize / 16)
+				- (g_viewHSize / 16)
 #endif
 				;
-			if (CurMouseH > Limit) {
-				Shift = (CurMouseH - Limit + 1) & (~ 1);
-				Limit = vMacScreenWidth - ViewHSize - ViewHStart;
+			if (g_curMouseH > Limit) {
+				Shift = (g_curMouseH - Limit + 1) & (~ 1);
+				Limit = vMacScreenWidth - g_viewHSize - g_viewHStart;
 				if (Shift >= Limit) {
 					Shift = Limit;
 				}
@@ -674,35 +674,35 @@ void AutoScrollScreen()
 		}
 
 		if (Shift != 0) {
-			ViewHStart += Shift;
-			SavedMouseH += Shift;
+			g_viewHStart += Shift;
+			g_savedMouseH += Shift;
 			ScreenChangedAll();
 		}
 	}
 
-	if (vMacScreenHeight != ViewVSize) {
+	if (vMacScreenHeight != g_viewVSize) {
 		Shift = 0;
-		Limit = ViewVStart
+		Limit = g_viewVStart
 #if WantAutoScrollBorder
-			+ (ViewVSize / 16)
+			+ (g_viewVSize / 16)
 #endif
 			;
-		if (CurMouseV < Limit) {
-			Shift = (Limit - CurMouseV + 1) & (~ 1);
-			Limit = ViewVStart;
+		if (g_curMouseV < Limit) {
+			Shift = (Limit - g_curMouseV + 1) & (~ 1);
+			Limit = g_viewVStart;
 			if (Shift >= Limit) {
 				Shift = Limit;
 			}
 			Shift = - Shift;
 		} else {
-			Limit = ViewVStart + ViewVSize
+			Limit = g_viewVStart + g_viewVSize
 #if WantAutoScrollBorder
-				- (ViewVSize / 16)
+				- (g_viewVSize / 16)
 #endif
 				;
-			if (CurMouseV > Limit) {
-				Shift = (CurMouseV - Limit + 1) & (~ 1);
-				Limit = vMacScreenHeight - ViewVSize - ViewVStart;
+			if (g_curMouseV > Limit) {
+				Shift = (g_curMouseV - Limit + 1) & (~ 1);
+				Limit = vMacScreenHeight - g_viewVSize - g_viewVStart;
 				if (Shift >= Limit) {
 					Shift = Limit;
 				}
@@ -710,8 +710,8 @@ void AutoScrollScreen()
 		}
 
 		if (Shift != 0) {
-			ViewVStart += Shift;
-			SavedMouseV += Shift;
+			g_viewVStart += Shift;
+			g_savedMouseV += Shift;
 			ScreenChangedAll();
 		}
 	}
@@ -1095,9 +1095,9 @@ void EvtQTryRecoverFromFull()
 const char *SavedBriefMsg = nullptr;
 const char *SavedLongMsg;
 #if WantAbnormalReports
-uint16_t SavedIDMsg = 0;
+uint16_t g_savedIDMsg = 0;
 #endif
-bool SavedFatalMsg;
+bool g_savedFatalMsg;
 
 void MacMsg(const char *briefMsg, const char *longMsg, bool fatal)
 {
@@ -1109,7 +1109,7 @@ void MacMsg(const char *briefMsg, const char *longMsg, bool fatal)
 	} else {
 		SavedBriefMsg = briefMsg;
 		SavedLongMsg = longMsg;
-		SavedFatalMsg = fatal;
+		g_savedFatalMsg = fatal;
 	}
 }
 
@@ -1119,13 +1119,13 @@ void WarnMsgAbnormalID(uint16_t id)
 	MacMsg(Localize(kStrReportAbnormalTitle),
 		Localize(kStrReportAbnormalMessage), false);
 
-	if (0 != SavedIDMsg) {
+	if (0 != g_savedIDMsg) {
 		/*
 			ignore the new message, only display the
 			first error.
 		*/
 	} else {
-		SavedIDMsg = id;
+		g_savedIDMsg = id;
 	}
 }
 #endif
@@ -1180,14 +1180,14 @@ void EntropyPoolAddPtr(uint8_t * p, uint32_t n)
 
 
 
-uint32_t LT_MyStamp = 0;
+uint32_t g_ltMyStamp = 0;
 
 void LT_PickStampNodeHint()
 {
-	LT_MyStamp = e_p[0];
+	g_ltMyStamp = e_p[0];
 
 #if dbglog_HAVE && 1
-	dbglog_writelnNum("LT_MyStamp ", LT_MyStamp);
+	dbglog_writelnNum("LT_MyStamp ", g_ltMyStamp);
 #endif
 
 	{
@@ -1196,18 +1196,18 @@ void LT_PickStampNodeHint()
 		for (;;) {
 			/* user node should be in 1-127 */
 
-			LT_NodeHint = e_p[1] & 0x7F;
+			g_ltNodeHint = e_p[1] & 0x7F;
 
 #if dbglog_HAVE && 1
-			dbglog_writelnNum("LT_NodeHint ", LT_NodeHint);
+			dbglog_writelnNum("LT_NodeHint ", g_ltNodeHint);
 #endif
 
-			if (0 != LT_NodeHint) {
+			if (0 != g_ltNodeHint) {
 				break;
 			}
 			if (0 == --i) {
 				/* just maybe, randomness is broken */
-				LT_NodeHint = 4;
+				g_ltNodeHint = 4;
 				break;
 			}
 			EntropyPoolStir();

@@ -60,7 +60,7 @@ void customreset()
 	if (auto* d = g_machine->findDevice<SonyDevice>()) d->reset();
 	Extn_Reset();
 	if (g_machine->config().isCompactMac()) {
-		WantMacReset = true;
+		g_wantMacReset = true;
 		/*
 			kludge, code in Finder appears
 			to do RESET and not expect
@@ -72,11 +72,11 @@ void customreset()
 	}
 }
 
-uint8_t * RAM = nullptr;
-uint8_t * VidROM = nullptr;
-uint8_t * VidMem = nullptr;
+uint8_t * g_ram = nullptr;
+uint8_t * g_vidROM = nullptr;
+uint8_t * g_vidMem = nullptr;
 
-uint8_t* Wires = nullptr;
+uint8_t* g_wiresData = nullptr;
 
 
 #if WantDisasm
@@ -448,7 +448,7 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 #define kParamFindExtnTheId 12
 
 /*
-	Look up a ROM extension by its four-byte signature.
+	Look up a g_rom extension by its four-byte signature.
 	Returns the extension slot index to the guest.
 */
 static void ExtnFind_Access(uint32_t p)
@@ -610,7 +610,7 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 }
 
 /*
-	ExtnDevice: wraps the ROM extension slot mechanism (Sony, Video, etc.)
+	ExtnDevice: wraps the g_rom extension slot mechanism (Sony, Video, etc.)
 	as a Device for ATT dispatch.
 */
 class ExtnDevice : public Device {
@@ -762,7 +762,7 @@ static void SetUp_RAM24()
 			r.cmpmask = 0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1);
 			r.cmpvalu = 0;
 			r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramSize() - 1);
-			r.usebase = RAM;
+			r.usebase = g_ram;
 			r.Access = kATTA_readwritereadymask;
 			AddToATTList(&r);
 		} else
@@ -775,7 +775,7 @@ static void SetUp_RAM24()
 						| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
 					r.cmpvalu = bankbit;
 					r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramBSize - 1);
-					r.usebase = cfg.ramASize + RAM;
+					r.usebase = cfg.ramASize + g_ram;
 					r.Access = kATTA_readwritereadymask;
 					AddToATTList(&r);
 				}
@@ -786,7 +786,7 @@ static void SetUp_RAM24()
 					| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
 				r.cmpvalu = 0;
 				r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramASize - 1);
-				r.usebase = RAM;
+				r.usebase = g_ram;
 				r.Access = kATTA_readwritereadymask;
 				AddToATTList(&r);
 			}
@@ -800,7 +800,7 @@ static void SetUp_RAM24()
 					| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
 				r.cmpvalu = bankbit;
 				r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramBSize - 1);
-				r.usebase = cfg.ramASize + RAM;
+				r.usebase = cfg.ramASize + g_ram;
 				r.Access = kATTA_readwritereadymask;
 				AddToATTList(&r);
 			}
@@ -811,7 +811,7 @@ static void SetUp_RAM24()
 				| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
 			r.cmpvalu = 0;
 			r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramASize - 1);
-			r.usebase = RAM;
+			r.usebase = g_ram;
 			r.Access = kATTA_readwritereadymask;
 			AddToATTList(&r);
 		}
@@ -945,7 +945,7 @@ static void SetUp_address24()
 			(0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
 		r.cmpvalu = kRAM_Base;
 		r.usemask = cfg.romSize - 1;
-		r.usebase = ROM;
+		r.usebase = g_rom;
 		r.Access = kATTA_readreadymask;
 		AddToATTList(&r);
 	} else {
@@ -955,21 +955,21 @@ static void SetUp_address24()
 	r.cmpmask = kROM_cmpmask;
 	r.cmpvalu = cfg.romBase;
 	r.usemask = cfg.romSize - 1;
-	r.usebase = ROM;
+	r.usebase = g_rom;
 	r.Access = kATTA_readreadymask;
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
 	r.cmpvalu = 0x900000;
 	r.usemask = (cfg.vidMemSize - 1) & (0x100000 - 1);
-	r.usebase = VidMem;
+	r.usebase = g_vidMem;
 	r.Access = kATTA_readwritereadymask;
 	AddToATTList(&r);
 	if (cfg.vidMemSize >= 0x00200000) {
 		r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
 		r.cmpvalu = 0xA00000;
 		r.usemask = (0x100000 - 1);
-		r.usebase = VidMem + (1 << 20);
+		r.usebase = g_vidMem + (1 << 20);
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);
 	}
@@ -977,13 +977,13 @@ static void SetUp_address24()
 		r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
 		r.cmpvalu = 0xB00000;
 		r.usemask = (0x100000 - 1);
-		r.usebase = VidMem + (2 << 20);
+		r.usebase = g_vidMem + (2 << 20);
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);
 		r.cmpmask = 0x00FFFFFF & ~ (0x100000 - 1);
 		r.cmpvalu = 0xC00000;
 		r.usemask = (0x100000 - 1);
-		r.usebase = VidMem + (3 << 20);
+		r.usebase = g_vidMem + (3 << 20);
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);
 	}
@@ -1001,7 +1001,7 @@ static void SetUp_address32()
 		r.cmpmask = ~ ((1 << 30) - 1);
 		r.cmpvalu = 0;
 		r.usemask = cfg.romSize - 1;
-		r.usebase = ROM;
+		r.usebase = g_rom;
 		r.Access = kATTA_readreadymask;
 		AddToATTList(&r);
 	} else {
@@ -1013,7 +1013,7 @@ static void SetUp_address32()
 				r.cmpmask = ~ ((1 << 30) - 1);
 				r.cmpvalu = 0;
 				r.usemask = cfg.ramSize() - 1;
-				r.usebase = RAM;
+				r.usebase = g_ram;
 				r.Access = kATTA_readwritereadymask;
 				AddToATTList(&r);
 			} else
@@ -1022,7 +1022,7 @@ static void SetUp_address32()
 					r.cmpmask = bankbit | ~ ((1 << 30) - 1);
 					r.cmpvalu = bankbit;
 					r.usemask = cfg.ramBSize - 1;
-					r.usebase = cfg.ramASize + RAM;
+					r.usebase = cfg.ramASize + g_ram;
 					r.Access = kATTA_readwritereadymask;
 					AddToATTList(&r);
 				}
@@ -1030,7 +1030,7 @@ static void SetUp_address32()
 				r.cmpmask = bankbit | ~ ((1 << 30) - 1);
 				r.cmpvalu = 0;
 				r.usemask = cfg.ramASize - 1;
-				r.usebase = RAM;
+				r.usebase = g_ram;
 				r.Access = kATTA_readwritereadymask;
 				AddToATTList(&r);
 			}
@@ -1039,7 +1039,7 @@ static void SetUp_address32()
 				r.cmpmask = bankbit | ~ ((1 << 30) - 1);
 				r.cmpvalu = bankbit;
 				r.usemask = cfg.ramBSize - 1;
-				r.usebase = cfg.ramASize + RAM;
+				r.usebase = cfg.ramASize + g_ram;
 				r.Access = kATTA_readwritereadymask;
 				AddToATTList(&r);
 			}
@@ -1047,7 +1047,7 @@ static void SetUp_address32()
 			r.cmpmask = bankbit | ~ ((1 << 30) - 1);
 			r.cmpvalu = 0;
 			r.usemask = cfg.ramASize - 1;
-			r.usebase = RAM;
+			r.usebase = g_ram;
 			r.Access = kATTA_readwritereadymask;
 			AddToATTList(&r);
 		}
@@ -1056,7 +1056,7 @@ static void SetUp_address32()
 	r.cmpmask = ~ ((1 << 28) - 1);
 	r.cmpvalu = 0x40000000;
 	r.usemask = cfg.romSize - 1;
-	r.usebase = ROM;
+	r.usebase = g_rom;
 	r.Access = kATTA_readreadymask;
 	AddToATTList(&r);
 
@@ -1065,14 +1065,14 @@ static void SetUp_address32()
 	r.cmpmask = ~ ((1 << 20) - 1);
 	r.cmpvalu = 0xF9F00000;
 	r.usemask = cfg.vidROMSize - 1;
-	r.usebase = VidROM;
+	r.usebase = g_vidROM;
 	r.Access = kATTA_readreadymask;
 	AddToATTList(&r);
 
 	r.cmpmask = ~ 0x000FFFFF;
 	r.cmpvalu = 0xF9900000;
 	r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
-	r.usebase = VidMem;
+	r.usebase = g_vidMem;
 	r.Access = kATTA_readwritereadymask;
 	AddToATTList(&r);
 /* kludge to allow more than 1M of Video Memory */
@@ -1080,7 +1080,7 @@ static void SetUp_address32()
 		r.cmpmask = ~ 0x000FFFFF;
 		r.cmpvalu = 0xF9A00000;
 		r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
-		r.usebase = VidMem + (1 << 20);
+		r.usebase = g_vidMem + (1 << 20);
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);
 	}
@@ -1088,13 +1088,13 @@ static void SetUp_address32()
 		r.cmpmask = ~ 0x000FFFFF;
 		r.cmpvalu = 0xF9B00000;
 		r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
-		r.usebase = VidMem + (2 << 20);
+		r.usebase = g_vidMem + (2 << 20);
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);
 		r.cmpmask = ~ 0x000FFFFF;
 		r.cmpvalu = 0xF9C00000;
 		r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
-		r.usebase = VidMem + (3 << 20);
+		r.usebase = g_vidMem + (3 << 20);
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);
 	}
@@ -1155,7 +1155,7 @@ static void SetUp_RAM24_compact()
 		r.cmpmask = 0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1);
 		r.cmpvalu = kRAM_Base;
 		r.usemask = cfg.ramSize() - 1;
-		r.usebase = RAM;
+		r.usebase = g_ram;
 		r.Access = kATTA_readwritereadymask;
 		AddToATTListWithMTB(&r);
 	} else {
@@ -1166,7 +1166,7 @@ static void SetUp_RAM24_compact()
 			r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~ ((1 << kRAM_ln2Spc) - 1));
 			r.cmpvalu = kRAM_Base + cfg.ramASize;
 			r.usemask = cfg.ramBSize - 1;
-			r.usebase = cfg.ramASize + RAM;
+			r.usebase = cfg.ramASize + g_ram;
 			r.Access = kATTA_readwritereadymask;
 			AddToATTListWithMTB(&r);
 		}
@@ -1174,7 +1174,7 @@ static void SetUp_RAM24_compact()
 		r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~ ((1 << kRAM_ln2Spc) - 1));
 		r.cmpvalu = kRAM_Base;
 		r.usemask = cfg.ramASize - 1;
-		r.usebase = RAM;
+		r.usebase = g_ram;
 		r.Access = kATTA_readwritereadymask;
 		AddToATTListWithMTB(&r);
 	}
@@ -1191,7 +1191,7 @@ static void SetUp_address_compact()
 			(0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
 		r.cmpvalu = kRAM_Base;
 		r.usemask = cfg.romSize - 1;
-		r.usebase = ROM;
+		r.usebase = g_rom;
 		r.Access = kATTA_readreadymask;
 		AddToATTListWithMTB(&r);
 	} else {
@@ -1207,7 +1207,7 @@ static void SetUp_address_compact()
 		AddToATTList(&r);
 	} else {
 		r.usemask = cfg.romSize - 1;
-		r.usebase = ROM;
+		r.usebase = g_rom;
 		r.Access = kATTA_readreadymask;
 		AddToATTListWithMTB(&r);
 	}
@@ -1218,12 +1218,12 @@ static void SetUp_address_compact()
 		if (cfg.ramBSize == 0 || cfg.ramASize == cfg.ramBSize) {
 			r.usemask = cfg.ramSize() - 1;
 				/* note that cmpmask and usemask overlap for 4M */
-			r.usebase = RAM;
+			r.usebase = g_ram;
 			r.Access = kATTA_readwritereadymask;
 		} else {
 			/* unbalanced memory */
 			r.usemask = cfg.ramBSize - 1;
-			r.usebase = cfg.ramASize + RAM;
+			r.usebase = cfg.ramASize + g_ram;
 			r.Access = kATTA_readwritereadymask;
 		}
 		AddToATTListWithMTB(&r);
@@ -1233,7 +1233,7 @@ static void SetUp_address_compact()
 		r.cmpmask = 0x00FFFFFF & ~ ((1 << kVidMem_ln2Spc) - 1);
 		r.cmpvalu = kVidMem_Base;
 		r.usemask = g_machine->config().vidMemSize - 1;
-		r.usebase = VidMem;
+		r.usebase = g_vidMem;
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);
 	}
@@ -1368,7 +1368,7 @@ static void SetUpMemBanks()
 			} else if ((addr & 1) != 0) {
 				if (0x3FFF == (addr & 0x1FFFF)) {
 					/*
-						for weirdness at offset 0x7C4 in ROM.
+						for weirdness at offset 0x7C4 in g_rom.
 						looks like bug.
 					*/
 					Data = p->device->access(Data, WriteMem,
@@ -1634,12 +1634,12 @@ Label_Retry:
 	return p;
 }
 
-bool InterruptButton = false;
+bool g_interruptButton = false;
 
 void SetInterruptButton(bool v)
 {
-	if (InterruptButton != v) {
-		InterruptButton = v;
+	if (g_interruptButton != v) {
+		g_interruptButton = v;
 		VIAorSCCinterruptChngNtfy();
 	}
 }
@@ -1658,7 +1658,7 @@ void VIAorSCCinterruptChngNtfy()
 
 	if (g_machine->config().isIIFamily()) {
 		/* Mac II priority: NMI > SCC > VIA2 > VIA1 */
-		if (InterruptButton) {
+		if (g_interruptButton) {
 			NewIPL = 7;
 		} else if (SCCInterruptRequest) {
 			NewIPL = 4;
@@ -1675,7 +1675,7 @@ void VIAorSCCinterruptChngNtfy()
 			& ~ SCCInterruptRequest;
 		NewIPL = VIAandNotSCC
 			| (SCCInterruptRequest << 1)
-			| (InterruptButton << 2);
+			| (g_interruptButton << 2);
 	}
 	if (NewIPL != s_curIPL) {
 		s_curIPL = NewIPL;
@@ -1686,7 +1686,7 @@ void VIAorSCCinterruptChngNtfy()
  bool AddrSpac_Init()
 {
 	g_wires.init(kNumWires);
-	Wires = g_wires.data();
+	g_wiresData = g_wires.data();
 
 	/* Register wire change callbacks */
 	g_wires.onChange(Wire_MemOverlay, MemOverlay_ChangeNtfy);
@@ -1756,7 +1756,7 @@ extern void PowerOff_ChangeNtfy();
 void PowerOff_ChangeNtfy()
 {
 	if (! VIA2_iB2) {
-		ForceMacOff = true;
+		g_forceMacOff = true;
 	}
 }
 

@@ -23,15 +23,15 @@ enum {
 
 /* --- Special mode variables --- */
 
-extern uint32_t SpecialModes;
-extern bool NeedWholeScreenDraw;
-extern uint8_t * CntrlDisplayBuff;
+extern uint32_t g_specialModes;
+extern bool g_needWholeScreenDraw;
+extern uint8_t * g_cntrlDisplayBuff;
 
 /* --- Special mode macros --- */
 
-#define SpecialModeSet(i) SpecialModes |= (1 << (i))
-#define SpecialModeClr(i) SpecialModes &= ~ (1 << (i))
-#define SpecialModeTst(i) (0 != (SpecialModes & (1 << (i))))
+#define SpecialModeSet(i) g_specialModes |= (1 << (i))
+#define SpecialModeClr(i) g_specialModes &= ~ (1 << (i))
+#define SpecialModeTst(i) (0 != (g_specialModes & (1 << (i))))
 
 #define MacMsgDisplayed SpecialModeTst(SpclModeMessage)
 

@@ -14,7 +14,7 @@ tMacErr LoadMacRomFrom(char *path)
 		err = tMacErr::fnfErr;
 	} else {
 		const uint32_t romSize = g_machine->config().romSize;
-		File_Size = fread(ROM, 1, romSize, ROM_File);
+		File_Size = fread(g_rom, 1, romSize, ROM_File);
 		if ((uint32_t)File_Size != romSize) {
 			if (feof(ROM_File))
 			{

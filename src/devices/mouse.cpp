@@ -121,7 +121,7 @@ void MouseDevice::endTickNotify()
 {
 	if (Mouse_Enabled()) {
 		/* tell platform specific code where the mouse went */
-		CurMouseV = get_ram_word(0x082C);
-		CurMouseH = get_ram_word(0x082E);
+		g_curMouseV = get_ram_word(0x082C);
+		g_curMouseH = get_ram_word(0x082E);
 	}
 }

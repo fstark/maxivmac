@@ -1,7 +1,7 @@
 /*
 	config_loader.h
 
-	Command-line argument parsing for runtime model/ROM/RAM/screen
+	Command-line argument parsing for runtime model/g_rom/g_ram/screen
 	configuration. Part of Phase 5 multi-model support.
 */
 

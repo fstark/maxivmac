@@ -12,14 +12,14 @@
 
 /* SpclMode enum provided by control_mode.h */
 
-uint32_t SpecialModes = 0;
+uint32_t g_specialModes = 0;
 
-bool NeedWholeScreenDraw = false;
+bool g_needWholeScreenDraw = false;
 
 /* SpecialModeSet/Clr/Tst macros provided by control_mode.h */
 
 
-uint8_t * CntrlDisplayBuff = nullptr;
+uint8_t * g_cntrlDisplayBuff = nullptr;
 
 /* Render an 8x16 character bitmap at screen coordinates (h, v),
    handling all supported color depths (1-bit through 32-bit). */
@@ -34,8 +34,8 @@ void DrawCell(unsigned int h, unsigned int v, int x)
 		int i;
 		uint8_t * p0 = const_cast<uint8_t *>(CellData) + 16 * x;
 
-	if (0 != vMacScreenDepth && UseColorMode) {
-			uint8_t * p = CntrlDisplayBuff
+	if (0 != vMacScreenDepth && g_useColorMode) {
+			uint8_t * p = g_cntrlDisplayBuff
 				+ ((h + 1) << vMacScreenDepth)
 				+ (v * 16 + 11) * vMacScreenByteWidth;
 
@@ -95,7 +95,7 @@ void DrawCell(unsigned int h, unsigned int v, int x)
 			}
 		} else
 		{
-			uint8_t * p = CntrlDisplayBuff + (h + 1)
+			uint8_t * p = g_cntrlDisplayBuff + (h + 1)
 				+ (v * 16 + 11) * vMacScreenMonoByteWidth;
 
 			for (i = 16; --i >= 0; ) {
@@ -336,9 +336,9 @@ void DrawCellsMessageModeBody()
 	DrawCellsBlankLine();
 	DrawCellsOneLineStr(SavedLongMsg);
 #if WantAbnormalReports
-	if (0 != SavedIDMsg) {
+	if (0 != g_savedIDMsg) {
 		DrawCellsBlankLine();
-		DrawCellsOneLineHexWord(SavedIDMsg);
+		DrawCellsOneLineHexWord(g_savedIDMsg);
 	}
 #endif
 }
@@ -353,14 +353,14 @@ void MacMsgDisplayOff()
 	SpecialModeClr(SpclModeMessage);
 	SavedBriefMsg = nullptr;
 #if WantAbnormalReports
-	SavedIDMsg = 0;
+	g_savedIDMsg = 0;
 #endif
-	NeedWholeScreenDraw = true;
+	g_needWholeScreenDraw = true;
 }
 
 void MacMsgDisplayOn()
 {
-	NeedWholeScreenDraw = true;
+	g_needWholeScreenDraw = true;
 	DisconnectKeyCodes1(kKeepMaskControl | kKeepMaskCapsLock);
 		/* command */
 	SpecialModeSet(SpclModeMessage);
@@ -410,12 +410,12 @@ void DoAboutMsg()
 void NoRomMsgDisplayOff()
 {
 	SpecialModeClr(SpclModeNoRom);
-	NeedWholeScreenDraw = true;
+	g_needWholeScreenDraw = true;
 }
 
 void NoRomMsgDisplayOn()
 {
-	NeedWholeScreenDraw = true;
+	g_needWholeScreenDraw = true;
 	SpecialModeSet(SpclModeNoRom);
 }
 
@@ -485,7 +485,7 @@ void DoEnterControlMode()
 {
 	CurControlMode = kCntrlModeBase;
 	ControlMessage = kCntrlMsgBaseStart;
-	NeedWholeScreenDraw = true;
+	g_needWholeScreenDraw = true;
 	DisconnectKeyCodes1(kKeepMaskControl | kKeepMaskCapsLock);
 	SpecialModeSet(SpclModeControl);
 }
@@ -494,7 +494,7 @@ void DoLeaveControlMode()
 {
 	SpecialModeClr(SpclModeControl);
 	CurControlMode = kCntrlModeOff;
-	NeedWholeScreenDraw = true;
+	g_needWholeScreenDraw = true;
 }
 
 void Keyboard_UpdateControlKey(bool down)
@@ -511,7 +511,7 @@ void Keyboard_UpdateControlKey(bool down)
 
 void SetSpeedValue(uint8_t i)
 {
-	SpeedValue = i;
+	g_speedValue = i;
 	CurControlMode = kCntrlModeBase;
 	ControlMessage = kCntrlMsgNewSpeed;
 }
@@ -579,10 +579,10 @@ void DoControlModeKey(uint8_t key)
 			switch (key) {
 #if WantEnblCtrlKtg
 				case MKC_K:
-					ControlKeyPressed = ! ControlKeyPressed;
+					g_controlKeyPressed = ! g_controlKeyPressed;
 					ControlMessage = kCntrlMsgEmCntrl;
 					Keyboard_UpdateKeyMap1(MKC_UnMappedKey,
-						ControlKeyPressed);
+						g_controlKeyPressed);
 					break;
 #endif
 				case MKC_S:
@@ -598,7 +598,7 @@ void DoControlModeKey(uint8_t key)
 #if WantEnblCtrlRst
 				case MKC_R:
 					if (! AnyDiskInserted()) {
-						WantMacReset = true;
+						g_wantMacReset = true;
 						ControlMessage = kCntrlMsgHaveReset;
 					} else {
 						CurControlMode = kCntrlModeConfirmReset;
@@ -608,7 +608,7 @@ void DoControlModeKey(uint8_t key)
 #endif
 				case MKC_Q:
 					if (! AnyDiskInserted()) {
-						ForceMacOff = true;
+						g_forceMacOff = true;
 					} else {
 						CurControlMode = kCntrlModeConfirmQuit;
 						ControlMessage = kCntrlMsgConfirmQuitStart;
@@ -622,11 +622,11 @@ void DoControlModeKey(uint8_t key)
 					break;
 #if NeedRequestInsertDisk
 				case MKC_O:
-					RequestInsertDisk = true;
+					g_requestInsertDisk = true;
 					break;
 #endif
 				case MKC_M:
-					WantMagnify = ! WantMagnify;
+					g_wantMagnify = ! g_wantMagnify;
 					ControlMessage = kCntrlMsgMagnify;
 					break;
 				case MKC_F:
@@ -639,31 +639,31 @@ void DoControlModeKey(uint8_t key)
 					break;
 #if NeedRequestIthDisk
 				case MKC_1:
-					RequestIthDisk = 1;
+					g_requestIthDisk = 1;
 					break;
 				case MKC_2:
-					RequestIthDisk = 2;
+					g_requestIthDisk = 2;
 					break;
 				case MKC_3:
-					RequestIthDisk = 3;
+					g_requestIthDisk = 3;
 					break;
 				case MKC_4:
-					RequestIthDisk = 4;
+					g_requestIthDisk = 4;
 					break;
 				case MKC_5:
-					RequestIthDisk = 5;
+					g_requestIthDisk = 5;
 					break;
 				case MKC_6:
-					RequestIthDisk = 6;
+					g_requestIthDisk = 6;
 					break;
 				case MKC_7:
-					RequestIthDisk = 7;
+					g_requestIthDisk = 7;
 					break;
 				case MKC_8:
-					RequestIthDisk = 8;
+					g_requestIthDisk = 8;
 					break;
 				case MKC_9:
-					RequestIthDisk = 9;
+					g_requestIthDisk = 9;
 					break;
 #endif
 			}
@@ -672,7 +672,7 @@ void DoControlModeKey(uint8_t key)
 		case kCntrlModeConfirmReset:
 			switch (key) {
 				case MKC_Y:
-					WantMacReset = true;
+					g_wantMacReset = true;
 					CurControlMode = kCntrlModeBase;
 					ControlMessage = kCntrlMsgHaveReset;
 					break;
@@ -691,7 +691,7 @@ void DoControlModeKey(uint8_t key)
 		case kCntrlModeConfirmInterrupt:
 			switch (key) {
 				case MKC_Y:
-					WantMacInterrupt = true;
+					g_wantMacInterrupt = true;
 					CurControlMode = kCntrlModeBase;
 					ControlMessage = kCntrlMsgHaveInterrupted;
 					break;
@@ -709,7 +709,7 @@ void DoControlModeKey(uint8_t key)
 		case kCntrlModeConfirmQuit:
 			switch (key) {
 				case MKC_Y:
-					ForceMacOff = true;
+					g_forceMacOff = true;
 					CurControlMode = kCntrlModeBase;
 					ControlMessage = kCntrlMsgBaseStart;
 						/* shouldn't see this message since quitting */
@@ -731,19 +731,19 @@ void DoControlModeKey(uint8_t key)
 					ControlMessage = kCntrlMsgBaseStart;
 					break;
 				case MKC_B:
-					RunInBackground = ! RunInBackground;
+					g_runInBackground = ! g_runInBackground;
 					CurControlMode = kCntrlModeBase;
 					ControlMessage = kCntrlMsgNewRunInBack;
 					break;
 				case MKC_D:
-					if (ROM_loaded) {
-						SpeedStopped = ! SpeedStopped;
+					if (g_romLoaded) {
+						g_speedStopped = ! g_speedStopped;
 						CurControlMode = kCntrlModeBase;
 						ControlMessage = kCntrlMsgNewStopped;
 					}
 					break;
 				case MKC_W:
-					WantNotAutoSlow = ! WantNotAutoSlow;
+					g_wantNotAutoSlow = ! g_wantNotAutoSlow;
 					CurControlMode = kCntrlModeBase;
 					ControlMessage = kCntrlMsgNewAutoSlow;
 					break;
@@ -771,7 +771,7 @@ void DoControlModeKey(uint8_t key)
 			}
 			break;
 	}
-	NeedWholeScreenDraw = true;
+	g_needWholeScreenDraw = true;
 }
 
 static const char * ControlMode2TitleStr()
@@ -972,14 +972,14 @@ void DrawSpclMode()
 
 uint8_t * GetCurDrawBuff()
 {
-	uint8_t * p = screencomparebuff;
+	uint8_t * p = g_screenCompareBuff;
 
-	if (0 != SpecialModes) {
-		MoveBytes(p, CntrlDisplayBuff,
-			(0 != vMacScreenDepth && UseColorMode) ? vMacScreenNumBytes :
+	if (0 != g_specialModes) {
+		MoveBytes(p, g_cntrlDisplayBuff,
+			(0 != vMacScreenDepth && g_useColorMode) ? vMacScreenNumBytes :
 				vMacScreenMonoNumBytes
 			);
-		p = CntrlDisplayBuff;
+		p = g_cntrlDisplayBuff;
 
 		DrawSpclMode();
 	}
@@ -1065,9 +1065,9 @@ void Keyboard_UpdateKeyMap2(uint8_t key, bool down)
 		Keyboard_UpdateControlKey(down);
 	} else
 #endif
-	if ((0 == SpecialModes)
+	if ((0 == g_specialModes)
 #if EnableAltKeysMode
-			|| (0 == (SpecialModes & ~ (
+			|| (0 == (g_specialModes & ~ (
 				0
 				| (1 << SpclModeAltKeyText)
 				)))
@@ -1103,8 +1103,8 @@ void DisconnectKeyCodes2()
 
 tMacErr ROM_IsValid()
 {
-	ROM_loaded = true;
-	SpeedStopped = false;
+	g_romLoaded = true;
+	g_speedStopped = false;
 
 	return tMacErr::noErr;
 }
@@ -1118,17 +1118,17 @@ void WarnMsgUnsupportedDisk()
 
 bool WaitForRom()
 {
-	if (! ROM_loaded) {
+	if (! g_romLoaded) {
 		NoRomMsgDisplayOn();
 
-		SpeedStopped = true;
+		g_speedStopped = true;
 		do {
 			WaitForNextTick();
 
-			if (ForceMacOff) {
+			if (g_forceMacOff) {
 				return false;
 			}
-		} while (SpeedStopped);
+		} while (g_speedStopped);
 
 		NoRomMsgDisplayOff();
 	}

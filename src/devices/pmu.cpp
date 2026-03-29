@@ -49,7 +49,7 @@ void PMUDevice::startSendResult(uint8_t resultCode, uint8_t len)
 
 /*
 	Process the current PMU command byte.  Handles power control,
-	XPRAM read/write, clock, ADB, and param RAM operations.
+	XPRAM read/write, clock, ADB, and param g_ram operations.
 	May transition to send-result or receive-buffer states.
 */
 void PMUDevice::checkCommandOp()

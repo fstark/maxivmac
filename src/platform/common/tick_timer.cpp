@@ -7,7 +7,7 @@
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
 #define dbglog_OSGInit (0 && dbglog_HAVE)
 
-uint32_t TrueEmulatedTime = 0;
+uint32_t g_trueEmulatedTime = 0;
 	/*
 		The amount of time the program has
 		been running, measured in Macintosh
@@ -43,7 +43,7 @@ static void InitNextTime()
 	IncrNextTime();
 }
 
-uint32_t NewMacDateInSeconds;
+uint32_t g_newMacDateInSeconds;
 
 bool UpdateTrueEmulatedTime()
 {
@@ -58,16 +58,16 @@ bool UpdateTrueEmulatedTime()
 		if (TimeDiff >= 0) {
 			if (TimeDiff > 256) {
 				/* emulation interrupted, forget it */
-				++TrueEmulatedTime;
+				++g_trueEmulatedTime;
 				InitNextTime();
 
 #if dbglog_TimeStuff
 				dbglog_writelnNum("emulation interrupted",
-					TrueEmulatedTime);
+					g_trueEmulatedTime);
 #endif
 			} else {
 				do {
-					++TrueEmulatedTime;
+					++g_trueEmulatedTime;
 					IncrNextTime();
 					TimeDiff = (LatestTime - s_nextIntTime);
 				} while (TimeDiff >= 0);
@@ -93,8 +93,8 @@ bool CheckDateTime()
 	   SixtiethSecondNotify (60 ticks = 1 second), not wall clock.
 	   Just detect transitions for sound/demo notifications. */
 	static uint32_t lastSeenDate = 0;
-	if (CurMacDateInSeconds != lastSeenDate) {
-		lastSeenDate = CurMacDateInSeconds;
+	if (g_curMacDateInSeconds != lastSeenDate) {
+		lastSeenDate = g_curMacDateInSeconds;
 		return true;
 	}
 	return false;
@@ -117,8 +117,8 @@ bool InitLocationDat()
 
 	/* Fixed date: 14 March 1990 12:00:00 UTC (Mac epoch seconds).
 	   Deterministic so emulated RTC doesn't depend on host clock. */
-	NewMacDateInSeconds = UINT32_C(0xA223E2C0);
-	CurMacDateInSeconds = NewMacDateInSeconds;
+	g_newMacDateInSeconds = UINT32_C(0xA223E2C0);
+	g_curMacDateInSeconds = g_newMacDateInSeconds;
 
 	return true;
 }

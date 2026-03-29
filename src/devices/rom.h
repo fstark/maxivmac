@@ -1,5 +1,5 @@
 /*
-	ROM — Read-only memory device
+	g_rom — Read-only memory device
 */
 #pragma once
 

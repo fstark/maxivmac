@@ -3,7 +3,7 @@
 /*
 	HaPpy MaCintosh Hack
 
-	Patch the ROM for alternatives to the
+	Patch the g_rom for alternatives to the
 	Happy Macintosh icon displayed on boot
 	when a disk is inserted.
 */
@@ -224,7 +224,7 @@ static void PatchHappyMac()
 	auto m = g_machine->config().model;
 	if (m == MacModel::PB100 || m == MacModel::II || m == MacModel::IIx) {
 		int i;
-		uint8_t *dst = HappyMacBase + ROM + 0x18;
+		uint8_t *dst = HappyMacBase + g_rom + 0x18;
 		uint8_t *src = const_cast<uint8_t *>(my_HappyMac_icon);
 
 		for (i = 10; --i >= 0; ) {
@@ -235,7 +235,7 @@ static void PatchHappyMac()
 		}
 	} else {
 		MoveBytes(const_cast<uint8_t *>(my_HappyMac_icon),
-			(HappyMacBase + ROM),
+			(HappyMacBase + g_rom),
 			sizeof(my_HappyMac_icon));
 	}
 }

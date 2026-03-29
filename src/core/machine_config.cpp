@@ -153,7 +153,7 @@ static VIAConfig MakeVIA1Config_PB100() {
 }
 
 /* Populate a MachineConfig with all hardware parameters for the
-   given Mac model: CPU type, RAM layout, ROM, screen, peripherals,
+   given Mac model: CPU type, g_ram layout, g_rom, screen, peripherals,
    VIA wiring, and feature flags. */
 MachineConfig MachineConfigForModel(MacModel model)
 {

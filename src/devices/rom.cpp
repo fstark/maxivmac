@@ -1,8 +1,8 @@
 /*
 	Read Only Memory EMulated DEVice
 
-	Checks the header of the loaded ROM image, and then patches
-	the ROM image.
+	Checks the header of the loaded g_rom image, and then patches
+	the g_rom image.
 
 	This code descended from "ROM.c" in vMac by Philip Cummins.
 
@@ -177,14 +177,14 @@ static uint32_t getSonyDriverBase() {
 #define Sony_DriverBase getSonyDriverBase()
 
 /*
-	Patch the Sony disk driver into ROM at the model-specific
+	Patch the Sony disk driver into g_rom at the model-specific
 	base address, followed by the extension trap, disk icon,
 	and optional screen-size hack.
 */
 #if UseSonyPatch
 static void Sony_Install()
 {
-	uint8_t * pto = Sony_DriverBase + ROM;
+	uint8_t * pto = Sony_DriverBase + g_rom;
 
 	MoveBytes(const_cast<uint8_t *>(sony_driver), pto, sizeof(sony_driver));
 	{
@@ -206,7 +206,7 @@ static void Sony_Install()
 	do_put_mem_long(pto, g_machine->config().extnBlockBase); /* pokeaddr */
 	pto += 4;
 
-	g_diskIconAddr = (pto - ROM) + g_machine->config().romBase;
+	g_diskIconAddr = (pto - g_rom) + g_machine->config().romBase;
 	MoveBytes(const_cast<uint8_t *>(my_disk_icon), pto, sizeof(my_disk_icon));
 	pto += sizeof(my_disk_icon);
 
@@ -234,8 +234,8 @@ static void Sony_Install()
 static void ROMscrambleForMTB()
 {
 	int32_t j;
-	uint8_t * p = ROM;
-	uint8_t * p2 = ROM + (1 << ln2mtb);
+	uint8_t * p = g_rom;
+	uint8_t * p2 = g_rom + (1 << ln2mtb);
 
 	for (j = g_machine->config().romSize / (1 << ln2mtb) / 2; --j >= 0; ) {
 		int32_t i;
@@ -254,7 +254,7 @@ static void ROMscrambleForMTB()
 #endif
 
 /*
-	Patch the ROM image: disable checksum/RAM test, install
+	Patch the g_rom image: disable checksum/g_ram test, install
 	the Sony replacement driver, apply Happy Mac hack,
 	and scramble for multi-bank configurations.
 */
@@ -268,15 +268,15 @@ static void ROMscrambleForMTB()
 	if (m == MacModel::Twig43) {
 		/* no checksum code */
 	} else if (m == MacModel::Twiggy) {
-		do_put_mem_word(0x136 + ROM, 0x6004);
+		do_put_mem_word(0x136 + g_rom, 0x6004);
 	} else if (m == MacModel::Mac128K) {
-		do_put_mem_word(0xE2 + ROM, 0x6004);
+		do_put_mem_word(0xE2 + g_rom, 0x6004);
 	} else if (m <= MacModel::Plus) {
-		do_put_mem_word(0xD7A + ROM, 0x6022);
+		do_put_mem_word(0xD7A + g_rom, 0x6022);
 	} else if (m <= MacModel::Classic) {
-		do_put_mem_word(0x1C68 + ROM, 0x6008);
+		do_put_mem_word(0x1C68 + g_rom, 0x6008);
 	} else if (g_machine->config().isIIFamily()) {
-		do_put_mem_word(0x2AB0 + ROM, 0x6008);
+		do_put_mem_word(0x2AB0 + g_rom, 0x6008);
 	}
 }
 
@@ -290,16 +290,16 @@ static void ROMscrambleForMTB()
 	if (m <= MacModel::Mac128K) {
 		/* nothing */
 	} else if (m <= MacModel::Plus) {
-		do_put_mem_word(3752 + ROM, 0x4E71);
+		do_put_mem_word(3752 + g_rom, 0x4E71);
 			/* shorten the ram check read */
-		do_put_mem_word(3728 + ROM, 0x4E71);
+		do_put_mem_word(3728 + g_rom, 0x4E71);
 			/* shorten the ram check write */
 	} else if (m <= MacModel::Classic) {
-		do_put_mem_word(134 + ROM, 0x6002);
-		do_put_mem_word(286 + ROM, 0x6002);
+		do_put_mem_word(134 + g_rom, 0x6002);
+		do_put_mem_word(286 + g_rom, 0x6002);
 	} else if (g_machine->config().isIIFamily()) {
-		do_put_mem_word(0xEE + ROM, 0x6002);
-		do_put_mem_word(0x1AA + ROM, 0x6002);
+		do_put_mem_word(0xEE + g_rom, 0x6002);
+		do_put_mem_word(0x1AA + g_rom, 0x6002);
 	}
 }
 

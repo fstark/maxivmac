@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-extern uint32_t TrueEmulatedTime;
-extern uint32_t NewMacDateInSeconds;
+extern uint32_t g_trueEmulatedTime;
+extern uint32_t g_newMacDateInSeconds;
 
 void IncrNextTime();
 bool UpdateTrueEmulatedTime();

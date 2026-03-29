@@ -2,7 +2,7 @@
 	SONY floppy disk EMulated DeVice
 
 	The Sony hardware is not actually emulated. Instead the
-	ROM is patched to replace the Sony disk driver with
+	g_rom is patched to replace the Sony disk driver with
 	code that calls Mini vMac extensions implemented in
 	the file.
 
@@ -29,14 +29,14 @@
 static uint32_t s_sonyMountedMask = 0;
 
 #define vSonyIsLocked(Drive_No) \
-	((vSonyWritableMask & ((uint32_t)1 << (Drive_No))) == 0)
+	((g_sonyWritableMask & ((uint32_t)1 << (Drive_No))) == 0)
 #define vSonyIsMounted(Drive_No) \
 	((s_sonyMountedMask & ((uint32_t)1 << (Drive_No))) != 0)
 
 static bool vSonyNextPendingInsert0(DriveIndex *Drive_No)
 {
 	/* find next drive to Mount */
-	uint32_t MountPending = vSonyInsertedMask & (~ s_sonyMountedMask);
+	uint32_t MountPending = g_sonyInsertedMask & (~ s_sonyMountedMask);
 	if (MountPending != 0) {
 		DriveIndex i;
 		for (i = 0; i < NumDrives; ++i) {
@@ -293,7 +293,7 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 			uint32_t TagOffset = 0;
 #endif
 
-			if (! vSonyRawMode)
+			if (! g_sonyRawMode)
 			{
 				uint8_t Temp[checkheadersize];
 				uint32_t Sony_Count = checkheadersize;
@@ -477,7 +477,7 @@ void SonyDevice::update()
 
 				g_cpu.diskInsertedPseudoException(s_mountCallBack, data);
 
-				if (! vSonyRawMode)
+				if (! g_sonyRawMode)
 				{
 					s_delayUntilNextInsert = MinTicksBetweenInsert;
 					/*
@@ -551,7 +551,7 @@ static tMacErr Drive_Eject(DriveIndex Drive_No)
 		result = vSonyEject(Drive_No);
 		if (s_quitOnEject != 0) {
 			if (! AnyDiskInserted()) {
-				ForceMacOff = true;
+				g_forceMacOff = true;
 			}
 		}
 	}
@@ -730,11 +730,11 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			}
 			break;
 		case kCmndDiskGetRawMode:
-			put_vm_word(p + kParamDiskBuffer, vSonyRawMode);
+			put_vm_word(p + kParamDiskBuffer, g_sonyRawMode);
 			result = tMacErr::noErr;
 			break;
 		case kCmndDiskSetRawMode:
-			vSonyRawMode = get_vm_word(p + kParamDiskBuffer);
+			g_sonyRawMode = get_vm_word(p + kParamDiskBuffer);
 			result = tMacErr::noErr;
 			break;
 		case kCmndDiskNew:
@@ -748,22 +748,22 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 				if (Pbuf_No != NOT_A_PBUF) {
 					result = CheckPbuf(Pbuf_No);
 					if (tMacErr::noErr == result) {
-						vSonyNewDiskWanted = true;
-						vSonyNewDiskSize = count;
-						if (vSonyNewDiskName != NOT_A_PBUF) {
-							PbufDispose(vSonyNewDiskName);
+						g_sonyNewDiskWanted = true;
+						g_sonyNewDiskSize = count;
+						if (g_sonyNewDiskName != NOT_A_PBUF) {
+							PbufDispose(g_sonyNewDiskName);
 						}
-						vSonyNewDiskName = Pbuf_No;
+						g_sonyNewDiskName = Pbuf_No;
 					}
 				} else
 				{
-					vSonyNewDiskWanted = true;
-					vSonyNewDiskSize = count;
+					g_sonyNewDiskWanted = true;
+					g_sonyNewDiskSize = count;
 				}
 			}
 			break;
 		case kCmndDiskGetNewWanted:
-			put_vm_word(p + kParamDiskBuffer, vSonyNewDiskWanted);
+			put_vm_word(p + kParamDiskBuffer, g_sonyNewDiskWanted);
 			result = tMacErr::noErr;
 			break;
 		case kCmndDiskEjectDelete:
@@ -792,7 +792,7 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 
 /*
 	Mini vMac extension that implements most of the logic
-	of the replacement disk driver patched into the emulated ROM.
+	of the replacement disk driver patched into the emulated g_rom.
 	(sony_driver in ROMEMDEV.c)
 
 	This logic used to be completely contained in the 68k code

@@ -40,37 +40,37 @@
    intentionally NOT duplicated here. Include platform.h (via osglu_ud.h)
    for those. */
 
-extern bool ROM_loaded;
-extern bool RequestMacOff;
+extern bool g_romLoaded;
+extern bool g_requestMacOff;
 
-extern uint8_t * screencomparebuff;
+extern uint8_t * g_screenCompareBuff;
 
-extern int16_t ScreenChangedTop;
-extern int16_t ScreenChangedLeft;
-extern int16_t ScreenChangedBottom;
-extern int16_t ScreenChangedRight;
+extern int16_t g_screenChangedTop;
+extern int16_t g_screenChangedLeft;
+extern int16_t g_screenChangedBottom;
+extern int16_t g_screenChangedRight;
 
-extern int16_t ScreenChangedQuietTop;
-extern int16_t ScreenChangedQuietLeft;
-extern int16_t ScreenChangedQuietBottom;
-extern int16_t ScreenChangedQuietRight;
+extern int16_t g_screenChangedQuietTop;
+extern int16_t g_screenChangedQuietLeft;
+extern int16_t g_screenChangedQuietBottom;
+extern int16_t g_screenChangedQuietRight;
 
-extern uint16_t ViewHSize;
-extern uint16_t ViewVSize;
-extern uint16_t ViewHStart;
-extern uint16_t ViewVStart;
+extern uint16_t g_viewHSize;
+extern uint16_t g_viewVSize;
+extern uint16_t g_viewHStart;
+extern uint16_t g_viewVStart;
 #if EnableFSMouseMotion
-extern int16_t SavedMouseH;
-extern int16_t SavedMouseV;
+extern int16_t g_savedMouseH;
+extern int16_t g_savedMouseV;
 #endif
 
 #if EnableFSMouseMotion
-extern bool HaveMouseMotion;
+extern bool g_haveMouseMotion;
 #endif
 
-extern uint32_t PbufAllocatedMask;
+extern uint32_t g_pbufAllocatedMask;
 extern uint32_t PbufSize[NumPbufs];
-#define PbufIsAllocated(i) ((PbufAllocatedMask & ((uint32_t)1 << (i))) != 0)
+#define PbufIsAllocated(i) ((g_pbufAllocatedMask & ((uint32_t)1 << (i))) != 0)
 
 extern uint32_t theKeys[4];
 extern bool g_mouseButtonState;
@@ -91,18 +91,18 @@ extern bool EvtQNeedRecover;
 extern const char *SavedBriefMsg;
 extern const char *SavedLongMsg;
 #if WantAbnormalReports
-extern uint16_t SavedIDMsg;
+extern uint16_t g_savedIDMsg;
 #endif
-extern bool SavedFatalMsg;
+extern bool g_savedFatalMsg;
 
 #define WantColorTransValid 1
 #if WantColorTransValid
-extern bool ColorTransValid;
+extern bool g_colorTransValid;
 #endif
 
 #if EmLocalTalk
 extern uint32_t e_p[2];
-extern uint32_t LT_MyStamp;
+extern uint32_t g_ltMyStamp;
 #endif
 
 /* --- function prototypes --- */

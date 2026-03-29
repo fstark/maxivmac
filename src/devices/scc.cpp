@@ -60,21 +60,21 @@ static void LT_TransmitPacket1()
 #if SCC_dolog
 	dbglog_WriteNote("SCC sending packet to UDP");
 	dbglog_StartLine();
-	dbglog_writelnNum("LT_TxBuffSz", LT_TxBuffSz);
+	dbglog_writelnNum("LT_TxBuffSz", g_ltTxBuffSz);
 #endif
 
-	if (LT_TxBuffSz < 3) {
+	if (g_ltTxBuffSz < 3) {
 		ReportAbnormalID(AbnormalID::kSCC_packet_too_small_in,
 			"packet too small in "
 				"in LT_TransmitPacket1");
 	} else {
-		uint8_t type = LT_TxBuffer[2];
+		uint8_t type = g_ltTxBuffer[2];
 
 #if SCC_dolog
 		dbglog_StartLine();
-		dbglog_writelnNum("dst", LT_TxBuffer[0]);
+		dbglog_writelnNum("dst", g_ltTxBuffer[0]);
 		dbglog_StartLine();
-		dbglog_writelnNum("src", LT_TxBuffer[1]);
+		dbglog_writelnNum("src", g_ltTxBuffer[1]);
 		dbglog_StartLine();
 		dbglog_writelnNum("type", type);
 #endif
@@ -88,7 +88,7 @@ static void LT_TransmitPacket1()
 		} else {
 			/* control packet */
 
-			if (3 != LT_TxBuffSz) {
+			if (3 != g_ltTxBuffSz) {
 				ReportAbnormalID(AbnormalID::kSCC_unexpected_size_of_control_packet_in,
 					"unexpected size of control packet in "
 						"in LT_TransmitPacket1");
@@ -113,7 +113,7 @@ static void LT_TransmitPacket1()
 			} else
 			if (0x84 == type) {
 				/* lapRTS - Request to send*/
-				if (0xFF == LT_TxBuffer[0]) {
+				if (0xFF == g_ltTxBuffer[0]) {
 #if SCC_dolog
 					dbglog_WriteNote(
 						"SCC LLAP packet ignore broadcast lapRTS");
@@ -129,8 +129,8 @@ static void LT_TransmitPacket1()
 					dbglog_WriteNote(
 						"SCC LLAP packet lapRTS");
 #endif
-					s_ctsPacketRxDA = LT_TxBuffer[1]; /* rx da = tx sa */
-					s_ctsPacketRxSA = LT_TxBuffer[0]; /* rx sa = tx da */
+					s_ctsPacketRxDA = g_ltTxBuffer[1]; /* rx da = tx sa */
+					s_ctsPacketRxSA = g_ltTxBuffer[0]; /* rx sa = tx da */
 					s_ctsPacketPending = true;
 				}
 			} else
@@ -169,8 +169,8 @@ static void GetCTSpacket()
 	device_buffer[2] = 0x85;          /* llap cts */
 
 	/* Start the receiver */
-	LT_RxBuffer = device_buffer;
-	LT_RxBuffSz = 3;
+	g_ltRxBuffer = device_buffer;
+	g_ltRxBuffSz = 3;
 
 	s_ctsPacketPending = false;
 }
@@ -189,19 +189,19 @@ static void GetNextPacketForMe()
 	for (;;) {
 		LT_ReceivePacket();
 
-		if (nullptr == LT_RxBuffer) {
+		if (nullptr == g_ltRxBuffer) {
 			break;
 		}
 
 		/* Is this packet destined for me? */
-		dst = LT_RxBuffer[0];
-		src = LT_RxBuffer[1];
-		type = LT_RxBuffer[2];
+		dst = g_ltRxBuffer[0];
+		src = g_ltRxBuffer[1];
+		type = g_ltRxBuffer[2];
 
 #if SCC_dolog
 		dbglog_StartLine();
 		dbglog_writeln("SCC receiving packet from UDP");
-		dbglog_writelnNum("LT_RxBuffSz", LT_RxBuffSz);
+		dbglog_writelnNum("LT_RxBuffSz", g_ltRxBuffSz);
 		dbglog_writelnNum("dst", dst);
 		dbglog_writelnNum("src", src);
 		dbglog_writelnNum("type", type);
@@ -214,11 +214,11 @@ static void GetNextPacketForMe()
 #if SCC_dolog
 			dbglog_WriteNote("SCC ignore packet not for me");
 #endif
-			LT_RxBuffer = nullptr;
+			g_ltRxBuffer = nullptr;
 			continue;
 		}
 #if LT_MayHaveEcho
-		if (CertainlyNotMyPacket) {
+		if (g_certainlyNotMyPacket) {
 #if SCC_dolog
 			dbglog_WriteNote("CertainlyNotMyPacket");
 #endif
@@ -242,7 +242,7 @@ static void GetNextPacketForMe()
 #if SCC_dolog
 				dbglog_WriteNote("received lapENQ probably from us");
 #endif
-				LT_RxBuffer = nullptr;
+				g_ltRxBuffer = nullptr;
 				continue;
 			}
 		} else
@@ -251,7 +251,7 @@ static void GetNextPacketForMe()
 #if SCC_dolog
 				dbglog_WriteNote("received lapACK probably from us");
 #endif
-				LT_RxBuffer = nullptr;
+				g_ltRxBuffer = nullptr;
 				continue;
 			} else {
 				/* lapACK, pass it on handle collision */
@@ -264,7 +264,7 @@ static void GetNextPacketForMe()
 #if SCC_dolog
 			dbglog_WriteNote("SCC ignore packet from myself");
 #endif
-			LT_RxBuffer = nullptr;
+			g_ltRxBuffer = nullptr;
 			continue;
 		}
 #else
@@ -708,9 +708,9 @@ void SCCDevice::reset()
 static void SCC_TxBuffPut(uint8_t Data)
 {
 	/* Buffer the data in the transmit buffer */
-	if (LT_TxBuffSz < LT_TxBfMxSz) {
-		LT_TxBuffer[LT_TxBuffSz] = Data;
-		++LT_TxBuffSz;
+	if (g_ltTxBuffSz < LT_TxBfMxSz) {
+		g_ltTxBuffer[g_ltTxBuffSz] = Data;
+		++g_ltTxBuffSz;
 	}
 }
 
@@ -734,7 +734,7 @@ static void rx_complete()
 		Need to wait for rx_eof_pending (end of frame) to clear before
 		preparing the next packet for receive.
 	*/
-	LT_RxBuffer = nullptr;
+	g_ltRxBuffer = nullptr;
 
 	s_scc.a[1].EndOfFrame = true;
 }
@@ -750,14 +750,14 @@ static void SCC_RxBuffAdvance()
 		error FIFOs."
 	*/
 
-	if (nullptr == LT_RxBuffer) {
+	if (nullptr == g_ltRxBuffer) {
 		value = 0x7E;
 		s_scc.a[1].RxChrAvail = false;
 	} else {
-		if (rx_data_offset < LT_RxBuffSz) {
-			value = LT_RxBuffer[rx_data_offset];
+		if (rx_data_offset < g_ltRxBuffSz) {
+			value = g_ltRxBuffer[rx_data_offset];
 		} else {
-			uint32_t i = rx_data_offset - LT_RxBuffSz;
+			uint32_t i = rx_data_offset - g_ltRxBuffSz;
 
 			/* if i==0 in first byte of CRC, have not got EOF yet */
 			if (i == 1) {
@@ -781,7 +781,7 @@ void SCCDevice::localTalkTick()
 	if (s_scc.a[1].RxEnable
 		&& (! s_scc.a[1].RxChrAvail))
 	{
-		if (nullptr != LT_RxBuffer) {
+		if (nullptr != g_ltRxBuffer) {
 #if SCC_dolog
 			dbglog_WriteNote("SCC recover abandoned packet");
 #endif
@@ -789,7 +789,7 @@ void SCCDevice::localTalkTick()
 			LT_ReceivePacket1();
 		}
 
-		if (nullptr != LT_RxBuffer) {
+		if (nullptr != g_ltRxBuffer) {
 			rx_data_offset  = 0;
 			s_scc.a[1].EndOfFrame = false;
 			s_scc.a[1].RxChrAvail = true;
@@ -1445,7 +1445,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 #if EmLocalTalk
 			if (! NewRxEnable) {
 #if SCC_dolog
-				if ((0 != chan) && (nullptr != LT_RxBuffer)) {
+				if ((0 != chan) && (nullptr != g_ltRxBuffer)) {
 					dbglog_WriteNote("SCC abandon packet");
 				}
 #endif
@@ -1658,7 +1658,7 @@ static void SCC_PutWR5(uint8_t Data, int chan)
 				/* happens in Print to ImageWriter */
 #if EmLocalTalk
 				if (0 != chan) {
-					LT_TxBuffSz = 0;
+					g_ltTxBuffSz = 0;
 				}
 #endif
 			} else {

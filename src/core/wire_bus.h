@@ -2,7 +2,7 @@
 	wire_bus.h
 
 	Runtime inter-device signal routing, replacing the compile-time
-	Wires[] array and #define change notification aliases.
+	g_wires[] array and #define change notification aliases.
 
 	Part of Phase 4: Device Interface & Machine Object.
 */

@@ -146,7 +146,7 @@ bool RTCDevice::init()
 	s_rtc.DataOut = s_rtc.DataNextOut = 0;
 	s_rtc.WrProtect = false;
 
-	secs = CurMacDateInSeconds;
+	secs = g_curMacDateInSeconds;
 	s_lastRealDate = secs;
 
 	s_rtc.Seconds_1[0] = secs & 0xFF;
@@ -162,7 +162,7 @@ bool RTCDevice::init()
 	s_rtc.PARAMRAM[0 + Group1Base] = 168; /* valid */
 
 #if EmLocalTalk
-	s_rtc.PARAMRAM[2 + Group1Base] = LT_NodeHint;
+	s_rtc.PARAMRAM[2 + Group1Base] = g_ltNodeHint;
 		/* set to constant instead for testing collisions */
 #else
 	if (g_machine->config().isIIFamily()) {
@@ -289,9 +289,9 @@ bool RTCDevice::init()
 	}
 
 	/* XPRAM: location data */
-	do_put_mem_long(&s_rtc.PARAMRAM[0xE4], CurMacLatitude);
-	do_put_mem_long(&s_rtc.PARAMRAM[0xE8], CurMacLongitude);
-	do_put_mem_long(&s_rtc.PARAMRAM[0xEC], CurMacDelta);
+	do_put_mem_long(&s_rtc.PARAMRAM[0xE4], g_curMacLatitude);
+	do_put_mem_long(&s_rtc.PARAMRAM[0xE8], g_curMacLongitude);
+	do_put_mem_long(&s_rtc.PARAMRAM[0xEC], g_curMacDelta);
 
 #endif /* RTCinitPRAM */
 
@@ -317,7 +317,7 @@ bool RTCDevice::init()
 void RTCDevice::interrupt()
 {
 	uint32_t Seconds = 0;
-	uint32_t NewRealDate = CurMacDateInSeconds;
+	uint32_t NewRealDate = g_curMacDateInSeconds;
 	uint32_t DateDelta = NewRealDate - s_lastRealDate;
 
 	if (DateDelta != 0) {
@@ -498,7 +498,7 @@ void RTCDevice::dataLineChangeNtfy()
 	if (s_rtc.DataOut) {
 		if (! s_rtc.DataNextOut) {
 			/*
-				ignore. The ROM doesn't read from the RTC the
+				ignore. The g_rom doesn't read from the RTC the
 				way described in the Hardware Reference.
 				It reads the data after setting the clock to
 				one instead of before, and then immediately

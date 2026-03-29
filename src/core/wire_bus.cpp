@@ -19,10 +19,10 @@ void WireBus::init(int numWires)
 		behavior and the idle state of most bus signals:
 		  - ADBMouseDisabled=1: mouse disabled until ADB polls (Mac II), or
 		    until Mouse_Enabled() uses SCC path (Plus/SE/128K)
-		  - VBLintunenbl=1: VBL interrupts disabled until ROM video driver
+		  - VBLintunenbl=1: VBL interrupts disabled until g_rom video driver
 		    calls kCmndVideoSetIntEnbl
 		  - VBLinterrupt=1: no VBL interrupt pending (goes to 0 to fire)
-		  - SoundDisable=1: sound disabled until ROM configures VIA port B
+		  - SoundDisable=1: sound disabled until g_rom configures VIA port B
 
 		The VIA/SCC Zap/Reset routines clear the interrupt request wires
 		to 0, so we pre-set those here to match post-Zap state.

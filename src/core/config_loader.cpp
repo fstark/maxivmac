@@ -403,7 +403,7 @@ static bool fileExists(const std::string& path)
 }
 
 /*
-	Search CWD, romDir, and ~/roms/ for the ROM file.
+	Search CWD, romDir, and ~/roms/ for the g_rom file.
 	Returns the model-default filename if no explicit path given.
 */
 std::string ResolveRomPath(const std::string& romPath, MacModel model, const std::string& romDir)

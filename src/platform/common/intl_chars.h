@@ -266,12 +266,12 @@ extern const char Cell2WinAsciiMap[];
 
 /* --- State variables --- */
 
-extern bool SpeedStopped;
-extern bool RunInBackground;
+extern bool g_speedStopped;
+extern bool g_runInBackground;
 
-extern bool WantFullScreen;
+extern bool g_wantFullScreen;
 
-extern bool WantMagnify;
+extern bool g_wantMagnify;
 
 /* Force all Need* to 1 — these variables are always compiled in intl_chars.cpp */
 #ifndef NeedRequestInsertDisk
@@ -286,16 +286,16 @@ extern bool WantMagnify;
 #define NeedDoAboutMsg 1
 #endif
 
-extern bool RequestInsertDisk;
+extern bool g_requestInsertDisk;
 
 #ifndef NeedRequestIthDisk
 #define NeedRequestIthDisk 1
 #endif
 
-extern uint8_t RequestIthDisk;
+extern uint8_t g_requestIthDisk;
 
 #if UseControlKeys
-extern bool ControlKeyPressed;
+extern bool g_controlKeyPressed;
 #endif
 
 #ifndef kStrCntrlKyName

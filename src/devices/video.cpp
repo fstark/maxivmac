@@ -74,7 +74,7 @@ static void ChecksumSlotROM()
 	/* Calculate CRC */
 	/* assuming check sum field initialized to zero */
 	int i;
-	uint8_t * p = VidROM;
+	uint8_t * p = g_vidROM;
 	uint32_t crc = 0;
 
 	const auto& cfg = g_machine->config();
@@ -135,7 +135,7 @@ static void PatchAnEndOfLst()
 }
 
 /*
-	Build the Mac II slot ROM image in VidROM.
+	Build the Mac II slot g_rom image in g_vidROM.
 	Constructs sResource directory, board/video type entries,
 	video driver code, and mode parameter blocks for mono
 	and (optionally) color modes.
@@ -165,7 +165,7 @@ static void PatchAnEndOfLst()
 	uint8_t * pTo_ColorBitMode = nullptr;
 	uint8_t * pTo_ColorVidParams = nullptr;
 
-	pPatch = VidROM;
+	pPatch = g_vidROM;
 
 	pAt_sRsrcDir = pPatch;
 	pTo_sRsrc_Board = ReservePatchOSLstEntry();
@@ -244,7 +244,7 @@ static void PatchAnEndOfLst()
 	pTo_MinorLength = ReservePatchOSLstEntry();
 	pTo_OneBitMode = ReservePatchOSLstEntry();
 	if (0 != vMacScreenDepth) {
-		if (ColorModeWorks) {
+		if (g_colorModeWorks) {
 			pTo_ColorBitMode = ReservePatchOSLstEntry();
 		}
 	}
@@ -318,7 +318,7 @@ static void PatchAnEndOfLst()
 	PatchALong(0x00000000); /* bmPlaneBytes */
 
 	if (0 != vMacScreenDepth) {
-		if (ColorModeWorks) {
+		if (g_colorModeWorks) {
 
 			PatchAReservedOSLstEntry(pTo_ColorBitMode, 0x81);
 			pTo_ColorVidParams = ReservePatchOSLstEntry();
@@ -359,7 +359,7 @@ static void PatchAnEndOfLst()
 	}
 
 	const auto& vidCfg = g_machine->config();
-	UsedSoFar = (pPatch - VidROM) + 20;
+	UsedSoFar = (pPatch - g_vidROM) + 20;
 	if (UsedSoFar > vidCfg.vidROMSize) {
 		ReportAbnormalID(AbnormalID::kVIDEO_vidROMSize_too_small, "vidROMSize too small");
 		return false;
@@ -369,7 +369,7 @@ static void PatchAnEndOfLst()
 		PatchAByte(0);
 	}
 
-	pPatch = (vidCfg.vidROMSize - 20) + VidROM;
+	pPatch = (vidCfg.vidROMSize - 20) + g_vidROM;
 	PatchALong((pAt_sRsrcDir - pPatch) & 0x00FFFFFF);
 	PatchALong(/* 0x0000041E */ vidCfg.vidROMSize);
 	PatchALong(0x00000000);
@@ -404,7 +404,7 @@ void VideoDevice::update()
 
 static uint16_t Vid_GetMode()
 {
-	return (0 != vMacScreenDepth && UseColorMode) ? 129 : 128;
+	return (0 != vMacScreenDepth && g_useColorMode) ? 129 : 128;
 }
 
 static tMacErr Vid_SetMode(uint16_t v)
@@ -412,9 +412,9 @@ static tMacErr Vid_SetMode(uint16_t v)
 	if (0 == vMacScreenDepth) {
 		UnusedParam(v);
 	} else {
-		if (UseColorMode != ((v != 128) && ColorModeWorks)) {
-			UseColorMode = ! UseColorMode;
-			ColorMappingChanged = true;
+		if (g_useColorMode != ((v != 128) && g_colorModeWorks)) {
+			g_useColorMode = ! g_useColorMode;
+			g_colorMappingChanged = true;
 		}
 	}
 	return tMacErr::noErr;
@@ -423,7 +423,7 @@ static tMacErr Vid_SetMode(uint16_t v)
  uint16_t VideoDevice::vidReset()
 {
 	if (0 != vMacScreenDepth) {
-		UseColorMode = false;
+		g_useColorMode = false;
 	}
 	return 128;
 }
@@ -458,9 +458,9 @@ static void FillScreenWithGrayPattern()
 {
 	int i;
 	int j;
-	uint32_t *p1 = reinterpret_cast<uint32_t *>(VidMem);
+	uint32_t *p1 = reinterpret_cast<uint32_t *>(g_vidMem);
 
-	if (0 != vMacScreenDepth && UseColorMode) {
+	if (0 != vMacScreenDepth && g_useColorMode) {
 		uint32_t pat;
 		switch (vMacScreenDepth) {
 			case 1: pat = 0xCCCCCCCC; break;
@@ -595,7 +595,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoControl, "
 							"SetEntries");
 #endif
-						if ((0 != vMacScreenDepth) && (vMacScreenDepth < 4) && UseColorMode) {
+						if ((0 != vMacScreenDepth) && (vMacScreenDepth < 4) && g_useColorMode) {
 							uint32_t csTable = get_vm_long(
 								csParam + VDSetEntryRecord_csTable);
 							uint16_t csStart = get_vm_word(
@@ -632,7 +632,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									}
 									csTable += 8;
 								}
-								ColorMappingChanged = true;
+								g_colorMappingChanged = true;
 							} else
 							if (csStart + csCount < csStart) {
 								/* overflow */
@@ -666,7 +666,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									}
 									csTable += 8;
 								}
-								ColorMappingChanged = true;
+								g_colorMappingChanged = true;
 								result = tMacErr::noErr;
 							}
 						} else {

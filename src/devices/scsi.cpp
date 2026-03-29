@@ -45,7 +45,7 @@ void SCSIDevice::reset()
 }
 
 /* Reset all NCR5380 registers to post-RST defaults and poke
-   the Mac RAM SCSI flag so the driver knows reset occurred. */
+   the Mac g_ram SCSI flag so the driver knows reset occurred. */
 static void SCSI_BusReset()
 {
 	SCSI[scsiRd + sCDR] = 0;

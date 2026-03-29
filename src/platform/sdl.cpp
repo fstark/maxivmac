@@ -88,7 +88,7 @@ static bool Sony_Insert1a(char *drivepath, bool silentfail)
 {
 	bool v;
 
-	if (! ROM_loaded) {
+	if (! g_romLoaded) {
 		v = (tMacErr::noErr == LoadMacRomFrom(drivepath));
 	} else {
 		v = Sony_Insert1(drivepath, silentfail);
@@ -281,17 +281,17 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 	if (s_useFullScreen)
 	{
-		if (top < ViewVStart) {
-			top = ViewVStart;
+		if (top < g_viewVStart) {
+			top = g_viewVStart;
 		}
-		if (left < ViewHStart) {
-			left = ViewHStart;
+		if (left < g_viewHStart) {
+			left = g_viewHStart;
 		}
-		if (bottom > ViewVStart + ViewVSize) {
-			bottom = ViewVStart + ViewVSize;
+		if (bottom > g_viewVStart + g_viewVSize) {
+			bottom = g_viewVStart + g_viewVSize;
 		}
-		if (right > ViewHStart + ViewHSize) {
-			right = ViewHStart + ViewHSize;
+		if (right > g_viewHStart + g_viewHSize) {
+			right = g_viewHStart + g_viewHSize;
 		}
 
 		if ((top >= bottom) || (left >= right)) {
@@ -306,8 +306,8 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 	if (s_useFullScreen)
 	{
-		XDest -= ViewHStart;
-		YDest -= ViewVStart;
+		XDest -= g_viewHStart;
+		YDest -= g_viewVStart;
 	}
 
 	/* SDL3 logical presentation handles magnification —
@@ -339,7 +339,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	uint32_t ExpectedPitch = vMacScreenWidth * bpp;
 
 
-	if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
+	if (g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
 		for (i = 0; i < CLUT_size; ++i) {
 			CLUT_pixel[i] = SDL_MapRGB(my_format,
 				nullptr,
@@ -364,20 +364,20 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 	if ((0 == ((bpp - 1) & bpp)) /* a power of 2 */
 		&& ((uint32_t)pitch == ExpectedPitch)
-		&& (vMacScreenDepth <= 3 || ! UseColorMode)
+		&& (vMacScreenDepth <= 3 || ! g_useColorMode)
 		)
 	{
 		int k;
 		Uint32 v;
 		int PixPerByte =
-			(UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4)
+			(g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4)
 			? (1 << (3 - vMacScreenDepth)) : 8;
 		Uint8 *p4 = CLUT_final;
 
 		for (i = 0; i < 256; ++i) {
 			for (k = PixPerByte; --k >= 0; ) {
 
-				if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
+				if (g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
 					v = CLUT_pixel[
 						(vMacScreenDepth == 3) ? i :
 						((i >> (k << vMacScreenDepth)) & (CLUT_size - 1))
@@ -406,7 +406,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 		ScalingBuff = static_cast<uint8_t *>(pixels);
 
-		if (UseColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
+		if (g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
 			{
 				switch (vMacScreenDepth) {
 					case 1: switch (bpp) { case 1: UpdateColorSrc1Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc1Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc1Dst5Copy(top,left,bottom,right); break; } break;
@@ -443,7 +443,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 					+ i * pitch + j * bpp;
 
 
-				if (UseColorMode && vMacScreenDepth > 0) {
+				if (g_useColorMode && vMacScreenDepth > 0) {
 					if (vMacScreenDepth < 4) {
 						p = the_data + ((i0 * vMacScreenWidth + j0)
 							>> (3 - vMacScreenDepth));
@@ -531,9 +531,9 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 static void DrawChangesAndClear()
 {
-	if (ScreenChangedBottom > ScreenChangedTop) {
-		HaveChangedScreenBuff(ScreenChangedTop, ScreenChangedLeft,
-			ScreenChangedBottom, ScreenChangedRight);
+	if (g_screenChangedBottom > g_screenChangedTop) {
+		HaveChangedScreenBuff(g_screenChangedTop, g_screenChangedLeft,
+			g_screenChangedBottom, g_screenChangedRight);
 		ScreenClearChanges();
 	}
 }
@@ -541,7 +541,7 @@ static void DrawChangesAndClear()
 void DoneWithDrawingForTick()
 {
 #if EnableFSMouseMotion
-	if (HaveMouseMotion) {
+	if (g_haveMouseMotion) {
 		AutoScrollScreen();
 	}
 #endif
@@ -584,8 +584,8 @@ static bool MoveMouse(int16_t h, int16_t v)
 
 	if (s_useFullScreen)
 	{
-		h -= ViewHStart;
-		v -= ViewVStart;
+		h -= g_viewHStart;
+		v -= g_viewVStart;
 	}
 
 	if (s_useMagnify) {
@@ -622,16 +622,16 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 
 	if (s_useFullScreen)
 	{
-		NewMousePosh += ViewHStart;
-		NewMousePosv += ViewVStart;
+		NewMousePosh += g_viewHStart;
+		NewMousePosv += g_viewVStart;
 	}
 
 #if EnableFSMouseMotion
-	if (HaveMouseMotion) {
-		MyMousePositionSetDelta(NewMousePosh - SavedMouseH,
-			NewMousePosv - SavedMouseV);
-		SavedMouseH = NewMousePosh;
-		SavedMouseV = NewMousePosv;
+	if (g_haveMouseMotion) {
+		MyMousePositionSetDelta(NewMousePosh - g_savedMouseH,
+			NewMousePosv - g_savedMouseV);
+		g_savedMouseH = NewMousePosh;
+		g_savedMouseV = NewMousePosv;
 	} else
 #endif
 	{
@@ -763,7 +763,7 @@ static void HandleTheEvent(SDL_Event *event)
 		case
 			SDL_EVENT_QUIT
 			:
-			RequestMacOff = true;
+			g_requestMacOff = true;
 			break;
 				case
 					SDL_EVENT_WINDOW_FOCUS_GAINED
@@ -792,7 +792,7 @@ static void HandleTheEvent(SDL_Event *event)
 			SDL_EVENT_MOUSE_MOTION
 			:
 #if EnableFSMouseMotion && ! HaveWorkingWarp
-			if (HaveMouseMotion) {
+			if (g_haveMouseMotion) {
 				MousePositionNotifyRelative(
 					event->motion.xrel, event->motion.yrel);
 			} else
@@ -807,7 +807,7 @@ static void HandleTheEvent(SDL_Event *event)
 			:
 			/* any mouse button, we don't care which */
 #if EnableFSMouseMotion && ! HaveWorkingWarp
-			if (HaveMouseMotion) {
+			if (g_haveMouseMotion) {
 				/* ignore position */
 			} else
 #endif
@@ -821,7 +821,7 @@ static void HandleTheEvent(SDL_Event *event)
 			SDL_EVENT_MOUSE_BUTTON_UP
 			:
 #if EnableFSMouseMotion && ! HaveWorkingWarp
-			if (HaveMouseMotion) {
+			if (g_haveMouseMotion) {
 				/* ignore position */
 			} else
 #endif
@@ -919,14 +919,14 @@ static void GrabTheMachine()
 #if HaveWorkingWarp
 	/*
 		if magnification changes, need to reset,
-		even if HaveMouseMotion already true
+		even if g_haveMouseMotion already true
 	*/
-	if (MoveMouse(ViewHStart + (ViewHSize / 2),
-		ViewVStart + (ViewVSize / 2)))
+	if (MoveMouse(g_viewHStart + (g_viewHSize / 2),
+		g_viewVStart + (g_viewVSize / 2)))
 	{
-		SavedMouseH = ViewHStart + (ViewHSize / 2);
-		SavedMouseV = ViewVStart + (ViewVSize / 2);
-		HaveMouseMotion = true;
+		g_savedMouseH = g_viewHStart + (g_viewHSize / 2);
+		g_savedMouseV = g_viewVStart + (g_viewVSize / 2);
+		g_haveMouseMotion = true;
 	}
 #endif
 
@@ -937,12 +937,12 @@ static void UngrabMachine()
 {
 #if EnableFSMouseMotion
 
-	if (HaveMouseMotion) {
+	if (g_haveMouseMotion) {
 #if HaveWorkingWarp
-		(void) MoveMouse(CurMouseH, CurMouseV);
+		(void) MoveMouse(g_curMouseH, g_curMouseV);
 #endif
 
-		HaveMouseMotion = false;
+		g_haveMouseMotion = false;
 	}
 
 #endif /* EnableFSMouseMotion */
@@ -958,25 +958,25 @@ static void MouseConstrain()
 	int16_t shiftdh;
 	int16_t shiftdv;
 
-	if (SavedMouseH < ViewHStart + (ViewHSize / 4)) {
-		shiftdh = ViewHSize / 2;
-	} else if (SavedMouseH > ViewHStart + ViewHSize - (ViewHSize / 4)) {
-		shiftdh = - ViewHSize / 2;
+	if (g_savedMouseH < g_viewHStart + (g_viewHSize / 4)) {
+		shiftdh = g_viewHSize / 2;
+	} else if (g_savedMouseH > g_viewHStart + g_viewHSize - (g_viewHSize / 4)) {
+		shiftdh = - g_viewHSize / 2;
 	} else {
 		shiftdh = 0;
 	}
-	if (SavedMouseV < ViewVStart + (ViewVSize / 4)) {
-		shiftdv = ViewVSize / 2;
-	} else if (SavedMouseV > ViewVStart + ViewVSize - (ViewVSize / 4)) {
-		shiftdv = - ViewVSize / 2;
+	if (g_savedMouseV < g_viewVStart + (g_viewVSize / 4)) {
+		shiftdv = g_viewVSize / 2;
+	} else if (g_savedMouseV > g_viewVStart + g_viewVSize - (g_viewVSize / 4)) {
+		shiftdv = - g_viewVSize / 2;
 	} else {
 		shiftdv = 0;
 	}
 	if ((shiftdh != 0) || (shiftdv != 0)) {
-		SavedMouseH += shiftdh;
-		SavedMouseV += shiftdv;
-		if (! MoveMouse(SavedMouseH, SavedMouseV)) {
-			HaveMouseMotion = false;
+		g_savedMouseH += shiftdh;
+		g_savedMouseV += shiftdv;
+		if (! MoveMouse(g_savedMouseH, g_savedMouseV)) {
+			g_haveMouseMotion = false;
 		}
 	}
 }
@@ -1147,23 +1147,23 @@ static bool CreateMainWindow()
 			SDL_GetWindowSizeInPixels
 			(my_main_wind, &wr, &hr);
 
-			ViewHSize = wr;
-			ViewVSize = hr;
+			g_viewHSize = wr;
+			g_viewVSize = hr;
 			if (s_useMagnify) {
-				ViewHSize /= s_windowScale;
-				ViewVSize /= s_windowScale;
+				g_viewHSize /= s_windowScale;
+				g_viewVSize /= s_windowScale;
 			}
-			if (ViewHSize >= vMacScreenWidth) {
-				ViewHStart = 0;
-				ViewHSize = vMacScreenWidth;
+			if (g_viewHSize >= vMacScreenWidth) {
+				g_viewHStart = 0;
+				g_viewHSize = vMacScreenWidth;
 			} else {
-				ViewHSize &= ~ 1;
+				g_viewHSize &= ~ 1;
 			}
-			if (ViewVSize >= vMacScreenHeight) {
-				ViewVStart = 0;
-				ViewVSize = vMacScreenHeight;
+			if (g_viewVSize >= vMacScreenHeight) {
+				g_viewVStart = 0;
+				g_viewVSize = vMacScreenHeight;
 			} else {
-				ViewVSize &= ~ 1;
+				g_viewVSize &= ~ 1;
 			}
 
 			if (wr > NewWindowWidth) {
@@ -1178,7 +1178,7 @@ static bool CreateMainWindow()
 			}
 		}
 
-		ColorModeWorks = true;
+		g_colorModeWorks = true;
 
 		v = true;
 	}
@@ -1245,10 +1245,10 @@ struct MyWState {
 #if EnableRecreateW
 static void GetMyWState(MyWState *r)
 {
-	r->f_ViewHSize = ViewHSize;
-	r->f_ViewVSize = ViewVSize;
-	r->f_ViewHStart = ViewHStart;
-	r->f_ViewVStart = ViewVStart;
+	r->f_ViewHSize = g_viewHSize;
+	r->f_ViewVSize = g_viewVSize;
+	r->f_ViewHStart = g_viewHStart;
+	r->f_ViewVStart = g_viewVStart;
 	r->f_hOffset = hOffset;
 	r->f_vOffset = vOffset;
 	r->f_UseFullScreen = s_useFullScreen;
@@ -1264,10 +1264,10 @@ static void GetMyWState(MyWState *r)
 #if EnableRecreateW
 static void SetMyWState(MyWState *r)
 {
-	ViewHSize = r->f_ViewHSize;
-	ViewVSize = r->f_ViewVSize;
-	ViewHStart = r->f_ViewHStart;
-	ViewVStart = r->f_ViewVStart;
+	g_viewHSize = r->f_ViewHSize;
+	g_viewVSize = r->f_ViewVSize;
+	g_viewHStart = r->f_ViewHStart;
+	g_viewVStart = r->f_ViewVStart;
 	hOffset = r->f_hOffset;
 	vOffset = r->f_vOffset;
 	s_useFullScreen = r->f_UseFullScreen;
@@ -1296,7 +1296,7 @@ static bool ReCreateMainWindow()
 		Like CreateMainWindow (which it calls), except may be
 		called when already have window, without CloseMainWindow
 		being called first. (Usually with different
-		values of WantMagnify and WantFullScreen than
+		values of g_wantMagnify and g_wantFullScreen than
 		on the previous call.)
 
 		If there is existing window, and fail to create
@@ -1340,16 +1340,16 @@ static bool ReCreateMainWindow()
 
 	ZapMyWState();
 
-	s_useMagnify = WantMagnify;
-	s_useFullScreen = WantFullScreen;
+	s_useMagnify = g_wantMagnify;
+	s_useFullScreen = g_wantFullScreen;
 
 	if (! CreateMainWindow()) {
 		CloseMainWindow();
 		SetMyWState(&old_state);
 
 		/* avoid retry */
-		WantFullScreen = s_useFullScreen;
-		WantMagnify = s_useMagnify;
+		g_wantFullScreen = s_useFullScreen;
+		g_wantMagnify = s_useMagnify;
 
 	} else {
 		GetMyWState(&new_state);
@@ -1359,7 +1359,7 @@ static bool ReCreateMainWindow()
 
 #if HaveWorkingWarp
 		if (HadCursorHidden) {
-			(void) MoveMouse(CurMouseH, CurMouseV);
+			(void) MoveMouse(g_curMouseH, g_curMouseV);
 		}
 #endif
 	}
@@ -1389,7 +1389,7 @@ static void ZapWinStateVars()
 
 void ToggleWantFullScreen()
 {
-	WantFullScreen = ! WantFullScreen;
+	g_wantFullScreen = ! g_wantFullScreen;
 
 	{
 		int OldWinState =
@@ -1397,15 +1397,15 @@ void ToggleWantFullScreen()
 		int OldMagState =
 			s_useMagnify ? kMagStateMagnifgy : kMagStateNormal;
 		int NewWinState =
-			WantFullScreen ? kWinStateFullScreen : kWinStateWindowed;
+			g_wantFullScreen ? kWinStateFullScreen : kWinStateWindowed;
 		int NewMagState = WinMagStates[NewWinState];
 
 		WinMagStates[OldWinState] = OldMagState;
 		if (kMagStateAuto != NewMagState) {
-			WantMagnify = (kMagStateMagnifgy == NewMagState);
+			g_wantMagnify = (kMagStateMagnifgy == NewMagState);
 		} else {
-			WantMagnify = false;
-			if (WantFullScreen) {
+			g_wantMagnify = false;
+			if (g_wantFullScreen) {
 				SDL_Rect r;
 
 				if (0 == SDL_GetDisplayBounds(0, &r)) {
@@ -1413,7 +1413,7 @@ void ToggleWantFullScreen()
 						&& (r.h >= vMacScreenHeight * s_windowScale)
 						)
 					{
-						WantMagnify = true;
+						g_wantMagnify = true;
 					}
 				}
 			}
@@ -1459,22 +1459,22 @@ static void CheckForSavedTasks()
 	}
 
 #if EnableFSMouseMotion && HaveWorkingWarp
-	if (HaveMouseMotion) {
+	if (g_haveMouseMotion) {
 		MouseConstrain();
 	}
 #endif
 
-	if (RequestMacOff) {
-		RequestMacOff = false;
+	if (g_requestMacOff) {
+		g_requestMacOff = false;
 		if (AnyDiskInserted()) {
 			MacMsgOverride(Localize(kStrQuitWarningTitle),
 				Localize(kStrQuitWarningMessage));
 		} else {
-			ForceMacOff = true;
+			g_forceMacOff = true;
 		}
 	}
 
-	if (ForceMacOff) {
+	if (g_forceMacOff) {
 		return;
 	}
 
@@ -1487,8 +1487,8 @@ static void CheckForSavedTasks()
 		}
 	}
 
-	if (s_curSpeedStopped != (SpeedStopped ||
-		(s_backgroundFlag && ! RunInBackground
+	if (s_curSpeedStopped != (g_speedStopped ||
+		(s_backgroundFlag && ! g_runInBackground
 		)))
 	{
 		s_curSpeedStopped = ! s_curSpeedStopped;
@@ -1505,8 +1505,8 @@ static void CheckForSavedTasks()
 
 #if EnableRecreateW
 	if (0
-		|| (s_useMagnify != WantMagnify)
-		|| (s_useFullScreen != WantFullScreen)
+		|| (s_useMagnify != g_wantMagnify)
+		|| (s_useFullScreen != g_wantFullScreen)
 		)
 	{
 		(void) ReCreateMainWindow();
@@ -1525,22 +1525,22 @@ static void CheckForSavedTasks()
 		}
 	}
 
-	if (NeedWholeScreenDraw) {
-		NeedWholeScreenDraw = false;
+	if (g_needWholeScreenDraw) {
+		g_needWholeScreenDraw = false;
 		ScreenChangedAll();
 	}
 
 #if NeedRequestIthDisk
-	if (0 != RequestIthDisk) {
-		Sony_InsertIth(RequestIthDisk);
-		RequestIthDisk = 0;
+	if (0 != g_requestIthDisk) {
+		Sony_InsertIth(g_requestIthDisk);
+		g_requestIthDisk = 0;
 	}
 #endif
 
-	if (vSonyNewDiskWanted) {
-		if (vSonyNewDiskName != NOT_A_PBUF) {
-			uint8_t *p = static_cast<uint8_t *>(PbufDat[vSonyNewDiskName]);
-			uint32_t L = PbufSize[vSonyNewDiskName];
+	if (g_sonyNewDiskWanted) {
+		if (g_sonyNewDiskName != NOT_A_PBUF) {
+			uint8_t *p = static_cast<uint8_t *>(PbufDat[g_sonyNewDiskName]);
+			uint32_t L = PbufSize[g_sonyNewDiskName];
 			char drivename[256];
 			uint32_t j = 0;
 			for (uint32_t i = 0; i < L && j < sizeof(drivename) - 1; ++i) {
@@ -1562,15 +1562,15 @@ static void CheckForSavedTasks()
 			if (j > 0 && drivename[0] == '.') {
 				drivename[0] = '-';
 			}
-			MakeNewDisk(vSonyNewDiskSize, drivename);
-			PbufDispose(vSonyNewDiskName);
-			vSonyNewDiskName = NOT_A_PBUF;
+			MakeNewDisk(g_sonyNewDiskSize, drivename);
+			PbufDispose(g_sonyNewDiskName);
+			g_sonyNewDiskName = NOT_A_PBUF;
 		} else
 		{
 			char defaultName[] = "untitled.dsk";
-			MakeNewDisk(vSonyNewDiskSize, defaultName);
+			MakeNewDisk(g_sonyNewDiskSize, defaultName);
 		}
-		vSonyNewDiskWanted = false;
+		g_sonyNewDiskWanted = false;
 	}
 
 	if (s_haveCursorHidden != (s_wantCursorHidden
@@ -1660,7 +1660,7 @@ static void CheckForSystemEvents()
  bool ExtraTimeNotOver()
 {
 	UpdateTrueEmulatedTime();
-	return TrueEmulatedTime == OnTrueTime;
+	return g_trueEmulatedTime == g_onTrueTime;
 }
 
 void WaitForNextTick()
@@ -1670,7 +1670,7 @@ void WaitForNextTick()
 	if (g_SkipThrottle) {
 		CheckForSystemEvents();
 		DoneWithDrawingForTick();
-		++OnTrueTime;
+		++g_onTrueTime;
 		return;
 	}
 
@@ -1678,7 +1678,7 @@ void WaitForNextTick()
 		CheckForSystemEvents();
 		CheckForSavedTasks();
 
-		if (ForceMacOff) {
+		if (g_forceMacOff) {
 			return;
 		}
 
@@ -1710,7 +1710,7 @@ void WaitForNextTick()
 		CheckMouseState();
 	}
 
-	OnTrueTime = TrueEmulatedTime;
+	g_onTrueTime = g_trueEmulatedTime;
 }
 
 /* --- platform independent code can be thought of as going here --- */
@@ -1737,12 +1737,12 @@ static bool AllocMyMemory()
 	if (!dbglog_ReserveAlloc())
 		goto fail;
 #endif
-	if (!AllocBlock(&ROM, g_machine->config().romSize, false))
+	if (!AllocBlock(&g_rom, g_machine->config().romSize, false))
 		goto fail;
-	if (!AllocBlock(&screencomparebuff, vMacScreenNumBytes, true))
+	if (!AllocBlock(&g_screenCompareBuff, vMacScreenNumBytes, true))
 		goto fail;
 #if UseControlKeys
-	if (!AllocBlock(&CntrlDisplayBuff, vMacScreenNumBytes, false))
+	if (!AllocBlock(&g_cntrlDisplayBuff, vMacScreenNumBytes, false))
 		goto fail;
 #endif
 	if (!AllocBlock(&CLUT_final, CLUT_finalsz, false))
@@ -1760,10 +1760,10 @@ fail:
 
 static void UnallocMyMemory()
 {
-	free(ROM); ROM = nullptr;
-	free(screencomparebuff); screencomparebuff = nullptr;
+	free(g_rom); g_rom = nullptr;
+	free(g_screenCompareBuff); g_screenCompareBuff = nullptr;
 #if UseControlKeys
-	free(CntrlDisplayBuff); CntrlDisplayBuff = nullptr;
+	free(g_cntrlDisplayBuff); g_cntrlDisplayBuff = nullptr;
 #endif
 	free(CLUT_final); CLUT_final = nullptr;
 	Sound_FreeBuffer();
@@ -1786,7 +1786,7 @@ static void UninitWhereAmI()
 }
 
 /* Perform all platform initialisation in order: allocate memory,
-   parse arguments, load ROM and disks, create window and sound. */
+   parse arguments, load g_rom and disks, create window and sound. */
 static bool InitOSGLU()
 {
 #define INIT_STEP(name, expr) \
@@ -1855,7 +1855,7 @@ int main(int argc, char **argv)
 	ProgramEarlyInit(argc, argv);
 
 	s_windowScale = GetEmulatorConfig().windowScale;
-	SpeedValue = GetEmulatorConfig().speed;
+	g_speedValue = GetEmulatorConfig().speed;
 
 	const LaunchConfig& lc = GetLaunchConfig();
 	if (lc.help) {

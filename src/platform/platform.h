@@ -38,7 +38,7 @@ extern void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
 
 extern bool AllocBlock(uint8_t **p, uint32_t n, bool FillOnes);
 
-extern uint8_t * ROM;
+extern uint8_t * g_rom;
 
 /*
 	error codes returned by Mini vMac extensions
@@ -82,11 +82,11 @@ extern void PbufTransfer(uint8_t * Buffer,
 
 using DriveIndex = uint16_t;
 
-extern uint32_t vSonyWritableMask;
-extern uint32_t vSonyInsertedMask;
+extern uint32_t g_sonyWritableMask;
+extern uint32_t g_sonyInsertedMask;
 
 #define vSonyIsInserted(Drive_No) \
-	((vSonyInsertedMask & ((uint32_t)1 << (Drive_No))) != 0)
+	((g_sonyInsertedMask & ((uint32_t)1 << (Drive_No))) != 0)
 
 extern tMacErr vSonyTransfer(bool IsWrite, uint8_t * Buffer,
 	DriveIndex Drive_No, uint32_t Sony_Start, uint32_t Sony_Count,
@@ -97,25 +97,25 @@ extern tMacErr vSonyGetSize(DriveIndex Drive_No, uint32_t *Sony_Count);
 extern bool AnyDiskInserted();
 extern void DiskRevokeWritable(DriveIndex Drive_No);
 
-extern bool vSonyRawMode;
+extern bool g_sonyRawMode;
 
-extern bool vSonyNewDiskWanted;
-extern uint32_t vSonyNewDiskSize;
+extern bool g_sonyNewDiskWanted;
+extern uint32_t g_sonyNewDiskSize;
 extern tMacErr vSonyEjectDelete(DriveIndex Drive_No);
 
-extern PbufIndex vSonyNewDiskName;
+extern PbufIndex g_sonyNewDiskName;
 
 extern tMacErr vSonyGetName(DriveIndex Drive_No, PbufIndex *r);
 
 extern tMacErr HTCEexport(PbufIndex i);
 extern tMacErr HTCEimport(PbufIndex *r);
 
-extern uint32_t OnTrueTime;
+extern uint32_t g_onTrueTime;
 
-extern uint32_t CurMacDateInSeconds;
-extern uint32_t CurMacLatitude;
-extern uint32_t CurMacLongitude;
-extern uint32_t CurMacDelta;
+extern uint32_t g_curMacDateInSeconds;
+extern uint32_t g_curMacLatitude;
+extern uint32_t g_curMacLongitude;
+extern uint32_t g_curMacDelta;
 	/* (dlsDelta << 24) | (gmtDelta & 0x00FFFFFF) */
 
 
@@ -138,10 +138,10 @@ extern uint8_t  g_screenDepth;
 #define vMacScreenMonoNumBytes (vMacScreenNumPixels / 8)
 #define vMacScreenMonoByteWidth ((long)vMacScreenWidth / 8)
 
-extern bool UseColorMode;
-extern bool ColorModeWorks;
+extern bool g_useColorMode;
+extern bool g_colorModeWorks;
 
-extern bool ColorMappingChanged;
+extern bool g_colorMappingChanged;
 
 #define CLUT_size 256
 
@@ -149,37 +149,37 @@ extern uint16_t CLUT_reds[CLUT_size];
 extern uint16_t CLUT_greens[CLUT_size];
 extern uint16_t CLUT_blues[CLUT_size];
 
-extern bool EmVideoDisable;
-extern int8_t EmLagTime;
+extern bool g_emVideoDisable;
+extern int8_t g_emLagTime;
 
 extern void Screen_OutputFrame(uint8_t * screencurrentbuff);
 extern void DoneWithDrawingForTick();
 
-extern bool ForceMacOff;
+extern bool g_forceMacOff;
 
-extern bool WantMacInterrupt;
+extern bool g_wantMacInterrupt;
 
-extern bool WantMacReset;
+extern bool g_wantMacReset;
 
 extern bool ExtraTimeNotOver();
 
-extern uint8_t SpeedValue;
+extern uint8_t g_speedValue;
 
 extern bool g_SkipThrottle;
 
-extern bool WantNotAutoSlow;
+extern bool g_wantNotAutoSlow;
 
 /* where emulated machine thinks mouse is */
-extern uint16_t CurMouseV;
-extern uint16_t CurMouseH;
+extern uint16_t g_curMouseV;
+extern uint16_t g_curMouseH;
 
-extern uint32_t QuietTime;
-extern uint32_t QuietSubTicks;
+extern uint32_t g_quietTime;
+extern uint32_t g_quietSubTicks;
 
 #define QuietEnds() \
 { \
-	QuietTime = 0; \
-	QuietSubTicks = 0; \
+	g_quietTime = 0; \
+	g_quietSubTicks = 0; \
 }
 
 using RawSoundSample = uint16_t;
@@ -195,20 +195,20 @@ extern void Sound_EndWrite(uint16_t actL);
 
 #if EmLocalTalk
 
-extern uint8_t LT_NodeHint;
+extern uint8_t g_ltNodeHint;
 
 #if LT_MayHaveEcho
-extern bool CertainlyNotMyPacket;
+extern bool g_certainlyNotMyPacket;
 #endif
 
 #define LT_TxBfMxSz 1024
-extern uint8_t * LT_TxBuffer;
-extern uint16_t LT_TxBuffSz;
+extern uint8_t * g_ltTxBuffer;
+extern uint16_t g_ltTxBuffSz;
 
 extern void LT_TransmitPacket();
 
-extern uint8_t * LT_RxBuffer;
-extern uint32_t LT_RxBuffSz;
+extern uint8_t * g_ltRxBuffer;
+extern uint32_t g_ltRxBuffSz;
 
 extern void LT_ReceivePacket();
 

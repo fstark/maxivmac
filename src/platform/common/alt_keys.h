@@ -45,7 +45,7 @@ static void Keyboard_UpdateKeyMap1(uint8_t key, bool down)
 		if (down && ! s_altKeysModOn) {
 			if (s_altKeysLockText) {
 				s_altKeysLockText = false;
-				NeedWholeScreenDraw = true;
+				g_needWholeScreenDraw = true;
 				SpecialModeClr(SpclModeAltKeyText);
 
 				CheckAltKeyUseMode();
@@ -60,7 +60,7 @@ static void Keyboard_UpdateKeyMap1(uint8_t key, bool down)
 			if (! s_altKeysLockText) {
 				s_altKeysLockText = true;
 				SpecialModeSet(SpclModeAltKeyText);
-				NeedWholeScreenDraw = true;
+				g_needWholeScreenDraw = true;
 				CheckAltKeyUseMode();
 			}
 		}

@@ -148,7 +148,7 @@ static void Sound_SecondNotify0()
 #if dbglog_SoundStuff
 			dbglog_writeln("MinFilledSoundBuffs too low");
 #endif
-			++TrueEmulatedTime;
+			++g_trueEmulatedTime;
 		}
 #if dbglog_SoundBuffStats
 		dbglog_writelnNum("MinFilledSoundBuffs",

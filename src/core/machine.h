@@ -1,7 +1,7 @@
 /*
 	machine — Legacy global hardware definitions
 
-	Model constants, memory globals (RAM, ROM, VidMem), address
+	Model constants, memory globals (g_ram, g_rom, g_vidMem), address
 	translation table (ATT), device memory dispatch, interrupt
 	scheduling, wires, and extension definitions.
 */
@@ -26,7 +26,7 @@
 
 /* --- Memory globals --- */
 
-extern uint8_t * RAM;
+extern uint8_t * g_ram;
 	/*
 		allocated by OSGLUxxx to be at least
 			kRAM_Size + RAMSafetyMarginFudge
@@ -34,8 +34,8 @@ extern uint8_t * RAM;
 		possible for the emulator to write up to 3 bytes past kRAM_Size.
 	*/
 
-extern uint8_t * VidROM;
-extern uint8_t * VidMem;
+extern uint8_t * g_vidROM;
+extern uint8_t * g_vidMem;
 
 // Rebuild the address translation table after overlay/32-bit mode change.
 extern void MemOverlay_ChangeNtfy();
@@ -57,19 +57,19 @@ extern uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
 
 /*
 	memory access routines that can use when have address
-	that is known to be in RAM (and that is in the first
+	that is known to be in g_ram (and that is in the first
 	copy of the ram, not the duplicates, i.e. < kRAM_Size).
 */
 
 #ifndef ln2mtb
 
-#define get_ram_byte(addr) do_get_mem_byte((addr) + RAM)
-#define get_ram_word(addr) do_get_mem_word((addr) + RAM)
-#define get_ram_long(addr) do_get_mem_long((addr) + RAM)
+#define get_ram_byte(addr) do_get_mem_byte((addr) + g_ram)
+#define get_ram_word(addr) do_get_mem_word((addr) + g_ram)
+#define get_ram_long(addr) do_get_mem_long((addr) + g_ram)
 
-#define put_ram_byte(addr, b) do_put_mem_byte((addr) + RAM, (b))
-#define put_ram_word(addr, w) do_put_mem_word((addr) + RAM, (w))
-#define put_ram_long(addr, l) do_put_mem_long((addr) + RAM, (l))
+#define put_ram_byte(addr, b) do_put_mem_byte((addr) + g_ram, (b))
+#define put_ram_word(addr, w) do_put_mem_word((addr) + g_ram, (w))
+#define put_ram_long(addr, l) do_put_mem_long((addr) + g_ram, (l))
 
 #else
 
@@ -83,7 +83,7 @@ extern uint8_t * get_real_address0(uint32_t L, bool WritableMem, uint32_t addr,
 
 #endif
 
-#define get_ram_address(addr) ((addr) + RAM)
+#define get_ram_address(addr) ((addr) + g_ram)
 
 /*
 	accessing addresses that don't map to
@@ -141,7 +141,7 @@ extern void DoReportAbnormalID(uint16_t id
 
 extern void VIAorSCCinterruptChngNtfy();
 
-extern bool InterruptButton;
+extern bool g_interruptButton;
 extern void SetInterruptButton(bool v);
 
 /* --- Interrupt scheduling (ICT) --- */
@@ -167,7 +167,7 @@ using iCountt = uint32_t;
 extern iCountt GetCuriCount();
 extern void ICT_Zap();
 
-extern uint8_t* Wires;
+extern uint8_t* g_wiresData;
 
 #define kLn2CycleScale 6
 #define kCycleScale (1 << kLn2CycleScale)

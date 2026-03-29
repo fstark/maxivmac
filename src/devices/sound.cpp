@@ -99,7 +99,7 @@ void SoundDevice::subTick(int SubTick)
 #endif
 		(ramSz - kSnd_Main_Offset);
 #ifndef ln2mtb
-	uint8_t * addr = addy + (2 * StartOffset) + RAM;
+	uint8_t * addr = addy + (2 * StartOffset) + g_ram;
 #else
 	uint32_t addr = addy + (2 * StartOffset);
 #endif

@@ -1406,23 +1406,23 @@ const uint16_t Cell2UnicodeMap[] = {
 };
 #endif
 
-bool SpeedStopped = false;
+bool g_speedStopped = false;
 
-bool RunInBackground = (WantInitRunInBackground != 0);
+bool g_runInBackground = (WantInitRunInBackground != 0);
 
-bool WantFullScreen = false;
+bool g_wantFullScreen = false;
 
-bool WantMagnify = true;
+bool g_wantMagnify = true;
 
 /* NeedRequestInsertDisk, NeedDoMoreCommandsMsg, NeedDoAboutMsg,
    NeedRequestIthDisk defaults are provided by intl_chars.h */
 
-bool RequestInsertDisk = false;
+bool g_requestInsertDisk = false;
 
-uint8_t RequestIthDisk = 0;
+uint8_t g_requestIthDisk = 0;
 
 #if UseControlKeys
-bool ControlKeyPressed = false;
+bool g_controlKeyPressed = false;
 #endif
 
 /* kStrCntrlKyName, kControlModeKey, kUnMappedKey provided by intl_chars.h */
@@ -1457,7 +1457,7 @@ const char * GetSubstitutionStr(char x)
 			break;
 #if UseControlKeys
 		case 'k':
-			if (ControlKeyPressed) {
+			if (g_controlKeyPressed) {
 				s = Localize(kStrPressed);
 			} else {
 				s = Localize(kStrReleased);
@@ -1465,42 +1465,42 @@ const char * GetSubstitutionStr(char x)
 			break;
 #endif
 		case 'g':
-			if (WantMagnify) {
+			if (g_wantMagnify) {
 				s = Localize(kStrOn);
 			} else {
 				s = Localize(kStrOff);
 			}
 			break;
 		case 'f':
-			if (WantFullScreen) {
+			if (g_wantFullScreen) {
 				s = Localize(kStrOn);
 			} else {
 				s = Localize(kStrOff);
 			}
 			break;
 		case 'b':
-			if (RunInBackground) {
+			if (g_runInBackground) {
 				s = Localize(kStrOn);
 			} else {
 				s = Localize(kStrOff);
 			}
 			break;
 		case 'h':
-			if (SpeedStopped) {
+			if (g_speedStopped) {
 				s = Localize(kStrStoppedOn);
 			} else {
 				s = Localize(kStrStoppedOff);
 			}
 			break;
 		case 'l':
-			if (WantNotAutoSlow) {
+			if (g_wantNotAutoSlow) {
 				s = Localize(kStrStoppedOff);
 			} else {
 				s = Localize(kStrStoppedOn);
 			}
 			break;
 		case 's':
-			switch (SpeedValue) {
+			switch (g_speedValue) {
 				case 0:
 					s = "1x";
 					break;
