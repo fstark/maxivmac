@@ -41,8 +41,6 @@ inline constexpr uint8_t MKC_UnMappedKey = MKC_Control;
 
 /* version and other info to display to user */
 
-#define NeedIntlChars 0
-
 #ifndef MAXIVMAC_VERSION
 #define MAXIVMAC_VERSION "dev-unknown"
 #endif
