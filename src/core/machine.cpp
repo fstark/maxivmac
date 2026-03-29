@@ -192,87 +192,74 @@ void DoReportAbnormalID(uint16_t id
 
 static constexpr uint32_t kRAM_Base = 0x00000000; /* when overlay off */
 
-static uint32_t addrmap_kRAM_ln2Spc() {
+static uint32_t GetRAMLn2Spc() {
 	auto m = g_machine->config().model;
 	if (m == MacModel::PB100 || g_machine->config().isIIFamily())
 		return 23;
 	return 22;
 }
-#define kRAM_ln2Spc addrmap_kRAM_ln2Spc()
 
-static uint32_t addrmap_kVidMem_Base() {
+static uint32_t GetVidMemBase() {
 	if (g_machine->config().model == MacModel::PB100) return 0x00FA0000;
 	return 0x00540000;
 }
-static uint32_t addrmap_kVidMem_ln2Spc() {
+static uint32_t GetVidMemLn2Spc() {
 	if (g_machine->config().model == MacModel::PB100) return 16;
 	return 18;
 }
-#define kVidMem_Base addrmap_kVidMem_Base()
-#define kVidMem_ln2Spc addrmap_kVidMem_ln2Spc()
 
-static uint32_t addrmap_kSCSI_Block_Base() {
+static uint32_t GetSCSIBlockBase() {
 	if (g_machine->config().model == MacModel::PB100) return 0x00F90000;
 	return 0x00580000;
 }
-static uint32_t addrmap_kSCSI_ln2Spc() {
+static uint32_t GetSCSILn2Spc() {
 	if (g_machine->config().model == MacModel::PB100) return 16;
 	return 19;
 }
-#define kSCSI_Block_Base addrmap_kSCSI_Block_Base()
-#define kSCSI_ln2Spc addrmap_kSCSI_ln2Spc()
 
 static constexpr uint32_t kRAM_Overlay_Base = 0x00600000; /* when overlay on */
 #define kRAM_Overlay_Top  0x00800000
 
-static uint32_t addrmap_kSCCRd_Block_Base() {
+static uint32_t GetSCCRdBlockBase() {
 	if (g_machine->config().model == MacModel::PB100) return 0x00FD0000;
 	return 0x00800000;
 }
-static uint32_t addrmap_kSCC_ln2Spc() {
+static uint32_t GetSCCLn2Spc() {
 	if (g_machine->config().model == MacModel::PB100) return 16;
 	return 22;
 }
-#define kSCCRd_Block_Base addrmap_kSCCRd_Block_Base()
-#define kSCC_ln2Spc addrmap_kSCC_ln2Spc()
 
 /* SCC write block: not present on PB100 (combined read/write) */
 static constexpr uint32_t kSCCWr_Block_Base = 0x00A00000;
 #define kSCCWr_Block_Top  0x00C00000
 
-static uint32_t addrmap_kIWM_Block_Base() {
+static uint32_t GetIWMBlockBase() {
 	if (g_machine->config().model == MacModel::PB100) return 0x00F60000;
 	return 0x00C00000;
 }
-static uint32_t addrmap_kIWM_ln2Spc() {
+static uint32_t GetIWMLn2Spc() {
 	if (g_machine->config().model == MacModel::PB100) return 16;
 	return 21;
 }
-#define kIWM_Block_Base addrmap_kIWM_Block_Base()
-#define kIWM_ln2Spc addrmap_kIWM_ln2Spc()
 
-static uint32_t addrmap_kVIA1_Block_Base() {
+static uint32_t GetVIA1BlockBase() {
 	if (g_machine->config().model == MacModel::PB100) return 0x00F70000;
 	return 0x00E80000;
 }
-static uint32_t addrmap_kVIA1_ln2Spc() {
+static uint32_t GetVIA1Ln2Spc() {
 	if (g_machine->config().model == MacModel::PB100) return 16;
 	return 19;
 }
-#define kVIA1_Block_Base addrmap_kVIA1_Block_Base()
-#define kVIA1_ln2Spc addrmap_kVIA1_ln2Spc()
 
 /* ASC: on PB100, at a different address; other models use EmASC guard */
-static uint32_t addrmap_kASC_Block_Base() {
+static uint32_t GetASCBlockBase() {
 	if (g_machine->config().model == MacModel::PB100) return 0x00FB0000;
 	return 0x50F00000; /* Mac II 32-bit ASC base */
 }
-static uint32_t addrmap_kASC_ln2Spc() {
+static uint32_t GetASCLn2Spc() {
 	if (g_machine->config().model == MacModel::PB100) return 16;
 	return 26; /* Mac II ASC space */
 }
-#define kASC_Block_Base addrmap_kASC_Block_Base()
-#define kASC_ln2Spc addrmap_kASC_ln2Spc()
 static constexpr uint32_t kASC_Mask = 0x00000FFF;
 
 
@@ -639,7 +626,7 @@ static constexpr uint32_t kVIA2_Mask = 0x00000F;
 
 static constexpr uint32_t kIWM_Mask = 0x00000F; /* Allocated Memory Bandwidth for IWM */
 
-static uint32_t addrmap_ROM_CmpZeroMask() {
+static uint32_t GetROMCmpZeroMask() {
 	const auto& cfg = g_machine->config();
 	auto m = cfg.model;
 	if (m <= MacModel::Mac512Ke) return 0;
@@ -649,11 +636,10 @@ static uint32_t addrmap_ROM_CmpZeroMask() {
 	/* SE, Classic, PB100, II, IIx all use 0 */
 	return 0;
 }
-#define ROM_CmpZeroMask addrmap_ROM_CmpZeroMask()
 
-#define kROM_cmpmask (0x00F00000 | ROM_CmpZeroMask)
+#define kROM_cmpmask (0x00F00000 | GetROMCmpZeroMask())
 
-static uint32_t addrmap_Overlay_ROM_CmpZeroMask() {
+static uint32_t GetOverlayROMCmpZeroMask() {
 	auto m = g_machine->config().model;
 	if (m <= MacModel::Mac512Ke) return 0x00100000;
 	if (m <= MacModel::Plus)     return 0x00020000;
@@ -661,7 +647,6 @@ static uint32_t addrmap_Overlay_ROM_CmpZeroMask() {
 	/* PB100, II, IIx */
 	return 0;
 }
-#define Overlay_ROM_CmpZeroMask addrmap_Overlay_ROM_CmpZeroMask()
 
 enum {
 	kMMDV_VIA1,
@@ -759,9 +744,9 @@ static void SetUp_RAM24()
 	if (cfg.ramASize == cfg.ramBSize) {
 		if (cfg.ramASize == bankbit) {
 			/* properly set up balanced RAM */
-			r.cmpmask = 0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1);
+			r.cmpmask = 0x00FFFFFF & ~ ((1 << GetRAMLn2Spc()) - 1);
 			r.cmpvalu = 0;
-			r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramSize() - 1);
+			r.usemask = ((1 << GetRAMLn2Spc()) - 1) & (cfg.ramSize() - 1);
 			r.usebase = g_ram;
 			r.Access = kATTA_readwritereadymask;
 			AddToATTList(&r);
@@ -772,9 +757,9 @@ static void SetUp_RAM24()
 			if (0 != bankbit) {
 				if (cfg.ramBSize != 0) {
 					r.cmpmask = bankbit
-						| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
+						| (0x00FFFFFF & ~ ((1 << GetRAMLn2Spc()) - 1));
 					r.cmpvalu = bankbit;
-					r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramBSize - 1);
+					r.usemask = ((1 << GetRAMLn2Spc()) - 1) & (cfg.ramBSize - 1);
 					r.usebase = cfg.ramASize + g_ram;
 					r.Access = kATTA_readwritereadymask;
 					AddToATTList(&r);
@@ -783,9 +768,9 @@ static void SetUp_RAM24()
 
 			{
 				r.cmpmask = bankbit
-					| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
+					| (0x00FFFFFF & ~ ((1 << GetRAMLn2Spc()) - 1));
 				r.cmpvalu = 0;
-				r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramASize - 1);
+				r.usemask = ((1 << GetRAMLn2Spc()) - 1) & (cfg.ramASize - 1);
 				r.usebase = g_ram;
 				r.Access = kATTA_readwritereadymask;
 				AddToATTList(&r);
@@ -797,9 +782,9 @@ static void SetUp_RAM24()
 		if (0 != bankbit) {
 			if (cfg.ramBSize != 0) {
 				r.cmpmask = bankbit
-					| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
+					| (0x00FFFFFF & ~ ((1 << GetRAMLn2Spc()) - 1));
 				r.cmpvalu = bankbit;
-				r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramBSize - 1);
+				r.usemask = ((1 << GetRAMLn2Spc()) - 1) & (cfg.ramBSize - 1);
 				r.usebase = cfg.ramASize + g_ram;
 				r.Access = kATTA_readwritereadymask;
 				AddToATTList(&r);
@@ -808,9 +793,9 @@ static void SetUp_RAM24()
 
 		{
 			r.cmpmask = bankbit
-				| (0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
+				| (0x00FFFFFF & ~ ((1 << GetRAMLn2Spc()) - 1));
 			r.cmpvalu = 0;
-			r.usemask = ((1 << kRAM_ln2Spc) - 1) & (cfg.ramASize - 1);
+			r.usemask = ((1 << GetRAMLn2Spc()) - 1) & (cfg.ramASize - 1);
 			r.usebase = g_ram;
 			r.Access = kATTA_readwritereadymask;
 			AddToATTList(&r);
@@ -941,8 +926,8 @@ static void SetUp_address24()
 
 
 	if (MemOverlay) {
-		r.cmpmask = Overlay_ROM_CmpZeroMask |
-			(0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
+		r.cmpmask = GetOverlayROMCmpZeroMask() |
+			(0x00FFFFFF & ~ ((1 << GetRAMLn2Spc()) - 1));
 		r.cmpvalu = kRAM_Base;
 		r.usemask = cfg.romSize - 1;
 		r.usebase = g_rom;
@@ -1152,7 +1137,7 @@ static void SetUp_RAM24_compact()
 	ATTer r{};
 
 	if (cfg.ramBSize == 0 || cfg.ramASize == cfg.ramBSize) {
-		r.cmpmask = 0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1);
+		r.cmpmask = 0x00FFFFFF & ~ ((1 << GetRAMLn2Spc()) - 1);
 		r.cmpvalu = kRAM_Base;
 		r.usemask = cfg.ramSize() - 1;
 		r.usebase = g_ram;
@@ -1163,7 +1148,7 @@ static void SetUp_RAM24_compact()
 
 		if (0 != (0x00FFFFFF & cfg.ramASize)) {
 			/* condition should always be true if configuration file right */
-			r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~ ((1 << kRAM_ln2Spc) - 1));
+			r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~ ((1 << GetRAMLn2Spc()) - 1));
 			r.cmpvalu = kRAM_Base + cfg.ramASize;
 			r.usemask = cfg.ramBSize - 1;
 			r.usebase = cfg.ramASize + g_ram;
@@ -1171,7 +1156,7 @@ static void SetUp_RAM24_compact()
 			AddToATTListWithMTB(&r);
 		}
 
-		r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~ ((1 << kRAM_ln2Spc) - 1));
+		r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~ ((1 << GetRAMLn2Spc()) - 1));
 		r.cmpvalu = kRAM_Base;
 		r.usemask = cfg.ramASize - 1;
 		r.usebase = g_ram;
@@ -1187,8 +1172,8 @@ static void SetUp_address_compact()
 	ATTer r{};
 
 	if (MemOverlay) {
-		r.cmpmask = Overlay_ROM_CmpZeroMask |
-			(0x00FFFFFF & ~ ((1 << kRAM_ln2Spc) - 1));
+		r.cmpmask = GetOverlayROMCmpZeroMask() |
+			(0x00FFFFFF & ~ ((1 << GetRAMLn2Spc()) - 1));
 		r.cmpvalu = kRAM_Base;
 		r.usemask = cfg.romSize - 1;
 		r.usebase = g_rom;
@@ -1230,24 +1215,24 @@ static void SetUp_address_compact()
 	}
 
 	if (g_machine->config().includeVidMem) {
-		r.cmpmask = 0x00FFFFFF & ~ ((1 << kVidMem_ln2Spc) - 1);
-		r.cmpvalu = kVidMem_Base;
+		r.cmpmask = 0x00FFFFFF & ~ ((1 << GetVidMemLn2Spc()) - 1);
+		r.cmpvalu = GetVidMemBase();
 		r.usemask = g_machine->config().vidMemSize - 1;
 		r.usebase = g_vidMem;
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);
 	}
 
-	r.cmpmask = 0x00FFFFFF & ~ ((1 << kVIA1_ln2Spc) - 1);
-	r.cmpvalu = kVIA1_Block_Base;
+	r.cmpmask = 0x00FFFFFF & ~ ((1 << GetVIA1Ln2Spc()) - 1);
+	r.cmpvalu = GetVIA1BlockBase();
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA1;
 	r.device = g_machine->findDevice<VIA1Device>();
 	AddToATTList(&r);
 
-	r.cmpmask = 0x00FFFFFF & ~ ((1 << kSCC_ln2Spc) - 1);
-	r.cmpvalu = kSCCRd_Block_Base;
+	r.cmpmask = 0x00FFFFFF & ~ ((1 << GetSCCLn2Spc()) - 1);
+	r.cmpvalu = GetSCCRdBlockBase();
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCC;
@@ -1263,8 +1248,8 @@ static void SetUp_address_compact()
 	AddToATTList(&r);
 
 	if (g_machine->config().model == MacModel::PB100) {
-		r.cmpmask = 0x00FFFFFF & ~ ((1 << kASC_ln2Spc) - 1);
-		r.cmpvalu = kASC_Block_Base;
+		r.cmpmask = 0x00FFFFFF & ~ ((1 << GetASCLn2Spc()) - 1);
+		r.cmpvalu = GetASCBlockBase();
 		r.usebase = nullptr;
 		r.Access = kATTA_mmdvmask;
 		r.MMDV = kMMDV_ASC;
@@ -1272,16 +1257,16 @@ static void SetUp_address_compact()
 		AddToATTList(&r);
 	}
 
-	r.cmpmask = 0x00FFFFFF & ~ ((1 << kSCSI_ln2Spc) - 1);
-	r.cmpvalu = kSCSI_Block_Base;
+	r.cmpmask = 0x00FFFFFF & ~ ((1 << GetSCSILn2Spc()) - 1);
+	r.cmpvalu = GetSCSIBlockBase();
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCSI;
 	r.device = g_machine->findDevice<SCSIDevice>();
 	AddToATTList(&r);
 
-	r.cmpmask = 0x00FFFFFF & ~ ((1 << kIWM_ln2Spc) - 1);
-	r.cmpvalu = kIWM_Block_Base;
+	r.cmpmask = 0x00FFFFFF & ~ ((1 << GetIWMLn2Spc()) - 1);
+	r.cmpvalu = GetIWMBlockBase();
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_IWM;
