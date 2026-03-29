@@ -264,20 +264,20 @@ static constexpr uint32_t kASC_Mask = 0x00000FFF;
 
 
 #if INCLUDE_EXTN_PBUFS
-static tMacErr PbufTransferVM(uint32_t Buffera,
-	PbufIndex i, uint32_t offset, uint32_t count, bool IsWrite)
+static tMacErr PbufTransferVM(uint32_t buffera,
+	PbufIndex i, uint32_t offset, uint32_t count, bool isWrite)
 {
 	uint32_t contig;
-	uint8_t * Buffer;
+	uint8_t * buffer;
 
 	while (count != 0) {
-		Buffer = get_real_address0(count, ! IsWrite, Buffera, &contig);
+		buffer = get_real_address0(count, ! isWrite, buffera, &contig);
 		if (0 == contig) {
 			return tMacErr::miscErr;
 		}
-		PbufTransfer(Buffer, i, offset, contig, IsWrite);
+		PbufTransfer(buffer, i, offset, contig, isWrite);
 		offset += contig;
-		Buffera += contig;
+		buffera += contig;
 		count -= contig;
 	}
 
@@ -316,55 +316,55 @@ static void ExtnParamBuffers_Access(uint32_t p)
 			break;
 		case kCmndPbufNew:
 			{
-				PbufIndex Pbuf_No;
+				PbufIndex pbufNo;
 				uint32_t count = get_vm_long(p + ExtnDat_params + 4);
 				/* reserved word at offset 2, should be zero */
-				result = PbufNew(count, &Pbuf_No);
-				put_vm_word(p + ExtnDat_params + 0, Pbuf_No);
+				result = PbufNew(count, &pbufNo);
+				put_vm_word(p + ExtnDat_params + 0, pbufNo);
 			}
 			break;
 		case kCmndPbufDispose:
 			{
-				PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
+				PbufIndex pbufNo = get_vm_word(p + ExtnDat_params + 0);
 				/* reserved word at offset 2, should be zero */
-				result = CheckPbuf(Pbuf_No);
+				result = CheckPbuf(pbufNo);
 				if (tMacErr::noErr == result) {
-					PbufDispose(Pbuf_No);
+					PbufDispose(pbufNo);
 				}
 			}
 			break;
 		case kCmndPbufGetSize:
 			{
-				uint32_t Count;
-				PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
+				uint32_t count;
+				PbufIndex pbufNo = get_vm_word(p + ExtnDat_params + 0);
 				/* reserved word at offset 2, should be zero */
 
-				result = PbufGetSize(Pbuf_No, &Count);
+				result = PbufGetSize(pbufNo, &count);
 				if (tMacErr::noErr == result) {
-					put_vm_long(p + ExtnDat_params + 4, Count);
+					put_vm_long(p + ExtnDat_params + 4, count);
 				}
 			}
 			break;
 		case kCmndPbufTransfer:
 			{
-				uint32_t PbufCount;
-				PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
+				uint32_t pbufCount;
+				PbufIndex pbufNo = get_vm_word(p + ExtnDat_params + 0);
 				/* reserved word at offset 2, should be zero */
 				uint32_t offset = get_vm_long(p + ExtnDat_params + 4);
 				uint32_t count = get_vm_long(p + ExtnDat_params + 8);
-				uint32_t Buffera = get_vm_long(p + ExtnDat_params + 12);
-				bool IsWrite =
+				uint32_t buffera = get_vm_long(p + ExtnDat_params + 12);
+				bool isWrite =
 					(get_vm_word(p + ExtnDat_params + 16) != 0);
-				result = PbufGetSize(Pbuf_No, &PbufCount);
+				result = PbufGetSize(pbufNo, &pbufCount);
 				if (tMacErr::noErr == result) {
 					uint32_t endoff = offset + count;
 					if ((endoff < offset) /* overflow */
-						|| (endoff > PbufCount))
+						|| (endoff > pbufCount))
 					{
 						result = tMacErr::eofErr;
 					} else {
-						result = PbufTransferVM(Buffera,
-							Pbuf_No, offset, count, IsWrite);
+						result = PbufTransferVM(buffera,
+							pbufNo, offset, count, isWrite);
 					}
 				}
 			}

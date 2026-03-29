@@ -33,28 +33,28 @@ This is about making onboarding and running the emulator as smooth as possible. 
 
 This is about making easier for me (and others if they want) to work on the maxivmac codebase. If the codebase is not high quality, there is little chance of anything else happening. The codebase is currently a mixed bag.
 
-- remove *all* the remaining #define
-- rename the functions into something understandable
-- split mega-functions if possible
-- remove spurious code or obscure functions
-- introduce github actions, workflow, non-reg tests
+- Remove *all* the remaining #define
+- Rename the functions into something understandable
+- Split mega-functions if possible
+- Remove spurious code or obscure functions
+- Introduce github actions, workflow, non-reg tests
 
 ### Improve MacOS User Experience
 
 This is about making the life of the user of the emulated MacOS better.
 
-- redo the mac<->minivmac communication layer
-- implement working transparent cut-and-paste
-- explore host slip
-- explore host file mounting
+- Redo the mac<->minivmac communication layer
+- Implement working transparent cut-and-paste
+- Explore host slip
+- Explore host file mounting
 
 ### Improve MacOS Developer Experience
 
 This is about making the life of someone that wants to use the emulator to create vintage mac software easier.
 
-- automatic send of keystrokes and mouse movments
-- debugger, trap watcher, etc
-- mcp server
+- Automatic send of keystrokes and mouse movments
+- Debugger, trap watcher, etc
+- Mcp server
 
 
 
