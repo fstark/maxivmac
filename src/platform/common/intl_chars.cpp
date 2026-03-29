@@ -709,7 +709,7 @@ const uint16_t Cell2UnicodeMap[] = {
 
 bool g_speedStopped = false;
 
-bool g_runInBackground = (WantInitRunInBackground != 0);
+bool g_runInBackground = false;
 
 bool g_wantFullScreen = false;
 

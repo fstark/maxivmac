@@ -33,7 +33,6 @@ inline constexpr uint8_t MKC_formac_RCommand = MKC_Command;
 inline constexpr uint8_t MKC_formac_ROption = MKC_Option;
 inline constexpr uint8_t MKC_formac_RShift = MKC_Shift;
 inline constexpr uint8_t MKC_UnMappedKey = MKC_Control;
-#define WantInitRunInBackground 0
 #define WantEnblCtrlInt 1
 #define WantEnblCtrlRst 1
 #define WantEnblCtrlKtg 1
