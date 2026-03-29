@@ -90,14 +90,6 @@ enum {
 
 typedef void (*ArgSetDstP)(uint32_t f);
 
-#define FasterAlignedL 0
-	/*
-		If most long memory access is long aligned,
-		this should be faster. But on the Mac, this
-		doesn't seem to be the case, so an
-		unpredictable branch slows it down.
-	*/
-
 static struct regstruct
 {
 	uint32_t regs[16]; /* Data and Address registers */
@@ -130,10 +122,6 @@ static struct regstruct
 	MATCr MATCwrB;
 	MATCr MATCrdW;
 	MATCr MATCwrW;
-#if FasterAlignedL
-	MATCr MATCrdL;
-	MATCr MATCwrL;
-#endif
 	ATTep HeadATTel;
 
 	int32_t MoreCyclesToGo;
@@ -893,28 +881,7 @@ static uint32_t get_long_misaligned(uint32_t addr)
 	}
 }
 
-#if FasterAlignedL
-static uint32_t get_long_ext(uint32_t addr);
-#endif
-
-#if FasterAlignedL
-static uint32_t get_long(uint32_t addr)
-{
-	if (0 == (addr & 0x03)) {
-		uint8_t * m = (addr & V_regs.MATCrdL.usemask)
-			+ V_regs.MATCrdL.usebase;
-		if ((addr & V_regs.MATCrdL.cmpmask) == V_regs.MATCrdL.cmpvalu) {
-			return static_cast<uint32_t>(do_get_mem_long(m));
-		} else {
-			return get_long_ext(addr);
-		}
-	} else {
-		return get_long_misaligned(addr);
-	}
-}
-#else
 #define get_long get_long_misaligned
-#endif
 
 static void put_long_misaligned_ext(uint32_t addr, uint32_t l);
 
@@ -933,28 +900,7 @@ static void put_long_misaligned(uint32_t addr, uint32_t l)
 	}
 }
 
-#if FasterAlignedL
-static void put_long_ext(uint32_t addr, uint32_t l);
-#endif
-
-#if FasterAlignedL
-static void put_long(uint32_t addr, uint32_t l)
-{
-	if (0 == (addr & 0x03)) {
-		uint8_t * m = (addr & V_regs.MATCwrL.usemask)
-			+ V_regs.MATCwrL.usebase;
-		if ((addr & V_regs.MATCwrL.cmpmask) == V_regs.MATCwrL.cmpvalu) {
-			do_put_mem_long(m, l);
-		} else {
-			put_long_ext(addr, l);
-		}
-	} else {
-		put_long_misaligned(addr, l);
-	}
-}
-#else
 #define put_long put_long_misaligned
-#endif
 
 static uint32_t get_disp_ea(uint32_t base)
 {
@@ -8268,90 +8214,6 @@ static void put_long_misaligned_ext(uint32_t addr, uint32_t l)
 	put_word(addr + 2, l);
 }
 
-#if FasterAlignedL
-static uint32_t get_long_ext(uint32_t addr)
-{
-	uint32_t Data;
-
-	if (0 != (addr & 0x03)) {
-		uint32_t hi = get_word(addr);
-		uint32_t lo = get_word(addr + 2);
-		Data = ((hi << 16) & 0xFFFF0000)
-			| (lo & 0x0000FFFF);
-	} else {
-		ATTep p;
-		uint8_t * m;
-		uint32_t AccFlags;
-
-Label_Retry:
-		p = LocalFindATTel(addr);
-		AccFlags = p->Access;
-
-		if (0 != (AccFlags & kATTA_readreadymask)) {
-			SetUpMATC(&V_regs.MATCrdL, p);
-			V_regs.MATCrdL.cmpmask |= 0x03;
-			m = p->usebase + (addr & p->usemask);
-			Data = do_get_mem_long(m);
-		} else if (0 != (AccFlags & kATTA_mmdvmask)) {
-			uint32_t hi = LocalMMDV_Access(p, 0,
-				false, false, addr);
-			uint32_t lo = LocalMMDV_Access(p, 0,
-				false, false, addr + 2);
-			Data = ((hi << 16) & 0xFFFF0000)
-				| (lo & 0x0000FFFF);
-		} else if (0 != (AccFlags & kATTA_ntfymask)) {
-			if (LocalMemAccessNtfy(p)) {
-				goto Label_Retry;
-			} else {
-				Data = 0; /* fail */
-			}
-		} else {
-			Data = 0; /* fail */
-		}
-	}
-
-	return static_cast<uint32_t>(Data);
-}
-#endif
-
-#if FasterAlignedL
-static void put_long_ext(uint32_t addr, uint32_t l)
-{
-	if (0 != (addr & 0x03)) {
-		put_word(addr, l >> 16);
-		put_word(addr + 2, l);
-	} else {
-		ATTep p;
-		uint8_t * m;
-		uint32_t AccFlags;
-
-Label_Retry:
-		p = LocalFindATTel(addr);
-		AccFlags = p->Access;
-
-		if (0 != (AccFlags & kATTA_writereadymask)) {
-			SetUpMATC(&V_regs.MATCwrL, p);
-			V_regs.MATCwrL.cmpmask |= 0x03;
-			m = p->usebase + (addr & p->usemask);
-			do_put_mem_long(m, l);
-		} else if (0 != (AccFlags & kATTA_mmdvmask)) {
-			(void) LocalMMDV_Access(p, (l >> 16) & 0x0000FFFF,
-				true, false, addr);
-			(void) LocalMMDV_Access(p, l & 0x0000FFFF,
-				true, false, addr + 2);
-		} else if (0 != (AccFlags & kATTA_ntfymask)) {
-			if (LocalMemAccessNtfy(p)) {
-				goto Label_Retry;
-			} else {
-				/* fail */
-			}
-		} else {
-			/* fail */
-		}
-	}
-}
-#endif
-
 static void Recalc_PC_Block()
 {
 	ATTep p;
@@ -8565,12 +8427,6 @@ void SetHeadATTel(ATTep p)
 	V_regs.MATCrdW.cmpvalu = 0xFFFFFFFF;
 	V_regs.MATCwrW.cmpmask = 0;
 	V_regs.MATCwrW.cmpvalu = 0xFFFFFFFF;
-#if FasterAlignedL
-	V_regs.MATCrdL.cmpmask = 0;
-	V_regs.MATCrdL.cmpvalu = 0xFFFFFFFF;
-	V_regs.MATCwrL.cmpmask = 0;
-	V_regs.MATCwrL.cmpvalu = 0xFFFFFFFF;
-#endif
 	/* force Recalc_PC_Block soon */
 		V_regs.pc = m68k_getpc();
 		V_regs.pc_pLo = V_pc_p;
