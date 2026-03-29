@@ -630,9 +630,7 @@ bool g_requestInsertDisk = false;
 
 uint8_t g_requestIthDisk = 0;
 
-#if UseControlKeys
 bool g_controlKeyPressed = false;
-#endif
 
 /* kStrCntrlKyName, kControlModeKey, kUnMappedKey provided by intl_chars.h */
 
@@ -664,7 +662,6 @@ const char * GetSubstitutionStr(char x)
 		case 'm':
 			s = kUnMappedKey;
 			break;
-#if UseControlKeys
 		case 'k':
 			if (g_controlKeyPressed) {
 				s = Localize(kStrPressed);
@@ -672,7 +669,6 @@ const char * GetSubstitutionStr(char x)
 				s = Localize(kStrReleased);
 			}
 			break;
-#endif
 		case 'g':
 			if (g_wantMagnify) {
 				s = Localize(kStrOn);

@@ -1665,10 +1665,8 @@ static bool AllocMyMemory()
 		goto fail;
 	if (!AllocBlock(&g_screenCompareBuff, vMacScreenNumBytes, true))
 		goto fail;
-#if UseControlKeys
 	if (!AllocBlock(&g_cntrlDisplayBuff, vMacScreenNumBytes, false))
 		goto fail;
-#endif
 	if (!AllocBlock(&CLUT_final, CLUT_FINAL_SZ, false))
 		goto fail;
 	if (!Sound_AllocBuffer())
@@ -1686,9 +1684,7 @@ static void UnallocMyMemory()
 {
 	free(g_rom); g_rom = nullptr;
 	free(g_screenCompareBuff); g_screenCompareBuff = nullptr;
-#if UseControlKeys
 	free(g_cntrlDisplayBuff); g_cntrlDisplayBuff = nullptr;
-#endif
 	free(CLUT_final); CLUT_final = nullptr;
 	Sound_FreeBuffer();
 	EmulationFreeAlloc();

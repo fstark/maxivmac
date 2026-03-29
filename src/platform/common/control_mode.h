@@ -11,9 +11,7 @@
 enum {
 	SpclModeNoRom,
 	SpclModeMessage,
-#if UseControlKeys
 	SpclModeControl,
-#endif
 
 	kNumSpclModes
 };

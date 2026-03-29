@@ -179,9 +179,7 @@ extern bool g_requestInsertDisk;
 
 extern uint8_t g_requestIthDisk;
 
-#if UseControlKeys
 extern bool g_controlKeyPressed;
-#endif
 
 #ifndef kStrCntrlKyName
 #define kStrCntrlKyName "control"

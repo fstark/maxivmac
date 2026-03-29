@@ -426,7 +426,6 @@ void DrawNoRomMode()
 	DrawSpclMode0(Localize(kStrNoROMTitle), DrawCellsNoRomModeBody);
 }
 
-#if UseControlKeys
 
 bool LastControlKey = false;
 int CurControlMode = 0;
@@ -435,12 +434,8 @@ int ControlMessage = 0;
 enum {
 	kCntrlModeOff,
 	kCntrlModeBase,
-#if WantEnblCtrlRst
 	kCntrlModeConfirmReset,
-#endif
-#if WantEnblCtrlInt
 	kCntrlModeConfirmInterrupt,
-#endif
 	kCntrlModeConfirmQuit,
 	kCntrlModeSpeedControl,
 
@@ -451,21 +446,15 @@ enum {
 	kCntrlMsgBaseStart,
 	kCntrlMsgMagnify,
 	kCntrlMsgFullScreen,
-#if WantEnblCtrlRst
 	kCntrlMsgConfirmResetStart,
 	kCntrlMsgHaveReset,
 	kCntrlMsgResetCancelled,
-#endif
-#if WantEnblCtrlInt
 	kCntrlMsgConfirmInterruptStart,
 	kCntrlMsgHaveInterrupted,
 	kCntrlMsgInterruptCancelled,
-#endif
 	kCntrlMsgConfirmQuitStart,
 	kCntrlMsgQuitCancelled,
-#if WantEnblCtrlKtg
 	kCntrlMsgEmCntrl,
-#endif
 	kCntrlMsgSpeedControlStart,
 	kCntrlMsgNewSpeed,
 	kCntrlMsgNewStopped,
@@ -559,25 +548,20 @@ void DoControlModeKey(uint8_t key)
 	switch (CurControlMode) {
 		case kCntrlModeBase:
 			switch (key) {
-#if WantEnblCtrlKtg
 				case MKC_K:
 					g_controlKeyPressed = ! g_controlKeyPressed;
 					ControlMessage = kCntrlMsgEmCntrl;
 					Keyboard_UpdateKeyMap1(MKC_UnMappedKey,
 						g_controlKeyPressed);
 					break;
-#endif
 				case MKC_S:
 					CurControlMode = kCntrlModeSpeedControl;
 					ControlMessage = kCntrlMsgSpeedControlStart;
 					break;
-#if WantEnblCtrlInt
 				case MKC_I:
 					CurControlMode = kCntrlModeConfirmInterrupt;
 					ControlMessage = kCntrlMsgConfirmInterruptStart;
 					break;
-#endif
-#if WantEnblCtrlRst
 				case MKC_R:
 					if (! AnyDiskInserted()) {
 						g_wantMacReset = true;
@@ -587,7 +571,6 @@ void DoControlModeKey(uint8_t key)
 						ControlMessage = kCntrlMsgConfirmResetStart;
 					}
 					break;
-#endif
 				case MKC_Q:
 					if (! AnyDiskInserted()) {
 						g_forceMacOff = true;
@@ -650,7 +633,6 @@ void DoControlModeKey(uint8_t key)
 #endif
 			}
 			break;
-#if WantEnblCtrlRst
 		case kCntrlModeConfirmReset:
 			switch (key) {
 				case MKC_Y:
@@ -668,8 +650,6 @@ void DoControlModeKey(uint8_t key)
 					break;
 			}
 			break;
-#endif
-#if WantEnblCtrlInt
 		case kCntrlModeConfirmInterrupt:
 			switch (key) {
 				case MKC_Y:
@@ -687,7 +667,6 @@ void DoControlModeKey(uint8_t key)
 					break;
 			}
 			break;
-#endif
 		case kCntrlModeConfirmQuit:
 			switch (key) {
 				case MKC_Y:
@@ -761,16 +740,12 @@ static const char * ControlMode2TitleStr()
 	const char *s;
 
 	switch (CurControlMode) {
-#if WantEnblCtrlRst
 		case kCntrlModeConfirmReset:
 			s = Localize(kStrModeConfirmReset);
 			break;
-#endif
-#if WantEnblCtrlInt
 		case kCntrlModeConfirmInterrupt:
 			s = Localize(kStrModeConfirmInterrupt);
 			break;
-#endif
 		case kCntrlModeConfirmQuit:
 			s = Localize(kStrModeConfirmQuit);
 			break;
@@ -824,15 +799,9 @@ void DrawCellsControlModeBody()
 			DrawCellsKeyCommand("S", Localize(kStrCmdSpeedControl));
 			DrawCellsKeyCommand("M", Localize(kStrCmdMagnifyToggle));
 			DrawCellsKeyCommand("F", Localize(kStrCmdFullScrnToggle));
-#if WantEnblCtrlKtg
 			DrawCellsKeyCommand("K", Localize(kStrCmdCtrlKeyToggle));
-#endif
-#if WantEnblCtrlRst
 			DrawCellsKeyCommand("R", Localize(kStrCmdReset));
-#endif
-#if WantEnblCtrlInt
 			DrawCellsKeyCommand("I", Localize(kStrCmdInterrupt));
-#endif
 			DrawCellsKeyCommand("P", Localize(kStrCmdCopyOptions));
 			DrawCellsKeyCommand("H", Localize(kStrCmdHelp));
 			break;
@@ -873,7 +842,6 @@ void DrawCellsControlModeBody()
 		case kCntrlMsgOptionsStrCopied:
 			DrawCellsOneLineStr(Localize(kStrHaveCopiedOptions));
 			break;
-#if WantEnblCtrlRst
 		case kCntrlMsgConfirmResetStart:
 			DrawCellsOneLineStr(Localize(kStrConfirmReset));
 			DrawCellsBlankLine();
@@ -886,8 +854,6 @@ void DrawCellsControlModeBody()
 		case kCntrlMsgResetCancelled:
 			DrawCellsOneLineStr(Localize(kStrCancelledReset));
 			break;
-#endif
-#if WantEnblCtrlInt
 		case kCntrlMsgConfirmInterruptStart:
 			DrawCellsOneLineStr(Localize(kStrConfirmInterrupt));
 			DrawCellsBlankLine();
@@ -900,7 +866,6 @@ void DrawCellsControlModeBody()
 		case kCntrlMsgInterruptCancelled:
 			DrawCellsOneLineStr(Localize(kStrCancelledInterrupt));
 			break;
-#endif
 		case kCntrlMsgConfirmQuitStart:
 			DrawCellsOneLineStr(Localize(kStrConfirmQuit));
 			DrawCellsBlankLine();
@@ -910,11 +875,9 @@ void DrawCellsControlModeBody()
 		case kCntrlMsgQuitCancelled:
 			DrawCellsOneLineStr(Localize(kStrCancelledQuit));
 			break;
-#if WantEnblCtrlKtg
 		case kCntrlMsgEmCntrl:
 			DrawCellsOneLineStr(Localize(kStrNewCntrlKey));
 			break;
-#endif
 		case kCntrlMsgBaseStart:
 		default:
 			DrawCellsOneLineStr(Localize(kStrHowToLeaveControl));
@@ -927,15 +890,11 @@ void DrawControlMode()
 	DrawSpclMode0(ControlMode2TitleStr(), DrawCellsControlModeBody);
 }
 
-#endif /* UseControlKeys */
-
 void DrawSpclMode()
 {
-#if UseControlKeys
 	if (SpecialModeTst(SpclModeControl)) {
 		DrawControlMode();
 	} else
-#endif
 	if (SpecialModeTst(SpclModeMessage)) {
 		DrawMessageMode();
 	} else
@@ -1037,11 +996,9 @@ uint8_t Keyboard_remapMac(uint8_t key)
 
 void Keyboard_updateKeyMap2(uint8_t key, bool down)
 {
-#if UseControlKeys
 	if (MKC_CM == key) {
 		Keyboard_UpdateControlKey(down);
 	} else
-#endif
 	if ((0 == g_specialModes)
 			|| (MKC_CapsLock == key)
 		)
@@ -1050,11 +1007,9 @@ void Keyboard_updateKeyMap2(uint8_t key, bool down)
 		Keyboard_UpdateKeyMap1(key, down);
 	} else {
 		if (down) {
-#if UseControlKeys
 			if (SpecialModeTst(SpclModeControl)) {
 				DoControlModeKey(key);
 			} else
-#endif
 			if (SpecialModeTst(SpclModeMessage)) {
 				DoMessageModeKey(key);
 			} else
@@ -1067,9 +1022,7 @@ void Keyboard_updateKeyMap2(uint8_t key, bool down)
 void DisconnectKeyCodes2()
 {
 	DisconnectKeyCodes1(kKeepMaskControl | kKeepMaskCapsLock);
-#if UseControlKeys
 	Keyboard_UpdateControlKey(false);
-#endif
 }
 
 tMacErr ROM_IsValid()
