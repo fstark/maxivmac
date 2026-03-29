@@ -24,9 +24,7 @@
 
 #include "cpu/m68k_tables.h"
 
-#if WANT_DISASM
 #include "cpu/disasm.h"
-#endif
 
 #include "cpu/m68k.h"
 
@@ -771,19 +769,15 @@ static void m68k_go_MaxCycles()
 			g_InstructionCount++;
 		}
 
-#if WANT_DISASM || WantBreakPoint
 		{
 			uint32_t pc = m68k_getpc() - 2;
-#if WANT_DISASM
 			DisasmOneOrSave(pc);
-#endif
 #if WantBreakPoint
 			if (BreakPointAddress == pc) {
 				BreakPointAction();
 			}
 #endif
 		}
-#endif
 
 		d();
 

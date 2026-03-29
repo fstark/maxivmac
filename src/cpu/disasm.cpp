@@ -4,8 +4,6 @@
 
 #include "core/common.h"
 
-#if WANT_DISASM
-
 #include "cpu/m68k_tables.h"
 
 #include "cpu/disasm.h"
@@ -2891,4 +2889,4 @@ void m68k_WantDisasmContext()
 	DisasmCounter = /* 256 */ 128;
 }
 
-#endif /* WANT_DISASM */
+

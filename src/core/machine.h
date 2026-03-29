@@ -108,11 +108,7 @@ extern uint32_t g_InstructionCount;
 extern uint32_t g_LogStart;
 extern uint32_t g_LogEnd;
 
-#if WANT_DISASM
 extern void dbglog_StartLine();
-#else
-#define dbglog_StartLine()
-#endif
 
 #if dbglog_HAVE
 extern void dbglog_WriteMemArrow(bool writeMem);

@@ -79,17 +79,13 @@ uint8_t * g_vidMem = nullptr;
 uint8_t* g_wiresData = nullptr;
 
 
-#if WANT_DISASM
 extern void m68k_WantDisasmContext();
-#endif
 
-#if WANT_DISASM
 void dbglog_StartLine()
 {
 	m68k_WantDisasmContext();
 	dbglog_writeCStr(" ");
 }
-#endif
 
 #if dbglog_HAVE
 void dbglog_WriteMemArrow(bool writeMem)
