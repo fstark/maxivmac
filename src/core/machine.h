@@ -155,10 +155,8 @@ extern uint8_t* g_wiresData;
 #define kLn2CycleScale 6
 #define kCycleScale (1 << kLn2CycleScale)
 
-#if WANT_CYC_BY_PRI_OP
 #define RdAvgXtraCyc /* 0 */ (kCycleScale + kCycleScale / 4)
 #define WrAvgXtraCyc /* 0 */ (kCycleScale + kCycleScale / 4)
-#endif
 
 #define kNumSubTicks 16
 
