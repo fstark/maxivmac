@@ -22,12 +22,12 @@ compile or exclude code blocks, replacing them with either always-compiled code
 
 | Category | Defines | Total `#if` sites | Action | Status |
 |----------|---------|-------------------|--------|--------|
-| Always-1 emulation features | 9 | ~314 | Remove guard, keep the code | Open |
+| Always-1 emulation features | 9 | ~314 | Remove guard, keep the code | **Done** |
 | Always-0 disabled features | 15 | ~83 | Remove guard AND the dead code | **Done** |
 | Always-0 but keep for debug | 20 | ~155 | Keep (debug toggle) | Keep |
-| CMake-configurable | 2 | ~71 | Keep or convert to runtime | Open |
+| CMake-configurable | 2 | ~71 | Keep or convert to runtime | Partial |
 | Platform-dependent | ~10 | ~22 | Keep (portability) | Keep |
-| Derived/conditional | ~8 | ~20 | Remove after parent is resolved | Partial |
+| Derived/conditional | ~8 | ~20 | Remove after parent is resolved | **Done** |
 
 ---
 
@@ -450,28 +450,31 @@ pass after every phase.
 
 ### Remaining
 
-| Step | Phase | Defines to remove | Est. `#if` sites | Risk |
-|------|-------|-------------------|-----------------|------|
-| 15 | 2.3 | `USE_PCLIMIT` | 13 | Low |
-| 16 | 1.6 | `WANT_DISASM` | 7 | Low |
-| 17 | 1.7+1.8 | `INCLUDE_EXTN_PBUFS`, `INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE` | 15 | Low |
-| 18 | 1.9+2.1–2.2 | `SONY_SUPPORT_DC42`, `SONY_SUPPORT_TAGS`, `SONY_WANT_CHECKSUMS_UPDATED` | 24 | Low |
-| 19 | 1.2+1.3 | `EM_FPU`, `EM_MMU` | 22 | Low |
-| 20 | 2.6–2.9 | `UseSonyPatch`, `DisableRomCheck`, `DisableRamTest`, `RTCinitPRAM` | 10 | Low |
-| 21 | 2.10+2.11+2.12 | `HAVE_WORKING_WARP`, `USE_MOTION_EVENTS`, `PbufHaveLock` | 15 | Low |
-| 22 | 2.13–2.17 | `WantColorTransValid`, `ENABLE_FS_MOUSE_MOTION`, `ENABLE_RECREATE_W`, `ENABLE_MOVE_MOUSE`, `GRAB_KEYS_FULL_SCREEN` | 28 | Low |
-| 23 | 2.18–2.21 | `UseControlKeys`, `WantEnblCtrlInt/Rst/Ktg` | 29 | Low |
-| 24 | 2.22+2.23 | `SaveDialogEnable`, `EnableDragDrop` | ~4 | Low |
-| 25 | 5.3 | `dbglog_HAVE` + rewrite 11 `*_dolog` expressions (see Phase 4 table) | 71 | Medium |
-| 26 | 1.1 | `USE_68020` | 86 | High |
-| 27 | 1.4 | `WANT_CYC_BY_PRI_OP` | 114 | High |
-| 28 | 1.5 | `WANT_CLOSER_CYC` | 65 | High |
-| 29a | 7 | `Sony_SupportOtherFormats` (after step 18) | 0 | Low |
-| 29b | 7 | `NeedDoMoreCommandsMsg`, `NeedDoAboutMsg` (after step 23) | 6 | Low |
-| 29c | 7 | `NeedRequestInsertDisk`, `NeedRequestIthDisk`, `NeedCell2MacAsciiMap`, `NeedCell2PlainAsciiMap`, `NeedCell2UnicodeMap` (no deps) | ~15 | Low |
+All steps complete. Commits a67dda6..579bfd3 (17 commits).
+
+| Step | Phase | Defines removed | Status |
+|------|-------|----------------|--------|
+| 15 | 2.3 | `USE_PCLIMIT` | **Done** |
+| 16 | 1.6 | `WANT_DISASM` | **Done** |
+| 17 | 1.7+1.8 | `INCLUDE_EXTN_PBUFS`, `INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE` | **Done** |
+| 18 | 1.9+2.1–2.2 | `SONY_SUPPORT_DC42`, `SONY_SUPPORT_TAGS`, `SONY_WANT_CHECKSUMS_UPDATED` | **Done** |
+| 19 | 1.2+1.3 | `EM_FPU`, `EM_MMU` | **Done** |
+| 20 | 2.6–2.9 | `UseSonyPatch`, `DisableRomCheck`, `DisableRamTest`, `RTCinitPRAM` | **Done** |
+| 21 | 2.10+2.11+2.12 | `HAVE_WORKING_WARP`, `USE_MOTION_EVENTS`, `PbufHaveLock` | **Done** |
+| 22 | 2.13–2.17 | `WantColorTransValid`, `ENABLE_FS_MOUSE_MOTION`, `ENABLE_RECREATE_W`, `ENABLE_MOVE_MOUSE`, `GRAB_KEYS_FULL_SCREEN` | **Done** |
+| 23 | 2.18–2.21 | `UseControlKeys`, `WantEnblCtrlInt/Rst/Ktg` | **Done** |
+| 24 | 2.22+2.23 | `SaveDialogEnable`, `EnableDragDrop` | **Done** |
+| 25 | 5.3 | `dbglog_HAVE` + rewrite 11 `*_dolog` expressions | **Done** |
+| 26 | 1.1 | `USE_68020` | **Done** |
+| 27 | 1.4 | `WANT_CYC_BY_PRI_OP` | **Done** |
+| 28 | 1.5 | `WANT_CLOSER_CYC` | **Done** |
+| 29a | 7 | `Sony_SupportOtherFormats` | **Done** |
+| 29b | 7 | `NeedDoMoreCommandsMsg`, `NeedDoAboutMsg` | **Done** |
+| 29c | 7 | `NeedRequestInsertDisk`, `NeedRequestIthDisk`, `NeedCell2MacAsciiMap`, `NeedCell2PlainAsciiMap`, `NeedCell2UnicodeMap` | **Done** |
 
 **Phase 3 total: 15 defines removed, ~83 `#if` sites cleaned, 14 commits.**
-**Remaining: ~38 defines, ~547 `#if` sites.**
+**Phases 1+2+5+7 total: ~38 defines removed, ~547 `#if` sites cleaned, 17 commits (steps 15–29c).**
+**Grand total: ~53 defines removed, ~630 `#if` sites cleaned, 31 commits.**
 
 ---
 
