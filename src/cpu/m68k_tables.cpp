@@ -2816,14 +2816,10 @@ static inline void DeCodeF(WorkR *p)
 #endif
 	p->DecOp.y.v[0].AMd =    (p->opcode >> 8) & 0xFF;
 	p->DecOp.y.v[0].ArgDat = (p->opcode     ) & 0xFF;
-#if EM_MMU || EM_FPU
 	switch (rg9(p)) {
-#if EM_MMU
 		case 0:
 			p->MainClass = kIKindMMU;
 			break;
-#endif
-#if EM_FPU
 		case 1:
 			switch (md6(p)) {
 				case 0:
@@ -2855,14 +2851,10 @@ static inline void DeCodeF(WorkR *p)
 					break;
 			}
 			break;
-#endif
 		default:
 			p->MainClass = kIKindFdflt;
 			break;
 	}
-#else
-	p->MainClass = kIKindFdflt;
-#endif
 }
 
 /* Dispatch opcode to one of the 16 class decoders (0-F) and

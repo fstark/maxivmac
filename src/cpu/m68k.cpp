@@ -6688,7 +6688,6 @@ static void DoCodeMoveCCREa()
 }
 #endif
 
-#if USE_68020 || EM_FPU
 static void DoCodeBraL()
 {
 	/* Bra 0110ccccnnnnnnnn */
@@ -6703,9 +6702,7 @@ static void DoCodeBraL()
 		Recalc_PC_Block();
 	}
 }
-#endif
 
-#if USE_68020 || EM_FPU
 static void SkipiLong()
 {
 	V_pc_p += 4;
@@ -6714,7 +6711,6 @@ static void SkipiLong()
 		Recalc_PC_Block();
 	}
 }
-#endif
 
 #if USE_68020
 static void DoCodeBccL()
@@ -7706,7 +7702,6 @@ static void DoBitField()
 }
 #endif
 
-#if EM_MMU | EM_FPU
 static bool DecodeModeRegister(uint32_t sz)
 {
 	bool IsOk;
@@ -7805,9 +7800,7 @@ static bool DecodeModeRegister(uint32_t sz)
 
 	return IsOk;
 }
-#endif
 
-#if EM_MMU | EM_FPU
 static uint32_t GetArgValueL()
 {
 	uint32_t v;
@@ -7821,9 +7814,7 @@ static uint32_t GetArgValueL()
 
 	return v;
 }
-#endif
 
-#if EM_MMU | EM_FPU
 static uint32_t GetArgValueW()
 {
 	uint32_t v;
@@ -7837,9 +7828,7 @@ static uint32_t GetArgValueW()
 
 	return v;
 }
-#endif
 
-#if EM_MMU | EM_FPU
 static uint32_t GetArgValueB()
 {
 	uint32_t v;
@@ -7853,9 +7842,7 @@ static uint32_t GetArgValueB()
 
 	return v;
 }
-#endif
 
-#if EM_MMU | EM_FPU
 static void SetArgValueL(uint32_t v)
 {
 	if (AKMemory == V_regs.ArgKind) {
@@ -7865,9 +7852,7 @@ static void SetArgValueL(uint32_t v)
 		*V_regs.ArgAddr.rga = v;
 	}
 }
-#endif
 
-#if EM_MMU | EM_FPU
 static void SetArgValueW(uint32_t v)
 {
 	if (AKMemory == V_regs.ArgKind) {
@@ -7878,9 +7863,7 @@ static void SetArgValueW(uint32_t v)
 			(*V_regs.ArgAddr.rga & ~ 0xffff) | ((v) & 0xffff);
 	}
 }
-#endif
 
-#if EM_MMU | EM_FPU
 static void SetArgValueB(uint32_t v)
 {
 	if (AKMemory == V_regs.ArgKind) {
@@ -7891,10 +7874,8 @@ static void SetArgValueB(uint32_t v)
 			(*V_regs.ArgAddr.rga & ~ 0xff) | ((v) & 0xff);
 	}
 }
-#endif
 
 
-#if EM_MMU
 static void DoCodeMMU()
 {
 	/*
@@ -7939,28 +7920,11 @@ static void DoCodeMMU()
 	ReportAbnormalID(AbnormalID::kCPU_MMU_op, "MMU op");
 	DoCodeFdefault();
 }
-#else
-/* EMU disabled — stub to satisfy dispatch table */
-static void DoCodeMMU() { DoCodeFdefault(); }
-#endif
 
-#if EM_FPU
 
 #include "cpu/fpu_math.h"
 #include "cpu/fpu_emdev.h"
 
-#else
-/* FPU disabled — stubs to satisfy dispatch table */
-static void DoCodeFPU_md60()   { DoCodeFdefault(); }
-static void DoCodeFPU_DBcc()   { DoCodeFdefault(); }
-static void DoCodeFPU_Trapcc() { DoCodeFdefault(); }
-static void DoCodeFPU_Scc()    { DoCodeFdefault(); }
-static void DoCodeFPU_FBccW()  { DoCodeFdefault(); }
-static void DoCodeFPU_FBccL()  { DoCodeFdefault(); }
-static void DoCodeFPU_Save()   { DoCodeFdefault(); }
-static void DoCodeFPU_Restore(){ DoCodeFdefault(); }
-static void DoCodeFPU_dflt()   { DoCodeFdefault(); }
-#endif
 
 #define Em_Enter()
 

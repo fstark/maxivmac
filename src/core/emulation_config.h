@@ -13,8 +13,6 @@
    Runtime selection via MachineConfig::use68020/emFPU/emMMU +
    dispatch table fixup in M68KITAB_setup(). */
 #define USE_68020 1
-#define EM_FPU 1
-#define EM_MMU 1
 
 /* kMyClockMult is now runtime — see MachineConfig::clockMult */
 
