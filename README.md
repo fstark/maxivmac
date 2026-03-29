@@ -19,17 +19,17 @@ There are end-user features, and developer features. Some features are targetted
 
 That makes 4 streams of work:
 
-* Improve Emulator User Experience
+### Improve Emulator User Experience
 
 This is about making onboarding and running the emulator as smooth as possible. Those are targetted at "first time users". In general, I prefer a feature to be removed than to be complicated to find and/or use.
 
--> Binary releases for OSX arm/x86 and Windows arm/x86 + source release for Linux
--> Bundle the utilities in a "rom disk"
--> Bundle some system disk images
--> Explore an imgui interface
--> Explore graphical choice of mac models and run-time configuration options
+- Binary releases for OSX arm/x86 and Windows arm/x86 + source release for Linux
+- Bundle the utilities in a "rom disk"
+- Bundle some system disk images
+- Explore an imgui interface
+- Explore graphical choice of mac models and run-time configuration options
 
-* Improve Emulator Developer Experience
+### Improve Emulator Developer Experience
 
 This is about making easier for me (and others if they want) to work on the maxivmac codebase. If the codebase is not high quality, there is little chance of anything else happening. The codebase is currently a mixed bag.
 
@@ -39,22 +39,22 @@ This is about making easier for me (and others if they want) to work on the maxi
 - remove spurious code or obscure functions
 - introduce github actions, workflow, non-reg tests
 
-* Improve MacOS User Experience
+### Improve MacOS User Experience
 
 This is about making the life of the user of the emulated MacOS better.
 
--> redo the mac<->minivmac communication layer
--> implement working transparent cut-and-paste
--> explore host slip
--> explore host file mounting
+- redo the mac<->minivmac communication layer
+- implement working transparent cut-and-paste
+- explore host slip
+- explore host file mounting
 
-* Improve MacOS Developer Experience
+### Improve MacOS Developer Experience
 
 This is about making the life of someone that wants to use the emulator to create vintage mac software easier.
 
--> automatic send of keystrokes and mouse movments
--> debugger, trap watcher, etc
--> mcp server
+- automatic send of keystrokes and mouse movments
+- debugger, trap watcher, etc
+- mcp server
 
 
 
