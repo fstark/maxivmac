@@ -1035,11 +1035,7 @@ static inline void DeCode3(WorkR *p)
 }
 
 
-#if WANT_CLOSER_CYC
 #define MoveAvgN 0
-#else
-#define MoveAvgN 3
-#endif
 
 static uint16_t MoveMEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
@@ -1706,16 +1702,7 @@ static inline void DeCode5(WorkR *p)
 		p->DecOp.y.v[0].ArgDat = (p->opcode >> 8) & 15;
 		if (mode(p) == 1) {
 			/* DBcc 0101cccc11001ddd */
-#if WANT_CLOSER_CYC
 			p->Cycles = 0;
-#else
-			p->Cycles = (11 * kCycleScale + 2 * RdAvgXtraCyc);
-				/*
-					average of cc true 12(2/0),
-					cc false taken 10(2/0),
-					and not 14(3/0)
-				*/
-#endif
 			SetDcoArgFields(p, false, kAMdRegW, reg(p));
 			if (1 == ((p->opcode >> 8) & 15)) {
 				p->MainClass = kIKindDBF;
@@ -1736,12 +1723,7 @@ static inline void DeCode5(WorkR *p)
 						p->Cycles = (8 * kCycleScale
 							+ RdAvgXtraCyc + WrAvgXtraCyc);
 					} else {
-#if WANT_CLOSER_CYC
 						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
-#else
-						p->Cycles = (5 * kCycleScale + RdAvgXtraCyc);
-							/* 4 when false, 6 when true */
-#endif
 					}
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindScc;
@@ -1837,25 +1819,14 @@ static inline void DeCode6(WorkR *p)
 		/* Bcc 0110ccccnnnnnnnn */
 		p->DecOp.y.v[0].ArgDat = cond;
 		if (0 == (p->opcode & 255)) {
-#if WANT_CLOSER_CYC
 			p->Cycles = 0;
-#else
-			p->Cycles = (11 * kCycleScale + 2 * RdAvgXtraCyc);
-				/* average of branch taken 10(2/0) and not 12(2/0) */
-#endif
 			p->MainClass = kIKindBccW;
 		} else
 		if (255 == (p->opcode & 255)) {
 			p->MainClass = kIKindBccL;
 		} else
 		{
-#if WANT_CLOSER_CYC
 			p->Cycles = 0;
-#else
-			p->Cycles = (9 * kCycleScale
-				+ RdAvgXtraCyc + (RdAvgXtraCyc / 2));
-				/* average of branch taken 10(2/0) and not 8(1/0) */
-#endif
 			p->MainClass = kIKindBccB;
 			p->DecOp.y.v[1].ArgDat = p->opcode & 255;
 		}
@@ -1888,25 +1859,11 @@ static inline void DeCode8(WorkR *p)
 				/* DivU 1000ddd011mmmrrr */
 				p->Cycles = RdAvgXtraCyc;
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
-#if ! WANT_CLOSER_CYC
-				p->Cycles += 133 * kCycleScale;
-					/*
-						worse case 140, less than ten percent
-						different from best case
-					*/
-#endif
 				p->MainClass = kIKindDivU;
 			} else {
 				/* DivS 1000ddd111mmmrrr */
 				p->Cycles = RdAvgXtraCyc;
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
-#if ! WANT_CLOSER_CYC
-				p->Cycles += 150 * kCycleScale;
-					/*
-						worse case 158, less than ten percent different
-						from best case
-					*/
-#endif
 				p->MainClass = kIKindDivS;
 			}
 		}
@@ -2227,12 +2184,7 @@ static inline void DeCodeC(WorkR *p)
 		if (CheckValidAddrMode(p, 0, rg9(p),
 			kAddrValidAny, false))
 		{
-#if WANT_CLOSER_CYC
 			p->Cycles = (38 * kCycleScale + RdAvgXtraCyc);
-#else
-			p->Cycles = (54 * kCycleScale + RdAvgXtraCyc);
-				/* worst case 70, best case 38 */
-#endif
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 			if (b8(p) == 0) {
 				/* MulU 1100ddd011mmmrrr */
@@ -2498,9 +2450,6 @@ static inline void DeCodeE(WorkR *p)
 			/* 11100ttd11mmmddd */
 			if (CheckAltMemAddrMode(p)) {
 				p->Cycles = (6 * kCycleScale
-#if ! WANT_CLOSER_CYC
-					+ 2 * kCycleScale
-#endif
 					+ RdAvgXtraCyc + WrAvgXtraCyc);
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				p->MainClass = rolops(p, rg9(p));
@@ -2517,9 +2466,6 @@ static inline void DeCodeE(WorkR *p)
 				p->Cycles = ((4 == p->opsize)
 						? (8 * kCycleScale + RdAvgXtraCyc)
 						: (6 * kCycleScale + RdAvgXtraCyc))
-#if ! WANT_CLOSER_CYC
-					+ (octdat(rg9(p)) * (2 * kCycleScale))
-#endif
 					;
 				p->MainClass = rolops(p, mode(p) & 3);
 				SetDcoArgFields(p, true, kAMdDat4, octdat(rg9(p)));
@@ -2531,19 +2477,9 @@ static inline void DeCodeE(WorkR *p)
 			if (CheckValidAddrMode(p, 0, reg(p),
 				kAddrValidAny, false))
 			{
-#if WANT_CLOSER_CYC
 				p->Cycles = ((4 == p->opsize)
 						? (8 * kCycleScale + RdAvgXtraCyc)
 						: (6 * kCycleScale + RdAvgXtraCyc));
-#else
-				p->Cycles = (4 == p->opsize)
-					? ((8 * kCycleScale)
-						+ RdAvgXtraCyc + (8 * (2 * kCycleScale)))
-						/* say average shift count of 8 */
-					: ((6 * kCycleScale)
-						+ RdAvgXtraCyc + (4 * (2 * kCycleScale)));
-						/* say average shift count of 4 */
-#endif
 				p->MainClass = rolops(p, mode(p) & 3);
 			}
 		}

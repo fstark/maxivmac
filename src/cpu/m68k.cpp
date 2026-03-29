@@ -93,9 +93,7 @@ static struct regstruct
 	uint8_t * pc_pHi;
 	int32_t MaxCyclesToGo;
 
-#if WANT_CLOSER_CYC
 	DecOpR *CurDecOp;
-#endif
 	DecOpYR CurDecOpY;
 
 	uint8_t LazyFlagKind;
@@ -673,9 +671,7 @@ static inline void DecodeNextInstruction(func_pointer_t *d, uint16_t *Cycles,
 
 	p = &V_regs.disp_table[opcode];
 
-#if WANT_CLOSER_CYC
 	V_regs.CurDecOp = p;
-#endif
 	MainClas = p->x.MainClas;
 	*Cycles = p->x.Cycles;
 	*y = p->y;
@@ -3843,21 +3839,15 @@ static void DoCodeBraW()
 	}
 }
 
-#if WANT_CLOSER_CYC
 static void DoCodeBccB_t()
 {
 	V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RdAvgXtraCyc);
 	DoCodeBraB();
 }
-#else
-#define DoCodeBccB_t DoCodeBraB
-#endif
 
 static void DoCodeBccB_f()
 {
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (8 * kCycleScale + RdAvgXtraCyc);
-#endif
 		/* do nothing */
 }
 
@@ -3876,25 +3866,17 @@ static void SkipiWord()
 	}
 }
 
-#if WANT_CLOSER_CYC
 static void DoCodeBccW_t()
 {
 	V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RdAvgXtraCyc);
 	DoCodeBraW();
 }
-#else
-#define DoCodeBccW_t DoCodeBraW
-#endif
 
-#if WANT_CLOSER_CYC
 static void DoCodeBccW_f()
 {
 	V_MaxCyclesToGo -= (12 * kCycleScale + 2 * RdAvgXtraCyc);
 	SkipiWord();
 }
-#else
-#define DoCodeBccW_f SkipiWord
-#endif
 
 static void DoCodeBccW()
 {
@@ -3919,27 +3901,19 @@ static void DoCodeDBF()
 #endif
 
 	if (static_cast<int32_t>(dstvalue) == -1) {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (14 * kCycleScale + 3 * RdAvgXtraCyc);
-#endif
 		SkipiWord();
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RdAvgXtraCyc);
-#endif
 		DoCodeBraW();
 	}
 }
 
-#if WANT_CLOSER_CYC
 static void DoCodeDBcc_t()
 {
 	V_MaxCyclesToGo -= (12 * kCycleScale + 2 * RdAvgXtraCyc);
 	SkipiWord();
 }
-#else
-#define DoCodeDBcc_t SkipiWord
-#endif
 
 static void DoCodeDBcc()
 {
@@ -4435,9 +4409,7 @@ static void DoCodeMOVEMRmML()
 	}
 	for (z = 16; --z >= 0; ) {
 		if ((regmask & (1 << (15 - z))) != 0) {
-#if WANT_CLOSER_CYC
 			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * WrAvgXtraCyc);
-#endif
 			p -= 4;
 			put_long(p, V_regs.regs[z]);
 		}
@@ -4458,9 +4430,7 @@ static void DoCodeMOVEMApRL()
 
 	for (z = 0; z < 16; ++z) {
 		if ((regmask & (1 << z)) != 0) {
-#if WANT_CLOSER_CYC
 			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * RdAvgXtraCyc);
-#endif
 			V_regs.regs[z] = get_long(p);
 			p += 4;
 		}
@@ -4675,9 +4645,7 @@ static void DoCodeAslB()
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		if (cnt >= 8) {
 			if (cnt == 8) {
@@ -4711,9 +4679,7 @@ static void DoCodeAslW()
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		if (cnt >= 16) {
 			if (cnt == 16) {
@@ -4747,9 +4713,7 @@ static void DoCodeAslL()
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		if (cnt >= 32) {
 			if (cnt == 32) {
@@ -4819,9 +4783,7 @@ static void DoCodeAsrB()
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		if (cnt >= 8) {
 			DoCodeOverAShift(dstvalue);
@@ -4851,9 +4813,7 @@ static void DoCodeAsrW()
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		if (cnt >= 16) {
 			DoCodeOverAShift(dstvalue);
@@ -4883,9 +4843,7 @@ static void DoCodeAsrL()
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		if (cnt >= 32) {
 			DoCodeOverAShift(dstvalue);
@@ -4928,9 +4886,7 @@ static void DoCodeLslB()
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		if (cnt >= 8) {
 			if (cnt == 8) {
@@ -4963,9 +4919,7 @@ static void DoCodeLslW()
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		if (cnt >= 16) {
 			if (cnt == 16) {
@@ -4998,9 +4952,7 @@ static void DoCodeLslL()
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		if (cnt >= 32) {
 			if (cnt == 32) {
@@ -5030,9 +4982,7 @@ static void DoCodeLsrB()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
@@ -5059,9 +5009,7 @@ static void DoCodeLsrW()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
@@ -5088,9 +5036,7 @@ static void DoCodeLsrL()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
@@ -5138,9 +5084,7 @@ static void DoCodeRxlB()
 	if (0 == cnt) {
 		DoCodeNullXShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		for (; cnt; --cnt) {
 			CFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -5165,9 +5109,7 @@ static void DoCodeRxlW()
 	if (0 == cnt) {
 		DoCodeNullXShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		for (; cnt; --cnt) {
 			CFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -5192,9 +5134,7 @@ static void DoCodeRxlL()
 	if (0 == cnt) {
 		DoCodeNullXShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		for (; cnt; --cnt) {
 			CFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -5219,9 +5159,7 @@ static void DoCodeRxrB()
 	if (0 == cnt) {
 		DoCodeNullXShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		dstvalue = ui5r_FromUByte(dstvalue);
 		for (; cnt; --cnt) {
@@ -5247,9 +5185,7 @@ static void DoCodeRxrW()
 	if (0 == cnt) {
 		DoCodeNullXShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		dstvalue = ui5r_FromUWord(dstvalue);
 		for (; cnt; --cnt) {
@@ -5275,9 +5211,7 @@ static void DoCodeRxrL()
 	if (0 == cnt) {
 		DoCodeNullXShift(dstvalue);
 	} else {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 		dstvalue = ui5r_FromULong(dstvalue);
 		for (; cnt; --cnt) {
@@ -5300,9 +5234,7 @@ static void DoCodeRolB()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
@@ -5332,9 +5264,7 @@ static void DoCodeRolW()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
@@ -5364,9 +5294,7 @@ static void DoCodeRolL()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
@@ -5396,9 +5324,7 @@ static void DoCodeRorB()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
@@ -5429,9 +5355,7 @@ static void DoCodeRorW()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
@@ -5462,9 +5386,7 @@ static void DoCodeRorL()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
-#endif
 
 	if (0 == cnt) {
 		DoCodeNullShift(dstvalue);
@@ -5674,11 +5596,9 @@ static void DoCodeNot()
 
 static void DoCodeScc_t()
 {
-#if WANT_CLOSER_CYC
 	if (kAMdRegB == V_regs.CurDecOpY.v[1].AMd) {
 		V_MaxCyclesToGo -= (2 * kCycleScale);
 	}
-#endif
 	DecodeSetDstValue(0xff);
 }
 
@@ -5848,7 +5768,6 @@ static void DoCodeMulU()
 
 	dstvalue = static_cast<uint32_t>(ui5r_FromUWord(dstvalue)
 		* ui5r_FromUWord(srcvalue));
-#if WANT_CLOSER_CYC
 	{
 		uint32_t v = srcvalue;
 
@@ -5859,7 +5778,6 @@ static void DoCodeMulU()
 			v >>= 1;
 		}
 	}
-#endif
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5879,7 +5797,6 @@ static void DoCodeMulS()
 
 	dstvalue = static_cast<uint32_t>((int32_t)(int16_t)dstvalue
 		* (int32_t)(int16_t)srcvalue);
-#if WANT_CLOSER_CYC
 	{
 		uint32_t v = (srcvalue << 1);
 
@@ -5890,7 +5807,6 @@ static void DoCodeMulS()
 			v >>= 1;
 		}
 	}
-#endif
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5909,10 +5825,8 @@ static void DoCodeDivU()
 	uint32_t dstvalue = *dstp;
 
 	if (srcvalue == 0) {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -=
 			(38 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
-#endif
 		Exception(5);
 #if m68k_logExceptions
 		dbglog_WriteNote("*** zero devide exception");
@@ -5920,9 +5834,7 @@ static void DoCodeDivU()
 	} else {
 		uint32_t newv = (uint32_t)dstvalue / (uint32_t)(uint16_t)srcvalue;
 		uint32_t rem = (uint32_t)dstvalue % (uint32_t)(uint16_t)srcvalue;
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (133 * kCycleScale);
-#endif
 		if (newv > 0xffff) {
 			NeedDefaultLazyAllFlags();
 
@@ -5952,10 +5864,8 @@ static void DoCodeDivS()
 	uint32_t dstvalue = *dstp;
 
 	if (srcvalue == 0) {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -=
 			(38 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
-#endif
 		Exception(5);
 #if m68k_logExceptions
 		dbglog_WriteNote("*** zero devide exception");
@@ -5963,9 +5873,7 @@ static void DoCodeDivS()
 	} else {
 		int32_t newv = (int32_t)dstvalue / (int32_t)(int16_t)srcvalue;
 		uint16_t rem = (int32_t)dstvalue % (int32_t)(int16_t)srcvalue;
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -= (150 * kCycleScale);
-#endif
 		if (((newv & 0xffff8000) != 0) &&
 			((newv & 0xffff8000) != 0xffff8000))
 		{
@@ -6015,11 +5923,9 @@ static void DoCodeMoveEaCR()
 
 static void DoPrivilegeViolation()
 {
-#if WANT_CLOSER_CYC
 	V_MaxCyclesToGo += GetDcoCycles(V_regs.CurDecOp);
 	V_MaxCyclesToGo -=
 		(34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
-#endif
 	BackupPC();
 	Exception(8);
 #if m68k_logExceptions
@@ -6113,9 +6019,7 @@ static void DoCodeMOVEMApRW()
 
 	for (z = 0; z < 16; ++z) {
 		if ((regmask & (1 << z)) != 0) {
-#if WANT_CLOSER_CYC
 			V_MaxCyclesToGo -= (4 * kCycleScale + RdAvgXtraCyc);
-#endif
 			V_regs.regs[z] = get_word(p);
 			p += 2;
 		}
@@ -6144,9 +6048,7 @@ static void DoCodeMOVEMRmMW()
 	}
 	for (z = 16; --z >= 0; ) {
 		if ((regmask & (1 << (15 - z))) != 0) {
-#if WANT_CLOSER_CYC
 			V_MaxCyclesToGo -= (4 * kCycleScale + WrAvgXtraCyc);
-#endif
 			p -= 2;
 			put_word(p, V_regs.regs[z]);
 		}
@@ -6165,10 +6067,8 @@ static void DoCodeMOVEMrmW()
 
 	for (z = 0; z < 16; ++z) {
 		if ((regmask & (1 << z)) != 0) {
-#if WANT_CLOSER_CYC
 			V_MaxCyclesToGo -=
 				(4 * kCycleScale + WrAvgXtraCyc);
-#endif
 			put_word(p, V_regs.regs[z]);
 			p += 2;
 		}
@@ -6184,10 +6084,8 @@ static void DoCodeMOVEMrmL()
 
 	for (z = 0; z < 16; ++z) {
 		if ((regmask & (1 << z)) != 0) {
-#if WANT_CLOSER_CYC
 			V_MaxCyclesToGo -=
 				(8 * kCycleScale + 2 * WrAvgXtraCyc);
-#endif
 			put_long(p, V_regs.regs[z]);
 			p += 4;
 		}
@@ -6203,10 +6101,8 @@ static void DoCodeMOVEMmrW()
 
 	for (z = 0; z < 16; ++z) {
 		if ((regmask & (1 << z)) != 0) {
-#if WANT_CLOSER_CYC
 			V_MaxCyclesToGo -=
 				(4 * kCycleScale + RdAvgXtraCyc);
-#endif
 			V_regs.regs[z] = get_word(p);
 			p += 2;
 		}
@@ -6222,10 +6118,8 @@ static void DoCodeMOVEMmrL()
 
 	for (z = 0; z < 16; ++z) {
 		if ((regmask & (1 << z)) != 0) {
-#if WANT_CLOSER_CYC
 			V_MaxCyclesToGo -=
 				(8 * kCycleScale + 2 * RdAvgXtraCyc);
-#endif
 			V_regs.regs[z] = get_long(p);
 			p += 4;
 		}
@@ -6502,19 +6396,15 @@ static void DoCodeChk()
 	if (ui5r_MSBisSet(srcvalue)) {
 		NeedDefaultLazyAllFlags();
 
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -=
 			(30 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
-#endif
 		NFLG = 1;
 		Exception(6);
 	} else if (((int32_t)srcvalue) > ((int32_t)dstvalue)) {
 		NeedDefaultLazyAllFlags();
 
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -=
 			(30 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
-#endif
 		NFLG = 0;
 		Exception(6);
 	}
@@ -6532,11 +6422,9 @@ static void DoCodeTrapV()
 	NeedDefaultLazyAllFlags();
 
 	if (VFLG != 0) {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo += GetDcoCycles(V_regs.CurDecOp);
 		V_MaxCyclesToGo -=
 			(34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
-#endif
 		Exception(7);
 	}
 }
@@ -8124,10 +8012,8 @@ static void DoCheckExternalInterruptPending()
 {
 	uint8_t level = *V_regs.fIPL;
 	if ((level > V_regs.intmask) || (level == 7)) {
-#if WANT_CLOSER_CYC
 		V_MaxCyclesToGo -=
 			(44 * kCycleScale + 5 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
-#endif
 		Exception(24 + level);
 		V_regs.intmask = level;
 	}
@@ -8146,10 +8032,8 @@ void m68k_go_nCycles(uint32_t n)
 	while (V_MaxCyclesToGo > 0) {
 
 		if (V_regs.TracePending) {
-#if WANT_CLOSER_CYC
 			V_MaxCyclesToGo -= (34 * kCycleScale
 				+ 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
-#endif
 			Exception(9);
 		}
 		if (V_regs.ExternalInterruptPending) {

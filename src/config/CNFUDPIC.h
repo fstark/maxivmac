@@ -15,7 +15,6 @@
 
 /* kMyClockMult is now runtime — see MachineConfig::clockMult */
 
-#define WANT_CLOSER_CYC 1
 
 /* kAutoSlowSubTicks/kAutoSlowTime are now runtime — see MachineConfig */
 
