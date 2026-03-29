@@ -12,7 +12,6 @@
 #include <sys/time.h>
 
 #define EnableDragDrop 1
-#define MyAppIsBundle 0
 
 #define kStrAppName "Maxi vMac"
 #define kAppVariationStr "maxivmac-sdl"
