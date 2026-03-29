@@ -16,7 +16,7 @@ struct EmulatorConfig {
 	// Display
 	bool     fullscreen   = false;   // start fullscreen
 	bool     magnify      = true;    // enable pixel scaling
-	uint8_t  windowScale  = 2;       // 1x, 2x, 3x, ...
+	uint8_t  windowScale  = 1;       // 1x, 2x, 3x, ...
 
 	// Audio
 	bool     soundEnabled = true;    // audio output

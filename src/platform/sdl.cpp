@@ -164,7 +164,7 @@ static bool s_backgroundFlag = false;
 static bool s_trueBackgroundFlag = false;
 static bool s_curSpeedStopped = true;
 
-static int s_windowScale = 2;
+static int s_windowScale = 1;
 
 
 static SDL_Window *my_main_wind = nullptr;
