@@ -9,9 +9,6 @@
 /* --- Special Mode enum --- */
 
 enum {
-#if EnableAltKeysMode
-	SpclModeAltKeyText,
-#endif
 	SpclModeNoRom,
 	SpclModeMessage,
 #if UseControlKeys
@@ -37,12 +34,8 @@ extern uint8_t * g_cntrlDisplayBuff;
 
 /* --- Keyboard aliases --- */
 
-#if EnableAltKeysMode
-/* When alt-keys mode is enabled, alt_keys.h provides the aliases */
-#else
 #define Keyboard_UpdateKeyMap1 Keyboard_UpdateKeyMap
 #define DisconnectKeyCodes1 DisconnectKeyCodes
-#endif
 
 /* --- Function prototypes --- */
 

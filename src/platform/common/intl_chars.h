@@ -212,13 +212,6 @@ enum {
 	kCellIcon21,
 	kCellIcon22,
 	kCellIcon23,
-#if EnableAltKeysMode
-	kInsertText00,
-	kInsertText01,
-	kInsertText02,
-	kInsertText03,
-	kInsertText04,
-#endif
 
 	kNumCells
 };

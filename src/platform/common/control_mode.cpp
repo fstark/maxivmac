@@ -281,9 +281,6 @@ void DrawSpclMode0(const char *Title, SpclModeBody Body)
 	DrawCellsBottomLine();
 }
 
-#if EnableAltKeysMode
-#include "platform/common/alt_keys.h"
-#endif
 /* Keyboard_UpdateKeyMap1/DisconnectKeyCodes1 aliases provided by control_mode.h */
 
 #if WantAbnormalReports
@@ -960,11 +957,6 @@ void DrawSpclMode()
 	if (SpecialModeTst(SpclModeNoRom)) {
 		DrawNoRomMode();
 	} else
-#if EnableAltKeysMode
-	if (SpecialModeTst(SpclModeAltKeyText)) {
-		DrawAltKeyMode();
-	} else
-#endif
 	{
 		/* should not get here */
 	}
@@ -1066,12 +1058,6 @@ void Keyboard_updateKeyMap2(uint8_t key, bool down)
 	} else
 #endif
 	if ((0 == g_specialModes)
-#if EnableAltKeysMode
-			|| (0 == (g_specialModes & ~ (
-				0
-				| (1 << SpclModeAltKeyText)
-				)))
-#endif
 			|| (MKC_CapsLock == key)
 		)
 	{
