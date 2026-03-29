@@ -845,18 +845,18 @@ static void HandleTheEvent(SDL_Event *event)
 			SDL_EVENT_MOUSE_WHEEL
 			:
 			if (event->wheel.x < 0) {
-				Keyboard_UpdateKeyMap2(MKC_Left, true);
-				Keyboard_UpdateKeyMap2(MKC_Left, false);
+				Keyboard_updateKeyMap2(MKC_Left, true);
+				Keyboard_updateKeyMap2(MKC_Left, false);
 			} else if (event->wheel.x > 0) {
-				Keyboard_UpdateKeyMap2(MKC_Right, true);
-				Keyboard_UpdateKeyMap2(MKC_Right, false);
+				Keyboard_updateKeyMap2(MKC_Right, true);
+				Keyboard_updateKeyMap2(MKC_Right, false);
 			}
 			if (event->wheel.y < 0) {
-				Keyboard_UpdateKeyMap2(MKC_Down, true);
-				Keyboard_UpdateKeyMap2(MKC_Down, false);
+				Keyboard_updateKeyMap2(MKC_Down, true);
+				Keyboard_updateKeyMap2(MKC_Down, false);
 			} else if(event->wheel.y > 0) {
-				Keyboard_UpdateKeyMap2(MKC_Up, true);
-				Keyboard_UpdateKeyMap2(MKC_Up, false);
+				Keyboard_updateKeyMap2(MKC_Up, true);
+				Keyboard_updateKeyMap2(MKC_Up, false);
 			}
 			break;
 		case

@@ -3,6 +3,7 @@
 */
 
 #include "core/common.h"
+#include "core/ict_scheduler.h"
 
 #include "devices/pmu.h"
 #include "core/machine_obj.h"
@@ -303,7 +304,7 @@ void PMUDevice::checkCommandCompletion()
 			}
 			i_ = 0;
 			sending_ = true;
-			ICT_add(kICT_PMU_Task,
+			g_ict.add(kICT_PMU_Task,
 				20400UL * kCycleScale / 64 * machine_->config().clockMult);
 		}
 	}
@@ -377,7 +378,7 @@ void PMUDevice::toReadyChangeNtfy()
 				sendNext_ = buffL_;
 				state_ = kPMUStateSendBuffer;
 				sending_ = true;
-				ICT_add(kICT_PMU_Task,
+				g_ict.add(kICT_PMU_Task,
 					20400UL * kCycleScale / 64 * machine_->config().clockMult);
 			}
 			break;
@@ -402,7 +403,7 @@ void PMUDevice::toReadyChangeNtfy()
 					--rem_;
 					++i_;
 					sending_ = true;
-					ICT_add(kICT_PMU_Task,
+					g_ict.add(kICT_PMU_Task,
 						20400UL * kCycleScale / 64 * machine_->config().clockMult);
 				}
 			}

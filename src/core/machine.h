@@ -160,12 +160,7 @@ enum {
 	kNumICTs
 };
 
-// Schedule a task to fire after n cycles.
-extern void ICT_add(int taskid, uint32_t n);
-
 using iCountt = uint32_t;
-extern iCountt GetCuriCount();
-extern void ICT_Zap();
 
 extern uint8_t* g_wiresData;
 
@@ -217,9 +212,9 @@ enum {
 
 extern uint32_t g_diskIconAddr;
 
-extern void Memory_Reset();
+extern void memoryReset();
 
-extern void Extn_Reset();
+extern void extnReset();
 
 extern void customreset();
 

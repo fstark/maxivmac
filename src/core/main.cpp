@@ -43,15 +43,15 @@ ICTScheduler g_ict;
 // Reset memory, scheduler, and all devices to power-on state.
 static void EmulatedHardwareZap()
 {
-	Memory_Reset();
-	ICT_Zap();
+	memoryReset();
+	g_ict.zap();
 	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<SCCDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
 	if (auto* d = g_machine->findDevice<VIA1Device>()) d->zap();
 	if (auto* d = g_machine->findDevice<VIA2Device>()) d->zap();
 	if (auto* d = g_machine->findDevice<SonyDevice>()) d->reset();
-	Extn_Reset();
+	extnReset();
 	g_cpu.reset();
 }
 
@@ -109,14 +109,14 @@ static void SubTickTaskDo()
 			might not equal CyclesScaledPerTick.
 		*/
 
-		ICT_add(kICT_SubTick, CyclesScaledPerSubTick);
+		g_ict.add(kICT_SubTick, CyclesScaledPerSubTick);
 	}
 }
 
 static void SubTickTaskStart()
 {
 	s_subTickCounter = 0;
-	ICT_add(kICT_SubTick, CyclesScaledPerSubTick);
+	g_ict.add(kICT_SubTick, CyclesScaledPerSubTick);
 }
 
 static void SubTickTaskEnd()

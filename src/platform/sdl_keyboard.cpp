@@ -161,7 +161,7 @@ void DoKeyCode(
 {
 	uint8_t v = SDLScan2MacKeyCode(r->scancode);
 	if (MKC_None != v) {
-		Keyboard_UpdateKeyMap2(v, down);
+		Keyboard_updateKeyMap2(v, down);
 	}
 }
 

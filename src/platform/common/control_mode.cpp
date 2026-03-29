@@ -987,8 +987,8 @@ uint8_t * GetCurDrawBuff()
 	return p;
 }
 
-/* Keyboard_RemapMac always compiled for cross-TU availability */
-uint8_t Keyboard_RemapMac(uint8_t key)
+/* Keyboard_remapMac always compiled for cross-TU availability */
+uint8_t Keyboard_remapMac(uint8_t key)
 {
 	if constexpr (MKC_formac_Control != MKC_Control) {
 		if (key == MKC_Control) return MKC_formac_Control;
@@ -1056,9 +1056,9 @@ uint8_t Keyboard_RemapMac(uint8_t key)
 
 	return key;
 }
-/* end Keyboard_RemapMac */
+/* end Keyboard_remapMac */
 
-void Keyboard_UpdateKeyMap2(uint8_t key, bool down)
+void Keyboard_updateKeyMap2(uint8_t key, bool down)
 {
 #if UseControlKeys
 	if (MKC_CM == key) {

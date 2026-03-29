@@ -58,7 +58,7 @@ void customreset()
 	if (auto* d = g_machine->findDevice<VIA1Device>()) d->reset();
 	if (auto* d = g_machine->findDevice<VIA2Device>()) d->reset();
 	if (auto* d = g_machine->findDevice<SonyDevice>()) d->reset();
-	Extn_Reset();
+	extnReset();
 	if (g_machine->config().isCompactMac()) {
 		g_wantMacReset = true;
 		/*
@@ -543,7 +543,7 @@ static uint16_t s_paramAddrHi;
 	Routes to the handler for the extension ID stored in
 	the parameter block.
 */
-static void Extn_Access(uint32_t Data, uint32_t addr)
+static void extnAccess(uint32_t Data, uint32_t addr)
 {
 	switch (addr) {
 		case kDSK_Params_Hi:
@@ -603,7 +603,7 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 class ExtnDevice : public Device {
 public:
 	uint32_t access(uint32_t data, bool /*writeMem*/, uint32_t addr) override {
-		Extn_Access(data, addr);
+		extnAccess(data, addr);
 		return data;
 	}
 	void zap() override {}
@@ -612,7 +612,7 @@ public:
 };
 static ExtnDevice g_extnDevice;
 
-void Extn_Reset()
+void extnReset()
 {
 	s_paramAddrHi = (uint16_t) - 1;
 }
@@ -1730,7 +1730,7 @@ void VIAorSCCinterruptChngNtfy()
 	return true;
 }
 
-void Memory_Reset()
+void memoryReset()
 {
 	g_wires.set(Wire_MemOverlay, 1);
 	SetUpMemBanks();
@@ -1773,21 +1773,4 @@ uint16_t MasterEvtQLock = 0;
 	return false;
 }
 
-/* task management — forwarding stubs to g_ict */
-
-#include "core/ict_scheduler.h"
-
-void ICT_Zap()
-{
-	g_ict.zap();
-}
-
-iCountt GetCuriCount()
-{
-	return g_ict.getCurrent();
-}
-
-void ICT_add(int taskid, uint32_t n)
-{
-	g_ict.add(taskid, n);
-}
+/* ICT scheduler now accessed directly via g_ict (core/ict_scheduler.h) */

@@ -8,6 +8,7 @@
 */
 
 #include "core/common.h"
+#include "core/ict_scheduler.h"
 
 #include "devices/via_base.h"
 #include "core/wire_bus.h"
@@ -238,7 +239,7 @@ uint8_t VIABase::shiftOutData()
 void VIABase::doTimer1Check()
 {
 	if (T1Running) {
-		iCountt NewTime = GetCuriCount();
+		iCountt NewTime = g_ict.getCurrent();
 		iCountt deltaTime = (NewTime - T1LastTime);
 		if (deltaTime != 0) {
 			uint32_t Temp = d_.T1C_F;
@@ -288,7 +289,7 @@ void VIABase::doTimer1Check()
 					NewTimer = (1 + (NewTemp >> (16 - kLn2CycleScale)))
 						* CYCLES_PER_VIA_TIME;
 				}
-				ICT_add(ictTimer1_, NewTimer);
+				g_ict.add(ictTimer1_, NewTimer);
 				T1IntReady = true;
 			}
 		}
@@ -330,7 +331,7 @@ uint16_t VIABase::getT1InvertTime()
 void VIABase::doTimer2Check()
 {
 	if (T2Running || T2C_ShortTime) {
-		iCountt NewTime = GetCuriCount();
+		iCountt NewTime = g_ict.getCurrent();
 		uint32_t Temp = d_.T2C_F;
 		iCountt deltaTime = (NewTime - T2LastTime);
 		uint32_t deltaTemp = (deltaTime / CYCLES_PER_VIA_TIME)
@@ -351,7 +352,7 @@ void VIABase::doTimer2Check()
 					NewTimer = (1 + (NewTemp >> (16 - kLn2CycleScale)))
 						* CYCLES_PER_VIA_TIME;
 				}
-				ICT_add(ictTimer2_, NewTimer);
+				g_ict.add(ictTimer2_, NewTimer);
 			}
 		}
 		d_.T2C_F = NewTemp;
@@ -433,7 +434,7 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				if ((d_.ACR & 0x40) == 0) {
 					T1_Active = 1;
 				}
-				T1LastTime = GetCuriCount();
+				T1LastTime = g_ict.getCurrent();
 				doTimer1Check();
 			} else {
 				doTimer1Check();
@@ -474,7 +475,7 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				{
 					T2C_ShortTime = true;
 				}
-				T2LastTime = GetCuriCount();
+				T2LastTime = g_ict.getCurrent();
 				doTimer2Check();
 			} else {
 				doTimer2Check();
@@ -651,13 +652,13 @@ void VIABase::extraTimeEnd()
 {
 	if (! T1Running) {
 		T1Running = true;
-		T1LastTime = GetCuriCount();
+		T1LastTime = g_ict.getCurrent();
 		doTimer1Check();
 	}
 	if (! T2Running) {
 		T2Running = true;
 		if (! T2C_ShortTime) {
-			T2LastTime = GetCuriCount();
+			T2LastTime = g_ict.getCurrent();
 		}
 		doTimer2Check();
 	}

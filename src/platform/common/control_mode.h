@@ -47,8 +47,8 @@ extern uint8_t * g_cntrlDisplayBuff;
 /* --- Function prototypes --- */
 
 uint8_t * GetCurDrawBuff();
-uint8_t Keyboard_RemapMac(uint8_t key);
-void Keyboard_UpdateKeyMap2(uint8_t key, bool down);
+uint8_t Keyboard_remapMac(uint8_t key);
+void Keyboard_updateKeyMap2(uint8_t key, bool down);
 void DisconnectKeyCodes2();
 void MacMsgOverride(const char *briefMsg, const char *longMsg);
 void MacMsgDisplayOn();

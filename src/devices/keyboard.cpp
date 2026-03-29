@@ -7,6 +7,7 @@
 */
 
 #include "core/common.h"
+#include "core/ict_scheduler.h"
 
 #include "devices/keyboard.h"
 #include "devices/via.h"
@@ -164,7 +165,7 @@ void KeyboardDevice::dataLineChngNtfy()
 #ifdef _VIA_Debug
 				fprintf(stderr, "posting kICT_Kybd_ReceiveCommand\n");
 #endif
-				ICT_add(kICT_Kybd_ReceiveCommand,
+				g_ict.add(kICT_Kybd_ReceiveCommand,
 					6800UL * kCycleScale / 64 * machine_->config().clockMult);
 
 				if (inquiryCommandTimer_ != 0) {
@@ -179,7 +180,7 @@ void KeyboardDevice::dataLineChngNtfy()
 				fprintf(stderr,
 					"posting kICT_Kybd_ReceiveEndCommand\n");
 #endif
-				ICT_add(kICT_Kybd_ReceiveEndCommand,
+				g_ict.add(kICT_Kybd_ReceiveEndCommand,
 					6800UL * kCycleScale / 64 * machine_->config().clockMult);
 			}
 			break;

@@ -3,6 +3,7 @@
 */
 
 #include "core/common.h"
+#include "core/ict_scheduler.h"
 
 
 
@@ -145,9 +146,9 @@ void ADBDevice::stateChangeNtfy()
 {
 #ifdef _VIA_Debug
 	fprintf(stderr, "ADBstate_ChangeNtfy: %d, %d, %d\n",
-		ADB_st1, ADB_st0, GetCuriCount());
+		ADB_st1, ADB_st0, g_ict.getCurrent());
 #endif
-	ICT_add(kICT_ADB_NewState,
+	g_ict.add(kICT_ADB_NewState,
 		348160UL * kCycleScale / 64 * machine_->config().clockMult);
 		/*
 			Macintosh Family Hardware Reference say device "must respond
