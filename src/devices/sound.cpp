@@ -29,8 +29,8 @@ void SoundDevice::reset()
 #include "cpu/m68k.h"
 
 
-#define kSnd_Main_Offset   0x0300
-#define kSnd_Alt_Offset    0x5F00
+static constexpr int kSnd_Main_Offset = 0x0300;
+#define kSnd_Alt_Offset 0x5F00
 
 /*
 	approximate volume levels of vMac, so:

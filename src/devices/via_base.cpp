@@ -16,13 +16,13 @@
 #define BIT_MASK(p) (1 << (p))
 #define TEST_BIT(i, p) (((i) & BIT_MASK(p)) != 0)
 
-#define kIntCA2 0
-#define kIntCA1 1
-#define kIntSR 2
-#define kIntCB2 3
-#define kIntCB1 4
-#define kIntT2 5
-#define kIntT1 6
+static constexpr int kIntCA2 = 0;
+static constexpr int kIntCA1 = 1;
+static constexpr int kIntSR  = 2;
+static constexpr int kIntCB2 = 3;
+static constexpr int kIntCB1 = 4;
+static constexpr int kIntT2  = 5;
+static constexpr int kIntT1  = 6;
 
 VIABase::VIABase(int viaNum, uint16_t abnormalBase, int ictTimer1, int ictTimer2)
 	: viaNum_(viaNum)
@@ -359,22 +359,22 @@ void VIABase::doTimer2Check()
 	}
 }
 
-#define kORB    0x00
-#define kORA_H  0x01
-#define kDDR_B  0x02
-#define kDDR_A  0x03
-#define kT1C_L  0x04
-#define kT1C_H  0x05
-#define kT1L_L  0x06
-#define kT1L_H  0x07
-#define kT2_L   0x08
-#define kT2_H   0x09
-#define kSR     0x0A
-#define kACR    0x0B
-#define kPCR    0x0C
-#define kIFR    0x0D
-#define kIER    0x0E
-#define kORA    0x0F
+static constexpr int kORB   = 0x00;
+static constexpr int kORA_H = 0x01;
+static constexpr int kDDR_B = 0x02;
+static constexpr int kDDR_A = 0x03;
+static constexpr int kT1C_L = 0x04;
+static constexpr int kT1C_H = 0x05;
+static constexpr int kT1L_L = 0x06;
+static constexpr int kT1L_H = 0x07;
+static constexpr int kT2_L  = 0x08;
+static constexpr int kT2_H  = 0x09;
+static constexpr int kSR    = 0x0A;
+static constexpr int kACR   = 0x0B;
+static constexpr int kPCR   = 0x0C;
+static constexpr int kIFR   = 0x0D;
+static constexpr int kIER   = 0x0E;
+static constexpr int kORA   = 0x0F;
 
 /*
 	VIA register read/write dispatcher.

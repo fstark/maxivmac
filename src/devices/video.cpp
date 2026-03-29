@@ -429,11 +429,11 @@ static tMacErr Vid_SetMode(uint16_t v)
 }
 
 #define kCmndVideoFeatures 1
-#define kCmndVideoGetIntEnbl 2
-#define kCmndVideoSetIntEnbl 3
-#define kCmndVideoClearInt 4
-#define kCmndVideoStatus 5
-#define kCmndVideoControl 6
+static constexpr int kCmndVideoGetIntEnbl = 2;
+static constexpr int kCmndVideoSetIntEnbl = 3;
+static constexpr int kCmndVideoClearInt = 4;
+static constexpr int kCmndVideoStatus = 5;
+static constexpr int kCmndVideoControl = 6;
 
 #define CntrlParam_csCode 0x1A /* control/status code [word] */
 #define CntrlParam_csParam 0x1C /* operation-defined parameters */

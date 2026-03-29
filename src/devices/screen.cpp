@@ -13,7 +13,7 @@
 #include "devices/screen.h"
 
 
-#define kMain_Offset      0x5900
+static constexpr int kMain_Offset = 0x5900;
 #define kAlternate_Offset 0xD900
 
 /* Select the active framebuffer (VRAM for NuBus Macs, main RAM

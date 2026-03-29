@@ -31,7 +31,7 @@
 #define sRESET   0x0E /* reset parity/interrupt      (r/o) */
 #define sIDMArx  0x0E /* start DMA initiator receive (w/o) */
 
-#define kSCSI_Size 0x00010
+static constexpr int kSCSI_Size = 0x00010;
 
 static uint8_t SCSI[kSCSI_Size];
 

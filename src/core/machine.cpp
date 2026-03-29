@@ -190,7 +190,7 @@ void DoReportAbnormalID(uint16_t id
 
 /* map of address space — addresses vary per model */
 
-#define kRAM_Base 0x00000000 /* when overlay off */
+static constexpr uint32_t kRAM_Base = 0x00000000; /* when overlay off */
 
 static uint32_t addrmap_kRAM_ln2Spc() {
 	auto m = g_machine->config().model;
@@ -222,7 +222,7 @@ static uint32_t addrmap_kSCSI_ln2Spc() {
 #define kSCSI_Block_Base addrmap_kSCSI_Block_Base()
 #define kSCSI_ln2Spc addrmap_kSCSI_ln2Spc()
 
-#define kRAM_Overlay_Base 0x00600000 /* when overlay on */
+static constexpr uint32_t kRAM_Overlay_Base = 0x00600000; /* when overlay on */
 #define kRAM_Overlay_Top  0x00800000
 
 static uint32_t addrmap_kSCCRd_Block_Base() {
@@ -237,7 +237,7 @@ static uint32_t addrmap_kSCC_ln2Spc() {
 #define kSCC_ln2Spc addrmap_kSCC_ln2Spc()
 
 /* SCC write block: not present on PB100 (combined read/write) */
-#define kSCCWr_Block_Base 0x00A00000
+static constexpr uint32_t kSCCWr_Block_Base = 0x00A00000;
 #define kSCCWr_Block_Top  0x00C00000
 
 static uint32_t addrmap_kIWM_Block_Base() {
@@ -273,7 +273,7 @@ static uint32_t addrmap_kASC_ln2Spc() {
 }
 #define kASC_Block_Base addrmap_kASC_Block_Base()
 #define kASC_ln2Spc addrmap_kASC_ln2Spc()
-#define kASC_Mask 0x00000FFF
+static constexpr uint32_t kASC_Mask = 0x00000FFF;
 
 
 #if INCLUDE_EXTN_PBUFS
@@ -301,11 +301,11 @@ static tMacErr PbufTransferVM(uint32_t Buffera,
 /* extension mechanism */
 
 #if INCLUDE_EXTN_PBUFS
-#define kCmndPbufFeatures 1
-#define kCmndPbufNew 2
-#define kCmndPbufDispose 3
-#define kCmndPbufGetSize 4
-#define kCmndPbufTransfer 5
+static constexpr int kCmndPbufFeatures = 1;
+static constexpr int kCmndPbufNew = 2;
+static constexpr int kCmndPbufDispose = 3;
+static constexpr int kCmndPbufGetSize = 4;
+static constexpr int kCmndPbufTransfer = 5;
 #endif
 
 /*
@@ -389,9 +389,9 @@ static void ExtnParamBuffers_Access(uint32_t p)
 #endif
 
 #if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
-#define kCmndHTCEFeatures 1
-#define kCmndHTCEExport 2
-#define kCmndHTCEImport 3
+static constexpr int kCmndHTCEFeatures = 1;
+static constexpr int kCmndHTCEExport = 2;
+static constexpr int kCmndHTCEImport = 3;
 #endif
 
 #if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
@@ -431,21 +431,21 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 }
 #endif
 
-#define kFindExtnExtension 0x64E1F58A
-#define kDiskDriverExtension 0x4C9219E6
+static constexpr uint32_t kFindExtnExtension = 0x64E1F58A;
+static constexpr uint32_t kDiskDriverExtension = 0x4C9219E6;
 #if INCLUDE_EXTN_PBUFS
-#define kHostParamBuffersExtension 0x314C87BF
+static constexpr uint32_t kHostParamBuffersExtension = 0x314C87BF;
 #endif
 #if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
-#define kHostClipExchangeExtension 0x27B130CA
+static constexpr uint32_t kHostClipExchangeExtension = 0x27B130CA;
 #endif
 
-#define kCmndFindExtnFind 1
-#define kCmndFindExtnId2Code 2
-#define kCmndFindExtnCount 3
+static constexpr int kCmndFindExtnFind = 1;
+static constexpr int kCmndFindExtnId2Code = 2;
+static constexpr int kCmndFindExtnCount = 3;
 
-#define kParamFindExtnTheExtn 8
-#define kParamFindExtnTheId 12
+static constexpr int kParamFindExtnTheExtn = 8;
+static constexpr int kParamFindExtnTheId = 12;
 
 /*
 	Look up a g_rom extension by its four-byte signature.
@@ -544,9 +544,9 @@ static void ExtnFind_Access(uint32_t p)
 	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
 }
 
-#define kDSK_Params_Hi 0
-#define kDSK_Params_Lo 1
-#define kDSK_QuitOnEject 3 /* obsolete */
+static constexpr int kDSK_Params_Hi = 0;
+static constexpr int kDSK_Params_Lo = 1;
+static constexpr int kDSK_QuitOnEject = 3; /* obsolete */
 
 static uint16_t s_paramAddrHi;
 
@@ -632,12 +632,12 @@ void Extn_Reset()
 
 /* implementation of read/write for everything but RAM and ROM */
 
-#define kSCC_Mask 0x03
+static constexpr int kSCC_Mask = 0x03;
 
-#define kVIA1_Mask 0x00000F
-#define kVIA2_Mask 0x00000F
+static constexpr uint32_t kVIA1_Mask = 0x00000F;
+static constexpr uint32_t kVIA2_Mask = 0x00000F;
 
-#define kIWM_Mask 0x00000F /* Allocated Memory Bandwidth for IWM */
+static constexpr uint32_t kIWM_Mask = 0x00000F; /* Allocated Memory Bandwidth for IWM */
 
 static uint32_t addrmap_ROM_CmpZeroMask() {
 	const auto& cfg = g_machine->config();
@@ -696,7 +696,7 @@ enum {
 
 
 /* Max ATT entries — generous fixed size, checked at runtime */
-#define kATTListMax 64
+static constexpr int kATTListMax = 64;
 static ATTer ATTListA[kATTListMax];
 static uint16_t s_lastATTel;
 

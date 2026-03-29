@@ -8,21 +8,21 @@
 	when a disk is inserted.
 */
 
-#define kAHM_aside 0
-#define kAHM_cheese 1
-#define kAHM_evil 2
-#define kAHM_horror 3
-#define kAHM_lady_mac 4
-#define kAHM_moustache 5
-#define kAHM_nerdy 6
-#define kAHM_pirate 7
-#define kAHM_sleepy 8
-#define kAHM_sly 9
-#define kAHM_sunglasses 10
-#define kAHM_surprise 11
-#define kAHM_tongue 12
-#define kAHM_yuck 13
-#define kAHM_zombie 14
+static constexpr int kAHM_aside = 0;
+static constexpr int kAHM_cheese = 1;
+static constexpr int kAHM_evil = 2;
+static constexpr int kAHM_horror = 3;
+static constexpr int kAHM_lady_mac = 4;
+static constexpr int kAHM_moustache = 5;
+static constexpr int kAHM_nerdy = 6;
+static constexpr int kAHM_pirate = 7;
+static constexpr int kAHM_sleepy = 8;
+static constexpr int kAHM_sly = 9;
+static constexpr int kAHM_sunglasses = 10;
+static constexpr int kAHM_surprise = 11;
+static constexpr int kAHM_tongue = 12;
+static constexpr int kAHM_yuck = 13;
+static constexpr int kAHM_zombie = 14;
 
 static const uint8_t my_HappyMac_icon[] = {
 #if CurAltHappyMac == kAHM_aside

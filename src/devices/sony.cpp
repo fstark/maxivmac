@@ -139,15 +139,15 @@ static uint32_t ImageTagOffset[NumDrives];
 #endif
 
 #if SONY_SUPPORT_DC42
-#define kDC42offset_diskName      0
-#define kDC42offset_dataSize     64
-#define kDC42offset_tagSize      68
-#define kDC42offset_dataChecksum 72
-#define kDC42offset_tagChecksum  76
-#define kDC42offset_diskFormat   80
-#define kDC42offset_formatByte   81
-#define kDC42offset_private      82
-#define kDC42offset_userData     84
+static constexpr int kDC42offset_diskName = 0;
+static constexpr int kDC42offset_dataSize = 64;
+static constexpr int kDC42offset_tagSize = 68;
+static constexpr int kDC42offset_dataChecksum = 72;
+#define kDC42offset_tagChecksum 76
+#define kDC42offset_diskFormat 80
+#define kDC42offset_formatByte 81
+static constexpr int kDC42offset_private = 82;
+static constexpr int kDC42offset_userData = 84;
 #endif
 
 #define ChecksumBlockSize 1024
@@ -602,33 +602,33 @@ void SonyDevice::reset()
 	Mini vMac extension for low level access to disk operations.
 */
 
-#define kCmndDiskNDrives 1
-#define kCmndDiskRead 2
-#define kCmndDiskWrite 3
-#define kCmndDiskEject 4
-#define kCmndDiskGetSize 5
-#define kCmndDiskGetCallBack 6
-#define kCmndDiskSetCallBack 7
-#define kCmndDiskQuitOnEject 8
-#define kCmndDiskFeatures 9
-#define kCmndDiskNextPendingInsert 10
-#define kCmndDiskGetRawMode 11
-#define kCmndDiskSetRawMode 12
-#define kCmndDiskNew 13
-#define kCmndDiskGetNewWanted 14
-#define kCmndDiskEjectDelete 15
-#define kCmndDiskGetName 16
+static constexpr int kCmndDiskNDrives = 1;
+static constexpr int kCmndDiskRead = 2;
+static constexpr int kCmndDiskWrite = 3;
+static constexpr int kCmndDiskEject = 4;
+static constexpr int kCmndDiskGetSize = 5;
+static constexpr int kCmndDiskGetCallBack = 6;
+static constexpr int kCmndDiskSetCallBack = 7;
+static constexpr int kCmndDiskQuitOnEject = 8;
+static constexpr int kCmndDiskFeatures = 9;
+static constexpr int kCmndDiskNextPendingInsert = 10;
+static constexpr int kCmndDiskGetRawMode = 11;
+static constexpr int kCmndDiskSetRawMode = 12;
+static constexpr int kCmndDiskNew = 13;
+static constexpr int kCmndDiskGetNewWanted = 14;
+static constexpr int kCmndDiskEjectDelete = 15;
+static constexpr int kCmndDiskGetName = 16;
 
-#define kFeatureCmndDisk_RawMode 0
-#define kFeatureCmndDisk_New 1
-#define kFeatureCmndDisk_NewName 2
-#define kFeatureCmndDisk_GetName 3
+static constexpr int kFeatureCmndDisk_RawMode = 0;
+static constexpr int kFeatureCmndDisk_New = 1;
+static constexpr int kFeatureCmndDisk_NewName = 2;
+static constexpr int kFeatureCmndDisk_GetName = 3;
 
-#define kParamDiskNumDrives 8
-#define kParamDiskStart 8
-#define kParamDiskCount 12
-#define kParamDiskBuffer 16
-#define kParamDiskDrive_No 20
+static constexpr int kParamDiskNumDrives = 8;
+static constexpr int kParamDiskStart = 8;
+static constexpr int kParamDiskCount = 12;
+static constexpr int kParamDiskBuffer = 16;
+static constexpr int kParamDiskDrive_No = 20;
 
 /*
 	Extension trap: handle low-level disk commands
@@ -802,52 +802,52 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 
 /* Sony Variable Drive Setting Offsets */
 
-#define kTrack       0 /* Current Track */
-#define kWriteProt   2 /* FF if Write Protected, 00 if readable */
-#define kDiskInPlace 3
+#define kTrack 0 /* Current Track */
+static constexpr int kWriteProt = 2; /* FF if Write Protected, 00 if readable */
+static constexpr int kDiskInPlace = 3;
 	/*
 		00 = No Disk, 01 = Disk In,
 		2 = MacOS Read, FC-FF = Just Ejected
 	*/
-#define kInstalled   4
+static constexpr int kInstalled = 4;
 	/* 00 = Unknown, 01 = Installed, FF = Not Installed */
-#define kSides       5
+static constexpr int kSides = 5;
 	/* 00 if Single Sided Drive, FF if Doubled Sided Drive */
-#define kQLink       6 /* Link to Next Drive */
-#define kQType      10 /* Drive Type (0 = Size Saved, 1 = Very Large) */
-#define kQDriveNo   12 /* Drive Number (1 = Internal, 2 = External) */
-#define kQRefNum    14
+static constexpr int kQLink = 6; /* Link to Next Drive */
+static constexpr int kQType = 10; /* Drive Type (0 = Size Saved, 1 = Very Large) */
+static constexpr int kQDriveNo = 12; /* Drive Number (1 = Internal, 2 = External) */
+static constexpr int kQRefNum = 14;
 	/* Driver Reference Number (-5 for .Sony, FFFB) */
-#define kQFSID      16 /* File System ID (0 = MacOS) */
-#define kQDrvSz     18 /* size, low-order word */
-#define kQDrvSz2    20 /* size, hi-order word */
+static constexpr int kQFSID = 16; /* File System ID (0 = MacOS) */
+static constexpr int kQDrvSz = 18; /* size, low-order word */
+static constexpr int kQDrvSz2 = 20; /* size, hi-order word */
 
-#define kTwoSideFmt 18
+static constexpr int kTwoSideFmt = 18;
 	/* FF if double-sided format, 00 if single-sided format */
-#define kNewIntf    19
+static constexpr int kNewIntf = 19;
 	/* FF if new 800K interface or 00 if old 400K interface */
-#define kDriveErrs  20 /* Drive Soft Errors */
+static constexpr int kDriveErrs = 20; /* Drive Soft Errors */
 
 /* Sony Driver Control Call csCodes */
 
-#define kKillIO             1
-#define kVerifyDisk         5
-#define kFormatDisk         6
-#define kEjectDisk          7
-#define kSetTagBuffer       8
-#define kTrackCacheControl  9
-#define kGetIconID         20
-#define kDriveIcon         21
-#define kMediaIcon         22
-#define kDriveInfo         23
-#define kFormatCopy     21315
+static constexpr int kKillIO = 1;
+static constexpr int kVerifyDisk = 5;
+static constexpr int kFormatDisk = 6;
+static constexpr int kEjectDisk = 7;
+static constexpr int kSetTagBuffer = 8;
+static constexpr int kTrackCacheControl = 9;
+#define kGetIconID 20
+static constexpr int kDriveIcon = 21;
+#define kMediaIcon 22
+static constexpr int kDriveInfo = 23;
+#define kFormatCopy 21315
 
 /* Sony Driver Status Call csCodes */
 
-#define kReturnFormatList  6
-#define kDriveStatus       8
-#define kMFMStatus        10
-#define kDuplicatorVersionSupport  17494
+#define kReturnFormatList 6
+static constexpr int kDriveStatus = 8;
+#define kMFMStatus 10
+#define kDuplicatorVersionSupport 17494
 
 /* Parameter Block Offsets */
 
@@ -1502,14 +1502,14 @@ static tMacErr Sony_OpenC(uint32_t p)
 	return tMacErr::noErr;
 }
 
-#define kCmndSonyPrime 1
-#define kCmndSonyControl 2
-#define kCmndSonyStatus 3
-#define kCmndSonyClose 4
-#define kCmndSonyOpenA 5
-#define kCmndSonyOpenB 6
-#define kCmndSonyOpenC 7
-#define kCmndSonyMount 8
+static constexpr int kCmndSonyPrime = 1;
+static constexpr int kCmndSonyControl = 2;
+static constexpr int kCmndSonyStatus = 3;
+static constexpr int kCmndSonyClose = 4;
+static constexpr int kCmndSonyOpenA = 5;
+static constexpr int kCmndSonyOpenB = 6;
+static constexpr int kCmndSonyOpenC = 7;
+static constexpr int kCmndSonyMount = 8;
 
 /*
 	Extension trap: dispatch the Sony replacement driver.
