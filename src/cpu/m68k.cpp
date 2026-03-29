@@ -48,9 +48,6 @@ struct MATCr {
 };
 using MATCp = MATCr *;
 
-#ifndef USE_PCLIMIT
-#define USE_PCLIMIT 1
-#endif
 
 #define AKMemory 0
 #define AKRegister 1
@@ -235,10 +232,8 @@ register uint8_t * g_pc_pHi asm (r_pc_pHi);
 static uint32_t DumpTable[kNumIKinds];
 #endif
 
-#if USE_PCLIMIT
 static void Recalc_PC_Block();
 static uint32_t Recalc_PC_BlockReturnUi5r(uint32_t v);
-#endif
 
 static inline uint16_t nextiword()
 /* NOT sign extended */
@@ -246,11 +241,9 @@ static inline uint16_t nextiword()
 	uint16_t r = do_get_mem_word(V_pc_p);
 	V_pc_p += 2;
 
-#if USE_PCLIMIT
 	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		Recalc_PC_Block();
 	}
-#endif
 
 	return r;
 }
@@ -260,11 +253,9 @@ static inline uint32_t nextiSByte()
 	uint32_t r = static_cast<uint32_t>(static_cast<int8_t>(do_get_mem_byte(V_pc_p + 1)));
 	V_pc_p += 2;
 
-#if USE_PCLIMIT
 	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		return Recalc_PC_BlockReturnUi5r(r);
 	}
-#endif
 
 	return r;
 }
@@ -275,11 +266,9 @@ static inline uint32_t nextiSWord()
 	uint32_t r = static_cast<uint32_t>(static_cast<int16_t>(do_get_mem_word(V_pc_p)));
 	V_pc_p += 2;
 
-#if USE_PCLIMIT
 	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		return Recalc_PC_BlockReturnUi5r(r);
 	}
-#endif
 
 	return r;
 }
@@ -291,12 +280,10 @@ static inline uint32_t nextilong()
 	uint32_t r = do_get_mem_long(V_pc_p);
 	V_pc_p += 4;
 
-#if USE_PCLIMIT
 	/* could be two words in different blocks */
 	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		r = nextilong_ext();
 	}
-#endif
 
 	return r;
 }
@@ -305,11 +292,9 @@ static inline void BackupPC()
 {
 	V_pc_p -= 2;
 
-#if USE_PCLIMIT
 	if (V_pc_p < V_regs.pc_pLo) [[unlikely]] {
 		Recalc_PC_Block();
 	}
-#endif
 }
 
 static inline uint32_t m68k_getpc()
@@ -3852,13 +3837,11 @@ static void DoCodeBraB()
 
 	V_pc_p = s;
 
-#if USE_PCLIMIT
 	if (s >= V_pc_pHi
 		|| s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
-#endif
 }
 
 static void DoCodeBraW()
@@ -3869,13 +3852,11 @@ static void DoCodeBraW()
 
 	V_pc_p = s;
 
-#if USE_PCLIMIT
 	if (s >= V_pc_pHi
 		|| s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
-#endif
 }
 
 #if WANT_CLOSER_CYC
@@ -3906,11 +3887,9 @@ static void SkipiWord()
 {
 	V_pc_p += 2;
 
-#if USE_PCLIMIT
 	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		Recalc_PC_Block();
 	}
-#endif
 }
 
 #if WANT_CLOSER_CYC
@@ -6724,13 +6703,11 @@ static void DoCodeBraL()
 
 	V_pc_p = s;
 
-#if USE_PCLIMIT
 	if (s >= V_pc_pHi
 		|| s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
-#endif
 }
 #endif
 
@@ -6739,11 +6716,9 @@ static void SkipiLong()
 {
 	V_pc_p += 4;
 
-#if USE_PCLIMIT
 	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
 		Recalc_PC_Block();
 	}
-#endif
 }
 #endif
 
@@ -6765,13 +6740,11 @@ static void DoCodeBsrL()
 	put_long(m68k_areg(7), m68k_getpc());
 	V_pc_p = s;
 
-#if USE_PCLIMIT
 	if (s >= V_pc_pHi
 		|| s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
-#endif
 
 	/* ReportAbnormal("long branch in DoCode6"); */
 	/* Used by various Apps */
