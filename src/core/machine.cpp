@@ -1482,13 +1482,6 @@ static void SetUpMemBanks()
 				}
 			}
 			if (! byteSize) {
-#if EXTRA_ABNORMAL_REPORTS
-				ReportAbnormalID(AbnormalID::kMACH_IWM_word, "access IWM word");
-				/*
-					This happens when quitting 'Glider 3.1.2'.
-					perhaps a bad handle is being disposed of.
-				*/
-#endif
 			} else if (g_machine->config().isIIFamily()) {
 				if ((addr & 1) != 0) {
 					ReportAbnormalID(AbnormalID::kMACH_IWM_odd, "access IWM odd");

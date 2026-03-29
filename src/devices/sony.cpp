@@ -1136,9 +1136,6 @@ static tMacErr Sony_Prime(uint32_t p)
 			|| (0 != (sonyCount & 0x1FF)))
 		{
 			/* only whole blocks allowed */
-#if EXTRA_ABNORMAL_REPORTS
-			ReportAbnormalID(AbnormalID::kSONY_not_blockwise_in_Sony_Prime, "not blockwise in Sony_Prime");
-#endif
 			result = tMacErr::paramErr;
 		} else if (isWrite && (get_vm_byte(dvl + kWriteProt) != 0)) {
 			result = tMacErr::wPrErr;
@@ -1316,15 +1313,6 @@ static tMacErr Sony_Control(uint32_t p)
 					dbglog_writeHex(OpCode);
 					dbglog_writeReturn();
 #endif
-#if EXTRA_ABNORMAL_REPORTS
-					if ((kGetIconID != OpCode)
-						&& (kMediaIcon != OpCode)
-						&& (kDriveInfo != OpCode))
-					{
-						ReportAbnormalID(AbnormalID::kSONY_unexpected_OpCode_in_Sony_Control,
-							"unexpected OpCode in Sony_Control");
-					}
-#endif
 					result = tMacErr::controlErr;
 						/*
 							Driver can't respond to
@@ -1369,14 +1357,6 @@ static tMacErr Sony_Status(uint32_t p)
 			result = tMacErr::noErr;
 		}
 	} else {
-#if EXTRA_ABNORMAL_REPORTS
-		if ((kReturnFormatList != OpCode)
-			&& (kDuplicatorVersionSupport != OpCode))
-		{
-			ReportAbnormalID(AbnormalID::kSONY_unexpected_OpCode_in_Sony_Control_2,
-				"unexpected OpCode in Sony_Control");
-		}
-#endif
 		result = tMacErr::statusErr;
 	}
 

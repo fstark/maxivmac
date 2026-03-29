@@ -41,4 +41,4 @@
 /* kROM_Base/kROM_ln2Spc are now runtime — see MachineConfig::romBase */
 
 #define WANT_DISASM 1
-#define EXTRA_ABNORMAL_REPORTS 0
+

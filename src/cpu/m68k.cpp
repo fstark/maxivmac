@@ -912,12 +912,6 @@ static uint32_t get_disp_ea(uint32_t base)
 	}
 	if (s_cpuConfig->use68020) {
 		regd <<= (dp >> 9) & 3;
-#if EXTRA_ABNORMAL_REPORTS
-		if (((dp >> 9) & 3) != 0) {
-			/* ReportAbnormal("Have scale in Extension Word"); */
-			/* apparently can happen in Sys 7.5.5 boot on 68000 */
-		}
-#endif
 		if (dp & 0x0100) {
 			if ((dp & 0x80) != 0) {
 				base = 0;
@@ -6834,12 +6828,6 @@ static void DoCHK2orCMP2()
 			upper = get_word(DstAddr + 2);
 			break;
 		default:
-#if EXTRA_ABNORMAL_REPORTS
-			if (4 != V_regs.CurDecOpY.v[0].ArgDat) {
-				ReportAbnormalID(AbnormalID::kCPU_illegal_opsize_in_CHK2_or_CMP2,
-					"illegal opsize in CHK2 or CMP2");
-			}
-#endif
 			if ((extra & 0x8000) == 0) {
 				regv = static_cast<uint32_t>(*srcp);
 			} else {
@@ -6885,11 +6873,6 @@ static void DoCAS()
 			srcvalue = static_cast<uint32_t>(static_cast<int16_t>(V_regs.regs[rc]));
 			break;
 		default:
-#if EXTRA_ABNORMAL_REPORTS
-			if (4 != V_regs.CurDecOpY.v[0].ArgDat) {
-				ReportAbnormalID(AbnormalID::kCPU_illegal_opsize_in_DoCAS, "illegal opsize in DoCAS");
-			}
-#endif
 			srcvalue = static_cast<uint32_t>(V_regs.regs[rc]);
 			break;
 	}
@@ -8228,10 +8211,6 @@ Label_Retry:
 			}
 		}
 		/* in trouble if get here */
-#if EXTRA_ABNORMAL_REPORTS
-		ReportAbnormalID(AbnormalID::kCPU_Recalc_PC_Block_fails, "Recalc_PC_Block fails");
-			/* happens on Restart */
-#endif
 
 		V_regs.pc_pLo = V_regs.fakeword;
 		V_pc_p = V_regs.pc_pLo;

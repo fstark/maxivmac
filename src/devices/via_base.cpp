@@ -196,14 +196,6 @@ void VIABase::shiftInData(uint8_t v)
 	uint8_t ShiftMode = (d_.ACR & 0x1C) >> 2;
 
 	if (ShiftMode != 3) {
-#if EXTRA_ABNORMAL_REPORTS
-		if (ShiftMode == 0) {
-			/* happens on reset */
-		} else {
-			ReportAbnormalID(abnormalBase_ | 0x03,
-				"VIA Not ready to shift in");
-		}
-#endif
 	} else {
 		d_.SR = v;
 		setInterruptFlag(kIntSR);
