@@ -23,8 +23,6 @@
 
 /* kAutoSlowSubTicks/kAutoSlowTime are now runtime — see MachineConfig */
 
-#define INCLUDE_EXTN_PBUFS 1
-#define INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE 1
 
 #define SONY_SUPPORT_DC42 1
 #define SONY_SUPPORT_TAGS 1

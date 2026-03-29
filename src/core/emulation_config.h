@@ -23,8 +23,6 @@
 
 /* kAutoSlowSubTicks/kAutoSlowTime are now runtime — see MachineConfig */
 
-#define INCLUDE_EXTN_PBUFS 1
-#define INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE 1
 
 constexpr int NumDrives = 6;
 constexpr int NumPbufs = 4;

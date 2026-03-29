@@ -259,7 +259,6 @@ static uint32_t GetASCLn2Spc() {
 static constexpr uint32_t kASC_Mask = 0x00000FFF;
 
 
-#if INCLUDE_EXTN_PBUFS
 static tMacErr PbufTransferVM(uint32_t buffera,
 	PbufIndex i, uint32_t offset, uint32_t count, bool isWrite)
 {
@@ -279,24 +278,20 @@ static tMacErr PbufTransferVM(uint32_t buffera,
 
 	return tMacErr::noErr;
 }
-#endif
 
 /* extension mechanism */
 
-#if INCLUDE_EXTN_PBUFS
 static constexpr int kCmndPbufFeatures = 1;
 static constexpr int kCmndPbufNew = 2;
 static constexpr int kCmndPbufDispose = 3;
 static constexpr int kCmndPbufGetSize = 4;
 static constexpr int kCmndPbufTransfer = 5;
-#endif
 
 /*
 	Handle extension parameter-buffer commands from guest.
 	Dispatches New, Dispose, GetSize, and Transfer operations
 	on host-side parameter buffers.
 */
-#if INCLUDE_EXTN_PBUFS
 static void ExtnParamBuffers_Access(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
@@ -369,15 +364,11 @@ static void ExtnParamBuffers_Access(uint32_t p)
 
 	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
 }
-#endif
 
-#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 static constexpr int kCmndHTCEFeatures = 1;
 static constexpr int kCmndHTCEExport = 2;
 static constexpr int kCmndHTCEImport = 3;
-#endif
 
-#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 static void ExtnHostTextClipExchange_Access(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
@@ -412,16 +403,11 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 
 	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
 }
-#endif
 
 static constexpr uint32_t kFindExtnExtension = 0x64E1F58A;
 static constexpr uint32_t kDiskDriverExtension = 0x4C9219E6;
-#if INCLUDE_EXTN_PBUFS
 static constexpr uint32_t kHostParamBuffersExtension = 0x314C87BF;
-#endif
-#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 static constexpr uint32_t kHostClipExchangeExtension = 0x27B130CA;
-#endif
 
 static constexpr int kCmndFindExtnFind = 1;
 static constexpr int kCmndFindExtnId2Code = 2;
@@ -451,20 +437,16 @@ static void ExtnFind_Access(uint32_t p)
 					put_vm_word(p + kParamFindExtnTheId, kExtnDisk);
 					result = tMacErr::noErr;
 				} else
-#if INCLUDE_EXTN_PBUFS
 				if (extn == kHostParamBuffersExtension) {
 					put_vm_word(p + kParamFindExtnTheId,
 						kExtnParamBuffers);
 					result = tMacErr::noErr;
 				} else
-#endif
-#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 				if (extn == kHostClipExchangeExtension) {
 					put_vm_word(p + kParamFindExtnTheId,
 						kExtnHostTextClipExchange);
 					result = tMacErr::noErr;
 				} else
-#endif
 				if (extn == kFindExtnExtension) {
 					put_vm_word(p + kParamFindExtnTheId,
 						kExtnFindExtn);
@@ -484,20 +466,16 @@ static void ExtnFind_Access(uint32_t p)
 						kDiskDriverExtension);
 					result = tMacErr::noErr;
 				} else
-#if INCLUDE_EXTN_PBUFS
 				if (extn == kExtnParamBuffers) {
 					put_vm_long(p + kParamFindExtnTheExtn,
 						kHostParamBuffersExtension);
 					result = tMacErr::noErr;
 				} else
-#endif
-#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 				if (extn == kExtnHostTextClipExchange) {
 					put_vm_long(p + kParamFindExtnTheExtn,
 						kHostClipExchangeExtension);
 					result = tMacErr::noErr;
 				} else
-#endif
 				if (extn == kExtnFindExtn) {
 					put_vm_long(p + kParamFindExtnTheExtn,
 						kFindExtnExtension);
@@ -561,16 +539,12 @@ static void extnAccess(uint32_t Data, uint32_t addr)
 						case kExtnVideo:
 							if (auto* d = g_machine->findDevice<VideoDevice>()) d->extnVideoAccess(p);
 							break;
-#if INCLUDE_EXTN_PBUFS
 						case kExtnParamBuffers:
 							ExtnParamBuffers_Access(p);
 							break;
-#endif
-#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 						case kExtnHostTextClipExchange:
 							ExtnHostTextClipExchange_Access(p);
 							break;
-#endif
 						case kExtnDisk:
 							if (auto* d = g_machine->findDevice<SonyDevice>()) d->extnDiskAccess(p);
 							break;

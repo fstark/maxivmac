@@ -194,12 +194,8 @@ enum {
 	kExtnDisk,
 	kExtnSony,
 	kExtnVideo, /* must stay at index 3 to match reference VidROM */
-#if INCLUDE_EXTN_PBUFS
 	kExtnParamBuffers,
-#endif
-#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 	kExtnHostTextClipExchange,
-#endif
 
 	kNumExtns
 };
