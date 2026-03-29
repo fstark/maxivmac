@@ -147,7 +147,7 @@ enum {
 	kIKindStop,
 	kIKindReset,
 
-#if Use68020
+#if USE_68020
 	kIKindCallMorRtm,
 	kIKindBraL,
 	kIKindBccL,

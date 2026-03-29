@@ -12,7 +12,7 @@ struct WorkR {
 	uint32_t opcode;
 	uint32_t opsize;
 	uint16_t MainClass;
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 	uint16_t Cycles;
 #endif
 	DecOpR DecOp;
@@ -93,7 +93,7 @@ static uint8_t GetAMdIndirectSz(WorkR *p)
 
 /* Calculate the read cycle penalty for the given effective
    address mode and register combination. */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 static uint16_t OpEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
 	uint16_t v;
@@ -169,7 +169,7 @@ static uint16_t OpEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 }
 #endif
 
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 static uint16_t OpEADestCalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
 	uint16_t v;
@@ -476,12 +476,12 @@ static bool CheckValidAddrMode(WorkR *p,
 	return IsOk;
 }
 
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 static uint8_t LeaPeaEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
 	uint16_t v;
 
-	UnusedParam(p);
+	UNUSED(p);
 	switch (m) {
 		case 2:
 			v = 0;
@@ -598,7 +598,7 @@ static inline void DeCode0(WorkR *p)
 	if (b8(p) == 1) {
 		if (mode(p) == 1) {
 			/* MoveP 0000ddd1mm001aaa */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			switch (b76(p)) {
 				case 0:
 					p->Cycles = (16 * kCycleScale + 4 * RdAvgXtraCyc);
@@ -628,7 +628,7 @@ static inline void DeCode0(WorkR *p)
 			/* dynamic bit, Opcode = 0000ddd1ttmmmrrr */
 			if (mode(p) == 0) {
 				p->opsize = 4;
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				switch (b76(p)) {
 					case 0: /* BTst */
 						p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
@@ -653,14 +653,14 @@ static inline void DeCode0(WorkR *p)
 				SetDcoArgFields(p, true, kAMdRegB, rg9(p));
 				if (b76(p) == 0) { /* BTst */
 					if (CheckDataAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
 					}
 				} else {
 					if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles = (8 * kCycleScale
 							+ RdAvgXtraCyc + WrAvgXtraCyc);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
@@ -674,7 +674,7 @@ static inline void DeCode0(WorkR *p)
 			/* static bit 00001000ssmmmrrr */
 			if (mode(p) == 0) {
 				p->opsize = 4;
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				switch (b76(p)) {
 					case 0: /* BTst */
 						p->Cycles =
@@ -705,7 +705,7 @@ static inline void DeCode0(WorkR *p)
 					if (CheckValidAddrMode(p,
 						mode(p), reg(p), kAddrValidDataNoCn, false))
 					{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles =
 							(8 * kCycleScale + 2 * RdAvgXtraCyc);
 						p->Cycles +=
@@ -714,7 +714,7 @@ static inline void DeCode0(WorkR *p)
 					}
 				} else {
 					if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles = (12 * kCycleScale
 							+ 2 * RdAvgXtraCyc + WrAvgXtraCyc);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
@@ -724,7 +724,7 @@ static inline void DeCode0(WorkR *p)
 			}
 		} else
 		if (b76(p) == 3) {
-#if Use68020
+#if USE_68020
 			if (rg9(p) < 3) {
 				/* CHK2 or CMP2 00000ss011mmmrrr */
 				switch ((p->opcode >> 9) & 3) {
@@ -741,7 +741,7 @@ static inline void DeCode0(WorkR *p)
 				p->DecOp.y.v[0].ArgDat = p->opsize;
 					/* size */
 				if (CheckControlAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
 					p->MainClass = kIKindCHK2orCMP2;
@@ -786,7 +786,7 @@ static inline void DeCode0(WorkR *p)
 			if (CheckValidAddrMode(p,
 				mode(p), reg(p), kAddrValidDataNoCn, false))
 			{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				if (0 == mode(p)) {
 					p->Cycles = (4 == p->opsize)
 						? (14 * kCycleScale + 3 * RdAvgXtraCyc)
@@ -801,12 +801,12 @@ static inline void DeCode0(WorkR *p)
 				p->MainClass = kIKindCmpB + OpSizeOffset(p);
 			}
 		} else if (rg9(p) == 7) {
-#if Use68020
+#if USE_68020
 			/* MoveS 00001110ssmmmrrr */
 			FindOpSizeFromb76(p);
 			p->DecOp.y.v[0].ArgDat = p->opsize;
 			if (CheckAltMemAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
 				p->MainClass = kIKindMoveS;
@@ -821,7 +821,7 @@ static inline void DeCode0(WorkR *p)
 				} else {
 					switch (rg9(p)) {
 						case 0:
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles =
 								(20 * kCycleScale + 3 * RdAvgXtraCyc);
 #endif
@@ -829,7 +829,7 @@ static inline void DeCode0(WorkR *p)
 								? kIKindOrISR : kIKindOrICCR;
 							break;
 						case 1:
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles =
 								(20 * kCycleScale + 3 * RdAvgXtraCyc);
 #endif
@@ -837,7 +837,7 @@ static inline void DeCode0(WorkR *p)
 								? kIKindAndISR : kIKindAndICCR;
 							break;
 						case 5:
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles =
 								(20 * kCycleScale + 3 * RdAvgXtraCyc);
 #endif
@@ -858,7 +858,7 @@ static inline void DeCode0(WorkR *p)
 						if (CheckValidAddrMode(p, mode(p), reg(p),
 							kAddrValidDataAlt, false))
 						{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							if (0 != mode(p)) {
 								p->Cycles = (4 == p->opsize)
 									? (20 * kCycleScale
@@ -887,7 +887,7 @@ static inline void DeCode0(WorkR *p)
 						if (CheckValidAddrMode(p, mode(p), reg(p),
 							kAddrValidDataAlt, false))
 						{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							if (0 != mode(p)) {
 								p->Cycles = (4 == p->opsize)
 									? (20 * kCycleScale
@@ -916,7 +916,7 @@ static inline void DeCode0(WorkR *p)
 						if (CheckValidAddrMode(p, mode(p), reg(p),
 							kAddrValidDataAlt, false))
 						{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							if (0 != mode(p)) {
 								p->Cycles = (4 == p->opsize)
 									? (20 * kCycleScale
@@ -945,7 +945,7 @@ static inline void DeCode0(WorkR *p)
 						if (CheckValidAddrMode(p, mode(p), reg(p),
 							kAddrValidDataAlt, false))
 						{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							if (0 != mode(p)) {
 								p->Cycles = (4 == p->opsize)
 									? (20 * kCycleScale
@@ -974,7 +974,7 @@ static inline void DeCode0(WorkR *p)
 						if (CheckValidAddrMode(p, mode(p), reg(p),
 							kAddrValidDataAlt, false))
 						{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							if (0 != mode(p)) {
 								p->Cycles = (4 == p->opsize)
 									? (20 * kCycleScale
@@ -1020,7 +1020,7 @@ static inline void DeCode1(WorkR *p)
 		if (CheckValidAddrMode(p, md6(p), rg9(p),
 			kAddrValidDataAlt, false))
 		{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 			p->Cycles += OpEADestCalcCyc(p, md6(p), rg9(p));
@@ -1039,7 +1039,7 @@ static inline void DeCode2(WorkR *p)
 		if (CheckValidAddrMode(p, 1, rg9(p),
 			kAddrValidAny, false))
 		{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
@@ -1052,7 +1052,7 @@ static inline void DeCode2(WorkR *p)
 		if (CheckValidAddrMode(p, md6(p), rg9(p),
 			kAddrValidDataAlt, false))
 		{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 			p->Cycles += OpEADestCalcCyc(p, md6(p), rg9(p));
@@ -1071,7 +1071,7 @@ static inline void DeCode3(WorkR *p)
 		if (CheckValidAddrMode(p, 1, rg9(p),
 			kAddrValidAny, false))
 		{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
@@ -1084,7 +1084,7 @@ static inline void DeCode3(WorkR *p)
 		if (CheckValidAddrMode(p, md6(p), rg9(p),
 			kAddrValidDataAlt, false))
 		{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 			p->Cycles += OpEADestCalcCyc(p, md6(p), rg9(p));
@@ -1094,9 +1094,9 @@ static inline void DeCode3(WorkR *p)
 	}
 }
 
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 
-#if WantCloserCyc
+#if WANT_CLOSER_CYC
 #define MoveAvgN 0
 #else
 #define MoveAvgN 3
@@ -1106,7 +1106,7 @@ static uint16_t MoveMEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 {
 	uint16_t v;
 
-	UnusedParam(p);
+	UNUSED(p);
 	switch (m) {
 		case 2:
 		case 3:
@@ -1147,7 +1147,7 @@ static inline void DeCode4(WorkR *p)
 	if (b8(p) != 0) {
 		switch (b76(p)) {
 			case 0:
-#if Use68020
+#if USE_68020
 				/* Chk.L 0100ddd100mmmrrr */
 				p->opsize = 4;
 				if (CheckValidAddrMode(p, mode(p), reg(p),
@@ -1155,7 +1155,7 @@ static inline void DeCode4(WorkR *p)
 				if (CheckValidAddrMode(p, 0, rg9(p),
 					kAddrValidAny, true))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
 					p->MainClass = kIKindChkL;
@@ -1175,7 +1175,7 @@ static inline void DeCode4(WorkR *p)
 				if (CheckValidAddrMode(p, 0, rg9(p),
 					kAddrValidAny, true))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (10 * kCycleScale + RdAvgXtraCyc);
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
@@ -1184,7 +1184,7 @@ static inline void DeCode4(WorkR *p)
 				break;
 			case 3:
 			default: /* keep compiler happy */
-#if Use68020
+#if USE_68020
 				if ((0 == mode(p)) && (4 == rg9(p))) {
 					/* EXTB.L */
 					SetDcoArgFields(p, false,
@@ -1195,7 +1195,7 @@ static inline void DeCode4(WorkR *p)
 				{
 					/* Lea 0100aaa111mmmrrr */
 					if (CheckControlAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
 						p->Cycles +=
 							LeaPeaEACalcCyc(p, mode(p), reg(p));
@@ -1213,7 +1213,7 @@ static inline void DeCode4(WorkR *p)
 					/* NegX 01000000ssmmmrrr */
 					FindOpSizeFromb76(p);
 					if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						if (0 != mode(p)) {
 							p->Cycles = (4 == p->opsize)
 								? (12 * kCycleScale
@@ -1230,13 +1230,13 @@ static inline void DeCode4(WorkR *p)
 						p->MainClass = kIKindNegXB + OpSizeOffset(p);
 					}
 				} else {
-#if Use68020
+#if USE_68020
 /* reference seems incorrect to say not for 68000 */
 #endif
 					/* Move from SR 0100000011mmmrrr */
 					p->opsize = 2;
 					if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles =
 							(12 * kCycleScale + 2 * RdAvgXtraCyc);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
@@ -1250,7 +1250,7 @@ static inline void DeCode4(WorkR *p)
 					/* Clr 01000010ssmmmrrr */
 					FindOpSizeFromb76(p);
 					if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						if (0 != mode(p)) {
 							p->Cycles = (4 == p->opsize)
 								? (12 * kCycleScale
@@ -1267,11 +1267,11 @@ static inline void DeCode4(WorkR *p)
 						p->MainClass = kIKindClr;
 					}
 				} else {
-#if Use68020
+#if USE_68020
 					/* Move from CCR 0100001011mmmrrr */
 					p->opsize = 2;
 					if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
 						p->MainClass = kIKindMoveCCREa;
@@ -1286,7 +1286,7 @@ static inline void DeCode4(WorkR *p)
 					/* Neg 01000100ssmmmrrr */
 					FindOpSizeFromb76(p);
 					if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						if (0 != mode(p)) {
 							p->Cycles = (4 == p->opsize)
 								? (12 * kCycleScale
@@ -1306,7 +1306,7 @@ static inline void DeCode4(WorkR *p)
 					/* Move to CCR 0100010011mmmrrr */
 					p->opsize = 2;
 					if (CheckDataAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles = (12 * kCycleScale + RdAvgXtraCyc);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
@@ -1319,7 +1319,7 @@ static inline void DeCode4(WorkR *p)
 					/* Not 01000110ssmmmrrr */
 					FindOpSizeFromb76(p);
 					if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						if (0 != mode(p)) {
 							p->Cycles = (4 == p->opsize)
 								? (12 * kCycleScale
@@ -1339,7 +1339,7 @@ static inline void DeCode4(WorkR *p)
 					/* Move to SR 0100011011mmmrrr */
 					p->opsize = 2;
 					if (CheckDataAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						if (0 != mode(p)) {
 							p->Cycles = (8 * kCycleScale
 								+ RdAvgXtraCyc + WrAvgXtraCyc);
@@ -1356,7 +1356,7 @@ static inline void DeCode4(WorkR *p)
 			case 4:
 				switch (b76(p)) {
 					case 0:
-#if Use68020
+#if USE_68020
 						if (mode(p) == 1) {
 							/* Link.L 0100100000001rrr */
 							SetDcoArgFields(p, false,
@@ -1368,7 +1368,7 @@ static inline void DeCode4(WorkR *p)
 							/* Nbcd 0100100000mmmrrr */
 							p->opsize = 1;
 							if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 								if (0 != mode(p)) {
 									p->Cycles = (8 * kCycleScale
 										+ RdAvgXtraCyc + WrAvgXtraCyc);
@@ -1386,7 +1386,7 @@ static inline void DeCode4(WorkR *p)
 					case 1:
 						if (mode(p) == 0) {
 							/* Swap 0100100001000rrr */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles =
 								(4 * kCycleScale + RdAvgXtraCyc);
 #endif
@@ -1394,7 +1394,7 @@ static inline void DeCode4(WorkR *p)
 							SetDcoArgFields(p, false,
 								kAMdRegL, reg(p));
 						} else
-#if Use68020
+#if USE_68020
 						if (mode(p) == 1) {
 							p->MainClass = kIKindBkpt;
 						} else
@@ -1402,7 +1402,7 @@ static inline void DeCode4(WorkR *p)
 						{
 							/* PEA 0100100001mmmrrr */
 							if (CheckControlAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 								p->Cycles = (12 * kCycleScale
 										+ RdAvgXtraCyc
 										+ 2 * WrAvgXtraCyc);
@@ -1416,7 +1416,7 @@ static inline void DeCode4(WorkR *p)
 					case 2:
 						if (mode(p) == 0) {
 							/* EXT.W */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles =
 								(4 * kCycleScale + RdAvgXtraCyc);
 #endif
@@ -1427,7 +1427,7 @@ static inline void DeCode4(WorkR *p)
 							/* MOVEM reg to mem 01001d001ssmmmrrr */
 							p->opsize = 2;
 							if (mode(p) == 4) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 								p->Cycles =
 									MoveMEACalcCyc(p, mode(p), reg(p));
 								p->Cycles += MoveAvgN * 4 * kCycleScale
@@ -1438,7 +1438,7 @@ static inline void DeCode4(WorkR *p)
 								p->MainClass = kIKindMOVEMRmMW;
 							} else {
 								if (CheckControlAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 									p->Cycles = MoveMEACalcCyc(p,
 										mode(p), reg(p));
 									p->Cycles +=
@@ -1454,7 +1454,7 @@ static inline void DeCode4(WorkR *p)
 					default: /* keep compiler happy */
 						if (mode(p) == 0) {
 							/* EXT.L */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles =
 								(4 * kCycleScale + RdAvgXtraCyc);
 #endif
@@ -1463,7 +1463,7 @@ static inline void DeCode4(WorkR *p)
 							p->MainClass = kIKindEXTL;
 						} else {
 							/* MOVEM reg to mem 01001d001ssmmmrrr */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles = MoveMEACalcCyc(p,
 								mode(p), reg(p));
 							p->Cycles += MoveAvgN * 8 * kCycleScale
@@ -1492,7 +1492,7 @@ static inline void DeCode4(WorkR *p)
 						/* Tas 0100101011mmmrrr */
 						p->opsize = 1;
 						if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							if (0 != mode(p)) {
 								p->Cycles = (14 * kCycleScale
 									+ 2 * RdAvgXtraCyc + WrAvgXtraCyc);
@@ -1511,7 +1511,7 @@ static inline void DeCode4(WorkR *p)
 					FindOpSizeFromb76(p);
 					if (b76(p) == 0) {
 						if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles =
 								(4 * kCycleScale + RdAvgXtraCyc);
 							p->Cycles +=
@@ -1521,7 +1521,7 @@ static inline void DeCode4(WorkR *p)
 						}
 					} else {
 						if (IsValidAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles =
 								(4 * kCycleScale + RdAvgXtraCyc);
 							p->Cycles +=
@@ -1537,7 +1537,7 @@ static inline void DeCode4(WorkR *p)
 					/* MOVEM mem to reg 010011001smmmrrr */
 					p->opsize = 2 * b76(p) - 2;
 					if (mode(p) == 3) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles = 4 * kCycleScale + RdAvgXtraCyc;
 						p->Cycles += MoveMEACalcCyc(p, mode(p), reg(p));
 						if (4 == p->opsize) {
@@ -1557,7 +1557,7 @@ static inline void DeCode4(WorkR *p)
 						}
 					} else {
 						if (CheckControlAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles = 4 * kCycleScale + RdAvgXtraCyc;
 							p->Cycles += MoveMEACalcCyc(p,
 								mode(p), reg(p));
@@ -1577,7 +1577,7 @@ static inline void DeCode4(WorkR *p)
 						}
 					}
 				} else {
-#if Use68020
+#if USE_68020
 					p->opsize = 4;
 
 					if (CheckDataAddrMode(p)) {
@@ -1607,7 +1607,7 @@ static inline void DeCode4(WorkR *p)
 							case 0:
 							case 1:
 								/* Trap 010011100100vvvv */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 								p->Cycles = (34 * kCycleScale
 									+ 4 * RdAvgXtraCyc
 									+ 3 * WrAvgXtraCyc);
@@ -1618,7 +1618,7 @@ static inline void DeCode4(WorkR *p)
 								break;
 							case 2:
 								/* Link */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 								p->Cycles = (16 * kCycleScale
 									+ 2 * RdAvgXtraCyc
 									+ 2 * WrAvgXtraCyc);
@@ -1633,7 +1633,7 @@ static inline void DeCode4(WorkR *p)
 								break;
 							case 3:
 								/* Unlk */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 								p->Cycles = (12 * kCycleScale
 									+ 3 * RdAvgXtraCyc);
 #endif
@@ -1647,7 +1647,7 @@ static inline void DeCode4(WorkR *p)
 								break;
 							case 4:
 								/* MOVE USP 0100111001100aaa */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 								p->Cycles =
 									(4 * kCycleScale + RdAvgXtraCyc);
 #endif
@@ -1657,7 +1657,7 @@ static inline void DeCode4(WorkR *p)
 								break;
 							case 5:
 								/* MOVE USP 0100111001101aaa */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 								p->Cycles =
 									(4 * kCycleScale + RdAvgXtraCyc);
 #endif
@@ -1669,7 +1669,7 @@ static inline void DeCode4(WorkR *p)
 								switch (reg(p)) {
 									case 0:
 										/* Reset 0100111001110000 */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 										p->Cycles = (132 * kCycleScale
 											+ RdAvgXtraCyc);
 #endif
@@ -1677,7 +1677,7 @@ static inline void DeCode4(WorkR *p)
 										break;
 									case 1:
 										/* Nop = 0100111001110001 */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 										p->Cycles = (4 * kCycleScale
 											+ RdAvgXtraCyc);
 #endif
@@ -1685,14 +1685,14 @@ static inline void DeCode4(WorkR *p)
 										break;
 									case 2:
 										/* Stop 0100111001110010 */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 										p->Cycles = (4 * kCycleScale);
 #endif
 										p->MainClass = kIKindStop;
 										break;
 									case 3:
 										/* Rte 0100111001110011 */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 										p->Cycles = (20 * kCycleScale
 											+ 5 * RdAvgXtraCyc);
 #endif
@@ -1700,7 +1700,7 @@ static inline void DeCode4(WorkR *p)
 										break;
 									case 4:
 										/* Rtd 0100111001110100 */
-#if Use68020
+#if USE_68020
 										p->MainClass = kIKindRtd;
 #else
 										p->MainClass = kIKindIllegal;
@@ -1708,7 +1708,7 @@ static inline void DeCode4(WorkR *p)
 										break;
 									case 5:
 										/* Rts 0100111001110101 */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 										p->Cycles = (16 * kCycleScale
 											+ 4 * RdAvgXtraCyc);
 #endif
@@ -1716,7 +1716,7 @@ static inline void DeCode4(WorkR *p)
 										break;
 									case 6:
 										/* TrapV 0100111001110110 */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 										p->Cycles = (4 * kCycleScale
 											+ RdAvgXtraCyc);
 #endif
@@ -1725,7 +1725,7 @@ static inline void DeCode4(WorkR *p)
 									case 7:
 									default: /* keep compiler happy */
 										/* Rtr 0100111001110111 */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 										p->Cycles = (20 * kCycleScale
 											+ 2 * RdAvgXtraCyc);
 #endif
@@ -1735,7 +1735,7 @@ static inline void DeCode4(WorkR *p)
 								break;
 							case 7:
 							default: /* keep compiler happy */
-#if Use68020
+#if USE_68020
 								/* MOVEC 010011100111101m */
 								switch (reg(p)) {
 									case 2:
@@ -1757,7 +1757,7 @@ static inline void DeCode4(WorkR *p)
 					case 2:
 						/* Jsr 0100111010mmmrrr */
 						if (CheckControlAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							switch (mode(p)) {
 								case 2:
 									p->Cycles = (16 * kCycleScale
@@ -1814,7 +1814,7 @@ static inline void DeCode4(WorkR *p)
 					default: /* keep compiler happy */
 						/* JMP 0100111011mmmrrr */
 						if (CheckControlAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							switch (mode(p)) {
 								case 2:
 									p->Cycles = (8 * kCycleScale
@@ -1872,8 +1872,8 @@ static inline void DeCode5(WorkR *p)
 		p->DecOp.y.v[0].ArgDat = (p->opcode >> 8) & 15;
 		if (mode(p) == 1) {
 			/* DBcc 0101cccc11001ddd */
-#if WantCycByPriOp
-#if WantCloserCyc
+#if WANT_CYC_BY_PRI_OP
+#if WANT_CLOSER_CYC
 			p->Cycles = 0;
 #else
 			p->Cycles = (11 * kCycleScale + 2 * RdAvgXtraCyc);
@@ -1891,7 +1891,7 @@ static inline void DeCode5(WorkR *p)
 				p->MainClass = kIKindDBcc;
 			}
 		} else {
-#if Use68020
+#if USE_68020
 			if ((mode(p) == 7) && (reg(p) >= 2)) {
 				/* TRAPcc 0101cccc11111sss */
 				p->DecOp.y.v[1].ArgDat = reg(p);
@@ -1902,12 +1902,12 @@ static inline void DeCode5(WorkR *p)
 				p->opsize = 1;
 				/* Scc 0101cccc11mmmrrr */
 				if (CheckDataAltAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					if (0 != mode(p)) {
 						p->Cycles = (8 * kCycleScale
 							+ RdAvgXtraCyc + WrAvgXtraCyc);
 					} else {
-#if WantCloserCyc
+#if WANT_CLOSER_CYC
 						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
 #else
 						p->Cycles = (5 * kCycleScale + RdAvgXtraCyc);
@@ -1933,7 +1933,7 @@ static inline void DeCode5(WorkR *p)
 					/* always long, regardless of opsize */
 				if (b8(p) == 0) {
 					/* AddQA 0101nnn0ss001rrr */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (4 == p->opsize)
 						? (8 * kCycleScale + RdAvgXtraCyc)
 						: (4 * kCycleScale + RdAvgXtraCyc);
@@ -1941,7 +1941,7 @@ static inline void DeCode5(WorkR *p)
 					p->MainClass = kIKindAddQA;
 				} else {
 					/* SubQA 0101nnn1ss001rrr */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
 #endif
 					p->MainClass = kIKindSubQA;
@@ -1954,7 +1954,7 @@ static inline void DeCode5(WorkR *p)
 			if (CheckValidAddrMode(p,
 				mode(p), reg(p), kAddrValidDataAlt, false))
 			{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				if (0 != mode(p)) {
 					p->Cycles = (4 == p->opsize)
 						? (12 * kCycleScale
@@ -1986,14 +1986,14 @@ static inline void DeCode6(WorkR *p)
 
 	if (cond == 1) {
 		/* Bsr 01100001nnnnnnnn */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 		p->Cycles = (18 * kCycleScale
 			+ 2 * RdAvgXtraCyc + 2 * WrAvgXtraCyc);
 #endif
 		if (0 == (p->opcode & 255)) {
 			p->MainClass = kIKindBsrW;
 		} else
-#if Use68020
+#if USE_68020
 		if (255 == (p->opcode & 255)) {
 			p->MainClass = kIKindBsrL;
 		} else
@@ -2004,13 +2004,13 @@ static inline void DeCode6(WorkR *p)
 		}
 	} else if (cond == 0) {
 		/* Bra 01100000nnnnnnnn */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 		p->Cycles = (10 * kCycleScale + 2 * RdAvgXtraCyc);
 #endif
 		if (0 == (p->opcode & 255)) {
 			p->MainClass = kIKindBraW;
 		} else
-#if Use68020
+#if USE_68020
 		if (255 == (p->opcode & 255)) {
 			p->MainClass = kIKindBraL;
 		} else
@@ -2023,8 +2023,8 @@ static inline void DeCode6(WorkR *p)
 		/* Bcc 0110ccccnnnnnnnn */
 		p->DecOp.y.v[0].ArgDat = cond;
 		if (0 == (p->opcode & 255)) {
-#if WantCycByPriOp
-#if WantCloserCyc
+#if WANT_CYC_BY_PRI_OP
+#if WANT_CLOSER_CYC
 			p->Cycles = 0;
 #else
 			p->Cycles = (11 * kCycleScale + 2 * RdAvgXtraCyc);
@@ -2033,14 +2033,14 @@ static inline void DeCode6(WorkR *p)
 #endif
 			p->MainClass = kIKindBccW;
 		} else
-#if Use68020
+#if USE_68020
 		if (255 == (p->opcode & 255)) {
 			p->MainClass = kIKindBccL;
 		} else
 #endif
 		{
-#if WantCycByPriOp
-#if WantCloserCyc
+#if WANT_CYC_BY_PRI_OP
+#if WANT_CLOSER_CYC
 			p->Cycles = 0;
 #else
 			p->Cycles = (9 * kCycleScale
@@ -2058,7 +2058,7 @@ static inline void DeCode7(WorkR *p)
 {
 	if (b8(p) == 0) {
 		p->opsize = 4;
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 		p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
 #endif
 		p->MainClass = kIKindMoveQ;
@@ -2080,10 +2080,10 @@ static inline void DeCode8(WorkR *p)
 		{
 			if (b8(p) == 0) {
 				/* DivU 1000ddd011mmmrrr */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				p->Cycles = RdAvgXtraCyc;
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
-#if ! WantCloserCyc
+#if ! WANT_CLOSER_CYC
 				p->Cycles += 133 * kCycleScale;
 					/*
 						worse case 140, less than ten percent
@@ -2094,10 +2094,10 @@ static inline void DeCode8(WorkR *p)
 				p->MainClass = kIKindDivU;
 			} else {
 				/* DivS 1000ddd111mmmrrr */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				p->Cycles = RdAvgXtraCyc;
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
-#if ! WantCloserCyc
+#if ! WANT_CLOSER_CYC
 				p->Cycles += 150 * kCycleScale;
 					/*
 						worse case 158, less than ten percent different
@@ -2117,7 +2117,7 @@ static inline void DeCode8(WorkR *p)
 			if (CheckValidAddrMode(p, 0, rg9(p),
 				kAddrValidAny, false))
 			{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				if (4 == p->opsize) {
 					if ((mode(p) < 2)
 						|| ((7 == mode(p)) && (reg(p) == 4)))
@@ -2138,7 +2138,7 @@ static inline void DeCode8(WorkR *p)
 				switch (b76(p)) {
 					case 0:
 						/* SBCD 1000xxx10000mxxx */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						if (0 != mode(p)) {
 							p->Cycles = (18 * kCycleScale
 								+ 3 * RdAvgXtraCyc + WrAvgXtraCyc);
@@ -2166,7 +2166,7 @@ static inline void DeCode8(WorkR *p)
 							}
 						}
 						break;
-#if Use68020
+#if USE_68020
 					case 1:
 						/* PACK 1000rrr10100mrrr */
 						if (mode(p) == 0) {
@@ -2236,7 +2236,7 @@ static inline void DeCode8(WorkR *p)
 				if (CheckValidAddrMode(p, mode(p), reg(p),
 					kAddrValidAltMem, false))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (4 == p->opsize)
 						? (12 * kCycleScale
 							+ RdAvgXtraCyc + 2 * WrAvgXtraCyc)
@@ -2261,7 +2261,7 @@ static inline void DeCode9(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p),
 			kAddrValidAny, true))
 		{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			if (4 == p->opsize) {
 				if ((mode(p) < 2) || ((7 == mode(p)) && (reg(p) == 4)))
 				{
@@ -2285,7 +2285,7 @@ static inline void DeCode9(WorkR *p)
 			if (CheckValidAddrMode(p, 0, rg9(p),
 				kAddrValidAny, false))
 			{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				if (4 == p->opsize) {
 					if ((mode(p) < 2)
 						|| ((7 == mode(p)) && (reg(p) == 4)))
@@ -2311,7 +2311,7 @@ static inline void DeCode9(WorkR *p)
 				if (CheckValidAddrMode(p, 0, rg9(p),
 					kAddrValidAny, false))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (4 == p->opsize)
 						? (8 * kCycleScale + RdAvgXtraCyc)
 						: (4 * kCycleScale + RdAvgXtraCyc);
@@ -2327,7 +2327,7 @@ static inline void DeCode9(WorkR *p)
 				if (CheckValidAddrMode(p, 4, rg9(p),
 					kAddrValidAny, false))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (4 == p->opsize)
 						? (30 * kCycleScale
 							+ 5 * RdAvgXtraCyc + 2 * WrAvgXtraCyc)
@@ -2344,7 +2344,7 @@ static inline void DeCode9(WorkR *p)
 				if (CheckValidAddrMode(p, mode(p),
 					reg(p), kAddrValidAltMem, false))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (4 == p->opsize)
 						? (12 * kCycleScale
 							+ RdAvgXtraCyc + 2 * WrAvgXtraCyc)
@@ -2361,7 +2361,7 @@ static inline void DeCode9(WorkR *p)
 
 static inline void DeCodeA(WorkR *p)
 {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 	p->Cycles = (34 * kCycleScale
 		+ 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 #endif
@@ -2378,7 +2378,7 @@ static inline void DeCodeB(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p),
 			kAddrValidAny, true))
 		{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 #endif
@@ -2393,7 +2393,7 @@ static inline void DeCodeB(WorkR *p)
 			if (CheckValidAddrMode(p, 3, rg9(p),
 				kAddrValidAny, false))
 			{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				p->Cycles = (4 == p->opsize)
 					? (20 * kCycleScale + 5 * RdAvgXtraCyc)
 					: (12 * kCycleScale + 3 * RdAvgXtraCyc);
@@ -2408,7 +2408,7 @@ static inline void DeCodeB(WorkR *p)
 			if (CheckValidAddrMode(p, mode(p), reg(p),
 				kAddrValidDataAlt, false))
 			{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				if (0 != mode(p)) {
 					p->Cycles = (4 == p->opsize)
 						? (12 * kCycleScale
@@ -2433,7 +2433,7 @@ static inline void DeCodeB(WorkR *p)
 		if (CheckValidAddrMode(p, 0, rg9(p),
 			kAddrValidAny, false))
 		{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			p->Cycles = (4 == p->opsize)
 				? (6 * kCycleScale + RdAvgXtraCyc)
 				: (4 * kCycleScale + RdAvgXtraCyc);
@@ -2453,8 +2453,8 @@ static inline void DeCodeC(WorkR *p)
 		if (CheckValidAddrMode(p, 0, rg9(p),
 			kAddrValidAny, false))
 		{
-#if WantCycByPriOp
-#if WantCloserCyc
+#if WANT_CYC_BY_PRI_OP
+#if WANT_CLOSER_CYC
 			p->Cycles = (38 * kCycleScale + RdAvgXtraCyc);
 #else
 			p->Cycles = (54 * kCycleScale + RdAvgXtraCyc);
@@ -2479,7 +2479,7 @@ static inline void DeCodeC(WorkR *p)
 			if (CheckValidAddrMode(p, 0, rg9(p),
 				kAddrValidAny, false))
 			{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				if (4 == p->opsize) {
 					if ((mode(p) < 2)
 						|| ((7 == mode(p)) && (reg(p) == 4)))
@@ -2500,7 +2500,7 @@ static inline void DeCodeC(WorkR *p)
 				switch (b76(p)) {
 					case 0:
 						/* ABCD 1100ddd10000mrrr */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						if (0 != mode(p)) {
 							p->Cycles = (18 * kCycleScale
 								+ 3 * RdAvgXtraCyc + WrAvgXtraCyc);
@@ -2530,7 +2530,7 @@ static inline void DeCodeC(WorkR *p)
 						break;
 					case 1:
 						/* Exg 1100ddd10100trrr */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 						p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
 #endif
 						p->opsize = 4;
@@ -2558,7 +2558,7 @@ static inline void DeCodeC(WorkR *p)
 							p->MainClass = kIKindIllegal;
 						} else {
 							/* Exg 1100ddd110001rrr */
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 							p->Cycles = (6 * kCycleScale
 								+ RdAvgXtraCyc);
 #endif
@@ -2580,7 +2580,7 @@ static inline void DeCodeC(WorkR *p)
 				if (CheckValidAddrMode(p, mode(p), reg(p),
 					kAddrValidAltMem, false))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (4 == p->opsize)
 						? (12 * kCycleScale
 							+ RdAvgXtraCyc + 2 * WrAvgXtraCyc)
@@ -2605,7 +2605,7 @@ static inline void DeCodeD(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p),
 			kAddrValidAny, true))
 		{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 			if (4 == p->opsize) {
 				if ((mode(p) < 2) || ((7 == mode(p)) && (reg(p) == 4)))
 				{
@@ -2629,7 +2629,7 @@ static inline void DeCodeD(WorkR *p)
 			if (CheckValidAddrMode(p, 0, rg9(p),
 				kAddrValidAny, false))
 			{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				if (4 == p->opsize) {
 					if ((mode(p) < 2)
 						|| ((7 == mode(p)) && (reg(p) == 4)))
@@ -2655,7 +2655,7 @@ static inline void DeCodeD(WorkR *p)
 				if (CheckValidAddrMode(p, 0, rg9(p),
 					kAddrValidAny, false))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (4 == p->opsize)
 						? (8 * kCycleScale + RdAvgXtraCyc)
 						: (4 * kCycleScale + RdAvgXtraCyc);
@@ -2670,7 +2670,7 @@ static inline void DeCodeD(WorkR *p)
 				if (CheckValidAddrMode(p, 4, rg9(p),
 					kAddrValidAny, false))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (4 == p->opsize)
 						? (30 * kCycleScale
 							+ 5 * RdAvgXtraCyc + 2 * WrAvgXtraCyc)
@@ -2687,7 +2687,7 @@ static inline void DeCodeD(WorkR *p)
 				if (CheckValidAddrMode(p, mode(p), reg(p),
 					kAddrValidAltMem, false))
 				{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 					p->Cycles = (4 == p->opsize)
 						? (12 * kCycleScale
 							+ RdAvgXtraCyc + 2 * WrAvgXtraCyc)
@@ -2718,7 +2718,7 @@ static inline void DeCodeE(WorkR *p)
 {
 	if (b76(p) == 3) {
 		if ((p->opcode & 0x0800) != 0) {
-#if Use68020
+#if USE_68020
 			/* 11101???11mmmrrr */
 			p->DecOp.y.v[0].AMd = mode(p);
 			p->DecOp.y.v[0].ArgDat = (p->opcode >> 8) & 7;
@@ -2749,9 +2749,9 @@ static inline void DeCodeE(WorkR *p)
 			p->opsize = 2;
 			/* 11100ttd11mmmddd */
 			if (CheckAltMemAddrMode(p)) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				p->Cycles = (6 * kCycleScale
-#if ! WantCloserCyc
+#if ! WANT_CLOSER_CYC
 					+ 2 * kCycleScale
 #endif
 					+ RdAvgXtraCyc + WrAvgXtraCyc);
@@ -2768,11 +2768,11 @@ static inline void DeCodeE(WorkR *p)
 			if (CheckValidAddrMode(p, 0, reg(p),
 				kAddrValidAny, false))
 			{
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				p->Cycles = ((4 == p->opsize)
 						? (8 * kCycleScale + RdAvgXtraCyc)
 						: (6 * kCycleScale + RdAvgXtraCyc))
-#if ! WantCloserCyc
+#if ! WANT_CLOSER_CYC
 					+ (octdat(rg9(p)) * (2 * kCycleScale))
 #endif
 					;
@@ -2787,8 +2787,8 @@ static inline void DeCodeE(WorkR *p)
 			if (CheckValidAddrMode(p, 0, reg(p),
 				kAddrValidAny, false))
 			{
-#if WantCycByPriOp
-#if WantCloserCyc
+#if WANT_CYC_BY_PRI_OP
+#if WANT_CLOSER_CYC
 				p->Cycles = ((4 == p->opsize)
 						? (8 * kCycleScale + RdAvgXtraCyc)
 						: (6 * kCycleScale + RdAvgXtraCyc));
@@ -2810,20 +2810,20 @@ static inline void DeCodeE(WorkR *p)
 
 static inline void DeCodeF(WorkR *p)
 {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 	p->Cycles =
 		(34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 #endif
 	p->DecOp.y.v[0].AMd =    (p->opcode >> 8) & 0xFF;
 	p->DecOp.y.v[0].ArgDat = (p->opcode     ) & 0xFF;
-#if EmMMU || EmFPU
+#if EM_MMU || EM_FPU
 	switch (rg9(p)) {
-#if EmMMU
+#if EM_MMU
 		case 0:
 			p->MainClass = kIKindMMU;
 			break;
 #endif
-#if EmFPU
+#if EM_FPU
 		case 1:
 			switch (md6(p)) {
 				case 0:
@@ -2922,7 +2922,7 @@ static void DeCodeOneOp(WorkR *p)
 	}
 
 	if (kIKindIllegal == p->MainClass) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 		p->Cycles = (34 * kCycleScale
 			+ 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 #endif
@@ -2933,7 +2933,7 @@ static void DeCodeOneOp(WorkR *p)
 	}
 
 	SetDcoMainClas(&(p->DecOp), p->MainClass);
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 	SetDcoCycles(&(p->DecOp), p->Cycles);
 #else
 	SetDcoCycles(&(p->DecOp), kMyAvgCycPerInstr);
@@ -3008,7 +3008,7 @@ void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 		r.DecOp.y.v[0].ArgDat = 0;
 		r.DecOp.y.v[1].AMd = 0;
 		r.DecOp.y.v[1].ArgDat = 0;
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 		r.Cycles = kMyAvgCycPerInstr;
 #endif
 
@@ -3019,7 +3019,7 @@ void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 
 	/* Runtime fixup: disable instruction kinds not supported by the
 	   configured CPU. The table was built with all features enabled
-	   (Use68020=1, EmFPU=1, EmMMU=1). Now patch out unsupported ones.
+	   (USE_68020=1, EM_FPU=1, EM_MMU=1). Now patch out unsupported ones.
 
 	   68020-only instructions → kIKindIllegal (Exception 4).
 	   Coprocessor (FPU/MMU) instructions → kIKindFdflt (Exception 0xB,
@@ -3034,7 +3034,7 @@ void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 	   kind originally, otherwise timing diverges from a build where the
 	   instruction was never decoded at all. */
 	if (config) {
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 		const uint16_t illegalCycles = (uint16_t)(34 * kCycleScale
 			+ 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 		/* Must match DeCodeF's cycle cost so that a runtime-disabled
@@ -3047,19 +3047,19 @@ void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 			uint8_t kind = p[i].x.MainClas;
 			if (!config->use68020 && is68020OnlyKind(kind)) {
 				SetDcoMainClas(&p[i], kIKindIllegal);
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				SetDcoCycles(&p[i], illegalCycles);
 #endif
 			}
 			if (!config->emFPU && isFPUKind(kind)) {
 				SetDcoMainClas(&p[i], kIKindFdflt);
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				SetDcoCycles(&p[i], fdfltCycles);
 #endif
 			}
 			if (!config->emMMU && isMMUKind(kind)) {
 				SetDcoMainClas(&p[i], kIKindFdflt);
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 				SetDcoCycles(&p[i], fdfltCycles);
 #endif
 			}

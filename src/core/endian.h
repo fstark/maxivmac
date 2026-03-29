@@ -12,12 +12,12 @@
 
 #define do_get_mem_byte(a) ((uint8_t)*((uint8_t *)(a)))
 
-#if BigEndianUnaligned
+#if BIG_ENDIAN_UNALIGNED
 #define do_get_mem_word(a) ((uint16_t)*((uint16_t *)(a)))
 #else
 static inline uint16_t do_get_mem_word(uint8_t * a)
 {
-#if LittleEndianUnaligned
+#if LITTLE_ENDIAN_UNALIGNED
 	uint16_t b = (*((uint16_t *)(a)));
 
 	return ((b & 0x00FF) << 8) | ((b >> 8) & 0x00FF);
@@ -27,14 +27,14 @@ static inline uint16_t do_get_mem_word(uint8_t * a)
 }
 #endif
 
-#if BigEndianUnaligned
+#if BIG_ENDIAN_UNALIGNED
 #define do_get_mem_long(a) ((uint32_t)*((uint32_t *)(a)))
-#elif HaveMySwapUi5r && LittleEndianUnaligned
+#elif HAVE_SWAP_UI5R && LITTLE_ENDIAN_UNALIGNED
 #define do_get_mem_long(a) (MySwapUi5r((uint32_t)*((uint32_t *)(a))))
 #else
 static inline uint32_t do_get_mem_long(uint8_t * a)
 {
-#if LittleEndianUnaligned
+#if LITTLE_ENDIAN_UNALIGNED
 	uint32_t b = (*((uint32_t *)(a)));
 	uint16_t b1 = b;
 	uint16_t b2 = b >> 16;
@@ -55,12 +55,12 @@ static inline uint32_t do_get_mem_long(uint8_t * a)
 
 #define do_put_mem_byte(a, v) ((*((uint8_t *)(a))) = (v))
 
-#if BigEndianUnaligned
+#if BIG_ENDIAN_UNALIGNED
 #define do_put_mem_word(a, v) ((*((uint16_t *)(a))) = (v))
 #else
 static inline void do_put_mem_word(uint8_t * a, uint16_t v)
 {
-#if LittleEndianUnaligned
+#if LITTLE_ENDIAN_UNALIGNED
 	uint16_t b = ((v & 0x00FF) << 8) | ((v >> 8) & 0x00FF);
 
 	*(uint16_t *)a = b;
@@ -71,14 +71,14 @@ static inline void do_put_mem_word(uint8_t * a, uint16_t v)
 }
 #endif
 
-#if BigEndianUnaligned
+#if BIG_ENDIAN_UNALIGNED
 #define do_put_mem_long(a, v) ((*((uint32_t *)(a))) = (v))
-#elif HaveMySwapUi5r && LittleEndianUnaligned
+#elif HAVE_SWAP_UI5R && LITTLE_ENDIAN_UNALIGNED
 #define do_put_mem_long(a, v) ((*((uint32_t *)(a))) = MySwapUi5r(v))
 #else
 static inline void do_put_mem_long(uint8_t * a, uint32_t v)
 {
-#if LittleEndianUnaligned
+#if LITTLE_ENDIAN_UNALIGNED
 	uint16_t b1 = v;
 	uint16_t b2 = v >> 16;
 	uint16_t c1 = ((b1 & 0x00FF) << 8) | ((b1 >> 8) & 0x00FF);

@@ -848,7 +848,7 @@ static uint8_t SCC_GetRR1(int chan)
 
 	uint8_t value;
 #if ! EmLocalTalk
-	UnusedParam(chan);
+	UNUSED(chan);
 #endif
 
 	value = (1 << 2) | (1 << 1)
@@ -924,7 +924,7 @@ static uint8_t SCC_GetRR3(int chan)
 {
 	uint8_t value = 0;
 
-	UnusedParam(chan);
+	UNUSED(chan);
 	ReportAbnormalID(AbnormalID::kSCC_RR_3, "RR 3");
 
 
@@ -970,7 +970,7 @@ static uint8_t SCC_GetRR10(int chan)
 	/* happens on boot with appletalk on */
 
 	uint8_t value = 0;
-	UnusedParam(chan);
+	UNUSED(chan);
 
 
 	return value;
@@ -981,7 +981,7 @@ static uint8_t SCC_GetRR12(int chan)
 	uint8_t value = 0;
 
 #if ! SCC_TrackMore
-	UnusedParam(chan);
+	UNUSED(chan);
 #endif
 	ReportAbnormalID(AbnormalID::kSCC_RR_12, "RR 12");
 
@@ -997,7 +997,7 @@ static uint8_t SCC_GetRR13(int chan)
 	uint8_t value = 0;
 
 #if ! SCC_TrackMore
-	UnusedParam(chan);
+	UNUSED(chan);
 #endif
 	ReportAbnormalID(AbnormalID::kSCC_RR_13, "RR 13");
 
@@ -1012,7 +1012,7 @@ static uint8_t SCC_GetRR15(int chan)
 {
 	uint8_t value = 0;
 
-	UnusedParam(chan);
+	UNUSED(chan);
 	ReportAbnormalID(AbnormalID::kSCC_RR_15, "RR 15");
 
 
@@ -1290,7 +1290,7 @@ static void SCC_PutWR2(uint8_t Data, int chan)
 	/* happens on boot always */
 
 #if ! SCC_dolog
-	UnusedParam(chan);
+	UNUSED(chan);
 #endif
 
 	if (s_scc.InterruptVector != Data) {
@@ -1472,8 +1472,8 @@ static void SCC_PutWR4(uint8_t Data, int chan)
 /* "Transmit/Receive miscellaneous parameters and modes" */
 {
 #if ! (EmLocalTalk || SCC_TrackMore)
-	UnusedParam(Data);
-	UnusedParam(chan);
+	UNUSED(Data);
+	UNUSED(chan);
 #endif
 
 #if SCC_TrackMore
@@ -1737,10 +1737,10 @@ static void SCC_PutWR6(uint8_t Data, int chan)
 	/* happens on boot with appletalk on */
 
 #if ! (EmLocalTalk || SCC_dolog)
-	UnusedParam(Data);
+	UNUSED(Data);
 #endif
 #if ! SCC_dolog
-	UnusedParam(chan);
+	UNUSED(chan);
 #endif
 
 #if SCC_dolog
@@ -1763,8 +1763,8 @@ static void SCC_PutWR7(uint8_t Data, int chan)
 	/* happens on boot with appletalk on */
 
 #if ! SCC_TrackMore
-	UnusedParam(Data);
-	UnusedParam(chan);
+	UNUSED(Data);
+	UNUSED(chan);
 #endif
 
 #if SCC_TrackMore
@@ -1786,7 +1786,7 @@ static void SCC_PutWR8(uint8_t Data, int chan)
 	/* happens in Print to ImageWriter */
 
 #if ! (EmLocalTalk || SCC_dolog)
-	UnusedParam(Data);
+	UNUSED(Data);
 #endif
 
 #if SCC_dolog
@@ -1828,7 +1828,7 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 {
 	/* Only 1 WR9 in the SCC */
 
-	UnusedParam(chan);
+	UNUSED(chan);
 
 	if ((Data & (1 << 0)) != 0) { /* VIS */
 		ReportAbnormalID(AbnormalID::kSCC_VIS, "VIS");
@@ -1912,7 +1912,7 @@ static void SCC_PutWR10(uint8_t Data, int chan)
 	/* happens in Print to ImageWriter */
 
 #if ! SCC_TrackMore
-	UnusedParam(chan);
+	UNUSED(chan);
 #endif
 
 	if ((Data & (1 << 0)) != 0) { /* 6 bit/8 bit sync */
@@ -1988,7 +1988,7 @@ static void SCC_PutWR11(uint8_t Data, int chan)
 	/* happens in MacCheck */
 
 #if ! SCC_TrackMore
-	UnusedParam(chan);
+	UNUSED(chan);
 #endif
 
 #if SCC_TrackMore
@@ -2114,8 +2114,8 @@ static void SCC_PutWR12(uint8_t Data, int chan)
 	/* happens in Print to ImageWriter */
 
 #if ! SCC_TrackMore
-	UnusedParam(Data);
-	UnusedParam(chan);
+	UNUSED(Data);
+	UNUSED(chan);
 #endif
 
 #if SCC_TrackMore /* don't care about Baud */
@@ -2140,8 +2140,8 @@ static void SCC_PutWR13(uint8_t Data, int chan)
 	/* happens in Print to ImageWriter */
 
 #if ! SCC_TrackMore
-	UnusedParam(Data);
-	UnusedParam(chan);
+	UNUSED(Data);
+	UNUSED(chan);
 #endif
 
 #if SCC_TrackMore /* don't care about Baud */
@@ -2165,7 +2165,7 @@ static void SCC_PutWR14(uint8_t Data, int chan)
 	/* happens on boot with appletalk on */
 
 #if ! (SCC_TrackMore || SCC_dolog)
-	UnusedParam(chan);
+	UNUSED(chan);
 #endif
 
 #if SCC_TrackMore
@@ -2249,7 +2249,7 @@ static void SCC_PutWR15(uint8_t Data, int chan)
 	/* happens on boot always */
 
 #if ! SCC_TrackMore
-	UnusedParam(chan);
+	UNUSED(chan);
 #endif
 
 	if ((Data & (1 << 0)) != 0) { /* WR15 b0 should be 0 */

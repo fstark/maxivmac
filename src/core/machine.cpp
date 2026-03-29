@@ -79,11 +79,11 @@ uint8_t * g_vidMem = nullptr;
 uint8_t* g_wiresData = nullptr;
 
 
-#if WantDisasm
+#if WANT_DISASM
 extern void m68k_WantDisasmContext();
 #endif
 
-#if WantDisasm
+#if WANT_DISASM
 void dbglog_StartLine()
 {
 	m68k_WantDisasmContext();
@@ -276,7 +276,7 @@ static uint32_t addrmap_kASC_ln2Spc() {
 #define kASC_Mask 0x00000FFF
 
 
-#if IncludeExtnPbufs
+#if INCLUDE_EXTN_PBUFS
 static tMacErr PbufTransferVM(uint32_t Buffera,
 	PbufIndex i, uint32_t offset, uint32_t count, bool IsWrite)
 {
@@ -300,7 +300,7 @@ static tMacErr PbufTransferVM(uint32_t Buffera,
 
 /* extension mechanism */
 
-#if IncludeExtnPbufs
+#if INCLUDE_EXTN_PBUFS
 #define kCmndPbufFeatures 1
 #define kCmndPbufNew 2
 #define kCmndPbufDispose 3
@@ -313,7 +313,7 @@ static tMacErr PbufTransferVM(uint32_t Buffera,
 	Dispatches New, Dispose, GetSize, and Transfer operations
 	on host-side parameter buffers.
 */
-#if IncludeExtnPbufs
+#if INCLUDE_EXTN_PBUFS
 static void ExtnParamBuffers_Access(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
@@ -388,13 +388,13 @@ static void ExtnParamBuffers_Access(uint32_t p)
 }
 #endif
 
-#if IncludeExtnHostTextClipExchange
+#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 #define kCmndHTCEFeatures 1
 #define kCmndHTCEExport 2
 #define kCmndHTCEImport 3
 #endif
 
-#if IncludeExtnHostTextClipExchange
+#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 static void ExtnHostTextClipExchange_Access(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
@@ -433,10 +433,10 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 
 #define kFindExtnExtension 0x64E1F58A
 #define kDiskDriverExtension 0x4C9219E6
-#if IncludeExtnPbufs
+#if INCLUDE_EXTN_PBUFS
 #define kHostParamBuffersExtension 0x314C87BF
 #endif
-#if IncludeExtnHostTextClipExchange
+#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 #define kHostClipExchangeExtension 0x27B130CA
 #endif
 
@@ -468,14 +468,14 @@ static void ExtnFind_Access(uint32_t p)
 					put_vm_word(p + kParamFindExtnTheId, kExtnDisk);
 					result = tMacErr::noErr;
 				} else
-#if IncludeExtnPbufs
+#if INCLUDE_EXTN_PBUFS
 				if (extn == kHostParamBuffersExtension) {
 					put_vm_word(p + kParamFindExtnTheId,
 						kExtnParamBuffers);
 					result = tMacErr::noErr;
 				} else
 #endif
-#if IncludeExtnHostTextClipExchange
+#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 				if (extn == kHostClipExchangeExtension) {
 					put_vm_word(p + kParamFindExtnTheId,
 						kExtnHostTextClipExchange);
@@ -501,14 +501,14 @@ static void ExtnFind_Access(uint32_t p)
 						kDiskDriverExtension);
 					result = tMacErr::noErr;
 				} else
-#if IncludeExtnPbufs
+#if INCLUDE_EXTN_PBUFS
 				if (extn == kExtnParamBuffers) {
 					put_vm_long(p + kParamFindExtnTheExtn,
 						kHostParamBuffersExtension);
 					result = tMacErr::noErr;
 				} else
 #endif
-#if IncludeExtnHostTextClipExchange
+#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 				if (extn == kExtnHostTextClipExchange) {
 					put_vm_long(p + kParamFindExtnTheExtn,
 						kHostClipExchangeExtension);
@@ -578,12 +578,12 @@ static void Extn_Access(uint32_t Data, uint32_t addr)
 						case kExtnVideo:
 							if (auto* d = g_machine->findDevice<VideoDevice>()) d->extnVideoAccess(p);
 							break;
-#if IncludeExtnPbufs
+#if INCLUDE_EXTN_PBUFS
 						case kExtnParamBuffers:
 							ExtnParamBuffers_Access(p);
 							break;
 #endif
-#if IncludeExtnHostTextClipExchange
+#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 						case kExtnHostTextClipExchange:
 							ExtnHostTextClipExchange_Access(p);
 							break;
@@ -1497,7 +1497,7 @@ static void SetUpMemBanks()
 				}
 			}
 			if (! ByteSize) {
-#if ExtraAbnormalReports
+#if EXTRA_ABNORMAL_REPORTS
 				ReportAbnormalID(AbnormalID::kMACH_IWM_word, "access IWM word");
 				/*
 					This happens when quitting 'Glider 3.1.2'.

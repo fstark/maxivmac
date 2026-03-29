@@ -12,25 +12,25 @@
 
 /* Optimization hints — compiler may override */
 
-#define cIncludeUnused 0
+#define C_INCLUDE_UNUSED 0
 #define UNUSED(p) (void)(p)
-#define UnusedParam(p) (void)(p)
+#define UNUSED(p) (void)(p)
 
 /* Endian/alignment support */
-#ifndef BigEndianUnaligned
-#define BigEndianUnaligned 0
+#ifndef BIG_ENDIAN_UNALIGNED
+#define BIG_ENDIAN_UNALIGNED 0
 #endif
 
-#ifndef LittleEndianUnaligned
-#define LittleEndianUnaligned 0
+#ifndef LITTLE_ENDIAN_UNALIGNED
+#define LITTLE_ENDIAN_UNALIGNED 0
 #endif
 
-#ifndef Have_ASR
-#define Have_ASR 0
+#ifndef HAVE_ASR
+#define HAVE_ASR 0
 #endif
 
-#ifndef HaveMySwapUi5r
-#define HaveMySwapUi5r 0
+#ifndef HAVE_SWAP_UI5R
+#define HAVE_SWAP_UI5R 0
 #endif
 
 /* 64-bit integer types (for FPU emulation) */

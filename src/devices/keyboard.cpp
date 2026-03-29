@@ -76,7 +76,7 @@ bool KeyboardDevice::attemptToFinishInquiry()
 	}
 }
 
-#define MaxKeyboardWait 16 /* in 60ths of a second */
+#define MAX_KEYBOARD_WAIT 16 /* in 60ths of a second */
 	/*
 		Code in the mac rom will reset the keyboard if
 		it hasn't been heard from in 32/60th of a second.
@@ -101,7 +101,7 @@ void KeyboardDevice::receiveCommand()
 		switch (in) {
 			case 0x10 : /* Inquiry Command */
 				if (! attemptToFinishInquiry()) {
-					inquiryCommandTimer_ = MaxKeyboardWait;
+					inquiryCommandTimer_ = MAX_KEYBOARD_WAIT;
 				}
 				break;
 			case 0x14 : /* Instant Command */

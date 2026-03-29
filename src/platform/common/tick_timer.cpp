@@ -5,7 +5,7 @@
 #include <SDL3/SDL.h>
 
 #define dbglog_TimeStuff (0 && dbglog_HAVE)
-#define dbglog_OSGInit (0 && dbglog_HAVE)
+#define DBGLOG_OSG_INIT (0 && dbglog_HAVE)
 
 uint32_t g_trueEmulatedTime = 0;
 	/*
@@ -108,7 +108,7 @@ void StartUpTimeAdjust()
 
 bool InitLocationDat()
 {
-#if dbglog_OSGInit
+#if DBGLOG_OSG_INIT
 	dbglog_writeln("enter InitLocationDat");
 #endif
 

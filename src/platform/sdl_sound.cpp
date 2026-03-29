@@ -32,7 +32,7 @@
 
 #define dbglog_SoundStuff (0 && dbglog_HAVE)
 #define dbglog_SoundBuffStats (0 && dbglog_HAVE)
-#define dbglog_OSGInit (0 && dbglog_HAVE)
+#define DBGLOG_OSG_INIT (0 && dbglog_HAVE)
 
 static SoundSamplePtr s_soundBuffer = nullptr;
 volatile static uint16_t ThePlayOffset;
@@ -163,13 +163,13 @@ static void Sound_SecondNotify0()
 
 typedef uint16_t SoundTemp;
 
-#define kCenterTempSound 0x8000
+#define K_CENTER_TEMP_SOUND 0x8000
 
-#define AudioStepVal 0x0040
+#define AUDIO_STEP_VAL 0x0040
 
-#define ConvertTempSoundSampleFromNative(v) ((v) + kCenterSound)
+#define CONVERT_TEMP_SOUND_SAMPLE_FROM_NATIVE(v) ((v) + kCenterSound)
 
-#define ConvertTempSoundSampleToNative(v) ((v) - kCenterSound)
+#define CONVERT_TEMP_SOUND_SAMPLE_TO_NATIVE(v) ((v) - kCenterSound)
 
 static void SoundRampTo(SoundTemp *last_val, SoundTemp dst_val,
 	SoundSamplePtr *stream, int *len)
@@ -182,22 +182,22 @@ static void SoundRampTo(SoundTemp *last_val, SoundTemp dst_val,
 	while ((v1 != dst_val) && (0 != n)) {
 		if (v1 > dst_val) {
 			diff = v1 - dst_val;
-			if (diff > AudioStepVal) {
-				v1 -= AudioStepVal;
+			if (diff > AUDIO_STEP_VAL) {
+				v1 -= AUDIO_STEP_VAL;
 			} else {
 				v1 = dst_val;
 			}
 		} else {
 			diff = dst_val - v1;
-			if (diff > AudioStepVal) {
-				v1 += AudioStepVal;
+			if (diff > AUDIO_STEP_VAL) {
+				v1 += AUDIO_STEP_VAL;
 			} else {
 				v1 = dst_val;
 			}
 		}
 
 		--n;
-		*p++ = ConvertTempSoundSampleToNative(v1);
+		*p++ = CONVERT_TEMP_SOUND_SAMPLE_TO_NATIVE(v1);
 	}
 
 	*stream = p;
@@ -245,7 +245,7 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 			dbglog_writeln("playing end transistion");
 #endif
 
-			SoundRampTo(&v1, kCenterTempSound, &dst, &len);
+			SoundRampTo(&v1, K_CENTER_TEMP_SOUND, &dst, &len);
 
 			ToPlayLen = 0;
 		} else if (! datp->HaveStartedPlaying) {
@@ -258,7 +258,7 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 			} else {
 				SoundSamplePtr p = datp->fTheSoundBuffer
 					+ (CurPlayOffset & kAllBuffMask);
-				SoundTemp v2 = ConvertTempSoundSampleFromNative(*p);
+				SoundTemp v2 = CONVERT_TEMP_SOUND_SAMPLE_FROM_NATIVE(*p);
 
 #if dbglog_SoundStuff
 				dbglog_writeln("have enough samples to start");
@@ -289,7 +289,7 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 #endif
 
 			for (i = 0; i < len; ++i) {
-				*dst++ = ConvertTempSoundSampleToNative(v1);
+				*dst++ = CONVERT_TEMP_SOUND_SAMPLE_TO_NATIVE(v1);
 			}
 			*datp->fMinFilledSoundBuffs = 0;
 			break;
@@ -309,7 +309,7 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 			for (i = 0; i < ToPlayLen; ++i) {
 				*dst++ = *p++;
 			}
-			v1 = ConvertTempSoundSampleFromNative(p[-1]);
+			v1 = CONVERT_TEMP_SOUND_SAMPLE_FROM_NATIVE(p[-1]);
 
 			CurPlayOffset += ToPlayLen;
 			len -= ToPlayLen;
@@ -347,7 +347,7 @@ void Sound_Stop()
 
 		cur_audio.wantplaying = false;
 
-		while (kCenterTempSound != cur_audio.lastv
+		while (K_CENTER_TEMP_SOUND != cur_audio.lastv
 			&& --retry_limit != 0)
 		{
 			/*
@@ -363,7 +363,7 @@ void Sound_Stop()
 		}
 
 #if dbglog_SoundStuff
-		if (kCenterTempSound == cur_audio.lastv) {
+		if (K_CENTER_TEMP_SOUND == cur_audio.lastv) {
 			dbglog_writeln("reached kCenterTempSound");
 		} else {
 			dbglog_writeln("retry limit reached");
@@ -384,7 +384,7 @@ void Sound_Start()
 {
 	if ((! cur_audio.wantplaying) && s_haveSoundOut) {
 		Sound_Start0();
-		cur_audio.lastv = kCenterTempSound;
+		cur_audio.lastv = K_CENTER_TEMP_SOUND;
 		cur_audio.HaveStartedPlaying = false;
 		cur_audio.wantplaying = true;
 
@@ -405,7 +405,7 @@ void Sound_UnInit()
 
 bool Sound_Init()
 {
-#if dbglog_OSGInit
+#if DBGLOG_OSG_INIT
 	dbglog_writeln("enter Sound_Init");
 #endif
 

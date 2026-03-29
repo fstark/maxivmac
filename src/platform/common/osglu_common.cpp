@@ -65,7 +65,7 @@ bool g_wantNotAutoSlow = false;
 uint16_t g_curMouseV = 0;
 uint16_t g_curMouseH = 0;
 
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 bool g_haveMouseMotion = false;
 #endif
 
@@ -202,7 +202,7 @@ void DiskEjectedNotify(DriveIndex Drive_No)
 		at a time.
 */
 
-#if LittleEndianUnaligned || BigEndianUnaligned
+#if LITTLE_ENDIAN_UNALIGNED || BIG_ENDIAN_UNALIGNED
 
 #define uibb uint32_t
 #define uibr uint32_t
@@ -305,7 +305,7 @@ uint8_t * g_screenCompareBuff = nullptr;
 static uint32_t s_nextDrawRow = 0;
 
 
-#if BigEndianUnaligned
+#if BIG_ENDIAN_UNALIGNED
 
 #define FlipCheckMonoBits (uiblockbitsn - 1)
 
@@ -629,7 +629,7 @@ uint16_t g_viewHSize;
 uint16_t g_viewVSize;
 uint16_t g_viewHStart = 0;
 uint16_t g_viewVStart = 0;
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 int16_t g_savedMouseH;
 int16_t g_savedMouseV;
 #endif
@@ -638,7 +638,7 @@ int16_t g_savedMouseV;
 #define WantAutoScrollBorder 0
 #endif
 
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 void AutoScrollScreen()
 {
 	int16_t Shift;
@@ -757,7 +757,7 @@ bool dbglog_ReserveAlloc()
 
 #else
 
-#define dbglog_bufsz PowOf2(dbglog_buflnsz)
+#define dbglog_bufsz POW_OF_2(dbglog_buflnsz)
 static uint32_t dbglog_bufpos = 0;
 
 static char *dbglog_bufp = nullptr;
@@ -772,7 +772,7 @@ bool dbglog_ReserveAlloc()
 
 static void dbglog_close()
 {
-	uint32_t n = ModPow2(dbglog_bufpos, dbglog_buflnsz);
+	uint32_t n = MOD_POW2(dbglog_bufpos, dbglog_buflnsz);
 	if (n != 0) {
 		dbglog_write0(dbglog_bufp, n);
 	}
@@ -786,11 +786,11 @@ static void dbglog_write(char *p, uint32_t L)
 	uint32_t bufposmod;
 	uint32_t curbufdiv;
 	uint32_t newbufpos = dbglog_bufpos + L;
-	uint32_t newbufdiv = FloorDivPow2(newbufpos, dbglog_buflnsz);
+	uint32_t newbufdiv = FLOOR_DIV_POW2(newbufpos, dbglog_buflnsz);
 
 	for (;;) {
-		curbufdiv = FloorDivPow2(dbglog_bufpos, dbglog_buflnsz);
-		bufposmod = ModPow2(dbglog_bufpos, dbglog_buflnsz);
+		curbufdiv = FLOOR_DIV_POW2(dbglog_bufpos, dbglog_buflnsz);
+		bufposmod = MOD_POW2(dbglog_bufpos, dbglog_buflnsz);
 		if (newbufdiv == curbufdiv) {
 			break;
 		}
@@ -999,7 +999,7 @@ void MyMouseButtonSet(bool down)
 	}
 }
 
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
 	if ((dh != 0) || (dv != 0)) {

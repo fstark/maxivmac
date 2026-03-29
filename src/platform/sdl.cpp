@@ -22,7 +22,7 @@ void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 
 /* --- control mode and internationalization --- */
 
-#define dbglog_OSGInit (0 && dbglog_HAVE)
+#define DBGLOG_OSG_INIT (0 && dbglog_HAVE)
 
 #include "platform/common/intl_chars.h"
 
@@ -178,7 +178,7 @@ static uint8_t * ScalingBuff = nullptr;
 
 static uint8_t * CLUT_final;
 
-#define CLUT_finalsz (256 * 8 * 4)
+#define CLUT_FINAL_SZ (256 * 8 * 4)
 	/*
 		256 possible values of one byte
 		8 pixels per byte maximum (when black and white)
@@ -540,7 +540,7 @@ static void DrawChangesAndClear()
 
 void DoneWithDrawingForTick()
 {
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 	if (g_haveMouseMotion) {
 		AutoScrollScreen();
 	}
@@ -566,11 +566,11 @@ static void ForceShowCursor()
 /* cursor moving */
 
 
-#ifndef HaveWorkingWarp
-#define HaveWorkingWarp 1
+#ifndef HAVE_WORKING_WARP
+#define HAVE_WORKING_WARP 1
 #endif
 
-#if EnableMoveMouse && HaveWorkingWarp
+#if ENABLE_MOVE_MOUSE && HAVE_WORKING_WARP
 static bool MoveMouse(int16_t h, int16_t v)
 {
 	/*
@@ -626,7 +626,7 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 		NewMousePosv += g_viewVStart;
 	}
 
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 	if (g_haveMouseMotion) {
 		MyMousePositionSetDelta(NewMousePosh - g_savedMouseH,
 			NewMousePosv - g_savedMouseV);
@@ -666,7 +666,7 @@ static void MousePositionNotify(int NewMousePosh, int NewMousePosv)
 	s_wantCursorHidden = ShouldHaveCursorHidden;
 }
 
-#if EnableFSMouseMotion && ! HaveWorkingWarp
+#if ENABLE_FS_MOUSE_MOTION && ! HAVE_WORKING_WARP
 static void MousePositionNotifyRelative(int deltah, int deltav)
 {
 	bool ShouldHaveCursorHidden = true;
@@ -742,9 +742,9 @@ static void CheckSavedMacMsg()
 
 /* --- event handling for main window --- */
 
-#define UseMotionEvents 1
+#define USE_MOTION_EVENTS 1
 
-#if UseMotionEvents
+#if USE_MOTION_EVENTS
 static bool s_caughtMouse = false;
 #endif
 
@@ -791,7 +791,7 @@ static void HandleTheEvent(SDL_Event *event)
 		case
 			SDL_EVENT_MOUSE_MOTION
 			:
-#if EnableFSMouseMotion && ! HaveWorkingWarp
+#if ENABLE_FS_MOUSE_MOTION && ! HAVE_WORKING_WARP
 			if (g_haveMouseMotion) {
 				MousePositionNotifyRelative(
 					event->motion.xrel, event->motion.yrel);
@@ -806,7 +806,7 @@ static void HandleTheEvent(SDL_Event *event)
 			SDL_EVENT_MOUSE_BUTTON_DOWN
 			:
 			/* any mouse button, we don't care which */
-#if EnableFSMouseMotion && ! HaveWorkingWarp
+#if ENABLE_FS_MOUSE_MOTION && ! HAVE_WORKING_WARP
 			if (g_haveMouseMotion) {
 				/* ignore position */
 			} else
@@ -820,7 +820,7 @@ static void HandleTheEvent(SDL_Event *event)
 		case
 			SDL_EVENT_MOUSE_BUTTON_UP
 			:
-#if EnableFSMouseMotion && ! HaveWorkingWarp
+#if ENABLE_FS_MOUSE_MOTION && ! HAVE_WORKING_WARP
 			if (g_haveMouseMotion) {
 				/* ignore position */
 			} else
@@ -883,7 +883,7 @@ static bool Screen_Init()
 {
 	bool v = false;
 
-#if dbglog_OSGInit
+#if DBGLOG_OSG_INIT
 	dbglog_writeln("enter Screen_Init");
 #endif
 
@@ -910,13 +910,13 @@ static bool s_grabMachine = false;
 
 static void GrabTheMachine()
 {
-#if GrabKeysFullScreen
+#if GRAB_KEYS_FULL_SCREEN
 	SDL_SetWindowMouseGrab(my_main_wind, true);
 #endif
 
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 
-#if HaveWorkingWarp
+#if HAVE_WORKING_WARP
 	/*
 		if magnification changes, need to reset,
 		even if g_haveMouseMotion already true
@@ -930,29 +930,29 @@ static void GrabTheMachine()
 	}
 #endif
 
-#endif /* EnableFSMouseMotion */
+#endif /* ENABLE_FS_MOUSE_MOTION */
 }
 
 static void UngrabMachine()
 {
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 
 	if (g_haveMouseMotion) {
-#if HaveWorkingWarp
+#if HAVE_WORKING_WARP
 		(void) MoveMouse(g_curMouseH, g_curMouseV);
 #endif
 
 		g_haveMouseMotion = false;
 	}
 
-#endif /* EnableFSMouseMotion */
+#endif /* ENABLE_FS_MOUSE_MOTION */
 
-#if GrabKeysFullScreen
+#if GRAB_KEYS_FULL_SCREEN
 	SDL_SetWindowMouseGrab(my_main_wind, false);
 #endif
 }
 
-#if EnableFSMouseMotion && HaveWorkingWarp
+#if ENABLE_FS_MOUSE_MOTION && HAVE_WORKING_WARP
 static void MouseConstrain()
 {
 	int16_t shiftdh;
@@ -1213,7 +1213,7 @@ static void CloseMainWindow()
 	}
 }
 
-#if EnableRecreateW
+#if ENABLE_RECREATE_W
 static void ZapMyWState()
 {
 	my_main_wind = nullptr;
@@ -1223,7 +1223,7 @@ static void ZapMyWState()
 }
 #endif
 
-#if EnableRecreateW
+#if ENABLE_RECREATE_W
 struct MyWState {
 	uint16_t f_ViewHSize;
 	uint16_t f_ViewVSize;
@@ -1242,7 +1242,7 @@ struct MyWState {
 };
 #endif
 
-#if EnableRecreateW
+#if ENABLE_RECREATE_W
 static void GetMyWState(MyWState *r)
 {
 	r->f_ViewHSize = g_viewHSize;
@@ -1261,7 +1261,7 @@ static void GetMyWState(MyWState *r)
 }
 #endif
 
-#if EnableRecreateW
+#if ENABLE_RECREATE_W
 static void SetMyWState(MyWState *r)
 {
 	g_viewHSize = r->f_ViewHSize;
@@ -1288,7 +1288,7 @@ enum {
 
 static int WinMagStates[kNumWinStates];
 
-#if EnableRecreateW
+#if ENABLE_RECREATE_W
 static bool ReCreateMainWindow()
 {
 	/*
@@ -1310,7 +1310,7 @@ static bool ReCreateMainWindow()
 
 	MyWState old_state;
 	MyWState new_state;
-#if HaveWorkingWarp
+#if HAVE_WORKING_WARP
 	bool HadCursorHidden = s_haveCursorHidden;
 #endif
 	int OldWinState =
@@ -1357,7 +1357,7 @@ static bool ReCreateMainWindow()
 		CloseMainWindow();
 		SetMyWState(&new_state);
 
-#if HaveWorkingWarp
+#if HAVE_WORKING_WARP
 		if (HadCursorHidden) {
 			(void) MoveMouse(g_curMouseH, g_curMouseV);
 		}
@@ -1458,7 +1458,7 @@ static void CheckForSavedTasks()
 		EvtQTryRecoverFromFull();
 	}
 
-#if EnableFSMouseMotion && HaveWorkingWarp
+#if ENABLE_FS_MOUSE_MOTION && HAVE_WORKING_WARP
 	if (g_haveMouseMotion) {
 		MouseConstrain();
 	}
@@ -1503,7 +1503,7 @@ static void CheckForSavedTasks()
 		MacMsgDisplayOn();
 	}
 
-#if EnableRecreateW
+#if ENABLE_RECREATE_W
 	if (0
 		|| (s_useMagnify != g_wantMagnify)
 		|| (s_useFullScreen != g_wantFullScreen)
@@ -1588,7 +1588,7 @@ static bool ScanCommandLine()
 	char *pa;
 	int i = 1;
 
-#if dbglog_OSGInit
+#if DBGLOG_OSG_INIT
 	dbglog_writeln("enter ScanCommandLine"); /*^*/
 #endif
 
@@ -1702,7 +1702,7 @@ void WaitForNextTick()
 	}
 
 	if ((! s_backgroundFlag)
-#if UseMotionEvents
+#if USE_MOTION_EVENTS
 		&& (! s_caughtMouse)
 #endif
 		)
@@ -1745,7 +1745,7 @@ static bool AllocMyMemory()
 	if (!AllocBlock(&g_cntrlDisplayBuff, vMacScreenNumBytes, false))
 		goto fail;
 #endif
-	if (!AllocBlock(&CLUT_final, CLUT_finalsz, false))
+	if (!AllocBlock(&CLUT_final, CLUT_FINAL_SZ, false))
 		goto fail;
 	if (!Sound_AllocBuffer())
 		goto fail;

@@ -88,7 +88,7 @@ static void SubTickNotify(int SubTick)
 	} else if (g_machine->config().emASC) {
 		if (auto* d = g_machine->findDevice<ASCDevice>()) d->subTick(SubTick);
 	} else {
-		UnusedParam(SubTick);
+		UNUSED(SubTick);
 	}
 }
 

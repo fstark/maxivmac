@@ -108,7 +108,7 @@ extern uint32_t g_InstructionCount;
 extern uint32_t g_LogStart;
 extern uint32_t g_LogEnd;
 
-#if WantDisasm
+#if WANT_DISASM
 extern void dbglog_StartLine();
 #else
 #define dbglog_StartLine()
@@ -172,7 +172,7 @@ extern uint8_t* g_wiresData;
 #define kLn2CycleScale 6
 #define kCycleScale (1 << kLn2CycleScale)
 
-#if WantCycByPriOp
+#if WANT_CYC_BY_PRI_OP
 #define RdAvgXtraCyc /* 0 */ (kCycleScale + kCycleScale / 4)
 #define WrAvgXtraCyc /* 0 */ (kCycleScale + kCycleScale / 4)
 #endif
@@ -203,10 +203,10 @@ enum {
 	kExtnDisk,
 	kExtnSony,
 	kExtnVideo, /* must stay at index 3 to match reference VidROM */
-#if IncludeExtnPbufs
+#if INCLUDE_EXTN_PBUFS
 	kExtnParamBuffers,
 #endif
-#if IncludeExtnHostTextClipExchange
+#if INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE
 	kExtnHostTextClipExchange,
 #endif
 

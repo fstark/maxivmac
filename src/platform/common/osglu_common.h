@@ -6,26 +6,26 @@
 
 /* --- feature computation macros --- */
 
-#define EnableFSMouseMotion 1
-#define EnableRecreateW 1
-#define EnableMoveMouse 1
+#define ENABLE_FS_MOUSE_MOTION 1
+#define ENABLE_RECREATE_W 1
+#define ENABLE_MOVE_MOUSE 1
 
-#ifndef GrabKeysFullScreen
-#define GrabKeysFullScreen 1
+#ifndef GRAB_KEYS_FULL_SCREEN
+#define GRAB_KEYS_FULL_SCREEN 1
 #endif
 
-#ifndef GrabKeysMaxFullScreen
-#define GrabKeysMaxFullScreen 0
+#ifndef GRAB_KEYS_MAX_FULL_SCREEN
+#define GRAB_KEYS_MAX_FULL_SCREEN 0
 #endif
 
 /* --- power-of-2 helper macros --- */
 
-#define PowOf2(p) ((uint32_t)1 << (p))
-#define Pow2Mask(p) (PowOf2(p) - 1)
-#define ModPow2(i, p) ((i) & Pow2Mask(p))
-#define FloorDivPow2(i, p) ((i) >> (p))
-#define FloorPow2Mult(i, p) ((i) & (~ Pow2Mask(p)))
-#define CeilPow2Mult(i, p) FloorPow2Mult((i) + Pow2Mask(p), (p))
+#define POW_OF_2(p) ((uint32_t)1 << (p))
+#define POW2_MASK(p) (POW_OF_2(p) - 1)
+#define MOD_POW2(i, p) ((i) & POW2_MASK(p))
+#define FLOOR_DIV_POW2(i, p) ((i) >> (p))
+#define FLOOR_POW2_MULT(i, p) ((i) & (~ POW2_MASK(p)))
+#define CEIL_POW2_MULT(i, p) FLOOR_POW2_MULT((i) + POW2_MASK(p), (p))
 
 /* --- keep-mask constants for DisconnectKeyCodes --- */
 
@@ -59,12 +59,12 @@ extern uint16_t g_viewHSize;
 extern uint16_t g_viewVSize;
 extern uint16_t g_viewHStart;
 extern uint16_t g_viewVStart;
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 extern int16_t g_savedMouseH;
 extern int16_t g_savedMouseV;
 #endif
 
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 extern bool g_haveMouseMotion;
 #endif
 
@@ -112,7 +112,7 @@ extern uint32_t g_ltMyStamp;
 void ScreenClearChanges();
 void ScreenChangedAll();
 
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 void AutoScrollScreen();
 #endif
 
@@ -126,7 +126,7 @@ void PbufDisposeNotify(PbufIndex Pbuf_No);
 
 void Keyboard_UpdateKeyMap(uint8_t key, bool down);
 void MyMouseButtonSet(bool down);
-#if EnableFSMouseMotion
+#if ENABLE_FS_MOUSE_MOTION
 void MyMousePositionSetDelta(uint16_t dh, uint16_t dv);
 #endif
 void MyMousePositionSet(uint16_t h, uint16_t v);

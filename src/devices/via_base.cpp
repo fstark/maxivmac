@@ -13,8 +13,8 @@
 #include "core/wire_bus.h"
 #include "core/machine_obj.h"
 
-#define BitMask(p) (1 << (p))
-#define TestBit(i, p) (((i) & BitMask(p)) != 0)
+#define BIT_MASK(p) (1 << (p))
+#define TEST_BIT(i, p) (((i) & BIT_MASK(p)) != 0)
 
 #define kIntCA2 0
 #define kIntCA1 1
@@ -40,7 +40,7 @@ uint8_t VIABase::getORA(uint8_t Selection)
 	uint8_t Value = (~ cfg.oraCanIn) & Selection & cfg.oraFloatVal;
 
 	for (int bit = 0; bit < 8; bit++) {
-		if (TestBit(cfg.oraCanIn, bit) && TestBit(Selection, bit)) {
+		if (TEST_BIT(cfg.oraCanIn, bit) && TEST_BIT(Selection, bit)) {
 			int wireId = cfg.portAWires[bit];
 			if (wireId >= 0) {
 				Value |= (g_wires.get(wireId) << bit);
@@ -57,7 +57,7 @@ uint8_t VIABase::getORB(uint8_t Selection)
 	uint8_t Value = (~ cfg.orbCanIn) & Selection & cfg.orbFloatVal;
 
 	for (int bit = 0; bit < 8; bit++) {
-		if (TestBit(cfg.orbCanIn, bit) && TestBit(Selection, bit)) {
+		if (TEST_BIT(cfg.orbCanIn, bit) && TEST_BIT(Selection, bit)) {
 			int wireId = cfg.portBWires[bit];
 			if (wireId >= 0) {
 				Value |= (g_wires.get(wireId) << bit);
@@ -74,7 +74,7 @@ void VIABase::putORA(uint8_t Selection, uint8_t Data)
 
 	/* Iterate bits 7→0 to match the reference build's callback ordering */
 	for (int bit = 7; bit >= 0; bit--) {
-		if (TestBit(cfg.oraCanOut, bit) && TestBit(Selection, bit)) {
+		if (TEST_BIT(cfg.oraCanOut, bit) && TEST_BIT(Selection, bit)) {
 			int wireId = cfg.portAWires[bit];
 			if (wireId >= 0) {
 				g_wires.set(wireId, (Data >> bit) & 1);
@@ -89,7 +89,7 @@ void VIABase::putORB(uint8_t Selection, uint8_t Data)
 
 	/* Iterate bits 7→0 to match the reference build's callback ordering */
 	for (int bit = 7; bit >= 0; bit--) {
-		if (TestBit(cfg.orbCanOut, bit) && TestBit(Selection, bit)) {
+		if (TEST_BIT(cfg.orbCanOut, bit) && TEST_BIT(Selection, bit)) {
 			int wireId = cfg.portBWires[bit];
 			if (wireId >= 0) {
 				g_wires.set(wireId, (Data >> bit) & 1);
@@ -195,7 +195,7 @@ void VIABase::shiftInData(uint8_t v)
 	uint8_t ShiftMode = (d_.ACR & 0x1C) >> 2;
 
 	if (ShiftMode != 3) {
-#if ExtraAbnormalReports
+#if EXTRA_ABNORMAL_REPORTS
 		if (ShiftMode == 0) {
 			/* happens on reset */
 		} else {
@@ -227,8 +227,8 @@ uint8_t VIABase::shiftOutData()
 	}
 }
 
-#define CyclesPerViaTime (10 * machine_->config().clockMult)
-#define CyclesScaledPerViaTime (kCycleScale * CyclesPerViaTime)
+#define CYCLES_PER_VIA_TIME (10 * machine_->config().clockMult)
+#define CYCLES_SCALED_PER_VIA_TIME (kCycleScale * CYCLES_PER_VIA_TIME)
 
 /*
 	Update Timer 1: subtract elapsed cycles, fire interrupt
@@ -243,9 +243,9 @@ void VIABase::doTimer1Check()
 		if (deltaTime != 0) {
 			uint32_t Temp = d_.T1C_F;
 			uint32_t deltaTemp =
-				(deltaTime / CyclesPerViaTime) << (16 - kLn2CycleScale);
+				(deltaTime / CYCLES_PER_VIA_TIME) << (16 - kLn2CycleScale);
 			uint32_t NewTemp = Temp - deltaTemp;
-			if ((deltaTime > (0x00010000UL * CyclesScaledPerViaTime))
+			if ((deltaTime > (0x00010000UL * CYCLES_SCALED_PER_VIA_TIME))
 				|| ((Temp <= deltaTemp) && (Temp != 0)))
 			{
 				if ((d_.ACR & 0x40) != 0) { /* Free Running? */
@@ -254,7 +254,7 @@ void VIABase::doTimer1Check()
 					uint16_t ntrans = 1 + ((v == 0) ? 0 :
 						(((deltaTemp - Temp) / v) >> 16));
 					NewTemp += (((uint32_t)v * ntrans) << 16);
-					if (TestBit(t1cfg.orbCanOut, 7)) {
+					if (TEST_BIT(t1cfg.orbCanOut, 7)) {
 						if ((d_.ACR & 0x80) != 0) { /* invert ? */
 							if ((ntrans & 1) != 0) {
 								int b7Wire = t1cfg.portBWires[7];
@@ -283,10 +283,10 @@ void VIABase::doTimer1Check()
 				uint32_t NewTemp = d_.T1C_F;
 				uint32_t NewTimer;
 				if (NewTemp == 0) {
-					NewTimer = (0x00010000UL * CyclesScaledPerViaTime);
+					NewTimer = (0x00010000UL * CYCLES_SCALED_PER_VIA_TIME);
 				} else {
 					NewTimer = (1 + (NewTemp >> (16 - kLn2CycleScale)))
-						* CyclesPerViaTime;
+						* CYCLES_PER_VIA_TIME;
 				}
 				ICT_add(ictTimer1_, NewTimer);
 				T1IntReady = true;
@@ -333,11 +333,11 @@ void VIABase::doTimer2Check()
 		iCountt NewTime = GetCuriCount();
 		uint32_t Temp = d_.T2C_F;
 		iCountt deltaTime = (NewTime - T2LastTime);
-		uint32_t deltaTemp = (deltaTime / CyclesPerViaTime)
+		uint32_t deltaTemp = (deltaTime / CYCLES_PER_VIA_TIME)
 			<< (16 - kLn2CycleScale);
 		uint32_t NewTemp = Temp - deltaTemp;
 		if (T2_Active == 1) {
-			if ((deltaTime > (0x00010000UL * CyclesScaledPerViaTime))
+			if ((deltaTime > (0x00010000UL * CYCLES_SCALED_PER_VIA_TIME))
 				|| ((Temp <= deltaTemp) && (Temp != 0)))
 			{
 				T2C_ShortTime = false;
@@ -346,10 +346,10 @@ void VIABase::doTimer2Check()
 			} else {
 				uint32_t NewTimer;
 				if (NewTemp == 0) {
-					NewTimer = (0x00010000UL * CyclesScaledPerViaTime);
+					NewTimer = (0x00010000UL * CYCLES_SCALED_PER_VIA_TIME);
 				} else {
 					NewTimer = (1 + (NewTemp >> (16 - kLn2CycleScale)))
-						* CyclesPerViaTime;
+						* CYCLES_PER_VIA_TIME;
 				}
 				ICT_add(ictTimer2_, NewTimer);
 			}

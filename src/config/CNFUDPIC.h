@@ -12,24 +12,24 @@
 /* CPU feature flags — always 1 so all instruction code compiles.
    Runtime selection via MachineConfig::use68020/emFPU/emMMU +
    dispatch table fixup in M68KITAB_setup(). */
-#define Use68020 1
-#define EmFPU 1
-#define EmMMU 1
+#define USE_68020 1
+#define EM_FPU 1
+#define EM_MMU 1
 
 /* kMyClockMult is now runtime — see MachineConfig::clockMult */
 
-#define WantCycByPriOp 1
-#define WantCloserCyc 1
+#define WANT_CYC_BY_PRI_OP 1
+#define WANT_CLOSER_CYC 1
 
 /* kAutoSlowSubTicks/kAutoSlowTime are now runtime — see MachineConfig */
 
-#define IncludeExtnPbufs 1
-#define IncludeExtnHostTextClipExchange 1
+#define INCLUDE_EXTN_PBUFS 1
+#define INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE 1
 
-#define Sony_SupportDC42 1
-#define Sony_SupportTags 1
-#define Sony_WantChecksumsUpdated 1
-#define Sony_VerifyChecksums 0
+#define SONY_SUPPORT_DC42 1
+#define SONY_SUPPORT_TAGS 1
+#define SONY_WANT_CHECKSUMS_UPDATED 1
+#define SONY_VERIFY_CHECKSUMS 0
 /* CaretBlinkTime and DoubleClickTime are model-dependent, set in rtc.cpp */
 
 #include "core/wire_macros.h"
@@ -40,5 +40,5 @@
 
 /* kROM_Base/kROM_ln2Spc are now runtime — see MachineConfig::romBase */
 
-#define WantDisasm 1
-#define ExtraAbnormalReports 0
+#define WANT_DISASM 1
+#define EXTRA_ABNORMAL_REPORTS 0

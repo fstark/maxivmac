@@ -85,7 +85,7 @@ typedef uint8_t flag; /* 0/1 */
 	is different than on 68881.
 */
 
-#define cIncludeFPUUnused cIncludeUnused
+#define cIncludeFPUUnused C_INCLUDE_UNUSED
 
 /* ----- from original file "softfloat.h" ----- */
 

@@ -133,12 +133,12 @@ static uint32_t ImageDataOffset[NumDrives];
 static uint32_t ImageDataSize[NumDrives];
 	/* size of disk image file contents */
 
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 static uint32_t ImageTagOffset[NumDrives];
 	/* offset to disk image file tags */
 #endif
 
-#if Sony_SupportDC42
+#if SONY_SUPPORT_DC42
 #define kDC42offset_diskName      0
 #define kDC42offset_dataSize     64
 #define kDC42offset_tagSize      68
@@ -152,7 +152,7 @@ static uint32_t ImageTagOffset[NumDrives];
 
 #define ChecksumBlockSize 1024
 
-#if Sony_SupportDC42 && Sony_WantChecksumsUpdated
+#if SONY_SUPPORT_DC42 && SONY_WANT_CHECKSUMS_UPDATED
 static tMacErr DC42BlockChecksum(DriveIndex Drive_No,
 	uint32_t Sony_Start, uint32_t Sony_Count, uint32_t *r)
 {
@@ -198,20 +198,20 @@ static tMacErr DC42BlockChecksum(DriveIndex Drive_No,
 }
 #endif
 
-#if Sony_SupportDC42 && Sony_WantChecksumsUpdated
-#if Sony_SupportTags
+#if SONY_SUPPORT_DC42 && SONY_WANT_CHECKSUMS_UPDATED
+#if SONY_SUPPORT_TAGS
 #define SizeCheckSumsToUpdate 8
 #else
 #define SizeCheckSumsToUpdate 4
 #endif
 #endif
 
-#if Sony_WantChecksumsUpdated
+#if SONY_WANT_CHECKSUMS_UPDATED
 static void Drive_UpdateChecksums(DriveIndex Drive_No)
 {
 	if (! vSonyIsLocked(Drive_No)) {
 		uint32_t DataOffset = ImageDataOffset[Drive_No];
-#if Sony_SupportDC42
+#if SONY_SUPPORT_DC42
 		if (kDC42offset_userData == DataOffset) {
 			/* a disk copy 4.2 image */
 			tMacErr result;
@@ -228,7 +228,7 @@ static void Drive_UpdateChecksums(DriveIndex Drive_No)
 				dataChecksum = 0;
 			}
 			do_put_mem_long(Buffer, dataChecksum);
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 			{
 				uint32_t tagChecksum;
 				uint32_t TagOffset = ImageTagOffset[Drive_No];
@@ -268,7 +268,7 @@ static void Drive_UpdateChecksums(DriveIndex Drive_No)
 #define checkheaderoffset 0
 #define checkheadersize (checkheaderblocks * 512)
 
-#define Sony_SupportOtherFormats Sony_SupportDC42
+#define Sony_SupportOtherFormats SONY_SUPPORT_DC42
 
 /*
 	Find the next pending disk, read its header, detect
@@ -289,7 +289,7 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 			/* first, set up for default format */
 			uint32_t DataOffset = 0;
 			uint32_t DataSize = L;
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 			uint32_t TagOffset = 0;
 #endif
 
@@ -306,7 +306,7 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 				if (tMacErr::noErr == (result = vSonyTransfer(false,
 					Temp, i, checkheaderoffset, Sony_Count, nullptr)))
 				{
-#if Sony_SupportDC42
+#if SONY_SUPPORT_DC42
 					/* Detect Disk Copy 4.2 image */
 					if (0x0100 == do_get_mem_word(
 						&Temp[kDC42offset_private]))
@@ -334,7 +334,7 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 								gotFormat = true;
 							}
 							if (gotFormat) {
-#if Sony_VerifyChecksums /* mostly useful to check the Checksum code */
+#if SONY_VERIFY_CHECKSUMS /* mostly useful to check the Checksum code */
 								uint32_t dataChecksum;
 								uint32_t tagChecksum;
 								uint32_t dataChecksum0 = do_get_mem_long(
@@ -362,14 +362,14 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 #endif
 								DataOffset = DataOffset0;
 								DataSize = DataSize0;
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 								TagOffset =
 									(0 == TagSize0) ? 0 : TagOffset0;
 #endif
 
-#if (! Sony_SupportTags) || (! Sony_WantChecksumsUpdated)
+#if (! SONY_SUPPORT_TAGS) || (! SONY_WANT_CHECKSUMS_UPDATED)
 								if (! vSonyIsLocked(i)) {
-#if ! Sony_WantChecksumsUpdated
+#if ! SONY_WANT_CHECKSUMS_UPDATED
 									/* unconditionally revoke */
 #else
 									if (0 != TagSize0)
@@ -382,7 +382,7 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 							}
 						}
 					}
-#endif /* Sony_SupportDC42 */
+#endif /* SONY_SUPPORT_DC42 */
 					if (! gotFormat) {
 						uint16_t drSigWord = do_get_mem_word(
 							&Temp[0x400]);
@@ -434,7 +434,7 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *Drive_No)
 
 				ImageDataOffset[i] = DataOffset;
 				ImageDataSize[i] = DataSize;
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 				ImageTagOffset[i] = TagOffset;
 #endif
 
@@ -545,7 +545,7 @@ static tMacErr Drive_Eject(DriveIndex Drive_No)
 	result = CheckReadableDrive(Drive_No);
 	if (tMacErr::noErr == result) {
 		s_sonyMountedMask &= ~ ((uint32_t)1 << Drive_No);
-#if Sony_WantChecksumsUpdated
+#if SONY_WANT_CHECKSUMS_UPDATED
 		Drive_UpdateChecksums(Drive_No);
 #endif
 		result = vSonyEject(Drive_No);
@@ -583,7 +583,7 @@ void SonyDevice::ejectAllDisks()
 	s_sonyMountedMask = 0;
 	for (i = 0; i < NumDrives; ++i) {
 		if (vSonyIsInserted(i)) {
-#if Sony_WantChecksumsUpdated
+#if SONY_WANT_CHECKSUMS_UPDATED
 			Drive_UpdateChecksums(i);
 #endif
 			(void) vSonyEject(i);
@@ -915,7 +915,7 @@ static uint32_t sony_MinSonVarsSize() {
 
 #define Sony_dolog (dbglog_HAVE && 0)
 
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 static uint32_t s_tagBuffer;
 #endif
 
@@ -1018,7 +1018,7 @@ static tMacErr Sony_Mount(uint32_t p)
 	return result;
 }
 
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 static tMacErr Sony_PrimeTags(DriveIndex Drive_No,
 	uint32_t Sony_Start, uint32_t Sony_Count, bool IsWrite)
 {
@@ -1136,7 +1136,7 @@ static tMacErr Sony_Prime(uint32_t p)
 			|| (0 != (Sony_Count & 0x1FF)))
 		{
 			/* only whole blocks allowed */
-#if ExtraAbnormalReports
+#if EXTRA_ABNORMAL_REPORTS
 			ReportAbnormalID(AbnormalID::kSONY_not_blockwise_in_Sony_Prime, "not blockwise in Sony_Prime");
 #endif
 			result = tMacErr::paramErr;
@@ -1146,7 +1146,7 @@ static tMacErr Sony_Prime(uint32_t p)
 			uint32_t Buffera = get_vm_long(ParamBlk + kioBuffer);
 			result = Drive_Transfer(IsWrite, Buffera, Drive_No,
 					Sony_Start, Sony_Count, &Sony_ActCount);
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 			if (tMacErr::noErr == result) {
 				result = Sony_PrimeTags(Drive_No,
 					Sony_Start, Sony_Count, IsWrite);
@@ -1186,7 +1186,7 @@ static tMacErr Sony_Control(uint32_t p)
 		dbglog_WriteNote("Sony : Control : kSetTagBuffer");
 #endif
 
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 		s_tagBuffer = get_vm_long(ParamBlk + kcsParam);
 		result = tMacErr::noErr;
 #else
@@ -1316,7 +1316,7 @@ static tMacErr Sony_Control(uint32_t p)
 					dbglog_writeHex(OpCode);
 					dbglog_writeReturn();
 #endif
-#if ExtraAbnormalReports
+#if EXTRA_ABNORMAL_REPORTS
 					if ((kGetIconID != OpCode)
 						&& (kMediaIcon != OpCode)
 						&& (kDriveInfo != OpCode))
@@ -1369,7 +1369,7 @@ static tMacErr Sony_Status(uint32_t p)
 			result = tMacErr::noErr;
 		}
 	} else {
-#if ExtraAbnormalReports
+#if EXTRA_ABNORMAL_REPORTS
 		if ((kReturnFormatList != OpCode)
 			&& (kDuplicatorVersionSupport != OpCode))
 		{
@@ -1388,7 +1388,7 @@ static tMacErr Sony_Status(uint32_t p)
 
 static tMacErr Sony_Close(uint32_t p)
 {
-	UnusedParam(p);
+	UNUSED(p);
 	return tMacErr::closErr; /* Can't Close Driver */
 }
 
@@ -1482,7 +1482,7 @@ static tMacErr Sony_OpenB(uint32_t p)
 		put_vm_long(p + ExtnDat_params + 20, SonyVars + 28 /* NullTask */);
 	}
 
-#if Sony_SupportTags
+#if SONY_SUPPORT_TAGS
 	s_tagBuffer = 0;
 #endif
 

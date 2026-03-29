@@ -410,7 +410,7 @@ static uint16_t Vid_GetMode()
 static tMacErr Vid_SetMode(uint16_t v)
 {
 	if (0 == vMacScreenDepth) {
-		UnusedParam(v);
+		UNUSED(v);
 	} else {
 		if (g_useColorMode != ((v != 128) && g_colorModeWorks)) {
 			g_useColorMode = ! g_useColorMode;

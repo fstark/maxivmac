@@ -4,7 +4,7 @@
 
 #include "core/common.h"
 
-#if WantDisasm
+#if WANT_DISASM
 
 #include "cpu/m68k_tables.h"
 
@@ -374,7 +374,7 @@ static inline void DisasmBcc()
 	if (src == 0) {
 		s += static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword()));
 	} else
-#if Use68020
+#if USE_68020
 	if (src == 255) {
 		s += static_cast<uint32_t>(Disasm_nextilong());
 		/* ReportAbnormal("long branch in DoCode6"); */
@@ -544,7 +544,7 @@ static inline void DisasmBsr()
 	if (src == 0) {
 		s += (int32_t)(int16_t)Disasm_nextiword();
 	} else
-#if Use68020
+#if USE_68020
 	if (src == 255) {
 		s += (int32_t)Disasm_nextilong();
 		/* ReportAbnormal("long branch in DoCode6"); */
@@ -1367,7 +1367,7 @@ static inline void DisasmReset()
 	dbglog_writeReturn();
 }
 
-#if Use68020
+#if USE_68020
 static inline void DisasmEXTBL()
 {
 	/* EXTB.L */
@@ -1377,7 +1377,7 @@ static inline void DisasmEXTBL()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmTRAPcc()
 {
 	/* TRAPcc 0101cccc11111sss */
@@ -1406,7 +1406,7 @@ static inline void DisasmTRAPcc()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmChkL()
 {
 	/* Chk.L 0100ddd100mmmrrr */
@@ -1415,7 +1415,7 @@ static inline void DisasmChkL()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmBkpt()
 {
 	/* BKPT 0100100001001rrr */
@@ -1425,7 +1425,7 @@ static inline void DisasmBkpt()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmDivL()
 {
 	/* DIVU 0100110001mmmrrr 0rrr0s0000000rrr */
@@ -1465,7 +1465,7 @@ static inline void DisasmDivL()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmMulL()
 {
 	/* MULU 0100110000mmmrrr 0rrr0s0000000rrr */
@@ -1504,7 +1504,7 @@ static inline void DisasmMulL()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmRtd()
 {
 	/* Rtd 0100111001110100 */
@@ -1514,7 +1514,7 @@ static inline void DisasmRtd()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static void DisasmControlReg(uint16_t i)
 {
 	switch (i) {
@@ -1549,7 +1549,7 @@ static void DisasmControlReg(uint16_t i)
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmMoveC()
 {
 	/* MOVEC 010011100111101m */
@@ -1591,7 +1591,7 @@ static inline void DisasmMoveC()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmLinkL()
 {
 	/* Link.L 0100100000001rrr */
@@ -1603,7 +1603,7 @@ static inline void DisasmLinkL()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmPack()
 {
 	DisasmStartOne("PACK ???");
@@ -1612,7 +1612,7 @@ static inline void DisasmPack()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmUnpk()
 {
 	DisasmStartOne("UNPK ???");
@@ -1621,7 +1621,7 @@ static inline void DisasmUnpk()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmCHK2orCMP2()
 {
 	DisasmStartOne("CHK2/CMP2 ???");
@@ -1630,7 +1630,7 @@ static inline void DisasmCHK2orCMP2()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmCAS2()
 {
 	DisasmStartOne("CAS2 ???");
@@ -1639,7 +1639,7 @@ static inline void DisasmCAS2()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 [[maybe_unused]]
 static inline void DisasmCAS()
 {
@@ -1649,7 +1649,7 @@ static inline void DisasmCAS()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 [[maybe_unused]]
 static inline void DisasmMOVES()
 {
@@ -1659,7 +1659,7 @@ static inline void DisasmMOVES()
 }
 #endif
 
-#if Use68020
+#if USE_68020
 static inline void DisasmBitField()
 {
 	DisasmStartOne("BitField ???");
@@ -1855,7 +1855,7 @@ static inline void DisasmCode0()
 			}
 		} else
 		if (Disasm_b76 == 3) {
-#if Use68020
+#if USE_68020
 			if (Disasm_rg9 < 3) {
 				/* CHK2 or CMP2 00000ss011mmmrrr */
 				if (IsValidControlAddrMode()) {
@@ -1890,7 +1890,7 @@ static inline void DisasmCode0()
 				DisasmIllegal();
 			}
 		} else if (Disasm_rg9 == 7) {
-#if Use68020
+#if USE_68020
 			/* MoveS 00001110ssmmmrrr */
 			if (IsValidAltMemAddrMode()) {
 				DisasmMoveSREa();
@@ -1998,7 +1998,7 @@ static inline void DisasmCode4()
 	if (Disasm_b8 != 0) {
 		switch (Disasm_b76) {
 			case 0:
-#if Use68020
+#if USE_68020
 				/* Chk.L 0100ddd100mmmrrr */
 				if (IsValidDataAddrMode()) {
 					DisasmChkL();
@@ -2022,7 +2022,7 @@ static inline void DisasmCode4()
 				break;
 			case 3:
 			default: /* keep compiler happy */
-#if Use68020
+#if USE_68020
 				if ((0 == Disasm_mode) && (4 == Disasm_rg9)) {
 					DisasmEXTBL();
 				} else
@@ -2048,7 +2048,7 @@ static inline void DisasmCode4()
 						DisasmIllegal();
 					}
 				} else {
-#if Use68020
+#if USE_68020
 /* reference seems incorrect to say not for 68000 */
 #endif
 					/* Move from SR 0100000011mmmrrr */
@@ -2068,7 +2068,7 @@ static inline void DisasmCode4()
 						DisasmIllegal();
 					}
 				} else {
-#if Use68020
+#if USE_68020
 					/* Move from CCR 0100001011mmmrrr */
 					if (IsValidDataAltAddrMode()) {
 						DisasmMoveCCREa();
@@ -2117,7 +2117,7 @@ static inline void DisasmCode4()
 			case 4:
 				switch (Disasm_b76) {
 					case 0:
-#if Use68020
+#if USE_68020
 						if (Disasm_mode == 1) {
 							/* Link.L 0100100000001rrr */
 							DisasmLinkL();
@@ -2137,7 +2137,7 @@ static inline void DisasmCode4()
 							/* Swap 0100100001000rrr */
 							DisasmSwap();
 						} else
-#if Use68020
+#if USE_68020
 						if (Disasm_mode == 1) {
 							DisasmBkpt();
 						} else
@@ -2237,7 +2237,7 @@ static inline void DisasmCode4()
 						}
 					}
 				} else {
-#if Use68020
+#if USE_68020
 					if (((Disasm_opcode >> 6) & 1) == 1) {
 						/* DIVU 0100110001mmmrrr 0rrr0s0000000rrr */
 						/* DIVS 0100110001mmmrrr 0rrr1s0000000rrr */
@@ -2312,7 +2312,7 @@ static inline void DisasmCode4()
 										break;
 									case 4:
 										/* Rtd 0100111001110100 */
-#if Use68020
+#if USE_68020
 										DisasmRtd();
 #else
 										DisasmIllegal();
@@ -2335,7 +2335,7 @@ static inline void DisasmCode4()
 								break;
 							case 7:
 							default: /* keep compiler happy */
-#if Use68020
+#if USE_68020
 								/* MOVEC 010011100111101m */
 								DisasmMoveC();
 #else
@@ -2374,7 +2374,7 @@ static inline void DisasmCode5()
 			/* DBcc 0101cccc11001ddd */
 			DisasmDBcc();
 		} else {
-#if Use68020
+#if USE_68020
 			if ((Disasm_mode == 7) && (Disasm_reg >= 2)) {
 				/* TRAPcc 0101cccc11111sss */
 				DisasmTRAPcc();
@@ -2478,7 +2478,7 @@ static inline void DisasmCode8()
 							DisasmSbcdm();
 						}
 						break;
-#if Use68020
+#if USE_68020
 					case 1:
 						/* PACK 1000rrr10100mrrr */
 						DisasmPack();
@@ -2681,7 +2681,7 @@ static inline void DisasmCodeE()
 {
 	if (Disasm_b76 == 3) {
 		if ((Disasm_opcode & 0x0800) != 0) {
-#if Use68020
+#if USE_68020
 			/* 11101???11mmmrrr */
 			switch (Disasm_mode) {
 				case 1:
@@ -2891,4 +2891,4 @@ void m68k_WantDisasmContext()
 	DisasmCounter = /* 256 */ 128;
 }
 
-#endif /* WantDisasm */
+#endif /* WANT_DISASM */
