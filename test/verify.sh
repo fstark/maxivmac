@@ -48,7 +48,7 @@ for golden in "$TESTDIR"/*.golden; do
     cp "$DISK_SRC" "$DISK_TMP"
 
     printf "%-14s " "$MODEL"
-    if "$EMU" --model="$MODEL" --rom="$ROM_PATH" \
+    if "$EMU" --model="$MODEL" --rom="$ROM_PATH" --scale=1\
               --verify="$golden" "$DISK_TMP" 2>&1 \
        | grep -q "^PASS"; then
         echo "PASS"

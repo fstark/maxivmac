@@ -12,7 +12,6 @@
 
 /* Optimization hints — compiler may override */
 
-#define C_INCLUDE_UNUSED 0
 #define UNUSED(p) (void)(p)
 #define UNUSED(p) (void)(p)
 

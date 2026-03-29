@@ -85,8 +85,6 @@ typedef uint8_t flag; /* 0/1 */
 	is different than on 68881.
 */
 
-#define cIncludeFPUUnused C_INCLUDE_UNUSED
-
 /* ----- from original file "softfloat.h" ----- */
 
 /*======================================================================
@@ -894,14 +892,6 @@ static inline flag lt128( ui6b a0, ui6b a1, ui6b b0, ui6b b1 )
 | Otherwise, returns 0.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static inline flag ne128( ui6b a0, ui6b a1, ui6b b0, ui6b b1 )
-{
-
-	return ( a0 != b0 ) || ( a1 != b1 );
-
-}
-#endif
 
 /* ----- end from original file "softfloat-macros" ----- */
 
@@ -1841,42 +1831,6 @@ static int32_t floatx80_to_int32( floatx80 a )
 | sign as `a' is returned.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static int32_t floatx80_to_int32_round_to_zero( floatx80 a )
-{
-	flag aSign;
-	int32_t aExp, shiftCount;
-	ui6b aSig, savedASig;
-	int32_t z;
-
-	aSig = extractFloatx80Frac( a );
-	aExp = extractFloatx80Exp( a );
-	aSign = extractFloatx80Sign( a );
-	if ( 0x401E < aExp ) {
-		if ( ( aExp == 0x7FFF ) && (ui6b) ( aSig<<1 ) ) aSign = 0;
-		goto invalid;
-	}
-	else if ( aExp < 0x3FFF ) {
-		if ( aExp || aSig ) float_exception_flags |= float_flag_inexact;
-		return 0;
-	}
-	shiftCount = 0x403E - aExp;
-	savedASig = aSig;
-	aSig >>= shiftCount;
-	z = aSig;
-	if ( aSign ) z = - z;
-	if ( ( z < 0 ) ^ aSign ) {
- invalid:
-		float_raise( float_flag_invalid );
-		return aSign ? (int32_t) 0x80000000 : 0x7FFFFFFF;
-	}
-	if ( ( aSig<<shiftCount ) != savedASig ) {
-		float_exception_flags |= float_flag_inexact;
-	}
-	return z;
-
-}
-#endif
 
 #ifdef FLOAT128
 
@@ -2486,30 +2440,6 @@ static floatx80 floatx80_sqrt( floatx80 a )
 | Arithmetic.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static flag floatx80_eq( floatx80 a, floatx80 b )
-{
-
-	if (    (    ( extractFloatx80Exp( a ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( a )<<1 ) )
-		 || (    ( extractFloatx80Exp( b ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( b )<<1 ) )
-	   ) {
-		if (    floatx80_is_signaling_nan( a )
-			 || floatx80_is_signaling_nan( b ) ) {
-			float_raise( float_flag_invalid );
-		}
-		return 0;
-	}
-	return
-		   ( a.low == b.low )
-		&& (    ( a.high == b.high )
-			 || (    ( a.low == 0 )
-				  && ( (uint16_t) ( ( a.high | b.high )<<1 ) == 0 ) )
-		   );
-
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Returns 1 if the extended double-precision floating-point value `a' is
@@ -2518,33 +2448,6 @@ static flag floatx80_eq( floatx80 a, floatx80 b )
 | Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static flag floatx80_le( floatx80 a, floatx80 b )
-{
-	flag aSign, bSign;
-
-	if (    (    ( extractFloatx80Exp( a ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( a )<<1 ) )
-		 || (    ( extractFloatx80Exp( b ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( b )<<1 ) )
-	   ) {
-		float_raise( float_flag_invalid );
-		return 0;
-	}
-	aSign = extractFloatx80Sign( a );
-	bSign = extractFloatx80Sign( b );
-	if ( aSign != bSign ) {
-		return
-			   aSign
-			|| (    ( ( (uint16_t) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
-				 == 0 );
-	}
-	return
-		  aSign ? le128( b.high, b.low, a.high, a.low )
-		: le128( a.high, a.low, b.high, b.low );
-
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Returns 1 if the extended double-precision floating-point value `a' is
@@ -2553,33 +2456,6 @@ static flag floatx80_le( floatx80 a, floatx80 b )
 | Arithmetic.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static flag floatx80_lt( floatx80 a, floatx80 b )
-{
-	flag aSign, bSign;
-
-	if (    (    ( extractFloatx80Exp( a ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( a )<<1 ) )
-		 || (    ( extractFloatx80Exp( b ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( b )<<1 ) )
-	   ) {
-		float_raise( float_flag_invalid );
-		return 0;
-	}
-	aSign = extractFloatx80Sign( a );
-	bSign = extractFloatx80Sign( b );
-	if ( aSign != bSign ) {
-		return
-			   aSign
-			&& (    ( ( (uint16_t) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
-				 != 0 );
-	}
-	return
-		  aSign ? lt128( b.high, b.low, a.high, a.low )
-		: lt128( a.high, a.low, b.high, b.low );
-
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Returns 1 if the extended double-precision floating-point value `a' is equal
@@ -2588,27 +2464,6 @@ static flag floatx80_lt( floatx80 a, floatx80 b )
 | according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static flag floatx80_eq_signaling( floatx80 a, floatx80 b )
-{
-
-	if (    (    ( extractFloatx80Exp( a ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( a )<<1 ) )
-		 || (    ( extractFloatx80Exp( b ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( b )<<1 ) )
-	   ) {
-		float_raise( float_flag_invalid );
-		return 0;
-	}
-	return
-		   ( a.low == b.low )
-		&& (    ( a.high == b.high )
-			 || (    ( a.low == 0 )
-				  && ( (uint16_t) ( ( a.high | b.high )<<1 ) == 0 ) )
-		   );
-
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Returns 1 if the extended double-precision floating-point value `a' is less
@@ -2617,36 +2472,6 @@ static flag floatx80_eq_signaling( floatx80 a, floatx80 b )
 | to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static flag floatx80_le_quiet( floatx80 a, floatx80 b )
-{
-	flag aSign, bSign;
-
-	if (    (    ( extractFloatx80Exp( a ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( a )<<1 ) )
-		 || (    ( extractFloatx80Exp( b ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( b )<<1 ) )
-	   ) {
-		if (    floatx80_is_signaling_nan( a )
-			 || floatx80_is_signaling_nan( b ) ) {
-			float_raise( float_flag_invalid );
-		}
-		return 0;
-	}
-	aSign = extractFloatx80Sign( a );
-	bSign = extractFloatx80Sign( b );
-	if ( aSign != bSign ) {
-		return
-			   aSign
-			|| (    ( ( (uint16_t) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
-				 == 0 );
-	}
-	return
-		  aSign ? le128( b.high, b.low, a.high, a.low )
-		: le128( a.high, a.low, b.high, b.low );
-
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Returns 1 if the extended double-precision floating-point value `a' is less
@@ -2655,36 +2480,6 @@ static flag floatx80_le_quiet( floatx80 a, floatx80 b )
 | IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static flag floatx80_lt_quiet( floatx80 a, floatx80 b )
-{
-	flag aSign, bSign;
-
-	if (    (    ( extractFloatx80Exp( a ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( a )<<1 ) )
-		 || (    ( extractFloatx80Exp( b ) == 0x7FFF )
-			  && (ui6b) ( extractFloatx80Frac( b )<<1 ) )
-	   ) {
-		if (    floatx80_is_signaling_nan( a )
-			 || floatx80_is_signaling_nan( b ) ) {
-			float_raise( float_flag_invalid );
-		}
-		return 0;
-	}
-	aSign = extractFloatx80Sign( a );
-	bSign = extractFloatx80Sign( b );
-	if ( aSign != bSign ) {
-		return
-			   aSign
-			&& (    ( ( (uint16_t) ( ( a.high | b.high )<<1 ) ) | a.low | b.low )
-				 != 0 );
-	}
-	return
-		  aSign ? lt128( b.high, b.low, a.high, a.low )
-		: lt128( a.high, a.low, b.high, b.low );
-
-}
-#endif
 
 #ifdef FLOAT128
 
@@ -3768,20 +3563,6 @@ static floatx80 floatx80_chs(floatx80 *x)
 | conversion overflows, the integer indefinite value is returned.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static Bit16s floatx80_to_int16(floatx80 a)
-{
-
-   Bit32s v32 = floatx80_to_int32(a);
-
-   if ((v32 > 32767) || (v32 < -32768)) {
-		float_exception_flags = float_flag_invalid; // throw way other flags
-		return int16_indefinite;
-   }
-
-   return (Bit16s) v32;
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Returns the result of converting the extended double-precision floating-
@@ -3792,20 +3573,6 @@ static Bit16s floatx80_to_int16(floatx80 a)
 | indefinite value is returned.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static Bit16s floatx80_to_int16_round_to_zero(floatx80 a)
-{
-
-   Bit32s v32 = floatx80_to_int32_round_to_zero(a);
-
-   if ((v32 > 32767) || (v32 < -32768)) {
-		float_exception_flags = float_flag_invalid; // throw way other flags
-		return int16_indefinite;
-   }
-
-   return (Bit16s) v32;
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Separate the source extended double-precision floating point value `a'
@@ -3926,36 +3693,6 @@ static floatx80 floatx80_scale(floatx80 a, floatx80 b)
 | Determine extended-precision floating-point number class.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static float_class_t floatx80_class(floatx80 a)
-{
-   Bit32s aExp = extractFloatx80Exp(a);
-   Bit64u aSig = extractFloatx80Frac(a);
-
-   if(aExp == 0) {
-	   if (aSig == 0)
-		   return float_zero;
-
-	   /* denormal or pseudo-denormal */
-	   return float_denormal;
-   }
-
-   /* valid numbers have the MS bit set */
-   if (!(aSig & LIT64(0x8000000000000000)))
-	   return float_NaN; /* report unsupported as NaNs */
-
-   if(aExp == 0x7fff) {
-	   int aSign = extractFloatx80Sign(a);
-
-	   if (((Bit64u) (aSig<< 1)) == 0)
-		   return (aSign) ? float_negative_inf : float_positive_inf;
-
-	   return float_NaN;
-   }
-
-   return float_normalized;
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Compare  between  two extended precision  floating  point  numbers. Returns
@@ -3965,65 +3702,6 @@ static float_class_t floatx80_class(floatx80 a)
 | value `b', or 'float_relation_unordered' otherwise.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static int floatx80_compare(floatx80 a, floatx80 b)
-{
-	int aSign;
-	int bSign;
-	Bit64u aSig;
-	Bit32s aExp;
-	Bit64u bSig;
-	Bit32s bExp;
-	int less_than;
-	float_class_t aClass = floatx80_class(a);
-	float_class_t bClass = floatx80_class(b);
-
-	if (aClass == float_NaN || bClass == float_NaN)
-	{
-		float_raise(float_flag_invalid);
-		return float_relation_unordered;
-	}
-
-	if (aClass == float_denormal || bClass == float_denormal)
-	{
-		float_raise(float_flag_denormal);
-	}
-
-	aSign = extractFloatx80Sign(a);
-	bSign = extractFloatx80Sign(b);
-
-	if (aClass == float_zero) {
-		if (bClass == float_zero) return float_relation_equal;
-		return bSign ? float_relation_greater : float_relation_less;
-	}
-
-	if (bClass == float_zero || aSign != bSign) {
-		return aSign ? float_relation_less : float_relation_greater;
-	}
-
-	aSig = extractFloatx80Frac(a);
-	aExp = extractFloatx80Exp(a);
-	bSig = extractFloatx80Frac(b);
-	bExp = extractFloatx80Exp(b);
-
-	if (aClass == float_denormal)
-		normalizeFloatx80Subnormal(aSig, &aExp, &aSig);
-
-	if (bClass == float_denormal)
-		normalizeFloatx80Subnormal(bSig, &bExp, &bSig);
-
-	if (aExp == bExp && aSig == bSig)
-		return float_relation_equal;
-
-	less_than =
-		aSign ? ((bExp < aExp) || ((bExp == aExp) && (bSig < aSig)))
-			  : ((aExp < bExp) || ((aExp == bExp) && (aSig < bSig)));
-
-	if (less_than) return float_relation_less;
-
-	return float_relation_greater;
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Compare  between  two extended precision  floating  point  numbers. Returns
@@ -4034,67 +3712,6 @@ static int floatx80_compare(floatx80 a, floatx80 b)
 | an exception.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static int floatx80_compare_quiet(floatx80 a, floatx80 b)
-{
-	int aSign;
-	int bSign;
-	Bit64u aSig;
-	Bit32s aExp;
-	Bit64u bSig;
-	Bit32s bExp;
-	int less_than;
-	float_class_t aClass = floatx80_class(a);
-	float_class_t bClass = floatx80_class(b);
-
-	if (aClass == float_NaN || bClass == float_NaN)
-	{
-
-		if (floatx80_is_signaling_nan(a) || floatx80_is_signaling_nan(b))
-			float_raise(float_flag_invalid);
-
-		return float_relation_unordered;
-	}
-
-	if (aClass == float_denormal || bClass == float_denormal)
-	{
-		float_raise(float_flag_denormal);
-	}
-
-	aSign = extractFloatx80Sign(a);
-	bSign = extractFloatx80Sign(b);
-
-	if (aClass == float_zero) {
-		if (bClass == float_zero) return float_relation_equal;
-		return bSign ? float_relation_greater : float_relation_less;
-	}
-
-	if (bClass == float_zero || aSign != bSign) {
-		return aSign ? float_relation_less : float_relation_greater;
-	}
-
-	aSig = extractFloatx80Frac(a);
-	aExp = extractFloatx80Exp(a);
-	bSig = extractFloatx80Frac(b);
-	bExp = extractFloatx80Exp(b);
-
-	if (aClass == float_denormal)
-		normalizeFloatx80Subnormal(aSig, &aExp, &aSig);
-
-	if (bClass == float_denormal)
-		normalizeFloatx80Subnormal(bSig, &bExp, &bSig);
-
-	if (aExp == bExp && aSig == bSig)
-		return float_relation_equal;
-
-	less_than =
-		aSign ? ((bExp < aExp) || ((bExp == aExp) && (bSig < aSig)))
-			  : ((aExp < bExp) || ((aExp == bExp) && (aSig < bSig)));
-
-	if (less_than) return float_relation_less;
-	return float_relation_greater;
-}
-#endif
 
 /* ----- end from original file "softfloatx80.cc" ----- */
 
@@ -4226,12 +3843,6 @@ static floatx80 do_fprem(floatx80 a, floatx80 b, Bit64u *q, int rounding_mode)
 | according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 *----------------------------------------------------------------------------*/
 
-#if cIncludeFPUUnused
-static floatx80 floatx80_ieee754_remainder(floatx80 a, floatx80 b, Bit64u *q)
-{
-	return do_fprem(a, b, q, float_round_nearest_even);
-}
-#endif
 
 /*----------------------------------------------------------------------------
 | Returns the remainder of the extended double-precision floating-point value
