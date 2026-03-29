@@ -356,6 +356,37 @@ MachineConfig BuildMachineConfig(const LaunchConfig& launch)
 		config.screenDepth = launch.screenDepth;
 	}
 
+	/*
+		Compact Macs (128K through Classic) normally share the
+		framebuffer with main RAM.  When a non-default screen size
+		is requested the ROM screen-hack patches ScrnBase to point
+		at kVidMem_Base (0x00540000), which is outside main RAM.
+		Allocate separate video memory so that address is mapped.
+	*/
+	if (!config.includeVidMem
+		&& !config.isIIFamily()
+		&& config.model != MacModel::PB100)
+	{
+		bool needScreenHack =
+			config.screenWidth != 512 || config.screenHeight != 342;
+		if (needScreenHack) {
+			uint32_t fbSize =
+				(((uint32_t)config.screenWidth * config.screenHeight
+					<< config.screenDepth) + 7) >> 3;
+			/* Round up to next power of two */
+			fbSize--;
+			fbSize |= fbSize >> 1;
+			fbSize |= fbSize >> 2;
+			fbSize |= fbSize >> 4;
+			fbSize |= fbSize >> 8;
+			fbSize |= fbSize >> 16;
+			fbSize++;
+			if (fbSize < 0x4000) fbSize = 0x4000;
+			config.includeVidMem = true;
+			config.vidMemSize = fbSize;
+		}
+	}
+
 	return config;
 }
 
