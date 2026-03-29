@@ -16,9 +16,7 @@
 
 
 /* Sony driver patch is used for all models except PB100 */
-#define UseSonyPatch 1
 
-#if UseSonyPatch
 static const uint8_t sony_driver[] = {
 /*
 	Replacement for .Sony driver
@@ -84,9 +82,7 @@ static const uint8_t sony_driver[] = {
 0x4C, 0xDF, 0x18, 0xF8, 0x4E, 0x75, 0x30, 0x3C,
 0xFF, 0xFF, 0x60, 0xF0
 };
-#endif
 
-#if UseSonyPatch
 static const uint8_t my_disk_icon[] = {
 	0x7F, 0xFF, 0xFF, 0xF0,
 	0x81, 0x00, 0x01, 0x08,
@@ -159,7 +155,6 @@ static const uint8_t my_disk_icon[] = {
 	/* empty pascal string */
 	0x00, 0x00,
 };
-#endif
 
 static uint32_t getSonyDriverBase() {
 	auto m = g_machine->config().model;
@@ -178,7 +173,6 @@ static uint32_t getSonyDriverBase() {
 	and optional screen-size hack.
 */
 #include "devices/screen_hack.h"
-#if UseSonyPatch
 static void Sony_Install()
 {
 	uint8_t * pto = Sony_DriverBase + g_rom;
@@ -211,15 +205,8 @@ static void Sony_Install()
 
 	(void) pto; /* avoid warning about unused */
 }
-#endif
 
-#ifndef DisableRomCheck
-#define DisableRomCheck 1
-#endif
 
-#ifndef DisableRamTest
-#define DisableRamTest 1
-#endif
 
 #ifdef CurAltHappyMac
 #include "devices/hpmac_hack.h"
@@ -255,7 +242,6 @@ static void ROMscrambleForMTB()
 */
  bool ROMDevice::init()
 {
-#if DisableRomCheck
 
 /* skip the rom checksum */
 {
@@ -275,10 +261,7 @@ static void ROMscrambleForMTB()
 	}
 }
 
-#endif /* DisableRomCheck */
 
-
-#if DisableRamTest
 
 {
 	auto m = g_machine->config().model;
@@ -298,22 +281,18 @@ static void ROMscrambleForMTB()
 	}
 }
 
-#endif /* DisableRamTest */
-
 #ifdef CurAltHappyMac
 	PatchHappyMac();
 #endif
 
 	/* do_put_mem_word(862 + ROM, 0x4E71); */ /* shorten set memory */
 
-#if UseSonyPatch
 	{
 		auto m = g_machine->config().model;
 		if (m != MacModel::PB100) {
 			Sony_Install();
 		}
 	}
-#endif
 
 #ifdef ln2mtb
 	ROMscrambleForMTB();

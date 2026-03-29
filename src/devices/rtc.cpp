@@ -53,9 +53,6 @@ static RTC_Ty s_rtc;
 
 static uint32_t s_lastRealDate;
 
-#ifndef RTCinitPRAM
-#define RTCinitPRAM 1
-#endif
 
 #ifndef TrackSpeed /* in 0..4 */
 #define TrackSpeed 0
@@ -158,7 +155,6 @@ bool RTCDevice::init()
 		s_rtc.PARAMRAM[Counter] = 0;
 	}
 
-#if RTCinitPRAM
 	s_rtc.PARAMRAM[0 + Group1Base] = 168; /* valid */
 
 #if EmLocalTalk
@@ -292,8 +288,6 @@ bool RTCDevice::init()
 	do_put_mem_long(&s_rtc.PARAMRAM[0xE4], g_curMacLatitude);
 	do_put_mem_long(&s_rtc.PARAMRAM[0xE8], g_curMacLongitude);
 	do_put_mem_long(&s_rtc.PARAMRAM[0xEC], g_curMacDelta);
-
-#endif /* RTCinitPRAM */
 
 #if dbglog_HAVE
 	DumpRTC();
