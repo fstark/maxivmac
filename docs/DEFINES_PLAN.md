@@ -20,14 +20,14 @@ compile or exclude code blocks, replacing them with either always-compiled code
 
 ## Summary
 
-| Category | Defines | Total `#if` sites | Action |
-|----------|---------|-------------------|--------|
-| Always-1 emulation features | 9 | ~314 | Remove guard, keep the code |
-| Always-0 disabled features | 13 | ~46 | Remove guard AND the dead code |
-| Always-0 but keep for debug | 12 | ~155 | Keep (debug toggle) |
-| CMake-configurable | 2 | ~71 | Keep or convert to runtime |
-| Platform-dependent | 4 | ~22 | Keep (portability) |
-| Derived/conditional | ~8 | ~20 | Remove after parent is resolved |
+| Category | Defines | Total `#if` sites | Action | Status |
+|----------|---------|-------------------|--------|--------|
+| Always-1 emulation features | 9 | ~314 | Remove guard, keep the code | Open |
+| Always-0 disabled features | 15 | ~83 | Remove guard AND the dead code | **Done** |
+| Always-0 but keep for debug | 20 | ~155 | Keep (debug toggle) | Keep |
+| CMake-configurable | 2 | ~71 | Keep or convert to runtime | Open |
+| Platform-dependent | ~10 | ~22 | Keep (portability) | Keep |
+| Derived/conditional | ~8 | ~20 | Remove after parent is resolved | Partial |
 
 ---
 
@@ -240,105 +240,29 @@ These defines are always `1`. The `#if 0` branches are dead code. Remove the
 
 ---
 
-## Phase 3 — Always-Off Constants (value = 0, dead code)
+## Phase 3 — Always-Off Constants (value = 0, dead code) — COMPLETE
 
-These defines are always `0`. The `#if` true-branches are dead code. Remove
-the `#if`/`#else`/`#endif` scaffolding. Keep only the "false"/"else" branch
-(if one exists), or delete the entire block.
+All 15 Phase 3 defines have been removed across 14 commits. Details in
+git history. Three defines were compiled in unconditionally
+(`SONY_VERIFY_CHECKSUMS`, `WantAutoScrollBorder`, `UseLargeScreenHack`);
+the remaining 12 were removed along with their dead code.
 
-### 3.1 `EXTRA_ABNORMAL_REPORTS` — always 0 (9 `#if` sites)
-
-- **Defined:** `emulation_config.h:43`
-- **Used in:** `machine.cpp`, `sony.cpp`, `via_base.cpp`
-- **Action:** Remove guards and the extra-verbose reporting code.
-
-### 3.2 `SONY_VERIFY_CHECKSUMS` — always 0 (1 `#if` site)
-
-- **Defined:** `emulation_config.h:35`
-- **Used in:** `sony.cpp`
-- **Action:** Remove guard and compile in the checksum-verification code
-  unconditionally. Replace `ReportAbnormalID` calls with warning log messages.
-
-### 3.3 `GRAB_KEYS_MAX_FULL_SCREEN` — always 0 (1 `#if` site)
-
-- **Defined:** `osglu_common.h:18`
-- **Used in:** `osglu_common.cpp`
-- **Action:** Remove guard and dead code.
-
-### 3.4 `EnableAltKeysMode` — always 0 (7 `#if` sites)
-
-- **Defined:** `platform_config.h:10`
-- **Used in:** `control_mode.h`, `intl_chars.h`
-- **Action:** Remove guards and alt-key-mode code.
-
-### 3.5 `NeedIntlChars` — always 0 (9 `#if` sites)
-
-- **Defined:** `platform_config.h:45`
-- **Used in:** `intl_chars.h`, `intl_chars.cpp`
-- **Action:** Remove guards and the international character code.
-
-### 3.6 `WantInitRunInBackground` — always 0 (used in expression only)
-
-- **Defined:** `platform_config.h:37`
-- **Used in:** `intl_chars.cpp` as `(WantInitRunInBackground != 0)` → `false`
-- **Action:** Replace with `false`, delete define.
-
-### 3.7 `MyAppIsBundle` — always 0 (used in expression only)
-
-- **Defined:** `sdl_config.h:15`
-- **Action:** Replace with `false`/`0` where used, delete define.
-
-### 3.8 `WantAutoScrollBorder` — always 0 (5 `#if` sites)
-
-- **Defined:** `osglu_common.cpp:638`
-- **Used in:** `osglu_common.cpp`
-- **Action:** Remove guards and the auto-scroll border code.
-
-### 3.9 `UseLargeScreenHack` — always 0 (2 `#if` sites)
-
-- **Defined:** `rom.cpp:22`
-- **Used in:** `rom.cpp`
-- **Action:** Remove guards and keep the code — compile in unconditionally
-  so the screen hack executes when the screen differs from default.
-
-### 3.10 `HaveGlbReg` — always 0 (6 `#if` sites)
-
-- **Defined:** `m68k.cpp:137`
-- **Used in:** `m68k.cpp`
-- **Action:** Remove guards. Global-register optimization is not used.
-  Simplify `V_regs`/`V_pc_p`/etc. to their normal expansions and remove
-  the indirection macros.
-
-### 3.11 `FasterAlignedL` — always 0 (8 `#if` sites)
-
-- **Defined:** `m68k.cpp:128`
-- **Used in:** `m68k.cpp`
-- **Action:** Remove guards and the aligned-long optimization code.
-
-### 3.12 `DisableLazyFlagAll` — always 0 (4 `#if` sites)
-
-- **Defined:** `m68k.cpp:38`
-- **Used in:** `m68k.cpp` (controls `ForceFlagsEval`, `UseLazyZ`, `UseLazyCC`)
-- **Action:** Remove. This unblocks removal of `ForceFlagsEval` (→ 0),
-  `UseLazyZ` (→ 1), `UseLazyCC` (→ 1).
-
-### 3.13 `ForceFlagsEval` — always 0 (5 `#if` sites)
-
-- **Defined:** `m68k.cpp:50` (derived: 0 when `DisableLazyFlagAll` = 0)
-- **Used in:** `m68k.cpp`
-- **Action:** Remove after `DisableLazyFlagAll` is removed.
-
-### 3.14 `C_INCLUDE_UNUSED` / `cIncludeFPUUnused` — always 0 (14 `#if` sites)
-
-- **Defined:** `types.h:15`, aliased in `fpu_math.h:88`
-- **Used in:** `fpu_math.h`
-- **Action:** Remove guards and delete the unused FPU routines they protect.
-
-### 3.15 `NeedCell2WinAsciiMap` — always 0 (3 `#if` sites)
-
-- **Defined:** `intl_chars.h:260`
-- **Used in:** `intl_chars.h`
-- **Action:** Remove guard and the Windows-ASCII mapping table.
+| # | Define(s) | Action | Commit |
+|---|-----------|--------|--------|
+| 1 | `DisableLazyFlagAll` + `ForceFlagsEval`, `UseLazyZ`, `UseLazyCC` | Remove | e1895b1 |
+| 2 | `HaveGlbReg` | Remove | 8d905f5 |
+| 3 | `FasterAlignedL` | Remove | 597c407 |
+| 4 | `EXTRA_ABNORMAL_REPORTS` | Remove | 487cefe |
+| 5 | `SONY_VERIFY_CHECKSUMS` | Compile in | 4d44b35 |
+| 6 | `GRAB_KEYS_MAX_FULL_SCREEN` | Remove | 3cabcce |
+| 7 | `EnableAltKeysMode` | Remove | 9ac5be1 |
+| 8 | `NeedIntlChars` | Remove | 9f07ecb |
+| 9 | `WantInitRunInBackground` | Remove | dee6b2f |
+| 10 | `MyAppIsBundle` | Remove | 1f41a61 |
+| 11 | `WantAutoScrollBorder` | Compile in | f6ad866 |
+| 12 | `UseLargeScreenHack` | Compile in | 7a5c6c0 |
+| 13 | `C_INCLUDE_UNUSED`, `cIncludeFPUUnused` | Remove | 405cf05 |
+| 14 | `NeedCell2WinAsciiMap` | Remove | 076540b |
 
 ---
 
@@ -445,10 +369,10 @@ these become trivially constant and can be removed too.
 
 | Define | Derives from | Sites | Action |
 |--------|-------------|-------|--------|
-| `ForceFlagsEval` | `DisableLazyFlagAll` | 5 | Remove (→ 0) after Phase 3.12 |
-| `UseLazyZ` | `DisableLazyFlagAll` | 9 | Remove (→ 1) after Phase 3.12 |
-| `UseLazyCC` | `DisableLazyFlagAll` | 7 | Remove (→ 1) after Phase 3.12 |
-| `cIncludeFPUUnused` | `C_INCLUDE_UNUSED` | 14 | Remove (→ 0) after Phase 3.14 |
+| ~~`ForceFlagsEval`~~ | ~~`DisableLazyFlagAll`~~ | ~~5~~ | ~~Done (Phase 3, step 1)~~ |
+| ~~`UseLazyZ`~~ | ~~`DisableLazyFlagAll`~~ | ~~9~~ | ~~Done (Phase 3, step 1)~~ |
+| ~~`UseLazyCC`~~ | ~~`DisableLazyFlagAll`~~ | ~~7~~ | ~~Done (Phase 3, step 1)~~ |
+| ~~`cIncludeFPUUnused`~~ | ~~`C_INCLUDE_UNUSED`~~ | ~~14~~ | ~~Done (Phase 3, step 13)~~ |
 | `Sony_SupportOtherFormats` | `SONY_SUPPORT_DC42` | 0 | Remove after Phase 1.9 |
 | `NeedDoMoreCommandsMsg` | `UseControlKeys` | 3 | Remove (→ 1) after Phase 2.18 |
 | `NeedDoAboutMsg` | `UseControlKeys` | 3 | Remove (→ 1) after Phase 2.18 |
@@ -463,36 +387,50 @@ these become trivially constant and can be removed too.
 ## Execution Order
 
 Each phase should be done in a separate commit (or series of commits) with a
-compile-and-test gate. The golden-file self-tests (`selftest.sh`) must pass
-after every phase.
+compile-and-test gate. The golden-file tests (`cd test && ./verify.sh`) must
+pass after every phase.
 
-| Step | Phase | Defines removed | Est. `#if` sites cleaned | Risk |
-|------|-------|----------------|-------------------------|------|
-| 1 | 3.12 | `DisableLazyFlagAll` | 4 | Low |
-| 2 | 7 (partial) | `ForceFlagsEval`, `UseLazyZ`, `UseLazyCC` | 21 | Low |
-| 3 | 3.10 | `HaveGlbReg` | 6 | Low |
-| 4 | 3.11 | `FasterAlignedL` | 8 | Low |
-| 5 | 2.3 | `USE_PCLIMIT` | 13 | Low |
-| 6 | 1.6 | `WANT_DISASM` | 7 | Low |
-| 7 | 1.7+1.8 | `INCLUDE_EXTN_PBUFS`, `INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE` | 15 | Low |
-| 8 | 1.9+2.1–2.2 | `SONY_SUPPORT_DC42`, `SONY_SUPPORT_TAGS`, `SONY_WANT_CHECKSUMS_UPDATED` | 24 | Low |
-| 9 | 3.2 | `SONY_VERIFY_CHECKSUMS` | 1 | Low |
-| 10 | 1.2+1.3 | `EM_FPU`, `EM_MMU` | 22 | Low |
-| 11 | 2.6–2.9 | `UseSonyPatch`, `DisableRomCheck`, `DisableRamTest`, `RTCinitPRAM` | 10 | Low |
-| 12 | 2.10+2.11+2.12 | `HAVE_WORKING_WARP`, `USE_MOTION_EVENTS`, `PbufHaveLock` | 15 | Low |
-| 13 | 2.13–2.17 | `WantColorTransValid`, `ENABLE_FS_MOUSE_MOTION`, `ENABLE_RECREATE_W`, `ENABLE_MOVE_MOUSE`, `GRAB_KEYS_FULL_SCREEN` | 28 | Low |
-| 14 | 2.18–2.21 | `UseControlKeys`, `WantEnblCtrlInt/Rst/Ktg` | 29 | Low |
-| 15 | 3.1 | `EXTRA_ABNORMAL_REPORTS` | 9 | Low |
-| 16 | 3.3–3.9 | `GRAB_KEYS_MAX_FULL_SCREEN`, `EnableAltKeysMode`, `NeedIntlChars`, `WantAutoScrollBorder`, `UseLargeScreenHack`, etc. | ~26 | Low |
-| 17 | 3.14+3.15 | `C_INCLUDE_UNUSED` / `cIncludeFPUUnused`, `NeedCell2WinAsciiMap` | 17 | Low |
-| 18 | 5.3 | `dbglog_HAVE` | 71 | Medium — touches many files, rewrite `*_dolog` expressions |
-| 19 | 1.1 | `USE_68020` | 86 | High — large volume, CPU-critical code |
-| 20 | 1.4 | `WANT_CYC_BY_PRI_OP` | 114 | High — largest volume define |
-| 21 | 1.5 | `WANT_CLOSER_CYC` | 65 | High — CPU-critical code |
-| 22 | 7 (rest) | Remaining derived/structural | ~20 | Low |
-| 23 | 2.22+2.23+3.6+3.7 | `SaveDialogEnable`, `EnableDragDrop`, `WantInitRunInBackground`, `MyAppIsBundle` | ~4 | Low |
+### Completed
 
-**Total:** ~53 defines removed, ~630 `#if` sites cleaned up.
+| Step | Phase | Defines removed | Status |
+|------|-------|----------------|--------|
+| 1 | 3.12+3.13 | `DisableLazyFlagAll`, `ForceFlagsEval`, `UseLazyZ`, `UseLazyCC` | **Done** |
+| 2 | 3.10 | `HaveGlbReg` | **Done** |
+| 3 | 3.11 | `FasterAlignedL` | **Done** |
+| 4 | 3.1 | `EXTRA_ABNORMAL_REPORTS` | **Done** |
+| 5 | 3.2 | `SONY_VERIFY_CHECKSUMS` (compiled in) | **Done** |
+| 6 | 3.3 | `GRAB_KEYS_MAX_FULL_SCREEN` | **Done** |
+| 7 | 3.4 | `EnableAltKeysMode` | **Done** |
+| 8 | 3.5 | `NeedIntlChars` | **Done** |
+| 9 | 3.6 | `WantInitRunInBackground` | **Done** |
+| 10 | 3.7 | `MyAppIsBundle` | **Done** |
+| 11 | 3.8 | `WantAutoScrollBorder` (compiled in) | **Done** |
+| 12 | 3.9 | `UseLargeScreenHack` (compiled in) | **Done** |
+| 13 | 3.14 | `C_INCLUDE_UNUSED`, `cIncludeFPUUnused` | **Done** |
+| 14 | 3.15 | `NeedCell2WinAsciiMap` | **Done** |
+
+### Remaining
+
+| Step | Phase | Defines to remove | Est. `#if` sites | Risk |
+|------|-------|-------------------|-----------------|------|
+| 15 | 2.3 | `USE_PCLIMIT` | 13 | Low |
+| 16 | 1.6 | `WANT_DISASM` | 7 | Low |
+| 17 | 1.7+1.8 | `INCLUDE_EXTN_PBUFS`, `INCLUDE_EXTN_HOST_TEXT_CLIP_EXCHANGE` | 15 | Low |
+| 18 | 1.9+2.1–2.2 | `SONY_SUPPORT_DC42`, `SONY_SUPPORT_TAGS`, `SONY_WANT_CHECKSUMS_UPDATED` | 24 | Low |
+| 19 | 1.2+1.3 | `EM_FPU`, `EM_MMU` | 22 | Low |
+| 20 | 2.6–2.9 | `UseSonyPatch`, `DisableRomCheck`, `DisableRamTest`, `RTCinitPRAM` | 10 | Low |
+| 21 | 2.10+2.11+2.12 | `HAVE_WORKING_WARP`, `USE_MOTION_EVENTS`, `PbufHaveLock` | 15 | Low |
+| 22 | 2.13–2.17 | `WantColorTransValid`, `ENABLE_FS_MOUSE_MOTION`, `ENABLE_RECREATE_W`, `ENABLE_MOVE_MOUSE`, `GRAB_KEYS_FULL_SCREEN` | 28 | Low |
+| 23 | 2.18–2.21 | `UseControlKeys`, `WantEnblCtrlInt/Rst/Ktg` | 29 | Low |
+| 24 | 2.22+2.23 | `SaveDialogEnable`, `EnableDragDrop` | ~4 | Low |
+| 25 | 5.3 | `dbglog_HAVE` | 71 | Medium |
+| 26 | 1.1 | `USE_68020` | 86 | High |
+| 27 | 1.4 | `WANT_CYC_BY_PRI_OP` | 114 | High |
+| 28 | 1.5 | `WANT_CLOSER_CYC` | 65 | High |
+| 29 | 7 (rest) | Remaining derived/structural | ~20 | Low |
+
+**Phase 3 total: 15 defines removed, ~83 `#if` sites cleaned, 14 commits.**
+**Remaining: ~38 defines, ~547 `#if` sites.**
 
 ---
 

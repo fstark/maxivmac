@@ -82,13 +82,6 @@ are compiled in.
 | `SONY_SUPPORT_DC42` | `1` | `emulation_config.h` | Support DiskCopy 4.2 disk image format. |
 | `SONY_SUPPORT_TAGS` | `1` | `emulation_config.h` | Support tag data in disk images. |
 | `SONY_WANT_CHECKSUMS_UPDATED` | `1` | `emulation_config.h` | Update DC42 checksums on disk writes. |
-| `SONY_VERIFY_CHECKSUMS` | `0` | `emulation_config.h` | Verify DC42 checksums when opening images (disabled). |
-
-### Abnormal Reports
-
-| Define | Value | File | Description |
-|--------|-------|------|-------------|
-| `EXTRA_ABNORMAL_REPORTS` | `0` | `emulation_config.h` | Extra-verbose abnormal situation reports (disabled by default). |
 
 ---
 
@@ -339,27 +332,14 @@ actual handler functions.
 Defined in `src/cpu/m68k.cpp` and `src/cpu/m68k_tables.cpp`. These are internal
 to the 68000 emulator and largely inherited from the original minivmac.
 
-### Lazy Flag Evaluation
+### Register Access
 
-| Define | Value | Description |
-|--------|-------|-------------|
-| `DisableLazyFlagAll` | `0` | Disable all lazy flag evaluation (debug aid). |
-| `ForceFlagsEval` | `0` (or `1` if `DisableLazyFlagAll`) | Force immediate flag eval after every op. |
-| `UseLazyZ` | `1` | Use lazy evaluation for the Z (zero) flag. |
-| `UseLazyCC` | `1` | Use lazy condition-code evaluation. |
-
-### Register Access Indirection
-
-The CPU emulator supports global-register optimization (`HaveGlbReg`). These
-macros abstract register access so the same code works with or without it.
-
-| Define | Normal expansion | Description |
-|--------|-----------------|-------------|
+| Define | Expansion | Description |
+|--------|-----------|-------------|
 | `V_regs` | `regs` | CPU register struct access. |
 | `V_pc_p` | `V_regs.pc_p` | Program counter pointer. |
 | `V_MaxCyclesToGo` | `V_regs.MaxCyclesToGo` | Remaining cycles in current slice. |
 | `V_pc_pHi` | `V_regs.pc_pHi` | Upper bound of current PC block. |
-| `HaveGlbReg` | `0` | Global register optimization (disabled). |
 
 ### CPU Status Flag Shortcuts
 
@@ -412,7 +392,6 @@ macros abstract register access so the same code works with or without it.
 |--------|-------|-------------|
 | `USE_PCLIMIT` | `1` | Use PC limit checking for block boundaries. |
 | `AKMemory` / `AKRegister` | `0` / `1` | Argument-kind constants (memory vs register). |
-| `FasterAlignedL` | `0` | Optimize for aligned long accesses (disabled). |
 | `disp_table_sz` | `256 * 256` | Size of opcode dispatch table (65536 entries). |
 | `ui5r_MSBisSet(x)` | sign test | Test if MSB of 32-bit value is set. |
 | `Bool2Bit(x)` | ternary | Convert boolean to 0/1 integer. |
@@ -421,14 +400,14 @@ macros abstract register access so the same code works with or without it.
 | `ui5b_lo(x)` / `ui5b_hi(x)` | mask/shift | Extract low/high 16 bits of 32-bit value. |
 | `MoveAvgN` | `0` or `3` | Average extra MOVE cycles (by cycle precision). |
 | `Ln2SavedPCs` / `NumSavedPCs` / `SavedPCsMask` | `4` / `16` / `15` | PC history ring buffer (disasm.cpp). |
-| `Em_Enter` / `Em_Exit` | no-op or `Em_Swap` | Entry/exit for global-register mode. |
-| `NeedDefaultLazyAllFlags` | function alias | Lazy flag setup. |
-| `HaveSetUpFlags` | function alias or no-op | Flag setup acknowledgment. |
+| `Em_Enter` / `Em_Exit` | no-op | Entry/exit hooks (no-op since global-register mode removed). |
+| `NeedDefaultLazyAllFlags` | `NeedDefaultLazyAllFlags0` | Lazy flag setup. |
+| `HaveSetUpFlags` | no-op | Flag setup acknowledgment (no-op). |
 | `WillSetZFLG` | alias to `NeedDefaultLazyAllFlags` | Signal that Z flag will be set. |
 | `DoCodeBccB_t` / `DoCodeBccW_t` | `DoCodeBraB` / `SkipiWord` | Branch-taken aliases. |
 | `DoCodeBccW_f` / `DoCodeDBcc_t` | `SkipiWord` | Branch-not-taken / DBcc-true aliases. |
-| `LocalMemAccessNtfy` | `MemAccessNtfy` | Memory-access notification alias. |
-| `LocalMMDV_Access` | `MMDV_Access` | Memory-mapped device access alias. |
+| `LocalMemAccessNtfy` | `MemAccessNtfy` | Memory-access notification (direct alias since global-register mode removed). |
+| `LocalMMDV_Access` | `MMDV_Access` | Memory-mapped device access (direct alias since global-register mode removed). |
 
 ---
 
@@ -441,7 +420,6 @@ configuration for the SoftFloat-based FPU emulator.
 
 | Define | Value | Description |
 |--------|-------|-------------|
-| `cIncludeFPUUnused` | `C_INCLUDE_UNUSED` | Compile unused FPU routines (matches global). |
 | `FLOATX80` | (defined) | Enable 80-bit extended precision type. |
 | `FLOAT128` | (defined) | Enable 128-bit quad precision type. |
 | `HaveUi5to6Mul` | `1` | 32→64 bit multiply available. |
@@ -721,7 +699,6 @@ Defined in `src/platform/sdl_sound.cpp`.
 | Define | Value | Description |
 |--------|-------|-------------|
 | `EnableDragDrop` | `1` | Enable drag-and-drop disk image mounting. |
-| `MyAppIsBundle` | `0` | Application is not a macOS app bundle. |
 | `kStrAppName` | `"Maxi vMac"` | Display name of the application. |
 | `kAppVariationStr` | `"maxivmac-sdl"` | Variation identifier string. |
 | `kStrCopyrightYear` | `"2026"` | Copyright year. |
@@ -733,13 +710,10 @@ Defined in `src/platform/sdl_sound.cpp`.
 | Define | Value | Description |
 |--------|-------|-------------|
 | `SaveDialogEnable` | `1` | Enable native save dialogs. |
-| `EnableAltKeysMode` | `0` | Alternate keyboard mode (disabled). |
-| `WantInitRunInBackground` | `0` | Start with run-in-background off. |
 | `WantEnblCtrlInt` | `1` | Enable Control-Mode interrupt command. |
 | `WantEnblCtrlRst` | `1` | Enable Control-Mode reset command. |
 | `WantEnblCtrlKtg` | `1` | Enable Control-Mode key toggle command. |
 | `UseControlKeys` | `1` | Use control-key combinations. |
-| `NeedIntlChars` | `0` | Compile international character support (disabled). |
 | `kBldOpts` | `"maxivmac " + version` | Build options string shown in About. |
 
 ### OS-Glue Common (osglu_common.h)
@@ -750,7 +724,6 @@ Defined in `src/platform/sdl_sound.cpp`.
 | `ENABLE_RECREATE_W` | `1` | Enable window recreation on mode change. |
 | `ENABLE_MOVE_MOUSE` | `1` | Enable programmatic mouse positioning. |
 | `GRAB_KEYS_FULL_SCREEN` | `1` | Grab keyboard in full-screen mode. |
-| `GRAB_KEYS_MAX_FULL_SCREEN` | `0` | Grab keyboard in maximized full-screen (disabled). |
 
 ### SDL Platform (sdl.cpp)
 
@@ -824,12 +797,6 @@ Defined in `src/platform/common/control_mode.cpp` and `control_mode.h`.
 | `PbufIsAllocated(i)` | bitmask test | Test if pbuf index is allocated. |
 | `NOT_A_PBUF` | `0xFFFF` | Sentinel value for invalid pbuf index. |
 
-### Scrolling (osglu_common.cpp)
-
-| Define | Value | Description |
-|--------|-------|-------------|
-| `WantAutoScrollBorder` | `0` | Auto-scroll border zone size (disabled). |
-
 ### International Characters (intl_chars.h)
 
 | Define | Default | Description |
@@ -837,7 +804,6 @@ Defined in `src/platform/common/control_mode.cpp` and `control_mode.h`.
 | `NeedCell2MacAsciiMap` | `1` | Compile Mac-ASCII mapping table. |
 | `NeedCell2PlainAsciiMap` | `1` | Compile plain-ASCII mapping table. |
 | `NeedCell2UnicodeMap` | `1` | Compile Unicode mapping table. |
-| `NeedCell2WinAsciiMap` | `0` | Compile Windows-ASCII mapping table (disabled). |
 | `NeedRequestInsertDisk` | `1` | Compile disk-insert request support. |
 | `NeedDoMoreCommandsMsg` | `1` | Compile "More Commands" message. |
 | `NeedDoAboutMsg` | `1` | Compile About message. |
@@ -960,7 +926,6 @@ Mac OS trap parameter block field offsets (matching Inside Macintosh):
 | Define | Value | Description |
 |--------|-------|-------------|
 | `UseSonyPatch` | `1` | Apply Sony driver patch to ROM. |
-| `UseLargeScreenHack` | `0` | Large screen hack (disabled). |
 | `DisableRomCheck` | `1` | Skip ROM checksum verification. |
 | `DisableRamTest` | `1` | Skip RAM test on boot (faster startup). |
 | `HappyMacBase` | model-dependent | ROM offset for Happy Mac icon (patched). |
@@ -1010,7 +975,6 @@ guest-to-host trap interface used by maxivmac extensions.
 
 | Define | Value | Description |
 |--------|-------|-------------|
-| `C_INCLUDE_UNUSED` | `0` | Don't compile unused code paths. |
 | `UNUSED(p)` | `(void)(p)` | Suppress unused-parameter warning. |
 | `BIG_ENDIAN_UNALIGNED` | `0` | Big-endian unaligned access available (default: no). |
 | `LITTLE_ENDIAN_UNALIGNED` | `0` | Little-endian unaligned access available (default: no). |
