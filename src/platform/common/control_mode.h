@@ -47,13 +47,9 @@ void MacMsgDisplayOff();
 tMacErr ROM_IsValid();
 bool WaitForRom();
 
-#if NeedDoMoreCommandsMsg
 void DoMoreCommandsMsg();
-#endif
 
-#if NeedDoAboutMsg
 void DoAboutMsg();
-#endif
 
 void MacMsgDebugAlert(const char *s);
 

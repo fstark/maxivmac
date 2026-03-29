@@ -623,8 +623,7 @@ bool g_wantFullScreen = false;
 
 bool g_wantMagnify = true;
 
-/* NeedRequestInsertDisk, NeedDoMoreCommandsMsg, NeedDoAboutMsg,
-   NeedRequestIthDisk defaults are provided by intl_chars.h */
+/* NeedRequestInsertDisk, NeedRequestIthDisk defaults are provided by intl_chars.h */
 
 bool g_requestInsertDisk = false;
 

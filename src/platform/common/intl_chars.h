@@ -163,14 +163,6 @@ extern bool g_wantMagnify;
 #define NeedRequestInsertDisk 1
 #endif
 
-#ifndef NeedDoMoreCommandsMsg
-#define NeedDoMoreCommandsMsg 1
-#endif
-
-#ifndef NeedDoAboutMsg
-#define NeedDoAboutMsg 1
-#endif
-
 extern bool g_requestInsertDisk;
 
 #ifndef NeedRequestIthDisk

@@ -386,21 +386,17 @@ void MacMsgDebugAlert(const char *s)
 	MacMsgOverride("Debug", s);
 }
 
-#if NeedDoMoreCommandsMsg
 void DoMoreCommandsMsg()
 {
 	MacMsgOverride(Localize(kStrMoreCommandsTitle),
 		Localize(kStrMoreCommandsMessage));
 }
-#endif
 
-#if NeedDoAboutMsg
 void DoAboutMsg()
 {
 	MacMsgOverride(Localize(kStrAboutTitle),
 		Localize(kStrAboutMessage));
 }
-#endif
 
 void NoRomMsgDisplayOff()
 {
