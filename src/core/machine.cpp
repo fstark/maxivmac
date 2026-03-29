@@ -1299,15 +1299,15 @@ static void SetUpMemBanks()
 	read/write to the correct device handler based on
 	the MMDV tag in the ATT entry.
 */
- uint32_t MMDV_Access(ATTep p, uint32_t Data,
-	bool WriteMem, bool ByteSize, uint32_t addr)
+ uint32_t MMDV_Access(ATTep p, uint32_t data,
+	bool writeMem, bool byteSize, uint32_t addr)
 {
-	uint32_t origData = Data;
+	uint32_t origData = data;
 	switch (p->MMDV) {
 		case kMMDV_VIA1:
-			if (! ByteSize) {
+			if (! byteSize) {
 				if (g_machine->config().isIIFamily()
-					&& WriteMem && (addr == 0xF40006))
+					&& writeMem && (addr == 0xF40006))
 				{
 					/* for weirdness on shutdown in System 6 */
 				} else
@@ -1329,22 +1329,22 @@ static void SetUpMemBanks()
 							"access VIA1 nonstandard address");
 					}
 				}
-				Data = p->device->access(Data, WriteMem,
+				data = p->device->access(data, writeMem,
 					(addr >> 9) & kVIA1_Mask);
 			}
 
 			break;
 		case kMMDV_VIA2:
-			if (! ByteSize) {
-				if ((! WriteMem)
+			if (! byteSize) {
+				if ((! writeMem)
 					&& ((0x3e00 == (addr & 0x1FFFF))
 						|| (0x3e02 == (addr & 0x1FFFF))))
 				{
 					/* for weirdness at offset 0x71E in ROM */
-					Data =
-						(p->device->access(Data, WriteMem,
+					data =
+						(p->device->access(data, writeMem,
 							(addr >> 9) & kVIA2_Mask) << 8)
-						| p->device->access(Data, WriteMem,
+						| p->device->access(data, writeMem,
 							(addr >> 9) & kVIA2_Mask);
 
 				} else {
@@ -1356,7 +1356,7 @@ static void SetUpMemBanks()
 						for weirdness at offset 0x7C4 in g_rom.
 						looks like bug.
 					*/
-					Data = p->device->access(Data, WriteMem,
+					data = p->device->access(data, writeMem,
 						(addr >> 9) & kVIA2_Mask);
 				} else {
 					ReportAbnormalID(AbnormalID::kMACH_VIA2_odd, "access VIA2 odd");
@@ -1366,7 +1366,7 @@ static void SetUpMemBanks()
 					ReportAbnormalID(AbnormalID::kMACH_VIA2_nonstandard_address,
 						"access VIA2 nonstandard address");
 				}
-				Data = p->device->access(Data, WriteMem,
+				data = p->device->access(data, writeMem,
 					(addr >> 9) & kVIA2_Mask);
 			}
 			break;
@@ -1380,13 +1380,13 @@ static void SetUpMemBanks()
 					break;
 				}
 			}
-			if (! ByteSize) {
+			if (! byteSize) {
 				ReportAbnormalID(AbnormalID::kMACH_Attemped_Phase_Adjust, "Attemped Phase Adjust");
 			} else
 			if (!g_machine->config().isIIFamily()
-				&& WriteMem != ((addr & 1) != 0))
+				&& writeMem != ((addr & 1) != 0))
 			{
-				if (WriteMem) {
+				if (writeMem) {
 					auto m = g_machine->config().model;
 					if (m >= MacModel::Mac512Ke
 						&& m != MacModel::PB100)
@@ -1399,7 +1399,7 @@ static void SetUpMemBanks()
 			} else
 			if (g_machine->config().model != MacModel::PB100
 				&& !g_machine->config().isIIFamily()
-				&& WriteMem != (addr >= kSCCWr_Block_Base))
+				&& writeMem != (addr >= kSCCWr_Block_Base))
 			{
 				ReportAbnormalID(AbnormalID::kMACH_SCC_wr_rd_base_wrong, "access SCC wr/rd base wrong");
 			} else
@@ -1416,49 +1416,49 @@ static void SetUpMemBanks()
 							"access SCC nonstandard address");
 					}
 				}
-				Data = p->device->access(Data, WriteMem,
+				data = p->device->access(data, writeMem,
 					(addr >> 1) & kSCC_Mask);
 			}
 			break;
 		case kMMDV_Extn:
-			if (ByteSize) {
+			if (byteSize) {
 				ReportAbnormalID(AbnormalID::kMACH_Sony_byte, "access Sony byte");
 			} else if ((addr & 1) != 0) {
 				ReportAbnormalID(AbnormalID::kMACH_Sony_odd, "access Sony odd");
-			} else if (! WriteMem) {
+			} else if (! writeMem) {
 				ReportAbnormalID(AbnormalID::kMACH_Sony_read, "access Sony read");
 			} else {
-				p->device->access(Data, WriteMem, (addr >> 1) & 0x0F);
+				p->device->access(data, writeMem, (addr >> 1) & 0x0F);
 			}
 			break;
 		case kMMDV_ASC:
-			if (! ByteSize) {
+			if (! byteSize) {
 				if (g_machine->config().isIIFamily()) {
-					if (WriteMem) {
-						(void) p->device->access((Data >> 8) & 0x00FF,
-							WriteMem, addr & kASC_Mask);
-						Data = p->device->access((Data) & 0x00FF,
-							WriteMem, (addr + 1) & kASC_Mask);
+					if (writeMem) {
+						(void) p->device->access((data >> 8) & 0x00FF,
+							writeMem, addr & kASC_Mask);
+						data = p->device->access((data) & 0x00FF,
+							writeMem, (addr + 1) & kASC_Mask);
 					} else {
-						Data =
-							(p->device->access((Data >> 8) & 0x00FF,
-								WriteMem, addr & kASC_Mask) << 8)
-							| p->device->access((Data) & 0x00FF,
-								WriteMem, (addr + 1) & kASC_Mask);
+						data =
+							(p->device->access((data >> 8) & 0x00FF,
+								writeMem, addr & kASC_Mask) << 8)
+							| p->device->access((data) & 0x00FF,
+								writeMem, (addr + 1) & kASC_Mask);
 					}
 				} else {
 					ReportAbnormalID(AbnormalID::kMACH_ASC_word, "access ASC word");
 				}
 			} else {
-				Data = p->device->access(Data, WriteMem, addr & kASC_Mask);
+				data = p->device->access(data, writeMem, addr & kASC_Mask);
 			}
 			break;
 		case kMMDV_SCSI:
-			if (! ByteSize) {
+			if (! byteSize) {
 				ReportAbnormalID(AbnormalID::kMACH_SCSI_word, "access SCSI word");
 			} else
 			if (!g_machine->config().isIIFamily()
-				&& WriteMem != ((addr & 1) != 0))
+				&& writeMem != ((addr & 1) != 0))
 			{
 				ReportAbnormalID(AbnormalID::kMACH_SCSI_even_odd, "access SCSI even/odd");
 			} else
@@ -1469,7 +1469,7 @@ static void SetUpMemBanks()
 							"access SCSI nonstandard address");
 					}
 				}
-				Data = p->device->access(Data, WriteMem, (addr >> 4) & 0x07);
+				data = p->device->access(data, writeMem, (addr >> 4) & 0x07);
 			}
 
 			break;
@@ -1481,7 +1481,7 @@ static void SetUpMemBanks()
 					break;
 				}
 			}
-			if (! ByteSize) {
+			if (! byteSize) {
 #if EXTRA_ABNORMAL_REPORTS
 				ReportAbnormalID(AbnormalID::kMACH_IWM_word, "access IWM word");
 				/*
@@ -1493,7 +1493,7 @@ static void SetUpMemBanks()
 				if ((addr & 1) != 0) {
 					ReportAbnormalID(AbnormalID::kMACH_IWM_odd, "access IWM odd");
 				} else {
-					Data = p->device->access(Data, WriteMem,
+					data = p->device->access(data, writeMem,
 						(addr >> 9) & kIWM_Mask);
 				}
 			} else {
@@ -1508,7 +1508,7 @@ static void SetUpMemBanks()
 								"access IWM nonstandard address");
 						}
 					}
-					Data = p->device->access(Data, WriteMem,
+					data = p->device->access(data, writeMem,
 						(addr >> 9) & kIWM_Mask);
 				}
 			}
@@ -1517,21 +1517,21 @@ static void SetUpMemBanks()
 	}
 
 	if (g_LogEnd > 0 && g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd) {
-		if (WriteMem) {
+		if (writeMem) {
 			fprintf(stderr, "%u IOW %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name(p->MMDV), addr, origData & 0xFF);
 		} else {
-			fprintf(stderr, "%u IOR %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name(p->MMDV), addr, Data & 0xFF);
+			fprintf(stderr, "%u IOR %s %08X %02X\n", (unsigned)g_InstructionCount, mmdv_name(p->MMDV), addr, data & 0xFF);
 		}
 	}
 
 	/* StateRecorder I/O hook */
 	if (g_recorder.active()) {
 		g_recorder.io(g_InstructionCount, addr,
-			WriteMem ? origData : Data,
-			WriteMem, ByteSize, mmdv_name(p->MMDV));
+			writeMem ? origData : data,
+			writeMem, byteSize, mmdv_name(p->MMDV));
 	}
 
-	return Data;
+	return data;
 }
 
  bool MemAccessNtfy(ATTep pT)

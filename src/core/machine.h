@@ -251,8 +251,8 @@ constexpr int kATTA_mmdvmask       = (1 << kATTA_mmdvbit);
 constexpr int kATTA_ntfymask       = (1 << kATTA_ntfybit);
 
 // Dispatch a memory-mapped device access through the ATT entry.
-extern uint32_t MMDV_Access(ATTep p, uint32_t Data,
-	bool WriteMem, bool ByteSize, uint32_t addr);
+extern uint32_t MMDV_Access(ATTep p, uint32_t data,
+	bool writeMem, bool byteSize, uint32_t addr);
 
 // Notify callback when a memory region is first accessed.
 extern bool MemAccessNtfy(ATTep pT);
