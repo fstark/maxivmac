@@ -1456,12 +1456,10 @@ static void CheckForSavedTasks()
 		ScreenChangedAll();
 	}
 
-#if NeedRequestIthDisk
 	if (0 != g_requestIthDisk) {
 		Sony_InsertIth(g_requestIthDisk);
 		g_requestIthDisk = 0;
 	}
-#endif
 
 	if (g_sonyNewDiskWanted) {
 		if (g_sonyNewDiskName != NOT_A_PBUF) {

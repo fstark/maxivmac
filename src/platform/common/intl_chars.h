@@ -120,34 +120,11 @@ enum {
 
 extern const uint8_t CellData[];
 
-#ifndef NeedCell2MacAsciiMap
-#if 1
-#define NeedCell2MacAsciiMap 1
-#else
-#define NeedCell2MacAsciiMap 0
-#endif
-#endif
-
-#if NeedCell2MacAsciiMap
 extern const char Cell2MacAsciiMap[];
-#endif
 
-/* Always compile all mapping tables for cross-TU availability */
-#ifndef NeedCell2PlainAsciiMap
-#define NeedCell2PlainAsciiMap 1
-#endif
-
-#if NeedCell2PlainAsciiMap
 extern const char Cell2PlainAsciiMap[];
-#endif
 
-#ifndef NeedCell2UnicodeMap
-#define NeedCell2UnicodeMap 1
-#endif
-
-#if NeedCell2UnicodeMap
 extern const uint16_t Cell2UnicodeMap[];
-#endif
 
 /* --- State variables --- */
 
@@ -158,16 +135,7 @@ extern bool g_wantFullScreen;
 
 extern bool g_wantMagnify;
 
-/* Force all Need* to 1 — these variables are always compiled in intl_chars.cpp */
-#ifndef NeedRequestInsertDisk
-#define NeedRequestInsertDisk 1
-#endif
-
 extern bool g_requestInsertDisk;
-
-#ifndef NeedRequestIthDisk
-#define NeedRequestIthDisk 1
-#endif
 
 extern uint8_t g_requestIthDisk;
 

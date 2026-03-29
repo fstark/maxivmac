@@ -579,11 +579,9 @@ void DoControlModeKey(uint8_t key)
 				case MKC_H:
 					ControlMessage = kCntrlMsgHelp;
 					break;
-#if NeedRequestInsertDisk
 				case MKC_O:
 					g_requestInsertDisk = true;
 					break;
-#endif
 				case MKC_M:
 					g_wantMagnify = ! g_wantMagnify;
 					ControlMessage = kCntrlMsgMagnify;
@@ -596,7 +594,6 @@ void DoControlModeKey(uint8_t key)
 					CopyOptionsStr();
 					ControlMessage = kCntrlMsgOptionsStrCopied;
 					break;
-#if NeedRequestIthDisk
 				case MKC_1:
 					g_requestIthDisk = 1;
 					break;
@@ -624,7 +621,6 @@ void DoControlModeKey(uint8_t key)
 				case MKC_9:
 					g_requestIthDisk = 9;
 					break;
-#endif
 			}
 			break;
 		case kCntrlModeConfirmReset:
@@ -786,9 +782,7 @@ void DrawCellsControlModeBody()
 			DrawCellsOneLineStr(Localize(kStrHowToPickACommand));
 			DrawCellsBlankLine();
 			DrawCellsKeyCommand("A", Localize(kStrCmdAbout));
-#if NeedRequestInsertDisk
 			DrawCellsKeyCommand("O", Localize(kStrCmdOpenDiskImage));
-#endif
 			DrawCellsKeyCommand("Q", Localize(kStrCmdQuit));
 			DrawCellsKeyCommand("S", Localize(kStrCmdSpeedControl));
 			DrawCellsKeyCommand("M", Localize(kStrCmdMagnifyToggle));

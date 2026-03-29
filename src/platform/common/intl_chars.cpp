@@ -335,9 +335,6 @@ const uint8_t CellData[] = {
 	0x00 /* just so last above line can end in ',' */
 };
 
-/* NeedCell2MacAsciiMap default provided by intl_chars.h */
-
-#if NeedCell2MacAsciiMap
 /* Mac Roman character set */
 const char Cell2MacAsciiMap[] = {
 	'\101', /* kCellUpA */
@@ -426,12 +423,8 @@ const char Cell2MacAsciiMap[] = {
 
 	'\0' /* just so last above line can end in ',' */
 };
-#endif
 
 
-/* NeedCell2PlainAsciiMap default provided by intl_chars.h */
-
-#if NeedCell2PlainAsciiMap
 /* Plain ascii - remove accents when possible */
 const char Cell2PlainAsciiMap[] = {
 	'A', /* kCellUpA */
@@ -520,11 +513,7 @@ const char Cell2PlainAsciiMap[] = {
 
 	'\0' /* just so last above line can end in ',' */
 };
-#endif
 
-/* NeedCell2UnicodeMap default provided by intl_chars.h */
-
-#if NeedCell2UnicodeMap
 /* Unicode character set */
 const uint16_t Cell2UnicodeMap[] = {
 	0x0041, /* kCellUpA */
@@ -613,7 +602,6 @@ const uint16_t Cell2UnicodeMap[] = {
 
 	'\0' /* just so last above line can end in ',' */
 };
-#endif
 
 bool g_speedStopped = false;
 
@@ -622,8 +610,6 @@ bool g_runInBackground = false;
 bool g_wantFullScreen = false;
 
 bool g_wantMagnify = true;
-
-/* NeedRequestInsertDisk, NeedRequestIthDisk defaults are provided by intl_chars.h */
 
 bool g_requestInsertDisk = false;
 
