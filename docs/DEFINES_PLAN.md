@@ -45,6 +45,20 @@ These defines are always `1`. The `#if 0` branches are dead code. Remove the
   non-68020 fallback code. Runtime model selection already happens via
   `M68KITAB_setup()` dispatch table fixup.
 - **Risk:** High volume — do in a dedicated pass. Run golden-file tests after.
+- **Pattern:** Most sites guard a 68020-only implementation with a
+  simpler 68000 fallback in the `#else`:
+  ```cpp
+  // BEFORE
+  #if USE_68020
+      DecodeModeRegister(...);
+      // 68020 extended addressing
+  #else
+      // 68000 simple addressing
+  #endif
+  // AFTER
+      DecodeModeRegister(...);
+      // 68020 extended addressing
+  ```
 
 ### 1.2 `EM_FPU` — always 1 (12 `#if` sites)
 
@@ -66,12 +80,41 @@ These defines are always `1`. The `#if 0` branches are dead code. Remove the
 - **Action:** Remove guards. Cycle-per-op accounting stays compiled-in.
   The `#else` branches are a simpler "no-cycle-tracking" path — delete them.
 - **Risk:** Highest volume define. Do in its own pass.
+- **Pattern:** Most sites look like:
+  ```cpp
+  // BEFORE
+  #if WANT_CYC_BY_PRI_OP
+      opsize = 4;
+  #endif
+  // AFTER
+      opsize = 4;
+  ```
+  Or with an `#else` dead-code branch:
+  ```cpp
+  // BEFORE
+  #if WANT_CYC_BY_PRI_OP
+      regs.cyc += (4 * kCycleScale + RdAvgXtraCyc);
+  #else
+      regs.cyc += (4 * kCycleScale);
+  #endif
+  // AFTER
+      regs.cyc += (4 * kCycleScale + RdAvgXtraCyc);
+  ```
 
 ### 1.5 `WANT_CLOSER_CYC` — always 1 (65 `#if` sites)
 
 - **Defined:** `emulation_config.h:22`
 - **Used in:** `m68k.cpp`
 - **Action:** Remove guards. Closer-cycle code stays, fallback removed.
+- **Pattern:** Typically adds extra cycle adjustments inside opcode handlers:
+  ```cpp
+  // BEFORE
+  #if WANT_CLOSER_CYC
+      regs.cyc += GetDcoCycles(p);
+  #endif
+  // AFTER
+      regs.cyc += GetDcoCycles(p);
+  ```
 
 ### 1.6 `WANT_DISASM` — always 1 (7 `#if` sites)
 
@@ -119,17 +162,13 @@ These defines are always `1`. The `#if 0` branches are dead code. Remove the
 - **Used in:** `m68k.cpp`
 - **Action:** Remove guards. PC limit checking always active.
 
-### 2.4 `UseLazyZ` — always 1 (9 `#if` sites)
+### ~~2.4 `UseLazyZ` — always 1 (9 `#if` sites)~~ — DONE (Phase 3, step 1)
 
-- **Defined:** `m68k.cpp:58` (derived: 1 unless `DisableLazyFlagAll`)
-- **Used in:** `m68k.cpp`
-- **Action:** Remove guards once `DisableLazyFlagAll` is removed (Phase 3).
+- Removed together with `DisableLazyFlagAll` in commit e1895b1.
 
-### 2.5 `UseLazyCC` — always 1 (7 `#if` sites)
+### ~~2.5 `UseLazyCC` — always 1 (7 `#if` sites)~~ — DONE (Phase 3, step 1)
 
-- **Defined:** `m68k.cpp:66` (derived: 1 unless `DisableLazyFlagAll`)
-- **Used in:** `m68k.cpp`
-- **Action:** Same — remove after `DisableLazyFlagAll`.
+- Removed together with `DisableLazyFlagAll` in commit e1895b1.
 
 ### 2.6 `UseSonyPatch` — always 1 (4 `#if` sites)
 
@@ -423,11 +462,13 @@ pass after every phase.
 | 22 | 2.13–2.17 | `WantColorTransValid`, `ENABLE_FS_MOUSE_MOTION`, `ENABLE_RECREATE_W`, `ENABLE_MOVE_MOUSE`, `GRAB_KEYS_FULL_SCREEN` | 28 | Low |
 | 23 | 2.18–2.21 | `UseControlKeys`, `WantEnblCtrlInt/Rst/Ktg` | 29 | Low |
 | 24 | 2.22+2.23 | `SaveDialogEnable`, `EnableDragDrop` | ~4 | Low |
-| 25 | 5.3 | `dbglog_HAVE` | 71 | Medium |
+| 25 | 5.3 | `dbglog_HAVE` + rewrite 11 `*_dolog` expressions (see Phase 4 table) | 71 | Medium |
 | 26 | 1.1 | `USE_68020` | 86 | High |
 | 27 | 1.4 | `WANT_CYC_BY_PRI_OP` | 114 | High |
 | 28 | 1.5 | `WANT_CLOSER_CYC` | 65 | High |
-| 29 | 7 (rest) | Remaining derived/structural | ~20 | Low |
+| 29a | 7 | `Sony_SupportOtherFormats` (after step 18) | 0 | Low |
+| 29b | 7 | `NeedDoMoreCommandsMsg`, `NeedDoAboutMsg` (after step 23) | 6 | Low |
+| 29c | 7 | `NeedRequestInsertDisk`, `NeedRequestIthDisk`, `NeedCell2MacAsciiMap`, `NeedCell2PlainAsciiMap`, `NeedCell2UnicodeMap` (no deps) | ~15 | Low |
 
 **Phase 3 total: 15 defines removed, ~83 `#if` sites cleaned, 14 commits.**
 **Remaining: ~38 defines, ~547 `#if` sites.**
