@@ -334,7 +334,6 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *driveNo)
 								gotFormat = true;
 							}
 							if (gotFormat) {
-#if SONY_VERIFY_CHECKSUMS /* mostly useful to check the Checksum code */
 								uint32_t dataChecksum;
 								uint32_t tagChecksum;
 								uint32_t dataChecksum0 = do_get_mem_long(
@@ -352,14 +351,11 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *driveNo)
 									tagChecksum = 0;
 								}
 								if (dataChecksum != dataChecksum0) {
-									ReportAbnormalID(AbnormalID::kSONY_bad_dataChecksum,
-										"bad dataChecksum");
+									dbglog_WriteNote("DC42 data checksum mismatch on disk image");
 								}
 								if (tagChecksum != tagChecksum0) {
-									ReportAbnormalID(AbnormalID::kSONY_bad_tagChecksum,
-										"bad tagChecksum");
+									dbglog_WriteNote("DC42 tag checksum mismatch on disk image");
 								}
-#endif
 								dataOffset = DataOffset0;
 								dataSize = DataSize0;
 #if SONY_SUPPORT_TAGS
