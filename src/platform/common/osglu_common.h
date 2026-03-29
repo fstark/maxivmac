@@ -115,7 +115,6 @@ EvtQEl * EvtQElAlloc();
 
 void MacMsg(const char *briefMsg, const char *longMsg, bool fatal);
 
-#if dbglog_HAVE
 bool dbglog_ReserveAlloc();
 
 #ifndef dbglog_buflnsz
@@ -123,7 +122,6 @@ bool dbglog_ReserveAlloc();
 #define dbglog_close dbglog_close0
 #define dbglog_open  dbglog_open0
 #define dbglog_write dbglog_write0
-#endif
 #endif
 
 #if EmLocalTalk

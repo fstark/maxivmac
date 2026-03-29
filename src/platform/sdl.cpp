@@ -22,7 +22,7 @@ void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 
 /* --- control mode and internationalization --- */
 
-#define DBGLOG_OSG_INIT (0 && dbglog_HAVE)
+#define DBGLOG_OSG_INIT 0
 
 #include "platform/common/intl_chars.h"
 
@@ -1535,10 +1535,8 @@ static bool ScanCommandLine()
 			{
 				/* ignore unrecognized options (e.g. --model, --help
 				   already consumed by ProgramEarlyInit, or OS X -psn_*) */
-#if dbglog_HAVE
 				dbglog_writeln("ignoring command line argument");
 				dbglog_writeln(pa);
-#endif
 				/* long option (--foo) without '=': next argv is its value;
 				   skip it so it is not mistaken for a disk image path */
 				if ('-' == pa[1] && nullptr == strchr(pa, '=')) {
@@ -1657,10 +1655,8 @@ static void ZapOSGLUVars()
 
 static bool AllocMyMemory()
 {
-#if dbglog_HAVE
 	if (!dbglog_ReserveAlloc())
 		goto fail;
-#endif
 	if (!AllocBlock(&g_rom, g_machine->config().romSize, false))
 		goto fail;
 	if (!AllocBlock(&g_screenCompareBuff, vMacScreenNumBytes, true))
@@ -1714,10 +1710,8 @@ static bool InitOSGLU()
 
 	INIT_STEP("AllocMyMemory", AllocMyMemory())
 	INIT_STEP("InitWhereAmI", InitWhereAmI())
-#if dbglog_HAVE
 	/* dbglog_open is best-effort: fail to open log file is non-fatal */
 	dbglog_open();
-#endif
 	INIT_STEP("ScanCommandLine", ScanCommandLine())
 	INIT_STEP("LoadMacRom", LoadMacRom(d_arg, app_parent, pref_dir))
 	INIT_STEP("LoadInitialImages", LoadInitialImages())
@@ -1751,9 +1745,7 @@ static void UnInitOSGLU()
 
 	ForceShowCursor();
 
-#if dbglog_HAVE
 	dbglog_close();
-#endif
 
 	UninitWhereAmI();
 	UnallocMyMemory();

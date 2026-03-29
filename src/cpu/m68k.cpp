@@ -4143,7 +4143,7 @@ static void DoCodeBsrW()
 	DoCodeBraW();
 }
 
-#define m68k_logExceptions (dbglog_HAVE && 0)
+#define m68k_logExceptions 0
 
 
 #ifndef WantDumpAJump

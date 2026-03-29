@@ -108,7 +108,7 @@ void SoundDevice::subTick(int subTick)
 		| (g_wires.get(Wire_SoundVolb1) << 1)
 		| (g_wires.get(Wire_SoundVolb2) << 2);
 
-#if dbglog_HAVE && 0
+#if 0
 	dbglog_StartLine();
 	dbglog_writeCStr("reading sound buffer ");
 	dbglog_writeHex(StartOffset);

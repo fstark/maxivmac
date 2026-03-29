@@ -4,8 +4,8 @@
 #include "platform/platform.h"
 #include <SDL3/SDL.h>
 
-#define dbglog_TimeStuff (0 && dbglog_HAVE)
-#define DBGLOG_OSG_INIT (0 && dbglog_HAVE)
+#define dbglog_TimeStuff 0
+#define DBGLOG_OSG_INIT 0
 
 uint32_t g_trueEmulatedTime = 0;
 	/*

@@ -133,7 +133,7 @@ static int s_ticksSinceSecond = 0;
 */
 static void SixtiethSecondNotify()
 {
-#if dbglog_HAVE && 0
+#if 0
 	dbglog_WriteNote("begin new Sixtieth");
 #endif
 	if (++s_ticksSinceSecond >= 60) {
@@ -166,7 +166,7 @@ static void SixtiethEndNotify()
 	SubTickTaskEnd();
 	if (auto* d = g_machine->findDevice<MouseDevice>()) d->endTickNotify();
 	if (auto* d = g_machine->findDevice<ScreenDevice>()) d->endTickNotify();
-#if dbglog_HAVE && 0
+#if 0
 	dbglog_WriteNote("end Sixtieth");
 #endif
 }
@@ -269,7 +269,7 @@ static void m68k_go_nCycles_1(uint32_t n)
 	do {
 		g_ict.doCurrentTasks();
 		n2 = g_ict.doGetNext(n);
-#if dbglog_HAVE && 0
+#if 0
 		dbglog_StartLine();
 		dbglog_writeCStr("before m68k_go_nCycles, nextCount:");
 		dbglog_writeHex(g_ict.nextCount);

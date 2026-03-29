@@ -110,7 +110,6 @@ extern uint32_t g_LogEnd;
 
 extern void dbglog_StartLine();
 
-#if dbglog_HAVE
 extern void dbglog_WriteMemArrow(bool writeMem);
 
 extern void dbglog_WriteNote(char *s);
@@ -118,20 +117,13 @@ extern void dbglog_WriteSetBool(char *s, bool v);
 extern void dbglog_AddrAccess(char *s,
 	uint32_t data, bool writeMem, uint32_t addr);
 extern void dbglog_Access(char *s, uint32_t data, bool writeMem);
-#endif
 
 #if ! WantAbnormalReports
 #define ReportAbnormalID(id, s)
 #else
-#if dbglog_HAVE
 #define ReportAbnormalID DoReportAbnormalID
-#else
-#define ReportAbnormalID(id, s) DoReportAbnormalID(id)
-#endif
 extern void DoReportAbnormalID(uint16_t id
-#if dbglog_HAVE
 	, char *s
-#endif
 	);
 #endif /* WantAbnormalReports */
 

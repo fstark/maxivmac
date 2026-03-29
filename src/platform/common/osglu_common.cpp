@@ -8,11 +8,9 @@
 
 /* --- backend-provided debug log primitives (extern) --- */
 
-#if dbglog_HAVE
 extern bool dbglog_open0();
 extern void dbglog_write0(char *s, uint32_t L);
 extern void dbglog_close0();
-#endif
 
 /* --- global variables --- */
 
@@ -715,7 +713,6 @@ bool AllocBlock(uint8_t **p, uint32_t n, bool fillOnes)
 
 /* --- sending debugging info to file --- */
 
-#if dbglog_HAVE
 
 #ifndef dbglog_buflnsz
 
@@ -876,7 +873,6 @@ void dbglog_writelnNum(char *s, int32_t v)
 	dbglog_writeReturn();
 }
 
-#endif /* dbglog_HAVE */
 
 
 /* --- event queue --- */
@@ -1139,13 +1135,11 @@ void EntropyPoolAddPtr(uint8_t * p, uint32_t n)
 		EntropyPoolAddByte(*p++);
 	}
 
-#if dbglog_HAVE
 	dbglog_writeCStr("ep: ");
 	dbglog_writeHex(e_p[0]);
 	dbglog_writeCStr(" ");
 	dbglog_writeHex(e_p[1]);
 	dbglog_writeReturn();
-#endif
 }
 
 
@@ -1156,9 +1150,7 @@ void LT_PickStampNodeHint()
 {
 	g_ltMyStamp = e_p[0];
 
-#if dbglog_HAVE && 1
 	dbglog_writelnNum("LT_MyStamp ", g_ltMyStamp);
-#endif
 
 	{
 		int i = 8 + 1;
@@ -1168,9 +1160,7 @@ void LT_PickStampNodeHint()
 
 			g_ltNodeHint = e_p[1] & 0x7F;
 
-#if dbglog_HAVE && 1
 			dbglog_writelnNum("LT_NodeHint ", g_ltNodeHint);
-#endif
 
 			if (0 != g_ltNodeHint) {
 				break;

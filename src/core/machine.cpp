@@ -87,7 +87,6 @@ void dbglog_StartLine()
 	dbglog_writeCStr(" ");
 }
 
-#if dbglog_HAVE
 void dbglog_WriteMemArrow(bool writeMem)
 {
 	if (writeMem) {
@@ -96,9 +95,7 @@ void dbglog_WriteMemArrow(bool writeMem)
 		dbglog_writeCStr(" -> ");
 	}
 }
-#endif
 
-#if dbglog_HAVE
 void dbglog_AddrAccess(char *s, uint32_t data,
 	bool writeMem, uint32_t addr)
 {
@@ -112,9 +109,7 @@ void dbglog_AddrAccess(char *s, uint32_t data,
 	dbglog_writeHex(data);
 	dbglog_writeReturn();
 }
-#endif
 
-#if dbglog_HAVE
 void dbglog_Access(char *s, uint32_t data, bool writeMem)
 {
 	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
@@ -124,9 +119,7 @@ void dbglog_Access(char *s, uint32_t data, bool writeMem)
 	dbglog_writeHex(data);
 	dbglog_writeReturn();
 }
-#endif
 
-#if dbglog_HAVE
 void dbglog_WriteNote(char *s)
 {
 	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
@@ -134,9 +127,7 @@ void dbglog_WriteNote(char *s)
 	dbglog_writeCStr(s);
 	dbglog_writeReturn();
 }
-#endif
 
-#if dbglog_HAVE
 void dbglog_WriteSetBool(char *s, bool v)
 {
 	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd) { return; }
@@ -150,7 +141,6 @@ void dbglog_WriteSetBool(char *s, bool v)
 	}
 	dbglog_writeReturn();
 }
-#endif
 
 #if WantAbnormalReports
 static bool s_gotOneAbnormal = false;
@@ -162,17 +152,13 @@ static bool s_gotOneAbnormal = false;
 
 #if WantAbnormalReports
 void DoReportAbnormalID(uint16_t id
-#if dbglog_HAVE
 	, char *s
-#endif
 	)
 {
-#if dbglog_HAVE
 	dbglog_StartLine();
 	dbglog_writeCStr("*** abnormal : ");
 	dbglog_writeCStr(s);
 	dbglog_writeReturn();
-#endif
 
 	if (! s_gotOneAbnormal) {
 		WarnMsgAbnormalID(id);

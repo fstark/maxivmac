@@ -127,7 +127,7 @@ static bool CheckForADBkeyEvt(uint8_t *NextADBkeyevt)
 	if (! FindKeyEvent(&i, &KeyDown)) {
 		return false;
 	} else {
-#if dbglog_HAVE && 0
+#if 0
 		if (KeyDown) {
 			dbglog_WriteNote("Got a KeyDown");
 		}

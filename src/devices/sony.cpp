@@ -867,7 +867,7 @@ static uint32_t sony_MinSonVarsSize() {
 
 #define kcom_checkval 0x841339E2
 
-#define Sony_dolog (dbglog_HAVE && 0)
+#define Sony_dolog 0
 
 static uint32_t s_tagBuffer;
 

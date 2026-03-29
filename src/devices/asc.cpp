@@ -41,7 +41,7 @@ static uint16_t ASC_FIFO_InA = 0;
 static uint16_t ASC_FIFO_InB = 0;
 static bool s_ascPlaying = false;
 
-#define ASC_dolog (dbglog_HAVE && 0)
+#define ASC_dolog 0
 
 static void ASC_RecalcStatus()
 {

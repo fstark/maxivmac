@@ -19,7 +19,6 @@ extern void WarnMsgAbnormalID(uint16_t id);
 
 extern void WarnMsgUnsupportedDisk();
 
-#if dbglog_HAVE
 extern void dbglog_writeCStr(char *s);
 extern void dbglog_writeReturn();
 extern void dbglog_writeHex(uint32_t x);
@@ -28,11 +27,8 @@ extern void dbglog_writeMacChar(uint8_t x);
 extern void dbglog_writeln(char *s);
 extern void dbglog_writelnHex(char *s, uint32_t x);
 extern void dbglog_writelnNum(char *s, int32_t v);
-#endif
 
-#if dbglog_HAVE
 extern void MacMsgDebugAlert(char *s);
-#endif
 
 extern void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
 

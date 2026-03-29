@@ -21,7 +21,7 @@
 
 /* Global singleton */
 
-#define IWM_dolog (dbglog_HAVE && 0)
+#define IWM_dolog 0
 
 /*
 	ReportAbnormalID unused 0x0603 - 0x06FF

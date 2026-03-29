@@ -5,12 +5,10 @@
 
 #include "platform/common/osglu_ui.h"
 
-#if dbglog_HAVE
 
 bool dbglog_open0();
 void dbglog_write0(char *s, uint32_t L);
 void dbglog_close0();
 
-#endif
 
 #endif /* DBGLOG_PLATFORM_H */

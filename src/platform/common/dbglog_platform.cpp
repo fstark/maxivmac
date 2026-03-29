@@ -1,6 +1,5 @@
 #include "dbglog_platform.h"
 
-#if dbglog_HAVE
 
 #include <cstdio>
 #include <cstring>
@@ -76,4 +75,3 @@ void dbglog_close0()
 #endif
 }
 
-#endif

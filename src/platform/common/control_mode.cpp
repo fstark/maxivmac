@@ -381,12 +381,10 @@ void MacMsgOverride(const char *briefMsg, const char *longMsg)
 	MacMsg(briefMsg, longMsg, false);
 }
 
-#if dbglog_HAVE
 void MacMsgDebugAlert(const char *s)
 {
 	MacMsgOverride("Debug", s);
 }
-#endif
 
 #if NeedDoMoreCommandsMsg
 void DoMoreCommandsMsg()

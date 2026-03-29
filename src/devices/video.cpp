@@ -29,7 +29,7 @@
 	ReportAbnormalID unused 0x0A08 - 0x0AFF
 */
 
-#define VID_dolog (dbglog_HAVE && 0)
+#define VID_dolog 0
 
 static const uint8_t VidDrvr_contents[] = {
 0x4C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -738,9 +738,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					default:
 						ReportAbnormalID(AbnormalID::kVIDEO_kCmndVideoControl_unknown_csCode,
 							"kCmndVideoControl, unknown csCode");
-#if dbglog_HAVE
 						dbglog_writelnNum("csCode", csCode);
-#endif
 						break;
 				}
 			}
@@ -915,9 +913,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						ReportAbnormalID(AbnormalID::kVIDEO_Video_Access_kCmndVideoStatus,
 							"Video_Access kCmndVideoStatus, "
 								"unknown csCode");
-#if dbglog_HAVE
 						dbglog_writelnNum("csCode", csCode);
-#endif
 						break;
 				}
 			}

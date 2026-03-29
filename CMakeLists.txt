@@ -137,7 +137,6 @@ target_compile_definitions(maxivmac PRIVATE
     "MAXIVMAC_VERSION=\"${GIT_VERSION}\""
     "WantAbnormalReports=${MINIVMAC_ABNORMAL_REPORTS}"
     "EmLocalTalk=${MINIVMAC_LOCALTALK}"
-    "dbglog_HAVE=1"
 )
 
 # Compiler flags matching the original Xcode project

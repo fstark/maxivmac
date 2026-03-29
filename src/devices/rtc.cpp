@@ -110,7 +110,6 @@ static uint32_t s_lastRealDate;
 	((MenuBlink << 2) + (StartUpDisk << 4) \
 		+ (DiskCacheOn << 5) + (MouseScalingOn << 6))
 
-#if dbglog_HAVE
 extern void DumpRTC();
 
 void DumpRTC()
@@ -128,7 +127,6 @@ void DumpRTC()
 	dbglog_writeHex((s_rtc.Seconds_1[3] << 24) | (s_rtc.Seconds_1[2] << 16) | (s_rtc.Seconds_1[1] << 8) | s_rtc.Seconds_1[0]);
 	dbglog_writeReturn();
 }
-#endif
 
  /*
 	Initialize PRAM with model-specific defaults and
@@ -289,9 +287,7 @@ bool RTCDevice::init()
 	do_put_mem_long(&s_rtc.PARAMRAM[0xE8], g_curMacLongitude);
 	do_put_mem_long(&s_rtc.PARAMRAM[0xEC], g_curMacDelta);
 
-#if dbglog_HAVE
 	DumpRTC();
-#endif
 	/* Dump PRAM to stderr for comparison */
 	{
 		int i;
@@ -488,7 +484,6 @@ void RTCDevice::clockChangeNtfy()
 
 void RTCDevice::dataLineChangeNtfy()
 {
-#if dbglog_HAVE
 	if (s_rtc.DataOut) {
 		if (! s_rtc.DataNextOut) {
 			/*
@@ -506,7 +501,6 @@ void RTCDevice::dataLineChangeNtfy()
 				"write RTC Data unexpected direction");
 		}
 	}
-#endif
 }
 
 

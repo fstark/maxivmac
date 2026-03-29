@@ -30,9 +30,9 @@
 #define kAllBuffMask (kAllBuffLen - 1)
 #define dbhBufferSize (kAllBuffSz + kOneBuffSz)
 
-#define dbglog_SoundStuff (0 && dbglog_HAVE)
-#define dbglog_SoundBuffStats (0 && dbglog_HAVE)
-#define DBGLOG_OSG_INIT (0 && dbglog_HAVE)
+#define dbglog_SoundStuff 0
+#define dbglog_SoundBuffStats 0
+#define DBGLOG_OSG_INIT 0
 
 static SoundSamplePtr s_soundBuffer = nullptr;
 volatile static uint16_t ThePlayOffset;

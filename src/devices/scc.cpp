@@ -34,7 +34,7 @@
 	ReportAbnormalID unused 0x074D - 0x07FF
 */
 
-#define SCC_dolog (dbglog_HAVE && 0)
+#define SCC_dolog 0
 #define SCC_TrackMore 0
 
 #if EmLocalTalk

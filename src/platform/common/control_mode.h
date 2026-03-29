@@ -55,9 +55,7 @@ void DoMoreCommandsMsg();
 void DoAboutMsg();
 #endif
 
-#if dbglog_HAVE
 void MacMsgDebugAlert(const char *s);
-#endif
 
 void WarnMsgUnsupportedDisk();
 

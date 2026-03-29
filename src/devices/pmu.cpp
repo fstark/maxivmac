@@ -214,7 +214,6 @@ void PMUDevice::checkCommandOp()
 		default:
 			if (kPMUStateRecievedCommand == state_) {
 				ReportAbnormalID(AbnormalID::kPMU_Unknown_PMU_op, "Unknown PMU op");
-#if dbglog_HAVE
 				dbglog_writeCStr("Unknown PMU op ");
 				dbglog_writeHex(curCommand_);
 				dbglog_writeReturn();
@@ -232,7 +231,6 @@ void PMUDevice::checkCommandOp()
 						dbglog_writeReturn();
 					}
 				}
-#endif
 			}
 			break;
 	}
