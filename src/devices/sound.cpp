@@ -85,13 +85,13 @@ static const uint8_t SubTick_n[kNumSubTicks] = {
 
 /* Copy one sub-tick slice of the sound buffer from Mac RAM,
    applying volume scaling and phase inversion as needed. */
-void SoundDevice::subTick(int SubTick)
+void SoundDevice::subTick(int subTick)
 {
 	uint16_t actL;
 	SoundSamplePtr p;
 	uint16_t i;
-	uint32_t StartOffset = SubTick_offset[SubTick];
-	uint16_t n = SubTick_n[SubTick];
+	uint32_t StartOffset = SubTick_offset[subTick];
+	uint16_t n = SubTick_n[subTick];
 	uint32_t ramSz = g_machine->config().ramSize();
 	unsigned long addy =
 #ifdef SoundBuffer
