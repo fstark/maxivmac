@@ -724,7 +724,6 @@ static inline void DeCode0(WorkR *p)
 			}
 		} else
 		if (b76(p) == 3) {
-#if USE_68020
 			if (rg9(p) < 3) {
 				/* CHK2 or CMP2 00000ss011mmmrrr */
 				switch ((p->opcode >> 9) & 3) {
@@ -774,7 +773,6 @@ static inline void DeCode0(WorkR *p)
 				/* CALLM or RTM 0000011011mmmrrr */
 				p->MainClass = kIKindCallMorRtm;
 			} else
-#endif
 			{
 				p->MainClass = kIKindIllegal;
 			}
@@ -801,7 +799,6 @@ static inline void DeCode0(WorkR *p)
 				p->MainClass = kIKindCmpB + OpSizeOffset(p);
 			}
 		} else if (rg9(p) == 7) {
-#if USE_68020
 			/* MoveS 00001110ssmmmrrr */
 			FindOpSizeFromb76(p);
 			p->DecOp.y.v[0].ArgDat = p->opsize;
@@ -811,9 +808,6 @@ static inline void DeCode0(WorkR *p)
 #endif
 				p->MainClass = kIKindMoveS;
 			}
-#else
-			p->MainClass = kIKindIllegal;
-#endif
 		} else {
 			if ((mode(p) == 7) && (reg(p) == 4)) {
 				if (b76(p) >= 2) {
@@ -1147,7 +1141,6 @@ static inline void DeCode4(WorkR *p)
 	if (b8(p) != 0) {
 		switch (b76(p)) {
 			case 0:
-#if USE_68020
 				/* Chk.L 0100ddd100mmmrrr */
 				p->opsize = 4;
 				if (CheckValidAddrMode(p, mode(p), reg(p),
@@ -1160,9 +1153,6 @@ static inline void DeCode4(WorkR *p)
 #endif
 					p->MainClass = kIKindChkL;
 				}
-#else
-				p->MainClass = kIKindIllegal;
-#endif
 				break;
 			case 1:
 				p->MainClass = kIKindIllegal;
@@ -1184,14 +1174,12 @@ static inline void DeCode4(WorkR *p)
 				break;
 			case 3:
 			default: /* keep compiler happy */
-#if USE_68020
 				if ((0 == mode(p)) && (4 == rg9(p))) {
 					/* EXTB.L */
 					SetDcoArgFields(p, false,
 						kAMdRegL, reg(p));
 					p->MainClass = kIKindEXTBL;
 				} else
-#endif
 				{
 					/* Lea 0100aaa111mmmrrr */
 					if (CheckControlAddrMode(p)) {
@@ -1230,9 +1218,7 @@ static inline void DeCode4(WorkR *p)
 						p->MainClass = kIKindNegXB + OpSizeOffset(p);
 					}
 				} else {
-#if USE_68020
 /* reference seems incorrect to say not for 68000 */
-#endif
 					/* Move from SR 0100000011mmmrrr */
 					p->opsize = 2;
 					if (CheckDataAltAddrMode(p)) {
@@ -1267,7 +1253,6 @@ static inline void DeCode4(WorkR *p)
 						p->MainClass = kIKindClr;
 					}
 				} else {
-#if USE_68020
 					/* Move from CCR 0100001011mmmrrr */
 					p->opsize = 2;
 					if (CheckDataAltAddrMode(p)) {
@@ -1276,9 +1261,6 @@ static inline void DeCode4(WorkR *p)
 #endif
 						p->MainClass = kIKindMoveCCREa;
 					}
-#else
-					p->MainClass = kIKindIllegal;
-#endif
 				}
 				break;
 			case 2:
@@ -1356,14 +1338,12 @@ static inline void DeCode4(WorkR *p)
 			case 4:
 				switch (b76(p)) {
 					case 0:
-#if USE_68020
 						if (mode(p) == 1) {
 							/* Link.L 0100100000001rrr */
 							SetDcoArgFields(p, false,
 								kAMdRegL, reg(p) + 8);
 							p->MainClass = kIKindLinkL;
 						} else
-#endif
 						{
 							/* Nbcd 0100100000mmmrrr */
 							p->opsize = 1;
@@ -1394,11 +1374,9 @@ static inline void DeCode4(WorkR *p)
 							SetDcoArgFields(p, false,
 								kAMdRegL, reg(p));
 						} else
-#if USE_68020
 						if (mode(p) == 1) {
 							p->MainClass = kIKindBkpt;
 						} else
-#endif
 						{
 							/* PEA 0100100001mmmrrr */
 							if (CheckControlAddrMode(p)) {
@@ -1577,7 +1555,6 @@ static inline void DeCode4(WorkR *p)
 						}
 					}
 				} else {
-#if USE_68020
 					p->opsize = 4;
 
 					if (CheckDataAddrMode(p)) {
@@ -1591,9 +1568,6 @@ static inline void DeCode4(WorkR *p)
 							p->MainClass = kIKindMulL;
 						}
 					}
-#else
-					p->MainClass = kIKindIllegal;
-#endif
 				}
 				break;
 			case 7:
@@ -1700,11 +1674,7 @@ static inline void DeCode4(WorkR *p)
 										break;
 									case 4:
 										/* Rtd 0100111001110100 */
-#if USE_68020
 										p->MainClass = kIKindRtd;
-#else
-										p->MainClass = kIKindIllegal;
-#endif
 										break;
 									case 5:
 										/* Rts 0100111001110101 */
@@ -1735,7 +1705,6 @@ static inline void DeCode4(WorkR *p)
 								break;
 							case 7:
 							default: /* keep compiler happy */
-#if USE_68020
 								/* MOVEC 010011100111101m */
 								switch (reg(p)) {
 									case 2:
@@ -1748,9 +1717,6 @@ static inline void DeCode4(WorkR *p)
 										p->MainClass = kIKindIllegal;
 										break;
 								}
-#else
-								p->MainClass = kIKindIllegal;
-#endif
 								break;
 						}
 						break;
@@ -1891,13 +1857,11 @@ static inline void DeCode5(WorkR *p)
 				p->MainClass = kIKindDBcc;
 			}
 		} else {
-#if USE_68020
 			if ((mode(p) == 7) && (reg(p) >= 2)) {
 				/* TRAPcc 0101cccc11111sss */
 				p->DecOp.y.v[1].ArgDat = reg(p);
 				p->MainClass = kIKindTRAPcc;
 			} else
-#endif
 			{
 				p->opsize = 1;
 				/* Scc 0101cccc11mmmrrr */
@@ -1993,11 +1957,9 @@ static inline void DeCode6(WorkR *p)
 		if (0 == (p->opcode & 255)) {
 			p->MainClass = kIKindBsrW;
 		} else
-#if USE_68020
 		if (255 == (p->opcode & 255)) {
 			p->MainClass = kIKindBsrL;
 		} else
-#endif
 		{
 			p->MainClass = kIKindBsrB;
 			p->DecOp.y.v[1].ArgDat = p->opcode & 255;
@@ -2010,11 +1972,9 @@ static inline void DeCode6(WorkR *p)
 		if (0 == (p->opcode & 255)) {
 			p->MainClass = kIKindBraW;
 		} else
-#if USE_68020
 		if (255 == (p->opcode & 255)) {
 			p->MainClass = kIKindBraL;
 		} else
-#endif
 		{
 			p->MainClass = kIKindBraB;
 			p->DecOp.y.v[1].ArgDat = p->opcode & 255;
@@ -2033,11 +1993,9 @@ static inline void DeCode6(WorkR *p)
 #endif
 			p->MainClass = kIKindBccW;
 		} else
-#if USE_68020
 		if (255 == (p->opcode & 255)) {
 			p->MainClass = kIKindBccL;
 		} else
-#endif
 		{
 #if WANT_CYC_BY_PRI_OP
 #if WANT_CLOSER_CYC
@@ -2166,7 +2124,6 @@ static inline void DeCode8(WorkR *p)
 							}
 						}
 						break;
-#if USE_68020
 					case 1:
 						/* PACK 1000rrr10100mrrr */
 						if (mode(p) == 0) {
@@ -2223,7 +2180,6 @@ static inline void DeCode8(WorkR *p)
 							}
 						}
 						break;
-#endif
 					default:
 						p->MainClass = kIKindIllegal;
 						break;
@@ -2718,7 +2674,6 @@ static inline void DeCodeE(WorkR *p)
 {
 	if (b76(p) == 3) {
 		if ((p->opcode & 0x0800) != 0) {
-#if USE_68020
 			/* 11101???11mmmrrr */
 			p->DecOp.y.v[0].AMd = mode(p);
 			p->DecOp.y.v[0].ArgDat = (p->opcode >> 8) & 7;
@@ -2742,9 +2697,6 @@ static inline void DeCodeE(WorkR *p)
 						break;
 				}
 			}
-#else
-			p->MainClass = kIKindIllegal;
-#endif
 		} else {
 			p->opsize = 2;
 			/* 11100ttd11mmmddd */

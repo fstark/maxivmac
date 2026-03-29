@@ -126,13 +126,9 @@ static struct regstruct
 	/* Status Register */
 	uint32_t intmask; /* bits 10-8 : interrupt priority mask */
 	flagtype t1; /* bit 15: Trace mode 1 */
-#if USE_68020
 	flagtype t0; /* bit 14: Trace mode 0 */
-#endif
 	flagtype s; /* bit 13: Supervisor or user privilege level */
-#if USE_68020
 	flagtype m; /* bit 12: Master or interrupt mode */
-#endif
 
 	flagtype x; /* bit 4: eXtend */
 	flagtype n; /* bit 3: Negative */
@@ -151,7 +147,6 @@ static struct regstruct
 
 	uint32_t usp; /* User Stack Pointer */
 	uint32_t isp; /* Interrupt Stack Pointer */
-#if USE_68020
 	uint32_t msp; /* Master Stack Pointer */
 	uint32_t sfc; /* Source Function Code register */
 	uint32_t dfc; /* Destination Function Code register */
@@ -164,7 +159,6 @@ static struct regstruct
 			bit 3 : Clear Cache (write only)
 		*/
 	uint32_t caar; /* Cache Address Register */
-#endif
 
 #define disp_table_sz (256 * 256)
 	DecOpR disp_table[disp_table_sz];
@@ -435,7 +429,6 @@ static void DoCodeFdefault();
 static void DoCodeStop();
 static void DoCodeReset();
 
-#if USE_68020
 static void DoCodeCallMorRtm();
 static void DoCodeBraL();
 static void DoCodeBccL();
@@ -457,7 +450,6 @@ static void DoCAS2();
 static void DoCAS();
 static void DoMOVES();
 static void DoBitField();
-#endif
 
 static void DoCodeMMU();
 
@@ -614,7 +606,6 @@ static const func_pointer_t OpDispatch[kNumIKinds + 1] = {
 	DoCodeStop /* kIKindStop */,
 	DoCodeReset /* kIKindReset */,
 
-#if USE_68020
 	DoCodeCallMorRtm /* kIKindCallMorRtm */,
 	DoCodeBraL /* kIKindBraL */,
 	DoCodeBccL /* kIKindBccL */,
@@ -637,7 +628,6 @@ static const func_pointer_t OpDispatch[kNumIKinds + 1] = {
 	DoCAS /* kIKindCAS */,
 	DoMOVES /* kIKindMoveS */,
 	DoBitField /* kIKindBitField */,
-#endif
 	DoCodeMMU /* kIKindMMU */,
 	DoCodeFPU_md60 /* kIKindFPUmd60 */,
 	DoCodeFPU_DBcc /* kIKindFPUDBcc */,
@@ -6672,21 +6662,17 @@ static void DoCodeReset()
 	}
 }
 
-#if USE_68020
 static void DoCodeCallMorRtm()
 {
 	/* CALLM or RTM 0000011011mmmrrr */
 	ReportAbnormalID(AbnormalID::kCPU_CALLM_or_RTM_instruction, "CALLM or RTM instruction");
 }
-#endif
 
-#if USE_68020
 static void DoCodeMoveCCREa()
 {
 	/* Move from CCR 0100001011mmmrrr */
 	DecodeSetDstValue(m68k_getCR());
 }
-#endif
 
 static void DoCodeBraL()
 {
@@ -6712,15 +6698,12 @@ static void SkipiLong()
 	}
 }
 
-#if USE_68020
 static void DoCodeBccL()
 {
 	/* Bcc 0110ccccnnnnnnnn */
 	cctrue(DoCodeBraL, SkipiLong);
 }
-#endif
 
-#if USE_68020
 static void DoCodeBsrL()
 {
 	int32_t offset = ((int32_t)(uint32_t)nextilong()) - 4;
@@ -6739,9 +6722,7 @@ static void DoCodeBsrL()
 	/* ReportAbnormal("long branch in DoCode6"); */
 	/* Used by various Apps */
 }
-#endif
 
-#if USE_68020
 static void DoCodeEXTBL()
 {
 	/* EXTB.L */
@@ -6756,9 +6737,7 @@ static void DoCodeEXTBL()
 
 	*dstp = dstvalue;
 }
-#endif
 
-#if USE_68020
 static void DoCHK2orCMP2()
 {
 	/* CHK2 or CMP2 00000ss011mmmrrr */
@@ -6814,9 +6793,7 @@ static void DoCHK2orCMP2()
 		Exception(6);
 	}
 }
-#endif
 
-#if USE_68020
 static void DoCAS()
 {
 	/* CAS 00001ss011mmmrrr */
@@ -6879,9 +6856,7 @@ static void DoCAS()
 		}
 	}
 }
-#endif
 
-#if USE_68020
 static void DoCAS2()
 {
 	/* CAS2 00001ss011111100 */
@@ -6961,9 +6936,7 @@ static void DoCAS2()
 		}
 	}
 }
-#endif
 
-#if USE_68020
 static void DoMOVES()
 {
 	/* MoveS 00001110ssmmmrrr */
@@ -6998,19 +6971,15 @@ static void DoMOVES()
 		}
 	}
 }
-#endif
 
 #define ui5b_lo(x) ((x) & 0x0000FFFF)
 #define ui5b_hi(x) (((x) >> 16) & 0x0000FFFF)
 
-#if USE_68020
 struct ui6r0 {
 	uint32_t hi;
 	uint32_t lo;
 };
-#endif
 
-#if USE_68020
 static void Ui6r_Negate(ui6r0 *v)
 {
 	v->hi = ~ v->hi;
@@ -7019,23 +6988,17 @@ static void Ui6r_Negate(ui6r0 *v)
 		v->hi++;
 	}
 }
-#endif
 
-#if USE_68020
 static bool Ui6r_IsZero(ui6r0 *v)
 {
 	return (v->hi == 0) && (v->lo == 0);
 }
-#endif
 
-#if USE_68020
 static bool Ui6r_IsNeg(ui6r0 *v)
 {
 	return ((int32_t)v->hi) < 0;
 }
-#endif
 
-#if USE_68020
 static void mul_unsigned(uint32_t src1, uint32_t src2, ui6r0 *dst)
 {
 	uint32_t src1_lo = ui5b_lo(src1);
@@ -7053,9 +7016,7 @@ static void mul_unsigned(uint32_t src1, uint32_t src2, ui6r0 *dst)
 	dst->lo = (ui5b_lo(ra1) << 16) | ui5b_lo(r0);
 	dst->hi = ui5b_hi(ra1) + ui5b_hi(r1) + ui5b_hi(r2) + r3;
 }
-#endif
 
-#if USE_68020
 static bool div_unsigned(ui6r0 *src, uint32_t div,
 	uint32_t *quot, uint32_t *rem)
 {
@@ -7085,9 +7046,7 @@ static bool div_unsigned(ui6r0 *src, uint32_t div,
 	*rem = src_hi;
 	return false;
 }
-#endif
 
-#if USE_68020
 static void DoCodeMulL()
 {
 	/* MULU 0100110000mmmrrr 0rrr0s0000000rrr */
@@ -7162,9 +7121,7 @@ static void DoCodeMulL()
 	}
 	m68k_dreg(r2) = dst.lo;
 }
-#endif
 
-#if USE_68020
 static void DoCodeDivL()
 {
 	/* DIVU 0100110001mmmrrr 0rrr0s0000000rrr */
@@ -7254,9 +7211,7 @@ static void DoCodeDivL()
 		}
 	}
 }
-#endif
 
-#if USE_68020
 static void DoMoveToControl()
 {
 	if (0 == V_regs.s) {
@@ -7318,9 +7273,7 @@ static void DoMoveToControl()
 		}
 	}
 }
-#endif
 
-#if USE_68020
 static void DoMoveFromControl()
 {
 	if (0 == V_regs.s) {
@@ -7383,18 +7336,14 @@ static void DoMoveFromControl()
 		V_regs.regs[regno] = v;
 	}
 }
-#endif
 
-#if USE_68020
 static void DoCodeBkpt()
 {
 	/* BKPT 0100100001001rrr */
 	ReportAbnormalID(AbnormalID::kCPU_BKPT_instruction, "BKPT instruction");
 	op_illg();
 }
-#endif
 
-#if USE_68020
 static void DoCodeRtd()
 {
 	/* Rtd 0100111001110100 */
@@ -7405,9 +7354,7 @@ static void DoCodeRtd()
 	m68k_areg(7) += (4 + offs);
 	m68k_setpc(NewPC);
 }
-#endif
 
-#if USE_68020
 static void DoCodeLinkL()
 {
 	/* Link.L 0100100000001rrr */
@@ -7424,24 +7371,18 @@ static void DoCodeLinkL()
 	*dstp = stackp;
 	m68k_areg(7) += (int32_t)nextilong();
 }
-#endif
 
-#if USE_68020
 static void DoCodeTRAPcc_t()
 {
 	ReportAbnormalID(AbnormalID::kCPU_TRAPcc_trapping, "TRAPcc trapping");
 	Exception(7);
 	/* pc pushed onto stack wrong */
 }
-#endif
 
-#if USE_68020
 static void DoCodeTRAPcc_f()
 {
 }
-#endif
 
-#if USE_68020
 static void DoCodeTRAPcc()
 {
 	/* TRAPcc 0101cccc11111sss */
@@ -7466,9 +7407,7 @@ static void DoCodeTRAPcc()
 	}
 	cctrue(DoCodeTRAPcc_t, DoCodeTRAPcc_f);
 }
-#endif
 
-#if USE_68020
 static void DoCodePack()
 {
 	uint32_t offs = nextiSWord();
@@ -7481,9 +7420,7 @@ static void DoCodePack()
 
 	DecodeSetDstValue(val);
 }
-#endif
 
-#if USE_68020
 static void DoCodeUnpk()
 {
 	uint32_t offs = nextiSWord();
@@ -7495,9 +7432,7 @@ static void DoCodeUnpk()
 
 	DecodeSetDstValue(val);
 }
-#endif
 
-#if USE_68020
 static void DoBitField()
 {
 	uint32_t tmp;
@@ -7700,7 +7635,6 @@ static void DoBitField()
 		}
 	}
 }
-#endif
 
 static bool DecodeModeRegister(uint32_t sz)
 {

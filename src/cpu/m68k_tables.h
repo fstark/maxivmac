@@ -147,7 +147,6 @@ enum {
 	kIKindStop,
 	kIKindReset,
 
-#if USE_68020
 	kIKindCallMorRtm,
 	kIKindBraL,
 	kIKindBccL,
@@ -170,7 +169,6 @@ enum {
 	kIKindCAS,
 	kIKindMoveS,
 	kIKindBitField,
-#endif
 	kIKindMMU,
 	kIKindFPUmd60,
 	kIKindFPUDBcc,
