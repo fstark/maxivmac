@@ -1,100 +1,99 @@
 # Code Quality Assessment: maxivmac
 
-**Date:** 2026-03-28
-**Scope:** src/ (excluding src/macsrc/)
+**Date:** 2026-03-30
+**Scope:** src/ (excluding src/macsrc)
 **Files:** 56 source files, 73 header files
-**Lines of Code:** 44,374 (non-blank, non-comment)
-**Exclusions:** src/macsrc/ (4 small C files for classic Mac utilities)
+**Lines of Code:** 41,386 (non-blank, non-comment)
+**Exclusions:** src/macsrc/ (classic Mac utility sources)
 
 ## Scorecard
 
 | # | Metric | Score | Delta | Key Evidence |
 |---|--------|-------|-------|-------------|
-| M1 | File Organization | 3/5 | = | 12/129 files (9.3%) exceed 1000 lines; sdl.cpp dropped 5,085→1,895; 72/73 headers guarded |
-| M2 | Function Complexity | 2/5 | = | 6,957 deeply-nested lines (4+ levels); sdl.cpp nesting dropped 962→207 |
-| M3 | Naming Consistency | 3/5 | = | Dominant PascalCase convention (ParseModelName, BuildMachineConfig) with C-legacy exceptions (t_act, f_act, dbglog_writeReturn) |
-| M4 | Memory & Resource Safety | 4/5 | = | Only 2 malloc calls (both checked), 24 malloc/free total; 0 unsafe string funcs; 5 snprintf uses |
-| M5 | Error Handling | 3/5 | = | 299 checks vs 44 failable calls; fopen returns checked in most places |
-| M6 | Preprocessor & Dead Code | 4/5 | +1 | 2,410 directives (54/KLOC); 0 true `#if 0` dead-code blocks (down from 27); 0 TODO/FIXME |
-| M7 | Documentation | 3/5 | = | 7.5% comment ratio (3,801/50,933 lines); 0 files with zero comments |
-| M8 | Build System | 4/5 | = | CMake with presets; -Wall -Wextra -Werror -Wundef; no CI integration |
-| M9 | Portability | 4/5 | = | Platform code fully isolated in src/platform/; 1 `#ifdef _WIN32` in path_utils.h; 0 platform ifdefs in core/cpu/devices |
-| M10 | Duplication | 3/5 | = | Line-level duplication in CPU emulation (dbglog_writeReturn ×103, t_act/f_act ×74); break ×425; mostly structural |
+| M1 | File Organization | 3/5 | = | 11/129 files (8.5%) exceed 1000 lines; 72/73 headers have `#pragma once` (screen_map_inst.h is intentional include-style) |
+| M2 | Function Complexity | 2/5 | = | 6,681 deeply-nested lines (4+ levels); m68k_tables.cpp (1,669), disasm.cpp (654), mac_roman.cpp (645) lead |
+| M3 | Naming Consistency | 3/5 | = | Dominant PascalCase (ParseModelName, BuildMachineConfig) with C-legacy exceptions (t_act, f_act, dbglog_writeReturn, get_vm_byte) |
+| M4 | Memory & Resource Safety | 4/5 | = | 24 malloc/free refs; 2 malloc calls (both checked); 0 unsafe string funcs; 5 snprintf uses |
+| M5 | Error Handling | 3/5 | = | 119 error-checking patterns vs 44 failable calls; some fwrite calls cast to (void) in logging |
+| M6 | Preprocessor & Dead Code | 3/5 | +1 | 1,173 directives (28/KLOC, down from 69/KLOC); only 12 `#if 0` blocks (down from 211); 0 TODO/FIXME |
+| M7 | Documentation | 3/5 | = | 7.7% comment ratio (3,656/47,775 lines); 0 source files with zero comments |
+| M8 | Build System | 4/5 | = | CMake with presets; -Wall -Wextra -Werror -Wundef -Wconditional-uninitialized; no CI |
+| M9 | Portability | 4/5 | = | 0 platform ifdefs outside src/platform/; 4 platform includes all in src/platform/ |
+| M10 | Duplication | 3/5 | = | dbglog_writeReturn ×103, t_act/f_act ×74 each; mostly structural CPU dispatch duplication |
 
-**Overall: 33/50** (Delta: +1)
+**Overall: 32/50** (Delta: +1)
 
 ## Detailed Findings
 
 ### M1: File Organization (3/5)
-**Data:** 12/129 files exceed 1000 lines (9.3%). Largest: m68k.cpp (8,863), fpu_math.h (6,151), m68k_tables.cpp (3,068), disasm.cpp (2,894), scc.cpp (2,507), intl_chars.cpp (1,930), sdl.cpp (1,895), machine.cpp (1,808), sony.cpp (1,557), osglu_common.cpp (1,218), fpu_emdev.h (1,189), control_mode.cpp (1,137). 72/73 headers have `#pragma once` guards (screen_map_inst.h is an intentional include-expansion file). File count increased from 116 to 129 due to sdl.cpp refactoring (split into sdl_keyboard.cpp, sdl_sound.cpp, disk_io.cpp, clipboard.cpp, param_buffers.cpp, path_utils.cpp, rom_loader.cpp, tick_timer.cpp, dbglog_platform.cpp).
-**Assessment:** 9.3% of files exceed 1000 lines — now below the 10% threshold (was 10.3%). The most significant change is sdl.cpp dropping from 5,085 to 1,895 lines (-3,190), splitting into 9+ focused modules in src/platform/common/. All headers properly guarded. Score 3: still 12 large files but organization improving through modularization.
+**Data:** 11/129 files exceed 1000 lines (8.5%). Largest: m68k.cpp (8,277), fpu_math.h (5,762), disasm.cpp (2,812), m68k_tables.cpp (2,720), scc.cpp (2,507), sdl.cpp (1,805), machine.cpp (1,725), sony.cpp (1,477), osglu_common.cpp (1,178), fpu_emdev.h (1,123), control_mode.cpp (1,049). 72/73 headers have `#pragma once`; screen_map_inst.h is an intentional include-style header without a guard.
+**Assessment:** At 8.5%, files exceeding 1000 lines are now below the 10% threshold (previous assessment: 11.1%). sdl.cpp dropped from 5,128 to 1,805 lines — a major split. m68k.cpp remains the largest at 8,277 lines. Header discipline is complete. Still score 3: below 10% but well above the 5% threshold for score 4, and several very large files remain.
 
 ### M2: Function Complexity (2/5)
-**Data:** 6,957 lines at nesting depth ≥4 (down from 7,077). Worst offenders: m68k_tables.cpp (1,704), mac_roman.cpp (645), disasm.cpp (659), m68k.cpp (420), asc.cpp (405), sony.cpp (387), machine.cpp (339), video.cpp (332), intl_chars.cpp (325), scc.cpp (322), control_mode.cpp (256), via_base.cpp (210), sdl.cpp (207), pmu.cpp (179), osglu_common.cpp (144).
-**Assessment:** Deep nesting reduced 7,077→6,957 (-120 lines). sdl.cpp deep nesting dropped dramatically from 962 to 207 (-755) due to the platform refactoring. mac_roman.cpp (645) is now visible as a top offender — data table initialization. Switch/case blocks in CPU decode and device handling continue to dominate. Score 2: still pervasive.
+**Data:** 6,681 lines at nesting depth ≥4 (down from 7,518). Worst offenders: m68k_tables.cpp (1,669), disasm.cpp (654), mac_roman.cpp (645), m68k.cpp (408), asc.cpp (405), sony.cpp (370), machine.cpp (334), video.cpp (332), scc.cpp (322), control_mode.cpp (253), via_base.cpp (209), sdl.cpp (203).
+**Assessment:** Deep nesting decreased by 837 lines (11%) from the previous assessment, partly from the sdl.cpp split (960→203). However, 6,681 deeply-nested lines across 32 files remains pervasive. The CPU decode and device handling switch/case blocks continue to drive the count. Score 2: deep nesting still widespread.
 
 ### M3: Naming Consistency (3/5)
-**Data:** Sampled 50 function definitions. Dominant convention is PascalCase for public functions (ParseModelName, BuildMachineConfig, MachineConfigForModel, ResolveRomPath) and camelCase for class methods (WireBus::set, ICTScheduler::add, Machine::init). Legacy C code uses mixed patterns: single-letter vars in CPU emulation (t_act, f_act, p), macro-style names from original minivmac (dbglog_writeReturn, HaveSetUpFlags).
-**Assessment:** Clear dominant convention in modernized C++ code, but the inherited C codebase introduces frequent exceptions. Score 3: dominant convention with frequent exceptions.
+**Data:** Sampled 50 function definitions. Dominant convention is PascalCase for public functions (ParseModelName, BuildMachineConfig, MachineConfigForModel, PrintUsage). Static helpers use camelCase (parseRAMSize, parseScreenSpec, fileExists, hashToHex). Legacy C code uses mixed patterns: get_vm_byte/put_vm_word (snake_case), dbglog_writeReturn/dbglog_StartLine (mixed), t_act/f_act (abbreviated), HaveSetUpFlags (PascalCase macro-style).
+**Assessment:** Clear dominant convention in modernized C++ code (PascalCase public, camelCase private), but inherited C emulation code introduces frequent exceptions. Score 3: dominant convention with frequent exceptions.
 
 ### M4: Memory & Resource Safety (4/5)
-**Data:** 24 malloc/calloc/realloc/free references total (down from 26). Only 2 actual malloc calls (path_utils.cpp and clipboard.cpp, both checked for NULL). Zero unsafe string functions (strcpy/strcat/sprintf/gets). 5 uses of safe alternatives (snprintf). Project is primarily C++ with stack/RAII allocation.
-**Assessment:** All allocations are checked. Zero unsafe string operations. Malloc calls moved from sdl.cpp to dedicated utility files (path_utils.cpp, clipboard.cpp) during refactoring, improving locality. Score 4.
+**Data:** 24 malloc/calloc/realloc/free references total (down from 26). 2 actual malloc calls: path_utils.cpp (checked by caller pattern) and clipboard.cpp (explicit `nullptr ==` check). Zero unsafe string functions (strcpy/strcat/sprintf/gets). 5 snprintf uses. Project is primarily C++ with stack/RAII allocation.
+**Assessment:** All allocations checked. Zero unsafe string operations. Very low manual memory management footprint with C++ RAII idioms. Score 4: all allocations checked; safe alternatives used; clear ownership model.
 
 ### M5: Error Handling (3/5)
-**Data:** 299 error-checking patterns (NULL checks, <0, error/fail tests). 44 failable external calls (fopen, fread, fwrite). Sample inspection: config_loader.cpp checks fopen; state_recorder.cpp checks fread return values; disk_io.cpp has mixed checking patterns.
-**Assessment:** Most external calls are checked. Error propagation is inconsistent — some functions return bool, others use fprintf+continue. Score 3.
+**Data:** 119 error-checking patterns (NULL/nullptr checks, < 0, error/fail tests). 44 failable external calls (fopen, fread, fwrite). Sample: config_loader.cpp checks fopen; state_recorder.cpp checks fread returns; disk_io.cpp checks fopen and fwrite; dbglog_platform.cpp casts fwrite to (void) for logging paths.
+**Assessment:** Most external calls are checked. The `(void) fwrite(...)` casts in dbglog_platform.cpp indicate intentional suppression for logging. Error propagation is inconsistent — some functions return bool, others use fprintf+continue. Score 3: most external calls checked, some internal error propagation.
 
-### M6: Preprocessor & Dead Code (4/5)
-**Data:** 2,410 preprocessor directives across 44.4 KLOC = 54.3 per KLOC (down from 2,723 / 60 per KLOC). 0 true `#if 0` dead-code blocks (down from 27 in sdl.cpp). The 7 grep matches for `#if 0` are all false positives: rtc.cpp uses `#if 0 != pr_HilCol*` (compile-time constant checks) and screen_map.h uses `#if 0 == (ScrnMapr_MapElSz & 3)` (size check). Conditional compilation flags still present: WantCycByPriOp ×113, SCC_dolog ×92, Use68020 ×83, SCC_TrackMore ×71, WantCloserCyc ×61. 0 TODO/FIXME markers.
-**Assessment:** Dead code cleanup is complete: all 27 true `#if 0` blocks in sdl.cpp have been removed via the platform refactoring. Preprocessor density dropped from 60 to 54 per KLOC. Remaining directives are feature flags for CPU instruction set variants and debug logging — legitimate conditional compilation. Score 4: no dead code; remaining preprocessor use is for feature flags and include guards.
+### M6: Preprocessor & Dead Code (3/5)
+**Data:** 1,173 preprocessor directives across 41.4 KLOC = 28 per KLOC (down from 3,290 / 69 per KLOC — a 64% reduction). Only 12 `#if 0` blocks remain (down from 211), concentrated in rtc.cpp (6) and main.cpp (3). Key conditionals: SCC_dolog ×93, EmLocalTalk ×53. WantCycByPriOp (previously ×113) completely removed. 0 TODO/FIXME/HACK/XXX markers.
+**Assessment:** Massive improvement. Preprocessor density dropped from 69 to 28 per KLOC. `#if 0` dead code blocks dropped from 211 to 12 (94% reduction). The WantCycByPriOp flag was entirely eliminated. Remaining conditionals (SCC_dolog, EmLocalTalk) are legitimate feature toggles. Score 3: moderate preprocessor use; few dead code blocks; zero markers.
 
 ### M7: Documentation (3/5)
-**Data:** 3,801 comment lines out of 50,933 total = 7.5% comment ratio (up from 7.1%). 0 source files completely lack comments (improved from 2). Comment style is mostly inline `/* */` blocks explaining hardware behavior and protocol details.
-**Assessment:** Comment ratio improved slightly (7.1%→7.5%) and the previously uncommented via.cpp/via2.cpp now have comments. Still in the 5–15% "adequate" band. Score 3.
+**Data:** 3,656 comment lines out of 47,775 total = 7.7% comment ratio. Zero source files completely lack comments. Comment style is mostly inline `/* */` blocks explaining hardware behavior and protocol details (particularly in SCC, VIA, and CPU code).
+**Assessment:** Comment ratio falls in the 5–15% band (7.7%). Comments are present throughout and tend to explain hardware quirks and emulation logic. No formal API documentation or doxygen-style comments. Score 3: comment ratio adequate, public APIs mostly documented via inline comments.
 
 ### M8: Build System (4/5)
-**Data:** CMakeLists.txt with CMakePresets.json (version 6, Ninja generator). Compiler flags: `-Wall -Wextra -Werror -Wundef -Wconditional-uninitialized -Wno-write-strings`. cmake/models/ directory for multi-target builds. No CI integration detected.
-**Assessment:** Modern CMake with presets and comprehensive warning flags. Lacks CI integration for score 5. Score 4.
+**Data:** CMakeLists.txt with CMakePresets.json (Ninja generator). Compiler flags: `-Wall -Wextra -Werror -Wundef -Wconditional-uninitialized -Wno-write-strings`. cmake/ directory for model-specific build configuration. No CI integration detected.
+**Assessment:** Modern CMake with presets and comprehensive warnings including -Werror. Well-organized targets. Lacks CI integration for score 5. Score 4: modern build system with strict warnings.
 
 ### M9: Portability (4/5)
-**Data:** 1 platform `#ifdef` in platform code (src/platform/common/path_utils.h:7 `#ifdef _WIN32`). 4 platform-specific includes (sdl_config.h: sys/param.h, sys/time.h; sdl.cpp: sys/stat.h; disk_io.h: sys/stat.h) — all in src/platform/. Zero platform ifdefs in src/core/, src/cpu/, or src/devices/. Platform code cleanly isolated in src/platform/ with src/platform/common/ for shared abstractions.
-**Assessment:** Excellent platform separation. The `#ifdef _WIN32` moved from sdl.cpp to path_utils.h during refactoring — still properly in platform/. All platform-specific code lives in src/platform/. Core, CPU, and device code contain zero platform dependencies. Score 4.
+**Data:** 0 platform `#ifdef` directives in non-platform code (improved from 1 in previous assessment). 4 platform-specific includes, all in src/platform/ (sys/time.h, sys/stat.h ×2). Zero platform ifdefs in src/core/, src/cpu/, or src/devices/. Platform code cleanly isolated in src/platform/ with src/platform/common/ for shared abstractions.
+**Assessment:** Excellent platform separation. All platform-specific code lives in src/platform/. The core emulator, CPU, and device code contain zero platform dependencies. The previous `#ifdef _WIN32` in sdl.cpp was resolved during the sdl.cpp split. Score 4: clean platform abstraction.
 
 ### M10: Duplication (3/5)
-**Data:** Top duplicate lines: `dbglog_writeReturn()` ×103 (unchanged), `break;` ×425 (down from 432), `t_act()`/`f_act()` ×74 each (unchanged), `#if WantCycByPriOp` ×113, `#if SCC_dolog` ×92. Much duplication is in CPU emulation and disassembly dispatch code.
-**Assessment:** Meaningful duplication is concentrated in CPU emulation code (m68k.cpp, disasm.cpp) where instruction decode patterns repeat structurally. Slight reduction in break statements. Score 3: some repeated patterns exist.
+**Data:** Top duplicate lines: `break;` ×425 (structural), `dbglog_writeReturn()` ×103, `#if SCC_dolog` ×92, `t_act()`/`f_act()` ×74 each, `#if SCC_TrackMore` ×71, `uint32_t *p = &V_regs.regs[ArgDat]` ×35, `HaveSetUpFlags()` ×31, `DecodeGetSrcSetDstValue()` ×29.
+**Assessment:** Meaningful duplication remains concentrated in CPU emulation (m68k.cpp, disasm.cpp) where instruction decode patterns repeat. This is common in interpreter-style emulators. The dbglog_writeReturn pattern (103 uses, down from 106) is a logging idiom. Score 3: some repeated patterns; abstractions difficult due to emulator structure.
 
 ## Progress Since Last Assessment
 
-**Previous date:** 2026-03-28 (scope: src/ including macsrc)
-**Score change:** 32/50 → 33/50 (+1)
+**Previous date:** 2026-03-27
+**Score change:** 31/50 → 32/50 (+1)
 
 | Metric | Previous | Current | Change | Notes |
 |--------|----------|---------|--------|-------|
-| M1 | 3 | 3 | = | 12/129 (9.3%) vs 12/116 (10.3%); sdl.cpp 5,085→1,895 (-3,190 lines); 9 new platform modules |
-| M2 | 2 | 2 | = | Deep nesting 7,077→6,957 (-120); sdl.cpp nesting 962→207 (-755) |
+| M1 | 3 | 3 | = | Files >1000 lines: 12→11 (11.1%→8.5%); sdl.cpp split from 5,128→1,805 lines |
+| M2 | 2 | 2 | = | Deep nesting: 7,518→6,681 (-837 lines, -11%); sdl.cpp nesting 960→203 |
 | M3 | 3 | 3 | = | Same naming patterns observed |
-| M4 | 4 | 4 | = | 2 checked mallocs; malloc refs 26→24; calls moved to utility files |
-| M5 | 3 | 3 | = | 299 checks vs 44 failable calls (essentially unchanged) |
-| M6 | 3 | 4 | +1 | All 27 true `#if 0` blocks removed (sdl.cpp split); directives 2,723→2,410 (-313); density 60→54/KLOC |
-| M7 | 3 | 3 | = | Comment ratio 7.1%→7.5%; zero-comment files 2→0 (via.cpp, via2.cpp now commented) |
-| M8 | 4 | 4 | = | Same warning flags; still no CI |
-| M9 | 4 | 4 | = | Platform isolation maintained; `#ifdef _WIN32` moved from sdl.cpp to path_utils.h |
-| M10 | 3 | 3 | = | dbglog_writeReturn ×103, t_act/f_act ×74 (unchanged); break ×425 (slightly down) |
+| M4 | 4 | 4 | = | 26→24 malloc/free refs; still 0 unsafe string funcs |
+| M5 | 3 | 3 | = | Same error checking patterns; 44 failable calls unchanged |
+| M6 | 2 | 3 | +1 | Directives: 3,290→1,173 (-64%); #if 0: 211→12 (-94%); WantCycByPriOp eliminated |
+| M7 | 3 | 3 | = | Comment ratio 7.2%→7.7% (scope changed to exclude macsrc) |
+| M8 | 4 | 4 | = | Same build configuration |
+| M9 | 4 | 4 | = | Platform isolation unchanged; _WIN32 ifdef removed during sdl split |
+| M10 | 3 | 3 | = | dbglog_writeReturn 106→103; t_act/f_act 76→74; marginal change |
 
 **Key improvements:**
-- M6: All 27 true `#if 0` dead-code blocks eliminated via sdl.cpp refactoring; preprocessor density dropped from 60 to 54 per KLOC
-- M1 (partial): sdl.cpp dropped 3,190 lines (5,085→1,895) by splitting into 9+ focused platform modules; percentage of oversized files improved from 10.3% to 9.3%
-- M2 (partial): sdl.cpp deep nesting dropped 755 lines (962→207); total nesting down 120 lines
-- M7 (minor): via.cpp and via2.cpp now have comments (2→0 zero-comment files); comment ratio up 7.1%→7.5%
+- M6: Preprocessor directives dropped 64% (3,290→1,173, from 69/KLOC to 28/KLOC). `#if 0` dead code blocks reduced 94% (211→12). WantCycByPriOp flag (113 uses) completely eliminated.
+- M1 (partial): sdl.cpp split from 5,128→1,805 lines; files over 1000 dropped from 11.1% to 8.5%. New files created during split (sdl_keyboard.cpp, sdl_sound.cpp, etc.) are well-sized.
+- M2 (partial): Deep nesting decreased 11% (7,518→6,681) partly from sdl.cpp restructuring.
 
 **Regressions:**
 - None
 
 ## Top 5 Improvement Actions
-1. **Reduce files over 1000 lines** — 12 files (9.3%) still exceed 1000 lines; splitting control_mode.cpp (1,137) and osglu_common.cpp (1,218) would push below 8% toward M1 score 4
-2. **Flatten deep nesting in device code** — asc.cpp (405), sony.cpp (387), scc.cpp (322) have complex switch/case; extracting case handlers into functions would reduce M2 nesting
-3. **Add CI integration** (GitHub Actions or similar) — one-time setup; with -Werror already in place, CI would catch regressions automatically (+1 to M8)
-4. **Reduce conditional compilation flags** — WantCycByPriOp (×113), SCC_dolog (×92), SCC_TrackMore (×71) could use runtime config or constexpr to reduce preprocessor count toward M6 score 5
-5. **Improve comment coverage** — 7.5% ratio is adequate but adding module-level documentation to newly split platform files would push toward 10%+ and M7 score 4
+1. **Remove remaining 12 `#if 0` blocks** — concentrated in rtc.cpp (6) and main.cpp (3); git preserves history; could push M6 toward 4/5
+2. **Break up m68k.cpp (8,277 lines)** — largest file by far; splitting instruction groups into separate files would improve both M1 and M2
+3. **Split fpu_math.h (5,762 lines)** — second largest file; could be organized by FPU operation category; direct impact on M1
+4. **Add CI integration** (GitHub Actions) — with -Werror already in place, CI catches regressions automatically; would push M8 to 5/5
+5. **Extract common CPU dispatch patterns** — dbglog_writeReturn (×103), t_act/f_act (×74 each), DecodeGetSrcSetDstValue (×29) could use macros or inline helpers to reduce M10 duplication
