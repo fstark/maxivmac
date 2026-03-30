@@ -1,9 +1,15 @@
-# Platform Refactoring Plan
+# Platform Refactoring Plan — COMPLETED
 
-Reference: [PLATFORM_ARCH.md](PLATFORM_ARCH.md)
+All 3 phases completed on 2026-03-30.
 
-Build: `cmake --preset macos && cmake --build --preset macos`
-Test: `cd test && ./verify.sh`
+Commits: 5be3629..c3df248
+
+- **Phase 1** — Extract screen_convert from sdl.cpp (5be3629)
+- **Phase 2** — Introduce PlatformBackend + SdlBackend wrapper (1645c55)
+- **Phase 3** — Create EmulatorShell, invert loop, replace sdl.cpp with app_main.cpp (c3df248)
+
+The old `src/platform/sdl.cpp` is no longer compiled (replaced by `app_main.cpp` + `emulator_shell.cpp`)
+and can be deleted.
 
 ---
 
