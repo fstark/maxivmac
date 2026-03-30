@@ -8275,3 +8275,28 @@ void MINEM68K_Init(
 
 	M68KITAB_setup(regs.disp_table, config);
 }
+
+/* ── Public register accessors for debug UI ─────────── */
+
+void m68k_getRegs(uint32_t *d, uint32_t *a)
+{
+	for (int i = 0; i < 8; i++) {
+		d[i] = V_regs.regs[i];
+		a[i] = V_regs.regs[i + 8];
+	}
+}
+
+uint32_t m68k_getPC_public()
+{
+	return V_regs.pc + (V_pc_p - V_regs.pc_pLo);
+}
+
+uint16_t m68k_getSR_public()
+{
+	return m68k_getSR();
+}
+
+uint32_t m68k_getUSP()  { return V_regs.usp; }
+uint32_t m68k_getISP()  { return V_regs.isp; }
+uint32_t m68k_getMSP()  { return V_regs.msp; }
+uint32_t m68k_getVBR()  { return V_regs.vbr; }

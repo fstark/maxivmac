@@ -12,11 +12,18 @@
 #include "platform/sdl_keyboard.h"
 #include "platform/sdl_sound.h"
 #include "platform/platform.h"
+#include "platform/imgui_debug_windows.h"
 
 /* Forward declarations to avoid pulling in the full osglu_common.h
    include chain (which depends on emulator config macros). */
 extern void InitKeyCodes();
 extern bool g_requestMacOff;
+
+/* Debug window visibility toggles (defined in imgui_debug_windows.cpp) */
+extern bool g_showRegisters;
+extern bool g_showDisassembly;
+extern bool g_showMemory;
+extern bool g_showVIA;
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -131,6 +138,7 @@ void ImGuiBackend::runLoop()
 
 		drawMenuBar();
 		drawEmulatorViewport();
+		DrawDebugWindows();
 
 		ImGui::Render();
 
@@ -261,6 +269,13 @@ void ImGuiBackend::drawMenuBar()
 		if (ImGui::BeginMenu("Machine")) {
 			if (ImGui::MenuItem("Fullscreen"))
 				shell_->toggleWantFullScreen();
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Debug")) {
+			ImGui::MenuItem("Registers",   nullptr, &g_showRegisters);
+			ImGui::MenuItem("Disassembly", nullptr, &g_showDisassembly);
+			ImGui::MenuItem("Memory",      nullptr, &g_showMemory);
+			ImGui::MenuItem("VIA State",   nullptr, &g_showVIA);
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();

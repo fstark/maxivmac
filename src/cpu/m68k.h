@@ -52,3 +52,20 @@ extern void SetHeadATTel(ATTep p);
 
 // Search ATT for the entry matching addr, with LRU reordering.
 extern ATTep FindATTel(uint32_t addr);
+
+/* --- Debug register accessors (read-only snapshots) --- */
+
+// Copy D0-D7 into d[8] and A0-A7 into a[8].
+extern void m68k_getRegs(uint32_t *d, uint32_t *a);
+
+// Current PC (resolved from cached pointer).
+extern uint32_t m68k_getPC_public();
+
+// Current SR (composed from individual flag fields).
+extern uint16_t m68k_getSR_public();
+
+// Stack pointers & supervisor registers.
+extern uint32_t m68k_getUSP();
+extern uint32_t m68k_getISP();
+extern uint32_t m68k_getMSP();
+extern uint32_t m68k_getVBR();

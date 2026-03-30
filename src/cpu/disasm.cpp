@@ -1,5 +1,9 @@
 /*
 	DISAssemble Motorola 68K instructions.
+
+	Rewritten to output to std::string instead of dbglog.
+	The old DisasmOneOrSave / m68k_WantDisasmContext API is preserved
+	at the bottom, implemented on top of Disassemble().
 */
 
 #include "core/common.h"
@@ -7,6 +11,22 @@
 #include "cpu/m68k_tables.h"
 
 #include "cpu/disasm.h"
+
+#include <string>
+#include <cstdio>
+
+/* -- output buffer ---- */
+
+static std::string *s_out = nullptr;
+
+static void out_str(const char *s) { s_out->append(s); }
+static void out_hex(uint32_t x) {
+	char buf[16];
+	snprintf(buf, sizeof(buf), "%X", x);
+	s_out->append(buf);
+}
+
+/* -- PC and memory access ---- */
 
 static uint32_t Disasm_pc;
 
@@ -24,7 +44,6 @@ static uint8_t Disasm_pcp_dummy[2] = {
 
 extern ATTep FindATTel(uint32_t addr);
 
-// Locate the memory block containing the disassembly PC.
 static void Disasm_Find_pcp()
 {
 	ATTep p;
@@ -42,7 +61,6 @@ static void Disasm_Find_pcp()
 }
 
 static uint16_t Disasm_nextiword()
-/* NOT sign extended */
 {
 	uint16_t r = do_get_mem_word(Disasm_pcp);
 	Disasm_pcp += 2;
@@ -77,8 +95,9 @@ static void Disasm_setpc(uint32_t newpc)
 	}
 }
 
-static uint32_t Disasm_opcode;
+/* -- opcode field extraction ---- */
 
+static uint32_t Disasm_opcode;
 static uint32_t Disasm_opsize;
 
 #define Disasm_b76 ((Disasm_opcode >> 6) & 3)
@@ -88,153 +107,126 @@ static uint32_t Disasm_opsize;
 #define Disasm_md6 ((Disasm_opcode >> 6) & 7)
 #define Disasm_rg9 ((Disasm_opcode >> 9) & 7)
 
+/* -- helpers ---- */
+
 static void DisasmOpSizeFromb76()
 {
 	Disasm_opsize = 1 << Disasm_b76;
 	switch (Disasm_opsize) {
-		case 1 :
-			dbglog_writeCStr(".B");
-			break;
-		case 2 :
-			dbglog_writeCStr(".W");
-			break;
-		case 4 :
-			dbglog_writeCStr(".L");
-			break;
+		case 1: out_str(".B"); break;
+		case 2: out_str(".W"); break;
+		case 4: out_str(".L"); break;
 	}
 }
 
-/* Disassemble an addressing mode and register pair,
-   printing the operand in m68k assembly syntax. */
 static void DisasmModeRegister(uint32_t themode, uint32_t thereg)
 {
 	switch (themode) {
-		case 0 :
-			dbglog_writeCStr("D");
-			dbglog_writeHex(thereg);
+		case 0:
+			out_str("D"); out_hex(thereg);
 			break;
-		case 1 :
-			dbglog_writeCStr("A");
-			dbglog_writeHex(thereg);
+		case 1:
+			out_str("A"); out_hex(thereg);
 			break;
-		case 2 :
-			dbglog_writeCStr("(A");
-			dbglog_writeHex(thereg);
-			dbglog_writeCStr(")");
+		case 2:
+			out_str("(A"); out_hex(thereg); out_str(")");
 			break;
-		case 3 :
-			dbglog_writeCStr("(A");
-			dbglog_writeHex(thereg);
-			dbglog_writeCStr(")+");
+		case 3:
+			out_str("(A"); out_hex(thereg); out_str(")+");
 			break;
-		case 4 :
-			dbglog_writeCStr("-(A");
-			dbglog_writeHex(thereg);
-			dbglog_writeCStr(")");
+		case 4:
+			out_str("-(A"); out_hex(thereg); out_str(")");
 			break;
-		case 5 :
-			dbglog_writeHex(Disasm_nextiword());
-			dbglog_writeCStr("(A");
-			dbglog_writeHex(thereg);
-			dbglog_writeCStr(")");
+		case 5:
+			out_hex(Disasm_nextiword());
+			out_str("(A"); out_hex(thereg); out_str(")");
 			break;
-		case 6 :
-			dbglog_writeCStr("???");
+		case 6:
+			out_str("???");
 			break;
-		case 7 :
+		case 7:
 			switch (thereg) {
-				case 0 :
-					dbglog_writeCStr("(");
-					dbglog_writeHex(Disasm_nextiword());
-					dbglog_writeCStr(")");
+				case 0:
+					out_str("("); out_hex(Disasm_nextiword()); out_str(")");
 					break;
-				case 1 :
-					dbglog_writeCStr("(");
-					dbglog_writeHex(Disasm_nextilong());
-					dbglog_writeCStr(")");
+				case 1:
+					out_str("("); out_hex(Disasm_nextilong()); out_str(")");
 					break;
-				case 2 :
+				case 2:
 					{
 						uint32_t s = Disasm_pc;
 						s += static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword()));
-						dbglog_writeCStr("(");
-						dbglog_writeHex(s);
-						dbglog_writeCStr(")");
+						out_str("("); out_hex(s); out_str(")");
 					}
 					break;
-				case 3 :
-					dbglog_writeCStr("???");
+				case 3:
+					out_str("???");
 					break;
-				case 4 :
-					dbglog_writeCStr("#");
+				case 4:
+					out_str("#");
 					if (Disasm_opsize == 2) {
-						dbglog_writeHex(Disasm_nextiword());
+						out_hex(Disasm_nextiword());
 					} else if (Disasm_opsize < 2) {
-						dbglog_writeHex(Disasm_nextibyte());
+						out_hex(Disasm_nextibyte());
 					} else {
-						dbglog_writeHex(Disasm_nextilong());
+						out_hex(Disasm_nextilong());
 					}
 					break;
 			}
 			break;
-		case 8 :
-			dbglog_writeCStr("#");
-			dbglog_writeHex(thereg);
+		case 8:
+			out_str("#"); out_hex(thereg);
 			break;
 	}
 }
 
-static void DisasmStartOne(char *s)
+static void DisasmStartOne(const char *s)
 {
-	dbglog_writeCStr(s);
+	out_str(s);
 }
 
-static void Disasm_xxxxxxxxssmmmrrr(char *s)
+/* -- common patterns ---- */
+
+static void Disasm_xxxxxxxxssmmmrrr(const char *s)
 {
 	DisasmStartOne(s);
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
-static void DisasmEaD_xxxxdddxssmmmrrr(char *s)
+static void DisasmEaD_xxxxdddxssmmmrrr(const char *s)
 {
 	DisasmStartOne(s);
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", ");
-	dbglog_writeCStr("D");
-	dbglog_writeHex(Disasm_rg9);
-	dbglog_writeReturn();
+	out_str(", D"); out_hex(Disasm_rg9);
 }
 
-static void DisasmI_xxxxxxxxssmmmrrr(char *s)
+static void DisasmI_xxxxxxxxssmmmrrr(const char *s)
 {
 	DisasmStartOne(s);
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" #");
+	out_str(" #");
 	if (Disasm_opsize == 2) {
-		dbglog_writeHex(static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword())));
+		out_hex(static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword())));
 	} else if (Disasm_opsize < 2) {
-		dbglog_writeHex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_nextibyte())));
+		out_hex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_nextibyte())));
 	} else {
-		dbglog_writeHex(static_cast<uint32_t>(Disasm_nextilong()));
+		out_hex(static_cast<uint32_t>(Disasm_nextilong()));
 	}
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
-static void DisasmsAA_xxxxdddxssxxxrrr(char *s)
+static void DisasmsAA_xxxxdddxssxxxrrr(const char *s)
 {
 	DisasmStartOne(s);
 	DisasmOpSizeFromb76();
 	DisasmModeRegister(3, Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(3, Disasm_rg9);
-	dbglog_writeReturn();
 }
 
 static uint32_t Disasm_octdat(uint32_t x)
@@ -246,118 +238,78 @@ static uint32_t Disasm_octdat(uint32_t x)
 	}
 }
 
-static void Disasm_xxxxnnnxssmmmrrr(char *s)
+static void Disasm_xxxxnnnxssmmmrrr(const char *s)
 {
 	DisasmStartOne(s);
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" #");
-
-	dbglog_writeHex(Disasm_octdat(Disasm_rg9));
-	dbglog_writeCStr(", ");
+	out_str(" #");
+	out_hex(Disasm_octdat(Disasm_rg9));
+	out_str(", ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
-static void DisasmDEa_xxxxdddxssmmmrrr(char *s)
+static void DisasmDEa_xxxxdddxssmmmrrr(const char *s)
 {
 	DisasmStartOne(s);
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" D");
-	dbglog_writeHex(Disasm_rg9);
-	dbglog_writeCStr(", ");
+	out_str(" D"); out_hex(Disasm_rg9);
+	out_str(", ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
-static void DisasmEaA_xxxxdddsxxmmmrrr(char *s)
+static void DisasmEaA_xxxxdddsxxmmmrrr(const char *s)
 {
 	DisasmStartOne(s);
 
 	Disasm_opsize = Disasm_b8 * 2 + 2;
 	if (Disasm_opsize == 2) {
-		dbglog_writeCStr(".W");
+		out_str(".W");
 	} else {
-		dbglog_writeCStr(".L");
+		out_str(".L");
 	}
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", A");
-	dbglog_writeHex(Disasm_rg9);
-	dbglog_writeReturn();
+	out_str(", A"); out_hex(Disasm_rg9);
 }
 
-static void DisasmDD_xxxxdddxssxxxrrr(char *s)
+static void DisasmDD_xxxxdddxssxxxrrr(const char *s)
 {
 	DisasmStartOne(s);
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmModeRegister(0, Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeReturn();
 }
 
-static void DisasmAAs_xxxxdddxssxxxrrr(char *s)
+static void DisasmAAs_xxxxdddxssxxxrrr(const char *s)
 {
 	DisasmStartOne(s);
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmModeRegister(4, Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(4, Disasm_rg9);
-	dbglog_writeReturn();
 }
 
-static inline void DisasmTst()
-{
-	/* Tst 01001010ssmmmrrr */
-	Disasm_xxxxxxxxssmmmrrr("TST");
-}
+/* -- instruction handlers ---- */
 
-static inline void DisasmCompare()
-{
-	/* Cmp 1011ddd0ssmmmrrr */
-	DisasmEaD_xxxxdddxssmmmrrr("CMP");
-}
-
-static inline void DisasmCmpI()
-{
-	/* CMPI 00001100ssmmmrrr */
-	DisasmI_xxxxxxxxssmmmrrr("CMP");
-}
-
-static inline void DisasmCmpM()
-{
-	/* CmpM 1011ddd1ss001rrr */
-	DisasmsAA_xxxxdddxssxxxrrr("CMP");
-}
+static inline void DisasmTst()     { Disasm_xxxxxxxxssmmmrrr("TST"); }
+static inline void DisasmCompare() { DisasmEaD_xxxxdddxssmmmrrr("CMP"); }
+static inline void DisasmCmpI()    { DisasmI_xxxxxxxxssmmmrrr("CMP"); }
+static inline void DisasmCmpM()    { DisasmsAA_xxxxdddxssxxxrrr("CMP"); }
 
 static void DisasmCC()
 {
-	switch ((Disasm_opcode >> 8) & 15) {
-		case 0:  dbglog_writeCStr("T"); break;
-		case 1:  dbglog_writeCStr("F"); break;
-		case 2:  dbglog_writeCStr("HI"); break;
-		case 3:  dbglog_writeCStr("LS"); break;
-		case 4:  dbglog_writeCStr("CC"); break;
-		case 5:  dbglog_writeCStr("CS"); break;
-		case 6:  dbglog_writeCStr("NE"); break;
-		case 7:  dbglog_writeCStr("EQ"); break;
-		case 8:  dbglog_writeCStr("VC"); break;
-		case 9:  dbglog_writeCStr("VS"); break;
-		case 10: dbglog_writeCStr("P"); break;
-		case 11: dbglog_writeCStr("MI"); break;
-		case 12: dbglog_writeCStr("GE"); break;
-		case 13: dbglog_writeCStr("LT"); break;
-		case 14: dbglog_writeCStr("GT"); break;
-		case 15: dbglog_writeCStr("LE"); break;
-		default: break; /* shouldn't get here */
-	}
+	static const char * const cc_names[16] = {
+		"T",  "F",  "HI", "LS", "CC", "CS", "NE", "EQ",
+		"VC", "VS", "P",  "MI", "GE", "LT", "GT", "LE"
+	};
+	out_str(cc_names[(Disasm_opcode >> 8) & 15]);
 }
 
 static inline void DisasmBcc()
 {
-	/* Bcc 0110ccccnnnnnnnn */
 	uint32_t src = ((uint32_t)Disasm_opcode) & 255;
 	uint32_t s = Disasm_pc;
 
@@ -367,168 +319,83 @@ static inline void DisasmBcc()
 		DisasmStartOne("B");
 		DisasmCC();
 	}
-	dbglog_writeCStr(" ");
+	out_str(" ");
 
 	if (src == 0) {
 		s += static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword()));
-	} else
-	if (src == 255) {
+	} else if (src == 255) {
 		s += static_cast<uint32_t>(Disasm_nextilong());
-		/* ReportAbnormal("long branch in DoCode6"); */
-		/* Used by various Apps */
-	} else
-	{
+	} else {
 		s += static_cast<uint32_t>(static_cast<int8_t>(src));
 	}
-	dbglog_writeHex(s);
-	dbglog_writeReturn();
+	out_hex(s);
 }
 
 static inline void DisasmDBcc()
 {
-	/* DBcc 0101cccc11001ddd */
-
 	uint32_t s = Disasm_pc;
 
 	DisasmStartOne("DB");
 	DisasmCC();
 
-	dbglog_writeCStr(" D");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(" D"); out_hex(Disasm_reg);
+	out_str(", ");
 
 	s += (int32_t)(int16_t)Disasm_nextiword();
-	dbglog_writeHex(s);
-	dbglog_writeReturn();
+	out_hex(s);
 }
 
 static inline void DisasmSwap()
 {
-	/* Swap 0100100001000rrr */
-
 	DisasmStartOne("SWAP D");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeReturn();
+	out_hex(Disasm_reg);
 }
 
-static void DisasmMove() /* MOVE */
+static void DisasmMove()
 {
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(Disasm_md6, Disasm_rg9);
-	dbglog_writeReturn();
 }
 
-static inline void DisasmMoveL()
-{
-	DisasmStartOne("MOVE.L ");
-	Disasm_opsize = 4;
-	DisasmMove();
-}
-
-static inline void DisasmMoveW()
-{
-	DisasmStartOne("MOVE.W ");
-	Disasm_opsize = 2;
-	DisasmMove();
-}
-
-static inline void DisasmMoveB()
-{
-	DisasmStartOne("MOVE.B ");
-	Disasm_opsize = 1;
-	DisasmMove();
-}
-
-static inline void DisasmMoveAL()
-{
-	DisasmStartOne("MOVEA.L ");
-	Disasm_opsize = 4;
-	DisasmMove();
-}
-
-static inline void DisasmMoveAW()
-{
-	DisasmStartOne("MOVEA.W ");
-	Disasm_opsize = 2;
-	DisasmMove();
-}
+static inline void DisasmMoveL()  { DisasmStartOne("MOVE.L "); Disasm_opsize = 4; DisasmMove(); }
+static inline void DisasmMoveW()  { DisasmStartOne("MOVE.W "); Disasm_opsize = 2; DisasmMove(); }
+static inline void DisasmMoveB()  { DisasmStartOne("MOVE.B "); Disasm_opsize = 1; DisasmMove(); }
+static inline void DisasmMoveAL() { DisasmStartOne("MOVEA.L "); Disasm_opsize = 4; DisasmMove(); }
+static inline void DisasmMoveAW() { DisasmStartOne("MOVEA.W "); Disasm_opsize = 2; DisasmMove(); }
 
 static inline void DisasmMoveQ()
 {
-	/* MoveQ 0111ddd0nnnnnnnn */
 	DisasmStartOne("MOVEQ #");
-	dbglog_writeHex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_opcode)));
-	dbglog_writeCStr(", D");
-	dbglog_writeHex(Disasm_rg9);
-	dbglog_writeReturn();
+	out_hex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_opcode)));
+	out_str(", D"); out_hex(Disasm_rg9);
 }
 
-static inline void DisasmAddEaR()
-{
-	DisasmEaD_xxxxdddxssmmmrrr("ADD");
-}
-
-static inline void DisasmAddQ()
-{
-	/* AddQ 0101nnn0ssmmmrrr */
-	Disasm_xxxxnnnxssmmmrrr("ADDQ");
-}
-
-static inline void DisasmAddI()
-{
-	DisasmI_xxxxxxxxssmmmrrr("ADDI");
-}
-
-static inline void DisasmAddREa()
-{
-	DisasmDEa_xxxxdddxssmmmrrr("ADD");
-}
-
-static inline void DisasmSubEaR()
-{
-	DisasmEaD_xxxxdddxssmmmrrr("SUB");
-}
-
-static inline void DisasmSubQ()
-{
-	/* SubQ 0101nnn1ssmmmrrr */
-	Disasm_xxxxnnnxssmmmrrr("SUBQ");
-}
-
-static inline void DisasmSubI()
-{
-	DisasmI_xxxxxxxxssmmmrrr("SUBI");
-}
-
-static inline void DisasmSubREa()
-{
-	DisasmDEa_xxxxdddxssmmmrrr("SUB");
-}
+static inline void DisasmAddEaR() { DisasmEaD_xxxxdddxssmmmrrr("ADD"); }
+static inline void DisasmAddQ()   { Disasm_xxxxnnnxssmmmrrr("ADDQ"); }
+static inline void DisasmAddI()   { DisasmI_xxxxxxxxssmmmrrr("ADDI"); }
+static inline void DisasmAddREa() { DisasmDEa_xxxxdddxssmmmrrr("ADD"); }
+static inline void DisasmSubEaR() { DisasmEaD_xxxxdddxssmmmrrr("SUB"); }
+static inline void DisasmSubQ()   { Disasm_xxxxnnnxssmmmrrr("SUBQ"); }
+static inline void DisasmSubI()   { DisasmI_xxxxxxxxssmmmrrr("SUBI"); }
+static inline void DisasmSubREa() { DisasmDEa_xxxxdddxssmmmrrr("SUB"); }
 
 static inline void DisasmLea()
 {
-	/* Lea 0100aaa111mmmrrr */
 	DisasmStartOne("LEA ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", A");
-	dbglog_writeHex(Disasm_rg9);
-	dbglog_writeReturn();
+	out_str(", A"); out_hex(Disasm_rg9);
 }
 
 static inline void DisasmPEA()
 {
-	/* PEA 0100100001mmmrrr */
 	DisasmStartOne("PEA ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmALine()
 {
-	DisasmStartOne("$");
-	dbglog_writeHex(Disasm_opcode);
-	dbglog_writeReturn();
+	DisasmStartOne("$"); out_hex(Disasm_opcode);
 }
 
 static inline void DisasmBsr()
@@ -539,69 +406,54 @@ static inline void DisasmBsr()
 	DisasmStartOne("BSR ");
 	if (src == 0) {
 		s += (int32_t)(int16_t)Disasm_nextiword();
-	} else
-	if (src == 255) {
+	} else if (src == 255) {
 		s += (int32_t)Disasm_nextilong();
-		/* ReportAbnormal("long branch in DoCode6"); */
-		/* Used by various Apps */
-	} else
-	{
+	} else {
 		s += (int32_t)(int8_t)src;
 	}
-	dbglog_writeHex(s);
-	dbglog_writeReturn();
+	out_hex(s);
 }
 
 static inline void DisasmJsr()
 {
-	/* Jsr 0100111010mmmrrr */
 	DisasmStartOne("JSR ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmLinkA6()
 {
 	DisasmStartOne("LINK A6, ");
-	dbglog_writeHex(Disasm_nextiword());
-	dbglog_writeReturn();
+	out_hex(Disasm_nextiword());
 }
 
 static inline void DisasmMOVEMRmM()
 {
-	/* MOVEM reg to mem 0100100011s100rrr */
 	int16_t z;
 	uint32_t regmask;
 
 	DisasmStartOne("MOVEM");
 	if (Disasm_b76 == 2) {
-		dbglog_writeCStr(".W");
+		out_str(".W");
 	} else {
-		dbglog_writeCStr(".L");
+		out_str(".L");
 	}
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	regmask = Disasm_nextiword();
 
 	for (z = 16; --z >= 0; ) {
 		if ((regmask & (1 << (15 - z))) != 0) {
 			if (z >= 8) {
-				dbglog_writeCStr("A");
-				dbglog_writeHex(z - 8);
+				out_str("A"); out_hex(z - 8);
 			} else {
-				dbglog_writeCStr("D");
-				dbglog_writeHex(z);
+				out_str("D"); out_hex(z);
 			}
 		}
 	}
-	dbglog_writeCStr(", -(A");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeCStr(")");
-	dbglog_writeReturn();
+	out_str(", -(A"); out_hex(Disasm_reg); out_str(")");
 }
 
 static inline void DisasmMOVEMApR()
 {
-	/* MOVEM mem to reg 0100110011s011rrr */
 	int16_t z;
 	uint32_t regmask;
 
@@ -609,496 +461,287 @@ static inline void DisasmMOVEMApR()
 
 	DisasmStartOne("MOVEM");
 	if (Disasm_b76 == 2) {
-		dbglog_writeCStr(".W");
+		out_str(".W");
 	} else {
-		dbglog_writeCStr(".L");
+		out_str(".L");
 	}
-	dbglog_writeCStr(" (A");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeCStr(")+, ");
+	out_str(" (A"); out_hex(Disasm_reg); out_str(")+, ");
 
 	for (z = 0; z < 16; ++z) {
 		if ((regmask & (1 << z)) != 0) {
 			if (z >= 8) {
-				dbglog_writeCStr("A");
-				dbglog_writeHex(z - 8);
+				out_str("A"); out_hex(z - 8);
 			} else {
-				dbglog_writeCStr("D");
-				dbglog_writeHex(z);
+				out_str("D"); out_hex(z);
 			}
 		}
 	}
-	dbglog_writeReturn();
 }
 
-static inline void DisasmUnlkA6()
-{
-	DisasmStartOne("UNLINK A6");
-	dbglog_writeReturn();
-}
-
-static inline void DisasmRts()
-{
-	/* Rts 0100111001110101 */
-	DisasmStartOne("RTS");
-	dbglog_writeReturn();
-}
+static inline void DisasmUnlkA6() { DisasmStartOne("UNLINK A6"); }
+static inline void DisasmRts()    { DisasmStartOne("RTS"); }
 
 static inline void DisasmJmp()
 {
-	/* JMP 0100111011mmmrrr */
 	DisasmStartOne("JMP ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
-static inline void DisasmClr()
-{
-	/* Clr 01000010ssmmmrrr */
-	Disasm_xxxxxxxxssmmmrrr("CLR");
-}
-
-static inline void DisasmAddA()
-{
-	/* ADDA 1101dddm11mmmrrr */
-	DisasmEaA_xxxxdddsxxmmmrrr("ADDA");
-}
+static inline void DisasmClr()  { Disasm_xxxxxxxxssmmmrrr("CLR"); }
+static inline void DisasmAddA() { DisasmEaA_xxxxdddsxxmmmrrr("ADDA"); }
 
 static inline void DisasmAddQA()
 {
-	/* 0101nnn0ss001rrr */
 	DisasmStartOne("ADDQA #");
-	dbglog_writeHex(Disasm_octdat(Disasm_rg9));
-	dbglog_writeCStr(", A");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeReturn();
+	out_hex(Disasm_octdat(Disasm_rg9));
+	out_str(", A"); out_hex(Disasm_reg);
 }
 
 static inline void DisasmSubQA()
 {
-	/* 0101nnn1ss001rrr */
 	DisasmStartOne("SUBQA #");
-	dbglog_writeHex(Disasm_octdat(Disasm_rg9));
-	dbglog_writeCStr(", A");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeReturn();
+	out_hex(Disasm_octdat(Disasm_rg9));
+	out_str(", A"); out_hex(Disasm_reg);
 }
 
-static inline void DisasmSubA()
-{
-	/* SUBA 1001dddm11mmmrrr */
-	DisasmEaA_xxxxdddsxxmmmrrr("SUBA");
-}
+static inline void DisasmSubA() { DisasmEaA_xxxxdddsxxmmmrrr("SUBA"); }
 
 static inline void DisasmCmpA()
 {
 	DisasmStartOne("CMPA ");
 	Disasm_opsize = Disasm_b8 * 2 + 2;
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", A");
-	dbglog_writeHex(Disasm_rg9);
-	dbglog_writeReturn();
+	out_str(", A"); out_hex(Disasm_rg9);
 }
 
-static inline void DisasmAddXd()
-{
-	DisasmDD_xxxxdddxssxxxrrr("ADDX");
-}
-
-static inline void DisasmAddXm()
-{
-	DisasmAAs_xxxxdddxssxxxrrr("ADDX");
-}
-
-static inline void DisasmSubXd()
-{
-	DisasmDD_xxxxdddxssxxxrrr("SUBX");
-}
-
-static inline void DisasmSubXm()
-{
-	DisasmAAs_xxxxdddxssxxxrrr("SUBX");
-}
+static inline void DisasmAddXd() { DisasmDD_xxxxdddxssxxxrrr("ADDX"); }
+static inline void DisasmAddXm() { DisasmAAs_xxxxdddxssxxxrrr("ADDX"); }
+static inline void DisasmSubXd() { DisasmDD_xxxxdddxssxxxrrr("SUBX"); }
+static inline void DisasmSubXm() { DisasmAAs_xxxxdddxssxxxrrr("SUBX"); }
 
 static void DisasmBinOp1(uint32_t x)
 {
-	if (! Disasm_b8) {
-		switch (x) {
-			case 0:
-				DisasmStartOne("ASR");
-				break;
-			case 1:
-				DisasmStartOne("LSR");
-				break;
-			case 2:
-				DisasmStartOne("RXR");
-				break;
-			case 3:
-				DisasmStartOne("ROR");
-				break;
-			default:
-				/* should not get here */
-				break;
-		}
-	} else {
-		switch (x) {
-			case 0:
-				DisasmStartOne("ASL");
-				break;
-			case 1:
-				DisasmStartOne("LSL");
-				break;
-			case 2:
-				DisasmStartOne("RXL");
-				break;
-			case 3:
-				DisasmStartOne("ROL");
-				break;
-			default:
-				/* should not get here */
-				break;
-		}
+	static const char * const shift_ops[2][4] = {
+		{ "ASR", "LSR", "RXR", "ROR" },
+		{ "ASL", "LSL", "RXL", "ROL" }
+	};
+	if (x < 4) {
+		DisasmStartOne(shift_ops[Disasm_b8 ? 1 : 0][x]);
 	}
 }
 
 static inline void DisasmRolopNM()
 {
 	DisasmBinOp1(Disasm_rg9);
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	Disasm_opsize = 2;
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmRolopND()
 {
-	/* 1110cccdss0ttddd */
 	DisasmBinOp1(Disasm_mode & 3);
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" #");
-	dbglog_writeHex(Disasm_octdat(Disasm_rg9));
-	dbglog_writeCStr(", ");
+	out_str(" #");
+	out_hex(Disasm_octdat(Disasm_rg9));
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmRolopDD()
 {
-	/* 1110rrrdss1ttddd */
 	DisasmBinOp1(Disasm_mode & 3);
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static void DisasmBinBitOp1()
 {
-	switch (Disasm_b76) {
-		case 0:
-			DisasmStartOne("BTST");
-			break;
-		case 1:
-			DisasmStartOne("BCHG");
-			break;
-		case 2:
-			DisasmStartOne("BCLR");
-			break;
-		case 3:
-			DisasmStartOne("BSET");
-			break;
-		default:
-			/* should not get here */
-			break;
+	static const char * const bit_ops[4] = {
+		"BTST", "BCHG", "BCLR", "BSET"
+	};
+	if (Disasm_b76 < 4) {
+		DisasmStartOne(bit_ops[Disasm_b76]);
 	}
 }
 
 static inline void DisasmBitOpDD()
 {
-	/* dynamic bit, Opcode = 0000ddd1tt000rrr */
 	DisasmBinBitOp1();
 	Disasm_opsize = 4;
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmBitOpDM()
 {
-	/* dynamic bit, Opcode = 0000ddd1ttmmmrrr */
 	DisasmBinBitOp1();
 	Disasm_opsize = 1;
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmBitOpND()
 {
-	/* static bit 00001010tt000rrr */
 	DisasmBinBitOp1();
 	Disasm_opsize = 4;
-	dbglog_writeCStr(" #");
-	dbglog_writeHex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_nextibyte())));
-	dbglog_writeCStr(", ");
+	out_str(" #");
+	out_hex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_nextibyte())));
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmBitOpNM()
 {
-	/* static bit 00001010ttmmmrrr */
 	DisasmBinBitOp1();
 	Disasm_opsize = 1;
-	dbglog_writeCStr(" #");
-	dbglog_writeHex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_nextibyte())));
-	dbglog_writeCStr(", ");
+	out_str(" #");
+	out_hex(static_cast<uint32_t>(static_cast<int8_t>(Disasm_nextibyte())));
+	out_str(", ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
-static inline void DisasmAndI()
-{
-	DisasmI_xxxxxxxxssmmmrrr("ANDI");
-}
-
-static inline void DisasmAndDEa()
-{
-	/* And 1100ddd1ssmmmrrr */
-	DisasmDEa_xxxxdddxssmmmrrr("AND");
-}
-
-static inline void DisasmAndEaD()
-{
-	/* And 1100ddd0ssmmmrrr */
-	DisasmEaD_xxxxdddxssmmmrrr("AND");
-}
-
-static inline void DisasmOrI()
-{
-	DisasmI_xxxxxxxxssmmmrrr("ORI");
-}
-
-static inline void DisasmOrDEa()
-{
-	/* OR 1000ddd1ssmmmrrr */
-	DisasmDEa_xxxxdddxssmmmrrr("OR");
-}
-
-static inline void DisasmOrEaD()
-{
-	/* OR 1000ddd0ssmmmrrr */
-	DisasmEaD_xxxxdddxssmmmrrr("OR");
-}
-
-static inline void DisasmEorI()
-{
-	DisasmI_xxxxxxxxssmmmrrr("EORI");
-}
-
-static inline void DisasmEor()
-{
-	/* Eor 1011ddd1ssmmmrrr */
-	DisasmDEa_xxxxdddxssmmmrrr("EOR");
-}
-
-static inline void DisasmNot()
-{
-	/* Not 01000110ssmmmrrr */
-	Disasm_xxxxxxxxssmmmrrr("NOT");
-}
+static inline void DisasmAndI()   { DisasmI_xxxxxxxxssmmmrrr("ANDI"); }
+static inline void DisasmAndDEa() { DisasmDEa_xxxxdddxssmmmrrr("AND"); }
+static inline void DisasmAndEaD() { DisasmEaD_xxxxdddxssmmmrrr("AND"); }
+static inline void DisasmOrI()    { DisasmI_xxxxxxxxssmmmrrr("ORI"); }
+static inline void DisasmOrDEa()  { DisasmDEa_xxxxdddxssmmmrrr("OR"); }
+static inline void DisasmOrEaD()  { DisasmEaD_xxxxdddxssmmmrrr("OR"); }
+static inline void DisasmEorI()   { DisasmI_xxxxxxxxssmmmrrr("EORI"); }
+static inline void DisasmEor()    { DisasmDEa_xxxxdddxssmmmrrr("EOR"); }
+static inline void DisasmNot()    { Disasm_xxxxxxxxssmmmrrr("NOT"); }
 
 static inline void DisasmScc()
 {
-	/* Scc 0101cccc11mmmrrr */
 	Disasm_opsize = 1;
 	DisasmStartOne("S");
 	DisasmCC();
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
-static inline void DisasmEXTL()
-{
-	DisasmStartOne("EXT.L D");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeReturn();
-}
+static inline void DisasmEXTL() { DisasmStartOne("EXT.L D"); out_hex(Disasm_reg); }
+static inline void DisasmEXTW() { DisasmStartOne("EXT.W D"); out_hex(Disasm_reg); }
 
-static inline void DisasmEXTW()
-{
-	DisasmStartOne("EXT.W D");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeReturn();
-}
-
-static inline void DisasmNeg()
-{
-	/* Neg 01000100ssmmmrrr */
-	Disasm_xxxxxxxxssmmmrrr("NEG");
-}
-
-static inline void DisasmNegX()
-{
-	/* NegX 01000000ssmmmrrr */
-	Disasm_xxxxxxxxssmmmrrr("NEGX");
-}
+static inline void DisasmNeg()  { Disasm_xxxxxxxxssmmmrrr("NEG"); }
+static inline void DisasmNegX() { Disasm_xxxxxxxxssmmmrrr("NEGX"); }
 
 static inline void DisasmMulU()
 {
-	/* MulU 1100ddd011mmmrrr */
 	Disasm_opsize = 2;
 	DisasmStartOne("MULU ");
-
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmMulS()
 {
-	/* MulS 1100ddd111mmmrrr */
 	Disasm_opsize = 2;
 	DisasmStartOne("MULS ");
-
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmDivU()
 {
-	/* DivU 1000ddd011mmmrrr */
-
 	Disasm_opsize = 2;
 	DisasmStartOne("DIVU ");
-
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmDivS()
 {
-	/* DivS 1000ddd111mmmrrr */
-
 	Disasm_opsize = 2;
 	DisasmStartOne("DIVS ");
-
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmExgdd()
 {
-	/* Exg 1100ddd101000rrr */
-
 	Disasm_opsize = 4;
 	DisasmStartOne("EXG ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmExgaa()
 {
-	/* Exg 1100ddd101001rrr */
-
 	Disasm_opsize = 4;
 	DisasmStartOne("EXG ");
 	DisasmModeRegister(1, Disasm_rg9);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(1, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmExgda()
 {
-	/* Exg 1100ddd110001rrr */
-
 	Disasm_opsize = 4;
 	DisasmStartOne("EXG ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(1, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmMoveCCREa()
 {
-	/* Move from CCR 0100001011mmmrrr */
 	Disasm_opsize = 2;
 	DisasmStartOne("MOVE CCR, ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmMoveEaCR()
 {
-	/* 0100010011mmmrrr */
 	Disasm_opsize = 2;
 	DisasmStartOne("MOVE ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", CCR");
-	dbglog_writeReturn();
+	out_str(", CCR");
 }
 
 static inline void DisasmMoveSREa()
 {
-	/* Move from SR 0100000011mmmrrr */
 	Disasm_opsize = 2;
 	DisasmStartOne("MOVE SR, ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmMoveEaSR()
 {
-	/* 0100011011mmmrrr */
 	Disasm_opsize = 2;
 	DisasmStartOne("MOVE ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", SR");
-	dbglog_writeReturn();
+	out_str(", SR");
 }
 
 static void DisasmBinOpStatusCCR()
 {
 	switch (Disasm_rg9) {
-		case 0 :
-			DisasmStartOne("OR");
-			break;
-		case 1 :
-			DisasmStartOne("AND");
-			break;
-		case 5 :
-			DisasmStartOne("EOR");
-			break;
-		default: /* should not happen */
-			break;
+		case 0: DisasmStartOne("OR"); break;
+		case 1: DisasmStartOne("AND"); break;
+		case 5: DisasmStartOne("EOR"); break;
+		default: break;
 	}
 	DisasmOpSizeFromb76();
-	dbglog_writeCStr(" #");
-	dbglog_writeHex(static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword())));
+	out_str(" #");
+	out_hex(static_cast<uint32_t>(static_cast<int16_t>(Disasm_nextiword())));
 	if (Disasm_b76 != 0) {
-		dbglog_writeCStr(", SR");
+		out_str(", SR");
 	} else {
-		dbglog_writeCStr(", CCR");
+		out_str(", CCR");
 	}
-	dbglog_writeReturn();
 }
 
 static void disasmreglist(int16_t direction, uint32_t m1, uint32_t r1)
@@ -1112,309 +755,189 @@ static void disasmreglist(int16_t direction, uint32_t m1, uint32_t r1)
 	Disasm_opsize = 2 * Disasm_b76 - 2;
 
 	if (Disasm_opsize == 2) {
-		dbglog_writeCStr(".W");
+		out_str(".W");
 	} else {
-		dbglog_writeCStr(".L");
+		out_str(".L");
 	}
 
-	dbglog_writeCStr(" ");
+	out_str(" ");
 
 	if (direction != 0) {
 		DisasmModeRegister(m1, r1);
-		dbglog_writeCStr(", ");
+		out_str(", ");
 	}
 
 	for (z = 0; z < 16; ++z) {
 		if ((regmask & (1 << z)) != 0) {
 			if (z >= 8) {
-				dbglog_writeCStr("A");
-				dbglog_writeHex(z - 8);
+				out_str("A"); out_hex(z - 8);
 			} else {
-				dbglog_writeCStr("D");
-				dbglog_writeHex(z);
+				out_str("D"); out_hex(z);
 			}
 		}
 	}
 
 	if (direction == 0) {
-		dbglog_writeCStr(", ");
+		out_str(", ");
 		DisasmModeRegister(m1, r1);
 	}
-
-	dbglog_writeReturn();
 }
 
-static inline void DisasmMOVEMrm()
-{
-	/* MOVEM reg to mem 010010001ssmmmrrr */
-	disasmreglist(0, Disasm_mode, Disasm_reg);
-}
+static inline void DisasmMOVEMrm() { disasmreglist(0, Disasm_mode, Disasm_reg); }
+static inline void DisasmMOVEMmr() { disasmreglist(1, Disasm_mode, Disasm_reg); }
 
-static inline void DisasmMOVEMmr()
-{
-	/* MOVEM mem to reg 0100110011smmmrrr */
-	disasmreglist(1, Disasm_mode, Disasm_reg);
-}
-
-static void DisasmByteBinOp(char *s, uint32_t m1, uint32_t r1, uint32_t m2, uint32_t r2)
+static void DisasmByteBinOp(const char *s, uint32_t m1, uint32_t r1, uint32_t m2, uint32_t r2)
 {
 	DisasmStartOne(s);
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	DisasmOpSizeFromb76();
 	DisasmModeRegister(m1, r1);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(m2, r2);
-	dbglog_writeReturn();
 }
 
-static inline void DisasmAbcdr()
-{
-	/* ABCD 1100ddd100000rrr */
-	DisasmByteBinOp("ABCD", 0, Disasm_reg, 0, Disasm_rg9);
-}
+static inline void DisasmAbcdr() { DisasmByteBinOp("ABCD", 0, Disasm_reg, 0, Disasm_rg9); }
+static inline void DisasmAbcdm() { DisasmByteBinOp("ABCD", 4, Disasm_reg, 4, Disasm_rg9); }
+static inline void DisasmSbcdr() { DisasmByteBinOp("SBCD", 0, Disasm_reg, 0, Disasm_rg9); }
+static inline void DisasmSbcdm() { DisasmByteBinOp("SBCD", 4, Disasm_reg, 4, Disasm_rg9); }
 
-static inline void DisasmAbcdm()
-{
-	/* ABCD 1100ddd100001rrr */
-	DisasmByteBinOp("ABCD", 4, Disasm_reg, 4, Disasm_rg9);
-}
+static inline void DisasmNbcd() { Disasm_xxxxxxxxssmmmrrr("NBCD"); }
 
-static inline void DisasmSbcdr()
-{
-	/* SBCD 1000xxx100000xxx */
-	DisasmByteBinOp("ABCD", 0, Disasm_reg, 0, Disasm_rg9);
-}
-
-static inline void DisasmSbcdm()
-{
-	/* SBCD 1000xxx100001xxx */
-	DisasmByteBinOp("ABCD", 4, Disasm_reg, 4, Disasm_rg9);
-}
-
-static inline void DisasmNbcd()
-{
-	/* Nbcd 0100100000mmmrrr */
-	Disasm_xxxxxxxxssmmmrrr("NBCD");
-}
-
-static inline void DisasmRte()
-{
-	/* Rte 0100111001110011 */
-	DisasmStartOne("RTE");
-	dbglog_writeReturn();
-}
-
-static inline void DisasmNop()
-{
-	/* Nop 0100111001110001 */
-	DisasmStartOne("NOP");
-	dbglog_writeReturn();
-}
+static inline void DisasmRte() { DisasmStartOne("RTE"); }
+static inline void DisasmNop() { DisasmStartOne("NOP"); }
 
 static inline void DisasmMoveP()
 {
-	/* MoveP 0000ddd1mm001aaa */
-
 	DisasmStartOne("MOVEP");
 	if (0 == (Disasm_b76 & 1)) {
 		Disasm_opsize = 2;
-		dbglog_writeCStr(".W");
+		out_str(".W");
 	} else {
 		Disasm_opsize = 4;
-		dbglog_writeCStr(".L");
+		out_str(".L");
 	}
-	dbglog_writeCStr(" ");
+	out_str(" ");
 	if (Disasm_b76 < 2) {
 		DisasmModeRegister(5, Disasm_reg);
-		dbglog_writeCStr(", ");
+		out_str(", ");
 		DisasmModeRegister(0, Disasm_rg9);
 	} else {
 		DisasmModeRegister(0, Disasm_rg9);
-		dbglog_writeCStr(", ");
+		out_str(", ");
 		DisasmModeRegister(5, Disasm_reg);
 	}
-	dbglog_writeReturn();
 }
 
-static inline void DisasmIllegal()
-{
-	DisasmStartOne("ILLEGAL");
-	dbglog_writeReturn();
-}
+static inline void DisasmIllegal() { DisasmStartOne("ILLEGAL"); }
 
 static void DisasmCheck()
 {
 	DisasmStartOne("CHK");
 	if (2 == Disasm_opsize) {
-		dbglog_writeCStr(".W");
+		out_str(".W");
 	} else {
-		dbglog_writeCStr(".L");
+		out_str(".L");
 	}
-	dbglog_writeCStr(" ");
-
+	out_str(" ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeCStr(", ");
+	out_str(", ");
 	DisasmModeRegister(0, Disasm_rg9);
-	dbglog_writeReturn();
 }
 
-static inline void DisasmChkW()
-{
-	/* Chk.W 0100ddd110mmmrrr */
-	Disasm_opsize = 2;
-	DisasmCheck();
-}
+static inline void DisasmChkW() { Disasm_opsize = 2; DisasmCheck(); }
 
 static inline void DisasmTrap()
 {
-	/* Trap 010011100100vvvv */
 	DisasmStartOne("TRAP ");
-	dbglog_writeHex(Disasm_opcode & 15);
-	dbglog_writeReturn();
+	out_hex(Disasm_opcode & 15);
 }
 
-static inline void DisasmTrapV()
-{
-	/* TrapV 0100111001110110 */
-	DisasmStartOne("TRAPV");
-	dbglog_writeReturn();
-}
-
-static inline void DisasmRtr()
-{
-	/* Rtr 0100111001110111 */
-	DisasmStartOne("RTR");
-	dbglog_writeReturn();
-}
+static inline void DisasmTrapV() { DisasmStartOne("TRAPV"); }
+static inline void DisasmRtr()   { DisasmStartOne("RTR"); }
 
 static inline void DisasmLink()
 {
-	DisasmStartOne("LINK A");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeCStr(", ");
-	dbglog_writeHex(Disasm_nextiword());
-	dbglog_writeReturn();
+	DisasmStartOne("LINK A"); out_hex(Disasm_reg);
+	out_str(", "); out_hex(Disasm_nextiword());
 }
 
 static inline void DisasmUnlk()
 {
-	DisasmStartOne("UNLINK A");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeReturn();
+	DisasmStartOne("UNLINK A"); out_hex(Disasm_reg);
 }
 
 static inline void DisasmMoveRUSP()
 {
-	/* MOVE USP 0100111001100aaa */
-	DisasmStartOne("MOVE A");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeCStr(", USP");
-	dbglog_writeReturn();
+	DisasmStartOne("MOVE A"); out_hex(Disasm_reg);
+	out_str(", USP");
 }
 
 static inline void DisasmMoveUSPR()
 {
-	/* MOVE USP 0100111001101aaa */
-	DisasmStartOne("MOVE USP, A");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeReturn();
+	DisasmStartOne("MOVE USP, A"); out_hex(Disasm_reg);
 }
 
 static inline void DisasmTas()
 {
-	/* Tas 0100101011mmmrrr */
 	Disasm_opsize = 1;
-	DisasmStartOne("TAS");
-	dbglog_writeCStr(" ");
+	DisasmStartOne("TAS ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmFLine()
 {
-	DisasmStartOne("$");
-	dbglog_writeHex(Disasm_opcode);
-	dbglog_writeReturn();
+	DisasmStartOne("$"); out_hex(Disasm_opcode);
 }
 
 static inline void DisasmCallMorRtm()
 {
 	DisasmStartOne("CALLM #");
-	dbglog_writeHex(Disasm_nextibyte());
-	dbglog_writeCStr(", ");
+	out_hex(Disasm_nextibyte());
+	out_str(", ");
 	DisasmModeRegister(Disasm_mode, Disasm_reg);
-	dbglog_writeReturn();
 }
 
 static inline void DisasmStop()
 {
-	/* Stop 0100111001110010 */
 	DisasmStartOne("STOP #");
-	dbglog_writeHex(Disasm_nextiword());
-	dbglog_writeReturn();
+	out_hex(Disasm_nextiword());
 }
 
-static inline void DisasmReset()
-{
-	/* Reset 0100111001100000 */
-	DisasmStartOne("RESET");
-	dbglog_writeReturn();
-}
+static inline void DisasmReset() { DisasmStartOne("RESET"); }
 
 static inline void DisasmEXTBL()
 {
-	/* EXTB.L */
-	DisasmStartOne("EXTB.L D");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeReturn();
+	DisasmStartOne("EXTB.L D"); out_hex(Disasm_reg);
 }
 
 static inline void DisasmTRAPcc()
 {
-	/* TRAPcc 0101cccc11111sss */
-
 	DisasmStartOne("TRAP");
 	DisasmCC();
 
 	switch (Disasm_reg) {
 		case 2:
-			dbglog_writeCStr(" ");
-			dbglog_writeHex(Disasm_nextiword());
+			out_str(" "); out_hex(Disasm_nextiword());
 			break;
 		case 3:
-			dbglog_writeCStr(" ");
-			dbglog_writeHex(Disasm_nextilong());
+			out_str(" "); out_hex(Disasm_nextilong());
 			break;
 		case 4:
-			/* no optional data */
 			break;
 		default:
-			/* illegal format */
 			break;
 	}
-
-	dbglog_writeReturn();
 }
 
-static inline void DisasmChkL()
-{
-	/* Chk.L 0100ddd100mmmrrr */
-	Disasm_opsize = 4;
-	DisasmCheck();
-}
+static inline void DisasmChkL() { Disasm_opsize = 4; DisasmCheck(); }
 
 static inline void DisasmBkpt()
 {
-	/* BKPT 0100100001001rrr */
-	DisasmStartOne("BKPT #");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeReturn();
+	DisasmStartOne("BKPT #"); out_hex(Disasm_reg);
 }
 
 static inline void DisasmDivL()
 {
-	/* DIVU 0100110001mmmrrr 0rrr0s0000000rrr */
-	/* DIVS 0100110001mmmrrr 0rrr1s0000000rrr */
 	Disasm_opsize = 4;
 	DisasmStartOne("DIV");
 
@@ -1423,37 +946,23 @@ static inline void DisasmDivL()
 		uint32_t rDr = extra & 7;
 		uint32_t rDq = (extra >> 12) & 7;
 
-		if (extra & 0x0800) {
-			dbglog_writeCStr("S");
-		} else {
-			dbglog_writeCStr("U");
-		}
-		if (extra & 0x0400) {
-			dbglog_writeCStr("L");
-		}
-		dbglog_writeCStr(".L ");
+		out_str((extra & 0x0800) ? "S" : "U");
+		if (extra & 0x0400) { out_str("L"); }
+		out_str(".L ");
 
 		DisasmModeRegister(Disasm_mode, Disasm_reg);
-
-		dbglog_writeCStr(", ");
+		out_str(", ");
 
 		if (rDr != rDq) {
-			dbglog_writeCStr("D");
-			dbglog_writeHex(rDr);
-			dbglog_writeCStr(":");
+			out_str("D"); out_hex(rDr);
+			out_str(":");
 		}
-		dbglog_writeCStr("D");
-		dbglog_writeHex(rDq);
+		out_str("D"); out_hex(rDq);
 	}
-
-	dbglog_writeReturn();
 }
 
 static inline void DisasmMulL()
 {
-	/* MULU 0100110000mmmrrr 0rrr0s0000000rrr */
-	/* MULS 0100110000mmmrrr 0rrr1s0000000rrr */
-
 	Disasm_opsize = 4;
 	DisasmStartOne("MUL");
 
@@ -1462,74 +971,43 @@ static inline void DisasmMulL()
 		uint32_t rhi = extra & 7;
 		uint32_t rlo = (extra >> 12) & 7;
 
-		if (extra & 0x0800) {
-			dbglog_writeCStr("S");
-		} else {
-			dbglog_writeCStr("U");
-		}
-
-		dbglog_writeCStr(".L ");
+		out_str((extra & 0x0800) ? "S" : "U");
+		out_str(".L ");
 
 		DisasmModeRegister(Disasm_mode, Disasm_reg);
-
-		dbglog_writeCStr(", ");
+		out_str(", ");
 
 		if (extra & 0x400) {
-			dbglog_writeCStr("D");
-			dbglog_writeHex(rhi);
-			dbglog_writeCStr(":");
+			out_str("D"); out_hex(rhi);
+			out_str(":");
 		}
-		dbglog_writeCStr("D");
-		dbglog_writeHex(rlo);
+		out_str("D"); out_hex(rlo);
 	}
-
-	dbglog_writeReturn();
 }
 
 static inline void DisasmRtd()
 {
-	/* Rtd 0100111001110100 */
 	DisasmStartOne("RTD #");
-	dbglog_writeHex((int32_t)(int16_t)Disasm_nextiword());
-	dbglog_writeReturn();
+	out_hex((int32_t)(int16_t)Disasm_nextiword());
 }
 
 static void DisasmControlReg(uint16_t i)
 {
 	switch (i) {
-		case 0x0000:
-			dbglog_writeCStr("SFC");
-			break;
-		case 0x0001:
-			dbglog_writeCStr("DFC");
-			break;
-		case 0x0002:
-			dbglog_writeCStr("CACR");
-			break;
-		case 0x0800:
-			dbglog_writeCStr("USP");
-			break;
-		case 0x0801:
-			dbglog_writeCStr("VBR");
-			break;
-		case 0x0802:
-			dbglog_writeCStr("CAAR");
-			break;
-		case 0x0803:
-			dbglog_writeCStr("MSP");
-			break;
-		case 0x0804:
-			dbglog_writeCStr("ISP");
-			break;
-		default:
-			dbglog_writeCStr("???");
-			break;
+		case 0x0000: out_str("SFC");  break;
+		case 0x0001: out_str("DFC");  break;
+		case 0x0002: out_str("CACR"); break;
+		case 0x0800: out_str("USP");  break;
+		case 0x0801: out_str("VBR");  break;
+		case 0x0802: out_str("CAAR"); break;
+		case 0x0803: out_str("MSP");  break;
+		case 0x0804: out_str("ISP");  break;
+		default:     out_str("???");  break;
 	}
 }
 
 static inline void DisasmMoveC()
 {
-	/* MOVEC 010011100111101m */
 	DisasmStartOne("MOVEC ");
 
 	{
@@ -1538,95 +1016,42 @@ static inline void DisasmMoveC()
 		switch (Disasm_reg) {
 			case 2:
 				DisasmControlReg(src & 0x0FFF);
-				dbglog_writeCStr(", ");
-				if (regno < 8) {
-					dbglog_writeCStr("D");
-				} else {
-					dbglog_writeCStr("A");
-				}
-				dbglog_writeHex(regno & 7);
+				out_str(", ");
+				out_str(regno < 8 ? "D" : "A");
+				out_hex(regno & 7);
 				break;
 			case 3:
-				if (regno < 8) {
-					dbglog_writeCStr("D");
-				} else {
-					dbglog_writeCStr("A");
-				}
-				dbglog_writeHex(regno & 7);
-
-				dbglog_writeCStr(", ");
-
+				out_str(regno < 8 ? "D" : "A");
+				out_hex(regno & 7);
+				out_str(", ");
 				DisasmControlReg(src & 0x0FFF);
 				break;
 			default:
-				/* illegal */
 				break;
 		}
 	}
-
-	dbglog_writeReturn();
 }
 
 static inline void DisasmLinkL()
 {
-	/* Link.L 0100100000001rrr */
-	DisasmStartOne("LINK.L A");
-	dbglog_writeHex(Disasm_reg);
-	dbglog_writeCStr(", ");
-	dbglog_writeHex(Disasm_nextilong());
-	dbglog_writeReturn();
+	DisasmStartOne("LINK.L A"); out_hex(Disasm_reg);
+	out_str(", "); out_hex(Disasm_nextilong());
 }
 
-static inline void DisasmPack()
-{
-	DisasmStartOne("PACK ???");
-	dbglog_writeReturn();
-	/* DoCodePack */
-}
-
-static inline void DisasmUnpk()
-{
-	DisasmStartOne("UNPK ???");
-	dbglog_writeReturn();
-	/* DoCodeUnpk */
-}
-
-static inline void DisasmCHK2orCMP2()
-{
-	DisasmStartOne("CHK2/CMP2 ???");
-	dbglog_writeReturn();
-	/* DoCHK2orCMP2 */
-}
-
-static inline void DisasmCAS2()
-{
-	DisasmStartOne("CAS2 ???");
-	dbglog_writeReturn();
-	/* DoCAS2 */
-}
+static inline void DisasmPack()       { DisasmStartOne("PACK ???"); }
+static inline void DisasmUnpk()       { DisasmStartOne("UNPK ???"); }
+static inline void DisasmCHK2orCMP2() { DisasmStartOne("CHK2/CMP2 ???"); }
+static inline void DisasmCAS2()       { DisasmStartOne("CAS2 ???"); }
 
 [[maybe_unused]]
-static inline void DisasmCAS()
-{
-	DisasmStartOne("CAS ???");
-	dbglog_writeReturn();
-	/* DoDoCAS */
-}
+static inline void DisasmCAS()        { DisasmStartOne("CAS ???"); }
 
 [[maybe_unused]]
-static inline void DisasmMOVES()
-{
-	DisasmStartOne("MOVES ???");
-	dbglog_writeReturn();
-	/* DoMOVES */
-}
+static inline void DisasmMOVES()      { DisasmStartOne("MOVES ???"); }
 
-static inline void DisasmBitField()
-{
-	DisasmStartOne("BitField ???");
-	dbglog_writeReturn();
-	/* DoBitField */
-}
+static inline void DisasmBitField()   { DisasmStartOne("BitField ???"); }
+
+/* -- address mode validation ---- */
 
 static bool IsValidAddrMode()
 {
@@ -1640,158 +1065,74 @@ static bool IsValidDstAddrMode()
 
 static bool IsValidDataAltAddrMode()
 {
-	bool IsOk;
-
 	switch (Disasm_mode) {
-		case 1:
-		default: /* keep compiler happy */
-			IsOk = false;
-			break;
-		case 0:
-		case 2:
-		case 3:
-		case 4:
-		case 5:
-		case 6:
-			IsOk = true;
-			break;
-		case 7:
-			IsOk = Disasm_reg < 2;
-			break;
+		case 1: return false;
+		case 0: case 2: case 3: case 4: case 5: case 6: return true;
+		case 7: return Disasm_reg < 2;
+		default: return false;
 	}
-
-	return IsOk;
 }
 
 static bool IsValidDataAddrMode()
 {
-	bool IsOk;
-
 	switch (Disasm_mode) {
-		case 1:
-		default: /* keep compiler happy */
-			IsOk = false;
-			break;
-		case 0:
-		case 2:
-		case 3:
-		case 4:
-		case 5:
-		case 6:
-			IsOk = true;
-			break;
-		case 7:
-			IsOk = Disasm_reg < 5;
-			break;
+		case 1: return false;
+		case 0: case 2: case 3: case 4: case 5: case 6: return true;
+		case 7: return Disasm_reg < 5;
+		default: return false;
 	}
-
-	return IsOk;
 }
 
 static bool IsValidControlAddrMode()
 {
-	bool IsOk;
-
 	switch (Disasm_mode) {
-		case 0:
-		case 1:
-		case 3:
-		case 4:
-		default: /* keep compiler happy */
-			IsOk = false;
-			break;
-		case 2:
-		case 5:
-		case 6:
-			IsOk = true;
-			break;
-		case 7:
-			IsOk = Disasm_reg < 4;
-			break;
+		case 0: case 1: case 3: case 4: return false;
+		case 2: case 5: case 6: return true;
+		case 7: return Disasm_reg < 4;
+		default: return false;
 	}
-
-	return IsOk;
 }
 
 static bool IsValidControlAltAddrMode()
 {
-	bool IsOk;
-
 	switch (Disasm_mode) {
-		case 0:
-		case 1:
-		case 3:
-		case 4:
-		default: /* keep compiler happy */
-			IsOk = false;
-			break;
-		case 2:
-		case 5:
-		case 6:
-			IsOk = true;
-			break;
-		case 7:
-			IsOk = Disasm_reg < 2;
-			break;
+		case 0: case 1: case 3: case 4: return false;
+		case 2: case 5: case 6: return true;
+		case 7: return Disasm_reg < 2;
+		default: return false;
 	}
-
-	return IsOk;
 }
 
 static bool IsValidAltMemAddrMode()
 {
-	bool IsOk;
-
 	switch (Disasm_mode) {
-		case 0:
-		case 1:
-		default: /* keep compiler happy */
-			IsOk = false;
-			break;
-		case 2:
-		case 3:
-		case 4:
-		case 5:
-		case 6:
-			IsOk = true;
-			break;
-		case 7:
-			IsOk = Disasm_reg < 2;
-			break;
+		case 0: case 1: return false;
+		case 2: case 3: case 4: case 5: case 6: return true;
+		case 7: return Disasm_reg < 2;
+		default: return false;
 	}
-
-	return IsOk;
 }
+
+/* -- top-level opcode group dispatchers -- */
 
 static inline void DisasmCode0()
 {
 	if (Disasm_b8 == 1) {
 		if (Disasm_mode == 1) {
-			/* MoveP 0000ddd1mm001aaa */
 			DisasmMoveP();
 		} else {
-			/* dynamic bit, Opcode = 0000ddd1ttmmmrrr */
 			if (Disasm_mode == 0) {
 				DisasmBitOpDD();
 			} else {
 				if (Disasm_b76 == 0) {
-					if (IsValidDataAddrMode()) {
-						DisasmBitOpDM();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAddrMode()) { DisasmBitOpDM(); } else { DisasmIllegal(); }
 				} else {
-					if (IsValidDataAltAddrMode()) {
-						DisasmBitOpDM();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAltAddrMode()) { DisasmBitOpDM(); } else { DisasmIllegal(); }
 				}
 			}
 		}
 	} else {
 		if (Disasm_rg9 == 4) {
-			/* static bit 00001010ssmmmrrr */
 			if (Disasm_mode == 0) {
 				DisasmBitOpND();
 			} else {
@@ -1799,100 +1140,45 @@ static inline void DisasmCode0()
 					if ((Disasm_mode == 7) && (Disasm_reg == 4)) {
 						DisasmIllegal();
 					} else {
-						if (IsValidDataAddrMode()) {
-							DisasmBitOpNM();
-						} else {
-							DisasmIllegal();
-						}
+						if (IsValidDataAddrMode()) { DisasmBitOpNM(); } else { DisasmIllegal(); }
 					}
 				} else {
-					if (IsValidDataAltAddrMode()) {
-						DisasmBitOpNM();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAltAddrMode()) { DisasmBitOpNM(); } else { DisasmIllegal(); }
 				}
 			}
 		} else
 		if (Disasm_b76 == 3) {
 			if (Disasm_rg9 < 3) {
-				/* CHK2 or CMP2 00000ss011mmmrrr */
-				if (IsValidControlAddrMode()) {
-					DisasmCHK2orCMP2();
-				} else {
-					DisasmIllegal();
-				}
-			} else
-			if (Disasm_rg9 >= 5) {
-				if ((Disasm_mode == 7) && (Disasm_reg == 4)) {
-					/* CAS2 00001ss011111100 */
-					DisasmCAS2();
-				} else {
-					/* CAS 00001ss011mmmrrr */
-					DisasmCAS2();
-				}
-			} else
-			if (Disasm_rg9 == 3) {
-				/* CALLM or RTM 0000011011mmmrrr */
+				if (IsValidControlAddrMode()) { DisasmCHK2orCMP2(); } else { DisasmIllegal(); }
+			} else if (Disasm_rg9 >= 5) {
+				DisasmCAS2();
+			} else if (Disasm_rg9 == 3) {
 				DisasmCallMorRtm();
-			} else
-			{
+			} else {
 				DisasmIllegal();
 			}
 		} else
 		if (Disasm_rg9 == 6) {
-			/* CMPI 00001100ssmmmrrr */
-			if (IsValidDataAltAddrMode()) {
-				DisasmCmpI();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidDataAltAddrMode()) { DisasmCmpI(); } else { DisasmIllegal(); }
 		} else if (Disasm_rg9 == 7) {
-			/* MoveS 00001110ssmmmrrr */
-			if (IsValidAltMemAddrMode()) {
-				DisasmMoveSREa();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidAltMemAddrMode()) { DisasmMoveSREa(); } else { DisasmIllegal(); }
 		} else {
 			if ((Disasm_mode == 7) && (Disasm_reg == 4)) {
 				switch (Disasm_rg9) {
-					case 0:
-					case 1:
-					case 5:
-						DisasmBinOpStatusCCR();
-						break;
-					default:
-						DisasmIllegal();
-						break;
+					case 0: case 1: case 5: DisasmBinOpStatusCCR(); break;
+					default: DisasmIllegal(); break;
 				}
 			} else {
 				if (! IsValidDataAltAddrMode()) {
 					DisasmIllegal();
 				} else {
 					switch (Disasm_rg9) {
-						case 0:
-							DisasmOrI();
-							break;
-						case 1:
-							DisasmAndI();
-							break;
-						case 2:
-							DisasmSubI();
-							break;
-						case 3:
-							DisasmAddI();
-							break;
-						case 5:
-							DisasmEorI();
-							break;
-						default:
-							/*
-								for compiler.
-								should be 0, 1, 2, 3, or 5
-							*/
-							DisasmIllegal();
-							break;
+						case 0: DisasmOrI();  break;
+						case 1: DisasmAndI(); break;
+						case 2: DisasmSubI(); break;
+						case 3: DisasmAddI(); break;
+						case 5: DisasmEorI(); break;
+						default: DisasmIllegal(); break;
 					}
 				}
 			}
@@ -1902,49 +1188,28 @@ static inline void DisasmCode0()
 
 static inline void DisasmCode1()
 {
-	if ((Disasm_mode == 1) || ! IsValidAddrMode()) {
-		DisasmIllegal();
-	} else if (Disasm_md6 == 1) { /* MOVEA */
-		DisasmIllegal();
-	} else if (! IsValidDstAddrMode()) {
-		DisasmIllegal();
-	} else {
-		DisasmMoveB();
-	}
+	if ((Disasm_mode == 1) || ! IsValidAddrMode()) { DisasmIllegal(); }
+	else if (Disasm_md6 == 1) { DisasmIllegal(); }
+	else if (! IsValidDstAddrMode()) { DisasmIllegal(); }
+	else { DisasmMoveB(); }
 }
 
 static inline void DisasmCode2()
 {
-	if (Disasm_md6 == 1) { /* MOVEA */
-		if (IsValidAddrMode()) {
-			DisasmMoveAL();
-		} else {
-			DisasmIllegal();
-		}
-	} else if (! IsValidAddrMode()) {
-		DisasmIllegal();
-	} else if (! IsValidDstAddrMode()) {
-		DisasmIllegal();
-	} else {
-		DisasmMoveL();
-	}
+	if (Disasm_md6 == 1) {
+		if (IsValidAddrMode()) { DisasmMoveAL(); } else { DisasmIllegal(); }
+	} else if (! IsValidAddrMode()) { DisasmIllegal(); }
+	else if (! IsValidDstAddrMode()) { DisasmIllegal(); }
+	else { DisasmMoveL(); }
 }
 
 static inline void DisasmCode3()
 {
-	if (Disasm_md6 == 1) { /* MOVEA */
-		if (IsValidAddrMode()) {
-			DisasmMoveAW();
-		} else {
-			DisasmIllegal();
-		}
-	} else if (! IsValidAddrMode()) {
-		DisasmIllegal();
-	} else if (! IsValidDstAddrMode()) {
-		DisasmIllegal();
-	} else {
-		DisasmMoveW();
-	}
+	if (Disasm_md6 == 1) {
+		if (IsValidAddrMode()) { DisasmMoveAW(); } else { DisasmIllegal(); }
+	} else if (! IsValidAddrMode()) { DisasmIllegal(); }
+	else if (! IsValidDstAddrMode()) { DisasmIllegal(); }
+	else { DisasmMoveW(); }
 }
 
 static inline void DisasmCode4()
@@ -1952,340 +1217,125 @@ static inline void DisasmCode4()
 	if (Disasm_b8 != 0) {
 		switch (Disasm_b76) {
 			case 0:
-				/* Chk.L 0100ddd100mmmrrr */
-				if (IsValidDataAddrMode()) {
-					DisasmChkL();
-				} else {
-					DisasmIllegal();
-				}
+				if (IsValidDataAddrMode()) { DisasmChkL(); } else { DisasmIllegal(); }
 				break;
-			case 1:
-				DisasmIllegal();
-				break;
+			case 1: DisasmIllegal(); break;
 			case 2:
-				/* Chk.W 0100ddd110mmmrrr */
-				if (IsValidDataAddrMode()) {
-					DisasmChkW();
-				} else {
-					DisasmIllegal();
-				}
+				if (IsValidDataAddrMode()) { DisasmChkW(); } else { DisasmIllegal(); }
 				break;
-			case 3:
-			default: /* keep compiler happy */
-				if ((0 == Disasm_mode) && (4 == Disasm_rg9)) {
-					DisasmEXTBL();
-				} else
-				{
-					/* Lea 0100aaa111mmmrrr */
-					if (IsValidControlAddrMode()) {
-						DisasmLea();
-					} else {
-						DisasmIllegal();
-					}
-				}
+			case 3: default:
+				if ((0 == Disasm_mode) && (4 == Disasm_rg9)) { DisasmEXTBL(); }
+				else { if (IsValidControlAddrMode()) { DisasmLea(); } else { DisasmIllegal(); } }
 				break;
 		}
 	} else {
 		switch (Disasm_rg9) {
 			case 0:
 				if (Disasm_b76 != 3) {
-					/* NegX 01000000ssmmmrrr */
-					if (IsValidDataAltAddrMode()) {
-						DisasmNegX();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAltAddrMode()) { DisasmNegX(); } else { DisasmIllegal(); }
 				} else {
-/* reference seems incorrect to say not for 68000 */
-					/* Move from SR 0100000011mmmrrr */
-					if (IsValidDataAltAddrMode()) {
-						DisasmMoveSREa();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAltAddrMode()) { DisasmMoveSREa(); } else { DisasmIllegal(); }
 				}
 				break;
 			case 1:
 				if (Disasm_b76 != 3) {
-					/* Clr 01000010ssmmmrrr */
-					if (IsValidDataAltAddrMode()) {
-						DisasmClr();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAltAddrMode()) { DisasmClr(); } else { DisasmIllegal(); }
 				} else {
-					/* Move from CCR 0100001011mmmrrr */
-					if (IsValidDataAltAddrMode()) {
-						DisasmMoveCCREa();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAltAddrMode()) { DisasmMoveCCREa(); } else { DisasmIllegal(); }
 				}
 				break;
 			case 2:
 				if (Disasm_b76 != 3) {
-					/* Neg 01000100ssmmmrrr */
-					if (IsValidDataAltAddrMode()) {
-						DisasmNeg();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAltAddrMode()) { DisasmNeg(); } else { DisasmIllegal(); }
 				} else {
-					/* Move to CCR 0100010011mmmrrr */
-					if (IsValidDataAddrMode()) {
-						DisasmMoveEaCR();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAddrMode()) { DisasmMoveEaCR(); } else { DisasmIllegal(); }
 				}
 				break;
 			case 3:
 				if (Disasm_b76 != 3) {
-					/* Not 01000110ssmmmrrr */
-					if (IsValidDataAltAddrMode()) {
-						DisasmNot();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAltAddrMode()) { DisasmNot(); } else { DisasmIllegal(); }
 				} else {
-					/* Move from SR 0100011011mmmrrr */
-					if (IsValidDataAddrMode()) {
-						DisasmMoveEaSR();
-					} else {
-						DisasmIllegal();
-					}
+					if (IsValidDataAddrMode()) { DisasmMoveEaSR(); } else { DisasmIllegal(); }
 				}
 				break;
 			case 4:
 				switch (Disasm_b76) {
 					case 0:
-						if (Disasm_mode == 1) {
-							/* Link.L 0100100000001rrr */
-							DisasmLinkL();
-						} else
-						{
-							/* Nbcd 0100100000mmmrrr */
-							if (IsValidDataAltAddrMode()) {
-								DisasmNbcd();
-							} else {
-								DisasmIllegal();
-							}
-						}
+						if (Disasm_mode == 1) { DisasmLinkL(); }
+						else { if (IsValidDataAltAddrMode()) { DisasmNbcd(); } else { DisasmIllegal(); } }
 						break;
 					case 1:
-						if (Disasm_mode == 0) {
-							/* Swap 0100100001000rrr */
-							DisasmSwap();
-						} else
-						if (Disasm_mode == 1) {
-							DisasmBkpt();
-						} else
-						{
-							/* PEA 0100100001mmmrrr */
-							if (IsValidControlAddrMode()) {
-								DisasmPEA();
-							} else {
-								DisasmIllegal();
-							}
-						}
+						if (Disasm_mode == 0) { DisasmSwap(); }
+						else if (Disasm_mode == 1) { DisasmBkpt(); }
+						else { if (IsValidControlAddrMode()) { DisasmPEA(); } else { DisasmIllegal(); } }
 						break;
 					case 2:
-						if (Disasm_mode == 0) {
-							/* EXT.W */
-							DisasmEXTW();
-						} else {
-							/*
-								MOVEM Disasm_reg
-									to mem 01001d001ssmmmrrr
-							*/
-							if (Disasm_mode == 4) {
-								DisasmMOVEMRmM();
-							} else {
-								if (IsValidControlAltAddrMode()) {
-									DisasmMOVEMrm();
-								} else {
-									DisasmIllegal();
-								}
-							}
+						if (Disasm_mode == 0) { DisasmEXTW(); }
+						else {
+							if (Disasm_mode == 4) { DisasmMOVEMRmM(); }
+							else { if (IsValidControlAltAddrMode()) { DisasmMOVEMrm(); } else { DisasmIllegal(); } }
 						}
 						break;
-					case 3:
-					default: /* keep compiler happy */
-						if (Disasm_mode == 0) {
-							/* EXT.L */
-							DisasmEXTL();
-						} else {
-							/*
-								MOVEM Disasm_reg
-									to mem 01001d001ssmmmrrr
-							*/
-							if (Disasm_mode == 4) {
-								DisasmMOVEMRmM();
-							} else {
-								if (IsValidControlAltAddrMode()) {
-									DisasmMOVEMrm();
-								} else {
-									DisasmIllegal();
-								}
-							}
+					case 3: default:
+						if (Disasm_mode == 0) { DisasmEXTL(); }
+						else {
+							if (Disasm_mode == 4) { DisasmMOVEMRmM(); }
+							else { if (IsValidControlAltAddrMode()) { DisasmMOVEMrm(); } else { DisasmIllegal(); } }
 						}
 						break;
 				}
 				break;
 			case 5:
 				if (Disasm_b76 == 3) {
-					if ((Disasm_mode == 7) && (Disasm_reg == 4)) {
-						/* the ILLEGAL instruction */
-						DisasmIllegal();
-					} else {
-						/* Tas 0100101011mmmrrr */
-						if (IsValidDataAltAddrMode()) {
-							DisasmTas();
-						} else {
-							DisasmIllegal();
-						}
-					}
+					if ((Disasm_mode == 7) && (Disasm_reg == 4)) { DisasmIllegal(); }
+					else { if (IsValidDataAltAddrMode()) { DisasmTas(); } else { DisasmIllegal(); } }
 				} else {
-					/* Tst 01001010ssmmmrrr */
 					if (Disasm_b76 == 0) {
-						if (IsValidDataAltAddrMode()) {
-							DisasmTst();
-						} else {
-							DisasmIllegal();
-						}
+						if (IsValidDataAltAddrMode()) { DisasmTst(); } else { DisasmIllegal(); }
 					} else {
-						if (IsValidAddrMode()) {
-							DisasmTst();
-						} else {
-							DisasmIllegal();
-						}
+						if (IsValidAddrMode()) { DisasmTst(); } else { DisasmIllegal(); }
 					}
 				}
 				break;
 			case 6:
 				if (((Disasm_opcode >> 7) & 1) == 1) {
-					/* MOVEM mem to Disasm_reg 0100110011smmmrrr */
-					if (Disasm_mode == 3) {
-						DisasmMOVEMApR();
-					} else {
-						if (IsValidControlAddrMode()) {
-							DisasmMOVEMmr();
-						} else {
-							DisasmIllegal();
-						}
-					}
+					if (Disasm_mode == 3) { DisasmMOVEMApR(); }
+					else { if (IsValidControlAddrMode()) { DisasmMOVEMmr(); } else { DisasmIllegal(); } }
 				} else {
-					if (((Disasm_opcode >> 6) & 1) == 1) {
-						/* DIVU 0100110001mmmrrr 0rrr0s0000000rrr */
-						/* DIVS 0100110001mmmrrr 0rrr1s0000000rrr */
-						DisasmDivL();
-					} else {
-						/* MULU 0100110000mmmrrr 0rrr0s0000000rrr */
-						/* MULS 0100110000mmmrrr 0rrr1s0000000rrr */
-						DisasmMulL();
-					}
+					if (((Disasm_opcode >> 6) & 1) == 1) { DisasmDivL(); }
+					else { DisasmMulL(); }
 				}
 				break;
-			case 7:
-			default: /* keep compiler happy */
+			case 7: default:
 				switch (Disasm_b76) {
-					case 0:
-						DisasmIllegal();
-						break;
+					case 0: DisasmIllegal(); break;
 					case 1:
 						switch (Disasm_mode) {
-							case 0:
-							case 1:
-								/* Trap 010011100100vvvv */
-								DisasmTrap();
-								break;
-							case 2:
-								/* Link */
-								if (Disasm_reg == 6) {
-									DisasmLinkA6();
-								} else {
-									DisasmLink();
-								}
-								break;
-							case 3:
-								/* Unlk */
-								if (Disasm_reg == 6) {
-									DisasmUnlkA6();
-								} else {
-									DisasmUnlk();
-								}
-								break;
-							case 4:
-								/* MOVE USP 0100111001100aaa */
-								DisasmMoveRUSP();
-								break;
-							case 5:
-								/* MOVE USP 0100111001101aaa */
-								DisasmMoveUSPR();
-								break;
+							case 0: case 1: DisasmTrap(); break;
+							case 2: if (Disasm_reg == 6) { DisasmLinkA6(); } else { DisasmLink(); } break;
+							case 3: if (Disasm_reg == 6) { DisasmUnlkA6(); } else { DisasmUnlk(); } break;
+							case 4: DisasmMoveRUSP(); break;
+							case 5: DisasmMoveUSPR(); break;
 							case 6:
 								switch (Disasm_reg) {
-									case 0:
-										/* Reset 0100111001100000 */
-										DisasmReset();
-										break;
-									case 1:
-										/*
-											Nop Opcode
-												= 0100111001110001
-										*/
-										DisasmNop();
-										break;
-									case 2:
-										/* Stop 0100111001110010 */
-										DisasmStop();
-										break;
-									case 3:
-										/* Rte 0100111001110011 */
-										DisasmRte();
-										break;
-									case 4:
-										/* Rtd 0100111001110100 */
-										DisasmRtd();
-										break;
-									case 5:
-										/* Rts 0100111001110101 */
-										DisasmRts();
-										break;
-									case 6:
-										/* TrapV 0100111001110110 */
-										DisasmTrapV();
-										break;
-									case 7:
-									default: /* keep compiler happy */
-										/* Rtr 0100111001110111 */
-										DisasmRtr();
-										break;
+									case 0: DisasmReset(); break;
+									case 1: DisasmNop();   break;
+									case 2: DisasmStop();  break;
+									case 3: DisasmRte();   break;
+									case 4: DisasmRtd();   break;
+									case 5: DisasmRts();   break;
+									case 6: DisasmTrapV(); break;
+									case 7: default: DisasmRtr(); break;
 								}
 								break;
-							case 7:
-							default: /* keep compiler happy */
-								/* MOVEC 010011100111101m */
-								DisasmMoveC();
-								break;
+							case 7: default: DisasmMoveC(); break;
 						}
 						break;
 					case 2:
-						/* Jsr 0100111010mmmrrr */
-						if (IsValidControlAddrMode()) {
-							DisasmJsr();
-						} else {
-							DisasmIllegal();
-						}
+						if (IsValidControlAddrMode()) { DisasmJsr(); } else { DisasmIllegal(); }
 						break;
-					case 3:
-					default: /* keep compiler happy */
-						/* JMP 0100111011mmmrrr */
-						if (IsValidControlAddrMode()) {
-							DisasmJmp();
-						} else {
-							DisasmIllegal();
-						}
+					case 3: default:
+						if (IsValidControlAddrMode()) { DisasmJmp(); } else { DisasmIllegal(); }
 						break;
 				}
 				break;
@@ -2296,45 +1346,19 @@ static inline void DisasmCode4()
 static inline void DisasmCode5()
 {
 	if (Disasm_b76 == 3) {
-		if (Disasm_mode == 1) {
-			/* DBcc 0101cccc11001ddd */
-			DisasmDBcc();
-		} else {
-			if ((Disasm_mode == 7) && (Disasm_reg >= 2)) {
-				/* TRAPcc 0101cccc11111sss */
-				DisasmTRAPcc();
-			} else
-			{
-				/* Scc 0101cccc11mmmrrr */
-				if (IsValidDataAltAddrMode()) {
-					DisasmScc();
-				} else {
-					DisasmIllegal();
-				}
-			}
+		if (Disasm_mode == 1) { DisasmDBcc(); }
+		else {
+			if ((Disasm_mode == 7) && (Disasm_reg >= 2)) { DisasmTRAPcc(); }
+			else { if (IsValidDataAltAddrMode()) { DisasmScc(); } else { DisasmIllegal(); } }
 		}
 	} else {
 		if (Disasm_mode == 1) {
-			if (Disasm_b8 == 0) {
-				DisasmAddQA(); /* AddQA 0101nnn0ss001rrr */
-			} else {
-				DisasmSubQA(); /* SubQA 0101nnn1ss001rrr */
-			}
+			if (Disasm_b8 == 0) { DisasmAddQA(); } else { DisasmSubQA(); }
 		} else {
 			if (Disasm_b8 == 0) {
-				/* AddQ 0101nnn0ssmmmrrr */
-				if (IsValidDataAltAddrMode()) {
-					DisasmAddQ();
-				} else {
-					DisasmIllegal();
-				}
+				if (IsValidDataAltAddrMode()) { DisasmAddQ(); } else { DisasmIllegal(); }
 			} else {
-				/* SubQ 0101nnn1ssmmmrrr */
-				if (IsValidDataAltAddrMode()) {
-					DisasmSubQ();
-				} else {
-					DisasmIllegal();
-				}
+				if (IsValidDataAltAddrMode()) { DisasmSubQ(); } else { DisasmIllegal(); }
 			}
 		}
 	}
@@ -2343,84 +1367,37 @@ static inline void DisasmCode5()
 static inline void DisasmCode6()
 {
 	uint32_t cond = (Disasm_opcode >> 8) & 15;
-
-	if (cond == 1) {
-		/* Bsr 01100001nnnnnnnn */
-		DisasmBsr();
-	} else if (cond == 0) {
-		/* Bra 01100000nnnnnnnn */
-		DisasmBcc();
-	} else {
-		/* Bcc 0110ccccnnnnnnnn */
-		DisasmBcc();
-	}
+	if (cond == 1) { DisasmBsr(); }
+	else { DisasmBcc(); }
 }
 
 static inline void DisasmCode7()
 {
-	if (Disasm_b8 == 0) {
-		DisasmMoveQ();
-	} else {
-		DisasmIllegal();
-	}
+	if (Disasm_b8 == 0) { DisasmMoveQ(); }
+	else { DisasmIllegal(); }
 }
 
 static inline void DisasmCode8()
 {
 	if (Disasm_b76 == 3) {
 		if (Disasm_b8 == 0) {
-			/* DivU 1000ddd011mmmrrr */
-			if (IsValidDataAddrMode()) {
-				DisasmDivU();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidDataAddrMode()) { DisasmDivU(); } else { DisasmIllegal(); }
 		} else {
-			/* DivS 1000ddd111mmmrrr */
-			if (IsValidDataAddrMode()) {
-				DisasmDivS();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidDataAddrMode()) { DisasmDivS(); } else { DisasmIllegal(); }
 		}
 	} else {
 		if (Disasm_b8 == 0) {
-			/* OR 1000ddd0ssmmmrrr */
-			if (IsValidDataAddrMode()) {
-				DisasmOrEaD();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidDataAddrMode()) { DisasmOrEaD(); } else { DisasmIllegal(); }
 		} else {
 			if (Disasm_mode < 2) {
 				switch (Disasm_b76) {
-					case 0:
-						/* SBCD 1000xxx10000mxxx */
-						if (Disasm_mode == 0) {
-							DisasmSbcdr();
-						} else {
-							DisasmSbcdm();
-						}
-						break;
-					case 1:
-						/* PACK 1000rrr10100mrrr */
-						DisasmPack();
-						break;
-					case 2:
-						/* UNPK 1000rrr11000mrrr */
-						DisasmUnpk();
-						break;
-					default:
-						DisasmIllegal();
-						break;
+					case 0: if (Disasm_mode == 0) { DisasmSbcdr(); } else { DisasmSbcdm(); } break;
+					case 1: DisasmPack(); break;
+					case 2: DisasmUnpk(); break;
+					default: DisasmIllegal(); break;
 				}
 			} else {
-				/* OR 1000ddd1ssmmmrrr */
-				if (IsValidDataAltAddrMode()) {
-					DisasmOrDEa();
-				} else {
-					DisasmIllegal();
-				}
+				if (IsValidDataAltAddrMode()) { DisasmOrDEa(); } else { DisasmIllegal(); }
 			}
 		}
 	}
@@ -2429,72 +1406,29 @@ static inline void DisasmCode8()
 static inline void DisasmCode9()
 {
 	if (Disasm_b76 == 3) {
-		/* SUBA 1001dddm11mmmrrr */
-		if (IsValidAddrMode()) {
-			DisasmSubA();
-		} else {
-			DisasmIllegal();
-		}
+		if (IsValidAddrMode()) { DisasmSubA(); } else { DisasmIllegal(); }
 	} else {
 		if (Disasm_b8 == 0) {
-			/* SUB 1001ddd0ssmmmrrr */
-			if (IsValidAddrMode()) {
-				DisasmSubEaR();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidAddrMode()) { DisasmSubEaR(); } else { DisasmIllegal(); }
 		} else {
-			if (Disasm_mode == 0) {
-				/* SUBX 1001ddd1ss000rrr */
-				DisasmSubXd();
-			} else if (Disasm_mode == 1) {
-				/* SUBX 1001ddd1ss001rrr */
-				DisasmSubXm();
-			} else {
-				/* SUB 1001ddd1ssmmmrrr */
-				if (IsValidAltMemAddrMode()) {
-					DisasmSubREa();
-				} else {
-					DisasmIllegal();
-				}
-			}
+			if (Disasm_mode == 0) { DisasmSubXd(); }
+			else if (Disasm_mode == 1) { DisasmSubXm(); }
+			else { if (IsValidAltMemAddrMode()) { DisasmSubREa(); } else { DisasmIllegal(); } }
 		}
 	}
 }
 
-static inline void DisasmCodeA()
-{
-	DisasmALine();
-}
+static inline void DisasmCodeA() { DisasmALine(); }
 
 static inline void DisasmCodeB()
 {
 	if (Disasm_b76 == 3) {
-		/* CMPA 1011ddds11mmmrrr */
-		if (IsValidAddrMode()) {
-			DisasmCmpA();
-		} else {
-			DisasmIllegal();
-		}
+		if (IsValidAddrMode()) { DisasmCmpA(); } else { DisasmIllegal(); }
 	} else if (Disasm_b8 == 1) {
-		if (Disasm_mode == 1) {
-			/* CmpM 1011ddd1ss001rrr */
-			DisasmCmpM();
-		} else {
-			/* Eor 1011ddd1ssmmmrrr */
-			if (IsValidDataAltAddrMode()) {
-				DisasmEor();
-			} else {
-				DisasmIllegal();
-			}
-		}
+		if (Disasm_mode == 1) { DisasmCmpM(); }
+		else { if (IsValidDataAltAddrMode()) { DisasmEor(); } else { DisasmIllegal(); } }
 	} else {
-		/* Cmp 1011ddd0ssmmmrrr */
-		if (IsValidAddrMode()) {
-			DisasmCompare();
-		} else {
-			DisasmIllegal();
-		}
+		if (IsValidAddrMode()) { DisasmCompare(); } else { DisasmIllegal(); }
 	}
 }
 
@@ -2502,64 +1436,24 @@ static inline void DisasmCodeC()
 {
 	if (Disasm_b76 == 3) {
 		if (Disasm_b8 == 0) {
-			/* MulU 1100ddd011mmmrrr */
-			if (IsValidDataAddrMode()) {
-				DisasmMulU();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidDataAddrMode()) { DisasmMulU(); } else { DisasmIllegal(); }
 		} else {
-			/* MulS 1100ddd111mmmrrr */
-			if (IsValidDataAddrMode()) {
-				DisasmMulS();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidDataAddrMode()) { DisasmMulS(); } else { DisasmIllegal(); }
 		}
 	} else {
 		if (Disasm_b8 == 0) {
-			/* And 1100ddd0ssmmmrrr */
-			if (IsValidDataAddrMode()) {
-				DisasmAndEaD();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidDataAddrMode()) { DisasmAndEaD(); } else { DisasmIllegal(); }
 		} else {
 			if (Disasm_mode < 2) {
 				switch (Disasm_b76) {
-					case 0:
-						/* ABCD 1100ddd10000mrrr */
-						if (Disasm_mode == 0) {
-							DisasmAbcdr();
-						} else {
-							DisasmAbcdm();
-						}
-						break;
-					case 1:
-						/* Exg 1100ddd10100trrr */
-						if (Disasm_mode == 0) {
-							DisasmExgdd();
-						} else {
-							DisasmExgaa();
-						}
-						break;
-					case 2:
-					default: /* keep compiler happy */
-						if (Disasm_mode == 0) {
-							DisasmIllegal();
-						} else {
-							/* Exg 1100ddd110001rrr */
-							DisasmExgda();
-						}
+					case 0: if (Disasm_mode == 0) { DisasmAbcdr(); } else { DisasmAbcdm(); } break;
+					case 1: if (Disasm_mode == 0) { DisasmExgdd(); } else { DisasmExgaa(); } break;
+					case 2: default:
+						if (Disasm_mode == 0) { DisasmIllegal(); } else { DisasmExgda(); }
 						break;
 				}
 			} else {
-				/* And 1100ddd1ssmmmrrr */
-				if (IsValidAltMemAddrMode()) {
-					DisasmAndDEa();
-				} else {
-					DisasmIllegal();
-				}
+				if (IsValidAltMemAddrMode()) { DisasmAndDEa(); } else { DisasmIllegal(); }
 			}
 		}
 	}
@@ -2568,33 +1462,14 @@ static inline void DisasmCodeC()
 static inline void DisasmCodeD()
 {
 	if (Disasm_b76 == 3) {
-		/* ADDA 1101dddm11mmmrrr */
-		if (IsValidAddrMode()) {
-			DisasmAddA();
-		} else {
-			DisasmIllegal();
-		}
+		if (IsValidAddrMode()) { DisasmAddA(); } else { DisasmIllegal(); }
 	} else {
 		if (Disasm_b8 == 0) {
-			/* ADD 1101ddd0ssmmmrrr */
-			if (IsValidAddrMode()) {
-				DisasmAddEaR();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidAddrMode()) { DisasmAddEaR(); } else { DisasmIllegal(); }
 		} else {
-			if (Disasm_mode == 0) {
-				DisasmAddXd();
-			} else if (Disasm_mode == 1) {
-				DisasmAddXm();
-			} else {
-				/* ADD 1101ddd1ssmmmrrr */
-				if (IsValidAltMemAddrMode()) {
-					DisasmAddREa();
-				} else {
-					DisasmIllegal();
-				}
-			}
+			if (Disasm_mode == 0) { DisasmAddXd(); }
+			else if (Disasm_mode == 1) { DisasmAddXm(); }
+			else { if (IsValidAltMemAddrMode()) { DisasmAddREa(); } else { DisasmIllegal(); } }
 		}
 	}
 }
@@ -2603,126 +1478,75 @@ static inline void DisasmCodeE()
 {
 	if (Disasm_b76 == 3) {
 		if ((Disasm_opcode & 0x0800) != 0) {
-			/* 11101???11mmmrrr */
 			switch (Disasm_mode) {
-				case 1:
-				case 3:
-				case 4:
-				default: /* keep compiler happy */
-					DisasmIllegal();
-					break;
-				case 0:
-				case 2:
-				case 5:
-				case 6:
-					DisasmBitField();
-					break;
+				case 1: case 3: case 4: default: DisasmIllegal(); break;
+				case 0: case 2: case 5: case 6: DisasmBitField(); break;
 				case 7:
 					switch (Disasm_reg) {
-						case 0:
-						case 1:
-							DisasmBitField();
-							break;
-						case 2:
-						case 3:
+						case 0: case 1: DisasmBitField(); break;
+						case 2: case 3:
 							switch ((Disasm_opcode >> 8) & 7) {
-								case 0: /* BFTST */
-								case 1: /* BFEXTU */
-								case 3: /* BFEXTS */
-								case 5: /* BFFFO */
-									DisasmBitField();
-									break;
-								default:
-									DisasmIllegal();
-									break;
+								case 0: case 1: case 3: case 5: DisasmBitField(); break;
+								default: DisasmIllegal(); break;
 							}
 							break;
-						default:
-							DisasmIllegal();
-							break;
+						default: DisasmIllegal(); break;
 					}
 					break;
 			}
 		} else {
-			/* 11100ttd11mmmddd */
-			if (IsValidAltMemAddrMode()) {
-				DisasmRolopNM();
-			} else {
-				DisasmIllegal();
-			}
+			if (IsValidAltMemAddrMode()) { DisasmRolopNM(); } else { DisasmIllegal(); }
 		}
 	} else {
-		if (Disasm_mode < 4) {
-			/* 1110cccdss0ttddd */
-			DisasmRolopND();
-		} else {
-			/* 1110rrrdss1ttddd */
-			DisasmRolopDD();
-		}
+		if (Disasm_mode < 4) { DisasmRolopND(); }
+		else { DisasmRolopDD(); }
 	}
 }
 
-static inline void DisasmCodeF()
-{
-	DisasmFLine();
-}
+static inline void DisasmCodeF() { DisasmFLine(); }
+
+/* -- main dispatch ---- */
 
 static void m68k_Disasm_one()
 {
 	Disasm_opcode = Disasm_nextiword();
 
 	switch (Disasm_opcode >> 12) {
-		case 0x0:
-			DisasmCode0();
-			break;
-		case 0x1:
-			DisasmCode1();
-			break;
-		case 0x2:
-			DisasmCode2();
-			break;
-		case 0x3:
-			DisasmCode3();
-			break;
-		case 0x4:
-			DisasmCode4();
-			break;
-		case 0x5:
-			DisasmCode5();
-			break;
-		case 0x6:
-			DisasmCode6();
-			break;
-		case 0x7:
-			DisasmCode7();
-			break;
-		case 0x8:
-			DisasmCode8();
-			break;
-		case 0x9:
-			DisasmCode9();
-			break;
-		case 0xA:
-			DisasmCodeA();
-			break;
-		case 0xB:
-			DisasmCodeB();
-			break;
-		case 0xC:
-			DisasmCodeC();
-			break;
-		case 0xD:
-			DisasmCodeD();
-			break;
-		case 0xE:
-			DisasmCodeE();
-			break;
-		case 0xF:
-		default: /* keep compiler happy */
-			DisasmCodeF();
-			break;
+		case 0x0: DisasmCode0(); break;
+		case 0x1: DisasmCode1(); break;
+		case 0x2: DisasmCode2(); break;
+		case 0x3: DisasmCode3(); break;
+		case 0x4: DisasmCode4(); break;
+		case 0x5: DisasmCode5(); break;
+		case 0x6: DisasmCode6(); break;
+		case 0x7: DisasmCode7(); break;
+		case 0x8: DisasmCode8(); break;
+		case 0x9: DisasmCode9(); break;
+		case 0xA: DisasmCodeA(); break;
+		case 0xB: DisasmCodeB(); break;
+		case 0xC: DisasmCodeC(); break;
+		case 0xD: DisasmCodeD(); break;
+		case 0xE: DisasmCodeE(); break;
+		case 0xF: default: DisasmCodeF(); break;
 	}
 }
+
+/* -- new public API ---- */
+
+std::string Disassemble(uint32_t &pc)
+{
+	std::string result;
+	s_out = &result;
+
+	Disasm_setpc(pc);
+	m68k_Disasm_one();
+	pc = Disasm_pc;
+
+	s_out = nullptr;
+	return result;
+}
+
+/* -- legacy API (implemented on top of Disassemble) ---- */
 
 #define Ln2SavedPCs 4
 #define NumSavedPCs (1 << Ln2SavedPCs)
@@ -2731,41 +1555,25 @@ static uint32_t SavedPCs[NumSavedPCs];
 static uint32_t SavedPCsIn = 0;
 static uint32_t SavedPCsOut = 0;
 
-#define DisasmIncludeCycles 0
+static uint32_t DisasmCounter = 0;
 
-static inline void DisasmOneAndBack(uint32_t pc)
+static void DisasmOneAndBack_legacy(uint32_t pc)
 {
-#if DisasmIncludeCycles
-	dbglog_writeHex(GetCuriCount());
-	dbglog_writeCStr(" ");
-#endif
+	std::string text = Disassemble(pc);
 	dbglog_writeHex(pc);
 	dbglog_writeCStr("  ");
-	Disasm_setpc(pc);
-	m68k_Disasm_one();
+	dbglog_writeCStr(const_cast<char *>(text.c_str()));
+	dbglog_writeReturn();
 }
 
-static inline void DisasmSavedPCs()
+static void DisasmSavedPCs_legacy()
 {
 	uint32_t n = SavedPCsIn - SavedPCsOut;
 
 	if (n != 0) {
-		uint32_t pc;
-#if DisasmIncludeCycles
-		uint32_t i;
-#endif
 		uint32_t j = SavedPCsOut;
 
 		SavedPCsOut = SavedPCsIn;
-			/*
-				do first, prevent recursion
-				in case of error while disassembling.
-				(i.e. failure to read emulated memory.)
-			*/
-
-#if DisasmIncludeCycles
-		i = GetCuriCount();
-#endif
 
 		if (n > NumSavedPCs) {
 			n = NumSavedPCs;
@@ -2775,27 +1583,17 @@ static inline void DisasmSavedPCs()
 
 		do {
 			--n;
-			pc = SavedPCs[j & SavedPCsMask];
-#if DisasmIncludeCycles
-			dbglog_writeHex(i /* - n */);
-			dbglog_writeCStr("-? ");
-#endif
-			dbglog_writeHex(pc);
-			dbglog_writeCStr("  ");
-			Disasm_setpc(pc);
-			m68k_Disasm_one();
+			uint32_t pc = SavedPCs[j & SavedPCsMask];
+			DisasmOneAndBack_legacy(pc);
 			++j;
 		} while (n != 0);
-
 	}
 }
-
-static uint32_t DisasmCounter = 0;
 
 void DisasmOneOrSave(uint32_t pc)
 {
 	if (0 != DisasmCounter) {
-		DisasmOneAndBack(pc);
+		DisasmOneAndBack_legacy(pc);
 		--DisasmCounter;
 	} else {
 		SavedPCs[SavedPCsIn & SavedPCsMask] = pc;
@@ -2805,8 +1603,6 @@ void DisasmOneOrSave(uint32_t pc)
 
 void m68k_WantDisasmContext()
 {
-	DisasmSavedPCs();
-	DisasmCounter = /* 256 */ 128;
+	DisasmSavedPCs_legacy();
+	DisasmCounter = 128;
 }
-
-
