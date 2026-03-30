@@ -174,84 +174,7 @@ static
 const SDL_PixelFormatDetails
 *my_format = nullptr;
 
-static uint8_t * ScalingBuff = nullptr;
-
-static uint8_t * CLUT_final;
-
-#define CLUT_FINAL_SZ (256 * 8 * 4)
-	/*
-		256 possible values of one byte
-		8 pixels per byte maximum (when black and white)
-		4 bytes per destination pixel maximum
-			multiplied by s_windowScale when magnified
-	*/
-
-#define ScrnMapr_DoMap UpdateBWDepth3Copy
-#define ScrnMapr_SrcDepth 0
-#define ScrnMapr_DstDepth 3
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateBWDepth4Copy
-#define ScrnMapr_SrcDepth 0
-#define ScrnMapr_DstDepth 4
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateBWDepth5Copy
-#define ScrnMapr_SrcDepth 0
-#define ScrnMapr_DstDepth 5
-#include "platform/screen_map_inst.h"
-
-
-/* Color copy functions for runtime depths 1, 2, 3 (CLUT-indexed).
-   Each src depth needs its own instantiation since ScrnMapr_SrcDepth
-   must be a compile-time constant.
-   Note: screen_map.h #undefines Src/Dst/Map after each inclusion,
-   so they must be redefined for every instantiation. */
-
-#define ScrnMapr_DoMap UpdateColorSrc1Dst3Copy
-#define ScrnMapr_SrcDepth 1
-#define ScrnMapr_DstDepth 3
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc1Dst4Copy
-#define ScrnMapr_SrcDepth 1
-#define ScrnMapr_DstDepth 4
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc1Dst5Copy
-#define ScrnMapr_SrcDepth 1
-#define ScrnMapr_DstDepth 5
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc2Dst3Copy
-#define ScrnMapr_SrcDepth 2
-#define ScrnMapr_DstDepth 3
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc2Dst4Copy
-#define ScrnMapr_SrcDepth 2
-#define ScrnMapr_DstDepth 4
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc2Dst5Copy
-#define ScrnMapr_SrcDepth 2
-#define ScrnMapr_DstDepth 5
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc3Dst3Copy
-#define ScrnMapr_SrcDepth 3
-#define ScrnMapr_DstDepth 3
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc3Dst4Copy
-#define ScrnMapr_SrcDepth 3
-#define ScrnMapr_DstDepth 4
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc3Dst5Copy
-#define ScrnMapr_SrcDepth 3
-#define ScrnMapr_DstDepth 5
-#include "platform/screen_map_inst.h"
+#include "platform/screen_convert.h"
 
 
 /* Convert a dirty rectangle of the emulated framebuffer into
@@ -259,12 +182,6 @@ static uint8_t * CLUT_final;
 static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	uint16_t bottom, uint16_t right)
 {
-	int i;
-	int j;
-	uint8_t *p;
-	Uint32 pixel;
-	Uint32 CLUT_pixel[CLUT_size];
-	Uint32 BWLUT_pixel[2];
 	uint32_t top2;
 	uint32_t left2;
 	uint32_t bottom2;
@@ -338,173 +255,17 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 	int bpp = my_format->bytes_per_pixel;
 	uint32_t ExpectedPitch = vMacScreenWidth * bpp;
 
-
-	if (g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
-		for (i = 0; i < CLUT_size; ++i) {
-			CLUT_pixel[i] = SDL_MapRGB(my_format,
-				nullptr,
-				CLUT_reds[i] >> 8,
-				CLUT_greens[i] >> 8,
-				CLUT_blues[i] >> 8);
-		}
-	} else {
-		BWLUT_pixel[1] = SDL_MapRGB(
-			my_format,
-			nullptr,
-			0, 0, 0
-		);
-			/* black */
-		BWLUT_pixel[0] = SDL_MapRGB(
-			my_format,
-			nullptr,
-			255, 255, 255
-		);
-			/* white */
-	}
-
 	if ((0 == ((bpp - 1) & bpp)) /* a power of 2 */
 		&& ((uint32_t)pitch == ExpectedPitch)
 		&& (vMacScreenDepth <= 3 || ! g_useColorMode)
 		)
 	{
-		int k;
-		Uint32 v;
-		int PixPerByte =
-			(g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4)
-			? (1 << (3 - vMacScreenDepth)) : 8;
-		Uint8 *p4 = CLUT_final;
-
-		for (i = 0; i < 256; ++i) {
-			for (k = PixPerByte; --k >= 0; ) {
-
-				if (g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
-					v = CLUT_pixel[
-						(vMacScreenDepth == 3) ? i :
-						((i >> (k << vMacScreenDepth)) & (CLUT_size - 1))
-					];
-				} else {
-					v = BWLUT_pixel[(i >> k) & 1];
-				}
-
-				{
-					switch (bpp) {
-						case 1: /* Assuming 8-bpp */
-							*p4++ = v;
-							break;
-						case 2: /* Probably 15-bpp or 16-bpp */
-							*(Uint16 *)p4 = v;
-							p4 += 2;
-							break;
-						case 4: /* Probably 32-bpp */
-							*(Uint32 *)p4 = v;
-							p4 += 4;
-							break;
-					}
-				}
-			}
-		}
-
 		ScalingBuff = static_cast<uint8_t *>(pixels);
-
-		if (g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
-			{
-				switch (vMacScreenDepth) {
-					case 1: switch (bpp) { case 1: UpdateColorSrc1Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc1Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc1Dst5Copy(top,left,bottom,right); break; } break;
-					case 2: switch (bpp) { case 1: UpdateColorSrc2Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc2Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc2Dst5Copy(top,left,bottom,right); break; } break;
-					case 3: switch (bpp) { case 1: UpdateColorSrc3Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc3Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc3Dst5Copy(top,left,bottom,right); break; } break;
-				}
-			}
-		} else {
-			{
-				switch (bpp) {
-					case 1:
-						UpdateBWDepth3Copy(top, left, bottom, right);
-						break;
-					case 2:
-						UpdateBWDepth4Copy(top, left, bottom, right);
-						break;
-					case 4:
-						UpdateBWDepth5Copy(top, left, bottom, right);
-						break;
-				}
-			}
-		}
-
+		BuildClutTable(bpp);
+		ConvertRect(bpp, top, left, bottom, right);
 	} else {
-		uint8_t *the_data = GetCurDrawBuff();
-
-		/* adapted from putpixel in SDL documentation */
-
-		for (i = top2; i < (int)bottom2; ++i) {
-			for (j = left2; j < (int)right2; ++j) {
-				int i0 = i;
-				int j0 = j;
-				Uint8 *bufp = static_cast<Uint8 *>(pixels)
-					+ i * pitch + j * bpp;
-
-
-				if (g_useColorMode && vMacScreenDepth > 0) {
-					if (vMacScreenDepth < 4) {
-						p = the_data + ((i0 * vMacScreenWidth + j0)
-							>> (3 - vMacScreenDepth));
-						{
-							uint8_t k = (*p >> (((~ j0)
-									& ((1 << (3 - vMacScreenDepth)) - 1))
-								<< vMacScreenDepth))
-								& (CLUT_size - 1);
-							pixel = CLUT_pixel[k];
-						}
-					} else if (vMacScreenDepth == 4) {
-						p = the_data + ((i0 * vMacScreenWidth + j0) << 1);
-						{
-							uint16_t t0 = do_get_mem_word(p);
-							pixel = SDL_MapRGB(my_format,
-								nullptr,
-								((t0 & 0x7C00) >> 7)
-									| ((t0 & 0x7000) >> 12),
-								((t0 & 0x03E0) >> 2)
-									| ((t0 & 0x0380) >> 7),
-								((t0 & 0x001F) << 3)
-									| ((t0 & 0x001C) >> 2));
-						}
-					} else { /* depth == 5 */
-						p = the_data + ((i0 * vMacScreenWidth + j0) << 2);
-						pixel = SDL_MapRGB(my_format,
-							nullptr,
-							p[1],
-							p[2],
-							p[3]);
-					}
-				} else {
-					p = the_data + ((i0 * vMacScreenWidth + j0) / 8);
-					pixel = BWLUT_pixel[(*p >> ((~ j0) & 0x7)) & 1];
-				}
-
-				switch (bpp) {
-					case 1: /* Assuming 8-bpp */
-						*bufp = pixel;
-						break;
-					case 2: /* Probably 15-bpp or 16-bpp */
-						*(Uint16 *)bufp = pixel;
-						break;
-					case 3:
-						/* Slow 24-bpp mode, usually not used */
-						if (SDL_BYTEORDER == SDL_BIG_ENDIAN) {
-							bufp[0] = (pixel >> 16) & 0xff;
-							bufp[1] = (pixel >> 8) & 0xff;
-							bufp[2] = pixel & 0xff;
-						} else {
-							bufp[0] = pixel & 0xff;
-							bufp[1] = (pixel >> 8) & 0xff;
-							bufp[2] = (pixel >> 16) & 0xff;
-						}
-						break;
-					case 4: /* Probably 32-bpp */
-						*(Uint32 *)bufp = pixel;
-						break;
-				}
-			}
-		}
+		ConvertRectSlow(static_cast<uint8_t *>(pixels), pitch, bpp,
+			top2, left2, bottom2, right2);
 	}
 
 	}
