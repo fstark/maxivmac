@@ -166,13 +166,9 @@ static bool s_curSpeedStopped = true;
 
 static int s_windowScale = 1;
 
+#include "platform/sdl_backend.h"
 
-static SDL_Window *my_main_wind = nullptr;
-static SDL_Renderer *my_renderer = nullptr;
-static SDL_Texture *my_texture = nullptr;
-static
-const SDL_PixelFormatDetails
-*my_format = nullptr;
+static SdlBackend* s_backend = nullptr;
 
 #include "platform/screen_convert.h"
 
@@ -245,14 +241,14 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 	if (
 		!
-		SDL_LockTexture(my_texture, nullptr, &pixels, &pitch)
+		SDL_LockTexture(s_backend->texture(), nullptr, &pixels, &pitch)
 	) {
 		return;
 	}
 
 	{
 
-	int bpp = my_format->bytes_per_pixel;
+	int bpp = s_backend->format()->bytes_per_pixel;
 	uint32_t ExpectedPitch = vMacScreenWidth * bpp;
 
 	if ((0 == ((bpp - 1) & bpp)) /* a power of 2 */
@@ -270,7 +266,7 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 	}
 
-	SDL_UnlockTexture(my_texture);
+	SDL_UnlockTexture(s_backend->texture());
 
 	src_rect.x = left2;
 	src_rect.y = top2;
@@ -284,9 +280,9 @@ static void HaveChangedScreenBuff(uint16_t top, uint16_t left,
 
 	/* SDL_RenderClear(my_renderer); */
 	SDL_RenderTexture
-	(my_renderer, my_texture, &src_rect, &dst_rect);
+	(s_backend->renderer(), s_backend->texture(), &src_rect, &dst_rect);
 	
-	SDL_RenderPresent(my_renderer);
+	SDL_RenderPresent(s_backend->renderer());
 
 }
 
@@ -318,7 +314,7 @@ static void ForceShowCursor()
 {
 	if (s_haveCursorHidden) {
 		s_haveCursorHidden = false;
-		SDL_ShowCursor();
+		s_backend->showCursor();
 	}
 }
 
@@ -354,7 +350,7 @@ static bool MoveMouse(int16_t h, int16_t v)
 		v += vOffset;
 	}
 
-	SDL_WarpMouseInWindow(my_main_wind, h, v);
+	SDL_WarpMouseInWindow(s_backend->window(), h, v);
 
 	return true;
 }
@@ -449,13 +445,6 @@ static void CheckMouseState()
 
 static void CheckSavedMacMsg()
 {
-	/*
-		OSGLUxxx common:
-		This is currently only used in the
-		rare case where there is a message
-		still pending as the program quits.
-	*/
-
 	if (nullptr != SavedBriefMsg) {
 		char briefMsg0[ClStrMaxLength + 1];
 		char longMsg0[ClStrMaxLength + 1];
@@ -463,16 +452,7 @@ static void CheckSavedMacMsg()
 		NativeStrFromCStr(briefMsg0, SavedBriefMsg);
 		NativeStrFromCStr(longMsg0, SavedLongMsg);
 
-		if (0 != SDL_ShowSimpleMessageBox(
-			SDL_MESSAGEBOX_ERROR,
-			SavedBriefMsg,
-			SavedLongMsg,
-			my_main_wind
-			))
-		{
-			fprintf(stderr, "%s\n", briefMsg0);
-			fprintf(stderr, "%s\n", longMsg0);
-		}
+		s_backend->showMessageBox(SavedBriefMsg, SavedLongMsg);
 
 		SavedBriefMsg = nullptr;
 	}
@@ -490,7 +470,7 @@ static void HandleTheEvent(SDL_Event *event)
 {
 	if (!s_useFullScreen) {
 		SDL_ConvertEventToRenderCoordinates(
-			my_renderer,
+			s_backend->renderer(),
 			event
 		);
 	}
@@ -522,7 +502,7 @@ static void HandleTheEvent(SDL_Event *event)
 					s_caughtMouse = 0;
 					break;
 				case SDL_EVENT_WINDOW_RESIZED:
-					SDL_RenderClear(my_renderer);
+					SDL_RenderClear(s_backend->renderer());
 					break;
 		case
 			SDL_EVENT_MOUSE_MOTION
@@ -588,7 +568,7 @@ static void HandleTheEvent(SDL_Event *event)
 				;
 
 				(void) Sony_Insert1a(s, false);
-				SDL_RaiseWindow(my_main_wind);
+				SDL_RaiseWindow(s_backend->window());
 			}
 			break;
 	}
@@ -601,36 +581,14 @@ static char **my_argv;
 
 static bool Screen_Init()
 {
-	bool v = false;
-
-#if DBGLOG_OSG_INIT
-	dbglog_writeln("enter Screen_Init");
-#endif
-
-	InitKeyCodes();
-
-	if (
-		!
-		SDL_Init(
-			SDL_INIT_AUDIO |
-			SDL_INIT_VIDEO
-		)
-	) {
-		fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
-	} else
-	{
-
-		v = true;
-	}
-
-	return v;
+	return s_backend->init(nullptr);
 }
 
 static bool s_grabMachine = false;
 
 static void GrabTheMachine()
 {
-	SDL_SetWindowMouseGrab(my_main_wind, true);
+	s_backend->setMouseGrab(true);
 
 
 	/*
@@ -656,7 +614,7 @@ static void UngrabMachine()
 		g_haveMouseMotion = false;
 	}
 
-	SDL_SetWindowMouseGrab(my_main_wind, false);
+	s_backend->setMouseGrab(false);
 }
 
 static void MouseConstrain()
@@ -703,42 +661,19 @@ static int WinPositionsY[kNumMagStates];
 
 static bool CreateMainWindow()
 {
-	/*
-		OSGLUxxx common:
-		Set up somewhere for us to draw the emulated screen and
-		receive mouse input. i.e. usually a window, as is the case
-		for this port.
-
-		The window should not be resizeable.
-
-		Should look at the current value of s_useMagnify and
-		s_useFullScreen.
-	*/
-
 	int NewWindowX;
 	int NewWindowY;
 	int NewWindowHeight = vMacScreenHeight;
 	int NewWindowWidth = vMacScreenWidth;
-	Uint32 flags =
-	SDL_WINDOW_RESIZABLE
-	;
 	bool v = false;
 
-#if 1
 	if (s_useMagnify) {
 		NewWindowHeight *= s_windowScale;
 		NewWindowWidth *= s_windowScale;
 	}
-#endif
 
 	if (s_useFullScreen)
 	{
-		/*
-			We don't want physical screen mode to be changed in modern
-			displays, so we pass this _DESKTOP flag.
-		*/
-		SDL_SetWindowFullscreen(my_main_wind, true);
-
 		NewWindowX = SDL_WINDOWPOS_UNDEFINED;
 		NewWindowY = SDL_WINDOWPOS_UNDEFINED;
 	}
@@ -764,166 +699,69 @@ static bool CreateMainWindow()
 		s_curWinIndx = WinIndx;
 	}
 
-
-	if (nullptr == (my_main_wind = SDL_CreateWindow(
+	if (!s_backend->createWindow(
 		(nullptr != n_arg) ? n_arg : kStrAppName,
-		NewWindowWidth, NewWindowHeight,
-		flags)))
+		NewWindowWidth, NewWindowHeight, s_useFullScreen))
 	{
-		fprintf(stderr, "SDL_CreateWindow fails: %s\n",
-			SDL_GetError());
-	} else
-	if (nullptr == (my_renderer = SDL_CreateRenderer(
-		my_main_wind,
-		0 /* SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC */
-			/*
-				SDL_RENDERER_ACCELERATED not needed
-				"no flags gives priority to available
-				SDL_RENDERER_ACCELERATED renderers"
-			*/
-			/* would rather not require vsync */
-		)))
-	{
-		fprintf(stderr, "SDL_CreateRenderer fails: %s\n",
-			SDL_GetError());
-	} else
-	if (
-		!SDL_SetWindowPosition(
-			my_main_wind,
-			NewWindowX,
-			NewWindowY
-		)
-	) {
-		fprintf(stderr, "SDL_SetWindowPosition fails: %s\n",
-			SDL_GetError());
-	} else
-	if (
-		!SDL_SetRenderLogicalPresentation(
-			my_renderer,
-			vMacScreenWidth,
-			vMacScreenHeight,
-			SDL_LOGICAL_PRESENTATION_INTEGER_SCALE
-		)
-	) {
-		fprintf(stderr, "SDL_SetRenderLogicalPresentation fails: %s\n",
-			SDL_GetError());
-	} else
-	if (nullptr == (my_texture = SDL_CreateTexture(
-		my_renderer,
-		SDL_PIXELFORMAT_ARGB8888,
-		SDL_TEXTUREACCESS_STREAMING,
-		vMacScreenWidth, vMacScreenHeight
-		)))
-	{
-		fprintf(stderr, "SDL_CreateTexture fails: %s\n",
-			SDL_GetError());
-	} else
-	if (
-		!SDL_SetTextureScaleMode(
-			my_texture,
-			SDL_SCALEMODE_NEAREST
-		)
-	) {
-		fprintf(stderr, "SDL_SetTextureScaleMode fails: %s\n",
-			SDL_GetError());
-	} else
-	if (
-		nullptr == (
-			my_format =
-			SDL_GetPixelFormatDetails
-			(SDL_PIXELFORMAT_ARGB8888)
-		)
-	) {
-		fprintf(stderr, "SDL_AllocFormat fails: %s\n",
-			SDL_GetError());
-	} else
-	{
-		/* SDL_ShowWindow(my_main_wind); */
-
-		SDL_RenderClear(my_renderer);
-
-
-		if (s_useFullScreen)
-		{
-			int wr;
-			int hr;
-
-			SDL_SetWindowFullscreen(my_main_wind, true);
-			SDL_GetWindowSizeInPixels
-			(my_main_wind, &wr, &hr);
-
-			g_viewHSize = wr;
-			g_viewVSize = hr;
-			if (s_useMagnify) {
-				g_viewHSize /= s_windowScale;
-				g_viewVSize /= s_windowScale;
-			}
-			if (g_viewHSize >= vMacScreenWidth) {
-				g_viewHStart = 0;
-				g_viewHSize = vMacScreenWidth;
-			} else {
-				g_viewHSize &= ~ 1;
-			}
-			if (g_viewVSize >= vMacScreenHeight) {
-				g_viewVStart = 0;
-				g_viewVSize = vMacScreenHeight;
-			} else {
-				g_viewVSize &= ~ 1;
-			}
-
-			if (wr > NewWindowWidth) {
-				hOffset = (wr - NewWindowWidth) / 2;
-			} else {
-				hOffset = 0;
-			}
-			if (hr > NewWindowHeight) {
-				vOffset = (hr - NewWindowHeight) / 2;
-			} else {
-				vOffset = 0;
-			}
-		}
-
-		g_colorModeWorks = true;
-
-		v = true;
+		return false;
 	}
 
+	if (!SDL_SetWindowPosition(s_backend->window(), NewWindowX, NewWindowY)) {
+		fprintf(stderr, "SDL_SetWindowPosition fails: %s\n",
+			SDL_GetError());
+		return false;
+	}
+
+	if (s_useFullScreen)
+	{
+		int wr;
+		int hr;
+
+		SDL_GetWindowSizeInPixels(s_backend->window(), &wr, &hr);
+
+		g_viewHSize = wr;
+		g_viewVSize = hr;
+		if (s_useMagnify) {
+			g_viewHSize /= s_windowScale;
+			g_viewVSize /= s_windowScale;
+		}
+		if (g_viewHSize >= vMacScreenWidth) {
+			g_viewHStart = 0;
+			g_viewHSize = vMacScreenWidth;
+		} else {
+			g_viewHSize &= ~ 1;
+		}
+		if (g_viewVSize >= vMacScreenHeight) {
+			g_viewVStart = 0;
+			g_viewVSize = vMacScreenHeight;
+		} else {
+			g_viewVSize &= ~ 1;
+		}
+
+		if (wr > NewWindowWidth) {
+			hOffset = (wr - NewWindowWidth) / 2;
+		} else {
+			hOffset = 0;
+		}
+		if (hr > NewWindowHeight) {
+			vOffset = (hr - NewWindowHeight) / 2;
+		} else {
+			vOffset = 0;
+		}
+	}
+
+	v = true;
 	return v;
 }
 
 static void CloseMainWindow()
 {
-	/*
-		OSGLUxxx common:
-		Dispose of anything set up by CreateMainWindow.
-	*/
-
-	if (nullptr != my_format) {
-		my_format = nullptr;
-	}
-
-	if (nullptr != my_texture) {
-		SDL_DestroyTexture(my_texture);
-		my_texture = nullptr;
-	}
-
-	if (nullptr != my_renderer) {
-		SDL_DestroyRenderer(my_renderer);
-		my_renderer = nullptr;
-	}
-
-	if (nullptr != my_main_wind) {
-		SDL_DestroyWindow(my_main_wind);
-		my_main_wind = nullptr;
-	}
+	s_backend->destroyWindow();
 }
 
 static void ZapMyWState()
 {
-	my_main_wind = nullptr;
-	my_renderer = nullptr;
-	my_texture = nullptr;
-	my_format = nullptr;
+	s_backend->zapWindowState();
 }
 
 struct MyWState {
@@ -936,11 +774,7 @@ struct MyWState {
 	bool f_UseFullScreen;
 	bool f_UseMagnify;
 	int f_CurWinIndx;
-	SDL_Window *f_my_main_wind;
-	SDL_Renderer *f_my_renderer;
-	SDL_Texture *f_my_texture;
-	const SDL_PixelFormatDetails
-	*f_my_format;
+	SdlWindowState f_sdlState;
 };
 
 static void GetMyWState(MyWState *r)
@@ -954,10 +788,7 @@ static void GetMyWState(MyWState *r)
 	r->f_UseFullScreen = s_useFullScreen;
 	r->f_UseMagnify = s_useMagnify;
 	r->f_CurWinIndx = s_curWinIndx;
-	r->f_my_main_wind = my_main_wind;
-	r->f_my_renderer = my_renderer;
-	r->f_my_texture = my_texture;
-	r->f_my_format = my_format;
+	s_backend->getWindowState(&r->f_sdlState);
 }
 
 static void SetMyWState(MyWState *r)
@@ -971,10 +802,7 @@ static void SetMyWState(MyWState *r)
 	s_useFullScreen = r->f_UseFullScreen;
 	s_useMagnify = r->f_UseMagnify;
 	s_curWinIndx = r->f_CurWinIndx;
-	my_main_wind = r->f_my_main_wind;
-	my_renderer = r->f_my_renderer;
-	my_texture = r->f_my_texture;
-	my_format = r->f_my_format;
+	s_backend->setWindowState(&r->f_sdlState);
 }
 
 enum {
@@ -1017,7 +845,7 @@ static bool ReCreateMainWindow()
 
 	if (! s_useFullScreen)
 	{
-		SDL_GetWindowPosition(my_main_wind,
+		s_backend->getWindowPosition(
 			&WinPositionsX[s_curWinIndx],
 			&WinPositionsY[s_curWinIndx]);
 		HavePositionWins[s_curWinIndx] = true;
@@ -1097,9 +925,9 @@ void ToggleWantFullScreen()
 		} else {
 			g_wantMagnify = false;
 			if (g_wantFullScreen) {
-				SDL_Rect r;
+				PlatformDisplayBounds r;
 
-				if (0 == SDL_GetDisplayBounds(0, &r)) {
+				if (s_backend->getDisplayBounds(&r)) {
 					if ((r.w >= vMacScreenWidth * s_windowScale)
 						&& (r.h >= vMacScreenHeight * s_windowScale)
 						)
@@ -1117,12 +945,12 @@ void ToggleWantFullScreen()
 static void LeaveBackground()
 {
 	ReconnectKeyCodes3();
-	DisableKeyRepeat();
+	s_backend->disableKeyRepeat();
 }
 
 static void EnterBackground()
 {
-	RestoreKeyRepeat();
+	s_backend->restoreKeyRepeat();
 	DisconnectKeyCodes3();
 
 	ForceShowCursor();
@@ -1130,14 +958,14 @@ static void EnterBackground()
 
 static void LeaveSpeedStopped()
 {
-	Sound_Start();
+	s_backend->audioStart();
 
 	StartUpTimeAdjust();
 }
 
 static void EnterSpeedStopped()
 {
-	Sound_Stop();
+	s_backend->audioStop();
 }
 
 static void CheckForSavedTasks()
@@ -1262,7 +1090,7 @@ static void CheckForSavedTasks()
 		&& ! (s_trueBackgroundFlag || s_curSpeedStopped)))
 	{
 		s_haveCursorHidden = ! s_haveCursorHidden;
-		s_haveCursorHidden ? SDL_HideCursor() : SDL_ShowCursor();
+		s_haveCursorHidden ? s_backend->hideCursor() : s_backend->showCursor();
 	}
 }
 
@@ -1476,7 +1304,7 @@ static bool InitOSGLU()
 	INIT_STEP("LoadInitialImages", LoadInitialImages())
 	INIT_STEP("InitLocationDat", InitLocationDat())
 	INIT_STEP("Screen_Init", Screen_Init())
-	INIT_STEP("Sound_Init", Sound_Init())
+	INIT_STEP("Sound_Init", s_backend->audioInit())
 	INIT_STEP("CreateMainWindow", CreateMainWindow())
 	INIT_STEP("WaitForRom", WaitForRom())
 
@@ -1486,19 +1314,14 @@ static bool InitOSGLU()
 
 static void UnInitOSGLU()
 {
-	/*
-		OSGLUxxx common:
-		Do all clean ups needed before the program quits.
-	*/
-
 	if (MacMsgDisplayed) {
 		MacMsgDisplayOff();
 	}
 
-	RestoreKeyRepeat();
+	s_backend->restoreKeyRepeat();
 	UngrabMachine();
-	Sound_Stop();
-	Sound_UnInit();
+	s_backend->audioStop();
+	s_backend->audioShutdown();
 	UnInitPbufs();
 	UnInitDrives();
 
@@ -1513,9 +1336,7 @@ static void UnInitOSGLU()
 
 	CloseMainWindow();
 
-	SDL_QuitSubSystem(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
-
-	SDL_Quit();
+	s_backend->shutdown();
 }
 
 int main(int argc, char **argv)
@@ -1552,6 +1373,8 @@ int main(int argc, char **argv)
 
 	/* Insert disk images from command line */
 	ZapOSGLUVars();
+
+	s_backend = new SdlBackend();
 	if (InitOSGLU()) {
 		for (const auto& diskPath : lc.diskPaths) {
 			(void) Sony_Insert1(const_cast<char*>(diskPath.c_str()), false);
@@ -1559,6 +1382,8 @@ int main(int argc, char **argv)
 		ProgramMain();
 	}
 	UnInitOSGLU();
+	delete s_backend;
+	s_backend = nullptr;
 	ProgramCleanup();
 
 	return 0;

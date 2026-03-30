@@ -85,6 +85,7 @@ set(MINIVMAC_SOURCES
     src/platform/sdl_sound.cpp
     src/platform/sdl_keyboard.cpp
     src/platform/screen_convert.cpp
+    src/platform/sdl_backend.cpp
     src/lang/localization.cpp
     src/lang/lang_english.cpp
     src/lang/lang_french.cpp
