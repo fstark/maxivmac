@@ -13,7 +13,40 @@
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/bld/${presetName}",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "MAXIVMAC_BACKEND": "sdl"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            }
+        },
+        {
+            "name": "macos-headless",
+            "displayName": "macOS (Headless)",
+            "description": "Headless backend on macOS — no SDL, no window",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/bld/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "MAXIVMAC_BACKEND": "headless"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            }
+        },
+        {
+            "name": "macos-imgui",
+            "displayName": "macOS (ImGui)",
+            "description": "Dear ImGui backend on macOS — debug UI",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/bld/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "MAXIVMAC_BACKEND": "imgui"
             },
             "condition": {
                 "type": "equals",
@@ -56,6 +89,14 @@
         {
             "name": "macos",
             "configurePreset": "macos"
+        },
+        {
+            "name": "macos-headless",
+            "configurePreset": "macos-headless"
+        },
+        {
+            "name": "macos-imgui",
+            "configurePreset": "macos-imgui"
         },
         {
             "name": "linux",

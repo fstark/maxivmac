@@ -283,6 +283,23 @@ bool SdlBackend::getDisplayBounds(PlatformDisplayBounds* bounds)
 	return false;
 }
 
+/* --- Paths --- */
+
+const char* SdlBackend::getAppParent()
+{
+	return SDL_GetBasePath();
+}
+
+char* SdlBackend::getPrefDir(const char* org, const char* app)
+{
+	return SDL_GetPrefPath(org, app);
+}
+
+void SdlBackend::freePath(void* path)
+{
+	SDL_free(path);
+}
+
 /* --- Window state management --- */
 
 void SdlBackend::zapWindowState()

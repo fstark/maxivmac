@@ -2,7 +2,16 @@
 
 #include "platform/common/osglu_ui.h"
 #include "platform/platform.h"
-#include <SDL3/SDL.h>
+
+#include <ctime>
+
+/* Monotonic millisecond timer — replaces GetTicksMs(). */
+static uint32_t GetTicksMs()
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
 
 #define dbglog_TimeStuff 0
 #define DBGLOG_OSG_INIT 0
@@ -24,9 +33,9 @@ uint32_t g_trueEmulatedTime = 0;
 #define MyInvTimeDivMask (MyInvTimeDiv - 1)
 #define MyInvTimeStep 1089590 /* 1000 / 60.14742 * MyInvTimeDiv */
 
-static Uint32 s_lastTime;
+static uint32_t s_lastTime;
 
-static Uint32 s_nextIntTime;
+static uint32_t s_nextIntTime;
 static uint32_t s_nextFracTime;
 
 void IncrNextTime()
@@ -47,10 +56,10 @@ uint32_t g_newMacDateInSeconds;
 
 bool UpdateTrueEmulatedTime()
 {
-	Uint32 LatestTime;
+	uint32_t LatestTime;
 	int32_t TimeDiff;
 
-	LatestTime = SDL_GetTicks();
+	LatestTime = GetTicksMs();
 	if (LatestTime != s_lastTime) {
 		s_lastTime = LatestTime;
 		TimeDiff = (LatestTime - s_nextIntTime);
@@ -102,7 +111,7 @@ bool CheckDateTime()
 
 void StartUpTimeAdjust()
 {
-	s_lastTime = SDL_GetTicks();
+	s_lastTime = GetTicksMs();
 	InitNextTime();
 }
 
@@ -112,7 +121,7 @@ bool InitLocationDat()
 	dbglog_writeln("enter InitLocationDat");
 #endif
 
-	s_lastTime = SDL_GetTicks();
+	s_lastTime = GetTicksMs();
 	InitNextTime();
 
 	/* Fixed date: 14 March 1990 12:00:00 UTC (Mac epoch seconds).

@@ -66,6 +66,10 @@ public:
 
 	bool getDisplayBounds(PlatformDisplayBounds* bounds) override;
 
+	const char* getAppParent() override;
+	char* getPrefDir(const char* org, const char* app) override;
+	void freePath(void* path) override;
+
 	/* Transitional getters — sdl.cpp still needs direct access during
 	   Phase 2 migration. These will be removed in Phase 3. */
 	SDL_Window* window() const { return window_; }

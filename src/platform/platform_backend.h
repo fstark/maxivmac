@@ -83,6 +83,15 @@ public:
 
 	/* Query */
 	virtual bool getDisplayBounds(PlatformDisplayBounds* bounds) = 0;
+
+	/* Paths — platform-specific application path resolution.
+	   Returned strings are owned by the backend; caller must not free.
+	   getAppParent(): directory containing the executable.
+	   getPrefDir(): writable directory for user preferences.
+	   freePath(): release a path returned by getPrefDir(). */
+	virtual const char* getAppParent() = 0;
+	virtual char* getPrefDir(const char* org, const char* app) = 0;
+	virtual void freePath(void* path) = 0;
 };
 
 #endif /* PLATFORM_BACKEND_H */

@@ -5,12 +5,15 @@
 #include "platform/common/param_buffers.h"
 #include "platform/common/mac_roman.h"
 
-#include <SDL3/SDL.h>
-
 #include <cstdlib>
+
+#ifdef HAVE_SDL
+#include <SDL3/SDL.h>
+#endif
 
 tMacErr HTCEexport(PbufIndex i)
 {
+#ifdef HAVE_SDL
 	tMacErr err;
 	char *p;
 	uint8_t * s = static_cast<uint8_t *>(PbufDat[i]);
@@ -32,10 +35,15 @@ tMacErr HTCEexport(PbufIndex i)
 	}
 
 	return err;
+#else
+	(void)i;
+	return tMacErr::miscErr;
+#endif
 }
 
 tMacErr HTCEimport(PbufIndex *r)
 {
+#ifdef HAVE_SDL
 	tMacErr err;
 	uint32_t L;
 	char *s = nullptr;
@@ -70,4 +78,8 @@ tMacErr HTCEimport(PbufIndex *r)
 	}
 
 	return err;
+#else
+	(void)r;
+	return tMacErr::miscErr;
+#endif
 }

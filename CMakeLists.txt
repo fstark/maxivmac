@@ -31,16 +31,18 @@ message(STATUS "Version: ${GIT_VERSION}")
 # Options
 # ---------------------------------------------------------------------------
 
+# Backend selection: sdl (default), headless, imgui
+set(MAXIVMAC_BACKEND "sdl" CACHE STRING "Backend: sdl, imgui, headless")
+
 # Debug
 set(MINIVMAC_ABNORMAL_REPORTS "0" CACHE STRING "Enable abnormal reports (1/0)")
 set(MINIVMAC_LOCALTALK "0" CACHE STRING "Enable LocalTalk (1/0)")
 
 # ---------------------------------------------------------------------------
-# Source files — all compilation units from the project.
-# Files guarded by config #defines compile to empty translation units when
-# their feature is disabled, so it's safe to always include them.
+# Common source files — no SDL dependency.
+# These compile for all backends (sdl, imgui, headless).
 # ---------------------------------------------------------------------------
-set(MINIVMAC_SOURCES
+set(COMMON_SOURCES
     src/core/machine_config.cpp
     src/core/config_loader.cpp
     src/core/wire_bus.cpp
@@ -82,10 +84,8 @@ set(MINIVMAC_SOURCES
     src/platform/common/disk_io.cpp
     src/platform/common/clipboard.cpp
     src/platform/common/rom_loader.cpp
-    src/platform/sdl_sound.cpp
-    src/platform/sdl_keyboard.cpp
     src/platform/screen_convert.cpp
-    src/platform/sdl_backend.cpp
+    src/platform/emulator_shell.cpp
     src/lang/localization.cpp
     src/lang/lang_english.cpp
     src/lang/lang_french.cpp
@@ -101,19 +101,89 @@ set(MINIVMAC_SOURCES
 )
 
 # ---------------------------------------------------------------------------
-# SDL target (Linux / Windows / macOS)
+# SDL-common sources — shared by sdl and imgui backends.
+# Not compiled for headless builds.
 # ---------------------------------------------------------------------------
-list(APPEND MINIVMAC_SOURCES
-    src/platform/app_main.cpp
-    src/platform/emulator_shell.cpp
+set(SDL_COMMON_SOURCES
+    src/platform/sdl_sound.cpp
+    src/platform/sdl_keyboard.cpp
 )
+
+# ---------------------------------------------------------------------------
+# Backend-specific sources
+# ---------------------------------------------------------------------------
+if(MAXIVMAC_BACKEND STREQUAL "sdl")
+    set(BACKEND_SOURCES
+        src/platform/sdl_backend.cpp
+        src/platform/app_main.cpp
+    )
+    set(NEED_SDL ON)
+elseif(MAXIVMAC_BACKEND STREQUAL "imgui")
+    set(BACKEND_SOURCES
+        src/platform/imgui_backend.cpp
+        src/platform/imgui_main.cpp
+    )
+    set(NEED_SDL ON)
+    set(NEED_IMGUI ON)
+elseif(MAXIVMAC_BACKEND STREQUAL "headless")
+    set(BACKEND_SOURCES
+        src/platform/headless_backend.cpp
+        src/platform/headless_main.cpp
+        src/platform/null_sound.cpp
+        src/platform/null_keyboard.cpp
+    )
+    set(NEED_SDL OFF)
+else()
+    message(FATAL_ERROR "Unknown backend: ${MAXIVMAC_BACKEND}")
+endif()
+
+message(STATUS "Backend: ${MAXIVMAC_BACKEND}")
+
+# ---------------------------------------------------------------------------
+# Assemble final source list
+# ---------------------------------------------------------------------------
+set(MINIVMAC_SOURCES ${COMMON_SOURCES} ${BACKEND_SOURCES})
+if(NEED_SDL)
+    list(APPEND MINIVMAC_SOURCES ${SDL_COMMON_SOURCES})
+endif()
 
 add_executable(maxivmac ${MINIVMAC_SOURCES})
 
-# Try SDL3
-find_package(SDL3 REQUIRED)
-message(STATUS "Found SDL3")
-target_link_libraries(maxivmac PRIVATE SDL3::SDL3)
+# ---------------------------------------------------------------------------
+# SDL (required for sdl and imgui backends)
+# ---------------------------------------------------------------------------
+if(NEED_SDL)
+    find_package(SDL3 REQUIRED)
+    message(STATUS "Found SDL3")
+    target_link_libraries(maxivmac PRIVATE SDL3::SDL3)
+endif()
+
+# ---------------------------------------------------------------------------
+# ImGui (required for imgui backend)
+# ---------------------------------------------------------------------------
+if(NEED_IMGUI)
+    set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/libs/imgui")
+    if(NOT EXISTS "${IMGUI_DIR}/imgui.h")
+        message(FATAL_ERROR "ImGui not found at ${IMGUI_DIR}. "
+            "Please vendor Dear ImGui into libs/imgui/.")
+    endif()
+    set(IMGUI_SOURCES
+        ${IMGUI_DIR}/imgui.cpp
+        ${IMGUI_DIR}/imgui_draw.cpp
+        ${IMGUI_DIR}/imgui_tables.cpp
+        ${IMGUI_DIR}/imgui_widgets.cpp
+        ${IMGUI_DIR}/imgui_demo.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+    )
+    target_sources(maxivmac PRIVATE ${IMGUI_SOURCES})
+    target_include_directories(maxivmac PRIVATE
+        ${IMGUI_DIR}
+        ${IMGUI_DIR}/backends
+    )
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(maxivmac PRIVATE OpenGL::GL)
+endif()
 
 # On Linux, we may need X11
 if(UNIX AND NOT APPLE)
@@ -143,6 +213,10 @@ target_compile_definitions(maxivmac PRIVATE
     "WantAbnormalReports=${MINIVMAC_ABNORMAL_REPORTS}"
     "EmLocalTalk=${MINIVMAC_LOCALTALK}"
 )
+
+if(NEED_SDL)
+    target_compile_definitions(maxivmac PRIVATE "HAVE_SDL=1")
+endif()
 
 # Compiler flags matching the original Xcode project
 target_compile_options(maxivmac PRIVATE

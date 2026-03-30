@@ -13,11 +13,11 @@
 #pragma once
 
 
-#include "platform/sdl_config.h"
+#include "platform/platform_defs.h"
 	/*
 		Configuration file independent of user options
 		for operating system glue.
-		Such as includes of API header files
+		Application metadata and standard library includes.
 	*/
 #include "core/types.h"
 	/*

@@ -928,22 +928,15 @@ void EmulatorShell::unallocMyMemory()
 
 bool EmulatorShell::initWhereAmI()
 {
-	/* SDL_GetBasePath / SDL_GetPrefPath still called via backend
-	   transitional getters. For now, call SDL directly since the
-	   backend is initialized. */
-	extern const char* SDL_GetBasePath();
-	extern char* SDL_GetPrefPath(const char*, const char*);
-
-	app_parent = const_cast<char *>(SDL_GetBasePath());
-	pref_dir_ = SDL_GetPrefPath("gryphel", "maxivmac");
+	app_parent = const_cast<char *>(backend_->getAppParent());
+	pref_dir_ = backend_->getPrefDir("gryphel", "maxivmac");
 
 	return true;
 }
 
 void EmulatorShell::uninitWhereAmI()
 {
-	extern void SDL_free(void*);
-	SDL_free(pref_dir_);
+	backend_->freePath(pref_dir_);
 	pref_dir_ = nullptr;
 }
 

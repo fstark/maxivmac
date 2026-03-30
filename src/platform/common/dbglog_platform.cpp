@@ -3,7 +3,10 @@
 
 #include <cstdio>
 #include <cstring>
+
+#ifdef HAVE_SDL
 #include <SDL3/SDL.h>
+#endif
 
 #include "path_utils.h"
 
