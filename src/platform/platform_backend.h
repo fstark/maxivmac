@@ -12,6 +12,31 @@
 
 class EmulatorShell;
 
+struct PlatformEvent {
+	enum class Type {
+		None,
+		Quit,
+		FocusGained,
+		FocusLost,
+		MouseEnter,
+		MouseLeave,
+		WindowResized,
+		MouseMove,
+		MouseButtonDown,
+		MouseButtonUp,
+		KeyDown,
+		KeyUp,
+		MouseWheel,
+		FileDrop
+	};
+	Type type = Type::None;
+	uint8_t macKeyCode = 0;
+	bool keyDown = false;
+	float x = 0, y = 0;
+	float wheelX = 0, wheelY = 0;
+	const char* filePath = nullptr;
+};
+
 struct PlatformDisplayBounds {
 	int x, y, w, h;
 };

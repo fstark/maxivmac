@@ -212,7 +212,7 @@ void EmulationFreeAlloc()
 	task handlers, initialize RTC/g_rom/Video, build the
 	address space, and perform hardware zap.
 */
-static bool InitEmulation()
+bool InitEmulation()
 {
 	/* Wire ICT scheduler to CPU cycle counters */
 	g_ict.setCycleAccessors(
@@ -345,7 +345,7 @@ static bool MoreSubTicksToDo()
 	return v;
 }
 
-static void DoEmulateExtraTime()
+void DoEmulateExtraTime()
 {
 	/*
 		DoEmulateExtraTime is used for
@@ -384,7 +384,7 @@ static uint32_t s_curEmulatedTime = 0;
 		"DoEmulateOneTick" has been called.
 	*/
 
-static void RunEmulatedTicksToTrueTime()
+void RunEmulatedTicksToTrueTime()
 {
 	/*
 		Always emulate exactly the number of ticks
@@ -418,20 +418,7 @@ static void RunEmulatedTicksToTrueTime()
 	}
 }
 
-// Main run loop: wait for host tick, run emulation, repeat.
-static void MainEventLoop()
-{
-	for (; ; ) {
-		WaitForNextTick();
-		if (g_forceMacOff) {
-			return;
-		}
-
-		RunEmulatedTicksToTrueTime();
-
-		DoEmulateExtraTime();
-	}
-}
+/* MainEventLoop has been removed — the backend now drives the loop. */
 
 static std::unique_ptr<Machine> s_machine;
 static LaunchConfig s_launchConfig;
@@ -564,10 +551,7 @@ void ProgramCleanup()
 	s_machine.reset();
 }
 
-void ProgramMain()
+bool ProgramMain()
 {
-	if (InitEmulation())
-	{
-		MainEventLoop();
-	}
+	return InitEmulation();
 }

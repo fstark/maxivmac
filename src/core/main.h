@@ -15,10 +15,15 @@ extern bool EmulationReserveAlloc();
 
 extern void EmulationFreeAlloc();
 
-// Enter the main emulation loop (does not return until quit).
-extern void ProgramMain();
+// Initialize emulation subsystems. Returns false on failure.
+extern bool ProgramMain();
 
 extern void ProgramCleanup();
+
+// Core emulation functions — called by EmulatorShell.
+extern bool InitEmulation();
+extern void RunEmulatedTicksToTrueTime();
+extern void DoEmulateExtraTime();
 
 // Access the parsed launch config (available after ProgramEarlyInit).
 extern const LaunchConfig& GetLaunchConfig();

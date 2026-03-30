@@ -103,7 +103,10 @@ set(MINIVMAC_SOURCES
 # ---------------------------------------------------------------------------
 # SDL target (Linux / Windows / macOS)
 # ---------------------------------------------------------------------------
-list(APPEND MINIVMAC_SOURCES src/platform/sdl.cpp)
+list(APPEND MINIVMAC_SOURCES
+    src/platform/app_main.cpp
+    src/platform/emulator_shell.cpp
+)
 
 add_executable(maxivmac ${MINIVMAC_SOURCES})
 

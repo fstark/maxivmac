@@ -84,6 +84,9 @@ private:
 	SDL_Renderer* renderer_ = nullptr;
 	SDL_Texture* texture_ = nullptr;
 	const SDL_PixelFormatDetails* format_ = nullptr;
+
+	PlatformEvent translateSdlEvent(SDL_Event& event);
+	void presentIfDirty();
 };
 
 #endif /* SDL_BACKEND_H */

@@ -3,6 +3,7 @@
 */
 
 #include "platform/sdl_backend.h"
+#include "platform/emulator_shell.h"
 #include "platform/sdl_keyboard.h"
 #include "platform/sdl_sound.h"
 #include "platform/platform.h"
@@ -37,7 +38,45 @@ void SdlBackend::shutdown()
 
 void SdlBackend::runLoop()
 {
-	/* Stub — will be implemented in Phase 3. */
+	if (!shell_) return;
+
+	while (!shell_->shouldQuit()) {
+		/* Poll events */
+		SDL_Event event;
+		int evtCount = 10;
+		while ((--evtCount >= 0) && SDL_PollEvent(&event)) {
+			PlatformEvent pEvt = translateSdlEvent(event);
+			if (pEvt.type != PlatformEvent::Type::None) {
+				shell_->dispatchEvent(pEvt);
+			}
+		}
+
+		shell_->processSavedTasks();
+		if (shell_->shouldQuit()) break;
+
+		if (shell_->isSpeedStopped()) {
+			presentIfDirty();
+			SDL_Event waitEvt;
+			if (SDL_WaitEvent(&waitEvt)) {
+				PlatformEvent pEvt = translateSdlEvent(waitEvt);
+				if (pEvt.type != PlatformEvent::Type::None) {
+					shell_->dispatchEvent(pEvt);
+				}
+			}
+			continue;
+		}
+
+		if (!shell_->tickIsDue()) {
+			(void) SDL_Delay(shell_->getDelayMs());
+			continue;
+		}
+
+		while (shell_->tickIsDue() && !shell_->shouldQuit()) {
+			shell_->runOneTick();
+		}
+
+		presentIfDirty();
+	}
 }
 
 /* --- Window --- */
@@ -268,4 +307,114 @@ void SdlBackend::setWindowState(const SdlWindowState* state)
 	renderer_ = state->renderer;
 	texture_ = state->texture;
 	format_ = state->format;
+}
+
+/* --- Event translation --- */
+
+PlatformEvent SdlBackend::translateSdlEvent(SDL_Event& event)
+{
+	PlatformEvent pEvt;
+
+	/* Convert coordinates for non-fullscreen rendering */
+	SDL_ConvertEventToRenderCoordinates(renderer_, &event);
+
+	switch (event.type) {
+		case SDL_EVENT_QUIT:
+			pEvt.type = PlatformEvent::Type::Quit;
+			break;
+		case SDL_EVENT_WINDOW_FOCUS_GAINED:
+			pEvt.type = PlatformEvent::Type::FocusGained;
+			break;
+		case SDL_EVENT_WINDOW_FOCUS_LOST:
+			pEvt.type = PlatformEvent::Type::FocusLost;
+			break;
+		case SDL_EVENT_WINDOW_MOUSE_ENTER:
+			pEvt.type = PlatformEvent::Type::MouseEnter;
+			break;
+		case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+			pEvt.type = PlatformEvent::Type::MouseLeave;
+			break;
+		case SDL_EVENT_WINDOW_RESIZED:
+			pEvt.type = PlatformEvent::Type::WindowResized;
+			break;
+		case SDL_EVENT_MOUSE_MOTION:
+			pEvt.type = PlatformEvent::Type::MouseMove;
+			pEvt.x = event.motion.x;
+			pEvt.y = event.motion.y;
+			break;
+		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			pEvt.type = PlatformEvent::Type::MouseButtonDown;
+			pEvt.x = event.button.x;
+			pEvt.y = event.button.y;
+			break;
+		case SDL_EVENT_MOUSE_BUTTON_UP:
+			pEvt.type = PlatformEvent::Type::MouseButtonUp;
+			pEvt.x = event.button.x;
+			pEvt.y = event.button.y;
+			break;
+		case SDL_EVENT_KEY_DOWN: {
+			uint8_t mkc = SDLScan2MacKeyCode(event.key.scancode);
+			if (mkc != 0xFF) { /* MKC_None */
+				pEvt.type = PlatformEvent::Type::KeyDown;
+				pEvt.macKeyCode = mkc;
+			}
+			break;
+		}
+		case SDL_EVENT_KEY_UP: {
+			uint8_t mkc = SDLScan2MacKeyCode(event.key.scancode);
+			if (mkc != 0xFF) {
+				pEvt.type = PlatformEvent::Type::KeyUp;
+				pEvt.macKeyCode = mkc;
+			}
+			break;
+		}
+		case SDL_EVENT_MOUSE_WHEEL:
+			pEvt.type = PlatformEvent::Type::MouseWheel;
+			pEvt.wheelX = event.wheel.x;
+			pEvt.wheelY = event.wheel.y;
+			break;
+		case SDL_EVENT_DROP_FILE:
+			pEvt.type = PlatformEvent::Type::FileDrop;
+			pEvt.filePath = event.drop.data;
+			break;
+		default:
+			break;
+	}
+
+	return pEvt;
+}
+
+/* --- Present framebuffer to screen --- */
+
+void SdlBackend::presentIfDirty()
+{
+	if (!shell_ || !shell_->isFramebufferDirty()) return;
+
+	void* pixels;
+	int pitch;
+
+	if (!SDL_LockTexture(texture_, nullptr, &pixels, &pitch)) {
+		shell_->clearDirtyFlag();
+		return;
+	}
+
+	const uint8_t* fb = shell_->getFramebuffer();
+	int fbPitch = vMacScreenWidth * 4;
+
+	if (pitch == fbPitch) {
+		memcpy(pixels, fb, fbPitch * vMacScreenHeight);
+	} else {
+		/* Row-by-row copy if pitches differ */
+		uint8_t* dst = static_cast<uint8_t*>(pixels);
+		for (int row = 0; row < vMacScreenHeight; ++row) {
+			memcpy(dst, fb + row * fbPitch, fbPitch);
+			dst += pitch;
+		}
+	}
+
+	SDL_UnlockTexture(texture_);
+	SDL_RenderTexture(renderer_, texture_, nullptr, nullptr);
+	SDL_RenderPresent(renderer_);
+
+	shell_->clearDirtyFlag();
 }
