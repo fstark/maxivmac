@@ -336,9 +336,11 @@ bool ImGuiBackend::createWindow(const char* title,
 	ImGui_ImplSDL3_InitForOpenGL(window_, glContext_);
 	ImGui_ImplOpenGL3_Init("#version 150");
 
-	/* Create GL texture for emulator framebuffer */
-	emuTexW_ = width;
-	emuTexH_ = height;
+	/* Create GL texture for emulator framebuffer.
+	   Use actual emulator resolution (g_screenWidth/Height), not the
+	   window size which may include magnification scaling. */
+	emuTexW_ = g_screenWidth;
+	emuTexH_ = g_screenHeight;
 	glGenTextures(1, &emuTextureId_);
 	glBindTexture(GL_TEXTURE_2D, emuTextureId_);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
