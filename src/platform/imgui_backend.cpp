@@ -249,6 +249,10 @@ void ImGuiBackend::uploadFramebuffer()
 	if (!shell_ || !shell_->isFramebufferDirty()) return;
 
 	glBindTexture(GL_TEXTURE_2D, emuTextureId_);
+	/* Ensure nearest-neighbour filtering — ImGui's font atlas creation
+	   can leave GL_LINEAR as the bound-texture filter state. */
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
 		emuTexW_, emuTexH_,
 		GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
