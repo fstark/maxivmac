@@ -305,9 +305,11 @@ void ImGuiBackend::drawEmulatorViewport()
 bool ImGuiBackend::createWindow(const char* title,
 	int width, int height, bool fullscreen)
 {
-	/* Create window larger than emulator resolution for ImGui chrome */
-	int winW = width * 2;
-	int winH = height * 2;
+	/* Size the window to fit the emulator display plus ImGui chrome.
+	   The incoming width/height may already be magnified (e.g. 2x),
+	   so just add modest extra space rather than doubling. */
+	int winW = width + 200;
+	int winH = height + 200;
 
 	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 	if (fullscreen) flags |= SDL_WINDOW_FULLSCREEN;
@@ -347,7 +349,7 @@ bool ImGuiBackend::createWindow(const char* title,
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, emuTexW_, emuTexH_, 0,
 		GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
 
 	return true;
