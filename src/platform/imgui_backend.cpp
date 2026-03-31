@@ -284,20 +284,16 @@ void ImGuiBackend::drawMenuBar()
 
 void ImGuiBackend::drawEmulatorViewport()
 {
-	ImGui::SetNextWindowSize(
-		ImVec2((float)emuTexW_ + 16, (float)emuTexH_ + 36),
-		ImGuiCond_FirstUseEver);
-
-	if (ImGui::Begin("Macintosh")) {
-		ImVec2 avail = ImGui::GetContentRegionAvail();
-		float scale = std::min(
-			avail.x / (float)emuTexW_,
-			avail.y / (float)emuTexH_);
-		if (scale < 0.1f) scale = 0.1f;
-		ImVec2 size((float)emuTexW_ * scale, (float)emuTexH_ * scale);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize
+		| ImGuiWindowFlags_AlwaysAutoResize
+		| ImGuiWindowFlags_NoScrollbar;
+	if (ImGui::Begin("Macintosh", nullptr, flags)) {
+		ImVec2 size((float)emuTexW_, (float)emuTexH_);
 		ImGui::Image((ImTextureID)(intptr_t)emuTextureId_, size);
 	}
 	ImGui::End();
+	ImGui::PopStyleVar();
 }
 
 /* ── Window ──────────────────────────────────────────── */
