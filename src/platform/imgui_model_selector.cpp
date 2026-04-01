@@ -156,6 +156,7 @@ ModelSelectorResult ModelSelector::draw()
 void ModelSelector::drawModelGrid()
 {
 	/* Title */
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
 	ImGui::PushFont(nullptr); /* use default for now */
 	{
 		const char* title = "Maxi vMac";
@@ -164,6 +165,7 @@ void ModelSelector::drawModelGrid()
 		ImGui::Text("%s", title);
 	}
 	ImGui::PopFont();
+	ImGui::PopStyleColor();
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
@@ -238,6 +240,7 @@ void ModelSelector::drawModelGrid()
 			ImGui::Spacing();
 
 			/* Name (centered) */
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
 			float nameW = ImGui::CalcTextSize(entry.displayName).x;
 			ImGui::SetCursorPosX((cardW - nameW) * 0.5f);
 			ImGui::Text("%s", entry.displayName);
@@ -246,8 +249,9 @@ void ModelSelector::drawModelGrid()
 			{
 				float descW = ImGui::CalcTextSize(entry.description).x;
 				ImGui::SetCursorPosX((cardW - descW) * 0.5f);
-				ImGui::TextDisabled("%s", entry.description);
+				ImGui::Text("%s", entry.description);
 			}
+			ImGui::PopStyleColor();
 		}
 
 		/* Detect hover and click */
@@ -311,10 +315,12 @@ void ModelSelector::drawModelGrid()
 	/* Hint for missing ROMs */
 	ImGui::Spacing();
 	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.25f, 0.25f, 0.25f, 1));
 		const char* hint = "Greyed-out models have no ROM file in roms/";
 		float hintW = ImGui::CalcTextSize(hint).x;
 		ImGui::SetCursorPosX((ImGui::GetContentRegionAvail().x - hintW) * 0.5f);
-		ImGui::TextDisabled("%s", hint);
+		ImGui::Text("%s", hint);
+		ImGui::PopStyleColor();
 	}
 }
 
