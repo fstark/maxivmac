@@ -134,11 +134,15 @@ void ImGuiBackend::runLoop()
 		/* Branch on UI state */
 		switch (uiState_) {
 		case UIState::ModelSelector:
+		{
 			/* No emulation ticks — just draw the selector UI */
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplSDL3_NewFrame();
 			ImGui::NewFrame();
 
+			/* drawModelSelector() may set pendingBoot_ — we must
+			   finish the current ImGui frame before tearing down
+			   the context, so defer the actual boot. */
 			drawModelSelector();
 
 			ImGui::Render();
@@ -151,8 +155,16 @@ void ImGuiBackend::runLoop()
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 				SDL_GL_SwapWindow(window_);
 			}
-			SDL_Delay(16); /* ~60 fps for UI */
+
+			/* Now it's safe to tear down ImGui and boot */
+			if (pendingBoot_) {
+				pendingBoot_ = false;
+				bootFromSelector(pendingBootConfig_);
+			} else {
+				SDL_Delay(16); /* ~60 fps for UI */
+			}
 			break;
+		}
 
 		case UIState::Windowed:
 		case UIState::Fullscreen:
@@ -262,7 +274,8 @@ void ImGuiBackend::drawModelSelector()
 {
 	ModelSelectorResult result = modelSelector_.draw();
 	if (result.accepted && shell_) {
-		bootFromSelector(result.config);
+		pendingBoot_ = true;
+		pendingBootConfig_ = result.config;
 	}
 }
 

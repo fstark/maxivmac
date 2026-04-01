@@ -92,6 +92,8 @@ private:
 	/* UI state */
 	UIState uiState_ = UIState::ModelSelector;
 	bool    overlayVisible_ = false;
+	bool    pendingBoot_ = false;
+	LaunchConfig pendingBootConfig_;
 
 	/* Overlay */
 	ControlOverlay overlay_;
