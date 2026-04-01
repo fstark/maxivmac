@@ -374,7 +374,7 @@ bool ImGuiBackend::createSelectorWindow()
 {
 	/* Create a modest window for the model selector, no emulation
 	   texture needed yet. */
-	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+	Uint32 flags = SDL_WINDOW_OPENGL
 		| SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
 	window_ = SDL_CreateWindow("Maxi vMac", 700, 500, flags);
