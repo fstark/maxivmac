@@ -32,7 +32,9 @@ struct PlatformEvent {
 	Type type = Type::None;
 	uint8_t macKeyCode = 0;
 	bool keyDown = false;
+	bool isRelative = false;
 	float x = 0, y = 0;
+	float dx = 0, dy = 0;
 	float wheelX = 0, wheelY = 0;
 	const char* filePath = nullptr;
 };
@@ -65,7 +67,6 @@ public:
 	/* Cursor */
 	virtual void showCursor() = 0;
 	virtual void hideCursor() = 0;
-	virtual bool warpCursor(int x, int y) = 0;
 	virtual void setMouseGrab(bool grab) = 0;
 
 	/* Audio */

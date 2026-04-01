@@ -36,7 +36,6 @@ public:
 
 	void showCursor() override;
 	void hideCursor() override;
-	bool warpCursor(int x, int y) override;
 	void setMouseGrab(bool grab) override;
 
 	bool audioInit() override;
@@ -61,6 +60,9 @@ private:
 	GLuint emuTextureId_ = 0;
 	int emuTexW_ = 0;
 	int emuTexH_ = 0;
+	float emuViewOriginX_ = 0;
+	float emuViewOriginY_ = 0;
+	bool relativeMouseMode_ = false;
 
 	PlatformEvent translateSdlEvent(SDL_Event& event);
 	bool imGuiConsumedEvent(const SDL_Event& event) const;

@@ -51,7 +51,6 @@ public:
 
 	void showCursor() override;
 	void hideCursor() override;
-	bool warpCursor(int x, int y) override;
 	void setMouseGrab(bool grab) override;
 
 	bool audioInit() override;
@@ -88,6 +87,7 @@ private:
 	SDL_Renderer* renderer_ = nullptr;
 	SDL_Texture* texture_ = nullptr;
 	const SDL_PixelFormatDetails* format_ = nullptr;
+	bool relativeMouseMode_ = false;
 
 	PlatformEvent translateSdlEvent(SDL_Event& event);
 	void presentIfDirty();

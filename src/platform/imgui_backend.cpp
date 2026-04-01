@@ -38,6 +38,7 @@ extern bool g_showVIA;
 
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 #include <algorithm>
 
 /* ── init / shutdown ─────────────────────────────────── */
@@ -166,7 +167,11 @@ bool ImGuiBackend::imGuiConsumedEvent(const SDL_Event& event) const
 		case SDL_EVENT_MOUSE_BUTTON_UP:
 		case SDL_EVENT_MOUSE_MOTION:
 		case SDL_EVENT_MOUSE_WHEEL:
-			return io.WantCaptureMouse;
+			/* Always forward mouse events to the emulator.
+			   Coordinates are offset by emuViewOrigin so clicks
+			   outside the viewport clamp harmlessly.  ImGui still
+			   gets the event via ImGui_ImplSDL3_ProcessEvent(). */
+			return false;
 		default:
 			return false;
 	}
@@ -175,6 +180,14 @@ bool ImGuiBackend::imGuiConsumedEvent(const SDL_Event& event) const
 PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event& event)
 {
 	PlatformEvent pEvt;
+
+	/* Helper: test if window-space coordinates fall inside the
+	   emulator viewport and compute emulator-relative coords. */
+	auto mouseInEmuView = [&](float wx, float wy, float &ex, float &ey) -> bool {
+		ex = wx - emuViewOriginX_;
+		ey = wy - emuViewOriginY_;
+		return ex >= 0 && ey >= 0 && ex < emuTexW_ && ey < emuTexH_;
+	};
 
 	switch (event.type) {
 		case SDL_EVENT_QUIT:
@@ -195,20 +208,41 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event& event)
 		case SDL_EVENT_WINDOW_RESIZED:
 			pEvt.type = PlatformEvent::Type::WindowResized;
 			break;
-		case SDL_EVENT_MOUSE_MOTION:
-			pEvt.type = PlatformEvent::Type::MouseMove;
-			pEvt.x = event.motion.x;
-			pEvt.y = event.motion.y;
+		case SDL_EVENT_MOUSE_MOTION: {
+			if (relativeMouseMode_) {
+				pEvt.type = PlatformEvent::Type::MouseMove;
+				pEvt.isRelative = true;
+				pEvt.dx = event.motion.xrel;
+				pEvt.dy = event.motion.yrel;
+			} else {
+				bool inside = mouseInEmuView(event.motion.x, event.motion.y,
+					pEvt.x, pEvt.y);
+				if (inside) {
+					pEvt.type = PlatformEvent::Type::MouseMove;
+					SDL_HideCursor();
+				} else {
+					SDL_ShowCursor();
+				}
+			}
 			break;
+		}
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
-			pEvt.type = PlatformEvent::Type::MouseButtonDown;
-			pEvt.x = event.button.x;
-			pEvt.y = event.button.y;
+			if (relativeMouseMode_) {
+				pEvt.type = PlatformEvent::Type::MouseButtonDown;
+				pEvt.isRelative = true;
+			} else if (mouseInEmuView(event.button.x, event.button.y,
+					pEvt.x, pEvt.y)) {
+				pEvt.type = PlatformEvent::Type::MouseButtonDown;
+			}
 			break;
 		case SDL_EVENT_MOUSE_BUTTON_UP:
-			pEvt.type = PlatformEvent::Type::MouseButtonUp;
-			pEvt.x = event.button.x;
-			pEvt.y = event.button.y;
+			if (relativeMouseMode_) {
+				pEvt.type = PlatformEvent::Type::MouseButtonUp;
+				pEvt.isRelative = true;
+			} else if (mouseInEmuView(event.button.x, event.button.y,
+					pEvt.x, pEvt.y)) {
+				pEvt.type = PlatformEvent::Type::MouseButtonUp;
+			}
 			break;
 		case SDL_EVENT_KEY_DOWN: {
 			uint8_t mkc = SDLScan2MacKeyCode(event.key.scancode);
@@ -249,10 +283,19 @@ void ImGuiBackend::uploadFramebuffer()
 	if (!shell_ || !shell_->isFramebufferDirty()) return;
 
 	glBindTexture(GL_TEXTURE_2D, emuTextureId_);
-	/* Ensure nearest-neighbour filtering — ImGui's font atlas creation
-	   can leave GL_LINEAR as the bound-texture filter state. */
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	/* GL_LINEAR, not GL_NEAREST.  On macOS Retina the emulator texture
+	   is displayed at 1× logical size but the GL framebuffer is 2×
+	   physical pixels (SDL_WINDOW_HIGH_PIXEL_DENSITY).  With GL_NEAREST,
+	   alternating black/white checkerboard pixels (the Mac Plus desktop
+	   pattern) produce a visible moiré that is anchored to the physical
+	   display — moving the window doesn't move the pattern.  The exact
+	   cause is unclear: possibly the macOS compositor or the OpenGL→Metal
+	   translation layer resamples the backing store at sub-pixel offsets.
+	   GL_LINEAR blends adjacent texels into uniform gray, matching the
+	   SDL backend's appearance.  The trade-off is slightly softer edges
+	   on fine pixel-art details. */
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
 		emuTexW_, emuTexH_,
 		GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
@@ -289,15 +332,26 @@ void ImGuiBackend::drawMenuBar()
 void ImGuiBackend::drawEmulatorViewport()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize
 		| ImGuiWindowFlags_AlwaysAutoResize
 		| ImGuiWindowFlags_NoScrollbar;
 	if (ImGui::Begin("Macintosh", nullptr, flags)) {
+		/* Snap the image origin to physical pixel boundaries so that
+		   GL_NEAREST samples each texel to exactly 2×2 Retina pixels,
+		   avoiding moiré on high-frequency patterns (checkerboard). */
+		ImVec2 pos = ImGui::GetCursorScreenPos();
+		float scale = ImGui::GetIO().DisplayFramebufferScale.x;
+		pos.x = floorf(pos.x * scale) / scale;
+		pos.y = floorf(pos.y * scale) / scale;
+		ImGui::SetCursorScreenPos(pos);
+		emuViewOriginX_ = pos.x;
+		emuViewOriginY_ = pos.y;
 		ImVec2 size((float)emuTexW_, (float)emuTexH_);
 		ImGui::Image((ImTextureID)(intptr_t)emuTextureId_, size);
 	}
 	ImGui::End();
-	ImGui::PopStyleVar();
+	ImGui::PopStyleVar(2);
 }
 
 /* ── Window ──────────────────────────────────────────── */
@@ -311,7 +365,8 @@ bool ImGuiBackend::createWindow(const char* title,
 	int winW = width + 200;
 	int winH = height + 200;
 
-	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
+	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+		| SDL_WINDOW_HIGH_PIXEL_DENSITY;
 	if (fullscreen) flags |= SDL_WINDOW_FULLSCREEN;
 
 	window_ = SDL_CreateWindow(title, winW, winH, flags);
@@ -333,6 +388,7 @@ bool ImGuiBackend::createWindow(const char* title,
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigWindowsMoveFromTitleBarOnly = true;
 	ImGui::StyleColorsDark();
 
 	ImGui_ImplSDL3_InitForOpenGL(window_, glContext_);
@@ -345,8 +401,8 @@ bool ImGuiBackend::createWindow(const char* title,
 	emuTexH_ = g_screenHeight;
 	glGenTextures(1, &emuTextureId_);
 	glBindTexture(GL_TEXTURE_2D, emuTextureId_);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, emuTexW_, emuTexH_, 0,
@@ -413,17 +469,13 @@ void ImGuiBackend::clearScreen()
 void ImGuiBackend::showCursor() { SDL_ShowCursor(); }
 void ImGuiBackend::hideCursor() { SDL_HideCursor(); }
 
-bool ImGuiBackend::warpCursor(int x, int y)
-{
-	if (!window_) return false;
-	SDL_WarpMouseInWindow(window_, (float)x, (float)y);
-	return true;
-}
-
 void ImGuiBackend::setMouseGrab(bool grab)
 {
-	if (window_)
+	if (window_) {
 		SDL_SetWindowMouseGrab(window_, grab);
+		SDL_SetWindowRelativeMouseMode(window_, grab);
+		relativeMouseMode_ = grab;
+	}
 }
 
 /* ── Audio ───────────────────────────────────────────── */

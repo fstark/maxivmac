@@ -31,7 +31,6 @@ public:
 	/* Cursor — all no-ops */
 	void showCursor() override {}
 	void hideCursor() override {}
-	bool warpCursor(int, int) override { return true; }
 	void setMouseGrab(bool) override {}
 
 	/* Audio — all no-ops */

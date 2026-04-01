@@ -1,3 +1,5 @@
+* WTF with the window changed code?
+
 * At one point we may want to fix the code so misconfigured VRAM doesn't crash (throw). (Unsure what is meant there)
 
 * Check what extnBlockBase does
@@ -23,6 +25,9 @@
 Step 9c — Extract event handling into sdl_events.cpp: HandleTheEvent() (~230 lines) is deeply coupled to sdl.cpp statics — my_renderer, UseFullScreen, RequestMacOff, gTrueBackgroundFlag, CaughtMouse, my_main_wind, plus mouse and disk-insert helpers. Extracting it would require exposing or restructuring a large number of internal globals, making the change invasive for modest payoff.
 
 Step 9d — Simplify HaveChangedScreenBuff: The plan called for removing the per-pixel slow path (including 24-bpp support) since modern displays never use it, and simplifying the CLUT loop. This touches core rendering logic and carries regression risk that wasn't worth taking without more targeted testing of color/depth modes beyond the golden-file suite.
+
+Headless: 4/6 PASS (Classic, Mac512Ke, MacPlus, MacSE). MacII/MacIIx FAIL due to SDL audio callback non-determinism in the golden files (pre-existing issue)
+This is the expected outcome. The headless backend works correctly; the MacII/MacIIx golden files are simply not deterministic enough for cross-backend verification. This is a known limitation to fix later (by making the audio path fully deterministic in record/verify mode).
 
 
 

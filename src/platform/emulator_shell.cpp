@@ -258,14 +258,21 @@ void EmulatorShell::dispatchEvent(const PlatformEvent& evt)
 			backend_->clearScreen();
 			break;
 		case PlatformEvent::Type::MouseMove:
-			mousePositionNotify(evt.x, evt.y);
+			if (evt.isRelative) {
+				MyMousePositionSetDelta(evt.dx, evt.dy);
+				wantCursorHidden_ = true;
+			} else {
+				mousePositionNotify(evt.x, evt.y);
+			}
 			break;
 		case PlatformEvent::Type::MouseButtonDown:
-			mousePositionNotify(evt.x, evt.y);
+			if (!evt.isRelative)
+				mousePositionNotify(evt.x, evt.y);
 			MyMouseButtonSet(true);
 			break;
 		case PlatformEvent::Type::MouseButtonUp:
-			mousePositionNotify(evt.x, evt.y);
+			if (!evt.isRelative)
+				mousePositionNotify(evt.x, evt.y);
 			MyMouseButtonSet(false);
 			break;
 		case PlatformEvent::Type::KeyDown:
@@ -307,10 +314,6 @@ void EmulatorShell::processSavedTasks()
 	if (EvtQNeedRecover) {
 		EvtQNeedRecover = false;
 		EvtQTryRecoverFromFull();
-	}
-
-	if (g_haveMouseMotion) {
-		mouseConstrain();
 	}
 
 	if (g_requestMacOff) {
@@ -536,33 +539,26 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 		NewMousePosv += g_viewVStart;
 	}
 
-	if (g_haveMouseMotion) {
-		MyMousePositionSetDelta(NewMousePosh - g_savedMouseH,
-			NewMousePosv - g_savedMouseV);
-		g_savedMouseH = NewMousePosh;
-		g_savedMouseV = NewMousePosv;
-	} else {
-		if (NewMousePosh < 0) {
-			NewMousePosh = 0;
-			ShouldHaveCursorHidden = false;
-		} else if (NewMousePosh >= vMacScreenWidth) {
-			NewMousePosh = vMacScreenWidth - 1;
-			ShouldHaveCursorHidden = false;
-		}
-		if (NewMousePosv < 0) {
-			NewMousePosv = 0;
-			ShouldHaveCursorHidden = false;
-		} else if (NewMousePosv >= vMacScreenHeight) {
-			NewMousePosv = vMacScreenHeight - 1;
-			ShouldHaveCursorHidden = false;
-		}
-
-		if (useFullScreen_) {
-			ShouldHaveCursorHidden = true;
-		}
-
-		MyMousePositionSet(NewMousePosh, NewMousePosv);
+	if (NewMousePosh < 0) {
+		NewMousePosh = 0;
+		ShouldHaveCursorHidden = false;
+	} else if (NewMousePosh >= vMacScreenWidth) {
+		NewMousePosh = vMacScreenWidth - 1;
+		ShouldHaveCursorHidden = false;
 	}
+	if (NewMousePosv < 0) {
+		NewMousePosv = 0;
+		ShouldHaveCursorHidden = false;
+	} else if (NewMousePosv >= vMacScreenHeight) {
+		NewMousePosv = vMacScreenHeight - 1;
+		ShouldHaveCursorHidden = false;
+	}
+
+	if (useFullScreen_) {
+		ShouldHaveCursorHidden = true;
+	}
+
+	MyMousePositionSet(NewMousePosh, NewMousePosv);
 
 	wantCursorHidden_ = ShouldHaveCursorHidden;
 }
@@ -575,75 +571,17 @@ void EmulatorShell::checkMouseState()
 	   in its runLoop. */
 }
 
-bool EmulatorShell::moveMouse(int16_t h, int16_t v)
-{
-	if (useFullScreen_) {
-		h -= g_viewHStart;
-		v -= g_viewVStart;
-	}
-
-	if (useMagnify_) {
-		h *= windowScale_;
-		v *= windowScale_;
-	}
-
-	if (useFullScreen_) {
-		h += hOffset_;
-		v += vOffset_;
-	}
-
-	return backend_->warpCursor(h, v);
-}
-
-void EmulatorShell::mouseConstrain()
-{
-	int16_t shiftdh;
-	int16_t shiftdv;
-
-	if (g_savedMouseH < g_viewHStart + (g_viewHSize / 4)) {
-		shiftdh = g_viewHSize / 2;
-	} else if (g_savedMouseH > g_viewHStart + g_viewHSize - (g_viewHSize / 4)) {
-		shiftdh = - g_viewHSize / 2;
-	} else {
-		shiftdh = 0;
-	}
-	if (g_savedMouseV < g_viewVStart + (g_viewVSize / 4)) {
-		shiftdv = g_viewVSize / 2;
-	} else if (g_savedMouseV > g_viewVStart + g_viewVSize - (g_viewVSize / 4)) {
-		shiftdv = - g_viewVSize / 2;
-	} else {
-		shiftdv = 0;
-	}
-	if ((shiftdh != 0) || (shiftdv != 0)) {
-		g_savedMouseH += shiftdh;
-		g_savedMouseV += shiftdv;
-		if (! moveMouse(g_savedMouseH, g_savedMouseV)) {
-			g_haveMouseMotion = false;
-		}
-	}
-}
-
 /* --- Grab/ungrab --- */
 
 void EmulatorShell::grabMachine()
 {
 	backend_->setMouseGrab(true);
-
-	if (moveMouse(g_viewHStart + (g_viewHSize / 2),
-		g_viewVStart + (g_viewVSize / 2)))
-	{
-		g_savedMouseH = g_viewHStart + (g_viewHSize / 2);
-		g_savedMouseV = g_viewVStart + (g_viewVSize / 2);
-		g_haveMouseMotion = true;
-	}
+	g_haveMouseMotion = true;
 }
 
 void EmulatorShell::ungrabMachine()
 {
-	if (g_haveMouseMotion) {
-		(void) moveMouse(g_curMouseH, g_curMouseV);
-		g_haveMouseMotion = false;
-	}
+	g_haveMouseMotion = false;
 	backend_->setMouseGrab(false);
 }
 

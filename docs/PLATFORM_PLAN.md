@@ -1,380 +1,216 @@
-# Platform Refactoring Plan — COMPLETED
+# Frontend Implementation Plan
 
-All 3 phases completed on 2026-03-30.
+Goal: Add a headless backend (for CI golden-file testing without SDL) and
+an ImGui backend (for a rich debug/development UI). Both build on the
+architecture established by the platform refactoring (app_main + EmulatorShell
++ PlatformBackend).
 
-Commits: 5be3629..c3df248
-
-- **Phase 1** — Extract screen_convert from sdl.cpp (5be3629)
-- **Phase 2** — Introduce PlatformBackend + SdlBackend wrapper (1645c55)
-- **Phase 3** — Create EmulatorShell, invert loop, replace sdl.cpp with app_main.cpp (c3df248)
-
-The old `src/platform/sdl.cpp` is no longer compiled (replaced by `app_main.cpp` + `emulator_shell.cpp`)
-and can be deleted.
+Each phase produces a working build. Validate with `cmake --build` and
+`test/verify.sh` at every gate.
 
 ---
 
-## Phase 1 — Extract screen_convert
+## Phase 1 — Decouple SDL from common sources
 
-Goal: Move all framebuffer conversion (CLUT/BW→ARGB8888) from sdl.cpp into
-a standalone compilation unit. sdl.cpp continues to work but calls into
-screen_convert instead of doing the conversion inline. No new interfaces,
-no loop changes.
+Before adding non-SDL backends, two files that are always compiled have
+SDL dependencies that block headless builds:
 
-### 1.1 Create screen_convert.h
+- `sdl_keyboard.cpp` — includes `<SDL3/SDL.h>`, linked into all builds
+- `sdl_sound.cpp` — includes `<SDL3/SDL.h>`, linked into all builds
 
-Create `src/platform/screen_convert.h` with:
-- `extern uint8_t* ScalingBuff;` (the output buffer pointer, set by caller)
-- `extern uint8_t* CLUT_final;` (the pre-computed CLUT table)
-- `#define CLUT_FINAL_SZ (256 * 8 * 4)`
-- Forward declarations for all 12 depth-copy functions:
-  `UpdateBWDepth3Copy`, `UpdateBWDepth4Copy`, `UpdateBWDepth5Copy`,
-  `UpdateColorSrc1Dst3Copy` through `UpdateColorSrc3Dst5Copy`
-  (each takes `int16_t top, left, bottom, right`)
-- `void BuildClutTable(...)` — builds the CLUT_final lookup from
-  current color mode, depth, and CLUT_reds/greens/blues. Replaces the
-  SDL_MapRGB calls with direct ARGB8888 packing.
-- `void ConvertRect(uint16_t top, left, bottom, right)` — dispatches
-  to the correct depth-copy based on current vMacScreenDepth, g_useColorMode,
-  and bpp (always 4 for ARGB8888).
-- `void ConvertRectSlow(uint8_t* dest, int pitch, uint16_t top, left, bottom, right)` — the
-  per-pixel fallback path (currently the else branch in HaveChangedScreenBuff).
+The headless backend has no SDL. We need these files excluded from headless
+builds, or their interfaces abstracted so the shell doesn't depend on SDL
+symbols at link time.
 
-### 1.2 Create screen_convert.cpp
+### 1.1 Split sdl_sound into interface + SDL implementation
 
-Create `src/platform/screen_convert.cpp`:
-- `#include "platform/screen_convert.h"`
-- Include required headers: `osglu_ui.h`, `osglu_common.h`, `platform.h`
-- Define `uint8_t* ScalingBuff = nullptr;`
-- Define `uint8_t* CLUT_final = nullptr;`  (remove `static` — now extern)
-- All 12 `ScrnMapr` instantiations (moved from sdl.cpp):
-  - `ScrnMapr_Dst` = `ScalingBuff` (via screen_map_inst.h, unchanged)
-  - `ScrnMapr_Src` = `GetCurDrawBuff()` (via screen_map_inst.h, unchanged)
-  - `ScrnMapr_Map` = `CLUT_final` (via screen_map_inst.h, unchanged)
-- `BuildClutTable()`: replaces SDL_MapRGB with direct ARGB packing:
-  `(0xFFu << 24) | (r << 16) | (g << 8) | b`
-  Builds BWLUT or color CLUT, then populates CLUT_final exactly as
-  the current code does but without any SDL dependency.
-- `ConvertRect()`: the fast-path dispatcher — same switch logic as current
-  code that selects `UpdateBWDepth3Copy` etc. based on depth and bpp.
-  Since we always target ARGB8888 (bpp=4), this always calls the `Dst5`
-  variants (DstDepth 5 = 32-bit = 4 bytes).
-- `ConvertRectSlow()`: the per-pixel fallback. Writes into caller-provided
-  buffer. Replaces SDL_MapRGB with the same ARGB packing.
+Create `src/platform/sound_interface.h`:
+```cpp
+void Sound_Start();
+void Sound_Stop();
+bool Sound_Init();
+void Sound_UnInit();
+void Sound_SecondNotify();
+bool Sound_AllocBuffer();
+void Sound_FreeBuffer();
+```
 
-### 1.3 Update sdl.cpp
+`sdl_sound.h` retains the SDL-specific includes and the SDL implementation.
+Create `src/platform/null_sound.cpp` that provides stubs (all no-ops,
+`Sound_Init` returns true) for headless builds.
 
-- Remove the 12 `ScrnMapr` instantiation blocks (the `#define/#include` sequences).
-- Remove `static uint8_t* ScalingBuff`, `static uint8_t* CLUT_final`, `CLUT_FINAL_SZ`.
-- `#include "platform/screen_convert.h"`
-- In `HaveChangedScreenBuff()`:
-  - Remove CLUT_pixel/BWLUT_pixel local vars and the SDL_MapRGB calls that build them.
-  - After `SDL_LockTexture`, set `ScalingBuff = (uint8_t*)pixels;`
-  - Call `BuildClutTable()` then `ConvertRect(top, left, bottom, right)` for
-    the fast path.
-  - For the slow path, call `ConvertRectSlow((uint8_t*)pixels, pitch, ...)`.
-  - Keep SDL_UnlockTexture, SDL_RenderTexture, SDL_RenderPresent as-is.
-- In `AllocMyMemory()`: allocation of CLUT_final stays (or moves to screen_convert
-  init function). Keep the `AllocBlock(&CLUT_final, ...)` call.
-- In `UnallocMyMemory()`: `free(CLUT_final)` stays.
+### 1.2 Guard sdl_keyboard for headless
 
-### 1.4 Update CMakeLists.txt
+`sdl_keyboard.h` exposes `SDLScan2MacKeyCode(SDL_Scancode)` which uses
+`SDL_Scancode` — an SDL type. The headless backend doesn't call it.
 
-Add `src/platform/screen_convert.cpp` to `MINIVMAC_SOURCES`.
+Approach: don't compile `sdl_keyboard.cpp` in headless builds. The
+`PlatformBackend::translateSdlEvent()` that calls it lives in
+`sdl_backend.cpp` (not compiled for headless either). The shell never
+calls `SDLScan2MacKeyCode` directly.
+
+Check: `emulator_shell.cpp` must have no `#include "sdl_keyboard.h"`.
+(Currently confirmed: it doesn't.)
+
+### 1.3 Restructure CMakeLists.txt for multi-backend
+
+```cmake
+# ── Common sources (no SDL dependency) ──
+set(COMMON_SOURCES
+    src/core/...
+    src/devices/...
+    src/cpu/...
+    src/platform/common/...
+    src/platform/screen_convert.cpp
+    src/platform/emulator_shell.cpp
+    src/lang/...
+)
+
+# ── SDL-common sources (shared by sdl + imgui backends) ──
+set(SDL_COMMON_SOURCES
+    src/platform/sdl_sound.cpp
+    src/platform/sdl_keyboard.cpp
+)
+
+# ── Backend selection ──
+set(MAXIVMAC_BACKEND "sdl" CACHE STRING "Backend: sdl, imgui, headless")
+
+if(MAXIVMAC_BACKEND STREQUAL "sdl")
+    set(BACKEND_SOURCES
+        src/platform/sdl_backend.cpp
+        src/platform/app_main.cpp
+    )
+    set(NEED_SDL ON)
+elseif(MAXIVMAC_BACKEND STREQUAL "imgui")
+    set(BACKEND_SOURCES
+        src/platform/imgui_backend.cpp
+        src/platform/imgui_main.cpp
+    )
+    set(NEED_SDL ON)        # ImGui backend uses SDL3 for windowing
+    set(NEED_IMGUI ON)
+elseif(MAXIVMAC_BACKEND STREQUAL "headless")
+    set(BACKEND_SOURCES
+        src/platform/headless_backend.cpp
+        src/platform/headless_main.cpp
+        src/platform/null_sound.cpp
+    )
+    set(NEED_SDL OFF)
+endif()
+
+set(MINIVMAC_SOURCES ${COMMON_SOURCES} ${BACKEND_SOURCES})
+if(NEED_SDL)
+    list(APPEND MINIVMAC_SOURCES ${SDL_COMMON_SOURCES})
+endif()
+
+add_executable(maxivmac ${MINIVMAC_SOURCES})
+
+if(NEED_SDL)
+    find_package(SDL3 REQUIRED)
+    target_link_libraries(maxivmac PRIVATE SDL3::SDL3)
+endif()
+if(NEED_IMGUI)
+    # See Phase 4 for ImGui integration details
+endif()
+```
+
+### 1.4 Add CMake presets for each backend
+
+In `CMakePresets.json`, add presets:
+- `macos` — existing, uses sdl backend (default)
+- `macos-headless` — sets `MAXIVMAC_BACKEND=headless`
+- `macos-imgui` — sets `MAXIVMAC_BACKEND=imgui`
 
 ### 1.5 Validate
 
 ```sh
+# SDL build still works:
 cmake --preset macos && cmake --build --preset macos
 cd test && ./verify.sh
+
+# Headless builds (won't pass verify yet — no headless backend):
+cmake --preset macos-headless && cmake --build --preset macos-headless
 ```
 
 ### 1.6 Commit
 
 ```sh
-git add -A && git commit -m "platform: extract screen_convert from sdl.cpp"
+git add -A && git commit -m "build: restructure CMake for multi-backend (sdl, imgui, headless)"
 ```
 
 ---
 
-## Phase 2 — Create PlatformBackend interface + SdlBackend wrapper
+## Phase 2 — HeadlessBackend
 
-Goal: Introduce the `PlatformBackend` abstract class and a `SdlBackend`
-that wraps existing SDL calls. sdl.cpp delegates to SdlBackend for primitive
-operations. The main loop is unchanged — this is a mechanical extraction.
+Create a minimal headless backend that runs the emulator without any
+windowing, audio, or input. Uses `g_SkipThrottle` (already set by
+`--verify`) to run at max speed.
 
-### 2.1 Create platform_backend.h
+### 2.1 Create headless_backend.h/.cpp
 
-Create `src/platform/platform_backend.h` with:
-- `struct PlatformEvent` (Type enum, macKeyCode, x/y, wheelX/Y, filePath)
-- `class PlatformBackend` abstract class with pure virtual methods:
-  - Lifecycle: `init(EmulatorShell*)`, `shutdown()`, `runLoop()`
-  - Window: `createWindow`, `destroyWindow`, `recreateWindow`, `getWindowSize`,
-    `getWindowPosition`, `setFullscreen`
-  - Cursor: `showCursor`, `hideCursor`, `warpCursor`, `setMouseGrab`
-  - Audio: `audioInit`, `audioStart`, `audioStop`, `audioShutdown`
-  - Keyboard: `disableKeyRepeat`, `restoreKeyRepeat`
-  - Dialog: `showMessageBox`
-  - Query: `getDisplayBounds`
-
-  Note: `runLoop()` is declared but **not yet called** — sdl.cpp still owns
-  the loop in this phase. It will be wired in Phase 3.
-
-### 2.2 Create sdl_backend.h / sdl_backend.cpp
-
-Create `src/platform/sdl_backend.h`:
-- `class SdlBackend : public PlatformBackend`
-- Private members for SDL objects: `SDL_Window*`, `SDL_Renderer*`,
-  `SDL_Texture*`, `const SDL_PixelFormatDetails*`
-- `MyWState` struct (moved from sdl.cpp)
-
-Create `src/platform/sdl_backend.cpp`:
-- Implement all PlatformBackend methods by wrapping existing SDL code:
-  - `init()`: calls `SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)` (from `Screen_Init`)
-  - `shutdown()`: calls `SDL_QuitSubSystem`, `SDL_Quit`
-  - `createWindow()`: contains the body of `CreateMainWindow()` — SDL_CreateWindow,
-    SDL_CreateRenderer, SDL_SetRenderLogicalPresentation, SDL_CreateTexture,
-    SDL_SetTextureScaleMode, SDL_GetPixelFormatDetails.
-    Returns bool. Stores SDL objects in members.
-  - `destroyWindow()`: body of `CloseMainWindow()`
-  - `recreateWindow()`: orchestrates destroy + create with state save/restore
-    (the `GetMyWState`/`SetMyWState` logic moves here)
-  - `getWindowSize()`: `SDL_GetWindowSizeInPixels`
-  - `getWindowPosition()`: `SDL_GetWindowPosition`
-  - `setFullscreen()`: `SDL_SetWindowFullscreen`
-  - `showCursor()` / `hideCursor()`: `SDL_ShowCursor` / `SDL_HideCursor`
-  - `warpCursor()`: `SDL_WarpMouseInWindow`
-  - `setMouseGrab()`: `SDL_SetWindowMouseGrab`
-  - `audioInit()`: delegates to existing `Sound_Init()`
-  - `audioStart()` / `audioStop()`: delegates to `Sound_Start()` / `Sound_Stop()`
-  - `audioShutdown()`: delegates to `Sound_UnInit()`
-  - `disableKeyRepeat()` / `restoreKeyRepeat()`: delegates to existing functions
-  - `showMessageBox()`: `SDL_ShowSimpleMessageBox`
-  - `getDisplayBounds()`: `SDL_GetDisplayBounds`
-  - `runLoop()`: **stub** — empty body or assert. Will be filled in Phase 3.
-- Expose getters for SDL objects that sdl.cpp still needs during this
-  transitional phase: `renderer()`, `texture()`, `format()`, `window()`.
-
-### 2.3 Update sdl.cpp
-
-- `#include "platform/sdl_backend.h"`
-- Create a file-scope `static SdlBackend* s_backend;` pointer
-  (allocated in `InitOSGLU`, freed in `UnInitOSGLU`).
-- Replace direct SDL calls with backend calls:
-  - `Screen_Init()` body → `s_backend->init(nullptr)` (no shell yet)
-  - `CreateMainWindow()` body → `s_backend->createWindow(...)`
-  - `CloseMainWindow()` body → `s_backend->destroyWindow()`
-  - `ForceShowCursor()` → `s_backend->showCursor()`
-  - `SDL_HideCursor()`/`SDL_ShowCursor()` in `CheckForSavedTasks` → `s_backend->hideCursor()`/`showCursor()`
-  - `SDL_WarpMouseInWindow` in `MoveMouse` → `s_backend->warpCursor()`
-  - `SDL_SetWindowMouseGrab` in `GrabTheMachine`/`UngrabMachine` → `s_backend->setMouseGrab()`
-  - `Sound_Init/Start/Stop/UnInit` → `s_backend->audioInit/Start/Stop/Shutdown()`
-  - `SDL_ShowSimpleMessageBox` in `CheckSavedMacMsg` → `s_backend->showMessageBox()`
-  - `SDL_GetDisplayBounds` in `ToggleWantFullScreen` → `s_backend->getDisplayBounds()`
-  - `DisableKeyRepeat/RestoreKeyRepeat` → `s_backend->disableKeyRepeat/restoreKeyRepeat()`
-- `HaveChangedScreenBuff()` still uses SDL texture via backend getters:
-  `s_backend->texture()`, `s_backend->renderer()`, etc.
-  This will be cleaned up in Phase 3.
-- `ReCreateMainWindow()` → calls `s_backend->recreateWindow(...)` instead of
-  manual GetMyWState/SetMyWState dance.
-- Remove `static SDL_Window* my_main_wind`, `my_renderer`, `my_texture`, `my_format`
-  — these now live in SdlBackend.
-- Remove `Screen_Init()`, `CreateMainWindow()`, `CloseMainWindow()`,
-  `GetMyWState()`, `SetMyWState()`, `ZapMyWState()`, `MyWState` struct — moved to SdlBackend.
-
-### 2.4 Update CMakeLists.txt
-
-Add `src/platform/sdl_backend.cpp` to `MINIVMAC_SOURCES`.
-
-### 2.5 Validate
-
-```sh
-cmake --preset macos && cmake --build --preset macos
-cd test && ./verify.sh
-```
-
-### 2.6 Commit
-
-```sh
-git add -A && git commit -m "platform: introduce PlatformBackend + SdlBackend wrapper"
-```
-
----
-
-## Phase 3 — Create EmulatorShell, invert the loop
-
-Goal: Move all platform-independent logic from sdl.cpp into EmulatorShell.
-Invert the control flow so the backend drives the frame loop.
-Delete MainEventLoop(). sdl.cpp becomes app_main.cpp (~30 lines).
-
-This is the largest phase. The steps below are ordered to keep the build
-working at each sub-step where possible, but the validate/commit gate
-is at the end of the full phase.
-
-### 3.1 Export core functions
-
-In `src/core/main.cpp`:
-- Make `RunEmulatedTicksToTrueTime()` non-static (remove `static`).
-- Make `DoEmulateExtraTime()` non-static.
-- Make `InitEmulation()` non-static.
-- Add `DoneWithDrawingForTick()` declaration if not already extern
-  (it's currently in sdl.cpp — it will move to the shell).
-- Delete `MainEventLoop()`.
-- Simplify `ProgramMain()` to just call `InitEmulation()` and return
-  success/failure (the tick loop is now driven by the backend):
-  ```cpp
-  bool ProgramMain() { return InitEmulation(); }
-  ```
-
-In `src/core/main.h`:
-- Add: `extern bool InitEmulation();`
-- Add: `extern void RunEmulatedTicksToTrueTime();`
-- Add: `extern void DoEmulateExtraTime();`
-- Change `ProgramMain()` return type to `bool`.
-
-### 3.2 Create emulator_shell.h
-
-Create `src/platform/emulator_shell.h`:
-- `class EmulatorShell` per PLATFORM_ARCH.md design.
-- Public API:
-  - `EmulatorShell(PlatformBackend* backend)`
-  - `bool init(int argc, char** argv)` — runs the full init sequence
-    (AllocMyMemory, InitWhereAmI, ScanCommandLine, LoadMacRom,
-    LoadInitialImages, InitLocationDat, backend→createWindow,
-    backend→audioInit, ProgramMain/InitEmulation)
-  - `void shutdown()` — full teardown (UnInitOSGLU equivalent)
-  - `void dispatchEvent(const PlatformEvent& evt)` — translates to emulator
-    actions (key, mouse, disk drop, focus, window events)
-  - `void processSavedTasks()` — state machine
-  - `bool tickIsDue()` — timing check (replaces ExtraTimeNotOver logic)
-  - `void runOneTick()` — calls RunEmulatedTicksToTrueTime + DoEmulateExtraTime
-    + DoneWithDrawingForTick
-  - `uint32_t getDelayMs()` — how long to sleep
-  - `bool shouldQuit()` — returns g_forceMacOff
-  - `bool isSpeedStopped()` — for backend to decide blocking wait vs poll
-  - `bool isFramebufferDirty()`
-  - `const uint8_t* getFramebuffer()`
-  - `int getScreenWidth()` / `getScreenHeight()`
-  - `void clearDirtyFlag()`
-  - `bool insertDiskOrRom(const char* path, bool silent)` — Sony_Insert1a
-- Private members: all state from sdl.cpp static vars (useFullScreen_, useMagnify_,
-  windowScale_, backgroundFlag_, trueBackgroundFlag_, curSpeedStopped_,
-  grabMachine_, haveCursorHidden_, wantCursorHidden_, caughtMouse_,
-  hOffset_, vOffset_, window position tracking arrays, argbBuffer_).
-
-### 3.3 Create emulator_shell.cpp
-
-Create `src/platform/emulator_shell.cpp` — move code from sdl.cpp:
-
-**Init/shutdown** (from InitOSGLU / UnInitOSGLU):
-- `init()`: AllocMyMemory, InitWhereAmI, ScanCommandLine (or delete since
-  ProgramEarlyInit already parsed CLI), LoadMacRom, LoadInitialImages,
-  InitLocationDat, backend_→init(this), backend_→audioInit(),
-  backend_→createWindow(...), ProgramMain() (now just InitEmulation).
-  Remove WaitForRom() call — if ROM load fails, return false.
-- `shutdown()`: the body of UnInitOSGLU, calling backend_ methods instead of
-  raw SDL.
-
-**Event dispatch** (from HandleTheEvent):
-- `dispatchEvent()`: switch on PlatformEvent::Type — delegates to
-  mousePositionNotify, MyMouseButtonSet, Keyboard_updateKeyMap2,
-  Sony_Insert1a for FileDrop, trueBackgroundFlag_ for Focus, etc.
-  The scancode→MKC translation is already done by the backend.
-
-**State machine** (from CheckForSavedTasks):
-- `processSavedTasks()`: same logic, but SDL calls replaced with
-  backend_ calls (showCursor/hideCursor, recreateWindow, setMouseGrab).
-  New disk creation code moves here. The cursor hide/show at the end
-  uses backend_→showCursor()/hideCursor().
-
-**Timing** (from WaitForNextTick):
-- `tickIsDue()`: calls `UpdateTrueEmulatedTime()`, returns whether
-  `g_trueEmulatedTime != g_onTrueTime`. For `g_SkipThrottle` mode
-  (record/verify), always returns true after advancing `g_onTrueTime`.
-- `runOneTick()`: calls `RunEmulatedTicksToTrueTime()` +
-  `DoEmulateExtraTime()` + `drawChangesAndClear()`. Updates
-  `g_onTrueTime` and calls `CheckDateTime()`/`Sound_SecondNotify()`
-  as needed.
-- `getDelayMs()`: returns `GetTimerDelay()`.
-
-**Framebuffer** (from HaveChangedScreenBuff / DrawChangesAndClear):
-- `drawChangesAndClear()`: if dirty rect exists, call `convertFramebuffer()`
-  then `ScreenClearChanges()`. Sets `framebufferDirty_ = true`.
-- `convertFramebuffer()`: set `ScalingBuff = argbBuffer_`, call
-  `BuildClutTable()`, call `ConvertRect()` (from screen_convert).
-  For fullscreen, apply view clipping. No SDL calls.
-
-**Mouse** (from MousePositionNotify, MoveMouse, MouseConstrain, CheckMouseState):
-- All move to shell methods. `moveMouse()` calls `backend_→warpCursor()`.
-
-**Grab/ungrab** (from GrabTheMachine, UngrabMachine):
-- Move to shell. Call `backend_→setMouseGrab()`.
-
-**Background/speed** (from LeaveBackground, EnterBackground, LeaveSpeedStopped, EnterSpeedStopped):
-- Move to shell. Call `backend_→restoreKeyRepeat()`, `backend_→audioStart()` etc.
-
-**Fullscreen toggle** (from ToggleWantFullScreen):
-- Move to shell. Calls `backend_→getDisplayBounds()`.
-- Provide the `extern "C"` or namespace-qualified wrapper that control_mode.cpp
-  calls (keep the `ToggleWantFullScreen()` free function, have it delegate to
-  a global shell pointer).
-
-**Disk orchestration** (from Sony_Insert1a, Sony_Insert2, Sony_InsertIth, LoadInitialImages):
-- Move to shell.
-
-**Remaining utilities**:
-- `NativeStrFromCStr()` — move to shell or common.
-- `MoveBytes()` — move to common (it's a memcpy wrapper).
-- `CheckSavedMacMsg()` — inline into shutdown(), calls backend_→showMessageBox().
-- `app_parent`, `pref_dir`, `d_arg`, `n_arg` — become shell members.
-
-### 3.4 Delete WaitForRom
-
-In `src/platform/common/control_mode.cpp`:
-- Delete the `WaitForRom()` function body. Replace with a stub that returns
-  `g_romLoaded` (or delete entirely if no callers remain after init changes).
-- The shell's `init()` checks `g_romLoaded` after `LoadMacRom()` and returns
-  false with an error message if it failed.
-
-### 3.5 Wire SdlBackend::runLoop()
-
-In `src/platform/sdl_backend.cpp`, implement `runLoop()`:
-```
-while (!shell_->shouldQuit()):
-  poll SDL events → translate to PlatformEvent → shell_->dispatchEvent()
-  shell_->processSavedTasks()
-  if shouldQuit: break
-  if isSpeedStopped:
-    // render current frame, then block
-    present if dirty
-    SDL_WaitEvent → translate → dispatchEvent
-    continue
-  if !tickIsDue:
-    SDL_Delay(shell_->getDelayMs())
-    continue
-  while tickIsDue:
-    shell_->runOneTick()
-  present if framebufferDirty:
-    SDL_LockTexture, memcpy from getFramebuffer(), SDL_UnlockTexture
-    SDL_RenderTexture, SDL_RenderPresent
-    shell_->clearDirtyFlag()
-```
-
-Event translation helper `translateSdlEvent()`:
-- Uses `SDLScan2MacKeyCode()` for key events (include sdl_keyboard.h)
-- Calls `SDL_ConvertEventToRenderCoordinates` for mouse coordinate mapping
-- Maps SDL event types to PlatformEvent::Type
-
-Also handle the `CheckMouseState()` equivalent: if not background and not
-caught mouse, read mouse position via `SDL_GetMouseState` and feed as a
-MouseMove event (once per frame after ticks).
-
-### 3.6 Replace sdl.cpp with app_main.cpp
-
-Rename `src/platform/sdl.cpp` → `src/platform/app_main.cpp`.
-Replace its contents with ~30 lines:
-
+`src/platform/headless_backend.h`:
 ```cpp
-#include "platform/sdl_backend.h"
+#include "platform/platform_backend.h"
+
+class HeadlessBackend : public PlatformBackend {
+public:
+    bool init(EmulatorShell* shell) override;
+    void shutdown() override;
+    void runLoop() override;
+
+    // Window — no-ops returning success
+    bool createWindow(const char*, int, int, bool) override { return true; }
+    void destroyWindow() override {}
+    bool recreateWindow(const char*, int, int, bool) override { return true; }
+    void getWindowSize(int* w, int* h) override { *w = 0; *h = 0; }
+    void getWindowPosition(int* x, int* y) override { *x = 0; *y = 0; }
+    void setWindowPosition(int, int) override {}
+    void setFullscreen(bool) override {}
+    void clearScreen() override {}
+
+    // Cursor — no-ops
+    void showCursor() override {}
+    void hideCursor() override {}
+    bool warpCursor(int, int) override { return true; }
+    void setMouseGrab(bool) override {}
+
+    // Audio — no-ops
+    bool audioInit() override { return true; }
+    void audioStart() override {}
+    void audioStop() override {}
+    void audioShutdown() override {}
+
+    // Keyboard — no-ops
+    void disableKeyRepeat() override {}
+    void restoreKeyRepeat() override {}
+
+    // Dialog — stderr
+    void showMessageBox(const char* t, const char* m) override;
+
+    // Query
+    bool getDisplayBounds(PlatformDisplayBounds*) override { return false; }
+
+private:
+    EmulatorShell* shell_ = nullptr;
+};
+```
+
+`src/platform/headless_backend.cpp` — `runLoop()`:
+```cpp
+void HeadlessBackend::runLoop() {
+    while (!shell_->shouldQuit()) {
+        shell_->processSavedTasks();
+        if (shell_->shouldQuit()) break;
+        while (shell_->tickIsDue() && !shell_->shouldQuit())
+            shell_->runOneTick();
+    }
+}
+```
+
+### 2.2 Create headless_main.cpp
+
+`src/platform/headless_main.cpp`:
+```cpp
+#include "platform/headless_backend.h"
 #include "platform/emulator_shell.h"
 #include "core/main.h"
 
@@ -383,7 +219,7 @@ int main(int argc, char** argv) {
     const LaunchConfig& lc = GetLaunchConfig();
     if (lc.help) return 0;
 
-    SdlBackend backend;
+    HeadlessBackend backend;
     EmulatorShell shell(&backend);
 
     if (!shell.init(argc, argv)) {
@@ -400,51 +236,534 @@ int main(int argc, char** argv) {
 }
 ```
 
-### 3.7 Update CMakeLists.txt
+### 2.3 Create null_sound.cpp
 
-- Replace `src/platform/sdl.cpp` with `src/platform/app_main.cpp`
-- Add `src/platform/emulator_shell.cpp`
-- Keep `src/platform/sdl_backend.cpp`, `src/platform/screen_convert.cpp`
-
-### 3.8 Provide global ToggleWantFullScreen wrapper
-
-Since control_mode.cpp calls `ToggleWantFullScreen()` as a free function
-(declared `extern` in platform.h), provide a thin wrapper in
-emulator_shell.cpp:
-
+`src/platform/null_sound.cpp` — stub implementations of the sound
+interface for headless builds (no SDL dependency):
 ```cpp
-static EmulatorShell* g_shell = nullptr;  // set during init
-
-void ToggleWantFullScreen() {
-    if (g_shell) g_shell->toggleWantFullScreen();
-}
+#include "platform/sdl_sound.h"  // or sound_interface.h
+void Sound_Start() {}
+void Sound_Stop() {}
+bool Sound_Init() { return true; }
+void Sound_UnInit() {}
+void Sound_SecondNotify() {}
+bool Sound_AllocBuffer() { return true; }
+void Sound_FreeBuffer() {}
 ```
 
-Similarly, `DoneWithDrawingForTick()` needs a free-function wrapper
-since core/main.cpp (RunEmulatedTicksToTrueTime) calls it:
-
-```cpp
-void DoneWithDrawingForTick() {
-    if (g_shell) g_shell->drawChangesAndClear();
-}
-```
-
-And `ExtraTimeNotOver()`:
-```cpp
-bool ExtraTimeNotOver() {
-    return g_shell ? g_shell->tickIsDue() : false;
-}
-```
-
-### 3.9 Validate
+### 2.4 Validate
 
 ```sh
+# Headless build:
+cmake --preset macos-headless && cmake --build --preset macos-headless
+
+# Headless can run verify (uses --verify which sets g_SkipThrottle):
+cd test && EMU=../bld/macos-headless/maxivmac ./verify.sh
+
+# SDL build still passes:
 cmake --preset macos && cmake --build --preset macos
 cd test && ./verify.sh
 ```
 
-### 3.10 Commit
+The headless verify.sh may need a small tweak to accept an `EMU` override,
+or we create a separate test script. Either way, golden-file output must
+match the SDL build exactly — the emulation is deterministic and both
+backends call the same shell/core code.
+
+### 2.5 Commit
 
 ```sh
-git add -A && git commit -m "platform: create EmulatorShell, invert loop, delete sdl.cpp"
+git add -A && git commit -m "platform: add HeadlessBackend for CI testing"
 ```
+
+---
+
+## Phase 3 — Delete dead sdl.cpp
+
+The old monolithic `sdl.cpp` is no longer compiled. Remove it.
+
+```sh
+rm src/platform/sdl.cpp
+git add -A && git commit -m "platform: delete dead sdl.cpp"
+```
+
+---
+
+## Phase 4 — Vendor Dear ImGui
+
+Dear ImGui is designed to be vendored (dropped into the source tree).
+There is no system package. We vendor it as a git subtree or a copy
+under `libs/imgui/`.
+
+### 4.1 Fetch ImGui + SDL3+OpenGL3 backends
+
+```sh
+mkdir -p libs/imgui
+# Download imgui release (v1.91.x or latest)
+# Required files:
+#   imgui.h, imgui.cpp, imgui_draw.cpp, imgui_tables.cpp, imgui_widgets.cpp
+#   imgui_demo.cpp        (optional, useful for development)
+#   backends/imgui_impl_sdl3.h, backends/imgui_impl_sdl3.cpp
+#   backends/imgui_impl_opengl3.h, backends/imgui_impl_opengl3.cpp
+```
+
+File layout:
+```
+libs/imgui/
+    imgui.h
+    imgui.cpp
+    imgui_draw.cpp
+    imgui_tables.cpp
+    imgui_widgets.cpp
+    imgui_demo.cpp
+    imgui_internal.h
+    imconfig.h
+    imstb_rectpack.h
+    imstb_textedit.h
+    imstb_truetype.h
+    backends/
+        imgui_impl_sdl3.h
+        imgui_impl_sdl3.cpp
+        imgui_impl_opengl3.h
+        imgui_impl_opengl3.cpp
+        imgui_impl_opengl3_loader.h
+```
+
+### 4.2 Add ImGui to CMake
+
+```cmake
+if(NEED_IMGUI)
+    set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/libs/imgui")
+    set(IMGUI_SOURCES
+        ${IMGUI_DIR}/imgui.cpp
+        ${IMGUI_DIR}/imgui_draw.cpp
+        ${IMGUI_DIR}/imgui_tables.cpp
+        ${IMGUI_DIR}/imgui_widgets.cpp
+        ${IMGUI_DIR}/imgui_demo.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+    )
+    target_sources(maxivmac PRIVATE ${IMGUI_SOURCES})
+    target_include_directories(maxivmac PRIVATE
+        ${IMGUI_DIR}
+        ${IMGUI_DIR}/backends
+    )
+    # OpenGL
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(maxivmac PRIVATE OpenGL::GL)
+endif()
+```
+
+### 4.3 Validate
+
+```sh
+cmake --preset macos-imgui && cmake --build --preset macos-imgui
+# Just verify it compiles. No backend yet.
+```
+
+### 4.4 Commit
+
+```sh
+git add -A && git commit -m "vendor: add Dear ImGui v1.91.x with SDL3+OpenGL3 backends"
+```
+
+---
+
+## Phase 5 — ImGuiBackend: minimal working backend
+
+Create an ImGui backend that renders the emulator viewport in an ImGui
+window. No debug windows yet — just the emulated screen and a menu bar.
+
+### 5.1 Create imgui_backend.h
+
+`src/platform/imgui_backend.h`:
+```cpp
+#include "platform/platform_backend.h"
+#include <SDL3/SDL.h>
+#include <imgui.h>
+
+typedef unsigned int GLuint;
+
+class ImGuiBackend : public PlatformBackend {
+public:
+    bool init(EmulatorShell* shell) override;
+    void shutdown() override;
+    void runLoop() override;
+
+    bool createWindow(const char* title,
+        int width, int height, bool fullscreen) override;
+    void destroyWindow() override;
+    bool recreateWindow(const char* title,
+        int width, int height, bool fullscreen) override;
+    void getWindowSize(int* w, int* h) override;
+    void getWindowPosition(int* x, int* y) override;
+    void setWindowPosition(int x, int y) override;
+    void setFullscreen(bool fullscreen) override;
+    void clearScreen() override;
+
+    void showCursor() override;
+    void hideCursor() override;
+    bool warpCursor(int x, int y) override;
+    void setMouseGrab(bool grab) override;
+
+    bool audioInit() override;
+    void audioStart() override;
+    void audioStop() override;
+    void audioShutdown() override;
+
+    void disableKeyRepeat() override;
+    void restoreKeyRepeat() override;
+
+    void showMessageBox(const char* title, const char* message) override;
+    bool getDisplayBounds(PlatformDisplayBounds* bounds) override;
+
+private:
+    EmulatorShell* shell_ = nullptr;
+    SDL_Window* window_ = nullptr;
+    SDL_GLContext glContext_ = nullptr;
+    GLuint emuTextureId_ = 0;
+
+    PlatformEvent translateSdlEvent(SDL_Event& event);
+    bool imGuiConsumedEvent(const SDL_Event& event) const;
+    void uploadFramebuffer();
+    void drawMenuBar();
+    void drawEmulatorViewport();
+};
+```
+
+### 5.2 Create imgui_backend.cpp
+
+Key implementation details:
+
+**init():**
+- `SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)`
+- `SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE)`
+- `SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3)` / minor 2
+- Store shell pointer, call `InitKeyCodes()`
+
+**createWindow():**
+- `SDL_CreateWindow(title, w*2, h*2, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE)`
+  (2x to give ImGui room for UI around the viewport)
+- `SDL_GL_CreateContext(window_)`
+- `SDL_GL_MakeCurrent(window_, glContext_)`
+- `SDL_GL_SetSwapInterval(1)` (vsync)
+- `ImGui::CreateContext()`
+- `ImGui_ImplSDL3_InitForOpenGL(window_, glContext_)`
+- `ImGui_ImplOpenGL3_Init("#version 150")`
+- `glGenTextures(1, &emuTextureId_)`
+- Configure texture: `GL_NEAREST` filtering, `GL_CLAMP_TO_EDGE`
+- Allocate initial texture storage: `glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, ...)`
+
+**runLoop():**
+```cpp
+void ImGuiBackend::runLoop() {
+    while (!shell_->shouldQuit()) {
+        // 1. Poll events — ImGui first
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            ImGui_ImplSDL3_ProcessEvent(&event);
+            if (!imGuiConsumedEvent(event)) {
+                PlatformEvent pe = translateSdlEvent(event);
+                if (pe.type != PlatformEvent::Type::None)
+                    shell_->dispatchEvent(pe);
+            }
+        }
+
+        // 2. State machine
+        shell_->processSavedTasks();
+        if (shell_->shouldQuit()) break;
+
+        // 3. Run emulation ticks
+        while (shell_->tickIsDue() && !shell_->shouldQuit())
+            shell_->runOneTick();
+
+        // 4. Upload framebuffer to GL texture if dirty
+        uploadFramebuffer();
+
+        // 5. ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
+        ImGui::NewFrame();
+
+        drawMenuBar();
+        drawEmulatorViewport();
+
+        ImGui::Render();
+
+        int displayW, displayH;
+        SDL_GetWindowSizeInPixels(window_, &displayW, &displayH);
+        glViewport(0, 0, displayW, displayH);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        SDL_GL_SwapWindow(window_);
+    }
+}
+```
+
+**imGuiConsumedEvent():**
+```cpp
+bool ImGuiBackend::imGuiConsumedEvent(const SDL_Event& event) const {
+    ImGuiIO& io = ImGui::GetIO();
+    switch (event.type) {
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
+            return io.WantCaptureKeyboard;
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+        case SDL_EVENT_MOUSE_MOTION:
+        case SDL_EVENT_MOUSE_WHEEL:
+            return io.WantCaptureMouse;
+        default:
+            return false;
+    }
+}
+```
+
+**translateSdlEvent():**
+Identical to `SdlBackend::translateSdlEvent()`. Both use `SDLScan2MacKeyCode()`
+and `SDL_ConvertEventToRenderCoordinates()`.
+
+To avoid duplicating this: either make it a free function in a shared file
+(e.g., `sdl_event_translate.h/.cpp`), or have ImGuiBackend include and call
+the same code. The simplest approach is a shared header with an inline
+implementation, since both backends already include `sdl_keyboard.h`.
+
+**uploadFramebuffer():**
+```cpp
+void ImGuiBackend::uploadFramebuffer() {
+    if (!shell_->isFramebufferDirty()) return;
+    glBindTexture(GL_TEXTURE_2D, emuTextureId_);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+        vMacScreenWidth, vMacScreenHeight,
+        GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
+        shell_->getFramebuffer());
+    shell_->clearDirtyFlag();
+}
+```
+
+Note on pixel format: the shell's framebuffer is ARGB8888 (host-endian).
+On little-endian (x86/ARM), this is `0xAARRGGBB` stored as `BB GG RR AA`
+in memory, which is `GL_BGRA` + `GL_UNSIGNED_INT_8_8_8_8_REV`. If this
+doesn't look right, fall back to `GL_RGBA` + `GL_UNSIGNED_BYTE` with a
+swizzle, or adjust `screen_convert.cpp` to output `GL_RGBA` order.
+Test empirically.
+
+**drawMenuBar():**
+```cpp
+void ImGuiBackend::drawMenuBar() {
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Insert Disk...", "Ctrl+O"))
+                { /* file dialog or drop target */ }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Quit", "Ctrl+Q"))
+                { /* set g_forceMacOff */ }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Machine")) {
+            if (ImGui::MenuItem("Speed: 1x", nullptr, !g_speedStopped))
+                { /* toggle */ }
+            if (ImGui::MenuItem("Fullscreen", "Ctrl+F"))
+                shell_->toggleWantFullScreen();
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+}
+```
+
+**drawEmulatorViewport():**
+```cpp
+void ImGuiBackend::drawEmulatorViewport() {
+    ImGui::SetNextWindowSize(
+        ImVec2(vMacScreenWidth + 16, vMacScreenHeight + 36),
+        ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Macintosh")) {
+        ImVec2 avail = ImGui::GetContentRegionAvail();
+        // Maintain aspect ratio
+        float scale = std::min(
+            avail.x / vMacScreenWidth,
+            avail.y / vMacScreenHeight);
+        ImVec2 size(vMacScreenWidth * scale, vMacScreenHeight * scale);
+        ImGui::Image((ImTextureID)(intptr_t)emuTextureId_, size);
+    }
+    ImGui::End();
+}
+```
+
+### 5.3 Create imgui_main.cpp
+
+`src/platform/imgui_main.cpp`:
+```cpp
+#include "platform/imgui_backend.h"
+#include "platform/emulator_shell.h"
+#include "core/main.h"
+
+int main(int argc, char** argv) {
+    ProgramEarlyInit(argc, argv);
+    const LaunchConfig& lc = GetLaunchConfig();
+    if (lc.help) return 0;
+
+    ImGuiBackend backend;
+    EmulatorShell shell(&backend);
+
+    if (!shell.init(argc, argv)) {
+        shell.shutdown();
+        ProgramCleanup();
+        return 1;
+    }
+
+    backend.runLoop();
+
+    shell.shutdown();
+    ProgramCleanup();
+    return 0;
+}
+```
+
+### 5.4 Extract shared SDL event translation
+
+Create `src/platform/sdl_event_translate.h` with the `translateSdlEvent()`
+function used by both `SdlBackend` and `ImGuiBackend`. Move the implementation
+from `sdl_backend.cpp` and have both backends call it.
+
+This avoids code duplication and ensures consistent event handling.
+
+### 5.5 Audio: reuse sdl_sound
+
+The ImGui backend uses SDL3 for audio — same as the SDL backend. The
+existing `sdl_sound.cpp` works unchanged. `audioInit()` calls `Sound_Init()`,
+etc. The PlatformBackend audio methods in ImGuiBackend delegate identically
+to SdlBackend.
+
+### 5.6 Validate
+
+```sh
+cmake --preset macos-imgui && cmake --build --preset macos-imgui
+./bld/macos-imgui/maxivmac --model=MacPlus --rom=roms/MacPlus.ROM extras/disks/608.hfs
+# Visual check: emulator screen appears in ImGui window, keyboard/mouse work
+```
+
+### 5.7 Commit
+
+```sh
+git add -A && git commit -m "platform: add ImGuiBackend with emulator viewport"
+```
+
+---
+
+## Phase 6 — ImGui debug windows
+
+Add debug/development windows. These are purely additive — each is an
+independent ImGui window drawn in `drawDebugWindows()`.
+
+### 6.1 Memory viewer
+
+Display RAM contents as a hex grid with ASCII sidebar. Uses ImGui's
+`ImGui::InputText` for an address field and `ImGui::Text` for the hex dump.
+
+Reads from `g_ram[]` (via `machine.h`) — no new core API needed.
+
+### 6.2 Register viewer
+
+Show CPU registers (D0-D7, A0-A7, PC, SR) updated every tick.
+Requires exposing current register state from the CPU. Check if
+`m68k.cpp` already has an accessor or if we need to add a read-only
+`M68K::getRegisters()` method.
+
+### 6.3 Disassembler view
+
+Show disassembled instructions around PC. Uses the existing
+`src/cpu/disasm.cpp` disassembler.
+
+### 6.4 Device state panels
+
+Show VIA, SCC, IWM register states. Each device's internal state is
+already accessible through the Machine's device pointers.
+
+### 6.5 Commit
+
+```sh
+git add -A && git commit -m "imgui: add debug windows (memory, registers, disassembly)"
+```
+
+---
+
+## Phase 7 — Polish and cleanup
+
+### 7.1 File dialogs
+
+Add native file dialog support for disk insertion. Options:
+- **tinyfd** (tiny file dialogs) — single-header, works on macOS/Linux/Windows
+- **NFD** (Native File Dialog) — small C library
+- ImGui file browser widget (pure ImGui, no native dialog)
+
+### 7.2 Keyboard/mouse focus handling
+
+Ensure that when the emulator viewport has focus:
+- Keyboard events go to the emulated Mac
+- Mouse clicks inside the viewport are translated to Mac coordinates
+- Mouse grab (for games/drawing) still works via the backend
+
+When an ImGui window (menu, debug panel) has focus:
+- ImGui handles the events
+- The emulator continues running but doesn't receive input
+
+### 7.3 Configuration persistence
+
+Save/restore ImGui layout (`imgui.ini`) and emulator preferences.
+
+### 7.4 Commit
+
+```sh
+git add -A && git commit -m "imgui: file dialogs, focus handling, layout persistence"
+```
+
+---
+
+## Summary of new files
+
+| Phase | File | Purpose |
+|---|---|---|
+| 1 | `src/platform/null_sound.cpp` | Sound stubs for headless |
+| 2 | `src/platform/headless_backend.h/.cpp` | HeadlessBackend |
+| 2 | `src/platform/headless_main.cpp` | Headless entry point |
+| 3 | _(delete)_ `src/platform/sdl.cpp` | Remove dead code |
+| 4 | `libs/imgui/...` | Vendored Dear ImGui |
+| 5 | `src/platform/imgui_backend.h/.cpp` | ImGuiBackend |
+| 5 | `src/platform/imgui_main.cpp` | ImGui entry point |
+| 5 | `src/platform/sdl_event_translate.h` | Shared SDL→PlatformEvent |
+
+## CMake presets
+
+| Preset | Backend | SDL | ImGui | Output binary |
+|---|---|---|---|---|
+| `macos` | sdl | yes | no | `bld/macos/maxivmac` |
+| `macos-headless` | headless | no | no | `bld/macos-headless/maxivmac` |
+| `macos-imgui` | imgui | yes | yes | `bld/macos-imgui/maxivmac` |
+
+## Risks and open questions
+
+1. **GL pixel format** — ARGB8888 from screen_convert may need byte-order
+   adjustment for OpenGL. Test on first ImGui render; fix in screen_convert
+   if needed (output RGBA instead of ARGB, or use GL format flags).
+
+2. **Mouse coordinate mapping in ImGui viewport** — The emulator viewport
+   is an ImGui::Image. Mouse events need to be translated from ImGui
+   viewport coordinates to emulator screen coordinates. ImGui provides
+   `ImGui::GetItemRectMin()` after `Image()` for this.
+
+3. **Fullscreen in ImGui** — Full-screen mode means the ImGui window goes
+   fullscreen, not just the viewport. The menu bar and debug windows
+   remain accessible. This is different from SDL fullscreen where the
+   emulator fills the screen. Need to decide on UX.
+
+4. **Headless sound linkage** — If any common/ file references
+   `Sound_BeginWrite`/`Sound_EndWrite` at link time, the headless build
+   may fail. These are only called from device/core code during
+   emulation ticks. Verify with a test link.
+
+5. **ImGui version** — Target v1.91.x (latest stable as of 2026). The
+   SDL3 backend (`imgui_impl_sdl3.cpp`) was added in v1.91.0.

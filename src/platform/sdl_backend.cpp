@@ -210,15 +210,11 @@ void SdlBackend::hideCursor()
 	SDL_HideCursor();
 }
 
-bool SdlBackend::warpCursor(int x, int y)
-{
-	SDL_WarpMouseInWindow(window_, x, y);
-	return true;
-}
-
 void SdlBackend::setMouseGrab(bool grab)
 {
 	SDL_SetWindowMouseGrab(window_, grab);
+	SDL_SetWindowRelativeMouseMode(window_, grab);
+	relativeMouseMode_ = grab;
 }
 
 /* --- Audio --- */
@@ -356,18 +352,32 @@ PlatformEvent SdlBackend::translateSdlEvent(SDL_Event& event)
 			break;
 		case SDL_EVENT_MOUSE_MOTION:
 			pEvt.type = PlatformEvent::Type::MouseMove;
-			pEvt.x = event.motion.x;
-			pEvt.y = event.motion.y;
+			if (relativeMouseMode_) {
+				pEvt.isRelative = true;
+				pEvt.dx = event.motion.xrel;
+				pEvt.dy = event.motion.yrel;
+			} else {
+				pEvt.x = event.motion.x;
+				pEvt.y = event.motion.y;
+			}
 			break;
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 			pEvt.type = PlatformEvent::Type::MouseButtonDown;
-			pEvt.x = event.button.x;
-			pEvt.y = event.button.y;
+			if (relativeMouseMode_) {
+				pEvt.isRelative = true;
+			} else {
+				pEvt.x = event.button.x;
+				pEvt.y = event.button.y;
+			}
 			break;
 		case SDL_EVENT_MOUSE_BUTTON_UP:
 			pEvt.type = PlatformEvent::Type::MouseButtonUp;
-			pEvt.x = event.button.x;
-			pEvt.y = event.button.y;
+			if (relativeMouseMode_) {
+				pEvt.isRelative = true;
+			} else {
+				pEvt.x = event.button.x;
+				pEvt.y = event.button.y;
+			}
 			break;
 		case SDL_EVENT_KEY_DOWN: {
 			uint8_t mkc = SDLScan2MacKeyCode(event.key.scancode);

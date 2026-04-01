@@ -63,8 +63,6 @@ private:
 	void convertFramebuffer(uint16_t top, uint16_t left,
 		uint16_t bottom, uint16_t right);
 	void mousePositionNotify(int newH, int newV);
-	bool moveMouse(int16_t h, int16_t v);
-	void mouseConstrain();
 	void grabMachine();
 	void ungrabMachine();
 	void forceShowCursor();
