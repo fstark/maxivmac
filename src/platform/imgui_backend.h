@@ -12,6 +12,7 @@
 #include "platform/platform_backend.h"
 #include "platform/imgui_model_selector.h"
 #include "platform/imgui_overlay.h"
+#include "platform/imgui_tool_registry.h"
 #include <SDL3/SDL.h>
 
 typedef unsigned int GLuint;
@@ -74,6 +75,9 @@ public:
 	   (no emulation texture, no emulator shell dependency). */
 	bool createSelectorWindow();
 
+	/* Tool registry for developer mode */
+	ToolRegistry& getToolRegistry() { return toolRegistry_; }
+
 private:
 	EmulatorShell* shell_ = nullptr;
 	SDL_Window* window_ = nullptr;
@@ -106,6 +110,9 @@ private:
 	ModelSelector modelSelector_;
 	void drawModelSelector();
 	void bootFromSelector(const LaunchConfig& config);
+
+	/* Tool registry for developer mode */
+	ToolRegistry toolRegistry_;
 
 	/* Per-state draw dispatchers */
 	void drawWindowedState();

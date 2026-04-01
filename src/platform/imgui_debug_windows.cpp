@@ -1,11 +1,9 @@
 /*
-	imgui_debug_windows.cpp — ImGui debug panels
-
-	Register viewer, disassembly listing, memory hex viewer,
-	and VIA state inspector.
+	imgui_debug_windows.cpp — Debug tool panel implementations
 */
 
 #include "platform/imgui_debug_windows.h"
+#include "platform/imgui_tool_registry.h"
 
 #include <imgui.h>
 
@@ -19,20 +17,13 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <memory>
 
-/* ── visibility toggles (accessible from menu) ─────── */
+/* ── RegistersTool ─────────────────────────────────── */
 
-bool g_showRegisters   = false;
-bool g_showDisassembly = false;
-bool g_showMemory      = false;
-bool g_showVIA         = false;
-
-/* ── Register Window ───────────────────────────────── */
-
-static void DrawRegisterWindow()
+void RegistersTool::draw()
 {
-	if (!g_showRegisters) return;
-	if (!ImGui::Begin("Registers", &g_showRegisters)) {
+	if (!ImGui::Begin(name(), &visible)) {
 		ImGui::End();
 		return;
 	}
@@ -46,7 +37,6 @@ static void DrawRegisterWindow()
 	ImGui::Text("SR  %04X", sr);
 	ImGui::Separator();
 
-	/* Flags */
 	ImGui::Text("Flags: %c%c%c%c%c  IPL=%d  %c%c",
 		(sr & 0x10) ? 'X' : '-',
 		(sr & 0x08) ? 'N' : '-',
@@ -58,7 +48,6 @@ static void DrawRegisterWindow()
 		(sr & 0x8000) ? 'T' : '-');
 	ImGui::Separator();
 
-	/* Data and address registers side by side */
 	if (ImGui::BeginTable("regs", 2)) {
 		ImGui::TableSetupColumn("Data");
 		ImGui::TableSetupColumn("Address");
@@ -82,12 +71,11 @@ static void DrawRegisterWindow()
 	ImGui::End();
 }
 
-/* ── Disassembly Window ────────────────────────────── */
+/* ── DisassemblyTool ───────────────────────────────── */
 
-static void DrawDisassemblyWindow()
+void DisassemblyTool::draw()
 {
-	if (!g_showDisassembly) return;
-	if (!ImGui::Begin("Disassembly", &g_showDisassembly)) {
+	if (!ImGui::Begin(name(), &visible)) {
 		ImGui::End();
 		return;
 	}
@@ -107,7 +95,6 @@ static void DrawDisassemblyWindow()
 	uint32_t pc = m68k_getPC_public();
 	uint32_t addr = followPC ? pc : disasmAddr;
 
-	/* Show ~32 lines of disassembly */
 	if (ImGui::BeginChild("disasm_listing", ImVec2(0, 0), ImGuiChildFlags_None,
 		ImGuiWindowFlags_HorizontalScrollbar))
 	{
@@ -133,12 +120,11 @@ static void DrawDisassemblyWindow()
 	ImGui::End();
 }
 
-/* ── Memory Viewer ─────────────────────────────────── */
+/* ── MemoryTool ────────────────────────────────────── */
 
-static void DrawMemoryWindow()
+void MemoryTool::draw()
 {
-	if (!g_showMemory) return;
-	if (!ImGui::Begin("Memory", &g_showMemory)) {
+	if (!ImGui::Begin(name(), &visible)) {
 		ImGui::End();
 		return;
 	}
@@ -166,7 +152,6 @@ static void DrawMemoryWindow()
 	if (ImGui::BeginChild("mem_hex", ImVec2(0, 0), ImGuiChildFlags_None,
 		ImGuiWindowFlags_HorizontalScrollbar))
 	{
-		/* Show enough rows to fill the window */
 		int rows = 32;
 		for (int r = 0; r < rows; ++r) {
 			uint32_t rowAddr = memAddr + (uint32_t)(r * bytesPerRow);
@@ -197,13 +182,12 @@ static void DrawMemoryWindow()
 	ImGui::End();
 }
 
-/* ── VIA State Window ──────────────────────────────── */
+/* ── VIATool ───────────────────────────────────────── */
 
-static void DrawVIAWindow()
+void VIATool::draw()
 {
-	if (!g_showVIA) return;
 	if (!g_machine) return;
-	if (!ImGui::Begin("VIA State", &g_showVIA)) {
+	if (!ImGui::Begin(name(), &visible)) {
 		ImGui::End();
 		return;
 	}
@@ -233,12 +217,12 @@ static void DrawVIAWindow()
 	ImGui::End();
 }
 
-/* ── Main entry point ──────────────────────────────── */
+/* ── Registration helper ───────────────────────────── */
 
-void DrawDebugWindows()
+void RegisterDebugTools(ToolRegistry& registry)
 {
-	DrawRegisterWindow();
-	DrawDisassemblyWindow();
-	DrawMemoryWindow();
-	DrawVIAWindow();
+	registry.registerTool(std::make_unique<RegistersTool>());
+	registry.registerTool(std::make_unique<DisassemblyTool>());
+	registry.registerTool(std::make_unique<MemoryTool>());
+	registry.registerTool(std::make_unique<VIATool>());
 }

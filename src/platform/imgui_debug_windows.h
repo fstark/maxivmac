@@ -1,10 +1,38 @@
 /*
-	imgui_debug_windows.h — ImGui debug window drawing routines
+	imgui_debug_windows.h — Debug tool panels
 
-	Provides register viewer, disassembly view, and memory viewer
-	for the ImGui backend.
+	ToolPanel implementations for Registers, Disassembly,
+	Memory, and VIA debug windows.
 */
 
 #pragma once
 
-void DrawDebugWindows();
+#include "platform/imgui_tool.h"
+
+class RegistersTool : public ToolPanel {
+public:
+	const char* name() const override { return "Registers"; }
+	void draw() override;
+};
+
+class DisassemblyTool : public ToolPanel {
+public:
+	const char* name() const override { return "Disassembly"; }
+	void draw() override;
+};
+
+class MemoryTool : public ToolPanel {
+public:
+	const char* name() const override { return "Memory"; }
+	void draw() override;
+};
+
+class VIATool : public ToolPanel {
+public:
+	const char* name() const override { return "VIA State"; }
+	void draw() override;
+};
+
+/* Register all debug tools with the given registry. */
+class ToolRegistry;
+void RegisterDebugTools(ToolRegistry& registry);

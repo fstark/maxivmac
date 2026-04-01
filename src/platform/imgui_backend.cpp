@@ -20,12 +20,6 @@
 extern void InitKeyCodes();
 extern bool g_requestMacOff;
 
-/* Debug window visibility toggles (defined in imgui_debug_windows.cpp) */
-extern bool g_showRegisters;
-extern bool g_showDisassembly;
-extern bool g_showMemory;
-extern bool g_showVIA;
-
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_opengl3.h>
@@ -228,9 +222,9 @@ void ImGuiBackend::drawWindowedState()
 		}
 	}
 
-	/* Debug windows only in Developer mode */
+	/* Debug tools only in Developer mode */
 	if (uiState_ == UIState::Developer)
-		DrawDebugWindows();
+		toolRegistry_.drawAllVisible();
 
 	ImGui::Render();
 
@@ -298,6 +292,9 @@ void ImGuiBackend::bootFromSelector(const LaunchConfig& config)
 		g_requestMacOff = true;
 		return;
 	}
+
+	/* Register debug tools now that the machine is initialized */
+	RegisterDebugTools(toolRegistry_);
 
 	uiState_ = UIState::Windowed;
 }
@@ -546,15 +543,14 @@ void ImGuiBackend::drawMenuBar()
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Machine")) {
+			if (ImGui::MenuItem("Windowed"))
+				enterWindowed();
 			if (ImGui::MenuItem("Fullscreen"))
-				shell_->toggleWantFullScreen();
+				enterFullscreen();
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Debug")) {
-			ImGui::MenuItem("Registers",   nullptr, &g_showRegisters);
-			ImGui::MenuItem("Disassembly", nullptr, &g_showDisassembly);
-			ImGui::MenuItem("Memory",      nullptr, &g_showMemory);
-			ImGui::MenuItem("VIA State",   nullptr, &g_showVIA);
+			toolRegistry_.drawToolMenu();
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
