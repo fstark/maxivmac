@@ -101,8 +101,10 @@ ModelSelectorResult ModelSelector::draw()
 	ImGui::SetNextWindowSize(displaySize);
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
 		| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
-		| ImGuiWindowFlags_NoSavedSettings;
+		| ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar
+		| ImGuiWindowFlags_NoScrollWithMouse;
 
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.50f, 0.50f, 0.50f, 1.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(40, 30));
 	if (ImGui::Begin("##ModelSelector", nullptr, flags)) {
 		if (selectedIndex_ < 0) {
@@ -113,6 +115,7 @@ ModelSelectorResult ModelSelector::draw()
 	}
 	ImGui::End();
 	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
 
 	/* Check if Boot was clicked (flag set by drawConfigPanel) */
 	if (bootClicked_ && selectedIndex_ >= 0 && selectedIndex_ < (int)models_.size()) {
@@ -171,7 +174,7 @@ void ModelSelector::drawModelGrid()
 	int cols = showAllModels_ ? 4 : 2;
 	float cardW = (avail - (cols - 1) * 16.0f) / cols;
 	if (cardW < 140.0f) { cols = 2; cardW = (avail - 16.0f) / 2; }
-	float cardH = showAllModels_ ? 80.0f : 120.0f;
+	float cardH = 120.0f;
 
 	/* Center the grid */
 	float totalW = cols * cardW + (cols - 1) * 16.0f;
@@ -199,7 +202,7 @@ void ModelSelector::drawModelGrid()
 
 		/* Draw card as a selectable child window */
 		ImVec2 cardSize(cardW, cardH);
-		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.18f, 0.18f, 0.22f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.35f, 0.35f, 0.38f, 1.0f));
 		ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 8.0f);
 		ImGui::BeginChild("card", cardSize, ImGuiChildFlags_Borders);
 		{
@@ -207,7 +210,7 @@ void ModelSelector::drawModelGrid()
 
 			/* Placeholder icon: colored square */
 			ImVec2 iconPos = ImGui::GetCursorScreenPos();
-			float iconSize = showAllModels_ ? 32.0f : 48.0f;
+			float iconSize = 48.0f;
 			ImGui::SetCursorPosX((cardW - iconSize) * 0.5f);
 			ImU32 iconColor = disabled
 				? IM_COL32(80, 80, 80, 255)
@@ -237,7 +240,7 @@ void ModelSelector::drawModelGrid()
 			ImGui::Text("%s", entry.displayName);
 
 			/* Description (centered, smaller) */
-			if (!showAllModels_) {
+			{
 				float descW = ImGui::CalcTextSize(entry.description).x;
 				ImGui::SetCursorPosX((cardW - descW) * 0.5f);
 				ImGui::TextDisabled("%s", entry.description);

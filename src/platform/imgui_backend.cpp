@@ -107,20 +107,24 @@ void ImGuiBackend::runLoop()
 				continue;
 			}
 
+			/* Intercept Ctrl key for overlay — must happen before
+			   imGuiConsumedEvent() which would eat it when
+			   WantCaptureKeyboard is set. */
+			if (event.type == SDL_EVENT_KEY_DOWN &&
+				(event.key.scancode == SDL_SCANCODE_LCTRL ||
+				 event.key.scancode == SDL_SCANCODE_RCTRL)) {
+				overlayVisible_ = true;
+				SDL_ShowCursor();
+				continue; /* don't forward to emulator */
+			}
+			if (event.type == SDL_EVENT_KEY_UP &&
+				(event.key.scancode == SDL_SCANCODE_LCTRL ||
+				 event.key.scancode == SDL_SCANCODE_RCTRL)) {
+				overlayVisible_ = false;
+				continue;
+			}
+
 			if (!imGuiConsumedEvent(event)) {
-				/* Intercept Ctrl key for overlay */
-				if (event.type == SDL_EVENT_KEY_DOWN &&
-					(event.key.scancode == SDL_SCANCODE_LCTRL ||
-					 event.key.scancode == SDL_SCANCODE_RCTRL)) {
-					overlayVisible_ = true;
-					continue; /* don't forward to emulator */
-				}
-				if (event.type == SDL_EVENT_KEY_UP &&
-					(event.key.scancode == SDL_SCANCODE_LCTRL ||
-					 event.key.scancode == SDL_SCANCODE_RCTRL)) {
-					overlayVisible_ = false;
-					continue;
-				}
 				/* When overlay is visible, don't forward to emulator */
 				if (overlayVisible_)
 					continue;
@@ -150,7 +154,7 @@ void ImGuiBackend::runLoop()
 				int displayW, displayH;
 				SDL_GetWindowSizeInPixels(window_, &displayW, &displayH);
 				glViewport(0, 0, displayW, displayH);
-				glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
+				glClearColor(0.50f, 0.50f, 0.50f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT);
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 				SDL_GL_SwapWindow(window_);
@@ -459,7 +463,7 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event& event)
 			} else {
 				bool inside = mouseInEmuView(event.motion.x, event.motion.y,
 					pEvt.x, pEvt.y);
-				if (inside) {
+				if (inside && !overlayVisible_) {
 					pEvt.type = PlatformEvent::Type::MouseMove;
 					SDL_HideCursor();
 				} else {
@@ -620,14 +624,19 @@ void ImGuiBackend::drawEmulatorViewport()
 		ImGui::End();
 		ImGui::PopStyleColor();
 	} else {
-		/* Windowed / Developer: fixed-size viewport */
+		/* Windowed / Developer: fixed-size viewport pinned to origin */
 		ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize
 			| ImGuiWindowFlags_AlwaysAutoResize
-			| ImGuiWindowFlags_NoScrollbar;
+			| ImGuiWindowFlags_NoScrollbar
+			| ImGuiWindowFlags_NoMove
+			| ImGuiWindowFlags_NoBringToFrontOnFocus
+			| ImGuiWindowFlags_NoSavedSettings;
 		if (uiState_ == UIState::Windowed) {
-			/* In windowed mode, no title bar either */
-			flags |= ImGuiWindowFlags_NoTitleBar;
+			/* In windowed mode, no title bar — just the Mac screen */
+			flags |= ImGuiWindowFlags_NoTitleBar
+				| ImGuiWindowFlags_NoCollapse;
 		}
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		if (ImGui::Begin("Macintosh", nullptr, flags)) {
 			/* Snap the image origin to physical pixel boundaries */
 			ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -651,11 +660,17 @@ void ImGuiBackend::drawEmulatorViewport()
 bool ImGuiBackend::createWindow(const char* title,
 	int width, int height, bool fullscreen)
 {
-	/* Size the window to fit the emulator display plus ImGui chrome.
-	   The incoming width/height may already be magnified (e.g. 2x),
-	   so just add modest extra space rather than doubling. */
-	int winW = width + 200;
-	int winH = height + 200;
+	/* In Windowed mode the window should be exactly the emulator's
+	   screen size so it feels like the original Mac.  In Developer
+	   mode we add extra space for debug panels. */
+	int winW, winH;
+	if (uiState_ == UIState::Developer) {
+		winW = width + 200;
+		winH = height + 200;
+	} else {
+		winW = width;
+		winH = height;
+	}
 
 	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
 		| SDL_WINDOW_HIGH_PIXEL_DENSITY;
