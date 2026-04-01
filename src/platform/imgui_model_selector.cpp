@@ -200,11 +200,13 @@ void ModelSelector::drawModelGrid()
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.35f);
 		}
 
-		/* Draw card as a selectable child window */
+		/* Draw card as a child window — transparent by default,
+		   white highlight on hover. */
 		ImVec2 cardSize(cardW, cardH);
-		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.35f, 0.35f, 0.38f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
 		ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 8.0f);
-		ImGui::BeginChild("card", cardSize, ImGuiChildFlags_Borders,
+		ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+		ImGui::BeginChild("card", cardSize, ImGuiChildFlags_None,
 			ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		{
 			ImGui::Spacing();
@@ -248,10 +250,19 @@ void ModelSelector::drawModelGrid()
 			}
 		}
 
-		/* Detect click on the child window */
+		/* Detect hover and click */
 		bool hovered = ImGui::IsWindowHovered();
 		ImGui::EndChild();
-		ImGui::PopStyleVar(); /* ChildRounding */
+
+		/* Draw white hover highlight behind the card */
+		if (hovered && !disabled) {
+			ImVec2 rMin = ImGui::GetItemRectMin();
+			ImVec2 rMax = ImGui::GetItemRectMax();
+			ImGui::GetWindowDrawList()->AddRectFilled(
+				rMin, rMax, IM_COL32(255, 255, 255, 40), 8.0f);
+		}
+
+		ImGui::PopStyleVar(2); /* ChildRounding, ChildBorderSize */
 		ImGui::PopStyleColor(); /* ChildBg */
 
 		if (hovered && !disabled && ImGui::IsMouseClicked(0)) {
