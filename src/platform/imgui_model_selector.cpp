@@ -178,7 +178,7 @@ void ModelSelector::drawModelGrid()
 	float gap = 16.0f;
 	float cardW = (avail - (cols - 1) * gap) / cols;
 	if (cardW < 120.0f) { cols = 3; cardW = (avail - (cols - 1) * gap) / cols; }
-	float cardH = 90.0f;
+	float cardH = 120.0f;
 
 	float totalW = cols * cardW + (cols - 1) * gap;
 	float offsetX = (avail - totalW) * 0.5f;
@@ -203,6 +203,26 @@ void ModelSelector::drawModelGrid()
 		ImGui::BeginChild("card", ImVec2(cardW, cardH), ImGuiChildFlags_None,
 			ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		{
+			/* Icon: colored square with initial letter */
+			float iconSize = 32.0f;
+			ImGui::SetCursorPosX((cardW - iconSize) * 0.5f);
+			ImVec2 iconPos = ImGui::GetCursorScreenPos();
+			ImU32 iconColor = disabled
+				? IM_COL32(80, 80, 80, 255)
+				: IM_COL32(100, 149, 237, 255);
+			ImGui::GetWindowDrawList()->AddRectFilled(
+				iconPos,
+				ImVec2(iconPos.x + iconSize, iconPos.y + iconSize),
+				iconColor, 6.0f);
+			char initial[2] = { entry.displayName[0], 0 };
+			ImVec2 letterSize = ImGui::CalcTextSize(initial);
+			ImGui::GetWindowDrawList()->AddText(
+				ImVec2(iconPos.x + (iconSize - letterSize.x) * 0.5f,
+				       iconPos.y + (iconSize - letterSize.y) * 0.5f),
+				IM_COL32(255, 255, 255, 255), initial);
+			ImGui::Dummy(ImVec2(iconSize, iconSize));
+			ImGui::Spacing();
+
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
 
 			/* Line 1: Model name (centered) */
