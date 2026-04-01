@@ -114,6 +114,23 @@ void ImGuiBackend::runLoop()
 			}
 
 			if (!imGuiConsumedEvent(event)) {
+				/* Intercept Ctrl key for overlay */
+				if (event.type == SDL_EVENT_KEY_DOWN &&
+					(event.key.scancode == SDL_SCANCODE_LCTRL ||
+					 event.key.scancode == SDL_SCANCODE_RCTRL)) {
+					overlayVisible_ = true;
+					continue; /* don't forward to emulator */
+				}
+				if (event.type == SDL_EVENT_KEY_UP &&
+					(event.key.scancode == SDL_SCANCODE_LCTRL ||
+					 event.key.scancode == SDL_SCANCODE_RCTRL)) {
+					overlayVisible_ = false;
+					continue;
+				}
+				/* When overlay is visible, don't forward to emulator */
+				if (overlayVisible_)
+					continue;
+
 				PlatformEvent pe = translateSdlEvent(event);
 				if (pe.type != PlatformEvent::Type::None)
 					shell_->dispatchEvent(pe);
@@ -195,6 +212,22 @@ void ImGuiBackend::drawWindowedState()
 		drawMenuBar();
 
 	drawEmulatorViewport();
+
+	/* Control overlay (Ctrl key held) */
+	if (overlayVisible_) {
+		UIState requested = uiState_;
+		overlay_.draw(uiState_, shell_, requested);
+		if (requested != uiState_) {
+			switch (requested) {
+			case UIState::Windowed:   enterWindowed(); break;
+			case UIState::Fullscreen: enterFullscreen(); break;
+			case UIState::Developer:  enterDeveloper(); break;
+			default: break;
+			}
+			overlayVisible_ = false;
+		}
+	}
+
 	DrawDebugWindows();
 
 	ImGui::Render();

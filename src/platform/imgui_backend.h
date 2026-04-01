@@ -11,6 +11,7 @@
 
 #include "platform/platform_backend.h"
 #include "platform/imgui_model_selector.h"
+#include "platform/imgui_overlay.h"
 #include <SDL3/SDL.h>
 
 typedef unsigned int GLuint;
@@ -86,6 +87,10 @@ private:
 
 	/* UI state */
 	UIState uiState_ = UIState::ModelSelector;
+	bool    overlayVisible_ = false;
+
+	/* Overlay */
+	ControlOverlay overlay_;
 
 	/* Saved window geometry for returning from fullscreen/developer */
 	int savedWinX_ = 0, savedWinY_ = 0;
