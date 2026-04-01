@@ -14,6 +14,14 @@
 
 typedef unsigned int GLuint;
 
+/* UI state machine — determines what the backend draws each frame. */
+enum class UIState {
+	ModelSelector,   // Pre-boot: user picks a model + config
+	Windowed,        // Running emulation in a window (no chrome)
+	Fullscreen,      // Running emulation fullscreen
+	Developer,       // Running emulation + dockable debug tools
+};
+
 class ImGuiBackend : public PlatformBackend {
 public:
 	ImGuiBackend() = default;
@@ -53,6 +61,17 @@ public:
 	char* getPrefDir(const char* org, const char* app) override;
 	void freePath(void* path) override;
 
+	/* UI state transitions */
+	void setUIState(UIState state) { uiState_ = state; }
+	UIState getUIState() const { return uiState_; }
+	void enterWindowed();
+	void enterFullscreen();
+	void enterDeveloper();
+
+	/* Pre-boot window: create a window suitable for the model selector
+	   (no emulation texture, no emulator shell dependency). */
+	bool createSelectorWindow();
+
 private:
 	EmulatorShell* shell_ = nullptr;
 	SDL_Window* window_ = nullptr;
@@ -64,11 +83,26 @@ private:
 	float emuViewOriginY_ = 0;
 	bool relativeMouseMode_ = false;
 
+	/* UI state */
+	UIState uiState_ = UIState::ModelSelector;
+
+	/* Saved window geometry for returning from fullscreen/developer */
+	int savedWinX_ = 0, savedWinY_ = 0;
+	int savedWinW_ = 0, savedWinH_ = 0;
+
 	PlatformEvent translateSdlEvent(SDL_Event& event);
 	bool imGuiConsumedEvent(const SDL_Event& event) const;
 	void uploadFramebuffer();
 	void drawMenuBar();
 	void drawEmulatorViewport();
+
+	/* Model selector (pre-boot) — stub until Phase 2 */
+	void drawModelSelector();
+
+	/* Per-state draw dispatchers */
+	void drawWindowedState();
+	void drawFullscreenState();
+	void drawDeveloperState();
 };
 
 #endif /* IMGUI_BACKEND_H */

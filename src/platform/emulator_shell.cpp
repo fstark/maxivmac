@@ -142,6 +142,13 @@ EmulatorShell::~EmulatorShell()
 
 bool EmulatorShell::init(int argc, char** argv)
 {
+	if (!initPlatform(argc, argv)) return false;
+	if (!initMachine()) return false;
+	return true;
+}
+
+bool EmulatorShell::initPlatform(int argc, char** argv)
+{
 	argc_ = argc;
 	argv_ = argv;
 	g_shell = this;
@@ -169,14 +176,22 @@ bool EmulatorShell::init(int argc, char** argv)
 		rom_path = const_cast<char*>(s_resolvedRom.c_str());
 	}
 
-	/* Initialize */
+	/* Initialize paths and drives */
 	zapWinStateVars();
 	InitDrives();
 
 	if (!backend_->init(this)) return false;
-	if (!allocMyMemory()) return false;
 	if (!initWhereAmI()) return false;
 	dbglog_open();
+
+	return true;
+}
+
+bool EmulatorShell::initMachine()
+{
+	const LaunchConfig& lc = GetLaunchConfig();
+
+	if (!allocMyMemory()) return false;
 	if (!scanCommandLine()) return false;
 	if (!LoadMacRom(d_arg_, app_parent, pref_dir_)) return false;
 	if (!loadInitialImages()) return false;
@@ -197,6 +212,7 @@ bool EmulatorShell::init(int argc, char** argv)
 		calloc(vMacScreenWidth * vMacScreenHeight * 4, 1));
 	if (!argbBuffer_) return false;
 
+	machineInited_ = true;
 	return true;
 }
 
@@ -737,7 +753,9 @@ bool EmulatorShell::reCreateMainWindow()
 	}
 
 	if (HadCursorHidden) {
-		(void) moveMouse(g_curMouseH, g_curMouseV);
+		/* Cursor was hidden before recreate — re-hide it.
+		   Position will update from the next mouse event. */
+		wantCursorHidden_ = true;
 	}
 
 	return true;

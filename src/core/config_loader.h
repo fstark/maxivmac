@@ -15,6 +15,7 @@
 
 struct LaunchConfig {
 	MacModel model      = MacModel::II;
+	bool     modelExplicit = false; // true only if --model was passed
 	std::string romPath;
 	std::vector<std::string> diskPaths;
 	uint32_t ramMB      = 0;   // 0 = use model default

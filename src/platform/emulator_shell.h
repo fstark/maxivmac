@@ -19,6 +19,16 @@ public:
 
 	/* --- Lifecycle --- */
 	bool init(int argc, char** argv);
+
+	/* Two-phase init for the model selector flow:
+	   initPlatform() sets up backend, window, paths — no emulation.
+	   initMachine() does everything else (ROM, RAM, devices, boot).
+	   The old init() is equivalent to initPlatform() + initMachine(). */
+	bool initPlatform(int argc, char** argv);
+	bool initMachine();
+
+	bool isMachineInited() const { return machineInited_; }
+
 	void shutdown();
 
 	/* --- Event dispatch (from backend) --- */
@@ -122,6 +132,9 @@ private:
 	/* --- Framebuffer --- */
 	uint8_t* argbBuffer_ = nullptr;
 	bool framebufferDirty_ = false;
+
+	/* --- Init state --- */
+	bool machineInited_ = false;
 };
 
 /* Global shell pointer for free-function wrappers. */

@@ -1,8 +1,9 @@
 /*
 	imgui_main.cpp — entry point for ImGui backend
 
-	Same structure as app_main.cpp but creates an ImGuiBackend
-	instead of SdlBackend.
+	Two-phase init:
+	- Without --model: platform init only → model selector UI
+	- With --model: full init → emulation starts immediately
 */
 
 #include "platform/imgui_backend.h"
@@ -18,10 +19,27 @@ int main(int argc, char** argv)
 	ImGuiBackend backend;
 	EmulatorShell shell(&backend);
 
-	if (!shell.init(argc, argv)) {
-		shell.shutdown();
-		ProgramCleanup();
-		return 1;
+	if (lc.modelExplicit) {
+		/* Model specified on command line — full init, boot directly */
+		if (!shell.init(argc, argv)) {
+			shell.shutdown();
+			ProgramCleanup();
+			return 1;
+		}
+		backend.setUIState(UIState::Windowed);
+	} else {
+		/* No model — platform init only, show model selector */
+		if (!shell.initPlatform(argc, argv)) {
+			shell.shutdown();
+			ProgramCleanup();
+			return 1;
+		}
+		if (!backend.createSelectorWindow()) {
+			shell.shutdown();
+			ProgramCleanup();
+			return 1;
+		}
+		backend.setUIState(UIState::ModelSelector);
 	}
 
 	backend.runLoop();

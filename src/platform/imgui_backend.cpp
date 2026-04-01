@@ -91,11 +91,27 @@ void ImGuiBackend::runLoop()
 {
 	if (!shell_) return;
 
-	while (!shell_->shouldQuit()) {
+	/* In ModelSelector state, shouldQuit() would crash (no machine).
+	   Use g_forceMacOff directly when machine isn't inited. */
+	auto wantQuit = [this]() -> bool {
+		if (shell_->isMachineInited())
+			return shell_->shouldQuit();
+		return g_requestMacOff;
+	};
+
+	while (!wantQuit()) {
 		/* 1. Poll SDL events — feed to ImGui first */
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			ImGui_ImplSDL3_ProcessEvent(&event);
+
+			/* In ModelSelector state, only handle quit events */
+			if (uiState_ == UIState::ModelSelector) {
+				if (event.type == SDL_EVENT_QUIT)
+					g_requestMacOff = true;
+				continue;
+			}
+
 			if (!imGuiConsumedEvent(event)) {
 				PlatformEvent pe = translateSdlEvent(event);
 				if (pe.type != PlatformEvent::Type::None)
@@ -103,55 +119,213 @@ void ImGuiBackend::runLoop()
 			}
 		}
 
-		/* 2. Process saved tasks (disk inserts etc.) */
-		shell_->processSavedTasks();
-		if (shell_->shouldQuit()) break;
+		/* Branch on UI state */
+		switch (uiState_) {
+		case UIState::ModelSelector:
+			/* No emulation ticks — just draw the selector UI */
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplSDL3_NewFrame();
+			ImGui::NewFrame();
 
-		/* 3. Handle speed-stopped state */
-		if (shell_->isSpeedStopped()) {
-			SDL_Event waitEvt;
-			if (SDL_WaitEvent(&waitEvt)) {
-				ImGui_ImplSDL3_ProcessEvent(&waitEvt);
-				if (!imGuiConsumedEvent(waitEvt)) {
-					PlatformEvent pe = translateSdlEvent(waitEvt);
-					if (pe.type != PlatformEvent::Type::None)
-						shell_->dispatchEvent(pe);
-				}
+			drawModelSelector();
+
+			ImGui::Render();
+			{
+				int displayW, displayH;
+				SDL_GetWindowSizeInPixels(window_, &displayW, &displayH);
+				glViewport(0, 0, displayW, displayH);
+				glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
+				glClear(GL_COLOR_BUFFER_BIT);
+				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+				SDL_GL_SwapWindow(window_);
 			}
-			continue;
+			SDL_Delay(16); /* ~60 fps for UI */
+			break;
+
+		case UIState::Windowed:
+		case UIState::Fullscreen:
+		case UIState::Developer:
+			drawWindowedState();
+			break;
 		}
-
-		/* 4. Run emulation ticks */
-		if (!shell_->tickIsDue()) {
-			SDL_Delay(shell_->getDelayMs());
-			continue;
-		}
-		while (shell_->tickIsDue() && !shell_->shouldQuit())
-			shell_->runOneTick();
-
-		/* 5. Upload emulator framebuffer to GL texture */
-		uploadFramebuffer();
-
-		/* 6. ImGui frame */
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL3_NewFrame();
-		ImGui::NewFrame();
-
-		drawMenuBar();
-		drawEmulatorViewport();
-		DrawDebugWindows();
-
-		ImGui::Render();
-
-		/* 7. Render */
-		int displayW, displayH;
-		SDL_GetWindowSizeInPixels(window_, &displayW, &displayH);
-		glViewport(0, 0, displayW, displayH);
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		SDL_GL_SwapWindow(window_);
 	}
+}
+
+/* ── Per-state draw paths ────────────────────────────── */
+
+void ImGuiBackend::drawWindowedState()
+{
+	/* Process saved tasks (disk inserts etc.) */
+	shell_->processSavedTasks();
+	if (shell_->shouldQuit()) return;
+
+	/* Handle speed-stopped state */
+	if (shell_->isSpeedStopped()) {
+		SDL_Event waitEvt;
+		if (SDL_WaitEvent(&waitEvt)) {
+			ImGui_ImplSDL3_ProcessEvent(&waitEvt);
+			if (!imGuiConsumedEvent(waitEvt)) {
+				PlatformEvent pe = translateSdlEvent(waitEvt);
+				if (pe.type != PlatformEvent::Type::None)
+					shell_->dispatchEvent(pe);
+			}
+		}
+		return;
+	}
+
+	/* Run emulation ticks */
+	if (!shell_->tickIsDue()) {
+		SDL_Delay(shell_->getDelayMs());
+		return;
+	}
+	while (shell_->tickIsDue() && !shell_->shouldQuit())
+		shell_->runOneTick();
+
+	/* Upload emulator framebuffer to GL texture */
+	uploadFramebuffer();
+
+	/* ImGui frame */
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplSDL3_NewFrame();
+	ImGui::NewFrame();
+
+	/* Only show menu bar in Developer state */
+	if (uiState_ == UIState::Developer)
+		drawMenuBar();
+
+	drawEmulatorViewport();
+	DrawDebugWindows();
+
+	ImGui::Render();
+
+	/* Render */
+	int displayW, displayH;
+	SDL_GetWindowSizeInPixels(window_, &displayW, &displayH);
+	glViewport(0, 0, displayW, displayH);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	SDL_GL_SwapWindow(window_);
+}
+
+void ImGuiBackend::drawFullscreenState()
+{
+	/* Placeholder — will be implemented in Phase 4 */
+	drawWindowedState();
+}
+
+void ImGuiBackend::drawDeveloperState()
+{
+	/* Placeholder — will be implemented in Phase 5 */
+	drawWindowedState();
+}
+
+/* ── Model selector (stub) ───────────────────────────── */
+
+void ImGuiBackend::drawModelSelector()
+{
+	/* Stub — will be fully implemented in Phase 2.
+	   For now, display a placeholder. */
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+	ImGui::SetNextWindowSize(displaySize);
+	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
+		| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+	if (ImGui::Begin("##ModelSelector", nullptr, flags)) {
+		float textW = ImGui::CalcTextSize("Maxi vMac").x;
+		ImGui::SetCursorPosX((displaySize.x - textW) * 0.5f);
+		ImGui::SetCursorPosY(displaySize.y * 0.3f);
+		ImGui::Text("Maxi vMac");
+		ImGui::Spacing();
+		float txt2W = ImGui::CalcTextSize("Model selector coming soon...").x;
+		ImGui::SetCursorPosX((displaySize.x - txt2W) * 0.5f);
+		ImGui::Text("Model selector coming soon...");
+		ImGui::Spacing();
+		float txt3W = ImGui::CalcTextSize("Launch with --model=MacPlus to run directly").x;
+		ImGui::SetCursorPosX((displaySize.x - txt3W) * 0.5f);
+		ImGui::TextDisabled("Launch with --model=MacPlus to run directly");
+	}
+	ImGui::End();
+}
+
+/* ── State transitions ───────────────────────────────── */
+
+void ImGuiBackend::enterWindowed()
+{
+	if (uiState_ == UIState::Fullscreen) {
+		SDL_SetWindowFullscreen(window_, false);
+		if (savedWinW_ > 0 && savedWinH_ > 0) {
+			SDL_SetWindowSize(window_, savedWinW_, savedWinH_);
+			SDL_SetWindowPosition(window_, savedWinX_, savedWinY_);
+		}
+	}
+	uiState_ = UIState::Windowed;
+}
+
+void ImGuiBackend::enterFullscreen()
+{
+	if (uiState_ != UIState::Fullscreen) {
+		SDL_GetWindowPosition(window_, &savedWinX_, &savedWinY_);
+		SDL_GetWindowSize(window_, &savedWinW_, &savedWinH_);
+		SDL_SetWindowFullscreen(window_, true);
+	}
+	uiState_ = UIState::Fullscreen;
+}
+
+void ImGuiBackend::enterDeveloper()
+{
+	if (uiState_ != UIState::Developer) {
+		SDL_GetWindowPosition(window_, &savedWinX_, &savedWinY_);
+		SDL_GetWindowSize(window_, &savedWinW_, &savedWinH_);
+		/* Expand to a larger window for developer tools */
+		PlatformDisplayBounds bounds;
+		int devW = 1400, devH = 900;
+		if (getDisplayBounds(&bounds)) {
+			devW = (int)(bounds.w * 0.8f);
+			devH = (int)(bounds.h * 0.8f);
+		}
+		SDL_SetWindowSize(window_, devW, devH);
+		SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED,
+			SDL_WINDOWPOS_CENTERED);
+	}
+	uiState_ = UIState::Developer;
+}
+
+/* ── Selector window (pre-boot) ──────────────────────── */
+
+bool ImGuiBackend::createSelectorWindow()
+{
+	/* Create a modest window for the model selector, no emulation
+	   texture needed yet. */
+	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+		| SDL_WINDOW_HIGH_PIXEL_DENSITY;
+
+	window_ = SDL_CreateWindow("Maxi vMac", 700, 500, flags);
+	if (!window_) {
+		fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
+		return false;
+	}
+
+	glContext_ = SDL_GL_CreateContext(window_);
+	if (!glContext_) {
+		fprintf(stderr, "SDL_GL_CreateContext failed: %s\n", SDL_GetError());
+		return false;
+	}
+	SDL_GL_MakeCurrent(window_, glContext_);
+	SDL_GL_SetSwapInterval(1);
+
+	/* Initialize ImGui */
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigWindowsMoveFromTitleBarOnly = true;
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplSDL3_InitForOpenGL(window_, glContext_);
+	ImGui_ImplOpenGL3_Init("#version 150");
+
+	return true;
 }
 
 /* ── event translation ───────────────────────────────── */

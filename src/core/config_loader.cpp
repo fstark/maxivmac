@@ -164,6 +164,7 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			MacModel m;
 			if (ParseModelName(arg + 8, m)) {
 				lc.model = m;
+				lc.modelExplicit = true;
 			} else {
 				fprintf(stderr, "Warning: unknown model '%s', using default (MacII)\n", arg + 8);
 			}
@@ -255,6 +256,7 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 			MacModel m;
 			if (ParseModelName(argv[++i], m)) {
 				lc.model = m;
+				lc.modelExplicit = true;
 			} else {
 				fprintf(stderr, "Warning: unknown model '%s', using default (MacII)\n", argv[i]);
 			}
