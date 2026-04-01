@@ -31,8 +31,9 @@ private:
 	struct ModelEntry {
 		MacModel    model;
 		const char* displayName;
-		const char* description;
-		bool        featured;       // shown in main grid
+		const char* cpu;
+		const char* ram;
+		const char* resolution;
 		bool        romAvailable;
 		std::string romPath;        // resolved path (empty if missing)
 	};
@@ -43,7 +44,6 @@ private:
 
 	std::vector<ModelEntry> models_;
 	int  selectedIndex_ = -1;       // -1 = grid view, >= 0 = config view
-	bool showAllModels_ = false;
 
 	/* Config panel state */
 	int         ramChoice_ = 0;

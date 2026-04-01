@@ -12,23 +12,24 @@
 struct ModelInfo {
 	MacModel    model;
 	const char* displayName;
-	const char* description;
-	bool        featured;
+	const char* cpu;
+	const char* ram;
+	const char* resolution;
 };
 
 static const ModelInfo kModelTable[] = {
-	{ MacModel::Mac128K,  "Macintosh 128K",  "68000, 128 KB RAM, 512\xc3\x97" "342",        true  },
-	{ MacModel::Plus,     "Macintosh Plus",   "68000, 4 MB RAM, 512\xc3\x97" "342",          true  },
-	{ MacModel::SE,       "Macintosh SE",     "68000, 4 MB RAM, ADB, 512\xc3\x97" "342",     true  },
-	{ MacModel::II,       "Macintosh II",     "68020, 8 MB RAM, 640\xc3\x97" "480 color",    true  },
-	{ MacModel::Twig43,   "Twig43",           "Prototype, 68000, 128 KB",                     false },
-	{ MacModel::Twiggy,   "Twiggy",           "Prototype, 68000, 128 KB",                     false },
-	{ MacModel::Mac512Ke, "Macintosh 512Ke",  "68000, 512 KB RAM, 512\xc3\x97" "342",        false },
-	{ MacModel::Kanji,    "Mac Plus Kanji",   "68000, 4 MB RAM, Japanese ROM",                false },
-	{ MacModel::SEFDHD,   "Macintosh SE FDHD","68000, 4 MB RAM, SuperDrive",                  false },
-	{ MacModel::Classic,  "Macintosh Classic", "68000, 4 MB RAM, System in ROM",              false },
-	{ MacModel::PB100,    "PowerBook 100",    "68000, 4 MB RAM, 640\xc3\x97" "400",          false },
-	{ MacModel::IIx,      "Macintosh IIx",    "68030, 8 MB RAM, 640\xc3\x97" "480 color",    false },
+	{ MacModel::Twig43,   "Twig43",            "68000", "128 KB RAM",  "512x342"          },
+	{ MacModel::Twiggy,   "Twiggy",            "68000", "128 KB RAM",  "512x342"          },
+	{ MacModel::Mac128K,  "Macintosh 128K",    "68000", "128 KB RAM",  "512x342"          },
+	{ MacModel::Mac512Ke, "Macintosh 512Ke",   "68000", "512 KB RAM",  "512x342"          },
+	{ MacModel::Plus,     "Macintosh Plus",     "68000", "4 MB RAM",   "512x342"          },
+	{ MacModel::Kanji,    "Mac Plus Kanji",     "68000", "4 MB RAM",   "512x342"          },
+	{ MacModel::SE,       "Macintosh SE",       "68000", "4 MB RAM",   "512x342"          },
+	{ MacModel::SEFDHD,   "Macintosh SE FDHD",  "68000", "4 MB RAM",  "512x342"          },
+	{ MacModel::Classic,  "Macintosh Classic",   "68000", "4 MB RAM",  "512x342"          },
+	{ MacModel::PB100,    "PowerBook 100",       "68000", "4 MB RAM",  "640x400"          },
+	{ MacModel::II,       "Macintosh II",        "68020", "8 MB RAM",  "640x480 color"    },
+	{ MacModel::IIx,      "Macintosh IIx",       "68030", "8 MB RAM",  "640x480 color"    },
 };
 static constexpr int kModelCount = sizeof(kModelTable) / sizeof(kModelTable[0]);
 
@@ -84,8 +85,9 @@ void ModelSelector::buildModelList(const std::string& romDir)
 		ModelEntry e;
 		e.model       = kModelTable[i].model;
 		e.displayName = kModelTable[i].displayName;
-		e.description = kModelTable[i].description;
-		e.featured    = kModelTable[i].featured;
+		e.cpu         = kModelTable[i].cpu;
+		e.ram         = kModelTable[i].ram;
+		e.resolution  = kModelTable[i].resolution;
 		e.romPath     = ResolveRomPath("", e.model, romDir);
 		e.romAvailable = !e.romPath.empty();
 		models_.push_back(e);
@@ -157,121 +159,89 @@ void ModelSelector::drawModelGrid()
 {
 	/* Title */
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
-	ImGui::PushFont(nullptr); /* use default for now */
 	{
 		const char* title = "Maxi vMac";
 		float titleW = ImGui::CalcTextSize(title).x;
 		ImGui::SetCursorPosX((ImGui::GetContentRegionAvail().x - titleW) * 0.5f);
 		ImGui::Text("%s", title);
 	}
-	ImGui::PopFont();
 	ImGui::PopStyleColor();
 	ImGui::Spacing();
+	ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.3f, 0.3f, 0.3f, 1));
 	ImGui::Separator();
+	ImGui::PopStyleColor();
 	ImGui::Spacing();
 	ImGui::Spacing();
 
-	/* Determine which models to show */
 	float avail = ImGui::GetContentRegionAvail().x;
-	int cols = showAllModels_ ? 4 : 2;
-	float cardW = (avail - (cols - 1) * 16.0f) / cols;
-	if (cardW < 140.0f) { cols = 2; cardW = (avail - 16.0f) / 2; }
-	float cardH = 120.0f;
+	int cols = 4;
+	float gap = 16.0f;
+	float cardW = (avail - (cols - 1) * gap) / cols;
+	if (cardW < 120.0f) { cols = 3; cardW = (avail - (cols - 1) * gap) / cols; }
+	float cardH = 90.0f;
 
-	/* Center the grid */
-	float totalW = cols * cardW + (cols - 1) * 16.0f;
+	float totalW = cols * cardW + (cols - 1) * gap;
 	float offsetX = (avail - totalW) * 0.5f;
 	if (offsetX > 0) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
 
 	int col = 0;
-	int modelIdx = 0;
-	for (auto& entry : models_) {
-		if (!showAllModels_ && !entry.featured) {
-			++modelIdx;
-			continue;
-		}
+	for (int i = 0; i < (int)models_.size(); ++i) {
+		auto& entry = models_[i];
 
 		if (col > 0)
-			ImGui::SameLine(0, 16.0f);
+			ImGui::SameLine(0, gap);
 
-		ImGui::PushID(modelIdx);
+		ImGui::PushID(i);
 
-		/* Card styling */
 		bool disabled = !entry.romAvailable;
-		if (disabled) {
+		if (disabled)
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.35f);
-		}
 
-		/* Draw card as a child window — transparent by default,
-		   white highlight on hover. */
-		ImVec2 cardSize(cardW, cardH);
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
 		ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 8.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
-		ImGui::BeginChild("card", cardSize, ImGuiChildFlags_None,
+		ImGui::BeginChild("card", ImVec2(cardW, cardH), ImGuiChildFlags_None,
 			ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		{
-			ImGui::Spacing();
-
-			/* Placeholder icon: colored square */
-			ImVec2 iconPos = ImGui::GetCursorScreenPos();
-			float iconSize = 48.0f;
-			ImGui::SetCursorPosX((cardW - iconSize) * 0.5f);
-			ImU32 iconColor = disabled
-				? IM_COL32(80, 80, 80, 255)
-				: (entry.featured
-					? IM_COL32(100, 149, 237, 255)
-					: IM_COL32(120, 120, 140, 255));
-			iconPos = ImGui::GetCursorScreenPos();
-			ImGui::GetWindowDrawList()->AddRectFilled(
-				iconPos,
-				ImVec2(iconPos.x + iconSize, iconPos.y + iconSize),
-				iconColor, 6.0f);
-			/* Initial letter */
-			char initial[2] = { entry.displayName[0], 0 };
-			if (entry.displayName[0] == 'M' && entry.displayName[10] != 0)
-				initial[0] = entry.displayName[10]; // Use distinguishing char
-			ImVec2 letterSize = ImGui::CalcTextSize(initial);
-			ImGui::GetWindowDrawList()->AddText(
-				ImVec2(iconPos.x + (iconSize - letterSize.x) * 0.5f,
-				       iconPos.y + (iconSize - letterSize.y) * 0.5f),
-				IM_COL32(255, 255, 255, 255), initial);
-			ImGui::Dummy(ImVec2(iconSize, iconSize));
-			ImGui::Spacing();
-
-			/* Name (centered) */
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
+
+			/* Line 1: Model name (centered) */
 			float nameW = ImGui::CalcTextSize(entry.displayName).x;
 			ImGui::SetCursorPosX((cardW - nameW) * 0.5f);
 			ImGui::Text("%s", entry.displayName);
 
-			/* Description (centered, smaller) */
-			{
-				float descW = ImGui::CalcTextSize(entry.description).x;
-				ImGui::SetCursorPosX((cardW - descW) * 0.5f);
-				ImGui::Text("%s", entry.description);
-			}
-			ImGui::PopStyleColor();
+			/* Line 2: CPU + RAM (centered, dimmer) */
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.2f, 0.2f, 1));
+			char line2[64];
+			snprintf(line2, sizeof(line2), "%s, %s", entry.cpu, entry.ram);
+			float l2W = ImGui::CalcTextSize(line2).x;
+			ImGui::SetCursorPosX((cardW - l2W) * 0.5f);
+			ImGui::Text("%s", line2);
+
+			/* Line 3: Resolution (centered, dimmer) */
+			float l3W = ImGui::CalcTextSize(entry.resolution).x;
+			ImGui::SetCursorPosX((cardW - l3W) * 0.5f);
+			ImGui::Text("%s", entry.resolution);
+			ImGui::PopStyleColor(); /* dimmer text */
+
+			ImGui::PopStyleColor(); /* black text */
 		}
 
-		/* Detect hover and click */
 		bool hovered = ImGui::IsWindowHovered();
 		ImGui::EndChild();
 
-		/* Draw white hover highlight behind the card */
 		if (hovered && !disabled) {
 			ImVec2 rMin = ImGui::GetItemRectMin();
 			ImVec2 rMax = ImGui::GetItemRectMax();
 			ImGui::GetWindowDrawList()->AddRectFilled(
-				rMin, rMax, IM_COL32(255, 255, 255, 40), 8.0f);
+				rMin, rMax, IM_COL32(255, 255, 255, 50), 8.0f);
 		}
 
 		ImGui::PopStyleVar(2); /* ChildRounding, ChildBorderSize */
 		ImGui::PopStyleColor(); /* ChildBg */
 
 		if (hovered && !disabled && ImGui::IsMouseClicked(0)) {
-			selectedIndex_ = modelIdx;
-			/* Set default RAM */
+			selectedIndex_ = i;
 			const float* opts = GetRAMOptions(entry.model);
 			float defRam = GetDefaultRAM(entry.model);
 			ramChoice_ = 0;
@@ -284,9 +254,8 @@ void ModelSelector::drawModelGrid()
 			configTab_ = 0;
 		}
 
-		if (disabled) {
+		if (disabled)
 			ImGui::PopStyleVar(); /* Alpha */
-		}
 
 		ImGui::PopID();
 
@@ -294,25 +263,12 @@ void ModelSelector::drawModelGrid()
 		if (col >= cols) {
 			col = 0;
 			ImGui::Spacing();
-			/* Re-center for next row */
 			if (offsetX > 0) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
-		}
-		++modelIdx;
-	}
-
-	/* "More Models..." / "Fewer Models" button */
-	ImGui::Spacing();
-	ImGui::Spacing();
-	{
-		const char* btnText = showAllModels_ ? "Show Featured" : "More Models...";
-		float btnW = ImGui::CalcTextSize(btnText).x + 40;
-		ImGui::SetCursorPosX((ImGui::GetContentRegionAvail().x - btnW) * 0.5f);
-		if (ImGui::Button(btnText, ImVec2(btnW, 0))) {
-			showAllModels_ = !showAllModels_;
 		}
 	}
 
 	/* Hint for missing ROMs */
+	ImGui::Spacing();
 	ImGui::Spacing();
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.25f, 0.25f, 0.25f, 1));
