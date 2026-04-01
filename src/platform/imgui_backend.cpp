@@ -228,7 +228,9 @@ void ImGuiBackend::drawWindowedState()
 		}
 	}
 
-	DrawDebugWindows();
+	/* Debug windows only in Developer mode */
+	if (uiState_ == UIState::Developer)
+		DrawDebugWindows();
 
 	ImGui::Render();
 
@@ -253,7 +255,10 @@ void ImGuiBackend::drawFullscreenState()
 
 void ImGuiBackend::drawDeveloperState()
 {
-	/* Placeholder — will be implemented in Phase 5 */
+	/* Developer mode: same emulation as windowed but with larger
+	   window, menu bar, and visible debug panels.
+	   (Full DockSpace requires imgui docking branch — using floating
+	    windows for now, which still provides a good developer UX.) */
 	drawWindowedState();
 }
 
