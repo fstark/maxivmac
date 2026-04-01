@@ -13,6 +13,7 @@
 #include "platform/sdl_sound.h"
 #include "platform/platform.h"
 #include "platform/imgui_debug_windows.h"
+#include "core/main.h"
 
 /* Forward declarations to avoid pulling in the full osglu_common.h
    include chain (which depends on emulator config macros). */
@@ -220,32 +221,44 @@ void ImGuiBackend::drawDeveloperState()
 	drawWindowedState();
 }
 
-/* ── Model selector (stub) ───────────────────────────── */
+/* ── Model selector ──────────────────────────────────── */
 
 void ImGuiBackend::drawModelSelector()
 {
-	/* Stub — will be fully implemented in Phase 2.
-	   For now, display a placeholder. */
-	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImVec2 displaySize = ImGui::GetIO().DisplaySize;
-	ImGui::SetNextWindowSize(displaySize);
-	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
-		| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
-	if (ImGui::Begin("##ModelSelector", nullptr, flags)) {
-		float textW = ImGui::CalcTextSize("Maxi vMac").x;
-		ImGui::SetCursorPosX((displaySize.x - textW) * 0.5f);
-		ImGui::SetCursorPosY(displaySize.y * 0.3f);
-		ImGui::Text("Maxi vMac");
-		ImGui::Spacing();
-		float txt2W = ImGui::CalcTextSize("Model selector coming soon...").x;
-		ImGui::SetCursorPosX((displaySize.x - txt2W) * 0.5f);
-		ImGui::Text("Model selector coming soon...");
-		ImGui::Spacing();
-		float txt3W = ImGui::CalcTextSize("Launch with --model=MacPlus to run directly").x;
-		ImGui::SetCursorPosX((displaySize.x - txt3W) * 0.5f);
-		ImGui::TextDisabled("Launch with --model=MacPlus to run directly");
+	ModelSelectorResult result = modelSelector_.draw();
+	if (result.accepted && shell_) {
+		bootFromSelector(result.config);
 	}
-	ImGui::End();
+}
+
+void ImGuiBackend::bootFromSelector(const LaunchConfig& config)
+{
+	/* Update the global config with user's choices */
+	SetLaunchConfig(config);
+
+	/* Tear down the selector window — initMachine will create
+	   the properly-sized emulation window. */
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL3_Shutdown();
+	ImGui::DestroyContext();
+	if (glContext_) {
+		SDL_GL_DestroyContext(glContext_);
+		glContext_ = nullptr;
+	}
+	if (window_) {
+		SDL_DestroyWindow(window_);
+		window_ = nullptr;
+	}
+
+	/* Now do the full machine init (ROM, RAM, devices, window) */
+	if (!shell_->initMachine()) {
+		fprintf(stderr, "Machine init failed for %s\n",
+			ModelToString(config.model));
+		g_requestMacOff = true;
+		return;
+	}
+
+	uiState_ = UIState::Windowed;
 }
 
 /* ── State transitions ───────────────────────────────── */
@@ -324,6 +337,10 @@ bool ImGuiBackend::createSelectorWindow()
 
 	ImGui_ImplSDL3_InitForOpenGL(window_, glContext_);
 	ImGui_ImplOpenGL3_Init("#version 150");
+
+	/* Initialize model selector with ROM discovery */
+	const LaunchConfig& lc = GetLaunchConfig();
+	modelSelector_.init(lc.romDir);
 
 	return true;
 }

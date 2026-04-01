@@ -430,6 +430,13 @@ const LaunchConfig& GetLaunchConfig()
 	return s_launchConfig;
 }
 
+void SetLaunchConfig(const LaunchConfig& lc)
+{
+	s_launchConfig = lc;
+	s_machineConfig = BuildMachineConfig(s_launchConfig);
+	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
+}
+
 const EmulatorConfig& GetEmulatorConfig()
 {
 	return s_emulatorConfig;

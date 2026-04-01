@@ -122,6 +122,7 @@ elseif(MAXIVMAC_BACKEND STREQUAL "imgui")
     set(BACKEND_SOURCES
         src/platform/imgui_backend.cpp
         src/platform/imgui_debug_windows.cpp
+        src/platform/imgui_model_selector.cpp
         src/platform/imgui_main.cpp
     )
     set(NEED_SDL ON)

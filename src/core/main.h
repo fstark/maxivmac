@@ -28,6 +28,10 @@ extern void DoEmulateExtraTime();
 // Access the parsed launch config (available after ProgramEarlyInit).
 extern const LaunchConfig& GetLaunchConfig();
 
+// Replace the launch config and rebuild derived configs (machine, emulator).
+// Used by the model selector to apply user choices before initMachine().
+extern void SetLaunchConfig(const LaunchConfig& lc);
+
 // Access the emulator config (available after ProgramEarlyInit).
 extern const EmulatorConfig& GetEmulatorConfig();
 extern EmulatorConfig& GetEmulatorConfigMut();

@@ -10,6 +10,7 @@
 #define IMGUI_BACKEND_H
 
 #include "platform/platform_backend.h"
+#include "platform/imgui_model_selector.h"
 #include <SDL3/SDL.h>
 
 typedef unsigned int GLuint;
@@ -96,8 +97,10 @@ private:
 	void drawMenuBar();
 	void drawEmulatorViewport();
 
-	/* Model selector (pre-boot) — stub until Phase 2 */
+	/* Model selector (pre-boot) */
+	ModelSelector modelSelector_;
 	void drawModelSelector();
+	void bootFromSelector(const LaunchConfig& config);
 
 	/* Per-state draw dispatchers */
 	void drawWindowedState();
