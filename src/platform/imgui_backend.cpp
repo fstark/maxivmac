@@ -236,7 +236,10 @@ void ImGuiBackend::drawWindowedState()
 	int displayW, displayH;
 	SDL_GetWindowSizeInPixels(window_, &displayW, &displayH);
 	glViewport(0, 0, displayW, displayH);
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	if (uiState_ == UIState::Fullscreen)
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	else
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	SDL_GL_SwapWindow(window_);
@@ -557,24 +560,75 @@ void ImGuiBackend::drawEmulatorViewport()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-	ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize
-		| ImGuiWindowFlags_AlwaysAutoResize
-		| ImGuiWindowFlags_NoScrollbar;
-	if (ImGui::Begin("Macintosh", nullptr, flags)) {
-		/* Snap the image origin to physical pixel boundaries so that
-		   GL_NEAREST samples each texel to exactly 2×2 Retina pixels,
-		   avoiding moiré on high-frequency patterns (checkerboard). */
-		ImVec2 pos = ImGui::GetCursorScreenPos();
-		float scale = ImGui::GetIO().DisplayFramebufferScale.x;
-		pos.x = floorf(pos.x * scale) / scale;
-		pos.y = floorf(pos.y * scale) / scale;
-		ImGui::SetCursorScreenPos(pos);
-		emuViewOriginX_ = pos.x;
-		emuViewOriginY_ = pos.y;
-		ImVec2 size((float)emuTexW_, (float)emuTexH_);
-		ImGui::Image((ImTextureID)(intptr_t)emuTextureId_, size);
+
+	if (uiState_ == UIState::Fullscreen) {
+		/* Fullscreen: fill the display, centered, aspect-preserving */
+		ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+		ImGui::SetNextWindowSize(displaySize);
+		ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
+			| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
+			| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings
+			| ImGuiWindowFlags_NoBringToFrontOnFocus;
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
+		if (ImGui::Begin("##FullscreenViewport", nullptr, flags)) {
+			/* Compute scaled size preserving aspect ratio */
+			float emuAspect = (float)emuTexW_ / (float)emuTexH_;
+			float dispAspect = displaySize.x / displaySize.y;
+			float scaledW, scaledH;
+			if (emuAspect > dispAspect) {
+				scaledW = displaySize.x;
+				scaledH = displaySize.x / emuAspect;
+			} else {
+				scaledH = displaySize.y;
+				scaledW = displaySize.y * emuAspect;
+			}
+			/* Try integer scaling if close enough */
+			int intScale = (int)(scaledW / emuTexW_);
+			if (intScale >= 1) {
+				float intW = emuTexW_ * intScale;
+				float intH = emuTexH_ * intScale;
+				if (intW <= displaySize.x && intH <= displaySize.y) {
+					scaledW = intW;
+					scaledH = intH;
+				}
+			}
+			/* Center */
+			float offsetX = (displaySize.x - scaledW) * 0.5f;
+			float offsetY = (displaySize.y - scaledH) * 0.5f;
+			ImGui::SetCursorPos(ImVec2(offsetX, offsetY));
+			ImVec2 pos = ImGui::GetCursorScreenPos();
+			emuViewOriginX_ = pos.x;
+			emuViewOriginY_ = pos.y;
+			ImGui::Image((ImTextureID)(intptr_t)emuTextureId_,
+				ImVec2(scaledW, scaledH));
+		}
+		ImGui::End();
+		ImGui::PopStyleColor();
+	} else {
+		/* Windowed / Developer: fixed-size viewport */
+		ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize
+			| ImGuiWindowFlags_AlwaysAutoResize
+			| ImGuiWindowFlags_NoScrollbar;
+		if (uiState_ == UIState::Windowed) {
+			/* In windowed mode, no title bar either */
+			flags |= ImGuiWindowFlags_NoTitleBar;
+		}
+		if (ImGui::Begin("Macintosh", nullptr, flags)) {
+			/* Snap the image origin to physical pixel boundaries */
+			ImVec2 pos = ImGui::GetCursorScreenPos();
+			float scale = ImGui::GetIO().DisplayFramebufferScale.x;
+			pos.x = floorf(pos.x * scale) / scale;
+			pos.y = floorf(pos.y * scale) / scale;
+			ImGui::SetCursorScreenPos(pos);
+			emuViewOriginX_ = pos.x;
+			emuViewOriginY_ = pos.y;
+			ImVec2 size((float)emuTexW_, (float)emuTexH_);
+			ImGui::Image((ImTextureID)(intptr_t)emuTextureId_, size);
+		}
+		ImGui::End();
 	}
-	ImGui::End();
+
 	ImGui::PopStyleVar(2);
 }
 
