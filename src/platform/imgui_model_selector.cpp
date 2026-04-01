@@ -204,7 +204,8 @@ void ModelSelector::drawModelGrid()
 		ImVec2 cardSize(cardW, cardH);
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.35f, 0.35f, 0.38f, 1.0f));
 		ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 8.0f);
-		ImGui::BeginChild("card", cardSize, ImGuiChildFlags_Borders);
+		ImGui::BeginChild("card", cardSize, ImGuiChildFlags_Borders,
+			ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		{
 			ImGui::Spacing();
 

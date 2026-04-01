@@ -107,19 +107,28 @@ void ImGuiBackend::runLoop()
 				continue;
 			}
 
-			/* Intercept Ctrl key for overlay — must happen before
-			   imGuiConsumedEvent() which would eat it when
-			   WantCaptureKeyboard is set. */
+			/* Intercept Ctrl key for overlay toggle.
+			   Toggle on key-down; ignore key-up.  Using hold-to-show
+			   doesn't work on macOS because Ctrl+Click is mapped to
+			   right-click, preventing button presses in the overlay. */
 			if (event.type == SDL_EVENT_KEY_DOWN &&
+				!event.key.repeat &&
 				(event.key.scancode == SDL_SCANCODE_LCTRL ||
 				 event.key.scancode == SDL_SCANCODE_RCTRL)) {
-				overlayVisible_ = true;
-				SDL_ShowCursor();
-				continue; /* don't forward to emulator */
+				overlayVisible_ = !overlayVisible_;
+				if (overlayVisible_)
+					SDL_ShowCursor();
+				continue;
 			}
 			if (event.type == SDL_EVENT_KEY_UP &&
 				(event.key.scancode == SDL_SCANCODE_LCTRL ||
 				 event.key.scancode == SDL_SCANCODE_RCTRL)) {
+				continue; /* swallow release, overlay stays */
+			}
+			/* Escape dismisses the overlay */
+			if (overlayVisible_ &&
+				event.type == SDL_EVENT_KEY_DOWN &&
+				event.key.scancode == SDL_SCANCODE_ESCAPE) {
 				overlayVisible_ = false;
 				continue;
 			}
@@ -624,30 +633,24 @@ void ImGuiBackend::drawEmulatorViewport()
 		ImGui::End();
 		ImGui::PopStyleColor();
 	} else {
-		/* Windowed / Developer: fixed-size viewport pinned to origin */
-		ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize
-			| ImGuiWindowFlags_AlwaysAutoResize
+		/* Windowed / Developer: viewport fills the entire display.
+		   In windowed mode the SDL window is exactly the emulator
+		   screen size, so this makes the image fill edge-to-edge
+		   with no border. */
+		ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+		ImGui::SetNextWindowSize(displaySize);
+		ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
+			| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
 			| ImGuiWindowFlags_NoScrollbar
-			| ImGuiWindowFlags_NoMove
 			| ImGuiWindowFlags_NoBringToFrontOnFocus
 			| ImGuiWindowFlags_NoSavedSettings;
-		if (uiState_ == UIState::Windowed) {
-			/* In windowed mode, no title bar — just the Mac screen */
-			flags |= ImGuiWindowFlags_NoTitleBar
-				| ImGuiWindowFlags_NoCollapse;
-		}
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		if (ImGui::Begin("Macintosh", nullptr, flags)) {
-			/* Snap the image origin to physical pixel boundaries */
-			ImVec2 pos = ImGui::GetCursorScreenPos();
-			float scale = ImGui::GetIO().DisplayFramebufferScale.x;
-			pos.x = floorf(pos.x * scale) / scale;
-			pos.y = floorf(pos.y * scale) / scale;
-			ImGui::SetCursorScreenPos(pos);
-			emuViewOriginX_ = pos.x;
-			emuViewOriginY_ = pos.y;
-			ImVec2 size((float)emuTexW_, (float)emuTexH_);
-			ImGui::Image((ImTextureID)(intptr_t)emuTextureId_, size);
+			emuViewOriginX_ = 0;
+			emuViewOriginY_ = 0;
+			ImGui::SetCursorPos(ImVec2(0, 0));
+			ImGui::Image((ImTextureID)(intptr_t)emuTextureId_,
+				ImVec2(displaySize.x, displaySize.y));
 		}
 		ImGui::End();
 	}
