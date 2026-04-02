@@ -435,6 +435,10 @@ void SetLaunchConfig(const LaunchConfig& lc)
 	s_launchConfig = lc;
 	s_machineConfig = BuildMachineConfig(s_launchConfig);
 	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
+	/* Rebuild the Machine so g_machine reflects the new model.
+	   ProgramEarlyInit already created one with defaults; replace it. */
+	s_machine = std::make_unique<Machine>(s_machineConfig);
+	s_machine->init();
 }
 
 const EmulatorConfig& GetEmulatorConfig()
