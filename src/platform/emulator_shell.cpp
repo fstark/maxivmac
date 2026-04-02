@@ -191,6 +191,14 @@ bool EmulatorShell::initMachine()
 {
 	const LaunchConfig& lc = GetLaunchConfig();
 
+	/* Re-resolve ROM path from the current (post-selector) LaunchConfig.
+	   initPlatform() may have run with a different model, so rom_path
+	   could point at the wrong ROM file. */
+	static std::string s_machineRom;
+	s_machineRom = ResolveRomPath(lc.romPath, lc.model, lc.romDir);
+	if (!s_machineRom.empty())
+		rom_path = const_cast<char*>(s_machineRom.c_str());
+
 	if (!allocMyMemory()) return false;
 	if (!scanCommandLine()) return false;
 	if (!LoadMacRom(d_arg_, app_parent, pref_dir_)) return false;
