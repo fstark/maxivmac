@@ -675,7 +675,7 @@ bool ImGuiBackend::createWindow(const char* title,
 		winH = height;
 	}
 
-	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+	Uint32 flags = SDL_WINDOW_OPENGL
 		| SDL_WINDOW_HIGH_PIXEL_DENSITY;
 	if (fullscreen) flags |= SDL_WINDOW_FULLSCREEN;
 
