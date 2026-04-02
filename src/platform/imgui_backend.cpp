@@ -117,7 +117,7 @@ void ImGuiBackend::runLoop()
 				 event.key.scancode == SDL_SCANCODE_RCTRL)) {
 				overlayVisible_ = !overlayVisible_;
 				if (overlayVisible_)
-					SDL_ShowCursor();
+					shell_->forceShowCursor();
 				continue;
 			}
 			if (event.type == SDL_EVENT_KEY_UP &&
@@ -194,6 +194,8 @@ void ImGuiBackend::drawWindowedState()
 {
 	/* Process saved tasks (disk inserts etc.) */
 	shell_->processSavedTasks();
+	if (overlayVisible_)
+		shell_->forceShowCursor();
 	if (shell_->shouldQuit()) return;
 
 	/* Handle speed-stopped state */
@@ -413,19 +415,17 @@ bool ImGuiBackend::createSelectorWindow()
 
 bool ImGuiBackend::imGuiConsumedEvent(const SDL_Event& event) const
 {
-	ImGuiIO& io = ImGui::GetIO();
 	switch (event.type) {
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
-			return io.WantCaptureKeyboard;
+			/* Only let ImGui consume keys when a text field is active
+			   (e.g. typing in a debug window).  Otherwise all keys
+			   go to the emulator, even in Developer mode. */
+			return ImGui::GetIO().WantTextInput;
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 		case SDL_EVENT_MOUSE_BUTTON_UP:
 		case SDL_EVENT_MOUSE_MOTION:
 		case SDL_EVENT_MOUSE_WHEEL:
-			/* Always forward mouse events to the emulator.
-			   Coordinates are offset by emuViewOrigin so clicks
-			   outside the viewport clamp harmlessly.  ImGui still
-			   gets the event via ImGui_ImplSDL3_ProcessEvent(). */
 			return false;
 		default:
 			return false;
@@ -469,15 +469,10 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event& event)
 				pEvt.isRelative = true;
 				pEvt.dx = event.motion.xrel;
 				pEvt.dy = event.motion.yrel;
-			} else {
-				bool inside = mouseInEmuView(event.motion.x, event.motion.y,
+			} else if (!overlayVisible_) {
+				mouseInEmuView(event.motion.x, event.motion.y,
 					pEvt.x, pEvt.y);
-				if (inside && !overlayVisible_) {
-					pEvt.type = PlatformEvent::Type::MouseMove;
-					SDL_HideCursor();
-				} else {
-					SDL_ShowCursor();
-				}
+				pEvt.type = PlatformEvent::Type::MouseMove;
 			}
 			break;
 		}
@@ -583,76 +578,91 @@ void ImGuiBackend::drawMenuBar()
 	}
 }
 
+void ImGuiBackend::displayEmulatorImage(float w, float h)
+{
+	ImVec2 pos = ImGui::GetCursorScreenPos();
+	emuViewOriginX_ = pos.x;
+	emuViewOriginY_ = pos.y;
+	ImGui::Image((ImTextureID)(intptr_t)emuTextureId_, ImVec2(w, h));
+}
+
+void ImGuiBackend::drawViewportWindowed()
+{
+	ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(displaySize);
+	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
+		| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
+		| ImGuiWindowFlags_NoScrollbar
+		| ImGuiWindowFlags_NoBringToFrontOnFocus
+		| ImGuiWindowFlags_NoSavedSettings;
+	if (ImGui::Begin("Macintosh", nullptr, flags)) {
+		ImGui::SetCursorPos(ImVec2(0, 0));
+		displayEmulatorImage(displaySize.x, displaySize.y);
+	}
+	ImGui::End();
+}
+
+void ImGuiBackend::drawViewportFullscreen()
+{
+	ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(displaySize);
+	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
+		| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
+		| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings
+		| ImGuiWindowFlags_NoBringToFrontOnFocus;
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
+	if (ImGui::Begin("##FullscreenViewport", nullptr, flags)) {
+		float emuAspect = (float)emuTexW_ / (float)emuTexH_;
+		float dispAspect = displaySize.x / displaySize.y;
+		float scaledW, scaledH;
+		if (emuAspect > dispAspect) {
+			scaledW = displaySize.x;
+			scaledH = displaySize.x / emuAspect;
+		} else {
+			scaledH = displaySize.y;
+			scaledW = displaySize.y * emuAspect;
+		}
+		int intScale = (int)(scaledW / emuTexW_);
+		if (intScale >= 1) {
+			float intW = emuTexW_ * intScale;
+			float intH = emuTexH_ * intScale;
+			if (intW <= displaySize.x && intH <= displaySize.y) {
+				scaledW = intW;
+				scaledH = intH;
+			}
+		}
+		float offsetX = (displaySize.x - scaledW) * 0.5f;
+		float offsetY = (displaySize.y - scaledH) * 0.5f;
+		ImGui::SetCursorPos(ImVec2(offsetX, offsetY));
+		displayEmulatorImage(scaledW, scaledH);
+	}
+	ImGui::End();
+	ImGui::PopStyleColor();
+}
+
+void ImGuiBackend::drawViewportDeveloper()
+{
+	ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar
+		| ImGuiWindowFlags_NoCollapse
+		| ImGuiWindowFlags_AlwaysAutoResize
+		| ImGuiWindowFlags_NoBringToFrontOnFocus;
+	if (ImGui::Begin("Macintosh", nullptr, flags)) {
+		displayEmulatorImage(emuTexW_, emuTexH_);
+	}
+	ImGui::End();
+}
+
 void ImGuiBackend::drawEmulatorViewport()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
-	if (uiState_ == UIState::Fullscreen) {
-		/* Fullscreen: fill the display, centered, aspect-preserving */
-		ImVec2 displaySize = ImGui::GetIO().DisplaySize;
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-		ImGui::SetNextWindowSize(displaySize);
-		ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
-			| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
-			| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings
-			| ImGuiWindowFlags_NoBringToFrontOnFocus;
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
-		if (ImGui::Begin("##FullscreenViewport", nullptr, flags)) {
-			/* Compute scaled size preserving aspect ratio */
-			float emuAspect = (float)emuTexW_ / (float)emuTexH_;
-			float dispAspect = displaySize.x / displaySize.y;
-			float scaledW, scaledH;
-			if (emuAspect > dispAspect) {
-				scaledW = displaySize.x;
-				scaledH = displaySize.x / emuAspect;
-			} else {
-				scaledH = displaySize.y;
-				scaledW = displaySize.y * emuAspect;
-			}
-			/* Try integer scaling if close enough */
-			int intScale = (int)(scaledW / emuTexW_);
-			if (intScale >= 1) {
-				float intW = emuTexW_ * intScale;
-				float intH = emuTexH_ * intScale;
-				if (intW <= displaySize.x && intH <= displaySize.y) {
-					scaledW = intW;
-					scaledH = intH;
-				}
-			}
-			/* Center */
-			float offsetX = (displaySize.x - scaledW) * 0.5f;
-			float offsetY = (displaySize.y - scaledH) * 0.5f;
-			ImGui::SetCursorPos(ImVec2(offsetX, offsetY));
-			ImVec2 pos = ImGui::GetCursorScreenPos();
-			emuViewOriginX_ = pos.x;
-			emuViewOriginY_ = pos.y;
-			ImGui::Image((ImTextureID)(intptr_t)emuTextureId_,
-				ImVec2(scaledW, scaledH));
-		}
-		ImGui::End();
-		ImGui::PopStyleColor();
-	} else {
-		/* Windowed / Developer: viewport fills the entire display.
-		   In windowed mode the SDL window is exactly the emulator
-		   screen size, so this makes the image fill edge-to-edge
-		   with no border. */
-		ImVec2 displaySize = ImGui::GetIO().DisplaySize;
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-		ImGui::SetNextWindowSize(displaySize);
-		ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
-			| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
-			| ImGuiWindowFlags_NoScrollbar
-			| ImGuiWindowFlags_NoBringToFrontOnFocus
-			| ImGuiWindowFlags_NoSavedSettings;
-		if (ImGui::Begin("Macintosh", nullptr, flags)) {
-			emuViewOriginX_ = 0;
-			emuViewOriginY_ = 0;
-			ImGui::SetCursorPos(ImVec2(0, 0));
-			ImGui::Image((ImTextureID)(intptr_t)emuTextureId_,
-				ImVec2(displaySize.x, displaySize.y));
-		}
-		ImGui::End();
+	switch (uiState_) {
+	case UIState::Fullscreen: drawViewportFullscreen(); break;
+	case UIState::Developer:  drawViewportDeveloper(); break;
+	default:                  drawViewportWindowed(); break;
 	}
 
 	ImGui::PopStyleVar(2);
@@ -698,6 +708,7 @@ bool ImGuiBackend::createWindow(const char* title,
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 	io.ConfigWindowsMoveFromTitleBarOnly = true;
 	ImGui::StyleColorsDark();
 
@@ -790,10 +801,10 @@ void ImGuiBackend::setMouseGrab(bool grab)
 
 /* ── Audio ───────────────────────────────────────────── */
 
-bool ImGuiBackend::audioInit()    { return Sound_Init(); }
-void ImGuiBackend::audioStart()   { Sound_Start(); }
-void ImGuiBackend::audioStop()    { Sound_Stop(); }
-void ImGuiBackend::audioShutdown() { Sound_UnInit(); }
+bool ImGuiBackend::audioInit()    { return GetEmulatorConfig().soundEnabled ? Sound_Init() : true; }
+void ImGuiBackend::audioStart()   { if (GetEmulatorConfig().soundEnabled) Sound_Start(); }
+void ImGuiBackend::audioStop()    { if (GetEmulatorConfig().soundEnabled) Sound_Stop(); }
+void ImGuiBackend::audioShutdown() { if (GetEmulatorConfig().soundEnabled) Sound_UnInit(); }
 
 /* ── Keyboard ────────────────────────────────────────── */
 

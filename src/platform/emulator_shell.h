@@ -61,6 +61,9 @@ public:
 	/* --- Mouse (internal, but used by wrapper) --- */
 	void checkMouseState();
 
+	/* --- Cursor --- */
+	void forceShowCursor();
+
 	/* --- Extra time (for ExtraTimeNotOver wrapper) --- */
 	bool extraTimeNotOver();
 
@@ -75,7 +78,6 @@ private:
 	void mousePositionNotify(int newH, int newV);
 	void grabMachine();
 	void ungrabMachine();
-	void forceShowCursor();
 	void leaveBackground();
 	void enterBackground();
 	void leaveSpeedStopped();

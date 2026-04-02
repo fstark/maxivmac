@@ -11,7 +11,7 @@
 set -e
 
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
-EMU="${EMU:-$DIR/bld/macos/maxivmac}"
+EMU="${EMU:-$DIR/bld/macos-imgui/maxivmac}"
 ROMS="$DIR/roms"
 DISK_SRC="$DIR/extras/disks/608.hfs"
 TESTDIR="$DIR/test"
@@ -50,7 +50,7 @@ for golden in "$TESTDIR"/*.golden; do
     cp "$DISK_SRC" "$DISK_TMP"
 
     printf "%-14s " "$MODEL"
-    if "$EMU" --model="$MODEL" --rom="$ROM_PATH" --scale=1\
+    if "$EMU" --model="$MODEL" --rom="$ROM_PATH" --scale=1 --silent\
               --verify="$golden" "$DISK_TMP" 2>&1 \
        | grep -q "^PASS"; then
         echo "PASS"

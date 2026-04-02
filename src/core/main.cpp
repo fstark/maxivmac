@@ -432,11 +432,19 @@ const LaunchConfig& GetLaunchConfig()
 
 void SetLaunchConfig(const LaunchConfig& lc)
 {
-	s_launchConfig = lc;
+	/* Merge selector choices onto the CLI-parsed config.
+	   The selector only sets model-specific fields (model, rom, ram,
+	   speed, disks).  CLI flags like --silent, --romdir, --title,
+	   --fullscreen, --scale must survive. */
+	s_launchConfig.model         = lc.model;
+	s_launchConfig.modelExplicit = lc.modelExplicit;
+	s_launchConfig.romPath       = lc.romPath;
+	s_launchConfig.ramMB         = lc.ramMB;
+	s_launchConfig.speed         = lc.speed;
+	s_launchConfig.diskPaths     = lc.diskPaths;
+
 	s_machineConfig = BuildMachineConfig(s_launchConfig);
 	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
-	/* Rebuild the Machine so g_machine reflects the new model.
-	   ProgramEarlyInit already created one with defaults; replace it. */
 	s_machine = std::make_unique<Machine>(s_machineConfig);
 	s_machine->init();
 }
@@ -452,8 +460,10 @@ EmulatorConfig& GetEmulatorConfigMut()
 }
 
 /*
-	Parse CLI args, configure machine and emulator, set up
-	the state recorder, and resolve g_rom/disk paths.
+	Parse CLI args and set up non-model-dependent state.
+	When a model is known (--model or --verify), also creates the Machine.
+	When no model is specified, the Machine is created later by
+	SetLaunchConfig() after the user picks one in the selector.
 */
 void ProgramEarlyInit(int argc, char* argv[])
 {
@@ -474,6 +484,10 @@ void ProgramEarlyInit(int argc, char* argv[])
 		g_LogStart = s_launchConfig.logStart;
 		g_LogEnd   = s_launchConfig.logStart + s_launchConfig.logCount;
 	}
+
+	/* No model specified — defer machine creation to SetLaunchConfig(). */
+	if (!s_launchConfig.modelExplicit)
+		return;
 
 	/* When verifying, source emulation params from the golden file */
 	StateRecorder::HeaderInfo goldenHdr;

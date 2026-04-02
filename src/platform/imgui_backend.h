@@ -107,6 +107,10 @@ private:
 	void uploadFramebuffer();
 	void drawMenuBar();
 	void drawEmulatorViewport();
+	void drawViewportWindowed();
+	void drawViewportFullscreen();
+	void drawViewportDeveloper();
+	void displayEmulatorImage(float w, float h);
 
 	/* Model selector (pre-boot) */
 	ModelSelector modelSelector_;

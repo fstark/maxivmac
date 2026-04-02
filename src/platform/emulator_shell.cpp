@@ -161,7 +161,6 @@ bool EmulatorShell::initPlatform(int argc, char** argv)
 	/* Seed options from launch config */
 	static std::string s_title;
 	static std::string s_romDir;
-	static std::string s_resolvedRom;
 	if (!lc.title.empty()) {
 		s_title = lc.title;
 		n_arg_ = const_cast<char*>(s_title.c_str());
@@ -171,10 +170,6 @@ bool EmulatorShell::initPlatform(int argc, char** argv)
 		d_arg_ = const_cast<char*>(s_romDir.c_str());
 	}
 	s_d_arg = d_arg_;
-	s_resolvedRom = ResolveRomPath(lc.romPath, lc.model, lc.romDir);
-	if (!s_resolvedRom.empty()) {
-		rom_path = const_cast<char*>(s_resolvedRom.c_str());
-	}
 
 	/* Initialize paths and drives */
 	zapWinStateVars();
@@ -191,9 +186,7 @@ bool EmulatorShell::initMachine()
 {
 	const LaunchConfig& lc = GetLaunchConfig();
 
-	/* Re-resolve ROM path from the current (post-selector) LaunchConfig.
-	   initPlatform() may have run with a different model, so rom_path
-	   could point at the wrong ROM file. */
+	/* Resolve ROM path from the current LaunchConfig. */
 	static std::string s_machineRom;
 	s_machineRom = ResolveRomPath(lc.romPath, lc.model, lc.romDir);
 	if (!s_machineRom.empty())
