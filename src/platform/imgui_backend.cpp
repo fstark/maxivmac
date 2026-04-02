@@ -163,7 +163,7 @@ void ImGuiBackend::runLoop()
 				int displayW, displayH;
 				SDL_GetWindowSizeInPixels(window_, &displayW, &displayH);
 				glViewport(0, 0, displayW, displayH);
-				glClearColor(0.50f, 0.50f, 0.50f, 1.0f);
+				glClearColor(0.78f, 0.78f, 0.78f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT);
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 				SDL_GL_SwapWindow(window_);

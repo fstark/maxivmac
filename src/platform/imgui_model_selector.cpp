@@ -106,7 +106,7 @@ ModelSelectorResult ModelSelector::draw()
 		| ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar
 		| ImGuiWindowFlags_NoScrollWithMouse;
 
-	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.50f, 0.50f, 0.50f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.78f, 0.78f, 0.78f, 1.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(40, 30));
 	if (ImGui::Begin("##ModelSelector", nullptr, flags)) {
 		if (selectedIndex_ < 0) {
@@ -225,24 +225,27 @@ void ModelSelector::drawModelGrid()
 
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
 
-			/* Line 1: Model name (centered) */
+			/* Line 1: Model name (centered, bold) */
 			float nameW = ImGui::CalcTextSize(entry.displayName).x;
 			ImGui::SetCursorPosX((cardW - nameW) * 0.5f);
+			ImVec2 namePos = ImGui::GetCursorScreenPos();
 			ImGui::Text("%s", entry.displayName);
+			/* Simulate bold: overdraw offset 1px right */
+			ImGui::GetWindowDrawList()->AddText(
+				ImVec2(namePos.x + 1.0f, namePos.y),
+				IM_COL32(0, 0, 0, 255), entry.displayName);
 
-			/* Line 2: CPU + RAM (centered, dimmer) */
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.2f, 0.2f, 1));
+			/* Line 2: CPU + RAM (centered, black) */
 			char line2[64];
 			snprintf(line2, sizeof(line2), "%s, %s", entry.cpu, entry.ram);
 			float l2W = ImGui::CalcTextSize(line2).x;
 			ImGui::SetCursorPosX((cardW - l2W) * 0.5f);
 			ImGui::Text("%s", line2);
 
-			/* Line 3: Resolution (centered, dimmer) */
+			/* Line 3: Resolution (centered, black) */
 			float l3W = ImGui::CalcTextSize(entry.resolution).x;
 			ImGui::SetCursorPosX((cardW - l3W) * 0.5f);
 			ImGui::Text("%s", entry.resolution);
-			ImGui::PopStyleColor(); /* dimmer text */
 
 			ImGui::PopStyleColor(); /* black text */
 		}
