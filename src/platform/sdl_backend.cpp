@@ -71,7 +71,7 @@ void SdlBackend::runLoop()
 			continue;
 		}
 
-		while (shell_->tickIsDue() && !shell_->shouldQuit()) {
+		if (shell_->tickIsDue() && !shell_->shouldQuit()) {
 			shell_->runOneTick();
 		}
 

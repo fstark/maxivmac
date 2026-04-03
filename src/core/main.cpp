@@ -332,30 +332,13 @@ static void DoEmulateOneTick()
 
 static bool MoreSubTicksToDo()
 {
-	/* Always complete all extra sub-ticks regardless of wall clock,
-	   so the emulated cycle count per tick is deterministic.
-	   Original code gated this on ExtraTimeNotOver() which made
-	   the number of sub-ticks vary with host speed. */
-	bool v = false;
-
-	if (s_extraSubTicksToDo > 0) {
-		v = true;
-	}
-
-	return v;
+	return s_extraSubTicksToDo > 0;
 }
 
 void DoEmulateExtraTime()
 {
-	/*
-		DoEmulateExtraTime is used for
-		anything over emulation speed
-		of 1x. It periodically calls
-		ExtraTimeNotOver and stops
-		when this returns false (or it
-		is finished with emulating the
-		extra time).
-	*/
+	/* Run extra sub-ticks for speed multiplier (anything over 1x).
+	   VIA timers are frozen for the duration. */
 
 	if (MoreSubTicksToDo()) {
 		ExtraTimeBeginNotify();
@@ -375,47 +358,17 @@ void DoEmulateExtraTime()
 	}
 }
 
-static uint32_t s_curEmulatedTime = 0;
-	/*
-		The number of ticks that have been
-		emulated so far.
-
-		That is, the number of times
-		"DoEmulateOneTick" has been called.
-	*/
-
 void RunEmulatedTicksToTrueTime()
 {
-	/*
-		Always emulate exactly the number of ticks
-		that g_trueEmulatedTime says are due, without
-		any cap or wall-clock gating.  This ensures
-		the emulated tick count (and therefore the
-		entire instruction stream) is deterministic
-		regardless of host speed.
-	*/
+	/* Run exactly one tick plus its extra-time sub-ticks (speed
+	   multiplier).  The backend calls this once per tick; there
+	   is no catch-up loop.  If the host falls behind wall-clock
+	   time, ticks are simply dropped. */
 
-	int16_t n = (int16_t)(g_onTrueTime - s_curEmulatedTime);
+	DoEmulateOneTick();
+	DoEmulateExtraTime();
 
-	if (n > 0) {
-		DoEmulateOneTick();
-		++s_curEmulatedTime;
-
-		DoneWithDrawingForTick();
-
-		if (--n > 0) {
-			g_emVideoDisable = true;
-
-			do {
-				DoEmulateOneTick();
-				++s_curEmulatedTime;
-			} while (--n > 0);
-
-			g_emVideoDisable = false;
-		}
-
-		g_emLagTime = 0;
-	}
+	DoneWithDrawingForTick();
 }
 
 /* MainEventLoop has been removed — the backend now drives the loop. */
@@ -485,8 +438,10 @@ void ProgramEarlyInit(int argc, char* argv[])
 		g_LogEnd   = s_launchConfig.logStart + s_launchConfig.logCount;
 	}
 
-	/* No model specified — defer machine creation to SetLaunchConfig(). */
-	if (!s_launchConfig.modelExplicit)
+	/* No model specified — defer machine creation to SetLaunchConfig().
+	   --verify implies a model (read from the golden header below). */
+	if (!s_launchConfig.modelExplicit
+		&& s_launchConfig.verifyPath.empty())
 		return;
 
 	/* When verifying, source emulation params from the golden file */
@@ -499,6 +454,7 @@ void ProgramEarlyInit(int argc, char* argv[])
 		}
 		haveGoldenHdr = true;
 		s_launchConfig.model = static_cast<MacModel>(goldenHdr.modelId);
+		s_launchConfig.modelExplicit = true;
 		g_speedValue = goldenHdr.speedValue;
 		g_SkipThrottle = true;
 	}

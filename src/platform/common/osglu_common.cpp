@@ -87,9 +87,6 @@ uint32_t g_ltRxBuffSz = 0;
 
 #endif
 
-bool g_emVideoDisable = false;
-int8_t g_emLagTime = 0;
-
 uint32_t g_onTrueTime = 0;
 
 /* --- Pbuf support --- */
@@ -568,8 +565,8 @@ void Screen_OutputFrame(uint8_t * screencurrentbuff)
 	int16_t bottom;
 	int16_t right;
 
-	if (! g_emVideoDisable) {
-		if (ScreenFindChanges(screencurrentbuff, g_emLagTime,
+	{
+		if (ScreenFindChanges(screencurrentbuff, 0,
 			&top, &left, &bottom, &right))
 		{
 			if (top < g_screenChangedTop) {

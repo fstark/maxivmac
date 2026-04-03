@@ -217,7 +217,7 @@ void ImGuiBackend::drawWindowedState()
 		SDL_Delay(shell_->getDelayMs());
 		return;
 	}
-	while (shell_->tickIsDue() && !shell_->shouldQuit())
+	if (shell_->tickIsDue() && !shell_->shouldQuit())
 		shell_->runOneTick();
 
 	/* Upload emulator framebuffer to GL texture */

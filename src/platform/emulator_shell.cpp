@@ -47,11 +47,6 @@ void DoneWithDrawingForTick()
 	if (g_shell) g_shell->doneWithDrawingForTick();
 }
 
-bool ExtraTimeNotOver()
-{
-	return g_shell ? g_shell->extraTimeNotOver() : false;
-}
-
 void ToggleWantFullScreen()
 {
 	if (g_shell) g_shell->toggleWantFullScreen();
@@ -455,21 +450,19 @@ bool EmulatorShell::tickIsDue()
 
 void EmulatorShell::runOneTick()
 {
-	if (g_SkipThrottle) {
-		drawChangesAndClear();
-		++g_onTrueTime;
-	} else {
+	if (!g_SkipThrottle) {
 		if (CheckDateTime()) {
 			Sound_SecondNotify();
 		}
 		if (! backgroundFlag_ && ! caughtMouse_) {
 			checkMouseState();
 		}
-		g_onTrueTime = g_trueEmulatedTime;
+	} else {
+		drawChangesAndClear();
 	}
 
+	++g_onTrueTime;
 	RunEmulatedTicksToTrueTime();
-	DoEmulateExtraTime();
 }
 
 uint32_t EmulatorShell::getDelayMs()
@@ -485,12 +478,6 @@ bool EmulatorShell::shouldQuit() const
 bool EmulatorShell::isSpeedStopped() const
 {
 	return curSpeedStopped_;
-}
-
-bool EmulatorShell::extraTimeNotOver()
-{
-	UpdateTrueEmulatedTime();
-	return g_trueEmulatedTime == g_onTrueTime;
 }
 
 /* --- Framebuffer --- */

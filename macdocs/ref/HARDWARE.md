@@ -1,0 +1,736 @@
+# The Macintosh Hardware
+
+> Extracted from Inside Macintosh, Chapter 29 (im029)
+> Source: `macdocs/tech_doc/im202.html` lines 34656–35772
+>
+> Covers: Macintosh 128K, 512K, and Plus hardware
+
+---
+
+## Table of Contents
+
+- [Overview of the Hardware](#overview-of-the-hardware)
+  - [RAM](#ram)
+  - [ROM](#rom)
+- [The Video Interface](#the-video-interface)
+- [The Sound Generator](#the-sound-generator)
+- [The SCC](#the-scc)
+- [The Mouse](#the-mouse)
+- [The Keyboard and Keypad](#the-keyboard-and-keypad)
+  - [Keyboard Communication Protocol](#keyboard-communication-protocol)
+  - [Keypad Communication Protocol](#keypad-communication-protocol)
+- [The Floppy Disk Interface](#the-floppy-disk-interface)
+  - [Controlling the Disk State-Control Lines](#controlling-the-disk-state-control-lines)
+  - [Reading from the Disk Registers](#reading-from-the-disk-registers)
+  - [Writing to the Disk Registers](#writing-to-the-disk-registers)
+  - [Explanations of the Disk Registers](#explanations-of-the-disk-registers)
+- [The Real-Time Clock](#the-real-time-clock)
+  - [Accessing the Clock Chip](#accessing-the-clock-chip)
+  - [The One-Second Interrupt](#the-one-second-interrupt)
+- [The SCSI Interface](#the-scsi-interface)
+- [The VIA](#the-via)
+  - [VIA Register A](#via-register-a)
+  - [VIA Register B](#via-register-b)
+  - [The VIA Peripheral Control Register](#the-via-peripheral-control-register)
+  - [The VIA Timers](#the-via-timers)
+  - [VIA Interrupts](#via-interrupts)
+  - [Other VIA Registers](#other-via-registers)
+- [System Startup](#system-startup)
+- [Summary](#summary)
+  - [Constants](#constants)
+  - [Constants (Macintosh Plus Only)](#constants-macintosh-plus-only)
+  - [Variables](#variables)
+  - [Exception Vectors](#exception-vectors)
+
+---
+
+## Overview of the Hardware
+
+The Macintosh contains a **Motorola MC68000** microprocessor clocked at **7.8336 MHz**, RAM, ROM, and five I/O devices:
+
+| Device | Chip | Function |
+|--------|------|----------|
+| Video display | Custom | Bit-mapped 512×342 screen |
+| Sound generator | Custom | PWM sound via RAM buffer |
+| VIA | Synertek SY6522 | Mouse, keyboard, RTC, disk, misc signals |
+| SCC | Zilog Z8530 | Two RS422 serial ports |
+| IWM | Apple custom | 3.5-inch floppy disk control |
+| SCSI | NCR 5380 | High-speed parallel port (Plus only) |
+
+The MC68000 can address **16 MB**, divided into four 4 MB sections:
+
+| Address Range | Contents |
+|---------------|----------|
+| `$000000`–`$3FFFFF` | RAM |
+| `$400000`–`$7FFFFF` | ROM (and SCSI on Plus) |
+| `$800000`–`$BFFFFF` | SCC |
+| `$C00000`–`$FFFFFF` | IWM and VIA |
+
+Addresses within each block wrap around since devices use far fewer than 4 MB.
+
+### RAM
+
+Base address: `$000000`
+
+- First 256 bytes (`$00`–`$FF`): MC68000 exception vectors
+- Also contains: system/application heaps, stack, screen buffers, sound buffers, disk speed buffer
+- RAM accesses are interleaved with video display during active scan lines
+- Sound generator and disk speed controller get first access after each scan line
+- Average RAM access rate: ~6 MHz
+
+**Macintosh Plus SIMM configurations:**
+
+| SIMMs | DRAM Density | Total RAM |
+|-------|-------------|-----------|
+| 2 | 256K-bit | 512K |
+| 4 | 256K-bit | 1 MB (standard) |
+| 2 | 1M-bit | 2 MB |
+| 4 | 1M-bit | 4 MB |
+| 2×1M + 2×256K | Mixed | 2.5 MB |
+
+RAM size stored in global variable `MemTop`.
+
+### ROM
+
+Base address: `$400000` (constant `romStart`, global variable `ROMBase`)
+
+- Contains Toolbox and Operating System routines
+- Always accessed at full 7.83 MHz (not interleaved)
+- 128K ROM: two 512K-bit (64K × 8) chips
+- Plus sockets accept up to 1M-bit (128K × 8) chips for 256K ROM
+
+---
+
+## The Video Interface
+
+The display is a **512 × 342 pixel** bit-mapped screen at **~74 DPI**.
+
+### Timing
+
+| Parameter | Value |
+|-----------|-------|
+| Pixel clock | 15.6672 MHz (~0.064 µs/pixel) |
+| Pixels per scan line | 512 displayed + 192 blanking = 704 total |
+| Scan line time | 44.93 µs |
+| Horizontal scan rate | 22.25 kHz |
+| Scan lines per frame | 342 displayed + 28 blanking = 370 total |
+| Frame time | ~16.6 ms |
+| Vertical scan rate | 60.15 Hz |
+
+### Screen Buffers
+
+Each screen buffer uses **21,888 bytes** (512 × 342 / 8). Bit = 0 → white, bit = 1 → black.
+
+| System | Main Buffer | Alternate Buffer |
+|--------|-------------|-----------------|
+| Mac 128K | `$1A700` | `$12700` |
+| Mac 512K | `$7A700` | `$72700` |
+| Plus 1 MB | `$FA700` | `$F2700` |
+| Plus 2 MB | `$1FA700` | `$1F2700` |
+| Plus 2.5 MB | `$27A700` | `$272700` |
+| Plus 4 MB | `$3FA700` | `$3F2700` |
+
+Use `screenBits` (QuickDraw) or `ScrnBase` global variable for the address.
+
+Each scan line = 32 consecutive words. In each word, bit 15 = leftmost pixel, bit 0 = rightmost.
+
+Switch to alternate buffer:
+```asm
+BCLR    #vPage2,vBase+vBufA    ; vPage2 .EQU 6
+```
+
+### Blanking Interrupts
+
+- **Vertical blanking interrupt**: generated by VIA at start of vertical blanking interval
+- 1.26 ms of unrestricted screen access after VBI
+- ~16.6 ms total to update from top to bottom
+
+---
+
+## The Sound Generator
+
+PWM-encoded sound from a RAM buffer, driving internal speaker or external jack (600+ ohm load).
+
+### Control
+
+Enable/disable via VIA register B:
+```
+vSndEnb    .EQU    7    ; bit 7 of vBase+vBufB: 0=enabled, 1=disabled
+```
+
+Volume (3-bit) via VIA register A low bits:
+```
+vSound    .EQU    7    ; mask for bits 0–2 of vBase+vBufA
+```
+
+### Sound Buffers
+
+**370 words per frame**, scanned at 60.15 Hz. High-order byte of each word = sound sample. Low-order byte = disk speed control (do not write).
+
+| System | Main Sound | Alternate Sound |
+|--------|-----------|----------------|
+| Mac 128K | `$1FD00` | `$1A100` |
+| Mac 512K | `$7FD00` | `$7A100` |
+| Plus 1 MB | `$FFD00` | `$FA100` |
+| Plus 2 MB | `$1FFD00` | `$1FA100` |
+| Plus 2.5 MB | `$27FD00` | `$27A100` |
+| Plus 4 MB | `$3FFD00` | `$3FA100` |
+
+Main sound buffer address: global variable `SoundBase`, constant `soundLow`.
+
+Switch to alternate buffer: clear bit `vSndPg2` (.EQU 3) of `vBase+vBufA`.
+
+### Square-Wave Generator
+
+For simple tones without CPU intervention:
+1. Fill all 370 sound buffer locations with a constant (`$00` or `$FF`)
+2. Load timer 1 latches with frequency value
+3. Set ACR bits 7–6 for "square wave output"
+
+Period = `2 × 1.2766 µs × timer_1_value`
+
+---
+
+## The SCC
+
+Two RS422 serial ports via **Zilog Z8530**. Port A = modem icon (higher interrupt priority). Port B = printer icon.
+
+### Base Addresses
+
+```
+sccRBase  .EQU    $9FFFF8    ; read base (global SCCRd)
+sccWBase  .EQU    $BFFFF9    ; write base (global SCCWr)
+```
+
+### Register Offsets
+
+| Offset | Contents |
+|--------|----------|
+| `aData` (.EQU 6) | Channel A data |
+| `aCtl` (.EQU 2) | Channel A control |
+| `bData` (.EQU 4) | Channel B data |
+| `bCtl` (.EQU 0) | Channel B control |
+
+### Access Rules
+
+- SCC is on **upper byte** of data bus
+- **Read**: even-addressed byte reads only (odd read tries to reset SCC)
+- **Write**: odd-addressed byte writes only
+- **Minimum interval**: 2.2 µs between accesses
+- **Word access**: shifts high-frequency timing by 128 ns
+- SCC clock (PCLK): 3.672 MHz
+- Internal sync clock (RTxC): 3.672 MHz (÷16 for baud rate generator)
+
+### Connector Pinouts
+
+**DB-9** (128K/512K/512Ke): pins for TxD+/−, RxD+/−, handshake (CTS/TRxC), +12V, +5V, GND.
+
+**Mini-8** (Plus): TxD+/−, RxD+/−, handshake in/out, GND. No +5V/+12V.
+
+---
+
+## The Mouse
+
+DB-9 connector. Generates quadrature signals for X and Y motion.
+
+### Signal Routing
+
+| Signal | Connected To |
+|--------|-------------|
+| X1 (interrupt) | SCC DCDA |
+| Y1 (interrupt) | SCC DCDB |
+| X2 (quadrature) | VIA register B, bit `vX2` (.EQU 4) |
+| Y2 (quadrature) | VIA register B, bit `vY2` (.EQU 5) |
+| Button | VIA register B, bit `vSW` (.EQU 3), 0 = down |
+
+### Quadrature Detection
+
+| SCC Edge | VIA Level | Direction |
+|----------|-----------|-----------|
+| Positive (X1/Y1) | Low (X2/Y2) | Left / Down |
+| Positive (X1/Y1) | High (X2/Y2) | Right / Up |
+| Negative (X1/Y1) | Low (X2/Y2) | Right / Up |
+| Negative (X1/Y1) | High (X2/Y2) | Left / Down |
+
+---
+
+## The Keyboard and Keypad
+
+Each contains an **Intel 8021** microprocessor. Connected via 4-wire RJ-11 jack. Keypad daisy-chains between keyboard and Mac.
+
+### Keyboard Communication Protocol
+
+Bidirectional data line (keyboard-driven clock). 8-bit transmissions, MSB first.
+
+**Keyboard → Mac timing**: 330 µs cycles (160 low, 170 high). Data placed 40 µs before falling edge. Clocked into VIA shift register on rising edge.
+
+**Mac → Keyboard timing**: 400 µs cycles (180 low, 220 high). Mac places data on falling edge. Keyboard reads 80 µs after rising edge.
+
+### Commands
+
+| Command | Value | Response |
+|---------|-------|----------|
+| Inquiry | `$10` | Key Transition code or Null (`$7B`) |
+| Instant | `$14` | Key Transition code or Null (`$7B`) |
+| Model Number | `$16` | Bit 0: 1, Bits 1–3: model (1–8), Bits 4–6: next device (1–8), Bit 7: 1 if another device |
+| Test | `$36` | ACK (`$7D`) or NAK (`$77`) |
+
+### Key Transition Response Format
+
+- Bit 7: 1 = key-up, 0 = key-down
+- Bit 0: always 1
+- Driver conversion: strip bit 7, shift right 1 (e.g., `$33` → `$19`)
+
+### Normal Operation
+
+1. Mac pulls data line low → keyboard starts clocking
+2. Mac sends Model Number command first; keyboard resets and responds
+3. If no response for 0.5s, Mac retries Model Number
+4. Normal: Mac sends Inquiry every 0.25s; keyboard responds with key transition or Null (`$7B`)
+
+### Keypad Protocol
+
+Keypad sits between keyboard and Mac. If no keypad key pressed, forwards keyboard responses. If keypad key pressed, sends Keypad response (`$79`); Mac sends Instant; keypad sends its own Key Transition.
+
+---
+
+## The Floppy Disk Interface
+
+Uses Apple **IWM** chip plus **Analog Signal Generator (ASG)**. Together with VIA, controls read/write/format/eject of 3.5-inch disks.
+
+- Plus: internal double-sided drive (800K); external double-sided or single-sided
+- Double-sided: two heads, two tracks simultaneously
+- IWM controls: CA0, CA1, CA2, LSTRB, drive enable, read/write data
+- VIA provides: SEL control line
+- ASG reads disk speed buffer in RAM (low-order bytes of sound buffer words)
+
+### Controlling the Disk State-Control Lines
+
+IWM base address: `dBase` (.EQU `$DFE1FF`), also in global variable `IWM`. IWM is on **lower byte** — use odd-addressed byte accesses only.
+
+| IWM Line | Turn On | Turn Off |
+|----------|---------|----------|
+| CA0 | `dBase+ph0H` | `dBase+ph0L` |
+| CA1 | `dBase+ph1H` | `dBase+ph1L` |
+| CA2 | `dBase+ph2H` | `dBase+ph2L` |
+| LSTRB | `dBase+ph3H` | `dBase+ph3L` |
+| ENABLE | `dBase+motorOn` | `dBase+motorOff` |
+| SELECT | `dBase+extDrive` | `dBase+intDrive` |
+| Q6 | `dBase+q6H` | `dBase+q6L` |
+| Q7 | `dBase+q7H` | `dBase+q7L` |
+
+### Reading from the Disk Registers
+
+Setup: turn off Q7 (`dBase+q7L`), turn on Q6 (`dBase+q6H`). Enable drive, ensure LSTRB low. Set CA0/CA1/CA2/SEL to address register. Read from `dBase+q7L` high bit.
+
+**Always turn Q6 back off** when finished.
+
+| CA2 | CA1 | CA0 | SEL | Register | Information |
+|-----|-----|-----|-----|----------|-------------|
+| 0 | 0 | 0 | 0 | DIRTN | Head step direction |
+| 0 | 0 | 0 | 1 | CSTIN | Disk in place |
+| 0 | 0 | 1 | 0 | STEP | Disk head stepping |
+| 0 | 0 | 1 | 1 | WRTPRT | Disk locked |
+| 0 | 1 | 0 | 0 | MOTORON | Disk motor running |
+| 0 | 1 | 0 | 1 | TKO | Head at track 0 |
+| 0 | 1 | 1 | 1 | TACH | Tachometer |
+| 1 | 0 | 0 | 0 | RDDATA0 | Read data, lower head |
+| 1 | 0 | 0 | 1 | RDDATA1 | Read data, upper head |
+| 1 | 1 | 0 | 0 | SIDES | Single/double-sided |
+| 1 | 1 | 1 | 1 | DRVIN | Drive installed |
+
+### Writing to the Disk Registers
+
+Ensure LSTRB off, set CA0/CA1 high, set SEL to 0, set CA0/CA1 per table, set CA2 to value. Hold LSTRB high ≥1 µs, <1 ms (except eject). Don't change CA0–CA2 or SEL while LSTRB high.
+
+| CA1 | CA0 | SEL | Register | Function |
+|-----|-----|-----|----------|----------|
+| 0 | 0 | 0 | DIRTN | Set stepping direction |
+| 0 | 1 | 0 | STEP | Step one track |
+| 1 | 0 | 0 | MOTORON | Motor on/off |
+| 1 | 1 | 0 | EJECT | Eject disk |
+
+### Explanations of the Disk Registers
+
+- **DIRTN**: 0 = toward track 79 (inside), 1 = toward track 0 (outside)
+- **CSTIN**: 0 when disk is in drive
+- **STEP**: set to 0 to step; drive sets back to 1 when complete (~12 ms)
+- **WRTPRT**: 0 = disk locked
+- **MOTORON**: 0 = motor on (only if drive enabled and disk in place)
+- **TKO**: 0 at track 0 (valid 12 ms after step)
+- **EJECT**: write 1 to eject; hold LSTRB ≥0.5 s
+- **TACH**: 60 pulses per motor rotation
+- **RDDATA0/1**: instantaneous data from lower/upper head
+- **SIDES**: 0 = single-sided, 1 = double-sided
+- **DRVIN**: 0 = drive connected, floats to 1 otherwise
+
+---
+
+## The Real-Time Clock
+
+Custom chip accessed through VIA. Contains:
+- 4-byte seconds counter (incremented each second)
+- 1-second interrupt line for VIA
+- 20 bytes of battery-backed parameter RAM
+
+### Accessing the Clock Chip
+
+Via VIA data register B (`vBase+vBufB`):
+
+```
+rTCData    .EQU    0    ; serial data (bidirectional)
+rTCClk     .EQU    1    ; data-clock (processor-driven)
+rTCEnb     .EQU    2    ; serial enable (0 = enabled)
+```
+
+**Protocol**: Set `rTCEnb` to 0 to enable. Keep low during entire transaction. Transfer 8-bit commands/data serially, MSB first.
+
+**Sending**: Set `rTCData` direction to output. For each bit: set `rTCClk` to 0, set `rTCData` to bit value, raise `rTCClk`. Repeat for all 8 bits.
+
+**Receiving**: After sending read command, set `rTCData` direction to input. For each bit: lower `rTCClk`, read `rTCData`, raise `rTCClk`.
+
+### Clock Commands
+
+Bit 7: 1 = read, 0 = write. Last two bits always `01`.
+
+| Command Byte | Register |
+|-------------|----------|
+| `z0000001` | Seconds register 0 (lowest byte) |
+| `z0000101` | Seconds register 1 |
+| `z0001001` | Seconds register 2 |
+| `z0001101` | Seconds register 3 (highest byte) |
+| `00110001` | Test register (write only) |
+| `00110101` | Write-protect register (write only) |
+| `z010aa01` | RAM address `$10`–`$13` |
+| `z1aaaa01` | RAM address `$00`–`$0F` |
+
+Write seconds registers in low-to-high order. Read time twice (until same value twice). Always end with a write (e.g., setting write-protect bit) to avoid battery drain.
+
+### The One-Second Interrupt
+
+Bit 0 of VIA interrupt enable register (`vBase+vIER`):
+- Write `$01` to disable
+- Write `$81` to enable
+
+---
+
+## The SCSI Interface
+
+> Macintosh Plus only.
+
+**NCR 5380** controlling up to 7 SCSI peripherals. DB-25 connector (not standard 50-pin). No termination power/resistors provided.
+
+Transfer rates: ~142K bytes/s (polled), ~312K bytes/s (blind).
+
+### Register Addresses
+
+Address format: `$580drn` where r = register (0–7), n = read(0)/write(1), d = DACK (0/1).
+
+| Symbolic Location | Address | Register |
+|-------------------|---------|----------|
+| `scsiWr+sODR+dackWr` | `$580201` | Output Data Register with DACK |
+| `scsiRd+sIDR+dackRd` | `$580260` | Current SCSI Data with DACK |
+| `scsiWr+sODR` | `$580001` | Output Data Register |
+| `scsiWr+sICR` | `$580011` | Initiator Command Register |
+| `scsiWr+sMR` | `$580021` | Mode Register |
+| `scsiWr+sTCR` | `$580031` | Target Command Register |
+| `scsiWr+sSER` | `$580041` | Select Enable Register |
+| `scsiWr+sDMAtx` | `$580051` | Start DMA Send |
+| `scsiWr+sTDMArx` | `$580061` | Start DMA Target Receive |
+| `scsiWr+sIDMArx` | `$580071` | Start DMA Initiator Receive |
+| `scsiRd+sCDR` | `$580000` | Current SCSI Data |
+| `scsiRd+sICR` | `$580010` | Initiator Command Register |
+| `scsiRd+sMR` | `$580020` | Mode Register |
+| `scsiRd+sTCR` | `$580030` | Target Command Register |
+| `scsiRd+sCSR` | `$580040` | Current SCSI Bus Status |
+| `scsiRd+sBSR` | `$580050` | Bus and Status Register |
+| `scsiRd+sIDR` | `$580060` | Input Data Register |
+| `scsiRd+sRESET` | `$580070` | Reset Parity/Interrupt |
+
+Read = even addresses, Write = odd addresses.
+
+---
+
+## The VIA
+
+**Synertek SY6522** Versatile Interface Adapter. Base address: constant `vBase`, global variable `VIA`. VIA is on **upper byte** of data bus — use even-addressed byte accesses only.
+
+### VIA Register A
+
+Location: `vBase+vBufA`. Direction register: `vBase+vDirA`.
+
+| Bit(s) | Name | Description |
+|--------|------|-------------|
+| 7 | `vSCCWReq` | SCC wait/request |
+| 6 | `vPage2` | 0 = alternate screen buffer |
+| 5 | `vHeadSel` | Disk SEL line |
+| 4 | `vOverlay` | ROM low-memory overlay (startup only) |
+| 3 | `vSndPg2` | 0 = alternate sound buffer |
+| 0–2 | `vSound` | Sound volume (3-bit mask = 7) |
+
+### VIA Register B
+
+Location: `vBase+vBufB`. Direction register: `vBase+vDirB`.
+
+| Bit | Name | Description |
+|-----|------|-------------|
+| 7 | `vSndEnb` | 0 = sound enabled, 1 = disabled |
+| 6 | `vH4` | Horizontal blanking |
+| 5 | `vY2` | Mouse Y quadrature |
+| 4 | `vX2` | Mouse X quadrature |
+| 3 | `vSW` | 0 = mouse button down |
+| 2 | `rTCEnb` | RTC serial enable |
+| 1 | `rTCClk` | RTC data-clock |
+| 0 | `rTCData` | RTC serial data |
+
+### The VIA Peripheral Control Register
+
+Location: `vBase+vPCR`
+
+| Bits | Description |
+|------|-------------|
+| 5–7 | Keyboard data interrupt control |
+| 4 | Keyboard clock interrupt control |
+| 1–3 | One-second interrupt control |
+| 0 | Vertical blanking interrupt control |
+
+### The VIA Timers
+
+Timer 1: sound timing. Timer 2: disk I/O timing.
+
+| Location | Contents |
+|----------|----------|
+| `vBase+vT1C` | Timer 1 counter (low byte) |
+| `vBase+vT1CH` | Timer 1 counter (high byte) |
+| `vBase+vT1L` | Timer 1 latch (low byte) |
+| `vBase+vT1LH` | Timer 1 latch (high byte) |
+| `vBase+vT2C` | Timer 2 counter (low byte) |
+| `vBase+vT2CH` | Timer 2 counter (high byte) |
+
+Note: high and low bytes are **not adjacent** — must do two explicit byte stores.
+
+### VIA Interrupts
+
+Level-1 processor interrupt via IRQ. Interrupt flag register: `vBase+vIFR`. Interrupt enable register: `vBase+vIER`.
+
+| Bit | Source |
+|-----|--------|
+| 7 | IRQ (any enabled VIA interrupt) |
+| 6 | Timer 1 |
+| 5 | Timer 2 |
+| 4 | Keyboard clock |
+| 3 | Keyboard data bit |
+| 2 | Keyboard data ready |
+| 1 | Vertical blanking |
+| 0 | One-second interrupt |
+
+**Enable register** (write): bit 7 = 1 → bits 0–6 with value 1 enable; bit 7 = 0 → bits 0–6 with value 1 disable. Zeros in bits 0–6 leave unchanged. Bit 7 always reads as 1.
+
+### Other VIA Registers
+
+| Location | Purpose |
+|----------|---------|
+| `vBase+vSR` | Shift register (keyboard data, 8 bits) |
+| `vBase+vACR` | Auxiliary control register (timers, shift register) |
+
+---
+
+## System Startup
+
+Power-on sequence:
+
+1. Processor held in wait state while VIA and IWM initialize
+2. **Overlay bit** (`vOverlay`) set in VIA register A:
+   - ROM at `$400000` (normal) AND duplicated at `$000000`
+   - RAM moves to `$600000`
+   - MC68000 reads critical low-memory vectors from ROM image at address 0
+3. Memory test and system tests
+4. Overlay bit cleared → RAM returns to `$000000`
+5. Disk startup: check internal drive → external drive → display `?` icon until disk inserted
+6. Read first two sectors (system startup blocks) → normal disk load
+
+---
+
+## Summary
+
+### Constants
+
+#### VIA Base Addresses
+
+```
+vBase     .EQU    $EFE1FE    ; main VIA base (global variable VIA)
+aVBufB    .EQU    vBase      ; register B base
+aVBufA    .EQU    $EFFFFE    ; register A base
+aVBufM    .EQU    aVBufB     ; register with mouse signals
+aVIFR     .EQU    $EFFBFE    ; interrupt flag register
+aVIER     .EQU    $EFFDFE    ; interrupt enable register
+```
+
+#### VIA Register Offsets (from vBase)
+
+```
+vBufB     .EQU    512*0      ; register B
+vDirB     .EQU    512*2      ; register B direction
+vDirA     .EQU    512*3      ; register A direction
+vT1C      .EQU    512*4      ; timer 1 counter low
+vT1CH     .EQU    512*5      ; timer 1 counter high
+vT1L      .EQU    512*6      ; timer 1 latch low
+vT1LH     .EQU    512*7      ; timer 1 latch high
+vT2C      .EQU    512*8      ; timer 2 counter low
+vT2CH     .EQU    512*9      ; timer 2 counter high
+vSR       .EQU    512*10     ; shift register (keyboard)
+vACR      .EQU    512*11     ; auxiliary control register
+vPCR      .EQU    512*12     ; peripheral control register
+vIFR      .EQU    512*13     ; interrupt flag register
+vIER      .EQU    512*14     ; interrupt enable register
+vBufA     .EQU    512*15     ; register A
+```
+
+#### VIA Register A
+
+```
+vAOut     .EQU    $7F        ; direction: 1 bits = outputs
+vAInit    .EQU    $7B        ; initial value (medium volume)
+vSound    .EQU    7          ; sound volume mask
+
+; Bit numbers:
+vSndPg2   .EQU    3          ; 0 = alternate sound buffer
+vOverlay  .EQU    4          ; 1 = ROM overlay (startup only)
+vHeadSel  .EQU    5          ; disk SEL control line
+vPage2    .EQU    6          ; 0 = alternate screen buffer
+vSCCWReq  .EQU    7          ; SCC wait/request
+```
+
+#### VIA Register B
+
+```
+vBOut     .EQU    $87        ; direction: 1 bits = outputs
+vBInit    .EQU    $07        ; initial value
+
+; Bit numbers:
+rTCData   .EQU    0          ; RTC serial data
+rTCClk    .EQU    1          ; RTC data-clock
+rTCEnb    .EQU    2          ; RTC serial enable
+vSW       .EQU    3          ; 0 = mouse button down
+vX2       .EQU    4          ; mouse X quadrature
+vY2       .EQU    5          ; mouse Y quadrature
+vH4       .EQU    6          ; 1 = horizontal blanking
+vSndEnb   .EQU    7          ; 0 = sound on, 1 = off
+```
+
+#### SCC
+
+```
+sccRBase  .EQU    $9FFFF8    ; read base (global SCCRd)
+sccWBase  .EQU    $BFFFF9    ; write base (global SCCWr)
+
+aData     .EQU    6          ; channel A data
+aCtl      .EQU    2          ; channel A control
+bData     .EQU    4          ; channel B data
+bCtl      .EQU    0          ; channel B control
+
+; Control register RR0 bits:
+rxBF      .EQU    0          ; 1 = receive buffer full
+txBE      .EQU    2          ; 1 = send buffer empty
+```
+
+#### IWM
+
+```
+dBase     .EQU    $DFE1FF    ; IWM base (global variable IWM)
+
+ph0L      .EQU    512*0      ; CA0 off
+ph0H      .EQU    512*1      ; CA0 on
+ph1L      .EQU    512*2      ; CA1 off
+ph1H      .EQU    512*3      ; CA1 on
+ph2L      .EQU    512*4      ; CA2 off
+ph2H      .EQU    512*5      ; CA2 on
+ph3L      .EQU    512*6      ; LSTRB off
+ph3H      .EQU    512*7      ; LSTRB on
+mtrOff    .EQU    512*8      ; disk enable off
+mtrOn     .EQU    512*9      ; disk enable on
+intDrive  .EQU    512*10     ; select internal drive
+extDrive  .EQU    512*11     ; select external drive
+q6L       .EQU    512*12     ; Q6 off
+q6H       .EQU    512*13     ; Q6 on
+q7L       .EQU    512*14     ; Q7 off
+q7H       .EQU    512*15     ; Q7 on
+```
+
+#### Screen and Sound (512K; wraps for 128K)
+
+```
+screenLow   .EQU    $7A700    ; main screen buffer
+soundLow    .EQU    $7FD00    ; main sound buffer (global SoundBase)
+pwmBuffer   .EQU    $7FD01    ; disk speed buffer
+ovlyRAM     .EQU    $600000   ; RAM with overlay set
+ovlyScreen  .EQU    $67A700   ; screen with overlay set
+romStart    .EQU    $400000   ; ROM start (global ROMBase)
+```
+
+### Constants (Macintosh Plus Only)
+
+#### SCSI
+
+```
+scsiRd    .EQU    $580000    ; read base
+scsiWr    .EQU    $580001    ; write base
+
+dackRd    .EQU    $200       ; DACK offset for reads
+dackWr    .EQU    $200       ; DACK offset for writes
+
+sCDR      .EQU    $00        ; Current SCSI Data (read)
+sOCR      .EQU    $00        ; Output Data Register (write)
+sICR      .EQU    $10        ; Initiator Command Register
+sMR       .EQU    $20        ; Mode Register
+sTCR      .EQU    $30        ; Target Command Register
+sCSR      .EQU    $40        ; Current SCSI Bus Status (read)
+sSER      .EQU    $40        ; Select Enable Register (write)
+sBSR      .EQU    $50        ; Bus & Status Register (read)
+sDMAtx    .EQU    $50        ; DMA Transmit Start (write)
+sIDR      .EQU    $60        ; Data Input Register (read)
+sTDMArx   .EQU    $60        ; Start Target DMA Receive (write)
+sRESET    .EQU    $70        ; Reset Parity/Interrupt (read)
+sIDMArx   .EQU    $70        ; Start Initiator DMA Receive (write)
+```
+
+### Variables
+
+| Name | Contents |
+|------|----------|
+| `ROMBase` | Base address of ROM |
+| `SoundBase` | Address of main sound buffer |
+| `SCCRd` | SCC read base address |
+| `SCCWr` | SCC write base address |
+| `IWM` | IWM base address |
+| `VIA` | VIA base address |
+
+### Exception Vectors
+
+| Address | Purpose |
+|---------|---------|
+| `$00` | Reset: initial stack pointer |
+| `$04` | Reset: initial vector |
+| `$08` | Bus error |
+| `$0C` | Address error |
+| `$10` | Illegal instruction |
+| `$14` | Divide by zero |
+| `$18` | CHK instruction |
+| `$1C` | TRAPV instruction |
+| `$20` | Privilege violation |
+| `$24` | Trace interrupt |
+| `$28` | Line 1010 emulator |
+| `$2C` | Line 1111 emulator |
+| `$30`–`$3B` | Unassigned (reserved) |
+| `$3C` | Uninitialized interrupt |
+| `$40`–`$5F` | Unassigned (reserved) |
+| `$60` | Spurious interrupt |
+| `$64` | VIA interrupt |
+| `$68` | SCC interrupt |
+| `$6C` | VIA+SCC vector (temporary) |
+| `$70` | Interrupt switch |
+| `$74` | Interrupt switch + VIA |
+| `$78` | Interrupt switch + SCC |
+| `$7C` | Interrupt switch + VIA + SCC |
+| `$80`–`$BF` | TRAP instructions |
+| `$C0`–`$FF` | Unassigned (reserved) |

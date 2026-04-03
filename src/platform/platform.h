@@ -145,9 +145,6 @@ extern uint16_t CLUT_reds[CLUT_size];
 extern uint16_t CLUT_greens[CLUT_size];
 extern uint16_t CLUT_blues[CLUT_size];
 
-extern bool g_emVideoDisable;
-extern int8_t g_emLagTime;
-
 extern void Screen_OutputFrame(uint8_t * screencurrentbuff);
 extern void DoneWithDrawingForTick();
 
@@ -156,8 +153,6 @@ extern bool g_forceMacOff;
 extern bool g_wantMacInterrupt;
 
 extern bool g_wantMacReset;
-
-extern bool ExtraTimeNotOver();
 
 extern uint8_t g_speedValue;
 

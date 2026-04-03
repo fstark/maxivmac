@@ -32,7 +32,7 @@ void HeadlessBackend::runLoop()
 		shell_->processSavedTasks();
 		if (shell_->shouldQuit()) break;
 
-		while (shell_->tickIsDue() && !shell_->shouldQuit()) {
+		if (shell_->tickIsDue() && !shell_->shouldQuit()) {
 			shell_->runOneTick();
 		}
 	}

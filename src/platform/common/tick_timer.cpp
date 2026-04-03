@@ -13,7 +13,6 @@ static uint32_t GetTicksMs()
 	return (uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
 }
 
-#define dbglog_TimeStuff 0
 #define DBGLOG_OSG_INIT 0
 
 uint32_t g_trueEmulatedTime = 0;
@@ -65,29 +64,24 @@ bool UpdateTrueEmulatedTime()
 		TimeDiff = (LatestTime - s_nextIntTime);
 			/* this should work even when time wraps */
 		if (TimeDiff >= 0) {
+			/* One tick is due.  Never accumulate — if we fell
+			   behind, just reset the deadline to now so the
+			   next tick is due in ~16.6 ms. */
+			++g_trueEmulatedTime;
 			if (TimeDiff > 256) {
-				/* emulation interrupted, forget it */
-				++g_trueEmulatedTime;
+				/* big gap (debugger, sleep, etc.) */
 				InitNextTime();
-
-#if dbglog_TimeStuff
-				dbglog_writelnNum("emulation interrupted",
-					g_trueEmulatedTime);
-#endif
 			} else {
-				do {
-					++g_trueEmulatedTime;
-					IncrNextTime();
-					TimeDiff = (LatestTime - s_nextIntTime);
-				} while (TimeDiff >= 0);
+				IncrNextTime();
+				/* If still behind, drop the debt */
+				if ((int32_t)(LatestTime - s_nextIntTime) >= 0) {
+					InitNextTime();
+				}
 			}
 			return true;
 		} else {
 			if (TimeDiff < -256) {
-#if dbglog_TimeStuff
-				dbglog_writeln("clock set back");
-#endif
-				/* clock goofed if ever get here, reset */
+				/* clock went backwards, reset */
 				InitNextTime();
 			}
 		}

@@ -1,27 +1,25 @@
 ignoring command line argument
---model=Mac512Ke
-ignoring command line argument
---record=/Users/fred/Development/maxivmac/test/Mac512Ke.golden
+--verify=test/MacIIx.golden
 RTC Parameter RAM
 0, 0
-1, 0
-2, 0
-3, 0
+1, 80
+2, 4F
+3, 48
 4, 0
 5, 0
 6, 0
 7, 0
 8, 7
-9, 53
-10, 4
-11, C
-12, 42
+9, 88
+10, 1
+11, 8C
+12, 4E
 13, 75
-14, 67
-15, 73
+14, 4D
+15, 63
 16, A8
 17, 0
-18, 0
+18, 1
 19, 22
 20, CC
 21, A
@@ -34,7 +32,7 @@ RTC Parameter RAM
 28, 0
 29, 2
 30, 63
-31, 0
+31, 1
 32, 0
 33, 0
 34, 0
@@ -73,9 +71,9 @@ RTC Parameter RAM
 67, 0
 68, 0
 69, 0
-70, 0
-71, 0
-72, 0
+70, 76
+71, 4D
+72, 81
 73, 0
 74, 0
 75, 0
@@ -122,17 +120,17 @@ RTC Parameter RAM
 116, 0
 117, 0
 118, 0
-119, 0
+119, 1
 120, 0
-121, 0
-122, 0
-123, 0
+121, 1
+122, FF
+123, FE
 124, 0
 125, 0
 126, 0
 127, 0
-128, 0
-129, 0
+128, 9
+129, 80
 130, 0
 131, 0
 132, 0

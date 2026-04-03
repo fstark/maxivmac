@@ -64,9 +64,6 @@ public:
 	/* --- Cursor --- */
 	void forceShowCursor();
 
-	/* --- Extra time (for ExtraTimeNotOver wrapper) --- */
-	bool extraTimeNotOver();
-
 	/* --- Window title --- */
 	const char* windowTitle() const;
 
