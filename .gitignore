@@ -6,6 +6,7 @@
 /minivmac
 /minivmac.app
 /minivmac.xcodeproj
+/maxivmac.app
 /build
 /*.exe
 /*.ROM
