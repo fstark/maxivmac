@@ -27,6 +27,7 @@
 #include "cpu/disasm.h"
 
 #include "cpu/m68k.h"
+#include "cpu/trap_counter.h"
 
 /*
 	ReportAbnormalID unused 0x0123 - 0x01FF
@@ -4379,6 +4380,7 @@ static void Exception(int nr)
 static void DoCodeA()
 {
 	BackupPC();
+	trap_counter_record(do_get_mem_word(V_pc_p));
 	Exception(0xA);
 }
 

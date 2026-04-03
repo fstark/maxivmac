@@ -53,6 +53,7 @@ set(COMMON_SOURCES
     src/devices/device.cpp
     src/cpu/m68k_tables.cpp
     src/cpu/m68k.cpp
+    src/cpu/trap_counter.cpp
     src/cpu/cpu.cpp
     src/devices/via_base.cpp
     src/devices/via.cpp

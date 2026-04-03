@@ -13,6 +13,7 @@
 #include "cpu/disasm.h"
 #include "devices/via.h"
 #include "devices/via2.h"
+#include "cpu/trap_counter.h"
 
 #include <cstdio>
 #include <cstring>
@@ -217,6 +218,86 @@ void VIATool::draw()
 	ImGui::End();
 }
 
+/* ── TrapsTool ─────────────────────────────────────── */
+
+void TrapsTool::draw()
+{
+	if (!ImGui::Begin(name(), &visible)) {
+		ImGui::End();
+		return;
+	}
+
+	if (ImGui::Button("Reset Counts")) {
+		trap_counter_reset();
+	}
+
+	TrapCountEntry entries[20];
+	int n = trap_counter_snapshot(entries, 20);
+
+	if (ImGui::BeginTable("traps", 4,
+		ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+		ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
+	{
+		ImGui::TableSetupColumn("Name",      ImGuiTableColumnFlags_DefaultSort, 0.0f, 0);
+		ImGui::TableSetupColumn("Trap",      ImGuiTableColumnFlags_None, 0.0f, 1);
+		ImGui::TableSetupColumn("Handler",   ImGuiTableColumnFlags_None, 0.0f, 2);
+		ImGui::TableSetupColumn("Count",     ImGuiTableColumnFlags_DefaultSort |
+			ImGuiTableColumnFlags_PreferSortDescending, 0.0f, 3);
+		ImGui::TableHeadersRow();
+
+		/* Respect sort spec if user clicks a column header */
+		if (ImGuiTableSortSpecs* specs = ImGui::TableGetSortSpecs()) {
+			if (specs->SpecsCount > 0) {
+				auto &s = specs->Specs[0];
+				bool asc = (s.SortDirection == ImGuiSortDirection_Ascending);
+				std::sort(entries, entries + n,
+					[&s, asc](const TrapCountEntry &a, const TrapCountEntry &b) {
+						int cmp = 0;
+						switch (s.ColumnUserID) {
+						case 0: cmp = strcmp(a.name, b.name); break;
+						case 1: cmp = (int)a.trapWord - (int)b.trapWord; break;
+						case 2: cmp = (int)a.trapWord - (int)b.trapWord; break;
+						case 3: cmp = (a.count < b.count) ? -1 : (a.count > b.count) ? 1 : 0; break;
+						}
+						return asc ? (cmp < 0) : (cmp > 0);
+					});
+			}
+		}
+
+		for (int i = 0; i < n; ++i) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(entries[i].name);
+			ImGui::TableNextColumn();
+			ImGui::Text("$%04X", entries[i].trapWord);
+			ImGui::TableNextColumn();
+			/*
+			   128K+ ROM dispatch tables (long-word entries):
+			     OS traps:      256 entries at $0400–$07FF
+			     Toolbox traps: 1024 entries at $0E00–$1DFF (Mac II)
+			   Read the handler address from the guest dispatch table.
+			*/
+			uint16_t w = entries[i].trapWord;
+			uint32_t slot;
+			if (w & 0x0800) {
+				slot = 0x0E00 + 4 * (w & 0x03FF);
+			} else {
+				slot = 0x0400 + 4 * (w & 0x00FF);
+			}
+			uint32_t handler = get_vm_long(slot);
+			ImGui::Text("$%08X", handler);
+			ImGui::TableNextColumn();
+			if (entries[i].count > 0)
+				ImGui::Text("%u", entries[i].count);
+			else
+				ImGui::TextDisabled("0");
+		}
+		ImGui::EndTable();
+	}
+
+	ImGui::End();
+}
+
 /* ── Registration helper ───────────────────────────── */
 
 void RegisterDebugTools(ToolRegistry& registry)
@@ -225,4 +306,5 @@ void RegisterDebugTools(ToolRegistry& registry)
 	registry.registerTool(std::make_unique<DisassemblyTool>());
 	registry.registerTool(std::make_unique<MemoryTool>());
 	registry.registerTool(std::make_unique<VIATool>());
+	registry.registerTool(std::make_unique<TrapsTool>());
 }
