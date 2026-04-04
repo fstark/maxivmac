@@ -49,6 +49,7 @@ set(COMMON_SOURCES
     src/core/ict_scheduler.cpp
     src/core/machine_obj.cpp
     src/core/machine.cpp
+    src/core/extn_clip.cpp
     src/core/state_recorder.cpp
     src/devices/device.cpp
     src/cpu/m68k_tables.cpp

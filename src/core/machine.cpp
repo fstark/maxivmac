@@ -497,14 +497,73 @@ static constexpr int kDSK_QuitOnEject = 3; /* obsolete */
 
 static uint16_t s_paramAddrHi;
 
+/* --- New register block state (offsets 16–31, byte $20–$3F) --- */
+
+static uint16_t s_regResult;
+static uint32_t s_regParam[7];   /* p0–p6 */
+
+/* Forward declaration — implemented in extn_clip.cpp */
+#include "core/extn_clip.h"
+
+static void regDispatch(uint16_t cmd)
+{
+	if (cmd >= 0x100 && cmd <= 0x1FF) {
+		extnClipDispatch(cmd, s_regParam, s_regResult);
+	} else {
+		s_regResult = 0xFFFF; /* unimplemented */
+	}
+}
+
+static uint32_t regBlockAccess(uint32_t data, bool writeMem, uint32_t regOff)
+{
+	if (regOff == 0) {
+		/* command register — write triggers dispatch, read returns 0 */
+		if (writeMem) {
+			regDispatch(static_cast<uint16_t>(data));
+		}
+		return 0;
+	}
+	if (regOff == 1) {
+		/* result register — read-only */
+		return s_regResult;
+	}
+	/* regOff 2..15 → param words (p0 high, p0 low, p1 high, ...) */
+	if (regOff >= 2 && regOff < 16) {
+		uint32_t paramIdx = (regOff - 2) / 2;
+		bool isLow = ((regOff - 2) % 2) != 0;
+		if (writeMem) {
+			if (isLow) {
+				s_regParam[paramIdx] = (s_regParam[paramIdx] & 0xFFFF0000u)
+					| (data & 0xFFFF);
+			} else {
+				s_regParam[paramIdx] = (s_regParam[paramIdx] & 0x0000FFFFu)
+					| ((data & 0xFFFF) << 16);
+			}
+		}
+		if (isLow) {
+			return s_regParam[paramIdx] & 0xFFFF;
+		} else {
+			return (s_regParam[paramIdx] >> 16) & 0xFFFF;
+		}
+	}
+	return 0;
+}
+
 /*
 	Main extension dispatch.  Called when the guest writes the
-	parameter-block address to the extension I/O ports.
+	parameter-block address to the extension I/O ports (offsets 0–15),
+	or accesses the new register block (offsets 16–31).
 	Routes to the handler for the extension ID stored in
 	the parameter block.
 */
-static void extnAccess(uint32_t Data, uint32_t addr)
+static uint32_t extnAccess(uint32_t Data, bool writeMem, uint32_t addr)
 {
+	/* New register block: word offsets 16–31 */
+	if (addr >= 16) {
+		return regBlockAccess(Data, writeMem, addr - 16);
+	}
+
+	/* Legacy extension dispatch: word offsets 0–15 (write-only) */
 	switch (addr) {
 		case kDSK_Params_Hi:
 			s_paramAddrHi = Data;
@@ -550,6 +609,7 @@ static void extnAccess(uint32_t Data, uint32_t addr)
 			if (auto* d = g_machine->findDevice<SonyDevice>()) d->setQuitOnEject();
 			break;
 	}
+	return Data;
 }
 
 /*
@@ -558,9 +618,8 @@ static void extnAccess(uint32_t Data, uint32_t addr)
 */
 class ExtnDevice : public Device {
 public:
-	uint32_t access(uint32_t data, bool /*writeMem*/, uint32_t addr) override {
-		extnAccess(data, addr);
-		return data;
+	uint32_t access(uint32_t data, bool writeMem, uint32_t addr) override {
+		return extnAccess(data, writeMem, addr);
 	}
 	void zap() override {}
 	void reset() override {}
@@ -1381,10 +1440,14 @@ static void SetUpMemBanks()
 				ReportAbnormalID(AbnormalID::kMACH_Sony_byte, "access Sony byte");
 			} else if ((addr & 1) != 0) {
 				ReportAbnormalID(AbnormalID::kMACH_Sony_odd, "access Sony odd");
-			} else if (! writeMem) {
-				ReportAbnormalID(AbnormalID::kMACH_Sony_read, "access Sony read");
 			} else {
-				p->device->access(data, writeMem, (addr >> 1) & 0x0F);
+				uint32_t wordOff = (addr >> 1) & 0x1F;
+				if (!writeMem && wordOff < 16) {
+					ReportAbnormalID(AbnormalID::kMACH_Sony_read,
+						"access Sony read");
+				} else {
+					data = p->device->access(data, writeMem, wordOff);
+				}
 			}
 			break;
 		case kMMDV_ASC:
