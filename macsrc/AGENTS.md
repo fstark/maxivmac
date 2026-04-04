@@ -20,6 +20,12 @@ result into the Mac scrap with `PutScrap`.
 clipboard.  Calls `GetScrap` to read the Mac scrap, then `HTCExport`
 to send it to the host.
 
+### clipsync/
+**ClipSync** — Console app (THINK C ANSI project).  Imports the host
+clipboard into the Mac scrap using the new register-block I/O
+interface at `extnBlockBase + $20`.  No pbufs — the host writes
+directly to guest RAM.  See `CLIPBOARD_PLAN.md` for the protocol.
+
 ### importfl/
 **ImportFl** — Application.  Imports a file from the host into the
 emulated Mac filesystem.  Uses the disk and pbuf extensions.

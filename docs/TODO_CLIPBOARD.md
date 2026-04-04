@@ -4,6 +4,19 @@ Automatic, transparent clipboard synchronization between the emulated
 Mac and the host.  No user action required — cut/copy on either side
 is visible on the other.
 
+## Status
+
+**Phase 1–2 implemented** (register I/O infrastructure + clipboard
+commands).  See `CLIPBOARD_PLAN.md` for the full design and protocol.
+
+**Phase 3 implemented** — `macsrc/clipsync/main.c` is a one-shot
+THINK C console app that imports the host clipboard into the Mac scrap.
+
+**Remaining work:**
+- Bidirectional sync (Mac → host via ClipExport)
+- INIT with trap patches for transparent operation
+- jGNEFilter polling for automatic host → Mac sync
+
 ## I/O Register Interface
 
 Two I/O blocks in the extension address space.  The legacy mechanism
