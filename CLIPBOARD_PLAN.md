@@ -1,5 +1,16 @@
 # Clipboard Sync Plan
 
+**All 4 phases completed** on 4 April 2026.
+
+Commit range: `1f126a0..b74ef72`
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Register I/O infrastructure (extnBlockBase+$20) | Done |
+| 2 | Clipboard commands (extn_clip.cpp + clipboard.h wrappers) | Done |
+| 3 | THINK C console app (macsrc/clipsync/main.c) | Done |
+| 4 | Documentation updates | Done |
+
 Host-to-Mac clipboard transfer using a new register-based I/O interface.
 No pbufs — the host writes directly to guest RAM.  The Mac side is a
 one-shot THINK C console app (later extended to bidirectional and INIT).
