@@ -18,7 +18,10 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <vector>
 #include <memory>
+
+#include "platform/common/mac_roman.h"
 
 /* ── RegistersTool ─────────────────────────────────── */
 
@@ -298,6 +301,191 @@ void TrapsTool::draw()
 	ImGui::End();
 }
 
+/* ── ScrapTool ─────────────────────────────────────── */
+
+/*
+	Low-memory scrap globals:
+	  $0960 ScrapSize   (long)  — byte count of scrap data
+	  $0964 ScrapHandle (long)  — handle to scrap in memory
+	  $0968 ScrapCount  (word)  — bumped by ZeroScrap
+	  $096A ScrapState  (word)  — >0 in memory, 0 on disk, <0 uninit
+
+	Scrap data format (sequential entries):
+	  4 bytes  type   (e.g. 'TEXT', 'PICT')
+	  4 bytes  length  of following data
+	  n bytes  data   (padded to even)
+*/
+
+static std::string macRomanToDisplay(const uint8_t *data, uint32_t len,
+	uint32_t maxChars)
+{
+	uint32_t n = (len < maxChars) ? len : maxChars;
+	uint32_t sz = MacRoman2UniCodeSize(const_cast<uint8_t *>(data), n);
+	std::string out(sz, '\0');
+	MacRoman2UniCodeData(const_cast<uint8_t *>(data), n,
+		const_cast<char *>(out.data()));
+	/* CR (0x0D) -> newline for display */
+	for (auto &c : out) {
+		if (c == '\r') c = '\n';
+	}
+	if (len > maxChars) {
+		out += "...";
+	}
+	return out;
+}
+
+void ScrapTool::draw()
+{
+	if (!ImGui::Begin(name(), &visible)) {
+		ImGui::End();
+		return;
+	}
+
+	/* Read low-memory globals */
+	uint32_t scrapSize   = get_vm_long(0x0960);
+	uint32_t scrapHandle = get_vm_long(0x0964);
+	int16_t  scrapCount  = (int16_t)get_vm_word(0x0968);
+	int16_t  scrapState  = (int16_t)get_vm_word(0x096A);
+
+	ImGui::Text("ScrapSize   %u ($%X)", scrapSize, scrapSize);
+	ImGui::Text("ScrapHandle $%08X", scrapHandle);
+	ImGui::Text("ScrapCount  %d", scrapCount);
+	ImGui::Text("ScrapState  %d  %s", scrapState,
+		scrapState > 0 ? "(in memory)" :
+		scrapState == 0 ? "(on disk)" : "(uninitialized)");
+	ImGui::Separator();
+
+	if (scrapState < 0) {
+		ImGui::TextDisabled("Scrap not initialized");
+		ImGui::End();
+		return;
+	}
+
+	if (scrapState == 0) {
+		ImGui::TextDisabled("Scrap on disk — not readable from RAM");
+		ImGui::End();
+		return;
+	}
+
+	if (scrapHandle == 0) {
+		ImGui::TextDisabled("ScrapHandle is NULL");
+		ImGui::End();
+		return;
+	}
+
+	/* Dereference handle: handle -> master pointer -> data */
+	uint32_t masterPtr = get_vm_long(scrapHandle);
+	if (masterPtr == 0) {
+		ImGui::TextDisabled("Master pointer is NULL (purged?)");
+		ImGui::End();
+		return;
+	}
+
+	ImGui::Text("Scrap data at $%08X", masterPtr);
+	ImGui::Separator();
+
+	/* Walk scrap entries */
+	uint32_t offset = 0;
+	int entryIdx = 0;
+	uint32_t ramSz = g_machine ? g_machine->ramSize() : 0;
+
+	while (offset + 8 <= scrapSize) {
+		uint32_t entryAddr = masterPtr + offset;
+
+		/* Bounds check */
+		if (entryAddr + 8 > ramSz) {
+			ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
+				"Entry %d: address $%08X out of RAM bounds", entryIdx, entryAddr);
+			break;
+		}
+
+		/* Read type (4 chars) and length */
+		char type[5];
+		for (int i = 0; i < 4; i++)
+			type[i] = (char)get_vm_byte(entryAddr + (uint32_t)i);
+		type[4] = '\0';
+
+		uint32_t entryLen = get_vm_long(entryAddr + 4);
+
+		/* Sanity check */
+		if (entryLen > scrapSize - offset - 8) {
+			ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
+				"Entry %d '%s': length %u exceeds remaining scrap (%u)",
+				entryIdx, type, entryLen, scrapSize - offset - 8);
+			break;
+		}
+
+		uint32_t dataAddr = entryAddr + 8;
+
+		char header[64];
+		snprintf(header, sizeof(header), "Entry %d: '%s'  %u bytes  @$%08X",
+			entryIdx, type, entryLen, dataAddr);
+
+		if (ImGui::CollapsingHeader(header,
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			if (entryLen == 0) {
+				ImGui::TextDisabled("  (empty)");
+			} else if (memcmp(type, "TEXT", 4) == 0) {
+				/* Decode TEXT — read bytes from guest, convert MacRoman */
+				uint32_t previewLen = (entryLen < 4096) ? entryLen : 4096;
+				std::vector<uint8_t> buf(previewLen);
+				for (uint32_t i = 0; i < previewLen; i++)
+					buf[i] = get_vm_byte(dataAddr + i);
+
+				std::string display = macRomanToDisplay(
+					buf.data(), entryLen, previewLen);
+
+				ImGui::Text("  Length: %u chars", entryLen);
+				ImGui::Indent();
+				ImGui::PushStyleColor(ImGuiCol_Text,
+					ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+				ImGui::TextWrapped("%s", display.c_str());
+				ImGui::PopStyleColor();
+				ImGui::Unindent();
+			} else {
+				/* Non-TEXT: hex dump first 128 bytes */
+				uint32_t dumpLen = (entryLen < 128) ? entryLen : 128;
+				ImGui::Text("  Hex (%u of %u bytes):", dumpLen, entryLen);
+				ImGui::Indent();
+
+				for (uint32_t row = 0; row < dumpLen; row += 16) {
+					char line[80];
+					int pos = snprintf(line, sizeof(line), "  %04X  ", row);
+					char ascii[17];
+					uint32_t cols = (dumpLen - row < 16) ? dumpLen - row : 16;
+
+					for (uint32_t c = 0; c < cols; c++) {
+						uint8_t v = get_vm_byte(dataAddr + row + c);
+						pos += snprintf(line + pos, sizeof(line) - (size_t)pos,
+							"%02X ", v);
+						ascii[c] = (v >= 0x20 && v < 0x7F) ? (char)v : '.';
+					}
+					ascii[cols] = '\0';
+					/* Pad if short row */
+					for (uint32_t c = cols; c < 16; c++)
+						pos += snprintf(line + pos, sizeof(line) - (size_t)pos,
+							"   ");
+					ImGui::Text("%s %s", line, ascii);
+				}
+
+				ImGui::Unindent();
+			}
+		}
+
+		/* Advance: 8 byte header + data padded to even */
+		offset += 8 + entryLen;
+		if (offset & 1) offset++;
+		entryIdx++;
+	}
+
+	if (entryIdx == 0 && scrapSize > 0) {
+		ImGui::TextDisabled("No scrap entries found (size=%u)", scrapSize);
+	}
+
+	ImGui::End();
+}
+
 /* ── Registration helper ───────────────────────────── */
 
 void RegisterDebugTools(ToolRegistry& registry)
@@ -307,4 +495,5 @@ void RegisterDebugTools(ToolRegistry& registry)
 	registry.registerTool(std::make_unique<MemoryTool>());
 	registry.registerTool(std::make_unique<VIATool>());
 	registry.registerTool(std::make_unique<TrapsTool>());
+	registry.registerTool(std::make_unique<ScrapTool>());
 }

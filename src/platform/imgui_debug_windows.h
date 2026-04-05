@@ -39,6 +39,12 @@ public:
 	void draw() override;
 };
 
+class ScrapTool : public ToolPanel {
+public:
+	const char* name() const override { return "Scrap"; }
+	void draw() override;
+};
+
 /* Register all debug tools with the given registry. */
 class ToolRegistry;
 void RegisterDebugTools(ToolRegistry& registry);
