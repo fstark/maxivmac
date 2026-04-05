@@ -8,6 +8,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 #ifdef HAVE_SDL
 #include <SDL3/SDL.h>
@@ -110,6 +111,10 @@ std::string hostClipGetTextMacRoman()
 	std::string result(len, '\0');
 	UniCodeStr2MacRoman(utf8, result.data());
 	SDL_free(utf8);
+	/* Host uses LF (0x0A), Mac uses CR (0x0D) */
+	for (auto &ch : result) {
+		if (ch == '\n') ch = '\r';
+	}
 	return result;
 #else
 	return {};
@@ -119,9 +124,14 @@ std::string hostClipGetTextMacRoman()
 void hostClipSetText(const uint8_t *macRoman, uint32_t len)
 {
 #ifdef HAVE_SDL
-	uint32_t sz = MacRoman2UniCodeSize(const_cast<uint8_t *>(macRoman), len);
+	/* Mac uses CR (0x0D), host uses LF (0x0A) */
+	std::vector<uint8_t> buf(macRoman, macRoman + len);
+	for (auto &ch : buf) {
+		if (ch == '\r') ch = '\n';
+	}
+	uint32_t sz = MacRoman2UniCodeSize(buf.data(), len);
 	std::string utf8(sz + 1, '\0');
-	MacRoman2UniCodeData(const_cast<uint8_t *>(macRoman), len, utf8.data());
+	MacRoman2UniCodeData(buf.data(), len, utf8.data());
 	utf8[sz] = '\0';
 	SDL_SetClipboardText(utf8.c_str());
 #else

@@ -1,148 +1,1 @@
-/*
-	ClipSync main.c
-
-	One-shot console app for THINK C.
-	Imports the host clipboard into the Mac scrap.
-
-	Usage: build as a THINK C ANSI project, run inside the
-	emulated Mac.  Host clipboard text appears in the Mac
-	clipboard after running.
-
-	Register interface at extnBlockBase + $20:
-	  +$00 word  command  (write triggers dispatch)
-	  +$02 word  result   (read)
-	  +$04 long  p0       (read/write)
-	  +$08 long  p1       (read/write)
-
-	Commands:
-	  $100 ClipVersion   -> p0 = version
-	  $102 ClipImport    p0=buf addr, p1=capacity -> p1=actual
-	  $103 ClipHasData   -> p0 = 0 or 1
-	  $104 ClipGetLen    -> p0 = byte count
-*/
-
-#include <stdio.h>
-#include <Memory.h>
-#include <Scrap.h>
-
-/* ---- extension discovery ---- */
-
-#define kSonyVarsPtr    0x0134
-#define kCheckVal       0x841339E2UL
-
-typedef struct {
-	unsigned long zeroes[4];
-	unsigned long checkval;
-	unsigned long pokeaddr;
-} MyDriverDat_R;
-
-static char *find_reg_base(void)
-{
-	MyDriverDat_R *sv;
-
-	sv = *(MyDriverDat_R **)kSonyVarsPtr;
-	if (sv == NULL)
-		return NULL;
-	if (sv->zeroes[0] != 0 || sv->zeroes[1] != 0 || sv->zeroes[2] != 0)
-		return NULL;
-	if (sv->checkval != kCheckVal)
-		return NULL;
-	if (sv->pokeaddr == 0)
-		return NULL;
-
-	/* new register block is 32 bytes past the legacy block */
-	return (char *)(sv->pokeaddr + 0x20);
-}
-
-/* ---- register access helpers ---- */
-
-#define REG_COMMAND  0x00
-#define REG_RESULT   0x02
-#define REG_P0       0x04
-#define REG_P1       0x08
-
-static void reg_set_p0(char *base, unsigned long v)
-{
-	*(unsigned long *)(base + REG_P0) = v;
-}
-
-static unsigned long reg_get_p0(char *base)
-{
-	return *(unsigned long *)(base + REG_P0);
-}
-
-static void reg_set_p1(char *base, unsigned long v)
-{
-	*(unsigned long *)(base + REG_P1) = v;
-}
-
-static unsigned long reg_get_p1(char *base)
-{
-	return *(unsigned long *)(base + REG_P1);
-}
-
-static void reg_command(char *base, unsigned short cmd)
-{
-	*(unsigned short *)(base + REG_COMMAND) = cmd;
-}
-
-static unsigned short reg_result(char *base)
-{
-	return *(unsigned short *)(base + REG_RESULT);
-}
-
-/* ---- main ---- */
-
-int main(void)
-{
-	char *base;
-	long len, actual;
-	Ptr buf;
-
-	base = find_reg_base();
-	if (base == NULL) {
-		printf("No emulator extension found\n");
-		return 1;
-	}
-
-	/* ClipHasData */
-	reg_command(base, 0x0103);
-	if (reg_get_p0(base) == 0) {
-		printf("No clipboard data on host\n");
-		return 0;
-	}
-
-	/* ClipGetLen */
-	reg_command(base, 0x0104);
-	len = (long)reg_get_p0(base);
-	if (len == 0) {
-		printf("Empty clipboard\n");
-		return 0;
-	}
-
-	/* Allocate */
-	buf = NewPtr(len);
-	if (buf == NULL) {
-		printf("Out of memory (%ld bytes)\n", len);
-		return 1;
-	}
-
-	/* ClipImport */
-	reg_set_p0(base, (unsigned long)buf);
-	reg_set_p1(base, (unsigned long)len);
-	reg_command(base, 0x0102);
-	if (reg_result(base) != 0) {
-		printf("Import failed (err %d)\n", reg_result(base));
-		DisposPtr(buf);
-		return 1;
-	}
-	actual = (long)reg_get_p1(base);
-
-	/* Put into Mac scrap */
-	ZeroScrap();
-	PutScrap(actual, 'TEXT', buf);
-	printf("Imported %ld bytes into clipboard\n", actual);
-
-	DisposPtr(buf);
-	return 0;
-}
+/*	ClipSync main.c	One-shot console app for THINK C.	Imports the host clipboard into the Mac scrap.	Usage: build as a THINK C ANSI project, run inside the	emulated Mac.  Host clipboard text appears in the Mac	clipboard after running.	Register interface at extnBlockBase + $20:	  +$00 word  command  (write triggers dispatch)	  +$02 word  result   (read)	  +$04 long  p0       (read/write)	  +$08 long  p1       (read/write)	Commands:	  $100 ClipVersion   -> p0 = version	  $102 ClipImport    p0=buf addr, p1=capacity -> p1=actual	  $103 ClipHasData   -> p0 = 0 or 1	  $104 ClipGetLen    -> p0 = byte count*/#include <stdio.h>#include <Memory.h>#include <Scrap.h>/* ---- extension discovery ---- */#define kSonyVarsPtr    0x0134#define kCheckVal       0x841339E2ULtypedef struct {	unsigned long zeroes[4];	unsigned long checkval;	unsigned long pokeaddr;} MyDriverDat_R;static char *find_reg_base(void){	MyDriverDat_R *sv;	sv = *(MyDriverDat_R **)kSonyVarsPtr;	if (sv == NULL)		return NULL;	if (sv->zeroes[0] != 0 || sv->zeroes[1] != 0 || sv->zeroes[2] != 0)		return NULL;	if (sv->checkval != kCheckVal)		return NULL;	if (sv->pokeaddr == 0)		return NULL;	/* new register block is 32 bytes past the legacy block */	return (char *)(sv->pokeaddr + 0x20);}/* ---- register access helpers ---- */#define REG_COMMAND  0x00#define REG_RESULT   0x02#define REG_P0       0x04#define REG_P1       0x08static void reg_set_p0(char *base, unsigned long v){	*(unsigned long *)(base + REG_P0) = v;}static unsigned long reg_get_p0(char *base){	return *(unsigned long *)(base + REG_P0);}static void reg_set_p1(char *base, unsigned long v){	*(unsigned long *)(base + REG_P1) = v;}static unsigned long reg_get_p1(char *base){	return *(unsigned long *)(base + REG_P1);}static void reg_command(char *base, unsigned short cmd){	*(unsigned short *)(base + REG_COMMAND) = cmd;}static unsigned short reg_result(char *base){	return *(unsigned short *)(base + REG_RESULT);}/* ---- main ---- */int main(void){	char *base;	long len, actual;	Ptr buf;	base = find_reg_base();	if (base == NULL) {		printf("No emulator extension found\n");		return 1;	}	/* ClipHasData */	reg_command(base, 0x0103);	if (reg_get_p0(base) == 0) {		printf("No clipboard data on host\n");		return 0;	}	/* ClipGetLen */	reg_command(base, 0x0104);	len = (long)reg_get_p0(base);	if (len == 0) {		printf("Empty clipboard\n");		return 0;	}	/* Allocate */	buf = NewPtr(len);	if (buf == NULL) {		printf("Out of memory (%ld bytes)\n", len);		return 1;	}	/* ClipImport */	reg_set_p0(base, (unsigned long)buf);	reg_set_p1(base, (unsigned long)len);	reg_command(base, 0x0102);	if (reg_result(base) != 0) {		printf("Import failed (err %d)\n", reg_result(base));		DisposPtr(buf);		return 1;	}	actual = (long)reg_get_p1(base);	/* Put into Mac scrap */	ZeroScrap();	PutScrap(actual, 'TEXT', buf);	printf("Imported %ld bytes into clipboard\n", actual);	DisposPtr(buf);	return 0;}
