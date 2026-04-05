@@ -85,6 +85,18 @@ void extnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 					buf[i] = get_vm_byte(guestAddr + i);
 				}
 				hostClipSetText(buf.data(), count);
+
+				/*
+					Update cache to match what we just exported.
+					This prevents ClipSeqNo from seeing the export
+					as a "new" host change (feedback loop).
+					The cache is Mac Roman with CRs — same encoding
+					as the buffer we just read from guest RAM.
+				*/
+				s_lastClipText.assign(
+					reinterpret_cast<char *>(buf.data()), count);
+				s_clipCache = s_lastClipText;
+
 				regResult = 0;
 			}
 			break;
