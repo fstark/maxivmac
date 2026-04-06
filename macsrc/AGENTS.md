@@ -21,10 +21,18 @@ clipboard.  Calls `GetScrap` to read the Mac scrap, then `HTCExport`
 to send it to the host.
 
 ### clipsync/
-**ClipSync** — Console app (THINK C ANSI project).  Imports the host
-clipboard into the Mac scrap using the new register-block I/O
-interface at `extnBlockBase + $20`.  No pbufs — the host writes
-directly to guest RAM.  See `CLIPBOARD_PLAN.md` for the protocol.
+**ClipSync** — Clipboard synchronization between host and emulated Mac.
+
+- **main.c** — Console app (THINK C ANSI project).  Bidirectional sync
+  using the register-block I/O interface at `extnBlockBase + $20`.
+  Works under Finder; does not work under MultiFinder.  Kept for
+  reference/debugging.
+
+- **init.c** — INIT resource (THINK C code resource project).  Installs
+  a jGNEFilter that runs in each app's partition context, bypassing
+  MultiFinder per-partition scrap isolation.  Per-app sync state stored
+  on host via KV commands ($106/$107).  Requires extension version >= 2.
+  See `CLIPBOARD_PLAN.md` and `INIT_PLAN.md` for design.
 
 ### importfl/
 **ImportFl** — Application.  Imports a file from the host into the

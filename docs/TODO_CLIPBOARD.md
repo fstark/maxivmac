@@ -9,13 +9,19 @@ is visible on the other.
 **Phase 1–2 implemented** (register I/O infrastructure + clipboard
 commands).  See `CLIPBOARD_PLAN.md` for the full design and protocol.
 
-**Phase 3 implemented** — `macsrc/clipsync/main.c` is a one-shot
-THINK C console app that imports the host clipboard into the Mac scrap.
+**Phase 3 implemented** — `macsrc/clipsync/main.c` is a bidirectional
+sync console app.  Works under Finder but not MultiFinder.
+
+**Phase 4 implemented** — `macsrc/clipsync/init.c` is a jGNEFilter
+INIT that bypasses MultiFinder per-partition scrap isolation.  The
+filter fires in each app's partition context and stores per-app sync
+state on the host via KV commands ($106/$107).  Extension version
+bumped to 2.
 
 **Remaining work:**
-- Bidirectional sync (Mac → host via ClipExport)
-- INIT with trap patches for transparent operation
-- jGNEFilter polling for automatic host → Mac sync
+- Manual testing under MultiFinder with multiple apps
+- Edge cases: empty clipboard, large clipboard (>4K)
+- Consider PICT scrap type support
 
 ## I/O Register Interface
 
@@ -59,7 +65,7 @@ ExtFS INIT) uses `$F0C020`.
 ```
 Command       Code   Parameters                    Returns
 -----------   ----   ----------                    -------
-ClipVersion   $100   —                             p0 = version (1)
+ClipVersion   $100   —                             p0 = version (2)
 ClipExport    $101   p0 = guest buffer address     result
                      p1 = byte count
                      (text in Mac OS Roman)
@@ -75,6 +81,8 @@ ClipSeqNo     $105   —                             p0 = host clipboard
                                                    sequence number (bumped
                                                    on every host clipboard
                                                    change)
+ClipKVSet     $106   p0 = key, p1 = value          result
+ClipKVGet     $107   p0 = key                      p0 = value (0 if unset)
 ```
 
 The C++ side does encoding conversion (UTF-8 ↔ Mac OS Roman) and
@@ -84,40 +92,43 @@ No pbufs.  The 68k side allocates a buffer (`_NewPtr`), passes its
 address.  The C++ side reads/writes guest RAM directly via
 `get_vm_byte` / `put_vm_byte`.
 
-## Mac Side — INIT
+## Mac Side — INIT (jGNEFilter)
 
-A small 68k INIT, loaded at boot from the System file (or injected
-into the system heap by the emulator via a ROM patch).
+A small 68k INIT (`macsrc/clipsync/init.c`), loaded at boot from the
+System file.  Source: `macsrc/clipsync/init.c` (THINK C code resource).
 
 ### What it does
 
-1. **At load time:**  patch `_ZeroScrap` and `_PutScrap` traps.
+1. **At load time** (`main`):
+   - Finds extension register base via `SonyVarsPtr` chain
+   - Checks `ClipVersion` >= 2 (needs KV commands)
+   - Allocates `FilterGlobals` in system heap
+   - Stores globals pointer at $0B00 (scratch area)
+   - Saves previous `jGNEFilter` ($029A) and installs ours
+   - Seeds initial KV state for the startup app
+   - `DetachResource` + `HLock` on self to stay resident
 
-2. **`_PutScrap` patch:**  call through to the real `_PutScrap`.
-   If the type is `'TEXT'`, read the scrap data and call
-   `ClipExport` to push it to the host.
+2. **jGNEFilter entry** (`FilterEntry`):
+   - Inline asm: saves D1-D2/A0-A4, calls `SyncOnGNE`, restores
+   - Chains to previous filter via JMP (or returns if none)
 
-3. **Periodic host→Mac sync:**  hook into the main event loop via
-   `_GetNextEvent` or `_WaitNextEvent` patch (or a jGNEFilter).
-   On each call, check `ClipSeqNo`.  If it changed since last
-   check:
-   - Call `ClipGetLen` to get the size.
-   - Allocate a buffer, call `ClipImport`.
-   - Call `_ZeroScrap` (bypass our own patch to avoid re-export)
-     then `_PutScrap` with type `'TEXT'`.
+3. **`SyncOnGNE`** — called on every GNE/WNE, in whichever app's
+   partition context is active:
+   - Throttled to 30 ticks (~0.5s) via `TickCount`
+   - Uses `CurApRefNum` ($0900) as per-app key
+   - **Host→Mac:** compares `ClipSeqNo` vs KV-stored `lastSeq`;
+     if different, calls `ClipImport` → `ZeroScrap` + `PutScrap`
+   - **Mac→Host:** compares `ScrapCount` ($0968) vs KV-stored
+     `lastCnt`; if different, calls `GetScrap` → `ClipExport`
 
-That's it.  No background tasks, no DA, no application.
+### Key design decisions
 
-### 68k code size estimate
-
-The INIT is essentially:
-
-- Trap patches for `_PutScrap`, `_ZeroScrap`, `_GetNextEvent` — a
-  few `GetTrapAddress` / `SetTrapAddress` calls in the INIT body.
-- The `_PutScrap` patch: ~20 instructions (check type, get scrap
-  data, set up registers, trigger I/O, call through).
-- The GNE filter: ~30 instructions (read `ClipSeqNo`, compare,
-  get length, allocate, trigger I/O, call `PutScrap`, deallocate).
+- **State on host via KV store** — avoids A5/globals issues under
+  MultiFinder.  Each partition has its own KV keys.
+- **jGNEFilter, not trap patches** — simpler, guaranteed to fire in
+  each app's context, no reentrancy issues.
+- **CurApRefNum as partition ID** — unique per open app, used to
+  index the KV store (`appId*2` for seq, `appId*2+1` for count).
 
 Total: well under 1 KB of 68k code.
 

@@ -2,10 +2,14 @@
 
 ## Status
 
-- Host→Mac import works under Finder (single app)
-- Does NOT work under MultiFinder — per-partition scrap isolation
-- UnloadScrap() after PutScrap did not help
-- Need deeper investigation into MultiFinder scrap propagation
+- **main.c** — bidirectional sync console app.  Works under Finder
+  (single app).  Does NOT work under MultiFinder due to per-partition
+  scrap isolation.  Kept for reference/debugging.
+- **init.c** — jGNEFilter INIT that bypasses MultiFinder isolation.
+  Filter fires in each app's partition context.  Per-app state stored
+  on host via KV commands ($106/$107).  Throttled to 30 ticks.
+  Requires extension version >= 2.
+- UnloadScrap() after PutScrap did not fix MultiFinder isolation
 
 ## Relevant Documentation
 
@@ -35,30 +39,23 @@
 | Inside Macintosh Vol V, ch 9 | Compatibility Guidelines | MultiFinder-aware app requirements |
 | Programmer's Guide to MultiFinder (APDA) | Full MultiFinder programming guide | Definitive reference for suspend/resume, scrap conversion, SIZE resource, background processing |
 
-## Key Questions to Resolve
+## Key Questions (Resolved)
 
 1. **How does MultiFinder propagate scrap between partitions?**
-   - TN#180 says it watches `_SysEdit` and menu events
-   - Does it also check on resume? Does it read the Clipboard File?
-   - What exactly triggers `LoadScrap` in the receiving partition?
+   - Answer: It watches `_SysEdit` and menu events (TN#180).
+     On resume with convertClipboardFlag set, the app should call
+     ConvertDeskScrapToPrivate.  But this is insufficient for us.
+   - Solution: jGNEFilter bypasses all of this — it writes directly
+     to whatever partition is active.
 
-2. **Suspend/Resume event clipboard bit**
-   - app4Evt (event code 15), message low byte: 0=suspend, 1=resume
-   - message bit 1: "convertClipboardFlag" — if set, app should convert scrap
-   - Need IM Vol V to confirm exact format and semantics
+2. **Approach chosen: jGNEFilter ($029A) INIT**
+   - Filter fires in each app's partition context on GNE/WNE
+   - Uses CurApRefNum ($0900) as per-app identifier
+   - State stored on host via KV commands — no A5/globals issues
+   - See init.c for implementation
 
-3. **Could we patch `_ZeroScrap`/`_PutScrap` from an INIT?**
-   - Runs in the calling app's partition context
-   - Could intercept and propagate to other partitions
-   - But: how to find other partitions' scrap globals?
+## Remaining Work
 
-4. **Could we patch `_GetNextEvent`/`_WaitNextEvent`?**
-   - INIT trap patch runs in each app's context
-   - Could check host clipboard and import before returning
-   - Avoids per-partition isolation entirely
-   - But: A5 management, reentrancy, must not move memory at wrong time
-
-5. **Alternative: work at the TE scrap level?**
-   - Directly write `TEScrpHandle` ($0AB4) and `TEScrpLength` ($0AB0)
-   - Bypasses desk scrap entirely for TE-based apps
-   - But: only works for TEXT, doesn't help non-TE apps
+- Test under MultiFinder with multiple apps
+- Test edge cases: empty clipboard, large clipboard (>4K)
+- Consider adding support for PICT scrap type
