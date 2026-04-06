@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstdint>
 #include <algorithm>
+#include <unordered_map>
 
 /* Guest RAM access — just need these four functions from m68k */
 extern uint8_t get_vm_byte(uint32_t addr);
@@ -16,8 +17,11 @@ static constexpr uint16_t kClipImport  = 0x102;
 static constexpr uint16_t kClipHasData = 0x103;
 static constexpr uint16_t kClipGetLen  = 0x104;
 static constexpr uint16_t kClipSeqNo   = 0x105;
+static constexpr uint16_t kClipKVSet   = 0x106;
+static constexpr uint16_t kClipKVGet   = 0x107;
 
 static std::string s_clipCache;
+static std::unordered_map<uint32_t, uint32_t> s_kvStore;
 static uint32_t    s_clipSeqNo = 0;
 static std::string s_lastClipText;
 
@@ -30,7 +34,7 @@ void extnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 {
 	switch (cmd) {
 		case kClipVersion:
-			regParam[0] = 1;
+			regParam[0] = 2;
 			regResult = 0;
 			break;
 
@@ -97,6 +101,19 @@ void extnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 					reinterpret_cast<char *>(buf.data()), count);
 				s_clipCache = s_lastClipText;
 
+				regResult = 0;
+			}
+			break;
+
+		case kClipKVSet:
+			s_kvStore[regParam[0]] = regParam[1];
+			regResult = 0;
+			break;
+
+		case kClipKVGet:
+			{
+				auto it = s_kvStore.find(regParam[0]);
+				regParam[0] = (it != s_kvStore.end()) ? it->second : 0;
 				regResult = 0;
 			}
 			break;

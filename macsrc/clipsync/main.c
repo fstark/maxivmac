@@ -1,1 +1,262 @@
-/*	ClipSync main.c	Bidirectional clipboard sync between host and emulated Mac.	THINK C ANSI project — runs inside the emulated Mac.	Polls every ~0.5 seconds:	  - If Mac scrap changed  -> export to host  (ClipExport)	  - If host clip changed  -> import to Mac   (ClipImport)	Press any key to quit.	The core logic is in SyncClipboard(), designed so a future	INIT can call the same logic from a jGNEFilter or periodic	task.	Register interface at extnBlockBase + $20:	  $100 ClipVersion   -> p0 = version	  $101 ClipExport    p0=buf addr, p1=byte count	  $102 ClipImport    p0=buf addr, p1=capacity -> p1=actual	  $103 ClipHasData   -> p0 = 0 or 1	  $104 ClipGetLen    -> p0 = byte count	  $105 ClipSeqNo     -> p0 = sequence number*/#include <stdio.h>#include <Memory.h>#include <Scrap.h>#include <Events.h>#include <OSUtils.h>/* ---- extension discovery ---- */#define kSonyVarsPtr    0x0134#define kCheckVal       0x841339E2ULtypedef struct {	unsigned long zeroes[4];	unsigned long checkval;	unsigned long pokeaddr;} MyDriverDat_R;static char *find_reg_base(void){	MyDriverDat_R *sv;	sv = *(MyDriverDat_R **)kSonyVarsPtr;	if (sv == NULL)		return NULL;	if (sv->zeroes[0] != 0 || sv->zeroes[1] != 0 || sv->zeroes[2] != 0)		return NULL;	if (sv->checkval != kCheckVal)		return NULL;	if (sv->pokeaddr == 0)		return NULL;	return (char *)(sv->pokeaddr + 0x20);}/* ---- register access helpers ---- */#define REG_COMMAND  0x00#define REG_RESULT   0x02#define REG_P0       0x04#define REG_P1       0x08static void reg_set_p0(char *base, unsigned long v){	*(unsigned long *)(base + REG_P0) = v;}static unsigned long reg_get_p0(char *base){	return *(unsigned long *)(base + REG_P0);}static void reg_set_p1(char *base, unsigned long v){	*(unsigned long *)(base + REG_P1) = v;}static unsigned long reg_get_p1(char *base){	return *(unsigned long *)(base + REG_P1);}static void reg_command(char *base, unsigned short cmd){	*(unsigned short *)(base + REG_COMMAND) = cmd;}static unsigned short reg_result(char *base){	return *(unsigned short *)(base + REG_RESULT);}/* ---- clipboard operations ---- *//*	Export Mac scrap to host clipboard.	Reads 'TEXT' from the desk scrap, sends via ClipExport.	Returns: number of bytes exported, or -1 on error.*/static long ExportMacToHost(char *regBase){	Handle h;	long offset;	long length;	h = NewHandle(0);	if (h == NULL)		return -1;	length = GetScrap(h, 'TEXT', &offset);	if (length <= 0) {		DisposHandle(h);		return (length == 0) ? 0 : -1;	}	HLock(h);	reg_set_p0(regBase, (unsigned long)*h);	reg_set_p1(regBase, (unsigned long)length);	reg_command(regBase, 0x0101);	HUnlock(h);	DisposHandle(h);	if (reg_result(regBase) != 0)		return -1;	return length;}/*	Import host clipboard to Mac scrap.	Calls ClipGetLen + ClipImport, then ZeroScrap + PutScrap + UnloadScrap.	Returns: number of bytes imported, or -1 on error / 0 if empty.*/static long ImportHostToMac(char *regBase){	long len, actual;	Ptr buf;	/* ClipGetLen */	reg_command(regBase, 0x0104);	len = (long)reg_get_p0(regBase);	if (len <= 0)		return 0;	buf = NewPtr(len);	if (buf == NULL)		return -1;	/* ClipImport */	reg_set_p0(regBase, (unsigned long)buf);	reg_set_p1(regBase, (unsigned long)len);	reg_command(regBase, 0x0102);	if (reg_result(regBase) != 0) {		DisposPtr(buf);		return -1;	}	actual = (long)reg_get_p1(regBase);	ZeroScrap();	PutScrap(actual, 'TEXT', buf);	UnloadScrap();	DisposPtr(buf);	return actual;}/* ---- sync logic ---- *//*	SyncClipboard - bidirectional sync, one poll cycle.	Call this periodically.  It compares Mac scrapCount and	host ClipSeqNo against the caller's last-known values,	and syncs whichever side changed.	Returns:	  0 = no change	  1 = imported host -> Mac	  2 = exported Mac -> host	After an import, *lastScrapCount is updated to the new	scrapCount (since our ZeroScrap+PutScrap bumps it).*/static int SyncClipboard(char *regBase,	short *lastScrapCount, unsigned long *lastHostSeqNo){	PScrapStuff scrapInfo;	unsigned long hostSeqNo;	long n;	/* Check Mac side first */	scrapInfo = InfoScrap();	if (scrapInfo->scrapCount != *lastScrapCount) {		n = ExportMacToHost(regBase);		*lastScrapCount = scrapInfo->scrapCount;		if (n > 0) {			printf("-> host: %ld bytes\n", n);			return 2;		}	}	/* Check host side */	reg_command(regBase, 0x0105);	hostSeqNo = reg_get_p0(regBase);	if (hostSeqNo != *lastHostSeqNo) {		n = ImportHostToMac(regBase);		*lastHostSeqNo = hostSeqNo;		/* Update scrapCount — our own ZeroScrap+PutScrap bumped it */		*lastScrapCount = InfoScrap()->scrapCount;		if (n > 0) {			printf("<- host: %ld bytes\n", n);			return 1;		}	}	return 0;}/* ---- main ---- */int main(void){	char *regBase;	short lastScrapCount;	unsigned long lastHostSeqNo;	unsigned long dummy;	EventRecord event;	regBase = find_reg_base();	if (regBase == NULL) {		printf("No emulator extension found\n");		return 1;	}	/* ClipVersion check */	reg_command(regBase, 0x0100);	printf("ClipSync v%lu — press any key to quit\n",		reg_get_p0(regBase));	/* Capture initial state */	lastScrapCount = InfoScrap()->scrapCount;	reg_command(regBase, 0x0105);	lastHostSeqNo = reg_get_p0(regBase);	/* Sync loop */	for (;;) {		SystemTask();		if (GetNextEvent(keyDownMask, &event))			break;		SyncClipboard(regBase, &lastScrapCount, &lastHostSeqNo);		Delay(30, &dummy);   /* ~0.5 sec */	}	printf("Quit\n");	return 0;}
+/*
+	ClipSync main.c
+
+	Bidirectional clipboard sync between host and emulated Mac.
+	THINK C ANSI project — runs inside the emulated Mac.
+
+	Polls every ~0.5 seconds:
+	  - If Mac scrap changed  -> export to host  (ClipExport)
+	  - If host clip changed  -> import to Mac   (ClipImport)
+
+	Press any key to quit.
+
+	The core logic is in SyncClipboard(), designed so a future
+	INIT can call the same logic from a jGNEFilter or periodic
+	task.
+
+	Register interface at extnBlockBase + $20:
+	  $100 ClipVersion   -> p0 = version
+	  $101 ClipExport    p0=buf addr, p1=byte count
+	  $102 ClipImport    p0=buf addr, p1=capacity -> p1=actual
+	  $103 ClipHasData   -> p0 = 0 or 1
+	  $104 ClipGetLen    -> p0 = byte count
+	  $105 ClipSeqNo     -> p0 = sequence number
+*/
+
+#include <stdio.h>
+#include <Memory.h>
+#include <Scrap.h>
+#include <Events.h>
+#include <OSUtils.h>
+
+/* ---- extension discovery ---- */
+
+#define kSonyVarsPtr    0x0134
+#define kCheckVal       0x841339E2UL
+
+typedef struct {
+	unsigned long zeroes[4];
+	unsigned long checkval;
+	unsigned long pokeaddr;
+} MyDriverDat_R;
+
+static char *find_reg_base(void)
+{
+	MyDriverDat_R *sv;
+
+	sv = *(MyDriverDat_R **)kSonyVarsPtr;
+	if (sv == NULL)
+		return NULL;
+	if (sv->zeroes[0] != 0 || sv->zeroes[1] != 0 || sv->zeroes[2] != 0)
+		return NULL;
+	if (sv->checkval != kCheckVal)
+		return NULL;
+	if (sv->pokeaddr == 0)
+		return NULL;
+
+	return (char *)(sv->pokeaddr + 0x20);
+}
+
+/* ---- register access helpers ---- */
+
+#define REG_COMMAND  0x00
+#define REG_RESULT   0x02
+#define REG_P0       0x04
+#define REG_P1       0x08
+
+static void reg_set_p0(char *base, unsigned long v)
+{
+	*(unsigned long *)(base + REG_P0) = v;
+}
+
+static unsigned long reg_get_p0(char *base)
+{
+	return *(unsigned long *)(base + REG_P0);
+}
+
+static void reg_set_p1(char *base, unsigned long v)
+{
+	*(unsigned long *)(base + REG_P1) = v;
+}
+
+static unsigned long reg_get_p1(char *base)
+{
+	return *(unsigned long *)(base + REG_P1);
+}
+
+static void reg_command(char *base, unsigned short cmd)
+{
+	*(unsigned short *)(base + REG_COMMAND) = cmd;
+}
+
+static unsigned short reg_result(char *base)
+{
+	return *(unsigned short *)(base + REG_RESULT);
+}
+
+/* ---- clipboard operations ---- */
+
+/*
+	Export Mac scrap to host clipboard.
+	Reads 'TEXT' from the desk scrap, sends via ClipExport.
+	Returns: number of bytes exported, or -1 on error.
+*/
+static long ExportMacToHost(char *regBase)
+{
+	Handle h;
+	long offset;
+	long length;
+
+	h = NewHandle(0);
+	if (h == NULL)
+		return -1;
+
+	length = GetScrap(h, 'TEXT', &offset);
+	if (length <= 0) {
+		DisposHandle(h);
+		return (length == 0) ? 0 : -1;
+	}
+
+	HLock(h);
+	reg_set_p0(regBase, (unsigned long)*h);
+	reg_set_p1(regBase, (unsigned long)length);
+	reg_command(regBase, 0x0101);
+	HUnlock(h);
+	DisposHandle(h);
+
+	if (reg_result(regBase) != 0)
+		return -1;
+
+	return length;
+}
+
+/*
+	Import host clipboard to Mac scrap.
+	Calls ClipGetLen + ClipImport, then ZeroScrap + PutScrap + UnloadScrap.
+	Returns: number of bytes imported, or -1 on error / 0 if empty.
+*/
+static long ImportHostToMac(char *regBase)
+{
+	long len, actual;
+	Ptr buf;
+
+	/* ClipGetLen */
+	reg_command(regBase, 0x0104);
+	len = (long)reg_get_p0(regBase);
+	if (len <= 0)
+		return 0;
+
+	buf = NewPtr(len);
+	if (buf == NULL)
+		return -1;
+
+	/* ClipImport */
+	reg_set_p0(regBase, (unsigned long)buf);
+	reg_set_p1(regBase, (unsigned long)len);
+	reg_command(regBase, 0x0102);
+	if (reg_result(regBase) != 0) {
+		DisposPtr(buf);
+		return -1;
+	}
+	actual = (long)reg_get_p1(regBase);
+
+	ZeroScrap();
+	PutScrap(actual, 'TEXT', buf);
+	UnloadScrap();
+	DisposPtr(buf);
+
+	return actual;
+}
+
+/* ---- sync logic ---- */
+
+/*
+	SyncClipboard - bidirectional sync, one poll cycle.
+
+	Call this periodically.  It compares Mac scrapCount and
+	host ClipSeqNo against the caller's last-known values,
+	and syncs whichever side changed.
+
+	Returns:
+	  0 = no change
+	  1 = imported host -> Mac
+	  2 = exported Mac -> host
+
+	After an import, *lastScrapCount is updated to the new
+	scrapCount (since our ZeroScrap+PutScrap bumps it).
+*/
+static int SyncClipboard(char *regBase,
+	short *lastScrapCount, unsigned long *lastHostSeqNo)
+{
+	PScrapStuff scrapInfo;
+	unsigned long hostSeqNo;
+	long n;
+
+	/* Check Mac side first */
+	scrapInfo = InfoScrap();
+	if (scrapInfo->scrapCount != *lastScrapCount) {
+		n = ExportMacToHost(regBase);
+		*lastScrapCount = scrapInfo->scrapCount;
+		if (n > 0) {
+			printf("-> host: %ld bytes\n", n);
+			return 2;
+		}
+	}
+
+	/* Check host side */
+	reg_command(regBase, 0x0105);
+	hostSeqNo = reg_get_p0(regBase);
+	if (hostSeqNo != *lastHostSeqNo) {
+		n = ImportHostToMac(regBase);
+		*lastHostSeqNo = hostSeqNo;
+		/* Update scrapCount — our own ZeroScrap+PutScrap bumped it */
+		*lastScrapCount = InfoScrap()->scrapCount;
+		if (n > 0) {
+			printf("<- host: %ld bytes\n", n);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+/* ---- main ---- */
+
+int main(void)
+{
+	char *regBase;
+	short lastScrapCount;
+	unsigned long lastHostSeqNo;
+	unsigned long dummy;
+	EventRecord event;
+
+	regBase = find_reg_base();
+	if (regBase == NULL) {
+		printf("No emulator extension found\n");
+		return 1;
+	}
+
+	/* ClipVersion check */
+	reg_command(regBase, 0x0100);
+	printf("ClipSync v%lu — press any key to quit\n",
+		reg_get_p0(regBase));
+
+	/* Capture initial state */
+	lastScrapCount = InfoScrap()->scrapCount;
+	reg_command(regBase, 0x0105);
+	lastHostSeqNo = reg_get_p0(regBase);
+
+	/* Sync loop */
+	for (;;) {
+		SystemTask();
+		if (GetNextEvent(keyDownMask, &event))
+			break;
+
+		SyncClipboard(regBase, &lastScrapCount, &lastHostSeqNo);
+
+		Delay(30, &dummy);   /* ~0.5 sec */
+	}
+
+	printf("Quit\n");
+	return 0;
+}
