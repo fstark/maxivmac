@@ -1,5 +1,9 @@
 # INIT Clipboard Sync — Implementation Plan
 
+## Status: Phases 1–3 DONE
+
+Phases 1–3 committed. Phase 4 (manual testing) remains.
+
 ## Overview
 
 Replace the ClipSync polling app with an INIT that installs a jGNEFilter.

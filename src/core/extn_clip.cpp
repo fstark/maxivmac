@@ -3,9 +3,12 @@
 
 #include <string>
 #include <vector>
+#include <deque>
 #include <cstdint>
+#include <cstdio>
 #include <algorithm>
 #include <unordered_map>
+#include <mutex>
 
 /* Guest RAM access — just need these four functions from m68k */
 extern uint8_t get_vm_byte(uint32_t addr);
@@ -19,11 +22,113 @@ static constexpr uint16_t kClipGetLen  = 0x104;
 static constexpr uint16_t kClipSeqNo   = 0x105;
 static constexpr uint16_t kClipKVSet   = 0x106;
 static constexpr uint16_t kClipKVGet   = 0x107;
+static constexpr uint16_t kClipDbgLog  = 0x108;
 
 static std::string s_clipCache;
 static std::unordered_map<uint32_t, uint32_t> s_kvStore;
 static uint32_t    s_clipSeqNo = 0;
 static std::string s_lastClipText;
+
+/* ── Debug console log buffer ──────────────────────── */
+
+static constexpr size_t kMaxConsoleLines = 2048;
+static std::deque<std::string> s_consoleLines;
+
+const std::deque<std::string>& extnDbgConsoleLines()
+{
+	return s_consoleLines;
+}
+
+static void consoleAppend(const std::string &line)
+{
+	fprintf(stderr, "[GUEST] %s\n", line.c_str());
+	s_consoleLines.push_back(line);
+	while (s_consoleLines.size() > kMaxConsoleLines) {
+		s_consoleLines.pop_front();
+	}
+}
+
+/* Read a C string from guest RAM (max 256 bytes, MacRoman). */
+static std::string readGuestString(uint32_t addr, size_t maxLen = 256)
+{
+	std::string s;
+	s.reserve(maxLen);
+	for (size_t i = 0; i < maxLen; i++) {
+		uint8_t ch = get_vm_byte(addr + static_cast<uint32_t>(i));
+		if (ch == 0) break;
+		s.push_back(static_cast<char>(ch));
+	}
+	return s;
+}
+
+/*
+	Format a guest printf-style string with up to 6 long args.
+	Supported: %lx (hex), %ld (decimal), %lu (unsigned decimal),
+	           %s (guest string pointer), %% (literal %).
+*/
+static std::string formatGuestLog(uint32_t fmtAddr, uint32_t args[7])
+{
+	std::string fmt = readGuestString(fmtAddr);
+	std::string out;
+	out.reserve(fmt.size() * 2);
+	int argIdx = 0;
+	char numbuf[20];
+
+	for (size_t i = 0; i < fmt.size(); i++) {
+		if (fmt[i] != '%') {
+			out.push_back(fmt[i]);
+			continue;
+		}
+		/* look at next char(s) */
+		i++;
+		if (i >= fmt.size()) break;
+
+		if (fmt[i] == '%') {
+			out.push_back('%');
+			continue;
+		}
+
+		/* consume optional 'l' prefix */
+		bool hasL = false;
+		if (fmt[i] == 'l' && i + 1 < fmt.size()) {
+			hasL = true;
+			i++;
+		}
+		(void)hasL;
+
+		if (argIdx > 5) {
+			out += "<?>";
+			continue;
+		}
+		uint32_t val = args[argIdx + 1]; /* args[1..6] = p1..p6 */
+		argIdx++;
+
+		switch (fmt[i]) {
+			case 'x': case 'X':
+				snprintf(numbuf, sizeof(numbuf), "%08X", val);
+				out += numbuf;
+				break;
+			case 'd':
+				snprintf(numbuf, sizeof(numbuf), "%ld",
+					static_cast<long>(static_cast<int32_t>(val)));
+				out += numbuf;
+				break;
+			case 'u':
+				snprintf(numbuf, sizeof(numbuf), "%lu",
+					static_cast<unsigned long>(val));
+				out += numbuf;
+				break;
+			case 's':
+				out += readGuestString(val);
+				break;
+			default:
+				out.push_back('%');
+				out.push_back(fmt[i]);
+				break;
+		}
+	}
+	return out;
+}
 
 static void refreshCache()
 {
@@ -114,6 +219,14 @@ void extnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			{
 				auto it = s_kvStore.find(regParam[0]);
 				regParam[0] = (it != s_kvStore.end()) ? it->second : 0;
+				regResult = 0;
+			}
+			break;
+
+		case kClipDbgLog:
+			{
+				std::string line = formatGuestLog(regParam[0], regParam);
+				consoleAppend(line);
 				regResult = 0;
 			}
 			break;

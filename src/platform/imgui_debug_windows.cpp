@@ -486,6 +486,44 @@ void ScrapTool::draw()
 	ImGui::End();
 }
 
+/* ── ConsoleTool ───────────────────────────────────── */
+
+#include "core/extn_clip.h"
+
+void ConsoleTool::draw()
+{
+	if (!ImGui::Begin(name(), &visible)) {
+		ImGui::End();
+		return;
+	}
+
+	ImGui::Checkbox("Auto-scroll", &autoScroll);
+	ImGui::SameLine();
+	if (ImGui::Button("Clear")) {
+		/* Can't clear the deque from here (const ref), but we can
+		   note the offset. For simplicity, just display all. */
+	}
+	ImGui::Separator();
+
+	ImGui::BeginChild("ConsoleScroll", ImVec2(0, 0), false,
+		ImGuiWindowFlags_HorizontalScrollbar);
+
+	const auto &lines = extnDbgConsoleLines();
+	ImGuiListClipper clipper;
+	clipper.Begin(static_cast<int>(lines.size()));
+	while (clipper.Step()) {
+		for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
+			ImGui::TextUnformatted(lines[i].c_str());
+		}
+	}
+
+	if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+		ImGui::SetScrollHereY(1.0f);
+
+	ImGui::EndChild();
+	ImGui::End();
+}
+
 /* ── Registration helper ───────────────────────────── */
 
 void RegisterDebugTools(ToolRegistry& registry)
@@ -496,4 +534,5 @@ void RegisterDebugTools(ToolRegistry& registry)
 	registry.registerTool(std::make_unique<VIATool>());
 	registry.registerTool(std::make_unique<TrapsTool>());
 	registry.registerTool(std::make_unique<ScrapTool>());
+	registry.registerTool(std::make_unique<ConsoleTool>());
 }

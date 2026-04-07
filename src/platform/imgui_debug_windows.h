@@ -45,6 +45,14 @@ public:
 	void draw() override;
 };
 
+class ConsoleTool : public ToolPanel {
+public:
+	const char* name() const override { return "Guest Console"; }
+	void draw() override;
+private:
+	bool autoScroll = true;
+};
+
 /* Register all debug tools with the given registry. */
 class ToolRegistry;
 void RegisterDebugTools(ToolRegistry& registry);
