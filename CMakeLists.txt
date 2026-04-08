@@ -127,6 +127,8 @@ elseif(MAXIVMAC_BACKEND STREQUAL "imgui")
         src/platform/imgui_model_selector.cpp
         src/platform/imgui_overlay.cpp
         src/platform/imgui_tool_registry.cpp
+        src/platform/imgui_lomem_tool.cpp
+        src/platform/lomem_globals.cpp
         src/platform/imgui_main.cpp
     )
     set(NEED_SDL ON)

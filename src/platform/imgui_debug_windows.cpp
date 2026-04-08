@@ -3,6 +3,7 @@
 */
 
 #include "platform/imgui_debug_windows.h"
+#include "platform/imgui_lomem_tool.h"
 #include "platform/imgui_tool_registry.h"
 
 #include <imgui.h>
@@ -598,4 +599,5 @@ void RegisterDebugTools(ToolRegistry& registry)
 	registry.registerTool(std::make_unique<TrapsTool>());
 	registry.registerTool(std::make_unique<ScrapTool>());
 	registry.registerTool(std::make_unique<ConsoleTool>());
+	registry.registerTool(std::make_unique<LowMemTool>());
 }
