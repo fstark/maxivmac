@@ -16,10 +16,22 @@ sync console app.  Works under Finder but not MultiFinder.
 INIT that bypasses MultiFinder per-partition scrap isolation.  The
 filter fires in each app's partition context and stores per-app sync
 state on the host via KV commands ($106/$107).  Extension version
-bumped to 2.
+bumped to 2.  Filter properly chains to previous jGNEFilter.
+
+**Known limitation:** Apps with private scraps (e.g. THINK C) only
+see clipboard changes after a real MultiFinder context switch (switch
+to Finder and back).  The desk scrap is updated immediately, but
+private-scrap apps cache their clipboard internally and only refresh
+it on a genuine resume+convertClipboard event from MultiFinder.
+This matches real Mac behavior.  Approaches tried and failed:
+- jGNEFilter event injection (MultiFinder doesn't deliver app4Evt
+  through GNE)
+- WaitNextEvent trap patch (THINK C uses GNE, not WNE)
+- PostEvent (events posted but not processed as suspend/resume)
 
 **Remaining work:**
-- Manual testing under MultiFinder with multiple apps
+- Understand MultiFinder's internal suspend/resume dispatch
+  (trap-level logging needed)
 - Edge cases: empty clipboard, large clipboard (>4K)
 - Consider PICT scrap type support
 
@@ -109,8 +121,8 @@ System file.  Source: `macsrc/clipsync/init.c` (THINK C code resource).
    - `DetachResource` + `HLock` on self to stay resident
 
 2. **jGNEFilter entry** (`FilterEntry`):
-   - Inline asm: saves D1-D2/A0-A4, calls `SyncOnGNE`, restores
-   - Chains to previous filter via JMP (or returns if none)
+   - Inline asm: saves D0-D2/A0-A2, calls `SyncOnGNE`, restores
+   - Chains to previous filter via UNLK A6 / JMP (A0)
 
 3. **`SyncOnGNE`** — called on every GNE/WNE, in whichever app's
    partition context is active:

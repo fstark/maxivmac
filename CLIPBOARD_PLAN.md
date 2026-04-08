@@ -1,6 +1,8 @@
 # Clipboard Sync Plan
 
 **All 4 phases completed** on 4 April 2026.
+**INIT cleaned up** on 9 April 2026 — stripped dead code, added
+proper filter chaining, documented private-scrap limitation.
 
 Commit range: `1f126a0..b74ef72`
 

@@ -1,5 +1,15 @@
 * WTF with the window changed code?
 
+* Clipboard sync: apps with private scraps (e.g. THINK C) only see
+  host clipboard changes after a real MultiFinder context switch
+  (Finder round-trip). Same limitation applies in the Mac→Host
+  direction. Desk scrap is updated correctly, but the app's private
+  scrap is only refreshed on resume+convertClipboard, which requires
+  a genuine app activation. Tried: jGNEFilter event injection,
+  WaitNextEvent trap patch, PostEvent — none deliver app4Evt to
+  apps in a way MultiFinder recognizes. Needs trap-level logging
+  to understand how MultiFinder dispatches suspend/resume internally.
+
 * At one point we may want to fix the code so misconfigured VRAM doesn't crash (throw). (Unsure what is meant there)
 
 * Check what extnBlockBase does
