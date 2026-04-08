@@ -88,6 +88,7 @@ private:
 	float emuViewOriginX_ = 0;
 	float emuViewOriginY_ = 0;
 	bool relativeMouseMode_ = false;
+	bool emuViewportHovered_ = false;
 
 	/* UI state */
 	UIState uiState_ = UIState::ModelSelector;

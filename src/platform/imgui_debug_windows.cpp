@@ -564,8 +564,7 @@ void ConsoleTool::draw()
 	ImGui::Checkbox("Auto-scroll", &autoScroll);
 	ImGui::SameLine();
 	if (ImGui::Button("Clear")) {
-		/* Can't clear the deque from here (const ref), but we can
-		   note the offset. For simplicity, just display all. */
+		extnDbgConsoleClear();
 	}
 	ImGui::Separator();
 

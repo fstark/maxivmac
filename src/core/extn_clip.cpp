@@ -39,6 +39,11 @@ const std::deque<std::string>& extnDbgConsoleLines()
 	return s_consoleLines;
 }
 
+void extnDbgConsoleClear()
+{
+	s_consoleLines.clear();
+}
+
 static void consoleAppend(const std::string &line)
 {
 	fprintf(stderr, "[GUEST] %s\n", line.c_str());

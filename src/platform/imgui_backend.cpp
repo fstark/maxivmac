@@ -418,15 +418,16 @@ bool ImGuiBackend::imGuiConsumedEvent(const SDL_Event& event) const
 	switch (event.type) {
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
-			/* Only let ImGui consume keys when a text field is active
-			   (e.g. typing in a debug window).  Otherwise all keys
-			   go to the emulator, even in Developer mode. */
-			return ImGui::GetIO().WantTextInput;
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 		case SDL_EVENT_MOUSE_BUTTON_UP:
 		case SDL_EVENT_MOUSE_MOTION:
 		case SDL_EVENT_MOUSE_WHEEL:
-			return false;
+			/* Forward to the emulator only when the emulator viewport
+			   is the topmost hovered window (from the previous frame).
+			   In Windowed/Fullscreen the viewport fills the window so
+			   this is ~always true; in Developer mode, debug tool
+			   windows on top correctly block the hover. */
+			return !emuViewportHovered_;
 		default:
 			return false;
 	}
@@ -596,7 +597,9 @@ void ImGuiBackend::drawViewportWindowed()
 		| ImGuiWindowFlags_NoScrollbar
 		| ImGuiWindowFlags_NoBringToFrontOnFocus
 		| ImGuiWindowFlags_NoSavedSettings;
+	emuViewportHovered_ = false;
 	if (ImGui::Begin("Macintosh", nullptr, flags)) {
+		emuViewportHovered_ = ImGui::IsWindowHovered();
 		ImGui::SetCursorPos(ImVec2(0, 0));
 		displayEmulatorImage(displaySize.x, displaySize.y);
 	}
@@ -613,7 +616,9 @@ void ImGuiBackend::drawViewportFullscreen()
 		| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings
 		| ImGuiWindowFlags_NoBringToFrontOnFocus;
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
+	emuViewportHovered_ = false;
 	if (ImGui::Begin("##FullscreenViewport", nullptr, flags)) {
+		emuViewportHovered_ = ImGui::IsWindowHovered();
 		float emuAspect = (float)emuTexW_ / (float)emuTexH_;
 		float dispAspect = displaySize.x / displaySize.y;
 		float scaledW, scaledH;
@@ -648,7 +653,9 @@ void ImGuiBackend::drawViewportDeveloper()
 		| ImGuiWindowFlags_NoCollapse
 		| ImGuiWindowFlags_AlwaysAutoResize
 		| ImGuiWindowFlags_NoBringToFrontOnFocus;
+	emuViewportHovered_ = false;
 	if (ImGui::Begin("Macintosh", nullptr, flags)) {
+		emuViewportHovered_ = ImGui::IsWindowHovered();
 		displayEmulatorImage(emuTexW_, emuTexH_);
 	}
 	ImGui::End();
