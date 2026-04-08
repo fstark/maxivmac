@@ -21,3 +21,7 @@ mf2.hfs
 608.hfs
 test/.608_verify.hfs
 imgui.ini
+coverage/
+coverage.html
+*.profraw
+*.profdata

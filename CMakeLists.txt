@@ -243,3 +243,14 @@ endif()
 
 set(CMAKE_C_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "-Os -DNDEBUG" CACHE STRING "" FORCE)
+
+# ---------------------------------------------------------------------------
+# Code coverage (clang source-based)
+# ---------------------------------------------------------------------------
+option(MAXIVMAC_COVERAGE "Build with code coverage instrumentation" OFF)
+if(MAXIVMAC_COVERAGE)
+    target_compile_options(maxivmac PRIVATE
+        -fprofile-instr-generate -fcoverage-mapping)
+    target_link_options(maxivmac PRIVATE
+        -fprofile-instr-generate -fcoverage-mapping)
+endif()
