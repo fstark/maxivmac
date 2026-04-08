@@ -19,6 +19,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <memory>
 
 #include "platform/common/mac_roman.h"
@@ -230,65 +231,125 @@ void TrapsTool::draw()
 		return;
 	}
 
+	/* Lazy-init: load defaults on first open */
+	static bool inited = false;
+	if (!inited) {
+		trap_watch_load_defaults();
+		inited = true;
+	}
+
+	/* ── Add trap control ─────────────────────────── */
+	static char searchBuf[64] = "";
+	static std::vector<TrapInfo> suggestions;
+	static int selectedSuggestion = -1;
+
+	ImGui::Text("Add trap:");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(200);
+	bool inputChanged = ImGui::InputText("##trap_search", searchBuf,
+		sizeof(searchBuf));
+	if (inputChanged) {
+		trap_dict_search(searchBuf, suggestions, 10);
+		selectedSuggestion = -1;
+	}
+
+	if (searchBuf[0] && !suggestions.empty()) {
+		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 0), ImVec2(400, 200));
+		if (ImGui::BeginChild("##suggestions", ImVec2(400, 0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Border)) {
+			for (int i = 0; i < (int)suggestions.size(); ++i) {
+				char label[80];
+				snprintf(label, sizeof(label), "%s ($%04X)",
+					suggestions[i].name, suggestions[i].trapWord);
+				if (ImGui::Selectable(label, i == selectedSuggestion)) {
+					trap_watch_add(suggestions[i].trapWord);
+					searchBuf[0] = '\0';
+					suggestions.clear();
+					selectedSuggestion = -1;
+				}
+			}
+		}
+		ImGui::EndChild();
+	}
+
+	ImGui::SameLine();
 	if (ImGui::Button("Reset Counts")) {
 		trap_counter_reset();
 	}
+	ImGui::SameLine();
+	if (ImGui::Button("Defaults")) {
+		trap_watch_load_defaults();
+	}
 
-	TrapCountEntry entries[20];
-	int n = trap_counter_snapshot(entries, 20);
+	ImGui::Separator();
 
-	if (ImGui::BeginTable("traps", 4,
+	/* ── Watchlist table ──────────────────────────── */
+	auto entries = trap_watch_snapshot();
+
+	if (ImGui::BeginTable("traps", 5,
 		ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
 		ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
 	{
-		ImGui::TableSetupColumn("Name",      ImGuiTableColumnFlags_DefaultSort, 0.0f, 0);
-		ImGui::TableSetupColumn("Trap",      ImGuiTableColumnFlags_None, 0.0f, 1);
-		ImGui::TableSetupColumn("Handler",   ImGuiTableColumnFlags_None, 0.0f, 2);
+		ImGui::TableSetupColumn("##del",     ImGuiTableColumnFlags_NoSort |
+			ImGuiTableColumnFlags_WidthFixed, 24.0f, 0);
+		ImGui::TableSetupColumn("Name",      ImGuiTableColumnFlags_DefaultSort, 0.0f, 1);
+		ImGui::TableSetupColumn("Trap",      ImGuiTableColumnFlags_None, 0.0f, 2);
+		ImGui::TableSetupColumn("Handler",   ImGuiTableColumnFlags_None, 0.0f, 3);
 		ImGui::TableSetupColumn("Count",     ImGuiTableColumnFlags_DefaultSort |
-			ImGuiTableColumnFlags_PreferSortDescending, 0.0f, 3);
+			ImGuiTableColumnFlags_PreferSortDescending, 0.0f, 4);
 		ImGui::TableHeadersRow();
 
-		/* Respect sort spec if user clicks a column header */
+		/* Sort if user clicks a column header */
 		if (ImGuiTableSortSpecs* specs = ImGui::TableGetSortSpecs()) {
 			if (specs->SpecsCount > 0) {
 				auto &s = specs->Specs[0];
 				bool asc = (s.SortDirection == ImGuiSortDirection_Ascending);
-				std::sort(entries, entries + n,
-					[&s, asc](const TrapCountEntry &a, const TrapCountEntry &b) {
+				std::sort(entries.begin(), entries.end(),
+					[&s, asc](const WatchEntry &a, const WatchEntry &b) {
 						int cmp = 0;
 						switch (s.ColumnUserID) {
-						case 0: cmp = strcmp(a.name, b.name); break;
-						case 1: cmp = (int)a.trapWord - (int)b.trapWord; break;
+						case 1: cmp = strcmp(a.name, b.name); break;
 						case 2: cmp = (int)a.trapWord - (int)b.trapWord; break;
-						case 3: cmp = (a.count < b.count) ? -1 : (a.count > b.count) ? 1 : 0; break;
+						case 3: cmp = (int)a.trapWord - (int)b.trapWord; break;
+						case 4: cmp = (a.count < b.count) ? -1
+							: (a.count > b.count) ? 1 : 0; break;
 						}
 						return asc ? (cmp < 0) : (cmp > 0);
 					});
 			}
 		}
 
-		for (int i = 0; i < n; ++i) {
+		uint16_t toRemove = 0;
+		for (int i = 0; i < (int)entries.size(); ++i) {
 			ImGui::TableNextRow();
+
+			/* Delete button */
+			ImGui::TableNextColumn();
+			ImGui::PushID(i);
+			if (ImGui::SmallButton("X")) {
+				toRemove = entries[i].trapWord;
+			}
+			ImGui::PopID();
+
+			/* Name */
 			ImGui::TableNextColumn();
 			ImGui::TextUnformatted(entries[i].name);
+
+			/* Trap word */
 			ImGui::TableNextColumn();
 			ImGui::Text("$%04X", entries[i].trapWord);
+
+			/* Handler address */
 			ImGui::TableNextColumn();
-			/*
-			   128K+ ROM dispatch tables (long-word entries):
-			     OS traps:      256 entries at $0400–$07FF
-			     Toolbox traps: 1024 entries at $0E00–$1DFF (Mac II)
-			   Read the handler address from the guest dispatch table.
-			*/
 			uint16_t w = entries[i].trapWord;
 			uint32_t slot;
-			if (w & 0x0800) {
+			if (w & 0x0800)
 				slot = 0x0E00 + 4 * (w & 0x03FF);
-			} else {
+			else
 				slot = 0x0400 + 4 * (w & 0x00FF);
-			}
 			uint32_t handler = get_vm_long(slot);
 			ImGui::Text("$%08X", handler);
+
+			/* Count */
 			ImGui::TableNextColumn();
 			if (entries[i].count > 0)
 				ImGui::Text("%u", entries[i].count);
@@ -296,6 +357,9 @@ void TrapsTool::draw()
 				ImGui::TextDisabled("0");
 		}
 		ImGui::EndTable();
+
+		if (toRemove)
+			trap_watch_remove(toRemove);
 	}
 
 	ImGui::End();
