@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.20)
 project(maxivmac VERSION 37.03 LANGUAGES C CXX)
 
 # ---------------------------------------------------------------------------
-# C++17
+# C++23
 # ---------------------------------------------------------------------------
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
