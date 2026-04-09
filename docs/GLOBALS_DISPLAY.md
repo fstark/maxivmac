@@ -9,155 +9,21 @@ so most code won't change.
 
 ---
 
-## Boundary Analysis
+## Phases 1-4 — DONE (commit 55014c2)
 
-4 of the 14 globals are **written by core** (`machine_obj.cpp` at `Machine::init()`):
-`g_screenWidth`, `g_screenHeight`, `g_screenDepth`, `g_colorModeWorks`.
-The remaining 10 live entirely within the platform/device layer.
+Created `DisplayState` struct in `display_state.h`, added as
+`EmulatorShell::display_` member. Replaced 14 global definitions with
+`#define` macro shims that call `GetDisplayState()`. An `s_earlyDisplay`
+static handles the case where `Machine::init()` runs before `g_shell` is
+set (via `ProgramEarlyInit`), with the early state copied into `display_`
+in `initPlatform()`.
 
-The core writes can be eliminated: `Machine::init()` copies from `MachineConfig`,
-which the Shell already has access to. The Shell can initialize the struct fields
-from config directly, and `Machine::init()` no longer needs to touch globals.
+Removed globals: `g_screenWidth`, `g_screenHeight`, `g_screenDepth`,
+`g_useColorMode`, `g_colorModeWorks`, `g_colorMappingChanged`,
+`g_colorTransValid`, `CLUT_reds[]`, `CLUT_greens[]`, `CLUT_blues[]`,
+`g_screenCompareBuff`, `g_screenChanged`, `ScalingBuff`, `CLUT_final`.
 
----
-
-## Phase 1 — Create `DisplayState` struct
-
-Define the struct in a new header. All 14 fields, zero-initialized defaults.
-
-### Steps
-
-1. Create `src/platform/display_state.h`:
-   ```cpp
-   #pragma once
-   #include <cstdint>
-
-   #define CLUT_SIZE 256
-
-   struct DisplayState {
-       /* Dimensions (set once from MachineConfig at init) */
-       uint16_t screenWidth  = 640;
-       uint16_t screenHeight = 480;
-       uint8_t  screenDepth  = 3;
-
-       /* Color mode */
-       bool useColorMode       = false;
-       bool colorModeWorks     = false;
-       bool colorMappingChanged = false;
-       bool colorTransValid    = false;
-
-       /* CLUT (Color Lookup Table) */
-       uint16_t clutReds[CLUT_SIZE]   = {};
-       uint16_t clutGreens[CLUT_SIZE] = {};
-       uint16_t clutBlues[CLUT_SIZE]  = {};
-
-       /* Screen buffers & dirty tracking */
-       uint8_t* screenCompareBuff = nullptr;
-       bool     screenChanged     = false;
-
-       /* Screen conversion output */
-       uint8_t* scalingBuff = nullptr;
-       uint8_t* clutFinal   = nullptr;
-   };
-   ```
-2. Build and test (header-only, no consumers yet — just validates syntax).
-
----
-
-## Phase 2 — Add `DisplayState` to EmulatorShell
-
-### Steps
-
-1. Add `#include "platform/display_state.h"` to `emulator_shell.h`.
-2. Add `DisplayState display_;` as a private member of `EmulatorShell`.
-3. Add a public accessor: `DisplayState& display() { return display_; }`.
-4. Build and test (no behavioral change yet).
-
----
-
-## Phase 3 — Initialize `DisplayState` from config
-
-Move the 4 config-sourced assignments out of `Machine::init()` and into
-`EmulatorShell::initMachine()`, targeting the new struct fields.
-
-### Steps
-
-1. In `src/platform/emulator_shell.cpp` `initMachine()`, **before** `Machine::init()` or
-   immediately after, add:
-   ```cpp
-   const auto& mc = GetMachineConfig();
-   display_.screenWidth  = mc.screenWidth;
-   display_.screenHeight = mc.screenHeight;
-   display_.screenDepth  = mc.screenDepth;
-   display_.colorModeWorks = (mc.screenDepth > 0);
-   ```
-2. Keep the old globals alive — they still exist and get written by `Machine::init()`.
-   This ensures zero behavioral change. The struct simply shadows them for now.
-3. Build and test.
-
----
-
-## Phase 4 — Redirect globals to struct fields
-
-The old globals (`g_screenWidth` etc.) still exist in `osglu_common.cpp` and are
-declared `extern` in `platform.h`. Replace their definitions with references to
-the Shell's `DisplayState`.
-
-### Steps
-
-1. In `src/platform/common/osglu_common.cpp`, remove the 12 definitions:
-   - `g_screenWidth`, `g_screenHeight`, `g_screenDepth`
-   - `g_useColorMode`, `g_colorModeWorks`, `g_colorMappingChanged`
-   - `g_colorTransValid`
-   - `CLUT_reds[]`, `CLUT_greens[]`, `CLUT_blues[]`
-   - `g_screenCompareBuff`, `g_screenChanged`
-
-2. In `src/platform/screen_convert.cpp`, remove the 2 definitions:
-   - `ScalingBuff`, `CLUT_final`
-
-3. In `src/platform/platform.h`, replace the `extern` declarations and macros
-   to access `g_shell->display()`:
-   ```cpp
-   /* Forward-declared display state accessors */
-   #include "platform/display_state.h"
-   class EmulatorShell;
-   extern EmulatorShell* g_shell;
-   DisplayState& GetDisplayState();  /* implemented in emulator_shell.cpp */
-
-   #define g_screenWidth      (GetDisplayState().screenWidth)
-   #define g_screenHeight     (GetDisplayState().screenHeight)
-   #define g_screenDepth      (GetDisplayState().screenDepth)
-   #define g_useColorMode     (GetDisplayState().useColorMode)
-   #define g_colorModeWorks   (GetDisplayState().colorModeWorks)
-   #define g_colorMappingChanged (GetDisplayState().colorMappingChanged)
-   #define g_colorTransValid  (GetDisplayState().colorTransValid)
-   #define CLUT_reds          (GetDisplayState().clutReds)
-   #define CLUT_greens        (GetDisplayState().clutGreens)
-   #define CLUT_blues         (GetDisplayState().clutBlues)
-   #define g_screenCompareBuff (GetDisplayState().screenCompareBuff)
-   #define g_screenChanged    (GetDisplayState().screenChanged)
-   #define ScalingBuff        (GetDisplayState().scalingBuff)
-   #define CLUT_final         (GetDisplayState().clutFinal)
-   ```
-   The `vMacScreenWidth` etc. macros keep working unchanged since they reference
-   `g_screenWidth` which is now a macro itself.
-
-4. Implement `GetDisplayState()` in `emulator_shell.cpp`:
-   ```cpp
-   DisplayState& GetDisplayState() { return g_shell->display(); }
-   ```
-
-5. Remove the 4 `extern` + assignment lines from `machine_obj.cpp`
-   (`Machine::init()` no longer needs to set display globals).
-
-6. Remove the `extern` from `osglu_common.h` for `g_screenCompareBuff`,
-   `g_screenChanged`, `g_colorTransValid`.
-
-7. Remove the `extern` declarations from `screen_convert.h` for `ScalingBuff`
-   and `CLUT_final`.
-
-8. Grep for each old variable name to confirm no duplicate definitions remain.
-9. Build and test.
+All 6 models pass non-regression tests.
 
 ---
 

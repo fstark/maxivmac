@@ -42,24 +42,24 @@ Excludes `static constexpr` / `inline constexpr` compile-time constants and `sta
 
 ## 4. Display & Screen
 
-All 14 of these should become a single **`DisplayState`** struct on Shell or Machine.
+All 14 consolidated into **`DisplayState`** struct on EmulatorShell (commit 55014c2).
 
 | Variable | Type | File | Tag | Notes |
 |----------|------|------|-----|-------|
-| `g_screenWidth` | `uint16_t` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_screenHeight` | `uint16_t` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_screenDepth` | `uint8_t` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_useColorMode` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_colorModeWorks` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_colorMappingChanged` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_colorTransValid` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
-| `CLUT_reds[256]` | `uint16_t[]` | osglu_common.cpp | **NEEDS WORK** | |
-| `CLUT_greens[256]` | `uint16_t[]` | osglu_common.cpp | **NEEDS WORK** | |
-| `CLUT_blues[256]` | `uint16_t[]` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_screenCompareBuff` | `uint8_t*` | osglu_common.cpp | **NEEDS WORK** | Shadow framebuffer for dirty tracking |
-| `g_screenChanged` | `bool` | osglu_common.cpp | **NEEDS WORK** | Dirty flag |
-| `ScalingBuff` | `uint8_t*` | screen_convert.h | **NEEDS WORK** | Output buffer for screen conversion |
-| `CLUT_final` | `uint8_t*` | screen_convert.h | **NEEDS WORK** | Pre-computed CLUT |
+| `g_screenWidth` | `uint16_t` | osglu_common.cpp | **DONE** | DisplayState.screenWidth |
+| `g_screenHeight` | `uint16_t` | osglu_common.cpp | **DONE** | DisplayState.screenHeight |
+| `g_screenDepth` | `uint8_t` | osglu_common.cpp | **DONE** | DisplayState.screenDepth |
+| `g_useColorMode` | `bool` | osglu_common.cpp | **DONE** | DisplayState.useColorMode |
+| `g_colorModeWorks` | `bool` | osglu_common.cpp | **DONE** | DisplayState.colorModeWorks |
+| `g_colorMappingChanged` | `bool` | osglu_common.cpp | **DONE** | DisplayState.colorMappingChanged |
+| `g_colorTransValid` | `bool` | osglu_common.cpp | **DONE** | DisplayState.colorTransValid |
+| `CLUT_reds[256]` | `uint16_t[]` | osglu_common.cpp | **DONE** | DisplayState.clutReds |
+| `CLUT_greens[256]` | `uint16_t[]` | osglu_common.cpp | **DONE** | DisplayState.clutGreens |
+| `CLUT_blues[256]` | `uint16_t[]` | osglu_common.cpp | **DONE** | DisplayState.clutBlues |
+| `g_screenCompareBuff` | `uint8_t*` | osglu_common.cpp | **DONE** | DisplayState.screenCompareBuff |
+| `g_screenChanged` | `bool` | osglu_common.cpp | **DONE** | DisplayState.screenChanged |
+| `ScalingBuff` | `uint8_t*` | screen_convert.h | **DONE** | DisplayState.scalingBuff |
+| `CLUT_final` | `uint8_t*` | screen_convert.h | **DONE** | DisplayState.clutFinal |
 
 ## 5. View / Scroll
 
