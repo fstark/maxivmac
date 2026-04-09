@@ -1,152 +1,81 @@
 /*
-	SCReeN MAPpeR
+	screen_map.h — Screen mapper function template (C++23)
+
+	Converts a rectangular region of the emulated Mac framebuffer
+	from a packed source depth (1/2/4/8 bpp) to a wider destination
+	depth (8/16/32 bpp) using a pre-computed colour lookup table.
+
+	Replaces the old macro-template pattern that was #included 12 times
+	with different #define parameters.
 */
 
-/* required arguments for this template */
+#ifndef SCREEN_MAP_H
+#define SCREEN_MAP_H
 
-#ifndef ScrnMapr_DoMap /* procedure to be created by this template */
-#error "ScrnMapr_DoMap not defined"
-#endif
-#ifndef ScrnMapr_Src
-#error "ScrnMapr_Src not defined"
-#endif
-#ifndef ScrnMapr_Dst
-#error "ScrnMapr_Dst not defined"
-#endif
-#ifndef ScrnMapr_SrcDepth
-#error "ScrnMapr_SrcDepth not defined"
-#endif
-#ifndef ScrnMapr_DstDepth
-#error "ScrnMapr_DstDepth not defined"
-#endif
-#ifndef ScrnMapr_Map
-#error "ScrnMapr_Map not defined"
-#endif
+#include <cstdint>
+#include <type_traits>
+#include "platform/platform.h"
 
-/* optional argument for this template */
-
-#ifndef ScrnMapr_Scale
-#define ScrnMapr_Scale 1
-#endif
-
-/* check of parameters */
-
-#if (ScrnMapr_SrcDepth < 0) || (ScrnMapr_SrcDepth > 3)
-#error "bad ScrnMapr_SrcDepth"
-#endif
-
-#if (ScrnMapr_DstDepth < ScrnMapr_SrcDepth)
-#error "bad ScrnMapr_Dst"
-#endif
-
-/* calculate a few things local to this template */
-
-#define ScrnMapr_MapElSz \
-	(ScrnMapr_Scale << (ScrnMapr_DstDepth - ScrnMapr_SrcDepth))
-
-#if 0 == (ScrnMapr_MapElSz & 3)
-#define ScrnMapr_TranT uint32_t
-#define ScrnMapr_TranLn2Sz 2
-#elif 0 == (ScrnMapr_MapElSz & 1)
-#define ScrnMapr_TranT uint16_t
-#define ScrnMapr_TranLn2Sz 1
-#else
-#define ScrnMapr_TranT uint8_t
-#define ScrnMapr_TranLn2Sz 0
-#endif
-
-#define ScrnMapr_TranN (ScrnMapr_MapElSz >> ScrnMapr_TranLn2Sz)
-
-#define ScrnMapr_ScrnWB (vMacScreenWidth >> (3 - ScrnMapr_SrcDepth))
-
-/* now define the procedure */
-
-static void ScrnMapr_DoMap(int16_t top, int16_t left,
-	int16_t bottom, int16_t right)
+template<int SrcDepth, int DstDepth, int Scale = 1>
+	requires (SrcDepth >= 0 && SrcDepth <= 3 &&
+	          DstDepth >= 3 && DstDepth <= 5 &&
+	          DstDepth >= SrcDepth &&
+	          Scale >= 1)
+static void ScreenMapConvert(
+	const uint8_t* src,
+	uint8_t*       dst,
+	const uint8_t* map,
+	int16_t top, int16_t left, int16_t bottom, int16_t right)
 {
-	int i;
-	int j;
-#if (ScrnMapr_TranN > 4) || (ScrnMapr_Scale > 2)
-	int k;
-#endif
-	uint32_t t0;
-	ScrnMapr_TranT *pMap;
-#if ScrnMapr_Scale > 1
-	ScrnMapr_TranT *p3;
-#endif
+	constexpr int MapElSz   = Scale << (DstDepth - SrcDepth);
+	constexpr int TranLn2Sz = (MapElSz % 4 == 0) ? 2
+	                        : (MapElSz % 2 == 0) ? 1
+	                        : 0;
+	constexpr int TranN     = MapElSz >> TranLn2Sz;
 
-	uint16_t leftB = left >> (3 - ScrnMapr_SrcDepth);
-	uint16_t rightB = (right + (1 << (3 - ScrnMapr_SrcDepth)) - 1)
-		>> (3 - ScrnMapr_SrcDepth);
-	uint16_t jn = rightB - leftB;
-	uint16_t SrcSkip = ScrnMapr_ScrnWB - jn;
-	uint8_t *pSrc = (static_cast<uint8_t *>(ScrnMapr_Src))
-		+ leftB + ScrnMapr_ScrnWB * (uint32_t)top;
-	ScrnMapr_TranT *pDst = (reinterpret_cast<ScrnMapr_TranT *>(ScrnMapr_Dst))
-		+ ((leftB + ScrnMapr_ScrnWB * ScrnMapr_Scale * (uint32_t)top)
-			* ScrnMapr_TranN);
-	uint32_t DstSkip = SrcSkip * ScrnMapr_TranN;
+	using TranT = std::conditional_t<(MapElSz % 4 == 0), uint32_t,
+	              std::conditional_t<(MapElSz % 2 == 0), uint16_t,
+	                                                      uint8_t>>;
 
-	for (i = bottom - top; --i >= 0; ) {
-#if ScrnMapr_Scale > 1
-		p3 = pDst;
-#endif
+	const uint16_t ScrnWB = vMacScreenWidth >> (3 - SrcDepth);
 
-		for (j = jn; --j >= 0; ) {
-			t0 = *pSrc++;
-			pMap =
-				&((ScrnMapr_TranT *)ScrnMapr_Map)[t0 * ScrnMapr_TranN];
+	uint16_t leftB  = left >> (3 - SrcDepth);
+	uint16_t rightB = (right + (1 << (3 - SrcDepth)) - 1) >> (3 - SrcDepth);
+	uint16_t jn      = rightB - leftB;
+	uint16_t SrcSkip = ScrnWB - jn;
 
-#if ScrnMapr_TranN > 4
-			for (k = ScrnMapr_TranN; --k >= 0; ) {
-				*pDst++ = *pMap++;
+	const uint8_t *pSrc = src + leftB + ScrnWB * static_cast<uint32_t>(top);
+
+	TranT *pDst = reinterpret_cast<TranT *>(dst)
+		+ (leftB + ScrnWB * Scale * static_cast<uint32_t>(top)) * TranN;
+
+	uint32_t DstSkip = SrcSkip * TranN;
+
+	const TranT *mapT = reinterpret_cast<const TranT *>(map);
+
+	for (int i = bottom - top; --i >= 0; ) {
+		TranT *p3 = pDst;
+
+		for (int j = jn; --j >= 0; ) {
+			uint32_t t0 = *pSrc++;
+			const TranT *pMap = &mapT[t0 * TranN];
+
+			for (int k = 0; k < TranN; ++k) {
+				*pDst++ = pMap[k];
 			}
-#else
-
-#if ScrnMapr_TranN >= 2
-			*pDst++ = *pMap++;
-#endif
-#if ScrnMapr_TranN >= 3
-			*pDst++ = *pMap++;
-#endif
-#if ScrnMapr_TranN >= 4
-			*pDst++ = *pMap++;
-#endif
-			*pDst++ = *pMap;
-
-#endif /* ! ScrnMapr_TranN > 4 */
-
 		}
+
 		pSrc += SrcSkip;
 		pDst += DstSkip;
 
-#if ScrnMapr_Scale > 1
-#if ScrnMapr_Scale > 2
-		for (k = ScrnMapr_Scale - 1; --k >= 0; )
-#endif
-		{
-			pMap = p3;
-			for (j = ScrnMapr_TranN * jn; --j >= 0; ) {
-				*pDst++ = *pMap++;
+		for (int s = 0; s < Scale - 1; ++s) {
+			const TranT *pCopy = p3;
+			for (int j = TranN * jn; --j >= 0; ) {
+				*pDst++ = *pCopy++;
 			}
 			pDst += DstSkip;
 		}
-#endif /* ScrnMapr_Scale > 1 */
 	}
 }
 
-/* undefine template locals and parameters */
-
-#undef ScrnMapr_ScrnWB
-#undef ScrnMapr_TranN
-#undef ScrnMapr_TranLn2Sz
-#undef ScrnMapr_TranT
-#undef ScrnMapr_MapElSz
-
-#undef ScrnMapr_DoMap
-#undef ScrnMapr_Src
-#undef ScrnMapr_Dst
-#undef ScrnMapr_SrcDepth
-#undef ScrnMapr_DstDepth
-#undef ScrnMapr_Map
-#undef ScrnMapr_Scale
+#endif /* SCREEN_MAP_H */
