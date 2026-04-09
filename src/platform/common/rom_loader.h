@@ -8,7 +8,5 @@
 
 /* ROM file loading. */
 
-extern char *rom_path;
-
 tMacErr LoadMacRomFrom(char *path);
-bool LoadMacRom(char *d_arg, char *app_parent, char *pref_dir);
+bool LoadMacRom(char *rom_path, char *d_arg, char *app_parent, char *pref_dir);

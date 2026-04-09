@@ -128,6 +128,7 @@ private:
 	char* d_arg_ = nullptr;
 	char* n_arg_ = nullptr;
 	char* pref_dir_ = nullptr;
+	char* romPath_ = nullptr;
 	int argc_ = 0;
 	char** argv_ = nullptr;
 

@@ -3,8 +3,6 @@
 
 #include <cstdio>
 
-char *rom_path = nullptr;
-
 tMacErr LoadMacRomFrom(char *path)
 {
 	tMacErr err;
@@ -94,7 +92,7 @@ static tMacErr LoadMacRomFromAppPar(char *d_arg, char *app_parent)
 	return err;
 }
 
-bool LoadMacRom(char *d_arg, char *app_parent, char *pref_dir)
+bool LoadMacRom(char *rom_path, char *d_arg, char *app_parent, char *pref_dir)
 {
 	tMacErr err;
 

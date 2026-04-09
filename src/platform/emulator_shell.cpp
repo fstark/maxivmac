@@ -167,11 +167,11 @@ bool EmulatorShell::initMachine()
 	static std::string s_machineRom;
 	s_machineRom = ResolveRomPath(lc.romPath, lc.model, lc.romDir);
 	if (!s_machineRom.empty())
-		rom_path = const_cast<char*>(s_machineRom.c_str());
+		romPath_ = const_cast<char*>(s_machineRom.c_str());
 
 	if (!allocMyMemory()) return false;
 	if (!scanCommandLine()) return false;
-	if (!LoadMacRom(d_arg_, app_parent, pref_dir_)) return false;
+	if (!LoadMacRom(romPath_, d_arg_, app_parent, pref_dir_)) return false;
 	if (!loadInitialImages()) return false;
 	if (!InitLocationDat()) return false;
 	if (!backend_->audioInit()) return false;
@@ -779,10 +779,10 @@ bool EmulatorShell::scanCommandLine()
 		if ('-' == pa[0]) {
 			if (0 == strcmp(pa, "--rom")) {
 				if (i < argc_) {
-					rom_path = argv_[i++];
+					romPath_ = argv_[i++];
 				}
 			} else if (0 == strncmp(pa, "--rom=", 6)) {
-				rom_path = pa + 6;
+				romPath_ = pa + 6;
 			} else {
 				dbglog_writeln("ignoring command line argument");
 				dbglog_writeln(pa);
