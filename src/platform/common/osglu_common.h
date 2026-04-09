@@ -58,10 +58,6 @@ extern uint16_t EvtQIn;
 extern uint16_t EvtQOut;
 extern bool EvtQNeedRecover;
 
-extern const char *SavedBriefMsg;
-extern const char *SavedLongMsg;
-extern bool g_savedFatalMsg;
-
 extern bool g_colorTransValid;
 
 #if EmLocalTalk

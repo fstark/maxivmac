@@ -32,6 +32,12 @@ public:
 	void setRomLoaded(bool v) { romLoaded_ = v; }
 	char* getAppParent() const { return appParent_; }
 
+	void queueMessage(const char* brief, const char* longMsg, bool fatal);
+	bool hasQueuedMessage() const { return savedBriefMsg_ != nullptr; }
+	const char* getBriefMsg() const { return savedBriefMsg_; }
+	const char* getLongMsg() const { return savedLongMsg_; }
+	void clearQueuedMessage() { savedBriefMsg_ = nullptr; }
+
 	void shutdown();
 
 	/* --- Event dispatch (from backend) --- */
@@ -141,6 +147,11 @@ private:
 	/* --- Init state --- */
 	bool machineInited_ = false;
 	bool romLoaded_ = false;
+
+	/* --- Queued error message (single-slot) --- */
+	const char* savedBriefMsg_ = nullptr;
+	const char* savedLongMsg_ = nullptr;
+	bool savedFatalMsg_ = false;
 };
 
 /* Global shell pointer for free-function wrappers. */

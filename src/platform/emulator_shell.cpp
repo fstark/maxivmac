@@ -192,6 +192,15 @@ bool EmulatorShell::initMachine()
 	return true;
 }
 
+void EmulatorShell::queueMessage(const char* brief, const char* longMsg, bool fatal)
+{
+	if (savedBriefMsg_ == nullptr) {
+		savedBriefMsg_ = brief;
+		savedLongMsg_ = longMsg;
+		savedFatalMsg_ = fatal;
+	}
+}
+
 void EmulatorShell::shutdown()
 {
 	backend_->restoreKeyRepeat();
@@ -206,9 +215,9 @@ void EmulatorShell::shutdown()
 	dbglog_close();
 
 	/* Show any pending error message */
-	if (nullptr != SavedBriefMsg) {
-		backend_->showMessageBox(SavedBriefMsg, SavedLongMsg);
-		SavedBriefMsg = nullptr;
+	if (hasQueuedMessage()) {
+		backend_->showMessageBox(getBriefMsg(), getLongMsg());
+		clearQueuedMessage();
 	}
 
 	closeMainWindow();

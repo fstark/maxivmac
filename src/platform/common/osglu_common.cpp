@@ -8,6 +8,8 @@
 
 #include <cstring>
 
+#include "platform/emulator_shell.h"
+
 /* --- backend-provided debug log primitives (extern) --- */
 
 extern bool dbglog_open0(const char *appParent);
@@ -682,21 +684,10 @@ void EvtQTryRecoverFromFull()
 
 /* --- MacMsg --- */
 
-const char *SavedBriefMsg = nullptr;
-const char *SavedLongMsg;
-bool g_savedFatalMsg;
-
 void MacMsg(const char *briefMsg, const char *longMsg, bool fatal)
 {
-	if (nullptr != SavedBriefMsg) {
-		/*
-			ignore the new message, only display the
-			first error.
-		*/
-	} else {
-		SavedBriefMsg = briefMsg;
-		SavedLongMsg = longMsg;
-		g_savedFatalMsg = fatal;
+	if (g_shell) {
+		g_shell->queueMessage(briefMsg, longMsg, fatal);
 	}
 }
 
