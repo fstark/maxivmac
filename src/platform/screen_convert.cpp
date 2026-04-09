@@ -1,83 +1,21 @@
 /*
 	screen_convert.cpp — framebuffer conversion (CLUT/BW → ARGB8888)
 
-	Extracted from sdl.cpp. Contains the 12 ScrnMapr instantiations,
-	CLUT table building, and rect conversion dispatching.
+	Extracted from sdl.cpp. Contains CLUT table building and rect
+	conversion dispatching. The 12 depth-copy variants are now
+	instantiated from the ScreenMapConvert<> function template.
 */
 
 #include "platform/screen_convert.h"
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
 #include "platform/common/osglu_common.h"
+#include "platform/common/screen_map.h"
 #include "platform/platform.h"
 #include "core/endian.h"
 
 uint8_t* ScalingBuff = nullptr;
 uint8_t* CLUT_final = nullptr;
-
-/* --- ScrnMapr instantiations (BW: SrcDepth 0, DstDepth 3/4/5) --- */
-
-#define ScrnMapr_DoMap UpdateBWDepth3Copy
-#define ScrnMapr_SrcDepth 0
-#define ScrnMapr_DstDepth 3
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateBWDepth4Copy
-#define ScrnMapr_SrcDepth 0
-#define ScrnMapr_DstDepth 4
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateBWDepth5Copy
-#define ScrnMapr_SrcDepth 0
-#define ScrnMapr_DstDepth 5
-#include "platform/screen_map_inst.h"
-
-/* --- ScrnMapr instantiations (Color: SrcDepth 1/2/3, DstDepth 3/4/5) --- */
-
-#define ScrnMapr_DoMap UpdateColorSrc1Dst3Copy
-#define ScrnMapr_SrcDepth 1
-#define ScrnMapr_DstDepth 3
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc1Dst4Copy
-#define ScrnMapr_SrcDepth 1
-#define ScrnMapr_DstDepth 4
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc1Dst5Copy
-#define ScrnMapr_SrcDepth 1
-#define ScrnMapr_DstDepth 5
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc2Dst3Copy
-#define ScrnMapr_SrcDepth 2
-#define ScrnMapr_DstDepth 3
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc2Dst4Copy
-#define ScrnMapr_SrcDepth 2
-#define ScrnMapr_DstDepth 4
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc2Dst5Copy
-#define ScrnMapr_SrcDepth 2
-#define ScrnMapr_DstDepth 5
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc3Dst3Copy
-#define ScrnMapr_SrcDepth 3
-#define ScrnMapr_DstDepth 3
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc3Dst4Copy
-#define ScrnMapr_SrcDepth 3
-#define ScrnMapr_DstDepth 4
-#include "platform/screen_map_inst.h"
-
-#define ScrnMapr_DoMap UpdateColorSrc3Dst5Copy
-#define ScrnMapr_SrcDepth 3
-#define ScrnMapr_DstDepth 5
-#include "platform/screen_map_inst.h"
 
 
 /* --- CLUT table building (no SDL dependency) --- */
@@ -145,20 +83,20 @@ void ConvertRect(int bpp, int16_t top, int16_t left, int16_t bottom, int16_t rig
 {
 	if (g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
 		switch (vMacScreenDepth) {
-			case 1: switch (bpp) { case 1: UpdateColorSrc1Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc1Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc1Dst5Copy(top,left,bottom,right); break; } break;
-			case 2: switch (bpp) { case 1: UpdateColorSrc2Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc2Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc2Dst5Copy(top,left,bottom,right); break; } break;
-			case 3: switch (bpp) { case 1: UpdateColorSrc3Dst3Copy(top,left,bottom,right); break; case 2: UpdateColorSrc3Dst4Copy(top,left,bottom,right); break; case 4: UpdateColorSrc3Dst5Copy(top,left,bottom,right); break; } break;
+			case 1: switch (bpp) { case 1: ScreenMapConvert<1,3>(g_screenCompareBuff, ScalingBuff, CLUT_final, top,left,bottom,right); break; case 2: ScreenMapConvert<1,4>(g_screenCompareBuff, ScalingBuff, CLUT_final, top,left,bottom,right); break; case 4: ScreenMapConvert<1,5>(g_screenCompareBuff, ScalingBuff, CLUT_final, top,left,bottom,right); break; } break;
+			case 2: switch (bpp) { case 1: ScreenMapConvert<2,3>(g_screenCompareBuff, ScalingBuff, CLUT_final, top,left,bottom,right); break; case 2: ScreenMapConvert<2,4>(g_screenCompareBuff, ScalingBuff, CLUT_final, top,left,bottom,right); break; case 4: ScreenMapConvert<2,5>(g_screenCompareBuff, ScalingBuff, CLUT_final, top,left,bottom,right); break; } break;
+			case 3: switch (bpp) { case 1: ScreenMapConvert<3,3>(g_screenCompareBuff, ScalingBuff, CLUT_final, top,left,bottom,right); break; case 2: ScreenMapConvert<3,4>(g_screenCompareBuff, ScalingBuff, CLUT_final, top,left,bottom,right); break; case 4: ScreenMapConvert<3,5>(g_screenCompareBuff, ScalingBuff, CLUT_final, top,left,bottom,right); break; } break;
 		}
 	} else {
 		switch (bpp) {
 			case 1:
-				UpdateBWDepth3Copy(top, left, bottom, right);
+				ScreenMapConvert<0,3>(g_screenCompareBuff, ScalingBuff, CLUT_final, top, left, bottom, right);
 				break;
 			case 2:
-				UpdateBWDepth4Copy(top, left, bottom, right);
+				ScreenMapConvert<0,4>(g_screenCompareBuff, ScalingBuff, CLUT_final, top, left, bottom, right);
 				break;
 			case 4:
-				UpdateBWDepth5Copy(top, left, bottom, right);
+				ScreenMapConvert<0,5>(g_screenCompareBuff, ScalingBuff, CLUT_final, top, left, bottom, right);
 				break;
 		}
 	}
