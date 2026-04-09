@@ -10,6 +10,7 @@
 #define EMULATOR_SHELL_H
 
 #include "platform/platform_backend.h"
+#include "platform/display_state.h"
 #include <cstdint>
 
 class EmulatorShell {
@@ -31,6 +32,7 @@ public:
 	bool isRomLoaded() const { return romLoaded_; }
 	void setRomLoaded(bool v) { romLoaded_ = v; }
 	char* getAppParent() const { return appParent_; }
+	DisplayState& display() { return display_; }
 
 	void queueMessage(const char* brief, const char* longMsg, bool fatal);
 	bool hasQueuedMessage() const { return savedBriefMsg_ != nullptr; }
@@ -147,6 +149,9 @@ private:
 	/* --- Init state --- */
 	bool machineInited_ = false;
 	bool romLoaded_ = false;
+
+	/* --- Consolidated display state --- */
+	DisplayState display_;
 
 	/* --- Queued error message (single-slot) --- */
 	const char* savedBriefMsg_ = nullptr;

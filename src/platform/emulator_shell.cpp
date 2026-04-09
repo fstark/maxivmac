@@ -36,6 +36,15 @@ extern void DisconnectKeyCodes3();
 /* Global shell pointer for free-function wrappers. */
 EmulatorShell* g_shell = nullptr;
 
+/* Early DisplayState for code that runs before g_shell is set. */
+static DisplayState s_earlyDisplay;
+
+DisplayState& GetDisplayState()
+{
+	if (g_shell) return g_shell->display();
+	return s_earlyDisplay;
+}
+
 /* appParent_ is set in initWhereAmI(). */
 
 /* --- Free-function wrappers (called from core) --- */
@@ -128,6 +137,9 @@ bool EmulatorShell::initPlatform(int argc, char** argv)
 	argc_ = argc;
 	argv_ = argv;
 	g_shell = this;
+
+	/* Adopt any display state written before g_shell was set. */
+	display_ = s_earlyDisplay;
 
 	windowScale_ = GetEmulatorConfig().windowScale;
 	g_speedValue = GetEmulatorConfig().speed;

@@ -113,10 +113,13 @@ extern uint32_t g_curMacDelta;
 	/* (dlsDelta << 24) | (gmtDelta & 0x00FFFFFF) */
 
 
-/* --- Runtime screen dimensions (set from MachineConfig at init) --- */
-extern uint16_t g_screenWidth;
-extern uint16_t g_screenHeight;
-extern uint8_t  g_screenDepth;
+/* --- Runtime screen dimensions (via DisplayState struct) --- */
+#include "platform/display_state.h"
+DisplayState& GetDisplayState();
+
+#define g_screenWidth       (GetDisplayState().screenWidth)
+#define g_screenHeight      (GetDisplayState().screenHeight)
+#define g_screenDepth       (GetDisplayState().screenDepth)
 
 #define vMacScreenWidth  ((long)g_screenWidth)
 #define vMacScreenHeight ((long)g_screenHeight)
@@ -132,16 +135,23 @@ extern uint8_t  g_screenDepth;
 #define vMacScreenMonoNumBytes (vMacScreenNumPixels / 8)
 #define vMacScreenMonoByteWidth ((long)vMacScreenWidth / 8)
 
-extern bool g_useColorMode;
-extern bool g_colorModeWorks;
+#define g_useColorMode      (GetDisplayState().useColorMode)
+#define g_colorModeWorks    (GetDisplayState().colorModeWorks)
 
-extern bool g_colorMappingChanged;
+#define g_colorMappingChanged (GetDisplayState().colorMappingChanged)
 
 #define CLUT_size 256
 
-extern uint16_t CLUT_reds[CLUT_size];
-extern uint16_t CLUT_greens[CLUT_size];
-extern uint16_t CLUT_blues[CLUT_size];
+#define CLUT_reds           (GetDisplayState().clutReds)
+#define CLUT_greens         (GetDisplayState().clutGreens)
+#define CLUT_blues          (GetDisplayState().clutBlues)
+
+#define g_screenCompareBuff (GetDisplayState().screenCompareBuff)
+#define g_screenChanged     (GetDisplayState().screenChanged)
+#define g_colorTransValid   (GetDisplayState().colorTransValid)
+
+#define ScalingBuff         (GetDisplayState().scalingBuff)
+#define CLUT_final          (GetDisplayState().clutFinal)
 
 extern void Screen_OutputFrame(uint8_t * screencurrentbuff);
 extern void DoneWithDrawingForTick();

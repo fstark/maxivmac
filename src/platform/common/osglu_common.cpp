@@ -35,20 +35,6 @@ uint32_t g_curMacLatitude = 0;
 uint32_t g_curMacLongitude = 0;
 uint32_t g_curMacDelta = 0;
 
-/* Runtime screen dimensions — initialized from MachineConfig */
-uint16_t g_screenWidth  = 640;
-uint16_t g_screenHeight = 480;
-uint8_t  g_screenDepth  = 3;
-
-bool g_useColorMode = false;
-bool g_colorModeWorks = false;
-
-bool g_colorMappingChanged = false;
-
-uint16_t CLUT_reds[CLUT_size];
-uint16_t CLUT_greens[CLUT_size];
-uint16_t CLUT_blues[CLUT_size];
-
 bool g_requestMacOff = false;
 
 bool g_forceMacOff = false;
@@ -192,12 +178,6 @@ void DiskEjectedNotify(DriveIndex driveNo)
 }
 
 /* --- Screen change detection --- */
-
-uint8_t * g_screenCompareBuff = nullptr;
-
-bool g_screenChanged = false;
-
-bool g_colorTransValid = false;
 
 /* Compare current screen buffer against shadow buffer.
    If anything changed (or the color palette was modified),

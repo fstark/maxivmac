@@ -10,12 +10,6 @@
 
 #include <cstdint>
 
-/* Output buffer pointer — set by caller before calling ConvertRect. */
-extern uint8_t* ScalingBuff;
-
-/* Pre-computed CLUT lookup table. */
-extern uint8_t* CLUT_final;
-
 #define CLUT_FINAL_SZ (256 * 8 * 4)
 	/*
 		256 possible values of one byte

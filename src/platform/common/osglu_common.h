@@ -28,10 +28,6 @@
 
 extern bool g_requestMacOff;
 
-extern uint8_t * g_screenCompareBuff;
-
-extern bool g_screenChanged;
-
 extern uint16_t g_viewHSize;
 extern uint16_t g_viewVSize;
 extern uint16_t g_viewHStart;
@@ -57,8 +53,6 @@ extern EvtQEl EvtQA[MyEvtQSz];
 extern uint16_t EvtQIn;
 extern uint16_t EvtQOut;
 extern bool EvtQNeedRecover;
-
-extern bool g_colorTransValid;
 
 #if EmLocalTalk
 extern uint32_t e_p[2];

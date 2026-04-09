@@ -14,9 +14,6 @@
 #include "platform/platform.h"
 #include "core/endian.h"
 
-uint8_t* ScalingBuff = nullptr;
-uint8_t* CLUT_final = nullptr;
-
 
 /* --- CLUT table building (no SDL dependency) --- */
 
