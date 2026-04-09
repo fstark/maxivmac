@@ -14,6 +14,3 @@
 	*/
 #include "core/emulation_config.h"
 #include "platform/platform.h"
-
-#include "lang/localization_keys.h"
-#include "lang/localization.h"

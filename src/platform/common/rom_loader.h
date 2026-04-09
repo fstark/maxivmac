@@ -3,9 +3,7 @@
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
 #include "platform/common/osglu_common.h"
-#include "platform/common/intl_chars.h"
-#include "platform/common/control_mode.h"
-#include "lang/localization.h"
+#include "platform/common/keyboard_map.h"
 #include "core/machine_obj.h"
 
 /* ROM file loading. */

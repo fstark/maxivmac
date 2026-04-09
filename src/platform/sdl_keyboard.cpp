@@ -4,8 +4,7 @@
 #include "platform/common/osglu_ud.h"
 #include "platform/common/osglu_common.h"
 #include "platform/platform.h"
-#include "platform/common/intl_chars.h"
-#include "platform/common/control_mode.h"
+#include "platform/common/keyboard_map.h"
 
 uint8_t SDLScan2MacKeyCode(SDL_Scancode i)
 {

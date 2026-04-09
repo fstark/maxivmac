@@ -1,5 +1,7 @@
 #include "platform/common/disk_io.h"
 
+#include <cstdio>
+
 FILE *Drives[NumDrives]; /* open disk image files */
 char *DriveNames[NumDrives]; /* paths of open disk images */
 
@@ -170,8 +172,7 @@ bool Sony_Insert0(FILE * refnum, bool locked,
 	bool IsOk = false;
 
 	if (! FirstFreeDisk(&driveNo)) {
-		MacMsg(Localize(kStrTooManyImagesTitle), Localize(kStrTooManyImagesMessage),
-			false);
+		fprintf(stderr, "Error: Too many disk images\n");
 	} else {
 		/* printf("Sony_Insert0 %d\n", (int)driveNo); */
 
@@ -203,7 +204,7 @@ bool Sony_Insert1(char *drivepath, bool silentfail)
 	}
 	if (nullptr == refnum) {
 		if (! silentfail) {
-			MacMsg(Localize(kStrOpenFailTitle), Localize(kStrOpenFailMessage), false);
+			fprintf(stderr, "Error: Could not open disk image\n");
 		}
 	} else {
 		return Sony_Insert0(refnum, locked, drivepath);
@@ -231,7 +232,7 @@ static void MakeNewDisk0(uint32_t L, char *drivepath)
 	bool IsOk = false;
 	FILE *refnum = fopen(drivepath, "wb+");
 	if (nullptr == refnum) {
-		MacMsg(Localize(kStrOpenFailTitle), Localize(kStrOpenFailMessage), false);
+		fprintf(stderr, "Error: Could not create disk image\n");
 	} else {
 		if (WriteZero(refnum, L)) {
 			IsOk = Sony_Insert0(refnum, false, drivepath);

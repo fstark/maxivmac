@@ -76,9 +76,8 @@ set(COMMON_SOURCES
     src/cpu/disasm.cpp
     src/core/main.cpp
     src/platform/common/osglu_common.cpp
-    src/platform/common/intl_chars.cpp
     src/platform/common/param_buffers.cpp
-    src/platform/common/control_mode.cpp
+    src/platform/common/keyboard_map.cpp
     src/platform/common/mac_roman.cpp
     src/platform/common/path_utils.cpp
     src/platform/common/dbglog_platform.cpp
@@ -88,18 +87,6 @@ set(COMMON_SOURCES
     src/platform/common/rom_loader.cpp
     src/platform/screen_convert.cpp
     src/platform/emulator_shell.cpp
-    src/lang/localization.cpp
-    src/lang/lang_english.cpp
-    src/lang/lang_french.cpp
-    src/lang/lang_german.cpp
-    src/lang/lang_italian.cpp
-    src/lang/lang_spanish.cpp
-    src/lang/lang_dutch.cpp
-    src/lang/lang_portuguese.cpp
-    src/lang/lang_polish.cpp
-    src/lang/lang_czech.cpp
-    src/lang/lang_serbian.cpp
-    src/lang/lang_catalan.cpp
 )
 
 # ---------------------------------------------------------------------------

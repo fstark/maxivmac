@@ -6,8 +6,10 @@
 */
 
 #include "platform/screen_convert.h"
+#include "platform/common/osglu_ui.h"
+#include "platform/common/osglu_ud.h"
+#include "platform/common/osglu_common.h"
 #include "platform/platform.h"
-#include "platform/common/control_mode.h"
 #include "core/endian.h"
 
 uint8_t* ScalingBuff = nullptr;
@@ -168,7 +170,7 @@ void ConvertRect(int bpp, int16_t top, int16_t left, int16_t bottom, int16_t rig
 void ConvertRectSlow(uint8_t* dest, int pitch, int bpp,
 	uint16_t top, uint16_t left, uint16_t bottom, uint16_t right)
 {
-	uint8_t *the_data = GetCurDrawBuff();
+	uint8_t *the_data = g_screenCompareBuff;
 
 	for (uint16_t i = top; i < bottom; ++i) {
 		for (uint16_t j = left; j < right; ++j) {

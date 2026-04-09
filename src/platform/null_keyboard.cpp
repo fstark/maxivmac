@@ -9,7 +9,7 @@
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
 #include "platform/common/osglu_common.h"
-#include "platform/common/control_mode.h"
+#include "platform/common/keyboard_map.h"
 #include "platform/platform.h"
 
 void ReconnectKeyCodes3()

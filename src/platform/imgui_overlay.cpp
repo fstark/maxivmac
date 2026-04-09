@@ -15,6 +15,9 @@ extern bool g_requestInsertDisk;
 extern uint8_t g_requestIthDisk;
 extern bool g_wantMagnify;
 extern bool g_wantFullScreen;
+extern bool g_speedStopped;
+extern bool g_runInBackground;
+extern bool g_wantNotAutoSlow;
 
 bool ControlOverlay::draw(UIState currentState, EmulatorShell* shell,
 	UIState& requestedState)
@@ -177,6 +180,8 @@ void ControlOverlay::drawSpeedTab()
 		{ "2x",        2 },
 		{ "4x",        4 },
 		{ "8x",        8 },
+		{ "16x",      16 },
+		{ "32x",      32 },
 		{ "Unlimited", 0 },
 	};
 
@@ -187,6 +192,18 @@ void ControlOverlay::drawSpeedTab()
 		ImGui::SameLine();
 	}
 	ImGui::NewLine();
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	ImGui::Checkbox("Stopped", &g_speedStopped);
+	ImGui::Checkbox("Run in Background", &g_runInBackground);
+
+	bool autoSlow = !g_wantNotAutoSlow;
+	if (ImGui::Checkbox("AutoSlow", &autoSlow)) {
+		g_wantNotAutoSlow = !autoSlow;
+	}
 }
 
 /* ── Advanced tab ────────────────────────────────────── */
@@ -206,4 +223,14 @@ void ControlOverlay::drawAdvancedTab(UIState currentState,
 		ImGui::SameLine();
 		ImGui::TextDisabled("Debug tools");
 	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	ImGui::Text("maxivmac");
+	ImGui::TextDisabled("A modernisation of the Mini vMac emulator");
+	ImGui::TextDisabled("github.com/InvisibleUp/minivmac");
+	ImGui::TextDisabled("Copyright 2001-2024 Paul C. Pratt et al.");
+	ImGui::TextDisabled("Licensed under GPL v2");
 }

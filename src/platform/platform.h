@@ -28,8 +28,6 @@ extern void dbglog_writeln(char *s);
 extern void dbglog_writelnHex(char *s, uint32_t x);
 extern void dbglog_writelnNum(char *s, int32_t v);
 
-extern void MacMsgDebugAlert(char *s);
-
 extern void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
 
 extern bool AllocBlock(uint8_t **p, uint32_t n, bool fillOnes);

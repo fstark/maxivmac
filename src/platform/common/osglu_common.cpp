@@ -691,9 +691,6 @@ void EvtQTryRecoverFromFull()
 
 const char *SavedBriefMsg = nullptr;
 const char *SavedLongMsg;
-#if WantAbnormalReports
-uint16_t g_savedIDMsg = 0;
-#endif
 bool g_savedFatalMsg;
 
 void MacMsg(const char *briefMsg, const char *longMsg, bool fatal)
@@ -713,17 +710,9 @@ void MacMsg(const char *briefMsg, const char *longMsg, bool fatal)
 #if WantAbnormalReports
 void WarnMsgAbnormalID(uint16_t id)
 {
-	MacMsg(Localize(kStrReportAbnormalTitle),
-		Localize(kStrReportAbnormalMessage), false);
-
-	if (0 != g_savedIDMsg) {
-		/*
-			ignore the new message, only display the
-			first error.
-		*/
-	} else {
-		g_savedIDMsg = id;
-	}
+	/* Abnormal IDs are already logged via dbglog in DoReportAbnormalID.
+	   No user-facing overlay needed. */
+	(void)id;
 }
 #endif
 

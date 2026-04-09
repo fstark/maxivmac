@@ -1,6 +1,8 @@
 #include "platform/common/rom_loader.h"
 #include "platform/common/path_utils.h"
 
+#include <cstdio>
+
 char *rom_path = nullptr;
 
 tMacErr LoadMacRomFrom(char *path)
@@ -18,12 +20,10 @@ tMacErr LoadMacRomFrom(char *path)
 		if ((uint32_t)File_Size != romSize) {
 			if (feof(ROM_File))
 			{
-				MacMsgOverride(Localize(kStrShortROMTitle),
-					Localize(kStrShortROMMessage));
+				fprintf(stderr, "Error: ROM file too short\n");
 				err = tMacErr::eofErr;
 			} else {
-				MacMsgOverride(Localize(kStrNoReadROMTitle),
-					Localize(kStrNoReadROMMessage));
+				fprintf(stderr, "Error: ROM file read error\n");
 				err = tMacErr::miscErr;
 			}
 		} else {

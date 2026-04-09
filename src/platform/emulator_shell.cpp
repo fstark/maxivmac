@@ -11,8 +11,7 @@
 #include "core/main.h"
 #include "platform/common/osglu_common.h"
 #include "platform/common/param_buffers.h"
-#include "platform/common/control_mode.h"
-#include "platform/common/intl_chars.h"
+#include "platform/common/keyboard_map.h"
 #include "platform/common/mac_roman.h"
 #include "platform/common/path_utils.h"
 #include "platform/common/dbglog_platform.h"
@@ -40,7 +39,7 @@ EmulatorShell* g_shell = nullptr;
 /* app_parent is referenced by other code as an extern. */
 char *app_parent = nullptr;
 
-/* --- Free-function wrappers (called from core and control_mode) --- */
+/* --- Free-function wrappers (called from core) --- */
 
 void DoneWithDrawingForTick()
 {
@@ -62,23 +61,6 @@ void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 {
 	(void) memcpy(reinterpret_cast<char *>(destPtr),
 		reinterpret_cast<char *>(srcPtr), byteCount);
-}
-
-/* --- Text translation --- */
-
-static void NativeStrFromCStr(char *r, const char *s)
-{
-	uint8_t ps[ClStrMaxLength];
-	int i;
-	int L;
-
-	ClStrFromSubstCStr(&L, ps, s);
-
-	for (i = 0; i < L; ++i) {
-		r[i] = Cell2PlainAsciiMap[ps[i]];
-	}
-
-	r[L] = 0;
 }
 
 /* --- Disk insertion helpers --- */
@@ -194,7 +176,6 @@ bool EmulatorShell::initMachine()
 	if (!InitLocationDat()) return false;
 	if (!backend_->audioInit()) return false;
 	if (!createMainWindow()) return false;
-	if (!WaitForRom()) return false;
 
 	/* Insert disk images from command line */
 	for (const auto& diskPath : lc.diskPaths) {
@@ -214,10 +195,6 @@ bool EmulatorShell::initMachine()
 
 void EmulatorShell::shutdown()
 {
-	if (MacMsgDisplayed) {
-		MacMsgDisplayOff();
-	}
-
 	backend_->restoreKeyRepeat();
 	ungrabMachine();
 	backend_->audioStop();
@@ -231,10 +208,6 @@ void EmulatorShell::shutdown()
 
 	/* Show any pending error message */
 	if (nullptr != SavedBriefMsg) {
-		char briefMsg0[ClStrMaxLength + 1];
-		char longMsg0[ClStrMaxLength + 1];
-		NativeStrFromCStr(briefMsg0, SavedBriefMsg);
-		NativeStrFromCStr(longMsg0, SavedLongMsg);
 		backend_->showMessageBox(SavedBriefMsg, SavedLongMsg);
 		SavedBriefMsg = nullptr;
 	}
@@ -347,11 +320,10 @@ void EmulatorShell::processSavedTasks()
 	if (g_requestMacOff) {
 		g_requestMacOff = false;
 		if (AnyDiskInserted()) {
-			MacMsgOverride(Localize(kStrQuitWarningTitle),
-				Localize(kStrQuitWarningMessage));
-		} else {
-			g_forceMacOff = true;
+			fprintf(stderr, "Warning: Quitting with disks still mounted. "
+				"Shut down the guest Mac first to avoid data loss.\n");
 		}
+		g_forceMacOff = true;
 	}
 
 	if (g_forceMacOff) {
@@ -378,10 +350,6 @@ void EmulatorShell::processSavedTasks()
 		}
 	}
 
-	if ((nullptr != SavedBriefMsg) & ! MacMsgDisplayed) {
-		MacMsgDisplayOn();
-	}
-
 	if ((useMagnify_ != g_wantMagnify)
 		|| (useFullScreen_ != g_wantFullScreen))
 	{
@@ -398,11 +366,6 @@ void EmulatorShell::processSavedTasks()
 		} else {
 			ungrabMachine();
 		}
-	}
-
-	if (g_needWholeScreenDraw) {
-		g_needWholeScreenDraw = false;
-		ScreenChangedAll();
 	}
 
 	if (0 != g_requestIthDisk) {
@@ -845,8 +808,6 @@ bool EmulatorShell::allocMyMemory()
 		goto fail;
 	if (!AllocBlock(&g_screenCompareBuff, vMacScreenNumBytes, true))
 		goto fail;
-	if (!AllocBlock(&g_cntrlDisplayBuff, vMacScreenNumBytes, false))
-		goto fail;
 	if (!AllocBlock(&CLUT_final, CLUT_FINAL_SZ, false))
 		goto fail;
 	if (!Sound_AllocBuffer())
@@ -856,7 +817,7 @@ bool EmulatorShell::allocMyMemory()
 
 	return true;
 fail:
-	MacMsg(Localize(kStrOutOfMemTitle), Localize(kStrOutOfMemMessage), true);
+	MacMsg("Out of Memory", "Not enough memory is available", true);
 	return false;
 }
 
@@ -864,7 +825,6 @@ void EmulatorShell::unallocMyMemory()
 {
 	free(g_rom); g_rom = nullptr;
 	free(g_screenCompareBuff); g_screenCompareBuff = nullptr;
-	free(g_cntrlDisplayBuff); g_cntrlDisplayBuff = nullptr;
 	free(CLUT_final); CLUT_final = nullptr;
 	Sound_FreeBuffer();
 	EmulationFreeAlloc();

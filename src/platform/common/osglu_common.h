@@ -64,9 +64,6 @@ extern bool EvtQNeedRecover;
 
 extern const char *SavedBriefMsg;
 extern const char *SavedLongMsg;
-#if WantAbnormalReports
-extern uint16_t g_savedIDMsg;
-#endif
 extern bool g_savedFatalMsg;
 
 extern bool g_colorTransValid;
