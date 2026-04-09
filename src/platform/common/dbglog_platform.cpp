@@ -10,9 +10,6 @@
 
 #include "path_utils.h"
 
-/* app_parent is owned by sdl.cpp */
-extern char *app_parent;
-
 #ifndef dbglog_ToStdErr
 #define dbglog_ToStdErr 0
 #endif
@@ -24,19 +21,19 @@ extern char *app_parent;
 static FILE *dbglog_File = nullptr;
 #endif
 
-bool dbglog_open0()
+bool dbglog_open0(const char *appParent)
 {
 #if dbglog_ToStdErr || dbglog_ToSDL_Log
 	return true;
 #else
-	if (nullptr == app_parent)
+	if (nullptr == appParent)
 	{
 		dbglog_File = fopen("dbglog.txt", "w");
 	}
 	else {
 		char *t = nullptr;
 
-		if (tMacErr::noErr == ChildPath(app_parent, "dbglog.txt", &t)) {
+		if (tMacErr::noErr == ChildPath(const_cast<char*>(appParent), "dbglog.txt", &t)) {
 			dbglog_File = fopen(t, "w");
 		}
 

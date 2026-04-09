@@ -30,6 +30,7 @@ public:
 	bool isMachineInited() const { return machineInited_; }
 	bool isRomLoaded() const { return romLoaded_; }
 	void setRomLoaded(bool v) { romLoaded_ = v; }
+	char* getAppParent() const { return appParent_; }
 
 	void shutdown();
 
@@ -129,6 +130,7 @@ private:
 	char* n_arg_ = nullptr;
 	char* pref_dir_ = nullptr;
 	char* romPath_ = nullptr;
+	char* appParent_ = nullptr;
 	int argc_ = 0;
 	char** argv_ = nullptr;
 

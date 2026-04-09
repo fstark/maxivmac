@@ -36,8 +36,7 @@ extern void DisconnectKeyCodes3();
 /* Global shell pointer for free-function wrappers. */
 EmulatorShell* g_shell = nullptr;
 
-/* app_parent is referenced by other code as an extern. */
-char *app_parent = nullptr;
+/* appParent_ is set in initWhereAmI(). */
 
 /* --- Free-function wrappers (called from core) --- */
 
@@ -78,7 +77,7 @@ static char* s_d_arg = nullptr; /* set by shell init */
 
 static bool Sony_Insert2_impl(char *s)
 {
-	char *d = (nullptr == s_d_arg) ? app_parent : s_d_arg;
+	char *d = (nullptr == s_d_arg) ? g_shell->getAppParent() : s_d_arg;
 	bool IsOk = false;
 
 	if (nullptr == d) {
@@ -154,7 +153,7 @@ bool EmulatorShell::initPlatform(int argc, char** argv)
 
 	if (!backend_->init(this)) return false;
 	if (!initWhereAmI()) return false;
-	dbglog_open();
+	dbglog_open(appParent_);
 
 	return true;
 }
@@ -171,7 +170,7 @@ bool EmulatorShell::initMachine()
 
 	if (!allocMyMemory()) return false;
 	if (!scanCommandLine()) return false;
-	if (!LoadMacRom(romPath_, d_arg_, app_parent, pref_dir_)) return false;
+	if (!LoadMacRom(romPath_, d_arg_, appParent_, pref_dir_)) return false;
 	if (!loadInitialImages()) return false;
 	if (!InitLocationDat()) return false;
 	if (!backend_->audioInit()) return false;
@@ -834,7 +833,7 @@ void EmulatorShell::unallocMyMemory()
 
 bool EmulatorShell::initWhereAmI()
 {
-	app_parent = const_cast<char *>(backend_->getAppParent());
+	appParent_ = const_cast<char *>(backend_->getAppParent());
 	pref_dir_ = backend_->getPrefDir("gryphel", "maxivmac");
 
 	return true;

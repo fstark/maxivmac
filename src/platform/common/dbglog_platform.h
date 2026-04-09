@@ -6,7 +6,7 @@
 #include "platform/common/osglu_ui.h"
 
 
-bool dbglog_open0();
+bool dbglog_open0(const char *appParent);
 void dbglog_write0(char *s, uint32_t L);
 void dbglog_close0();
 

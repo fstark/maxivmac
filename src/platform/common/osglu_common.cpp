@@ -10,7 +10,7 @@
 
 /* --- backend-provided debug log primitives (extern) --- */
 
-extern bool dbglog_open0();
+extern bool dbglog_open0(const char *appParent);
 extern void dbglog_write0(char *s, uint32_t L);
 extern void dbglog_close0();
 
