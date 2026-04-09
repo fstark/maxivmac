@@ -6,6 +6,8 @@
 #include "platform/common/osglu_ud.h"
 #include "platform/common/osglu_common.h"
 
+#include <cstring>
+
 /* --- backend-provided debug log primitives (extern) --- */
 
 extern bool dbglog_open0();
@@ -190,423 +192,55 @@ void DiskEjectedNotify(DriveIndex driveNo)
 
 /* --- Screen change detection --- */
 
-/*
-	block type - for operating on multiple uint8_t elements
-		at a time.
-*/
-
-#if LITTLE_ENDIAN_UNALIGNED || BIG_ENDIAN_UNALIGNED
-
-#define uibb uint32_t
-#define uibr uint32_t
-#define ln2uiblockn 2
-
-#else
-
-#define uibb uint8_t
-#define uibr uint8_t
-#define ln2uiblockn 0
-
-#endif
-
-#define uiblockn (1 << ln2uiblockn)
-#define ln2uiblockbitsn (3 + ln2uiblockn)
-#define uiblockbitsn (8 * uiblockn)
-
-static bool FindFirstChangeInLVecs(uibb *ptr1, uibb *ptr2,
-					uint32_t L, uint32_t *j)
-{
-	uibb *p1 = ptr1;
-	uibb *p2 = ptr2;
-	uint32_t i;
-
-	for (i = L; i != 0; --i) {
-		if (*p1++ != *p2++) {
-			--p1;
-			*j = p1 - ptr1;
-			return true;
-		}
-	}
-	return false;
-}
-
-static void FindLastChangeInLVecs(uibb *ptr1, uibb *ptr2,
-					uint32_t L, uint32_t *j)
-{
-	uibb *p1 = ptr1 + L;
-	uibb *p2 = ptr2 + L;
-
-	while (*--p1 == *--p2) {
-	}
-	*j = p1 - ptr1;
-}
-
-/* Scan left/right within changed rows to find the narrowest
-   bounding box of differing pixels per scanline. */
-static void FindLeftRightChangeInLMat(uibb *ptr1, uibb *ptr2,
-	uint32_t width, uint32_t top, uint32_t bottom,
-	uint32_t *LeftMin0, uibr *LeftMask0,
-	uint32_t *RightMax0, uibr *RightMask0)
-{
-	uint32_t i;
-	uint32_t j;
-	uibb *p1;
-	uibb *p2;
-	uibr x;
-	uint32_t offset = top * width;
-	uibb *p10 = (uibb *)ptr1 + offset;
-	uibb *p20 = (uibb *)ptr2 + offset;
-	uint32_t LeftMin = *LeftMin0;
-	uint32_t RightMax = *RightMax0;
-	uibr LeftMask = 0;
-	uibr RightMask = 0;
-	for (i = top; i < bottom; ++i) {
-		p1 = p10;
-		p2 = p20;
-		for (j = 0; j < LeftMin; ++j) {
-			x = *p1++ ^ *p2++;
-			if (0 != x) {
-				LeftMin = j;
-				LeftMask = x;
-				goto Label_3;
-			}
-		}
-		LeftMask |= (*p1 ^ *p2);
-Label_3:
-		p1 = p10 + RightMax;
-		p2 = p20 + RightMax;
-		RightMask |= (*p1++ ^ *p2++);
-		for (j = RightMax + 1; j < width; ++j) {
-			x = *p1++ ^ *p2++;
-			if (0 != x) {
-				RightMax = j;
-				RightMask = x;
-			}
-		}
-
-		p10 += width;
-		p20 += width;
-	}
-	*LeftMin0 = LeftMin;
-	*RightMax0 = RightMax;
-	*LeftMask0 = LeftMask;
-	*RightMask0 = RightMask;
-}
-
 uint8_t * g_screenCompareBuff = nullptr;
 
-static uint32_t s_nextDrawRow = 0;
-
-
-#if BIG_ENDIAN_UNALIGNED
-
-#define FlipCheckMonoBits (uiblockbitsn - 1)
-
-#else
-
-#define FlipCheckMonoBits 7
-
-#endif
-
-#define FlipCheckBits (FlipCheckMonoBits >> vMacScreenDepth)
+bool g_screenChanged = false;
 
 bool g_colorTransValid = false;
 
-/* Compare current and previous screen buffers row-by-row to
-   find the dirty rectangle, limiting work per tick for smooth
-   animation.  Copies changed rows to the shadow buffer. */
-static bool ScreenFindChanges(uint8_t * screencurrentbuff,
-	int8_t TimeAdjust, int16_t *top, int16_t *left, int16_t *bottom, int16_t *right)
+/* Compare current screen buffer against shadow buffer.
+   If anything changed (or the color palette was modified),
+   snapshot the current buffer and set g_screenChanged. */
+static bool ScreenFindChanges(uint8_t * screencurrentbuff)
 {
-	uint32_t j0;
-	uint32_t j1;
-	uint32_t j0h;
-	uint32_t j1h;
-	uint32_t j0v;
-	uint32_t j1v;
-	uint32_t copysize;
-	uint32_t copyoffset;
-	uint32_t copyrows;
-	uint32_t LimitDrawRow;
-	uint32_t MaxRowsDrawnPerTick;
-	uint32_t LeftMin;
-	uint32_t RightMax;
-	uibr LeftMask;
-	uibr RightMask;
-	int j;
+	uint32_t bufSize;
 
-	if (TimeAdjust < 4) {
-		MaxRowsDrawnPerTick = vMacScreenHeight;
-	} else if (TimeAdjust < 6) {
-		MaxRowsDrawnPerTick = vMacScreenHeight / 2;
-	} else {
-		MaxRowsDrawnPerTick = vMacScreenHeight / 4;
+	if (g_colorMappingChanged) {
+		g_colorMappingChanged = false;
+		g_colorTransValid = false;
+		bufSize = (uint32_t)vMacScreenHeight * vMacScreenByteWidth;
+		MoveBytes(screencurrentbuff, g_screenCompareBuff, bufSize);
+		return true;
 	}
 
 	if (vMacScreenDepth != 0 && g_useColorMode) {
-		if (g_colorMappingChanged) {
-			g_colorMappingChanged = false;
-			j0h = 0;
-			j1h = vMacScreenWidth;
-			j0v = 0;
-			j1v = vMacScreenHeight;
-			g_colorTransValid = false;
-		} else {
-			if (! FindFirstChangeInLVecs(
-				(uibb *)screencurrentbuff
-					+ s_nextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
-				(uibb *)g_screenCompareBuff
-					+ s_nextDrawRow * (vMacScreenBitWidth / uiblockbitsn),
-				((uint32_t)(vMacScreenHeight - s_nextDrawRow)
-					* (uint32_t)vMacScreenBitWidth) / uiblockbitsn,
-				&j0))
-			{
-				s_nextDrawRow = 0;
-				return false;
-			}
-			j0v = j0 / (vMacScreenBitWidth / uiblockbitsn);
-			j0h = j0 - j0v * (vMacScreenBitWidth / uiblockbitsn);
-			j0v += s_nextDrawRow;
-			LimitDrawRow = j0v + MaxRowsDrawnPerTick;
-			if (LimitDrawRow >= vMacScreenHeight) {
-				LimitDrawRow = vMacScreenHeight;
-				s_nextDrawRow = 0;
-			} else {
-				s_nextDrawRow = LimitDrawRow;
-			}
-			FindLastChangeInLVecs((uibb *)screencurrentbuff,
-				(uibb *)g_screenCompareBuff,
-				((uint32_t)LimitDrawRow
-					* (uint32_t)vMacScreenBitWidth) / uiblockbitsn,
-				&j1);
-			j1v = j1 / (vMacScreenBitWidth / uiblockbitsn);
-			j1h = j1 - j1v * (vMacScreenBitWidth / uiblockbitsn);
-			j1v++;
-
-			if (j0h < j1h) {
-				LeftMin = j0h;
-				RightMax = j1h;
-			} else {
-				LeftMin = j1h;
-				RightMax = j0h;
-			}
-
-			FindLeftRightChangeInLMat((uibb *)screencurrentbuff,
-				(uibb *)g_screenCompareBuff,
-				(vMacScreenBitWidth / uiblockbitsn),
-				j0v, j1v, &LeftMin, &LeftMask, &RightMax, &RightMask);
-
-			if (vMacScreenDepth > ln2uiblockbitsn) {
-				j0h =  (LeftMin >> (vMacScreenDepth - ln2uiblockbitsn));
-			} else if (ln2uiblockbitsn > vMacScreenDepth) {
-				for (j = 0; j < (1 << (ln2uiblockbitsn - vMacScreenDepth));
-					++j)
-				{
-					if (0 != (LeftMask
-						& (((((uibr)1) << (1 << vMacScreenDepth)) - 1)
-							<< ((j ^ FlipCheckBits) << vMacScreenDepth))))
-					{
-						goto Label_1c;
-					}
-				}
-Label_1c:
-				j0h =  (LeftMin << (ln2uiblockbitsn - vMacScreenDepth)) + j;
-			} else {
-				j0h =  LeftMin;
-			}
-
-			if (vMacScreenDepth > ln2uiblockbitsn) {
-				j1h = (RightMax >> (vMacScreenDepth - ln2uiblockbitsn)) + 1;
-			} else if (ln2uiblockbitsn > vMacScreenDepth) {
-				for (j = (uiblockbitsn >> vMacScreenDepth); --j >= 0; ) {
-					if (0 != (RightMask
-						& (((((uibr)1) << (1 << vMacScreenDepth)) - 1)
-							<< ((j ^ FlipCheckBits) << vMacScreenDepth))))
-					{
-						goto Label_2c;
-					}
-				}
-Label_2c:
-				j1h = (RightMax << (ln2uiblockbitsn - vMacScreenDepth))
-					+ j + 1;
-			} else {
-				j1h = RightMax + 1;
-			}
-		}
-
-		copyrows = j1v - j0v;
-		copyoffset = j0v * vMacScreenByteWidth;
-		copysize = copyrows * vMacScreenByteWidth;
+		bufSize = (uint32_t)vMacScreenHeight * vMacScreenByteWidth;
 	} else {
-		if (vMacScreenDepth != 0 && g_colorMappingChanged) {
-			g_colorMappingChanged = false;
-			j0h = 0;
-			j1h = vMacScreenWidth;
-			j0v = 0;
-			j1v = vMacScreenHeight;
-			g_colorTransValid = false;
-		} else {
-			if (! FindFirstChangeInLVecs(
-				(uibb *)screencurrentbuff
-					+ s_nextDrawRow * (vMacScreenWidth / uiblockbitsn),
-				(uibb *)g_screenCompareBuff
-					+ s_nextDrawRow * (vMacScreenWidth / uiblockbitsn),
-				((uint32_t)(vMacScreenHeight - s_nextDrawRow)
-					* (uint32_t)vMacScreenWidth) / uiblockbitsn,
-				&j0))
-			{
-				s_nextDrawRow = 0;
-				return false;
-			}
-			j0v = j0 / (vMacScreenWidth / uiblockbitsn);
-			j0h = j0 - j0v * (vMacScreenWidth / uiblockbitsn);
-			j0v += s_nextDrawRow;
-			LimitDrawRow = j0v + MaxRowsDrawnPerTick;
-			if (LimitDrawRow >= vMacScreenHeight) {
-				LimitDrawRow = vMacScreenHeight;
-				s_nextDrawRow = 0;
-			} else {
-				s_nextDrawRow = LimitDrawRow;
-			}
-			FindLastChangeInLVecs((uibb *)screencurrentbuff,
-				(uibb *)g_screenCompareBuff,
-				((uint32_t)LimitDrawRow
-					* (uint32_t)vMacScreenWidth) / uiblockbitsn,
-				&j1);
-			j1v = j1 / (vMacScreenWidth / uiblockbitsn);
-			j1h = j1 - j1v * (vMacScreenWidth / uiblockbitsn);
-			j1v++;
-
-			if (j0h < j1h) {
-				LeftMin = j0h;
-				RightMax = j1h;
-			} else {
-				LeftMin = j1h;
-				RightMax = j0h;
-			}
-
-			FindLeftRightChangeInLMat((uibb *)screencurrentbuff,
-				(uibb *)g_screenCompareBuff,
-				(vMacScreenWidth / uiblockbitsn),
-				j0v, j1v, &LeftMin, &LeftMask, &RightMax, &RightMask);
-
-			for (j = 0; j < uiblockbitsn; ++j) {
-				if (0 != (LeftMask
-					& (((uibr)1) << (j ^ FlipCheckMonoBits))))
-				{
-					goto Label_1;
-				}
-			}
-Label_1:
-			j0h = LeftMin * uiblockbitsn + j;
-
-			for (j = uiblockbitsn; --j >= 0; ) {
-				if (0 != (RightMask
-					& (((uibr)1) << (j ^ FlipCheckMonoBits))))
-				{
-					goto Label_2;
-				}
-			}
-Label_2:
-			j1h = RightMax * uiblockbitsn + j + 1;
-		}
-
-		copyrows = j1v - j0v;
-		copyoffset = j0v * vMacScreenMonoByteWidth;
-		copysize = copyrows * vMacScreenMonoByteWidth;
+		bufSize = (uint32_t)vMacScreenHeight * vMacScreenMonoByteWidth;
 	}
 
-	MoveBytes(screencurrentbuff + copyoffset,
-		g_screenCompareBuff + copyoffset,
-		copysize);
+	if (0 != memcmp(screencurrentbuff, g_screenCompareBuff, bufSize)) {
+		MoveBytes(screencurrentbuff, g_screenCompareBuff, bufSize);
+		return true;
+	}
 
-	*top = j0v;
-	*left = j0h;
-	*bottom = j1v;
-	*right = j1h;
-
-	return true;
+	return false;
 }
 
 /* --- Screen frame output --- */
 
-int16_t g_screenChangedTop;
-int16_t g_screenChangedLeft;
-int16_t g_screenChangedBottom;
-int16_t g_screenChangedRight;
-
-void ScreenClearChanges()
-{
-	g_screenChangedTop = 0;
-	g_screenChangedBottom = vMacScreenHeight;
-	g_screenChangedLeft = 0;
-	g_screenChangedRight = vMacScreenWidth;
-}
-
 void ScreenChangedAll()
 {
-	g_screenChangedTop = 0;
-	g_screenChangedBottom = vMacScreenHeight;
-	g_screenChangedLeft = 0;
-	g_screenChangedRight = vMacScreenWidth;
+	g_screenChanged = true;
 }
 
-int16_t g_screenChangedQuietTop = vMacScreenHeight;
-int16_t g_screenChangedQuietLeft = vMacScreenWidth;
-int16_t g_screenChangedQuietBottom = 0;
-int16_t g_screenChangedQuietRight = 0;
-
-/* Find the changed region since last frame and notify the
-   platform layer (HaveChangedScreenBuff) for display update. */
+/* Detect whether the screen changed since last frame and
+   flag it for the platform layer to redraw. */
 void Screen_OutputFrame(uint8_t * screencurrentbuff)
 {
-	int16_t top;
-	int16_t left;
-	int16_t bottom;
-	int16_t right;
-
-	{
-		if (ScreenFindChanges(screencurrentbuff, 0,
-			&top, &left, &bottom, &right))
-		{
-			if (top < g_screenChangedTop) {
-				g_screenChangedTop = top;
-			}
-			if (bottom > g_screenChangedBottom) {
-				g_screenChangedBottom = bottom;
-			}
-			if (left < g_screenChangedLeft) {
-				g_screenChangedLeft = left;
-			}
-			if (right > g_screenChangedRight) {
-				g_screenChangedRight = right;
-			}
-
-			if (top < g_screenChangedQuietTop) {
-				g_screenChangedQuietTop = top;
-			}
-			if (bottom > g_screenChangedQuietBottom) {
-				g_screenChangedQuietBottom = bottom;
-			}
-			if (left < g_screenChangedQuietLeft) {
-				g_screenChangedQuietLeft = left;
-			}
-			if (right > g_screenChangedQuietRight) {
-				g_screenChangedQuietRight = right;
-			}
-
-			if (((g_screenChangedQuietRight - g_screenChangedQuietLeft) > 1)
-				|| ((g_screenChangedQuietBottom
-					- g_screenChangedQuietTop) > 32))
-			{
-				g_screenChangedQuietTop = vMacScreenHeight;
-				g_screenChangedQuietLeft = vMacScreenWidth;
-				g_screenChangedQuietBottom = 0;
-				g_screenChangedQuietRight = 0;
-
-				QuietEnds();
-			}
-		}
+	if (ScreenFindChanges(screencurrentbuff)) {
+		g_screenChanged = true;
+		QuietEnds();
 	}
 }
 

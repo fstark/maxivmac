@@ -506,10 +506,9 @@ void EmulatorShell::doneWithDrawingForTick()
 
 void EmulatorShell::drawChangesAndClear()
 {
-	if (g_screenChangedBottom > g_screenChangedTop) {
-		convertFramebuffer(g_screenChangedTop, g_screenChangedLeft,
-			g_screenChangedBottom, g_screenChangedRight);
-		ScreenClearChanges();
+	if (g_screenChanged) {
+		convertFramebuffer(0, 0, vMacScreenHeight, vMacScreenWidth);
+		g_screenChanged = false;
 		framebufferDirty_ = true;
 	}
 }

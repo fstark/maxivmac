@@ -31,15 +31,7 @@ extern bool g_requestMacOff;
 
 extern uint8_t * g_screenCompareBuff;
 
-extern int16_t g_screenChangedTop;
-extern int16_t g_screenChangedLeft;
-extern int16_t g_screenChangedBottom;
-extern int16_t g_screenChangedRight;
-
-extern int16_t g_screenChangedQuietTop;
-extern int16_t g_screenChangedQuietLeft;
-extern int16_t g_screenChangedQuietBottom;
-extern int16_t g_screenChangedQuietRight;
+extern bool g_screenChanged;
 
 extern uint16_t g_viewHSize;
 extern uint16_t g_viewVSize;
@@ -88,7 +80,6 @@ extern uint32_t g_ltMyStamp;
 /* NOTE: Functions already declared in platform/platform.h are NOT
    duplicated here. */
 
-void ScreenClearChanges();
 void ScreenChangedAll();
 
 void AutoScrollScreen();
