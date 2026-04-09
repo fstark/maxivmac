@@ -1,25 +1,31 @@
 ignoring command line argument
---verify=test/MacIIx.golden
+--model=MacSE
+ignoring command line argument
+--scale=1
+ignoring command line argument
+--silent
+ignoring command line argument
+--verify=/Users/fred/Development/maxivmac/test/MacSE.golden
 RTC Parameter RAM
 0, 0
 1, 80
 2, 4F
-3, 48
+3, 0
 4, 0
 5, 0
 6, 0
 7, 0
 8, 7
-9, 88
-10, 1
-11, 8C
-12, 4E
+9, 53
+10, 4
+11, C
+12, 42
 13, 75
-14, 4D
-15, 63
+14, 67
+15, 73
 16, A8
 17, 0
-18, 1
+18, 0
 19, 22
 20, CC
 21, A
@@ -32,7 +38,7 @@ RTC Parameter RAM
 28, 0
 29, 2
 30, 63
-31, 1
+31, 0
 32, 0
 33, 0
 34, 0
@@ -71,9 +77,9 @@ RTC Parameter RAM
 67, 0
 68, 0
 69, 0
-70, 76
-71, 4D
-72, 81
+70, 0
+71, 0
+72, 0
 73, 0
 74, 0
 75, 0
@@ -120,7 +126,7 @@ RTC Parameter RAM
 116, 0
 117, 0
 118, 0
-119, 1
+119, 0
 120, 0
 121, 1
 122, FF
@@ -129,8 +135,8 @@ RTC Parameter RAM
 125, 0
 126, 0
 127, 0
-128, 9
-129, 80
+128, 0
+129, 0
 130, 0
 131, 0
 132, 0

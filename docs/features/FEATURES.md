@@ -36,7 +36,7 @@ Dorothee
     She wants to be able to "mark" a moment, and all updated values after that would be displayed in red.
     **Implemented:** `LowMemTool` panel — sortable/filterable table of ~160 globals with Mark/Clear change tracking.
 
-# Code Coverage (COVERAGE)
+# Code Coverage (COVERAGE) ✅
     Dorothee would love to have the emulator simpler and get rid of the old unused minivmac code. She wants to have code coverage calculated, so she can easily see what portion of the code is unused and good candidate for removal.
 
 # Snapshots (SNAPSHOTS)

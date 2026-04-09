@@ -87,6 +87,8 @@ private:
 	int emuTexH_ = 0;
 	float emuViewOriginX_ = 0;
 	float emuViewOriginY_ = 0;
+	float emuViewW_ = 0;
+	float emuViewH_ = 0;
 	bool relativeMouseMode_ = false;
 	bool emuViewportHovered_ = false;
 

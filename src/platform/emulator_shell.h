@@ -64,6 +64,9 @@ public:
 	/* --- Cursor --- */
 	void forceShowCursor();
 
+	/* --- Fullscreen hint (for backends that manage their own fullscreen) --- */
+	void setFullscreenHint(bool fs) { fullscreenHint_ = fs; }
+
 	/* --- Window title --- */
 	const char* windowTitle() const;
 
@@ -109,6 +112,7 @@ private:
 	bool wantCursorHidden_ = false;
 	bool caughtMouse_ = false;
 	bool grabMachine_ = false;
+	bool fullscreenHint_ = false;
 
 	/* --- Window position tracking --- */
 	enum { kMagStateNormal = 0, kMagStateMagnifgy = 1, kNumMagStates = 2 };

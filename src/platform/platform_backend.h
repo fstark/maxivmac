@@ -33,6 +33,7 @@ struct PlatformEvent {
 	uint8_t macKeyCode = 0;
 	bool keyDown = false;
 	bool isRelative = false;
+	bool positionOnly = false;
 	float x = 0, y = 0;
 	float dx = 0, dy = 0;
 	float wheelX = 0, wheelY = 0;

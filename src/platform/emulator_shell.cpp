@@ -275,6 +275,8 @@ void EmulatorShell::dispatchEvent(const PlatformEvent& evt)
 				wantCursorHidden_ = true;
 			} else {
 				mousePositionNotify(evt.x, evt.y);
+				if (evt.positionOnly)
+					wantCursorHidden_ = false;
 			}
 			break;
 		case PlatformEvent::Type::MouseButtonDown:
@@ -558,7 +560,7 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 		ShouldHaveCursorHidden = false;
 	}
 
-	if (useFullScreen_) {
+	if (useFullScreen_ || fullscreenHint_) {
 		ShouldHaveCursorHidden = true;
 	}
 

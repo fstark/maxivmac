@@ -338,6 +338,8 @@ void ImGuiBackend::enterWindowed()
 			SDL_SetWindowPosition(window_, savedWinX_, savedWinY_);
 		}
 	}
+	if (shell_)
+		shell_->setFullscreenHint(false);
 	uiState_ = UIState::Windowed;
 }
 
@@ -348,6 +350,8 @@ void ImGuiBackend::enterFullscreen()
 		SDL_GetWindowSize(window_, &savedWinW_, &savedWinH_);
 		SDL_SetWindowFullscreen(window_, true);
 	}
+	if (shell_)
+		shell_->setFullscreenHint(true);
 	uiState_ = UIState::Fullscreen;
 }
 
@@ -367,6 +371,8 @@ void ImGuiBackend::enterDeveloper()
 		SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED,
 			SDL_WINDOWPOS_CENTERED);
 	}
+	if (shell_)
+		shell_->setFullscreenHint(false);
 	uiState_ = UIState::Developer;
 }
 
@@ -416,11 +422,16 @@ bool ImGuiBackend::createSelectorWindow()
 bool ImGuiBackend::imGuiConsumedEvent(const SDL_Event& event) const
 {
 	switch (event.type) {
+		case SDL_EVENT_MOUSE_MOTION:
+			/* Mouse position is always forwarded to the emulator so
+			   the guest cursor tracks the host even when an ImGui
+			   window is on top.  translateSdlEvent sets positionOnly
+			   when the viewport is not hovered. */
+			return false;
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 		case SDL_EVENT_MOUSE_BUTTON_UP:
-		case SDL_EVENT_MOUSE_MOTION:
 		case SDL_EVENT_MOUSE_WHEEL:
 			/* Forward to the emulator only when the emulator viewport
 			   is the topmost hovered window (from the previous frame).
@@ -438,10 +449,20 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event& event)
 	PlatformEvent pEvt;
 
 	/* Helper: test if window-space coordinates fall inside the
-	   emulator viewport and compute emulator-relative coords. */
+	   emulator viewport and compute emulator-pixel coords.
+	   When the image is scaled (e.g. 2× in fullscreen), map from
+	   display-pixel space back to emulator-pixel space so the
+	   shell receives coordinates in [0, emuTexW_) × [0, emuTexH_). */
 	auto mouseInEmuView = [&](float wx, float wy, float &ex, float &ey) -> bool {
-		ex = wx - emuViewOriginX_;
-		ey = wy - emuViewOriginY_;
+		float relX = wx - emuViewOriginX_;
+		float relY = wy - emuViewOriginY_;
+		if (emuViewW_ > 0 && emuViewH_ > 0) {
+			ex = relX * emuTexW_ / emuViewW_;
+			ey = relY * emuTexH_ / emuViewH_;
+		} else {
+			ex = relX;
+			ey = relY;
+		}
 		return ex >= 0 && ey >= 0 && ex < emuTexW_ && ey < emuTexH_;
 	};
 
@@ -471,9 +492,21 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event& event)
 				pEvt.dx = event.motion.xrel;
 				pEvt.dy = event.motion.yrel;
 			} else if (!overlayVisible_) {
-				mouseInEmuView(event.motion.x, event.motion.y,
+				bool inView = mouseInEmuView(event.motion.x, event.motion.y,
 					pEvt.x, pEvt.y);
-				pEvt.type = PlatformEvent::Type::MouseMove;
+				if (emuViewportHovered_) {
+					/* Viewport is topmost — normal cursor-hiding path. */
+					pEvt.type = PlatformEvent::Type::MouseMove;
+				} else if (inView) {
+					/* Mouse is over the guest area but an ImGui window
+					   is on top: forward position so the guest cursor
+					   tracks the host, but keep the host cursor visible
+					   for the overlapping UI. */
+					pEvt.type = PlatformEvent::Type::MouseMove;
+					pEvt.positionOnly = true;
+				}
+				/* Otherwise mouse is outside the guest area entirely
+				   (e.g. in a debug panel) — don't update the guest. */
 			}
 			break;
 		}
@@ -584,6 +617,8 @@ void ImGuiBackend::displayEmulatorImage(float w, float h)
 	ImVec2 pos = ImGui::GetCursorScreenPos();
 	emuViewOriginX_ = pos.x;
 	emuViewOriginY_ = pos.y;
+	emuViewW_ = w;
+	emuViewH_ = h;
 	ImGui::Image((ImTextureID)(intptr_t)emuTextureId_, ImVec2(w, h));
 }
 
