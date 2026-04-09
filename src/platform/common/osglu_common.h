@@ -26,7 +26,6 @@
    intentionally NOT duplicated here. Include platform.h (via osglu_ud.h)
    for those. */
 
-extern bool g_romLoaded;
 extern bool g_requestMacOff;
 
 extern uint8_t * g_screenCompareBuff;

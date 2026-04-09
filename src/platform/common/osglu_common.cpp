@@ -17,7 +17,6 @@ extern void dbglog_close0();
 /* --- global variables --- */
 
 uint8_t * g_rom = nullptr;
-bool g_romLoaded = false;
 
 uint32_t g_sonyWritableMask = 0;
 uint32_t g_sonyInsertedMask = 0;

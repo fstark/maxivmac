@@ -67,7 +67,7 @@ void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
 
 static bool Sony_Insert1a_impl(char *drivepath, bool silentfail)
 {
-	if (! g_romLoaded) {
+	if (! g_shell->isRomLoaded()) {
 		return (tMacErr::noErr == LoadMacRomFrom(drivepath));
 	} else {
 		return Sony_Insert1(drivepath, silentfail);

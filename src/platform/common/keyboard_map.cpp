@@ -10,6 +10,7 @@
 #include "platform/common/osglu_ud.h"
 #include "platform/common/osglu_common.h"
 #include "platform/platform.h"
+#include "platform/emulator_shell.h"
 
 #include <cstdio>
 
@@ -111,7 +112,7 @@ void DisconnectKeyCodes2()
 
 tMacErr ROM_IsValid()
 {
-	g_romLoaded = true;
+	g_shell->setRomLoaded(true);
 	g_speedStopped = false;
 	return tMacErr::noErr;
 }

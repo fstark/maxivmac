@@ -28,6 +28,8 @@ public:
 	bool initMachine();
 
 	bool isMachineInited() const { return machineInited_; }
+	bool isRomLoaded() const { return romLoaded_; }
+	void setRomLoaded(bool v) { romLoaded_ = v; }
 
 	void shutdown();
 
@@ -135,6 +137,7 @@ private:
 
 	/* --- Init state --- */
 	bool machineInited_ = false;
+	bool romLoaded_ = false;
 };
 
 /* Global shell pointer for free-function wrappers. */
