@@ -29,7 +29,7 @@ Excludes `static constexpr` / `inline constexpr` compile-time constants and `sta
 | `g_ict` | `ICTScheduler` | core/main.cpp | **NEEDS WORK** | Should be owned by Machine |
 | `g_wires` | `WireBus` | core/wire_bus.cpp | **NEEDS WORK** | Should be owned by Machine |
 | `g_recorder` | `StateRecorder` | core/state_recorder.cpp | **KEEP** | Debug/test tool, orthogonal to emulation |
-| `g_wiresData` | `uint8_t*` | core/machine.cpp | **REMOVE** | Compatibility shim into WireBus; replace with `g_wires.data()` |
+| `g_wiresData` | `uint8_t*` | core/machine.cpp | ~~REMOVE~~ DONE | Replaced with `g_wires.data()` in all macros |
 
 ## 3. Memory Buffers
 
@@ -82,8 +82,8 @@ Bundle into **`InputState`** on Shell.
 |----------|------|------|-----|-------|
 | `g_curMouseH` | `uint16_t` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_curMouseV` | `uint16_t` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_mousePosCurH` | `uint16_t` | osglu_common.cpp | **REMOVE** | Redundant cached copy of g_curMouseH |
-| `g_mousePosCurV` | `uint16_t` | osglu_common.cpp | **REMOVE** | Redundant cached copy of g_curMouseV |
+| `g_mousePosCurH` | `uint16_t` | osglu_common.cpp | ~~REMOVE~~ DONE | Removed; was redundant cached copy of g_curMouseH |
+| `g_mousePosCurV` | `uint16_t` | osglu_common.cpp | ~~REMOVE~~ DONE | Removed; was redundant cached copy of g_curMouseV |
 | `g_haveMouseMotion` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_mouseButtonState` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
 | `theKeys[4]` | `uint32_t[]` | osglu_common.cpp | **NEEDS WORK** | Keyboard bitmap |
@@ -166,9 +166,9 @@ Bundle into **`TimingState`** on Shell.
 | `g_wantMagnify` | `bool` | keyboard_map.cpp | **NEEDS WORK** | → Shell config |
 | `g_requestInsertDisk` | `bool` | keyboard_map.cpp | **NEEDS WORK** | → Shell command queue |
 | `g_requestIthDisk` | `uint8_t` | keyboard_map.cpp | **NEEDS WORK** | Same |
-| `SavedBriefMsg` | `const char*` | osglu_common.cpp | **REMOVE** | Active but legacy. Replace with std::string on Shell |
-| `SavedLongMsg` | `const char*` | osglu_common.cpp | **REMOVE** | Same |
-| `g_savedFatalMsg` | `bool` | osglu_common.cpp | **REMOVE** | Same |
+| `SavedBriefMsg` | `const char*` | osglu_common.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::savedBriefMsg_ |
+| `SavedLongMsg` | `const char*` | osglu_common.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::savedLongMsg_ |
+| `g_savedFatalMsg` | `bool` | osglu_common.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::savedFatalMsg_ |
 
 ## 13. LocalTalk Networking
 
@@ -189,9 +189,9 @@ Bundle into **`NetworkState`** struct when networking matures.
 
 | Variable | Type | File | Tag | Notes |
 |----------|------|------|-----|-------|
-| `rom_path` | `char*` | rom_loader.h | **REMOVE** | Should be a parameter, not global |
-| `app_parent` | `char*` | dbglog_platform.cpp | **REMOVE** | Same |
-| `g_romLoaded` | `bool` | osglu_common.cpp | **REMOVE** | Init flag checked by shell; could be return value or Shell member |
+| `rom_path` | `char*` | rom_loader.h | ~~REMOVE~~ DONE | Now a parameter to LoadMacRom() |
+| `app_parent` | `char*` | dbglog_platform.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::appParent_ |
+| `g_romLoaded` | `bool` | osglu_common.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::romLoaded_ |
 
 ## 15. CPU Internals
 
@@ -218,7 +218,7 @@ class members on their respective Device subclasses as device refactoring contin
 |------|-------|-----|-------|
 | ASC (sound chip) | ~15 | **KEEP** | Registers, sample buffer, FIFO pointers, playing flag |
 | ADB | ~12 | **KEEP** | Data buffer, command state, mouse/keyboard addresses and deltas |
-| IWM | 1 | **REMOVE** | `IWM` struct missing `static` keyword — only used internally, never externed |
+| IWM | 1 | ~~REMOVE~~ DONE | Added missing `static` keyword |
 | RTC | 2 | **KEEP** | `s_rtc` state, `s_lastRealDate` |
 | SCSI | 1 | **KEEP** | Register array |
 | SCC | ~9 | **KEEP** | Channel state, LocalTalk CTS/node vars |
@@ -263,7 +263,7 @@ Not globals — only visible within main.cpp. Listed for completeness.
 | Disposition | Count | Description |
 |-------------|-------|-------------|
 | **KEEP** | ~30 | Architecturally sound, well-encapsulated, or performance-critical |
-| **REMOVE** | ~10 | Straightforward elimination (shims, redundant copies, bare pointers) |
+| **REMOVE** | ~~10~~ 0 | All completed — see GLOBAL_REMOVE.md |
 | **NEEDS WORK** | ~80 | Require struct consolidation or ownership changes |
 
 The ~80 NEEDS WORK globals cluster into natural refactoring targets:
