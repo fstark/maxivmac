@@ -250,6 +250,20 @@ void EmulatorShell::shutdown()
 
 void EmulatorShell::dispatchEvent(const PlatformEvent& evt)
 {
+	/* When backgrounded or speed-stopped, block mouse input to the
+	   guest.  Housekeeping events (focus, quit) still get through. */
+	if (curSpeedStopped_ || backgroundFlag_) {
+		switch (evt.type) {
+			case PlatformEvent::Type::MouseMove:
+			case PlatformEvent::Type::MouseButtonDown:
+			case PlatformEvent::Type::MouseButtonUp:
+			case PlatformEvent::Type::MouseWheel:
+				return;
+			default:
+				break;
+		}
+	}
+
 	switch (evt.type) {
 		case PlatformEvent::Type::Quit:
 			g_requestMacOff = true;
@@ -261,10 +275,10 @@ void EmulatorShell::dispatchEvent(const PlatformEvent& evt)
 			trueBackgroundFlag_ = true;
 			break;
 		case PlatformEvent::Type::MouseEnter:
-			caughtMouse_ = true;
+			mouseInWindow_ = true;
 			break;
 		case PlatformEvent::Type::MouseLeave:
-			caughtMouse_ = false;
+			mouseInWindow_ = false;
 			break;
 		case PlatformEvent::Type::WindowResized:
 			backend_->clearScreen();
@@ -456,9 +470,7 @@ void EmulatorShell::runOneTick()
 		if (CheckDateTime()) {
 			Sound_SecondNotify();
 		}
-		if (! backgroundFlag_ && ! caughtMouse_) {
-			checkMouseState();
-		}
+
 	} else {
 		drawChangesAndClear();
 	}
@@ -536,13 +548,8 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 	bool ShouldHaveCursorHidden = true;
 
 	if (useFullScreen_) {
-		NewMousePosh -= hOffset_;
-		NewMousePosv -= vOffset_;
-	}
-
-	if (useFullScreen_) {
-		NewMousePosh += g_viewHStart;
-		NewMousePosv += g_viewVStart;
+		NewMousePosh += g_viewHStart - hOffset_;
+		NewMousePosv += g_viewVStart - vOffset_;
 	}
 
 	if (NewMousePosh < 0) {
@@ -569,13 +576,7 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 	wantCursorHidden_ = ShouldHaveCursorHidden;
 }
 
-void EmulatorShell::checkMouseState()
-{
-	/* Backend provides mouse position via events.
-	   For non-caught-mouse polling, we'd need a backend query.
-	   For now, this is a no-op since the backend polls mouse
-	   in its runLoop. */
-}
+
 
 /* --- Grab/ungrab --- */
 

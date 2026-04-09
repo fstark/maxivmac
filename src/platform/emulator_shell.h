@@ -58,9 +58,6 @@ public:
 	/* --- Fullscreen toggle (called from control_mode.cpp) --- */
 	void toggleWantFullScreen();
 
-	/* --- Mouse (internal, but used by wrapper) --- */
-	void checkMouseState();
-
 	/* --- Cursor --- */
 	void forceShowCursor();
 
@@ -110,7 +107,7 @@ private:
 	/* --- Cursor state --- */
 	bool haveCursorHidden_ = false;
 	bool wantCursorHidden_ = false;
-	bool caughtMouse_ = false;
+	bool mouseInWindow_ = false;
 	bool grabMachine_ = false;
 	bool fullscreenHint_ = false;
 
