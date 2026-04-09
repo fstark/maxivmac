@@ -65,7 +65,7 @@ struct IWM_Ty
 	uint8_t Lines;     /* Used to Access Disk Drive Registers */
 };
 
-IWM_Ty IWM;
+static IWM_Ty IWM;
 
 void IWMDevice::reset()
 {
