@@ -740,9 +740,8 @@ git add -A && git commit -m "imgui: file dialogs, focus handling, layout persist
 
 | Preset | Backend | SDL | ImGui | Output binary |
 |---|---|---|---|---|
-| `macos` | sdl | yes | no | `bld/macos/maxivmac` |
+| `macos` | imgui | yes | yes | `bld/macos/maxivmac` |
 | `macos-headless` | headless | no | no | `bld/macos-headless/maxivmac` |
-| `macos-imgui` | imgui | yes | yes | `bld/macos-imgui/maxivmac` |
 
 ## Risks and open questions
 

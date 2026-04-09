@@ -103,7 +103,7 @@ set(COMMON_SOURCES
 )
 
 # ---------------------------------------------------------------------------
-# SDL-common sources — shared by sdl and imgui backends.
+# SDL-common sources — shared by imgui backend (SDL3 for windowing/audio).
 # Not compiled for headless builds.
 # ---------------------------------------------------------------------------
 set(SDL_COMMON_SOURCES
@@ -114,13 +114,7 @@ set(SDL_COMMON_SOURCES
 # ---------------------------------------------------------------------------
 # Backend-specific sources
 # ---------------------------------------------------------------------------
-if(MAXIVMAC_BACKEND STREQUAL "sdl")
-    set(BACKEND_SOURCES
-        src/platform/sdl_backend.cpp
-        src/platform/app_main.cpp
-    )
-    set(NEED_SDL ON)
-elseif(MAXIVMAC_BACKEND STREQUAL "imgui")
+if(MAXIVMAC_BACKEND STREQUAL "imgui")
     set(BACKEND_SOURCES
         src/platform/imgui_backend.cpp
         src/platform/imgui_debug_windows.cpp

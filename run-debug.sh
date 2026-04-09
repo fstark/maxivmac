@@ -6,3 +6,4 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 exec "$DIR/bld/macos/maxivmac" \
     --model PB100 \
     --log-start=0 --log-count=1000000
+

@@ -17,7 +17,7 @@ Host-to-Mac clipboard transfer using a new register-based I/O interface.
 No pbufs — the host writes directly to guest RAM.  The Mac side is a
 one-shot THINK C console app (later extended to bidirectional and INIT).
 
-Build gate: `cmake --build bld/macos-imgui && cmake --build bld/macos-headless`
+Build gate: `cmake --build bld/macos && cmake --build bld/macos-headless`
 Test gate:  `cd test && ./verify.sh`
 
 ---

@@ -8,13 +8,13 @@
     "configurePresets": [
         {
             "name": "macos",
-            "displayName": "macOS (SDL)",
-            "description": "SDL backend on macOS",
+            "displayName": "macOS (ImGui)",
+            "description": "Dear ImGui backend on macOS",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/bld/${presetName}",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "MAXIVMAC_BACKEND": "sdl"
+                "MAXIVMAC_BACKEND": "imgui"
             },
             "condition": {
                 "type": "equals",
@@ -39,22 +39,6 @@
             }
         },
         {
-            "name": "macos-imgui",
-            "displayName": "macOS (ImGui)",
-            "description": "Dear ImGui backend on macOS — debug UI",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/bld/${presetName}",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "MAXIVMAC_BACKEND": "imgui"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Darwin"
-            }
-        },
-        {
             "name": "macos-coverage",
             "displayName": "macOS (Headless + Coverage)",
             "description": "Headless backend with code-coverage instrumentation",
@@ -70,36 +54,6 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Darwin"
             }
-        },
-        {
-            "name": "linux",
-            "displayName": "Linux (SDL)",
-            "description": "SDL backend on Linux",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/bld/${presetName}",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Linux"
-            }
-        },
-        {
-            "name": "windows",
-            "displayName": "Windows (SDL)",
-            "description": "SDL backend on Windows",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/bld/${presetName}",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
-            }
         }
     ],
     "buildPresets": [
@@ -112,20 +66,8 @@
             "configurePreset": "macos-headless"
         },
         {
-            "name": "macos-imgui",
-            "configurePreset": "macos-imgui"
-        },
-        {
             "name": "macos-coverage",
             "configurePreset": "macos-coverage"
-        },
-        {
-            "name": "linux",
-            "configurePreset": "linux"
-        },
-        {
-            "name": "windows",
-            "configurePreset": "windows"
         }
     ]
 }

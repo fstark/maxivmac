@@ -11,7 +11,7 @@
 set -e
 
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
-EMU="${EMU:-$DIR/bld/macos-imgui/maxivmac}"
+EMU="${EMU:-$DIR/bld/macos-headless/maxivmac}"
 ROMS="$DIR/roms"
 DISK_SRC="$DIR/extras/disks/608.hfs"
 TESTDIR="$DIR/test"

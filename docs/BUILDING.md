@@ -6,7 +6,7 @@
 src/core/        — Core emulation (machine glue, main loop, endian helpers)
 src/cpu/         — 68000/68020 CPU emulator and instruction decode tables
 src/devices/     — Hardware device emulation (VIA, SCC, IWM, SCSI, ADB, etc.)
-src/platform/    — Platform backend (sdl.cpp)
+src/platform/    — Platform backend (ImGui + SDL3 for windowing/audio)
   common/        — Shared platform code compiled as separate translation units:
                    osglu_common, intl_chars, param_buffers, control_mode
 src/config/      — Build configuration headers and language strings
@@ -25,7 +25,7 @@ cmake --preset macos
 cmake --build --preset macos
 ```
 
-The binary is at `bld/macos/maxivmac`. Place a Mac ROM file in the working directory and pass a System disk image on the command line to boot.
+The binary is at `bld/macos/maxivmac`. The ImGui backend provides a graphical UI with debug tools. Place a Mac ROM file in the working directory and pass a System disk image on the command line to boot.
 
 ## Runtime Model Selection
 
