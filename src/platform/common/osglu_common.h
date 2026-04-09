@@ -49,9 +49,6 @@ extern uint32_t PbufSize[NumPbufs];
 extern uint32_t theKeys[4];
 extern bool g_mouseButtonState;
 
-extern uint16_t g_mousePosCurV;
-extern uint16_t g_mousePosCurH;
-
 /* event queue */
 #define MyEvtQLg2Sz 4
 #define MyEvtQSz (1 << MyEvtQLg2Sz)

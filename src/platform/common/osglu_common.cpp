@@ -618,12 +618,9 @@ void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 	}
 }
 
-uint16_t g_mousePosCurV = 0;
-uint16_t g_mousePosCurH = 0;
-
 void MyMousePositionSet(uint16_t h, uint16_t v)
 {
-	if ((h != g_mousePosCurH) || (v != g_mousePosCurV)) {
+	if ((h != g_curMouseH) || (v != g_curMouseV)) {
 		EvtQEl *p = EvtQElPreviousIn();
 		if ((nullptr == p) || (EvtQElKind::MousePos != p->kind)) {
 			p = EvtQElAlloc();
@@ -632,9 +629,6 @@ void MyMousePositionSet(uint16_t h, uint16_t v)
 			p->kind = EvtQElKind::MousePos;
 			p->u.pos.h = h;
 			p->u.pos.v = v;
-
-			g_mousePosCurH = h;
-			g_mousePosCurV = v;
 		}
 
 		QuietEnds();
