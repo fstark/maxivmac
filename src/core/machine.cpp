@@ -76,8 +76,6 @@ uint8_t * g_ram = nullptr;
 uint8_t * g_vidROM = nullptr;
 uint8_t * g_vidMem = nullptr;
 
-uint8_t* g_wiresData = nullptr;
-
 
 extern void m68k_WantDisasmContext();
 
@@ -1683,7 +1681,6 @@ void VIAorSCCinterruptChngNtfy()
  bool AddrSpac_Init()
 {
 	g_wires.init(kNumWires);
-	g_wiresData = g_wires.data();
 
 	/* Register wire change callbacks */
 	g_wires.onChange(Wire_MemOverlay, MemOverlay_ChangeNtfy);

@@ -150,8 +150,6 @@ enum {
 
 using iCountt = uint32_t;
 
-extern uint8_t* g_wiresData;
-
 #define kLn2CycleScale 6
 #define kCycleScale (1 << kLn2CycleScale)
 
