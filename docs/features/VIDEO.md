@@ -1,6 +1,4 @@
-# VIDEO — Framebuffer Formats and Depth Conversion Pipeline
-
-Status: investigation / pre-design
+# VIDEO — Framebuffer and Display Pipeline
 
 ## 1. Overview
 
@@ -9,7 +7,7 @@ address space.  The emulator reads that framebuffer once per tick,
 detects changes, converts it into a host ARGB8888 buffer, and uploads
 it to a GL texture for display.
 
-This document covers the entire pipeline from emulated pixels to the
+This document describes the current pipeline from emulated pixels to the
 host display, across all supported models.
 
 ## 2. Framebuffer sources
@@ -24,9 +22,7 @@ host display, across all supported models.
 
 With the screen hack active (non-default resolution via `--screen`),
 `ScrnBase` is patched to point at `kVidMem_Base = 0x00540000`, backed
-by a separately-allocated VRAM block.  The screen hack patches dozens
-of ROM offsets to set row bytes, bounds, cursor math, icon positions,
-etc. — see `src/devices/screen_hack.h`.
+by a separately-allocated VRAM block.
 
 ### 2.2 SE family (SE, SEFDHD, Classic)
 
@@ -36,19 +32,18 @@ are at different ROM offsets.  Always 1 bpp.
 ### 2.3 Mac II family (MacII, MacIIx)
 
 * **Location:** dedicated VRAM at `g_vidMem`, mapped by the NuBus
-  address decoder
+  address decoder at `0xF9900000`
 * **Default:** 640×480, 8 bpp (256-colour CLUT)
-* **VRAM size:** 512 KB hard-coded in model config
+* **VRAM size:** auto-sized to fit the configured depth (minimum 512 KB)
 * **Colour:** depths 0–5 (1/2/4/8/16/32 bpp) configurable via `--screen`
 * **NuBus slot ROM:** built at runtime by `VideoDevice::init()` with
-  VPBlock parameters for each active mode
-* **PRAM gate:** `PRAM[0x48]` tells the Mac ROM whether the card
-  supports colour (0x81) or mono only (0x80)
+  mode parameter blocks for mono (0x80) and one colour mode (0x81)
+* **PRAM gate:** `PRAM[0x48]` = 0x81 for any non-B&W depth, 0x80 for
+  depth 0
 
 ### 2.4 PowerBook 100
 
-* **Location:** dedicated VRAM at `g_vidMem`
-* **Address:** `0x00FA0000`
+* **Location:** dedicated VRAM at `g_vidMem`, address `0x00FA0000`
 * **Format:** 640×400, 1 bpp
 * **VRAM size:** 32 KB
 
@@ -81,9 +76,9 @@ Derived macros (`platform.h`):
 ```
 vMacScreenNumPixels  = Width × Height
 vMacScreenNumBits    = NumPixels << Depth
-vMacScreenNumBytes   = NumBits / 8          (total FB size)
-vMacScreenByteWidth  = (Width << Depth) / 8 (bytes per scanline)
-vMacScreenMonoByteWidth = Width / 8         (B&W scanline width)
+vMacScreenNumBytes   = NumBits / 8
+vMacScreenByteWidth  = (Width << Depth) / 8
+vMacScreenMonoByteWidth = Width / 8
 ```
 
 ## 4. Frame output flow
@@ -102,28 +97,17 @@ vMacScreenMonoByteWidth = Width / 8         (B&W scanline width)
                    ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  ScreenFindChanges()                   [osglu_common.cpp]    │
-│    • memcmp shadow buffer (screenCompareBuff) vs live FB     │
-│    • bufSize = Height × ByteWidth (colour) or MonoByteWidth │
+│    • memcmp screenCompareBuff vs live FB                     │
 │    • if changed: memcpy snapshot, set g_screenChanged        │
-│    • also triggers on g_colorMappingChanged (palette change) │
+│    • also triggers on g_colorMappingChanged                  │
 └──────────────────┬───────────────────────────────────────────┘
                    │  g_screenChanged = true
                    ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  EmulatorShell::drawChangesAndClear()  [emulator_shell.cpp]  │
-│    • calls convertFramebuffer(0, 0, H, W)                   │
+│    • if indexed depth: calls BuildPalette()                  │
+│    • calls ConvertScreen()                                   │
 │    • sets framebufferDirty_ = true                           │
-└──────────────────┬───────────────────────────────────────────┘
-                   ▼
-┌──────────────────────────────────────────────────────────────┐
-│  convertFramebuffer()                                        │
-│    bpp = 4 (always ARGB8888 destination)                     │
-│                                                              │
-│    if depth ≤ 3 or B&W mode:                                 │
-│      BuildClutTable(4)  →  populate CLUT_final               │
-│      ConvertRect(4, …)  →  dispatch to ScreenMapConvert<>    │
-│    else (depth 4–5, direct colour):                          │
-│      ConvertRectSlow()  →  per-pixel fallback                │
 └──────────────────┬───────────────────────────────────────────┘
                    ▼
 ┌──────────────────────────────────────────────────────────────┐
@@ -132,7 +116,8 @@ vMacScreenMonoByteWidth = Width / 8         (B&W scanline width)
                    ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  ImGuiBackend::uploadFramebuffer()     [imgui_backend.cpp]   │
-│    glTexSubImage2D(GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, …) │
+│    • applies textureFilter_ (GL_NEAREST or GL_LINEAR)        │
+│    • glTexSubImage2D(GL_BGRA, UNSIGNED_INT_8_8_8_8_REV, …)  │
 │    → GL texture → ImGui image → rendered via OpenGL          │
 │                                                              │
 │  HeadlessBackend: no upload, conversion still runs for       │
@@ -140,104 +125,63 @@ vMacScreenMonoByteWidth = Width / 8         (B&W scanline width)
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## 5. Conversion paths
+## 5. Palette and conversion
 
-### 5.1 CLUT table building — `BuildClutTable(bpp)`
+### 5.1 Palette — `BuildPalette()`
 
-Pre-expands every possible source byte value into destination pixels.
+Builds a flat `uint32_t clut32[256]` palette in `DisplayState` from the
+16-bit `clutReds/clutGreens/clutBlues` arrays.
 
-For each of the 256 possible byte values, and for each pixel packed in
-that byte (`PixPerByte = 8 >> depth`):
+* **B&W mode (depth 0):** `clut32[0] = white`, `clut32[1] = black`
+* **Indexed colour (depth 1–3):** packs `(R,G,B) >> 8` into ARGB8888
 
-* **Colour mode (depth 1–3):** extract pixel index, look up
-  `CLUT_reds/greens/blues[index]`, pack as ARGB8888
-* **B&W mode (depth 0):** extract bit, map 0→white, 1→black
+Called every frame when the screen is dirty and depth < 4.
 
-Output: `CLUT_final` — flat array of `256 × PixPerByte × bpp` bytes.
-Maximum: `CLUT_FINAL_SZ = 256 × 8 × 4 = 8192` bytes.
+### 5.2 Conversion — `ConvertScreen()`
 
-### 5.2 Fast path — `ScreenMapConvert<SrcDepth, DstDepth, Scale>`
+Single unified function in `screen_convert.cpp`.  Always converts the
+full Mac framebuffer to ARGB8888.  No rect parameters, no bpp parameter,
+no scaling.
 
-C++23 function template in `screen_map.h`.  Constraints:
-
-* `SrcDepth ∈ {0,1,2,3}` — indexed / mono only
-* `DstDepth ∈ {3,4,5}` — 8/16/32-bit destination
-* `DstDepth ≥ SrcDepth`
-* `Scale ≥ 1` (default 1; 2 = pixel-double)
-
-Derived constants (all compile-time):
-
-```
-MapElSz   = Scale << (DstDepth - SrcDepth)   // dest bytes per src byte
-TranLn2Sz = log₂ of widest aligned unit in MapElSz
-TranN     = MapElSz >> TranLn2Sz              // number of transfer units
-TranT     = uint32_t / uint16_t / uint8_t     // transfer type
+```cpp
+void ConvertScreen(
+    const uint8_t* src, uint32_t* dst,
+    const uint32_t* palette, int depth,
+    int width, int height);
 ```
 
-Inner loop per source scanline: read byte → index into `mapT[]` →
-copy `TranN` units to destination.  Scaling duplicates each row
-`Scale - 1` additional times.
+Implementation uses a template-on-depth dispatcher for indexed colour
+(`ConvertScreenIndexed<Depth>`) and direct functions for 16/32 bpp.
 
-**Instantiations used (bpp=4, Scale=1):**
+| Depth | Method | Source unit | Decode |
+|:---:|---|:---:|---|
+| 0 | `ConvertScreenIndexed<0>` | 1 byte → 8 px | `palette[bit]` |
+| 1 | `ConvertScreenIndexed<1>` | 1 byte → 4 px | `palette[2-bit index]` |
+| 2 | `ConvertScreenIndexed<2>` | 1 byte → 2 px | `palette[4-bit index]` |
+| 3 | `ConvertScreenIndexed<3>` | 1 byte → 1 px | `palette[byte]` |
+| 4 | `ConvertScreenDepth4` | 2 bytes → 1 px | 5-5-5 → 8-8-8 expansion |
+| 5 | `ConvertScreenDepth5` | 4 bytes → 1 px | set alpha to 0xFF |
 
-| Mode | SrcDepth | DstDepth | Source format |
-|---|:---:|:---:|---|
-| B&W | 0 | 5 | 1 bpp mono → 32-bit ARGB |
-| 4-col | 1 | 5 | 2 bpp CLUT → 32-bit ARGB |
-| 16-col | 2 | 5 | 4 bpp CLUT → 32-bit ARGB |
-| 256-col | 3 | 5 | 8 bpp CLUT → 32-bit ARGB |
+### 5.3 GL texture filter
 
-(DstDepth=3 and DstDepth=4 instantiations exist but are dead code when
-`bpp` is always 4.)
+The `ImGuiBackend` has a runtime-switchable `TextureFilter` (Nearest or
+Linear), toggled from the Display tab of the Ctrl overlay:
 
-### 5.3 Slow path — `ConvertRectSlow()`
+* **GL_NEAREST** — crisp pixel art, integer-scale look
+* **GL_LINEAR** — smooth, avoids moiré on Retina at non-integer scales
 
-Per-pixel loop for depths 4 and 5 (16/32 bpp direct colour).  No CLUT
-table; reads RGB directly from the framebuffer:
-
-* **Depth 4 (16 bpp):** reads big-endian 5-5-5 RGB, expands to 8-8-8
-* **Depth 5 (32 bpp):** reads xRGB bytes, sets alpha to 0xFF
-
-Writes directly to `argbBuffer_` using pitch and bpp.
-
-### 5.4 Reference implementation (minivmac)
-
-The original minivmac used `SCRNMAPR.h`, a C macro template `#include`d
-multiple times with different `#define` parameters.  In `OSGLUSDL.c`
-there were 12 instantiations:
-
-| Name | SrcDepth | DstDepth | Scale |
-|---|:---:|:---:|:---:|
-| UpdateBWDepth3Copy | 0 | 3 | 1 |
-| UpdateBWDepth4Copy | 0 | 4 | 1 |
-| UpdateBWDepth5Copy | 0 | 5 | 1 |
-| UpdateBWDepth3ScaledCopy | 0 | 3 | 2 |
-| UpdateBWDepth4ScaledCopy | 0 | 4 | 2 |
-| UpdateBWDepth5ScaledCopy | 0 | 5 | 2 |
-| UpdateColorDepth3Copy | D | 3 | 1 |
-| UpdateColorDepth4Copy | D | 4 | 1 |
-| UpdateColorDepth5Copy | D | 5 | 1 |
-| UpdateColorDepth3ScaledCopy | D | 3 | 2 |
-| UpdateColorDepth4ScaledCopy | D | 4 | 2 |
-| UpdateColorDepth5ScaledCopy | D | 5 | 2 |
-
-Where D = `vMacScreenDepth` (compile-time constant in minivmac).
-
-The maxivmac C++ template replaces all 12 with a single function
-template, with `vMacScreenDepth` now a runtime value dispatched through
-a `switch`.
+Default is Linear.
 
 ## 6. Buffer inventory
 
 | Buffer | Type | Size | Owner | Lifetime |
 |---|---|---|---|---|
 | `screenCompareBuff` | Shadow of Mac FB | `vMacScreenNumBytes` | DisplayState | init→shutdown |
-| `CLUT_final` | Expanded CLUT | 8192 bytes | DisplayState | init→shutdown |
+| `clut32[256]` | ARGB8888 palette | 1024 bytes | DisplayState | init→shutdown |
 | `argbBuffer_` | Host ARGB8888 | W × H × 4 | EmulatorShell | init→shutdown |
-| `scalingBuff` | Alias to argbBuffer_ | — | DisplayState (ptr) | per-frame |
 
 `screenCompareBuff` is initialised to 0xFF so the entire screen is
-considered dirty on the first tick.
+dirty on the first tick.
 
 ## 7. Mac II video card emulation
 
@@ -246,101 +190,128 @@ containing:
 
 * Board resource (vendor "Paul C. Pratt", board "Mini vMac video card")
 * **Mode 0x80** — 1 bpp monochrome (always present)
-* **Mode 0x81** — colour at configured depth (only when depth 1–3 and
-  `g_colorModeWorks`)
+* **Mode 0x81** — colour at the single configured depth (only when
+  depth > 0 and `g_colorModeWorks`)
 
-### 7.1 Video driver traps
+The slot ROM is built once at `VideoDevice::init()` and checksummed.
+The mode parameter blocks (VPBlock) describe resolution, row bytes,
+pixel size, component count/size, and device type (CLUT vs direct).
 
-The driver handles Mac OS control/status calls:
+### 7.1 Video driver traps (current state)
 
-| csCode | Name | Implemented? |
+| csCode | Name | Status |
 |:---:|---|:---:|
-| 0 | Reset | ✅ |
-| 2 | SetVidMode / GetMode | ✅ |
+| 0 | VidReset | ✅ returns mode 128 |
+| 1 | KillIO | ✅ |
+| 2 | SetVidMode / GetMode | ✅ binary toggle (128 ↔ 129) |
 | 3 | SetEntries / GetEntries | ✅ / stub |
-| 4 | GetPages | ✅ |
-| 5 | GetPageAddr | ✅ |
+| 4 | GetPages | ✅ returns 1 |
+| 5 | GetPageAddr | ✅ returns VidBaseAddr |
 | 6 | SetGray / GetGray | ✅ |
-| 7 | SetGamma | stub |
-| 8 | GetGamma | stub |
-| 9 | SetDefaultMode / GetDefaultMode | **not handled** |
+| 7, 8 | SetGamma / GetGamma | stubs |
+| 9 | SetDefaultMode | **stub** (logged, no-op) |
 | 10 | GetCurrentMode | **not handled** |
 | 12 | GetConnection | **not handled** |
 | 14 | GetModeBaseAddress | **not handled** |
-| 16 | Save/GetPreferredConfiguration | **not handled** |
+| 16 | SavePreferredConfiguration | **stub** (logged, no-op) |
 | 17 | GetNextResolution | **not handled** |
 | 18 | GetVideoParameters | **not handled** |
 
 ### 7.2 Mode switching
 
 `Vid_SetMode(v)` toggles `g_useColorMode` between mode 128 (B&W) and
-129 (colour).  `VideoDevice::vidReset()` always resets to mode 128.
+129 (colour at the configured depth).  The mode change propagates via
+`g_colorMappingChanged` → palette rebuild + full-screen redraw.
 
-The mode change propagates via `g_colorMappingChanged` → full-screen
-CLUT rebuild + redraw on the next tick.
+There is **no runtime depth switching**.  The slot ROM contains exactly
+two modes, and the mode-enumeration traps (csCode 9, 10, 17, 18) are
+absent or stubbed.  The Monitors control panel cannot discover
+additional depths.
+
+### 7.3 VRAM mapping
+
+```
+NuBus slot 9:
+  0xF9F00000  Slot declaration ROM  (vidROMSize bytes)
+  0xF9900000  Video RAM             (vidMemSize, mirrored to 1 MB window)
+  0xF9A00000  VRAM bank 2           (if vidMemSize ≥ 2 MB)
+  0xF9B00000  VRAM bank 3           (if vidMemSize ≥ 3 MB)
+```
+
+### 7.4 VBL interrupt flow
+
+On compact Macs (Plus, SE), the 60 Hz VBL heartbeat comes directly
+from VIA1 CA1.  On the Mac II, it comes from the **video card** via a
+NuBus slot interrupt.  The guest video driver is responsible for
+acknowledging the interrupt and calling the system VBL task manager.
+
+The full chain:
+
+```
+Host tick (60 Hz)
+  → VideoDevice::update()
+    → sets Wire_VBLinterrupt = 0 (active-low)
+    → pulses VIA2 CA1  (NuBus slot interrupt, IRQ level 2)
+      → 68020 takes interrupt
+      → Slot Manager walks slot interrupt queue
+      → calls our driver's BeginIH handler
+        → host extension trap: kCmndVideoClearInt
+          → sets Wire_VBLinterrupt = 1 (acknowledged)
+        → extracts slot # from DCE
+        → JSR (JVBLTask)  ← runs all VBL tasks for this slot
+      → RTS with D0 = 1 (interrupt serviced)
+```
+
+The guest driver (source: `extras/mydriver/video/firmware.a`) is a thin
+shim.  Its interrupt handler does exactly two things:
+
+1. **Acknowledge** the interrupt by calling the host via extension trap
+   (`kCmndVideoClearInt`), which de-asserts the VIA2 IRQ line.
+2. **Dispatch VBL tasks** by calling `JVBLTask` (low-memory global
+   `$0D28`) with the slot number in D0.  This is how the Mac II runs
+   cursor blinking, `Delay()`, animation, and all time-based tasks.
+
+This design seems backwards — the host generates the interrupt, the
+guest acknowledges it, then calls the system VBL handler — but it
+mirrors real Mac II hardware, where the video card's vertical retrace
+interrupt was the only source of the 60 Hz heartbeat.  Without this
+chain, VBL tasks would not run and the system would freeze.
+
+The driver's **Open** allocates 4 bytes of private storage (just to
+save the slot queue element pointer for later removal) and installs
+the interrupt handler via `_SIntInstall`.  **Close** removes it.
+**Control** and **Status** simply forward the parameter block to the
+host extension trap without interpreting csCode values — making the
+binary mode-agnostic.
 
 ## 8. Host pixel format
 
-`argbBuffer_` is uploaded to GL via:
+`argbBuffer_` is uploaded via:
 
 ```c
 glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h,
     GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, argbBuffer_);
 ```
 
-With `GL_BGRA` + `GL_UNSIGNED_INT_8_8_8_8_REV`, the byte order in
-memory is **[A, R, G, B]** (little-endian: the "REV" reverses the
-uint32 component order so byte 0 = blue in GL terms, but the BGRA
-swizzle makes byte 0 = alpha).
+The packing `0xFF000000 | (r << 16) | (g << 8) | b` produces uint32
+`0xFFRRGGBB`.  On little-endian this is bytes `[BB, GG, RR, FF]`,
+matching `GL_BGRA + UNSIGNED_INT_8_8_8_8_REV`.
 
-The `BuildClutTable` packing `(0xFF << 24) | (r << 16) | (g << 8) | b`
-produces the uint32 value `0xFFRRGGBB`, which on a little-endian host
-is stored as bytes `[BB, GG, RR, FF]`.  This matches the GL upload
-format.
-
-## 9. Known bugs
-
-### B1 — CLUT pixel mask wrong for 2-bpp and 4-bpp
-
-`BuildClutTable()` uses `& (CLUT_size - 1)` (= 255) to extract pixel
-indices.  The correct mask is `(1 << (1 << depth)) - 1`: 3 for 2 bpp,
-15 for 4 bpp.
-
-**Symptom:** garbled pixel artifacts at `--screen=…x2` and `…x4`.
-
-### B2 — No input validation on `--screen` depth
-
-`parseScreenSpec()` accepts any integer and silently truncates.
-`--screen=640x480x24` → depth 4 (same as x16).
-
-### B3 — VRAM too small for depth ≥ 4 on Mac II
-
-`vidMemSize = 0x80000` (512 KB) is hard-coded.  640×480×16 needs
-614,400 bytes.
-
-**Symptom:** garbled screen / hang / crash at x16 or x32.
-
-### B4 — PRAM blocks colour for direct depths (16/32 bpp)
-
-`PRAM[0x48] = 0x80` when depth ≥ 4, so the Mac ROM never offers the
-Monitors colour option.
-
-### B5 — Stray `w` character in screen_convert.cpp line 91
-
-### B6 — Dead DstDepth=3 and DstDepth=4 instantiations
-
-`convertFramebuffer()` always passes `bpp=4`, making the DstDepth=3 and
-DstDepth=4 branches unreachable.
-
-## 10. Limitations
+## 9. Limitations
 
 ### L1 — Only one colour depth per session
 
-Slot ROM is built once.  Mode-enumeration traps are unimplemented.
+The slot ROM is built once with a single colour mode.  Mode-enumeration
+traps are unimplemented.  The Monitors control panel sees only 1 bpp
+and one colour depth (the one passed at launch).
 
-### L2 — Direct-colour modes use slow per-pixel path
+### L2 — Direct-colour modes (16/32 bpp) crash
 
-Depths 4/5 go through `ConvertRectSlow()`.
+Depths 4 and 5 can be configured and the converter handles them
+correctly, but the guest OS crashes during startup.  The likely cause
+is incomplete video driver emulation: the ROM's display init code may
+call unimplemented status traps (GetCurrentMode, GetVideoParameters)
+or expect mode-enumeration to succeed.
 
 ### L3 — No gamma support
 
@@ -348,170 +319,23 @@ Depths 4/5 go through `ConvertRectSlow()`.
 
 Guest Monitors preference survives via the disk image, not PRAM.
 
-### L5 — Scaling is unused
-
-`ScreenMapConvert` supports `Scale > 1` but it is never invoked.  The
-reference minivmac used it for 2× magnification.  maxivmac relies on GL
-texture scaling instead.
-
-### L6 — Compact Macs are always 1 bpp
+### L5 — Compact Macs are always 1 bpp
 
 The screen hack patches geometry only; `--screen=512x342x8` on a
 MacPlus would silently misbehave.
 
-## 11. Architectural critique
+## 10. Future: multi-depth NuBus card
 
-### 11.1 Scaling belongs in the GPU, not the converter
+The correct fix for L1 and L2 is to implement a proper multi-mode
+video card:
 
-The `ScreenMapConvert` template has a `Scale` parameter inherited from
-minivmac's `SCRNMAPR.h`.  In minivmac, SDL 1.x had no efficient texture
-scaling, so the converter pixel-doubled into a 2× buffer which was then
-blitted.  six of the 12 original instantiations were `Scale=2` variants.
+1. Build the slot ROM with mode entries for all supported depths
+   (0x80–0x85 for 1/2/4/8/16/32 bpp)
+2. Implement mode-enumeration traps (csCode 10, 17, 18) so the
+   Monitors CP can discover depths
+3. Implement `SetVidMode` with actual depth switching (update
+   `vMacScreenDepth` at runtime, resize/reallocate ARGB buffer)
+4. Direct-colour would then work because the guest OS properly
+   negotiates the mode instead of being forced via PRAM
 
-In maxivmac, the output goes to a GL texture drawn by ImGui.  GL already
-scales the texture to fill the window.  A 512×342 texture scaled via
-`GL_NEAREST` produces identical crisp pixels.  The converter's Scale
-path is dead code — it doubles the ARGB buffer size, doubles conversion
-work, and is never called.
-
-**The correct approach:** `argbBuffer_` should always be at native Mac
-resolution (512×342 for compact, 640×480 for Mac II, etc.).  Display
-scaling is a presentation concern handled by the GL magnification
-filter:
-
-* `GL_NEAREST` — crisp pixel art (correct for emulated CRT)
-* `GL_LINEAR` — smooth (current default, avoids Retina moiré)
-
-This eliminates `Scale` from the template, the dead `bpp=1`/`bpp=2`
-DstDepth paths, and the `scalingBuff` alias.
-
-### 11.2 The template conflates three things that should be separate
-
-The current `ScreenMapConvert<SrcDepth, DstDepth, Scale>` is structured
-around a very specific operation: "read one source byte → look it up in
-a pre-expanded CLUT → write N destination units."  This only works for
-packed indexed formats (depths 0–3) where one source byte always maps to
-a fixed number of output pixels via a 256-entry table.
-
-It cannot handle direct-colour depths (16/32 bpp) because:
-* Depth 4 (16 bpp): each pixel spans 2 source bytes → not indexable
-  from a single byte
-* Depth 5 (32 bpp): each pixel spans 4 source bytes → the "CLUT" would
-  need 2³² entries
-
-This forces direct-colour through `ConvertRectSlow()`, a per-pixel
-fallback that is structurally a different code path with its own address
-calculations, endian handling, and output logic.
-
-**The conversion is really just three steps:**
-
-1. **Read** a source unit (1 byte containing N packed pixels, OR 2/4
-   bytes containing one pixel)
-2. **Decode** each pixel in that unit into ARGB8888 (via CLUT for
-   indexed, or inline conversion for direct)
-3. **Write** the ARGB8888 pixels to the destination scanline
-
-Reframed this way, every depth fits the same loop structure:
-
-| Depth | Source unit | Pixels per unit | Decode method |
-|:---:|:---:|:---:|---|
-| 0 (1 bpp) | 1 byte | 8 | B&W table (2 entries) |
-| 1 (2 bpp) | 1 byte | 4 | CLUT[index & 0x03] |
-| 2 (4 bpp) | 1 byte | 2 | CLUT[index & 0x0F] |
-| 3 (8 bpp) | 1 byte | 1 | CLUT[byte] |
-| 4 (16 bpp) | 2 bytes | 1 | 5-5-5 → 8-8-8 expansion |
-| 5 (32 bpp) | 4 bytes | 1 | Set alpha to 0xFF |
-
-The CLUT lookup for depths 0–3 and the inline conversion for depths 4–5
-are both just "how to turn source bits into ARGB".  The outer scanline
-loop, dirty-rect clipping, stride calculation, and destination write are
-identical.
-
-A unified template would look something like:
-
-```
-for each scanline in [top, bottom):
-    pSrc = src + row * srcStride + leftUnit
-    pDst = dst + row * dstStride + leftUnit * pixPerUnit * 4
-    for each source unit in [leftUnit, rightUnit):
-        read srcUnitBytes from pSrc
-        for each pixel k in unit:
-            argb = decode(srcValue, k)    // CLUT or inline
-            write argb to pDst
-```
-
-This eliminates:
-* The `DstDepth` parameter (destination is always ARGB8888 = 4 bytes)
-* The `Scale` parameter (GPU handles this)
-* The `TranT` / `TranN` / `MapElSz` machinery (destination is always
-  uint32_t)
-* The separate `ConvertRectSlow` code path
-* The `bpp` parameter plumbed through `BuildClutTable` and `ConvertRect`
-
-The CLUT table itself (`CLUT_final`) also simplifies: instead of
-pre-expanding every byte into `PixPerByte × bpp` destination bytes, it
-becomes a straight `uint32_t[256]` palette (or `uint32_t[2]` for B&W).
-The byte→pixels unpacking moves from `BuildClutTable` into the scanline
-loop where it's more readable.
-
-For direct-colour, the "decode" step is:
-* Depth 4: `uint16_t rgb555 = big_endian_read(pSrc); expand_555_to_8888(rgb555)`
-* Depth 5: `uint32_t xrgb = big_endian_read(pSrc); xrgb | 0xFF000000`
-
-## 12. Possible directions
-
-### D1 — Fix bugs B1–B5
-
-Localised fixes.  No architecture changes.
-
-### D2 — Remove Scale and DstDepth from the converter
-
-The destination is always ARGB8888 (DstDepth=5, bpp=4).  Remove the
-`Scale`, `DstDepth`, and `bpp` plumbing.  The `argbBuffer_` stays at
-native Mac resolution; GL handles display scaling.
-
-### D3 — Unify the conversion template
-
-Replace `ScreenMapConvert` + `ConvertRectSlow` + `BuildClutTable` with
-a single template parameterised on source depth only.  All depths 0–5
-use the same scanline loop; the pixel decode is depth-specific:
-
-* Depths 0–3: CLUT lookup (`uint32_t palette[N]`)
-* Depth 4: inline 5-5-5 → ARGB8888
-* Depth 5: inline xRGB → ARGB8888
-
-This removes the `CLUT_final` pre-expansion buffer entirely (the CLUT
-becomes a simple `uint32_t[]` palette) and eliminates the slow-path
-fallback.
-
-### D4 — Multi-depth mode enumeration (Mac II)
-
-Implement video driver traps (csCode 9, 16, 17, 18) so the Monitors
-control panel can discover multiple indexed depths at runtime.
-
-### D5 — Fix PRAM for direct-colour depths
-
-### D6 — Validate `--screen` against model capabilities
-
-Reject colour depths on compact Macs.  Warn when VRAM would overflow.
-
-### D7 — Persisted PRAM
-
-### D8 — Document / fix byte-order assumptions
-
-Clarify the ARGB8888 naming vs. the actual BGRA byte order.  Ensure the
-pipeline works correctly on big-endian hosts (if that's a goal).
-
-## 13. Open questions
-
-1. **Which depths are actually useful?**  The real Mac II TFB card
-   supported 1 and 8 bpp only.  Depths 2, 4, 16, 32 are maxivmac
-   additions with limited testing.
-2. **Is runtime depth switching worth the complexity?**
-3. **Should compact Macs support non-1bpp depth?**  The screen hack
-   would need colour-aware ROM patching.
-4. **Byte-order portability:**  is big-endian host support a goal?
-5. **GL_NEAREST vs GL_LINEAR:**  GL_NEAREST gives crisp pixels but the
-   existing code uses GL_LINEAR to avoid a moiré artefact on Retina
-   displays (see comment in `imgui_backend.cpp`).  Is the moiré
-   fixable another way (e.g., integer scaling only)?
+See `VIDEO_PLAN.md` for the implementation plan.
