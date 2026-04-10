@@ -237,6 +237,8 @@ pixel size, component count/size, and device type (CLUT vs direct).
 
 ### 7.2 Mode switching
 
+#### Depth switching
+
 `Vid_SetMode(modeID)` switches depth by updating `s_currentDepth`,
 `g_screenDepth`, and `g_useColorMode`.  For indexed modes (depth 1–3),
 it re-initializes the CLUT with white at index 0 and black at the
@@ -246,6 +248,29 @@ last index.  The mode change propagates via `g_colorMappingChanged`
 The slot ROM contains modes 0x80 through `0x80 + maxDepth`, and the
 mode-enumeration traps (csCode 17, 18) allow the Monitors control
 panel to discover and switch between all available depths.
+
+**System requirements for depth switching:**
+
+| Depth range | Minimum System |
+|---|---|
+| 1–8 bpp (indexed) | System 6.0.2+ with Monitors CP |
+| 16/32 bpp (direct) | System 7.0+ (built-in 32-Bit QuickDraw) or System 6 + 32-Bit QuickDraw 1.0 INIT |
+
+#### Resolution switching (not yet implemented)
+
+Real NuBus video cards could advertise multiple timing modes
+(resolutions).  Two mechanisms exist:
+
+* **Monitors CP + reboot** (System 6.0.5–7.1): the user selects a
+  resolution, the System writes the display mode to PRAM, and the Mac
+  reboots into the new resolution.
+* **Display Manager 2.0** (System 7.1.2+ or System 7.1 with Display
+  Enabler 2.0 extension): live resolution switching via a `SwitchMode`
+  control call (csCode 4 in the DM2 protocol), no reboot required.
+  This is the preferred path — it enables on-the-fly resolution changes
+  from the Monitors & Sound or Displays control panel.
+
+See `VIDEO_PLAN.md` §Resolution Switching for the implementation plan.
 
 ### 7.3 VRAM mapping
 
@@ -340,5 +365,11 @@ MacPlus would silently misbehave.
 ### L5 — Single resolution
 
 Only one resolution per session (set at launch via `--screen`).  The
-card reports a single displayModeID.  Multi-resolution would require
-VRAM reallocation and host window resizing.
+card reports a single displayModeID.  See `VIDEO_PLAN.md` §Resolution
+Switching for the plan to support multiple resolutions with live
+switching via Display Manager 2.0 (System 7.1.2+).
+
+### L6 — Single monitor
+
+One NuBus video card in slot 9.  Multi-monitor (multiple cards in
+different NuBus slots) is not yet implemented.
