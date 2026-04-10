@@ -17,6 +17,27 @@
 
 /* --- CLUT table building (no SDL dependency) --- */
 
+void BuildPalette()
+{
+	DisplayState& ds = GetDisplayState();
+	int depth = (ds.useColorMode && ds.screenDepth > 0 && ds.screenDepth < 4)
+		? ds.screenDepth : 0;
+
+	if (depth == 0) {
+		/* B&W mode */
+		ds.clut32[0] = 0xFFFFFFFF; /* white */
+		ds.clut32[1] = 0xFF000000; /* black */
+	} else {
+		int nColors = 1 << (1 << depth);
+		for (int i = 0; i < nColors; ++i) {
+			uint8_t r = ds.clutReds[i] >> 8;
+			uint8_t g = ds.clutGreens[i] >> 8;
+			uint8_t b = ds.clutBlues[i] >> 8;
+			ds.clut32[i] = 0xFF000000u | (r << 16) | (g << 8) | b;
+		}
+	}
+}
+
 void BuildClutTable(int bpp)
 {
 	int i;

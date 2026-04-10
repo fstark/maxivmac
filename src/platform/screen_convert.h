@@ -21,6 +21,10 @@
    Uses direct ARGB8888 packing — no SDL dependency. */
 void BuildClutTable(int bpp);
 
+/* Build the flat uint32_t palette from current CLUT state.
+   Fills clut32[256] in the DisplayState.  For use with ConvertScreen(). */
+void BuildPalette();
+
 /* Fast-path dispatcher: selects the correct depth-copy based on
    vMacScreenDepth, g_useColorMode, and bpp. */
 void ConvertRect(int bpp, int16_t top, int16_t left, int16_t bottom, int16_t right);

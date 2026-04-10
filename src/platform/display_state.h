@@ -39,6 +39,9 @@ struct DisplayState {
 	uint8_t* scalingBuff = nullptr;
 	uint8_t* clutFinal   = nullptr;
 
+	/* New flat ARGB8888 palette (Phase 2) */
+	uint32_t clut32[CLUT_STATE_SIZE] = {};
+
 	/* --- Buffer lifecycle --- */
 
 	bool allocBuffers(uint32_t screenNumBytes, uint32_t clutFinalSize)
