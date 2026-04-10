@@ -489,9 +489,9 @@ void EmulatorShell::doneWithDrawingForTick()
 
 void EmulatorShell::drawChangesAndClear()
 {
-	if (g_screenChanged) {
+	if (display_.screenChanged) {
 		convertFramebuffer(0, 0, vMacScreenHeight, vMacScreenWidth);
-		g_screenChanged = false;
+		display_.screenChanged = false;
 		framebufferDirty_ = true;
 	}
 }
@@ -512,9 +512,9 @@ void EmulatorShell::convertFramebuffer(uint16_t top, uint16_t left,
 	int bpp = 4; /* ARGB8888 always */
 	uint32_t ExpectedPitch = vMacScreenWidth * bpp;
 
-	ScalingBuff = argbBuffer_;
+	display_.scalingBuff = argbBuffer_;
 
-	if (vMacScreenDepth <= 3 || ! g_useColorMode) {
+	if (vMacScreenDepth <= 3 || !display_.useColorMode) {
 		BuildClutTable(bpp);
 		ConvertRect(bpp, top, left, bottom, right);
 	} else {
@@ -826,9 +826,7 @@ bool EmulatorShell::allocMyMemory()
 		goto fail;
 	if (!AllocBlock(&g_rom, g_machine->config().romSize, false))
 		goto fail;
-	if (!AllocBlock(&g_screenCompareBuff, vMacScreenNumBytes, true))
-		goto fail;
-	if (!AllocBlock(&CLUT_final, CLUT_FINAL_SZ, false))
+	if (!display_.allocBuffers(vMacScreenNumBytes, CLUT_FINAL_SZ))
 		goto fail;
 	if (!Sound_AllocBuffer())
 		goto fail;
@@ -844,8 +842,7 @@ fail:
 void EmulatorShell::unallocMyMemory()
 {
 	free(g_rom); g_rom = nullptr;
-	free(g_screenCompareBuff); g_screenCompareBuff = nullptr;
-	free(CLUT_final); CLUT_final = nullptr;
+	display_.freeBuffers();
 	Sound_FreeBuffer();
 	EmulationFreeAlloc();
 }

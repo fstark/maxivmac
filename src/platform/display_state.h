@@ -9,6 +9,8 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 
 #define CLUT_STATE_SIZE 256
 
@@ -36,4 +38,25 @@ struct DisplayState {
 	/* Screen conversion output */
 	uint8_t* scalingBuff = nullptr;
 	uint8_t* clutFinal   = nullptr;
+
+	/* --- Buffer lifecycle --- */
+
+	bool allocBuffers(uint32_t screenNumBytes, uint32_t clutFinalSize)
+	{
+		screenCompareBuff = static_cast<uint8_t*>(std::calloc(1, screenNumBytes));
+		if (!screenCompareBuff) return false;
+		std::memset(screenCompareBuff, 0xFF, screenNumBytes);
+
+		clutFinal = static_cast<uint8_t*>(std::calloc(1, clutFinalSize));
+		if (!clutFinal) return false;
+
+		return true;
+	}
+
+	void freeBuffers()
+	{
+		std::free(screenCompareBuff); screenCompareBuff = nullptr;
+		std::free(clutFinal);         clutFinal = nullptr;
+		scalingBuff = nullptr; /* not owned — points into Shell's argbBuffer_ */
+	}
 };
