@@ -1073,28 +1073,22 @@ static void SetUp_address32()
 	r.usebase = g_vidMem;
 	r.Access = kATTA_readwritereadymask;
 	AddToATTList(&r);
-/* kludge to allow more than 1M of Video Memory */
-	if (cfg.vidMemSize >= 0x00200000) {
-		r.cmpmask = ~ 0x000FFFFF;
-		r.cmpvalu = 0xF9A00000;
-		r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
-		r.usebase = g_vidMem + (1 << 20);
-		r.Access = kATTA_readwritereadymask;
-		AddToATTList(&r);
-	}
-	if (cfg.vidMemSize >= 0x00400000) {
-		r.cmpmask = ~ 0x000FFFFF;
-		r.cmpvalu = 0xF9B00000;
-		r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
-		r.usebase = g_vidMem + (2 << 20);
-		r.Access = kATTA_readwritereadymask;
-		AddToATTList(&r);
-		r.cmpmask = ~ 0x000FFFFF;
-		r.cmpvalu = 0xF9C00000;
-		r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
-		r.usebase = g_vidMem + (3 << 20);
-		r.Access = kATTA_readwritereadymask;
-		AddToATTList(&r);
+	/* Map additional 1 MB banks for VRAM > 1 MB.
+	   NuBus super-slot 9 spans 0xF9000000–0xF9FFFFFF;
+	   ROM occupies 0xF9F00000, so VRAM can use up to
+	   0xF9000000–0xF9EFFFFF (15 banks from 0xF9900000). */
+	{
+		uint32_t banks = (cfg.vidMemSize + 0x000FFFFF) >> 20;
+		if (banks > 15) banks = 15;  /* cap at super-slot boundary */
+		for (uint32_t b = 1; b < banks; b++) {
+			r.cmpmask = ~ 0x000FFFFF;
+			r.cmpvalu = 0xF9900000 + (b << 20);
+			if (r.cmpvalu >= 0xF9F00000) break;  /* don't overwrite ROM */
+			r.usemask = 0x000FFFFF & (cfg.vidMemSize - 1);
+			r.usebase = g_vidMem + (b << 20);
+			r.Access = kATTA_readwritereadymask;
+			AddToATTList(&r);
+		}
 	}
 
 	SetUp_io();

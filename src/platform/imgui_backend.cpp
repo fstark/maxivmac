@@ -879,6 +879,39 @@ bool ImGuiBackend::getDisplayBounds(PlatformDisplayBounds* bounds)
 	return true;
 }
 
+void ImGuiBackend::onResolutionChanged(uint16_t newW, uint16_t newH)
+{
+	/* Recreate GL texture at the new resolution */
+	emuTexW_ = newW;
+	emuTexH_ = newH;
+
+	if (emuTextureId_) {
+		glDeleteTextures(1, &emuTextureId_);
+		emuTextureId_ = 0;
+	}
+	glGenTextures(1, &emuTextureId_);
+	glBindTexture(GL_TEXTURE_2D, emuTextureId_);
+	{
+		GLenum glFilter = (textureFilter_ == TextureFilter::Nearest)
+			? GL_NEAREST : GL_LINEAR;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, newW, newH, 0,
+		GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+
+	/* Resize SDL window only in Windowed mode.  Fullscreen and
+	   Developer modes handle the new resolution automatically
+	   via aspect-ratio scaling / ImGui auto-resize. */
+	if (uiState_ == UIState::Windowed) {
+		int scale = (shell_ && shell_->useMagnify())
+			? shell_->windowScale() : 1;
+		SDL_SetWindowSize(window_, newW * scale, newH * scale);
+	}
+}
+
 /* ── Paths ───────────────────────────────────────────── */
 
 const char* ImGuiBackend::getAppParent()

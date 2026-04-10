@@ -62,6 +62,7 @@ public:
 
 	void showMessageBox(const char* title, const char* message) override;
 	bool getDisplayBounds(PlatformDisplayBounds* bounds) override;
+	void onResolutionChanged(uint16_t newW, uint16_t newH) override;
 
 	const char* getAppParent() override;
 	char* getPrefDir(const char* org, const char* app) override;

@@ -78,6 +78,10 @@ public:
 	/* --- Window title --- */
 	const char* windowTitle() const;
 
+	/* --- Video accessors --- */
+	bool useMagnify() const { return useMagnify_; }
+	int windowScale() const { return windowScale_; }
+
 private:
 	/* --- Helpers --- */
 	void drawChangesAndClear();

@@ -86,6 +86,9 @@ public:
 	/* Query */
 	virtual bool getDisplayBounds(PlatformDisplayBounds* bounds) = 0;
 
+	/* Resolution change notification (called when guest switches resolution) */
+	virtual void onResolutionChanged(uint16_t newW, uint16_t newH) = 0;
+
 	/* Paths — platform-specific application path resolution.
 	   Returned strings are owned by the backend; caller must not free.
 	   getAppParent(): directory containing the executable.

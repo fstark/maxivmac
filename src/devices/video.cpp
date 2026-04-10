@@ -32,10 +32,30 @@
 /* Maximum number of modes (depth 0..5) */
 #define kMaxModes 6
 
+/* Maximum number of resolutions */
+#define kMaxResolutions 8
+
+struct ResolutionEntry {
+	uint32_t displayModeID;
+	uint16_t width;
+	uint16_t height;
+};
+
+/* Resolution table — built during init() */
+static ResolutionEntry s_resolutions[kMaxResolutions];
+static int s_numResolutions = 0;
+
 /* Current depth and configured max depth (set during init) */
 static int s_currentDepth = 0;
 static int s_maxDepth     = 0;
 static int s_preferredDepth = -1; /* -1 = use configured depth */
+static uint32_t s_currentDisplayModeID = 1;
+static int s_preferredDisplayModeID = -1; /* -1 = use boot res */
+static uint16_t s_currentWidth = 640;
+static uint16_t s_currentHeight = 480;
+
+/* Flag for host to detect resolution change */
+static bool s_resolutionChanged = false;
 
 static const uint8_t VidDrvr_contents[] = {
 0x4C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -98,6 +118,64 @@ static int clutSizeForDepth(int depth)
 	return 1 << (1 << depth);
 }
 
+/* Look up a resolution by displayModeID.  Returns nullptr if not found. */
+static const ResolutionEntry* findResolution(uint32_t displayModeID)
+{
+	for (int i = 0; i < s_numResolutions; i++) {
+		if (s_resolutions[i].displayModeID == displayModeID)
+			return &s_resolutions[i];
+	}
+	return nullptr;
+}
+
+/* Return the next resolution after prevID, or nullptr if exhausted. */
+static const ResolutionEntry* nextResolution(uint32_t prevID)
+{
+	if (prevID == 0)
+		return (s_numResolutions > 0) ? &s_resolutions[0] : nullptr;
+	for (int i = 0; i < s_numResolutions; i++) {
+		if (s_resolutions[i].displayModeID == prevID) {
+			if (i + 1 < s_numResolutions)
+				return &s_resolutions[i + 1];
+			return nullptr;
+		}
+	}
+	return nullptr;
+}
+
+/* Maximum depth mode that fits in VRAM for a given resolution. */
+static int maxDepthForResolution(uint16_t w, uint16_t h, uint32_t vidMemSize)
+{
+	int best = 0;
+	for (int d = 0; d <= 5; d++) {
+		uint32_t bytes = (uint32_t)w * h * (1 << d) / 8;
+		if (bytes <= vidMemSize)
+			best = d;
+	}
+	return best;
+}
+
+/* Build the classic resolution table.  Called during init(). */
+static void buildResolutionTable()
+{
+	static const struct { uint32_t id; uint16_t w, h; } kClassic[] = {
+		{ 1,  512,  342 },
+		{ 2,  512,  384 },
+		{ 3,  640,  480 },
+		{ 4,  832,  624 },
+		{ 5, 1024,  768 },
+		{ 6, 1152,  870 },
+	};
+	s_numResolutions = 0;
+	for (int i = 0; i < (int)(sizeof(kClassic) / sizeof(kClassic[0])); i++) {
+		if (s_numResolutions >= kMaxResolutions) break;
+		s_resolutions[s_numResolutions].displayModeID = kClassic[i].id;
+		s_resolutions[s_numResolutions].width  = kClassic[i].w;
+		s_resolutions[s_numResolutions].height = kClassic[i].h;
+		s_numResolutions++;
+	}
+}
+
 /*
 	Build the Mac II slot ROM image in g_vidROM.
 	Constructs sResource directory, board/video type entries,
@@ -108,10 +186,33 @@ bool VideoDevice::init()
 {
 	const auto& cfg = g_machine->config();
 	int maxDepth = cfg.screenDepth;
-	uint16_t width = cfg.screenWidth;
-	uint16_t height = cfg.screenHeight;
+	uint16_t bootWidth = cfg.screenWidth;
+	uint16_t bootHeight = cfg.screenHeight;
 
 	s_maxDepth = maxDepth;
+
+	/* Build resolution table (classic resolutions only for now) */
+	buildResolutionTable();
+
+	/* Find the boot resolution — pick the classic entry matching
+	   the configured screen size, or default to 640×480 (ID 3). */
+	const ResolutionEntry* bootRes = nullptr;
+	for (int i = 0; i < s_numResolutions; i++) {
+		if (s_resolutions[i].width == bootWidth &&
+			s_resolutions[i].height == bootHeight) {
+			bootRes = &s_resolutions[i];
+			break;
+		}
+	}
+	if (!bootRes) {
+		/* Configured resolution not in table; use 640×480 */
+		bootRes = findResolution(3);
+		if (!bootRes) bootRes = &s_resolutions[0];
+	}
+
+	s_currentWidth = bootRes->width;
+	s_currentHeight = bootRes->height;
+	s_currentDisplayModeID = bootRes->displayModeID;
 
 	/*
 		Boot at the highest indexed (CLUT) depth, not a direct-color
@@ -124,24 +225,33 @@ bool VideoDevice::init()
 	int bootDepth = (maxDepth >= 4) ? 3 : maxDepth;
 	s_currentDepth = bootDepth;
 	g_screenDepth = bootDepth;
+	g_screenWidth = bootRes->width;
+	g_screenHeight = bootRes->height;
 	g_useColorMode = (bootDepth > 0);
 	if (s_preferredDepth < 0)
 		s_preferredDepth = bootDepth;
+	if (s_preferredDisplayModeID < 0)
+		s_preferredDisplayModeID = (int)bootRes->displayModeID;
 
 #if VID_dolog
 	dbglog_writelnNum("VideoDevice::init maxDepth", maxDepth);
-	dbglog_writelnNum("  width", width);
-	dbglog_writelnNum("  height", height);
+	dbglog_writelnNum("  bootRes width", bootRes->width);
+	dbglog_writelnNum("  bootRes height", bootRes->height);
+	dbglog_writelnNum("  bootRes displayModeID", bootRes->displayModeID);
+	dbglog_writelnNum("  numResolutions", s_numResolutions);
 	dbglog_writelnNum("  vidROMSize", cfg.vidROMSize);
 	dbglog_writelnNum("  vidMemSize", cfg.vidMemSize);
 #endif
 
 	SlotROMWriter w(g_vidROM, cfg.vidROMSize);
 
-	/* --- sResource directory --- */
+	/* --- sResource directory ---
+	   One board sResource + one video sResource per resolution. */
 	size_t sRsrcDir = w.pos();
 	auto rBoard = w.reserve();
-	auto rVideo = w.reserve();
+	size_t rVideoEntries[kMaxResolutions];
+	for (int r = 0; r < s_numResolutions; r++)
+		rVideoEntries[r] = w.reserve();
 	w.writeEndOfList();
 
 	/* --- Board sResource --- */
@@ -172,71 +282,88 @@ bool VideoDevice::init()
 	w.writeString("maxivmac");
 
 	w.patchOffset(rRevLevel, 0x03);
-	w.writeString("2.0");
+	w.writeString("3.0");
 
 	w.patchOffset(rPartNum, 0x04);
-	w.writeString("MVMv-1");
+	w.writeString("MVMv-2");
 
-	/* --- Video sResource --- */
-	w.patchOffset(rVideo, 0x80);
+	/* --- Video sResources (one per resolution) ---
+	   Each resolution gets sResource ID 0x80 + index.  Inside each,
+	   mode entries 0x80..0x80+maxDepth describe depth modes. */
+	for (int ri = 0; ri < s_numResolutions; ri++) {
+		const auto& res = s_resolutions[ri];
+		int resMaxDepth = maxDepthForResolution(res.width, res.height,
+			cfg.vidMemSize);
+		if (resMaxDepth > maxDepth)
+			resMaxDepth = maxDepth;
 
-	auto rVideoType = w.reserve();
-	auto rVideoName = w.reserve();
-	auto rVidDrvrDir = w.reserve();
-	w.writeDataEntry(0x08, 0x00000001);  /* sRsrcHWDevId */
-	auto rMinorBase   = w.reserve();
-	auto rMinorLength = w.reserve();
+		w.patchOffset(rVideoEntries[ri], 0x80 + ri);
 
-	/* Reserve one entry per mode (0x80 + depth) */
-	size_t rModes[kMaxModes];
-	for (int d = 0; d <= maxDepth; d++)
-		rModes[d] = w.reserve();
-	w.writeEndOfList();
+		auto rVideoType = w.reserve();
+		auto rVideoName = w.reserve();
+		/* Only the first resolution carries the driver directory.
+		   The Slot Manager finds the driver from any sResource, but
+		   we only need one copy. */
+		size_t rVidDrvrDir = 0;
+		if (ri == 0)
+			rVidDrvrDir = w.reserve();
+		w.writeDataEntry(0x08, 0x00000001);  /* sRsrcHWDevId */
+		auto rMinorBase   = w.reserve();
+		auto rMinorLength = w.reserve();
 
-	w.patchOffset(rVideoType, 0x01);
-	w.writeWord(0x0003);  /* catDisplay */
-	w.writeWord(0x0001);  /* typVideo */
-	w.writeWord(0x0001);  /* drSwApple */
-	w.writeWord(0x0001);  /* drHwTFB */
-
-	w.patchOffset(rVideoName, 0x02);
-	w.writeString("Display_Video_Apple_TFB");
-
-	w.patchOffset(rMinorBase, 0x0A);
-	w.writeLong(0x00000000);
-
-	w.patchOffset(rMinorLength, 0x0B);
-	w.writeLong(cfg.vidMemSize);
-
-	/* --- Driver directory --- */
-	w.patchOffset(rVidDrvrDir, 0x04);
-	auto rDriverEntry = w.reserve();
-	w.writeEndOfList();
-
-	w.patchOffset(rDriverEntry, 0x02);  /* sMacOS68020 */
-	w.writeLong(4 + sizeof(VidDrvr_contents) + 8);
-	w.writeBytes(VidDrvr_contents, sizeof(VidDrvr_contents));
-	w.writeWord(kcom_callcheck);
-	w.writeWord(kExtnVideo);
-	w.writeLong(cfg.extnBlockBase);
-
-	/* --- Mode entries and VPBlocks --- */
-	for (int d = 0; d <= maxDepth; d++) {
-		w.patchOffset(rModes[d], 0x80 + d);
-		auto rVP = w.reserve();
-		w.writeDataEntry(0x03, 0x00000001);  /* mPageCnt = 1 */
-		w.writeDataEntry(0x04, (d < 4) ? 0x00000000 : 0x00000002); /* mDevType */
+		/* Reserve one entry per depth mode */
+		size_t rModes[kMaxModes];
+		for (int d = 0; d <= resMaxDepth; d++)
+			rModes[d] = w.reserve();
 		w.writeEndOfList();
 
-		w.patchOffset(rVP, 0x01);  /* mVidParams */
-		VPBlock::forMode(d, width, height).writeTo(w);
+		w.patchOffset(rVideoType, 0x01);
+		w.writeWord(0x0003);  /* catDisplay */
+		w.writeWord(0x0001);  /* typVideo */
+		w.writeWord(0x0001);  /* drSwApple */
+		w.writeWord(0x0001);  /* drHwTFB */
+
+		w.patchOffset(rVideoName, 0x02);
+		w.writeString("Display_Video_Apple_TFB");
+
+		w.patchOffset(rMinorBase, 0x0A);
+		w.writeLong(0x00000000);
+
+		w.patchOffset(rMinorLength, 0x0B);
+		w.writeLong(cfg.vidMemSize);
+
+		/* Driver directory (only in first resolution sResource) */
+		if (ri == 0) {
+			w.patchOffset(rVidDrvrDir, 0x04);
+			auto rDriverEntry = w.reserve();
+			w.writeEndOfList();
+
+			w.patchOffset(rDriverEntry, 0x02);  /* sMacOS68020 */
+			w.writeLong(4 + sizeof(VidDrvr_contents) + 8);
+			w.writeBytes(VidDrvr_contents, sizeof(VidDrvr_contents));
+			w.writeWord(kcom_callcheck);
+			w.writeWord(kExtnVideo);
+			w.writeLong(cfg.extnBlockBase);
+		}
+
+		/* Mode entries and VPBlocks for this resolution */
+		for (int d = 0; d <= resMaxDepth; d++) {
+			w.patchOffset(rModes[d], 0x80 + d);
+			auto rVP = w.reserve();
+			w.writeDataEntry(0x03, 0x00000001);  /* mPageCnt = 1 */
+			w.writeDataEntry(0x04, (d < 4) ? 0x00000000 : 0x00000002);
+			w.writeEndOfList();
+
+			w.patchOffset(rVP, 0x01);  /* mVidParams */
+			VPBlock::forMode(d, res.width, res.height).writeTo(w);
+		}
 	}
 
 	/* --- Pad + trailer --- */
 	uint32_t usedSoFar = (uint32_t)w.pos() + 20;
 #if VID_dolog
 	dbglog_writelnNum("  ROM used bytes", (long)usedSoFar);
-	dbglog_writelnNum("  ROM modes built", maxDepth + 1);
+	dbglog_writelnNum("  ROM resolutions", s_numResolutions);
 #endif
 	if (usedSoFar > cfg.vidROMSize) {
 		ReportAbnormalID(AbnormalID::kVIDEO_vidROMSize_too_small,
@@ -684,9 +811,13 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						{
 							uint16_t mode = get_vm_word(
 								csParam + VDSwitchInfo_csMode);
+							uint32_t modeID = get_vm_long(
+								csParam + VDSwitchInfo_csData);
 							int depth = mode - 0x80;
 							if (depth >= 0 && depth <= s_maxDepth)
 								s_preferredDepth = depth;
+							if (findResolution(modeID))
+								s_preferredDisplayModeID = (int)modeID;
 							result = tMacErr::noErr;
 						}
 						break;
@@ -802,7 +933,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						put_vm_word(csParam + VDSwitchInfo_csMode,
 							0x80 + s_currentDepth);
 						put_vm_long(csParam + VDSwitchInfo_csData,
-							1); /* displayModeID = 1 */
+							s_currentDisplayModeID);
 						put_vm_word(csParam + VDSwitchInfo_csPage, 0);
 						put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
 							VidBaseAddr);
@@ -852,10 +983,13 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						{
 							int defDepth = (s_preferredDepth >= 0)
 								? s_preferredDepth : s_maxDepth;
+							uint32_t prefMode = (s_preferredDisplayModeID >= 0)
+								? (uint32_t)s_preferredDisplayModeID
+								: s_currentDisplayModeID;
 							put_vm_word(csParam + VDSwitchInfo_csMode,
 								0x80 + defDepth);
 							put_vm_long(csParam + VDSwitchInfo_csData,
-								1); /* displayModeID = 1 */
+								prefMode);
 							result = tMacErr::noErr;
 						}
 						break;
@@ -868,22 +1002,27 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						{
 							uint32_t prevID = get_vm_long(
 								csParam + VDResInfo_csPreviousDisplayModeID);
-							if (prevID == 0) {
-								/* First resolution */
-								put_vm_long(csParam + VDResInfo_csRIDisplayModeID, 1);
+							const ResolutionEntry* next = nextResolution(prevID);
+							if (next) {
+								int resMax = maxDepthForResolution(
+									next->width, next->height,
+									g_machine->config().vidMemSize);
+								if (resMax > s_maxDepth) resMax = s_maxDepth;
+								put_vm_long(csParam + VDResInfo_csRIDisplayModeID,
+									next->displayModeID);
 								put_vm_long(csParam + VDResInfo_csHorizontalPixels,
-									vMacScreenWidth);
+									next->width);
 								put_vm_long(csParam + VDResInfo_csVerticalLines,
-									vMacScreenHeight);
+									next->height);
 								put_vm_long(csParam + VDResInfo_csRefreshRate,
 									0x00420000); /* ~66.67 Hz fixed-point */
 								put_vm_word(csParam + VDResInfo_csMaxDepthMode,
-									0x80 + s_maxDepth);
+									0x80 + resMax);
 								result = tMacErr::noErr;
-							} else if (prevID == 1) {
-								/* No more resolutions */
+							} else if (prevID != 0 && findResolution(prevID)) {
+								/* prevID was the last — no more */
 								put_vm_long(csParam + VDResInfo_csRIDisplayModeID,
-									0xFFFFFFFE); /* kDisplayModeIDNoMoreResolutions */
+									0xFFFFFFFE);
 								result = tMacErr::noErr;
 							} else {
 								result = tMacErr::paramErr;
@@ -909,15 +1048,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							dbglog_writelnNum("  s_maxDepth", s_maxDepth);
 #endif
 							int depth = depthMode - 0x80;
-							if (displayModeID != 1
-								|| depth < 0 || depth > s_maxDepth)
+							const ResolutionEntry* res =
+								findResolution(displayModeID);
+							if (!res || depth < 0 || depth > s_maxDepth)
 							{
 								result = tMacErr::paramErr;
 							} else {
 								writeVPBlockToGuest(depth,
-									g_machine->config().screenWidth,
-									g_machine->config().screenHeight,
-									vpPtr);
+									res->width, res->height, vpPtr);
 								put_vm_long(csParam + VDVidParams_csPageCount, 1);
 								result = tMacErr::noErr;
 							}
@@ -939,4 +1077,26 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 	}
 
 	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
+}
+
+/* --- Resolution-change flag accessors (used by host/emulator_shell) --- */
+
+bool Vid_ResolutionChanged()
+{
+	return s_resolutionChanged;
+}
+
+void Vid_ClearResolutionChanged()
+{
+	s_resolutionChanged = false;
+}
+
+uint16_t Vid_CurrentWidth()
+{
+	return s_currentWidth;
+}
+
+uint16_t Vid_CurrentHeight()
+{
+	return s_currentHeight;
 }

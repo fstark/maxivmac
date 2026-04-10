@@ -470,7 +470,7 @@ MachineConfig MachineConfigForModel(MacModel model)
 			c.emVidCard   = true;
 			c.includeVidMem = true;
 			c.vidMemSize  = 0x00080000;
-			c.vidROMSize  = 0x000800;
+			c.vidROMSize  = 0x002000;  // 8 KB
 			c.maxATTListN = 20;
 			c.clockMult   = 2;
 			c.via1Config  = MakeVIA1Config_MacII();

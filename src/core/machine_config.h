@@ -74,7 +74,7 @@ struct MachineConfig {
 	uint32_t ramASize    = 0x00400000;  // 4 MB
 	uint32_t ramBSize    = 0x00400000;  // 4 MB
 	uint32_t vidMemSize  = 0x00080000;  // 512 KB
-	uint32_t vidROMSize  = 0x000800;
+	uint32_t vidROMSize  = 0x002000;    // 8 KB (multi-resolution ROM)
 
 	// ROM configuration (set by model factory)
 	uint32_t    romSize     = 0x00040000;  // 256 KB default (Mac II)

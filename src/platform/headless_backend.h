@@ -51,6 +51,9 @@ public:
 	/* Query — no display */
 	bool getDisplayBounds(PlatformDisplayBounds*) override { return false; }
 
+	/* Resolution change — no-op (no window to resize) */
+	void onResolutionChanged(uint16_t, uint16_t) override {}
+
 	/* Paths — use POSIX equivalents */
 	const char* getAppParent() override;
 	char* getPrefDir(const char* org, const char* app) override;

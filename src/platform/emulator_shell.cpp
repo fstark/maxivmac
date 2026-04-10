@@ -195,9 +195,18 @@ bool EmulatorShell::initMachine()
 
 	if (!ProgramMain()) return false;
 
-	/* Allocate ARGB framebuffer for screen conversion */
-	argbBuffer_ = static_cast<uint8_t*>(
-		calloc(vMacScreenWidth * vMacScreenHeight * 4, 1));
+	/* Allocate ARGB framebuffer for screen conversion.
+	   Size for the largest classic resolution (1152×870) at 32 bpp
+	   so resolution switches don't need reallocation. */
+	{
+		const uint32_t maxW = 1152, maxH = 870;
+		uint32_t allocW = (vMacScreenWidth > (long)maxW)
+			? (uint32_t)vMacScreenWidth : maxW;
+		uint32_t allocH = (vMacScreenHeight > (long)maxH)
+			? (uint32_t)vMacScreenHeight : maxH;
+		argbBuffer_ = static_cast<uint8_t*>(
+			calloc(allocW * allocH * 4, 1));
+	}
 	if (!argbBuffer_) return false;
 
 	/* Build initial palette (B&W default for non-colour models) */
@@ -824,8 +833,19 @@ bool EmulatorShell::allocMyMemory()
 		goto fail;
 	if (!AllocBlock(&g_rom, g_machine->config().romSize, false))
 		goto fail;
-	if (!display_.allocBuffers(vMacScreenNumBytes))
-		goto fail;
+	/* Allocate screen compare buffer for the largest resolution
+	   at the deepest mode (32 bpp) so resolution switches don't
+	   need reallocation. */
+	{
+		const uint32_t maxW = 1152, maxH = 870;
+		uint32_t allocW = ((uint32_t)g_screenWidth > maxW)
+			? (uint32_t)g_screenWidth : maxW;
+		uint32_t allocH = ((uint32_t)g_screenHeight > maxH)
+			? (uint32_t)g_screenHeight : maxH;
+		uint32_t maxBytes = allocW * allocH * 4;
+		if (!display_.allocBuffers(maxBytes))
+			goto fail;
+	}
 	if (!Sound_AllocBuffer())
 		goto fail;
 	if (!EmulationReserveAlloc())

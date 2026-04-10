@@ -20,3 +20,9 @@ public:
 	void extnVideoAccess(uint32_t p);
 };
 
+/* Check/clear the resolution-changed flag (set by SwitchMode). */
+bool Vid_ResolutionChanged();
+void Vid_ClearResolutionChanged();
+uint16_t Vid_CurrentWidth();
+uint16_t Vid_CurrentHeight();
+

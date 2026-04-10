@@ -366,13 +366,17 @@ MachineConfig BuildMachineConfig(const LaunchConfig& launch)
 
 	/*
 		Mac II family: ensure vidMemSize is large enough for the
-		configured screen dimensions and depth (the model default
-		is 512 KB, which overflows at 640x480x16 and above).
+		largest classic resolution (1152×870) at 32 bpp.
+		All resolutions share a single VRAM pool; the card
+		advertises multiple resolutions and the user can switch
+		between them at runtime.
 	*/
 	if (config.includeVidMem && config.isIIFamily()) {
-		uint32_t fbSize =
-			(((uint32_t)config.screenWidth * config.screenHeight
-				<< config.screenDepth) + 7) >> 3;
+		/* Largest classic resolution the card will advertise */
+		const uint32_t maxResW = 1152;
+		const uint32_t maxResH = 870;
+		/* Always size for 32 bpp (depth 5) so all depths fit */
+		uint32_t fbSize = maxResW * maxResH * 4;
 		/* Round up to next power of two */
 		fbSize--;
 		fbSize |= fbSize >> 1;
