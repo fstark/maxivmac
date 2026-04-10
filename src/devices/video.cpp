@@ -236,10 +236,16 @@ static void buildResolutionTable()
 bool VideoDevice::init()
 {
 	const auto& cfg = g_machine->config();
-	int maxDepth = cfg.screenDepth;
 	uint16_t bootWidth = cfg.screenWidth;
 	uint16_t bootHeight = cfg.screenHeight;
 
+	/* The card's maximum depth is determined by how many bpp the
+	   boot resolution can fit in VRAM, not by the configured boot
+	   depth.  cfg.screenDepth controls only which mode the card
+	   boots into — the user can switch to deeper modes via
+	   Monitors CP after the desktop appears. */
+	int maxDepth = maxDepthForResolution(bootWidth, bootHeight,
+		cfg.vidMemSize);
 	s_maxDepth = maxDepth;
 
 	/* Build resolution table (classic resolutions only for now) */
