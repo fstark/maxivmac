@@ -1,9 +1,19 @@
-# VIDEO_PLAN — NuBus Multi-Mode Video Card
+# VIDEO_PLAN — NuBus Multi-Mode Video Card — COMPLETED
 
-Implements a proper multi-depth NuBus video card so the Mac II guest OS
-can enumerate and switch between all supported colour depths at runtime.
+**Completed:** 2026-04-10, commit 317ccc8.
 
-**Prerequisite reading:** `VIDEO.md` §7 (current card emulation),
+All phases (0–5) implemented in a single commit:
+- Phase 0: SlotROMWriter + VPBlock replace PatchA* byte-patching
+- Phase 1: Multi-mode slot ROM (all depths 0..maxDepth)
+- Phase 2: All status calls (GetVideoParameters, GetNextResolution,
+  GetCurrentMode, GetConnection, GetModeBaseAddress,
+  GetDefaultMode, GetPreferredConfiguration)
+- Phase 3: Runtime depth switching via Vid_SetMode()
+- Phase 4: SetEntries for all indexed depths with clutSizeForDepth()
+- Phase 5: PRAM boot mode, preference save, golden re-record
+
+Files modified: slot_rom.h (new), video.cpp, rtc.cpp,
+MacII.golden, MacIIx.golden.
 Inside Macintosh: Devices ch. 6 (video drivers).
 
 **Reference sources:**
