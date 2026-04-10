@@ -27,69 +27,30 @@ All 6 models pass non-regression tests.
 
 ---
 
-## Phase 5 — Migrate buffer lifecycle to DisplayState
+## Phase 5 — DONE (commit 9aa44ec)
 
-Move `alloc`/`free` of display buffers into `DisplayState` methods.
-
-### Steps
-
-1. Add methods to `DisplayState`:
-   ```cpp
-   bool allocBuffers(long screenNumBytes, long clutFinalSize);
-   void freeBuffers();
-   ```
-
-2. Implement them (simple `AllocBlock` / `free` wrappers).
-
-3. In `EmulatorShell::allocMyMemory()`, replace:
-   ```cpp
-   AllocBlock(&g_screenCompareBuff, ...)
-   AllocBlock(&CLUT_final, ...)
-   ```
-   with `display_.allocBuffers(...)`.
-
-4. In `EmulatorShell::unallocMyMemory()`, replace:
-   ```cpp
-   free(g_screenCompareBuff); ...
-   free(CLUT_final); ...
-   ```
-   with `display_.freeBuffers()`.
-
-5. Build and test.
+Added `allocBuffers()`/`freeBuffers()` methods to `DisplayState`.
+`EmulatorShell::allocMyMemory()` and `unallocMyMemory()` now call these
+instead of raw `AllocBlock`/`free` on macro-redirected globals.
 
 ---
 
-## Phase 6 — Remove legacy macro shims
+## Phase 6 — DONE (commit 9aa44ec)
 
-Once all consumers go through `GetDisplayState()`, the macro shims in platform.h
-can be cleaned up. Convert direct struct field access in platform code, keeping
-only the `vMacScreen*` derived-quantity macros.
-
-### Steps
-
-1. In each platform .cpp file, replace macro-mediated access with direct
-   `g_shell->display().fieldName` where readability improves.
-2. Keep `vMacScreenWidth` / `vMacScreenHeight` / `vMacScreenDepth` macros
-   (these are used 200+ times in device code and provide a clean read-only API).
-3. Remove the `#define g_screenWidth ...` shims from platform.h once all direct
-   `g_screenWidth` references in .cpp files are eliminated.
-4. Grep for each old name to ensure zero residual references.
-5. Build and test.
+Converted `emulator_shell.cpp` from macro-mediated access (`g_screenChanged`,
+`g_useColorMode`, `ScalingBuff`) to direct `display_` member access. The
+`#define` shims in `platform.h` are retained for device code (`video.cpp`)
+and other cross-layer consumers that include `platform.h` transitively.
 
 ---
 
 ## Summary
 
-| Phase | Description | Complexity | Files |
-|-------|-------------|-----------|-------|
-| 1 | Create `DisplayState` struct header | Trivial | 1 new |
-| 2 | Add to EmulatorShell | Trivial | 1 |
-| 3 | Shadow-init from config | Simple | 1 |
-| 4 | Redirect globals → struct via macros | Moderate | ~6 |
-| 5 | Migrate buffer lifecycle | Simple | 2 |
-| 6 | Remove legacy macro shims | Moderate | ~8 |
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1-4 | Create struct, add to Shell, redirect globals via macros | DONE (55014c2) |
+| 5 | Migrate buffer lifecycle to `DisplayState` methods | DONE (9aa44ec) |
+| 6 | Direct `display_` access in `emulator_shell.cpp` | DONE (9aa44ec) |
 
-Phases 1–4 are the core refactoring. Phases 5–6 are polish.
-Each phase can be committed independently. Phase 4 is the big one
-where the actual global elimination happens, but the macro-redirect
-approach means zero changes to the 200+ consumer sites in device code.
+All phases complete. The `#define` shims in `platform.h` remain as the
+stable API for device code and cross-layer consumers.
