@@ -150,9 +150,6 @@ DisplayState& GetDisplayState();
 #define g_screenChanged     (GetDisplayState().screenChanged)
 #define g_colorTransValid   (GetDisplayState().colorTransValid)
 
-#define ScalingBuff         (GetDisplayState().scalingBuff)
-#define CLUT_final          (GetDisplayState().clutFinal)
-
 extern void Screen_OutputFrame(uint8_t * screencurrentbuff);
 extern void DoneWithDrawingForTick();
 

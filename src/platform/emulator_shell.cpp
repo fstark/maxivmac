@@ -510,8 +510,7 @@ void EmulatorShell::drawChangesAndClear()
 	}
 }
 
-void EmulatorShell::convertFramebuffer(uint16_t /*top*/, uint16_t /*left*/,
-	uint16_t /*bottom*/, uint16_t /*right*/)
+void EmulatorShell::convertFramebuffer()
 {
 	int depth = (display_.useColorMode && vMacScreenDepth > 0)
 		? vMacScreenDepth : 0;
@@ -825,7 +824,7 @@ bool EmulatorShell::allocMyMemory()
 		goto fail;
 	if (!AllocBlock(&g_rom, g_machine->config().romSize, false))
 		goto fail;
-	if (!display_.allocBuffers(vMacScreenNumBytes, CLUT_FINAL_SZ))
+	if (!display_.allocBuffers(vMacScreenNumBytes))
 		goto fail;
 	if (!Sound_AllocBuffer())
 		goto fail;

@@ -81,8 +81,7 @@ public:
 private:
 	/* --- Helpers --- */
 	void drawChangesAndClear();
-	void convertFramebuffer(uint16_t top, uint16_t left,
-		uint16_t bottom, uint16_t right);
+	void convertFramebuffer();
 	void mousePositionNotify(int newH, int newV);
 	void grabMachine();
 	void ungrabMachine();
