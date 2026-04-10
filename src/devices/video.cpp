@@ -24,6 +24,7 @@
 #include "core/abnormal_ids.h"
 
 #include <cstring>
+#include <cstdio>
 
 /*
 	ReportAbnormalID unused 0x0A08 - 0x0AFF
@@ -62,6 +63,15 @@ static bool s_resolutionChanged = false;
 /* Host desktop size — set by platform layer before init() */
 static uint16_t s_hostDesktopW = 0;
 static uint16_t s_hostDesktopH = 0;
+
+/* Byte offsets of each VPBlock inside g_vidROM, recorded during init().
+   On SwitchMode we rewrite these in-place so the Slot Manager sees the
+   new resolution when it re-reads the declaration ROM.  Yes, we mutate
+   a "ROM" buffer at runtime.  This is the only mechanism a single-
+   sResource card has to tell the Graphics Device Manager about a
+   resolution change — Basilisk II does the same thing. */
+static size_t s_vpBlockROMOffset[kMaxModes];
+static int    s_numVPBlocks = 0;
 
 static const uint8_t VidDrvr_contents[] = {
 0x4C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -116,6 +126,37 @@ static void ChecksumSlotROM()
 	do_put_mem_long(p - 12, crc);
 }
 
+/*
+	Rewrite all VPBlocks in g_vidROM to reflect a new resolution.
+	Called from SwitchMode and vidReset when the active resolution
+	changes.  The Slot Manager / Graphics Device Manager re-reads
+	these VPBlocks (via SReadStruct) after a mode switch to rebuild
+	the GDevice's pixMap bounds and rowBytes.  Without this, the
+	GDevice keeps the boot resolution's geometry and QuickDraw
+	paints into the wrong region of VRAM.
+
+	This is a well-known emulator pattern — Basilisk II does the
+	same thing — because a single-sResource card has no other way
+	to communicate resolution changes through the Slot Manager API.
+*/
+static void patchSlotROMVPBlocks(uint16_t newW, uint16_t newH)
+{
+	const auto& cfg = g_machine->config();
+	SlotROMWriter w(g_vidROM, cfg.vidROMSize);
+
+	for (int d = 0; d < s_numVPBlocks; d++) {
+		w.seek(s_vpBlockROMOffset[d]);
+		VPBlock::forMode(d, newW, newH).writeTo(w);
+	}
+
+	/* Zero the CRC field before recomputing */
+	do_put_mem_long(g_vidROM + cfg.vidROMSize - 12, 0);
+	ChecksumSlotROM();
+
+	std::fprintf(stderr, "[VID] patchSlotROMVPBlocks → %ux%u (%d modes)\n",
+		newW, newH, s_numVPBlocks);
+}
+
 /* Return the CLUT size for a given depth (0 for direct modes) */
 static int clutSizeForDepth(int depth)
 {
@@ -135,9 +176,13 @@ static const ResolutionEntry* findResolution(uint32_t displayModeID)
 }
 
 /* Return the next resolution after prevID, or nullptr if exhausted. */
+/* DM2 sentinel values for GetNextResolution iteration */
+static constexpr uint32_t kDisplayModeIDFindFirstResolution = 0xFFFFFFFE;
+static constexpr uint32_t kDisplayModeIDNoMoreResolutions   = 0xFFFFFFFD;
+
 static const ResolutionEntry* nextResolution(uint32_t prevID)
 {
-	if (prevID == 0)
+	if (prevID == 0 || prevID == kDisplayModeIDFindFirstResolution)
 		return (s_numResolutions > 0) ? &s_resolutions[0] : nullptr;
 	for (int i = 0; i < s_numResolutions; i++) {
 		if (s_resolutions[i].displayModeID == prevID) {
@@ -314,6 +359,13 @@ bool VideoDevice::init()
 	dbglog_writelnNum("  vidROMSize", cfg.vidROMSize);
 	dbglog_writelnNum("  vidMemSize", cfg.vidMemSize);
 #endif
+	std::fprintf(stderr, "[VID] init: boot=%ux%u bootDepth=%d maxDepth=%d vidMem=%u numRes=%d\n",
+		bootRes->width, bootRes->height, bootDepth, maxDepth,
+		cfg.vidMemSize, s_numResolutions);
+	for (int ri = 0; ri < s_numResolutions; ri++)
+		std::fprintf(stderr, "[VID]   res[%d]: id=%u %ux%u\n",
+			ri, s_resolutions[ri].displayModeID,
+			s_resolutions[ri].width, s_resolutions[ri].height);
 
 	SlotROMWriter w(g_vidROM, cfg.vidROMSize);
 
@@ -422,8 +474,10 @@ bool VideoDevice::init()
 			w.writeEndOfList();
 
 			w.patchOffset(rVP, 0x01);  /* mVidParams */
+			s_vpBlockROMOffset[d] = w.pos();
 			VPBlock::forMode(d, bootRes->width, bootRes->height).writeTo(w);
 		}
+		s_numVPBlocks = bootMaxDepth + 1;
 	}
 
 	/* --- Pad + trailer --- */
@@ -537,6 +591,7 @@ uint16_t VideoDevice::vidReset()
 				g_screenWidth = res->width;
 				g_screenHeight = res->height;
 				s_resolutionChanged = true;
+				patchSlotROMVPBlocks(res->width, res->height);
 			}
 		}
 	}
@@ -722,13 +777,15 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 				uint16_t csCode =
 					get_vm_word(CntrlParams + CntrlParam_csCode);
 
-				switch (csCode) {
+				std::fprintf(stderr, "[VID] Control csCode=%u\n", csCode);
+					switch (csCode) {
 					case 0: /* VidReset */
 #if VID_dolog
 						dbglog_WriteNote(
 							"Video_Access kCmndVideoControl, VidReset");
 						dbglog_writelnNum("  returning mode", Vid_GetMode());
 #endif
+						std::fprintf(stderr, "[VID] VidReset → mode=0x%02X\n", Vid_GetMode());
 						put_vm_word(csParam + VDPageInfo_csMode,
 							Vid_GetMode());
 						put_vm_word(csParam + VDPageInfo_csPage, 0);
@@ -759,6 +816,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						} else {
 							result = Vid_SetMode(get_vm_word(
 								csParam + VDPageInfo_csMode));
+							std::fprintf(stderr, "[VID] SetVidMode → mode=0x%02X\n",
+								get_vm_word(csParam + VDPageInfo_csMode));
 							put_vm_long(csParam + VDPageInfo_csBaseAddr,
 								VidBaseAddr);
 						}
@@ -910,6 +969,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							dbglog_writelnNum("  displayModeID", modeID);
 							dbglog_writelnNum("  page", page);
 #endif
+							std::fprintf(stderr, "[VID] SwitchMode mode=0x%02X modeID=%u page=%u\n",
+								mode, modeID, page);
 							/* Write current base addr in case we fail */
 							put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
 								VidBaseAddr);
@@ -969,6 +1030,11 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 
 							if (resChanged) {
 								s_resolutionChanged = true;
+								/* Patch VPBlocks in the slot ROM so
+								   the Slot Manager / GDevice Manager
+								   sees the new resolution */
+								patchSlotROMVPBlocks(res->width,
+									res->height);
 								/* Reset screen compare buffer to
 								   force full redraw */
 								if (g_screenCompareBuff) {
@@ -982,6 +1048,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 
 							put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
 								VidBaseAddr);
+							std::fprintf(stderr, "[VID] SwitchMode OK → %ux%u depth=%d resChanged=%d\n",
+								res->width, res->height, newDepth, resChanged);
 							result = tMacErr::noErr;
 						}
 						break;
@@ -1021,6 +1089,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					CntrlParams + CntrlParam_csCode);
 
 				result = tMacErr::statusErr;
+				std::fprintf(stderr, "[VID] Status csCode=%u\n", csCode);
 				switch (csCode) {
 					case 2: /* GetMode */
 #if VID_dolog
@@ -1120,6 +1189,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						put_vm_word(csParam + VDSwitchInfo_csPage, 0);
 						put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
 							VidBaseAddr);
+						std::fprintf(stderr, "[VID] GetCurrentMode → mode=0x%02X displayModeID=%u\n",
+							0x80 + s_currentDepth, s_currentDisplayModeID);
 						result = tMacErr::noErr;
 						break;
 					case 12: /* GetConnection */
@@ -1136,6 +1207,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							0x000E); /* kAllModes | kAllFlags */
 						put_vm_long(csParam + VDConnectInfo_csDisplayComponent, 0);
 						put_vm_long(csParam + VDConnectInfo_csConnectReserved, 0);
+						std::fprintf(stderr, "[VID] GetConnection → displayType=6 flags=0x000E\n");
 						result = tMacErr::noErr;
 						break;
 					case 13: /* GetModeTiming */
@@ -1155,6 +1227,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							const ResolutionEntry* res =
 								findResolution(timingModeID);
 							if (!res) {
+								std::fprintf(stderr, "[VID] GetModeTiming modeID=%u → paramErr (not found)\n",
+									timingModeID);
 								result = tMacErr::paramErr;
 							} else {
 								put_vm_long(csParam + 8,
@@ -1169,6 +1243,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									s_preferredDisplayModeID)
 									flags |= 0x0004;
 								put_vm_long(csParam + 16, flags);
+								std::fprintf(stderr, "[VID] GetModeTiming modeID=%u → flags=0x%04X (%ux%u)\n",
+									timingModeID, flags, res->width, res->height);
 								result = tMacErr::noErr;
 							}
 						}
@@ -1227,13 +1303,17 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									0x00420000); /* ~66.67 Hz fixed-point */
 								put_vm_word(csParam + VDResInfo_csMaxDepthMode,
 									0x80 + resMax);
+								std::fprintf(stderr, "[VID] GetNextResolution prev=%u → id=%u %ux%u maxDepth=0x%02X\n",
+									prevID, next->displayModeID, next->width, next->height, 0x80 + resMax);
 								result = tMacErr::noErr;
 							} else if (prevID != 0 && findResolution(prevID)) {
 								/* prevID was the last — no more */
 								put_vm_long(csParam + VDResInfo_csRIDisplayModeID,
-									0xFFFFFFFE);
+									kDisplayModeIDNoMoreResolutions);
+								std::fprintf(stderr, "[VID] GetNextResolution prev=%u → END-OF-LIST\n", prevID);
 								result = tMacErr::noErr;
 							} else {
+								std::fprintf(stderr, "[VID] GetNextResolution prev=%u → paramErr\n", prevID);
 								result = tMacErr::paramErr;
 							}
 						}
@@ -1261,11 +1341,15 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 								findResolution(displayModeID);
 							if (!res || depth < 0 || depth > s_maxDepth)
 							{
+								std::fprintf(stderr, "[VID] GetVideoParameters modeID=%u depth=0x%02X → paramErr (res=%p depth=%d max=%d)\n",
+									displayModeID, depthMode, (void*)res, depth, s_maxDepth);
 								result = tMacErr::paramErr;
 							} else {
 								writeVPBlockToGuest(depth,
 									res->width, res->height, vpPtr);
 								put_vm_long(csParam + VDVidParams_csPageCount, 1);
+								std::fprintf(stderr, "[VID] GetVideoParameters modeID=%u depth=0x%02X → %ux%u OK\n",
+									displayModeID, depthMode, res->width, res->height);
 								result = tMacErr::noErr;
 							}
 						}

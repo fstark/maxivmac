@@ -215,11 +215,11 @@ pixel size, component count/size, and device type (CLUT vs direct).
 | 9 | GetDefaultMode | ✅ returns preferred depth |
 | 10 | GetCurrentMode | ✅ mode, displayModeID, page, base |
 | 12 | GetConnection | ✅ kVGAConnect, kAllModes |
-| 13 | GetModeTiming | stub (returns statusErr) |
+| 13 | GetModeTiming | ✅ timing format + valid/safe/default flags |
 | 14 | GetModeBaseAddress | ✅ VidBaseAddr |
 | 16 | GetPreferredConfiguration | ✅ preferred mode + displayModeID |
-| 17 | GetNextResolution | ✅ single resolution enumeration |
-| 18 | GetVideoParameters | ✅ VPBlock + page count for any mode |
+| 17 | GetNextResolution | ✅ full resolution enumeration (DM2 sentinels) |
+| 18 | GetVideoParameters | ✅ VPBlock + page count for any mode/res |
 
 **Control calls (kCmndVideoControl):**
 
@@ -233,7 +233,8 @@ pixel size, component count/size, and device type (CLUT vs direct).
 | 5 | GrayScreen | ✅ fills VRAM with gray pattern |
 | 6 | SetGray | ✅ |
 | 9 | SetDefaultMode | ✅ saves preferred depth |
-| 16 | SavePreferredConfiguration | ✅ saves preferred depth |
+| 10 | SwitchMode | ✅ live resolution + depth switching (DM2) |
+| 16 | SavePreferredConfiguration | ✅ saves preferred depth + resolution |
 
 ### 7.2 Mode switching
 
@@ -256,21 +257,38 @@ panel to discover and switch between all available depths.
 | 1–8 bpp (indexed) | System 6.0.2+ with Monitors CP |
 | 16/32 bpp (direct) | System 7.0+ (built-in 32-Bit QuickDraw) or System 6 + 32-Bit QuickDraw 1.0 INIT |
 
-#### Resolution switching (not yet implemented)
+#### Resolution switching
 
-Real NuBus video cards could advertise multiple timing modes
-(resolutions).  Two mechanisms exist:
+The Mac II video card advertises multiple resolutions via the DM2 driver
+protocol.  Two mechanisms are supported:
 
-* **Monitors CP + reboot** (System 6.0.5–7.1): the user selects a
-  resolution, the System writes the display mode to PRAM, and the Mac
-  reboots into the new resolution.
-* **Display Manager 2.0** (System 7.1.2+ or System 7.1 with Display
-  Enabler 2.0 extension): live resolution switching via a `SwitchMode`
-  control call (csCode 4 in the DM2 protocol), no reboot required.
-  This is the preferred path — it enables on-the-fly resolution changes
-  from the Monitors & Sound or Displays control panel.
+* **CLI flag:** `--screen=WxHxD` sets the boot resolution and depth.
+* **Monitors CP → Options (live):** On System 7.5.3+ with Display
+  Manager 2.0, the user can switch resolution from the Monitors
+  control panel "Options" dialog without rebooting.
+* **PRAM reboot path:** On older Systems, selecting a resolution and
+  rebooting causes the card to boot into the saved resolution.
 
-See `VIDEO_PLAN.md` §Resolution Switching for the implementation plan.
+**Resolution table:**  Six classic resolutions (512×342 through
+1152×870) plus up to two host-derived resolutions (matching the host
+display), built at init by `buildResolutionTable()`.
+
+**DM2 protocol:**  The driver implements `GetNextResolution` (status
+csCode 17), `GetVideoParameters` (csCode 18), `GetModeTiming`
+(csCode 13), and `SwitchMode` (control csCode 10) to support live
+resolution enumeration and switching.
+
+**Slot ROM VPBlock patching (hack):**  On SwitchMode, the VPBlock
+entries in the slot ROM buffer are rewritten in-place to reflect the
+new resolution, and the ROM checksum is recomputed.  This is necessary
+because the System's Graphics Device Manager re-reads VPBlocks from
+the ROM (via Slot Manager) after a mode switch, ignoring the driver's
+status call responses.  See `VIDEO_ISSUE.md` for full details and
+research into a proper fix.
+
+**maxDepth per resolution:**  The maximum advertised depth for each
+resolution is computed from VRAM capacity, not from the boot depth.
+With 4 MB VRAM at 640×480, all depths through 32 bpp are available.
 
 ### 7.3 VRAM mapping
 
@@ -362,12 +380,12 @@ Guest Monitors preference survives via the disk image, not PRAM.
 The screen hack patches geometry only; `--screen=512x342x8` on a
 MacPlus would silently misbehave.
 
-### L5 — Single resolution
+### L5 — Slot ROM VPBlock patching hack
 
-Only one resolution per session (set at launch via `--screen`).  The
-card reports a single displayModeID.  See `VIDEO_PLAN.md` §Resolution
-Switching for the plan to support multiple resolutions with live
-switching via Display Manager 2.0 (System 7.1.2+).
+Resolution switching works but requires mutating the slot ROM buffer
+at runtime.  This is an emulator workaround, not how real hardware
+behaved.  See `VIDEO_ISSUE.md` for analysis and research into a
+proper fix using multiple sResources with correct flags.
 
 ### L6 — Single monitor
 
