@@ -312,12 +312,15 @@ bool VideoDevice::init()
 	SlotROMWriter w(g_vidROM, cfg.vidROMSize);
 
 	/* --- sResource directory ---
-	   One board sResource + one video sResource per resolution. */
+	   One board sResource + ONE video functional sResource.
+	   Multiple resolutions are advertised by the DM2 driver protocol
+	   (GetNextResolution / GetVideoParameters / SwitchMode), not by
+	   multiple video sResources.  Having multiple video sResources
+	   makes the System think there are multiple physical displays,
+	   which causes a freeze during boot. */
 	size_t sRsrcDir = w.pos();
 	auto rBoard = w.reserve();
-	size_t rVideoEntries[kMaxResolutions];
-	for (int r = 0; r < s_numResolutions; r++)
-		rVideoEntries[r] = w.reserve();
+	auto rVideo = w.reserve();
 	w.writeEndOfList();
 
 	/* --- Board sResource --- */
@@ -353,33 +356,27 @@ bool VideoDevice::init()
 	w.patchOffset(rPartNum, 0x04);
 	w.writeString("MVMv-2");
 
-	/* --- Video sResources (one per resolution) ---
-	   Each resolution gets sResource ID 0x80 + index.  Inside each,
-	   mode entries 0x80..0x80+maxDepth describe depth modes. */
-	for (int ri = 0; ri < s_numResolutions; ri++) {
-		const auto& res = s_resolutions[ri];
-		int resMaxDepth = maxDepthForResolution(res.width, res.height,
-			cfg.vidMemSize);
-		if (resMaxDepth > maxDepth)
-			resMaxDepth = maxDepth;
+	/* --- Single video sResource (ID 0x80) ---
+	   Contains depth mode entries for the boot resolution.
+	   Other resolutions are exposed via GetNextResolution. */
+	{
+		int bootMaxDepth = maxDepthForResolution(
+			bootRes->width, bootRes->height, cfg.vidMemSize);
+		if (bootMaxDepth > maxDepth)
+			bootMaxDepth = maxDepth;
 
-		w.patchOffset(rVideoEntries[ri], 0x80 + ri);
+		w.patchOffset(rVideo, 0x80);
 
 		auto rVideoType = w.reserve();
 		auto rVideoName = w.reserve();
-		/* Only the first resolution carries the driver directory.
-		   The Slot Manager finds the driver from any sResource, but
-		   we only need one copy. */
-		size_t rVidDrvrDir = 0;
-		if (ri == 0)
-			rVidDrvrDir = w.reserve();
+		auto rVidDrvrDir = w.reserve();
 		w.writeDataEntry(0x08, 0x00000001);  /* sRsrcHWDevId */
 		auto rMinorBase   = w.reserve();
 		auto rMinorLength = w.reserve();
 
 		/* Reserve one entry per depth mode */
 		size_t rModes[kMaxModes];
-		for (int d = 0; d <= resMaxDepth; d++)
+		for (int d = 0; d <= bootMaxDepth; d++)
 			rModes[d] = w.reserve();
 		w.writeEndOfList();
 
@@ -398,22 +395,20 @@ bool VideoDevice::init()
 		w.patchOffset(rMinorLength, 0x0B);
 		w.writeLong(cfg.vidMemSize);
 
-		/* Driver directory (only in first resolution sResource) */
-		if (ri == 0) {
-			w.patchOffset(rVidDrvrDir, 0x04);
-			auto rDriverEntry = w.reserve();
-			w.writeEndOfList();
+		/* Driver directory */
+		w.patchOffset(rVidDrvrDir, 0x04);
+		auto rDriverEntry = w.reserve();
+		w.writeEndOfList();
 
-			w.patchOffset(rDriverEntry, 0x02);  /* sMacOS68020 */
-			w.writeLong(4 + sizeof(VidDrvr_contents) + 8);
-			w.writeBytes(VidDrvr_contents, sizeof(VidDrvr_contents));
-			w.writeWord(kcom_callcheck);
-			w.writeWord(kExtnVideo);
-			w.writeLong(cfg.extnBlockBase);
-		}
+		w.patchOffset(rDriverEntry, 0x02);  /* sMacOS68020 */
+		w.writeLong(4 + sizeof(VidDrvr_contents) + 8);
+		w.writeBytes(VidDrvr_contents, sizeof(VidDrvr_contents));
+		w.writeWord(kcom_callcheck);
+		w.writeWord(kExtnVideo);
+		w.writeLong(cfg.extnBlockBase);
 
-		/* Mode entries and VPBlocks for this resolution */
-		for (int d = 0; d <= resMaxDepth; d++) {
+		/* Mode entries and VPBlocks for the boot resolution */
+		for (int d = 0; d <= bootMaxDepth; d++) {
 			w.patchOffset(rModes[d], 0x80 + d);
 			auto rVP = w.reserve();
 			w.writeDataEntry(0x03, 0x00000001);  /* mPageCnt = 1 */
@@ -421,7 +416,7 @@ bool VideoDevice::init()
 			w.writeEndOfList();
 
 			w.patchOffset(rVP, 0x01);  /* mVidParams */
-			VPBlock::forMode(d, res.width, res.height).writeTo(w);
+			VPBlock::forMode(d, bootRes->width, bootRes->height).writeTo(w);
 		}
 	}
 
