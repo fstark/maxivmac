@@ -237,7 +237,7 @@ void ImGuiBackend::drawWindowedState()
 	/* Control overlay (Ctrl key held) */
 	if (overlayVisible_) {
 		UIState requested = uiState_;
-		overlay_.draw(uiState_, shell_, requested);
+		overlay_.draw(uiState_, shell_, this, requested);
 		if (requested != uiState_) {
 			switch (requested) {
 			case UIState::Windowed:   enterWindowed(); break;
@@ -562,24 +562,28 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event& event)
 
 /* ── GL texture upload ───────────────────────────────── */
 
+void ImGuiBackend::setTextureFilter(TextureFilter f)
+{
+	if (textureFilter_ == f) return;
+	textureFilter_ = f;
+	if (emuTextureId_) {
+		GLenum glFilter = (f == TextureFilter::Nearest)
+			? GL_NEAREST : GL_LINEAR;
+		glBindTexture(GL_TEXTURE_2D, emuTextureId_);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
+	}
+}
+
 void ImGuiBackend::uploadFramebuffer()
 {
 	if (!shell_ || !shell_->isFramebufferDirty()) return;
 
 	glBindTexture(GL_TEXTURE_2D, emuTextureId_);
-	/* GL_LINEAR, not GL_NEAREST.  On macOS Retina the emulator texture
-	   is displayed at 1× logical size but the GL framebuffer is 2×
-	   physical pixels (SDL_WINDOW_HIGH_PIXEL_DENSITY).  With GL_NEAREST,
-	   alternating black/white checkerboard pixels (the Mac Plus desktop
-	   pattern) produce a visible moiré that is anchored to the physical
-	   display — moving the window doesn't move the pattern.  The exact
-	   cause is unclear: possibly the macOS compositor or the OpenGL→Metal
-	   translation layer resamples the backing store at sub-pixel offsets.
-	   GL_LINEAR blends adjacent texels into uniform gray, matching the
-	   SDL backend's appearance.  The trade-off is slightly softer edges
-	   on fine pixel-art details. */
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	GLenum glFilter = (textureFilter_ == TextureFilter::Nearest)
+		? GL_NEAREST : GL_LINEAR;
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
 		emuTexW_, emuTexH_,
 		GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
@@ -764,8 +768,12 @@ bool ImGuiBackend::createWindow(const char* title,
 	emuTexH_ = g_screenHeight;
 	glGenTextures(1, &emuTextureId_);
 	glBindTexture(GL_TEXTURE_2D, emuTextureId_);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	{
+		GLenum glFilter = (textureFilter_ == TextureFilter::Nearest)
+			? GL_NEAREST : GL_LINEAR;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, glFilter);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, glFilter);
+	}
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, emuTexW_, emuTexH_, 0,

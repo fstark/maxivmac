@@ -9,17 +9,19 @@
 #pragma once
 
 class EmulatorShell;
+class ImGuiBackend;
 enum class UIState;
 
 class ControlOverlay {
 public:
 	/* Draw the overlay. Returns true if a UIState change was requested. */
 	bool draw(UIState currentState, EmulatorShell* shell,
-		UIState& requestedState);
+		ImGuiBackend* backend, UIState& requestedState);
 
 private:
 	void drawMachineTab(EmulatorShell* shell);
-	void drawDisplayTab(UIState currentState, UIState& requestedState);
+	void drawDisplayTab(UIState currentState, ImGuiBackend* backend,
+		UIState& requestedState);
 	void drawSpeedTab();
 	void drawAdvancedTab(UIState currentState, UIState& requestedState);
 };

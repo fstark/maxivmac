@@ -20,7 +20,7 @@ extern bool g_runInBackground;
 extern bool g_wantNotAutoSlow;
 
 bool ControlOverlay::draw(UIState currentState, EmulatorShell* shell,
-	UIState& requestedState)
+	ImGuiBackend* backend, UIState& requestedState)
 {
 	bool stateChanged = false;
 	requestedState = currentState;
@@ -58,7 +58,7 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell* shell,
 				ImGui::EndTabItem();
 			}
 			if (ImGui::BeginTabItem("Display")) {
-				drawDisplayTab(currentState, requestedState);
+				drawDisplayTab(currentState, backend, requestedState);
 				if (requestedState != currentState)
 					stateChanged = true;
 				ImGui::EndTabItem();
@@ -136,7 +136,7 @@ void ControlOverlay::drawMachineTab(EmulatorShell* shell)
 /* ── Display tab ─────────────────────────────────────── */
 
 void ControlOverlay::drawDisplayTab(UIState currentState,
-	UIState& requestedState)
+	ImGuiBackend* backend, UIState& requestedState)
 {
 	ImGui::Spacing();
 	ImGui::Text("Zoom");
@@ -151,6 +151,20 @@ void ControlOverlay::drawDisplayTab(UIState currentState,
 	ImGui::SameLine();
 	if (ImGui::RadioButton("2x", magnified)) {
 		g_wantMagnify = true;
+	}
+
+	ImGui::Spacing();
+
+	/* Filter toggle */
+	ImGui::Text("Filter");
+	ImGui::SameLine(80);
+	bool isNearest = (backend->textureFilter() == TextureFilter::Nearest);
+	if (ImGui::RadioButton("Nearest", isNearest)) {
+		backend->setTextureFilter(TextureFilter::Nearest);
+	}
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Linear", !isNearest)) {
+		backend->setTextureFilter(TextureFilter::Linear);
 	}
 
 	ImGui::Spacing();

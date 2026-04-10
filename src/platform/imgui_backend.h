@@ -25,6 +25,9 @@ enum class UIState {
 	Developer,       // Running emulation + dockable debug tools
 };
 
+/* GL texture filter for the emulator viewport. */
+enum class TextureFilter { Nearest, Linear };
+
 class ImGuiBackend : public PlatformBackend {
 public:
 	ImGuiBackend() = default;
@@ -78,6 +81,10 @@ public:
 	/* Tool registry for developer mode */
 	ToolRegistry& getToolRegistry() { return toolRegistry_; }
 
+	/* GL texture filter */
+	void setTextureFilter(TextureFilter f);
+	TextureFilter textureFilter() const { return textureFilter_; }
+
 private:
 	EmulatorShell* shell_ = nullptr;
 	SDL_Window* window_ = nullptr;
@@ -91,6 +98,7 @@ private:
 	float emuViewH_ = 0;
 	bool relativeMouseMode_ = false;
 	bool emuViewportHovered_ = false;
+	TextureFilter textureFilter_ = TextureFilter::Linear;
 
 	/* UI state */
 	UIState uiState_ = UIState::ModelSelector;
