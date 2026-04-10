@@ -27,7 +27,7 @@
 	ReportAbnormalID unused 0x0A08 - 0x0AFF
 */
 
-#define VID_dolog 0
+#define VID_dolog 1
 
 /* Maximum number of modes (depth 0..5) */
 #define kMaxModes 6
@@ -115,6 +115,14 @@ bool VideoDevice::init()
 	s_currentDepth = maxDepth;
 	if (s_preferredDepth < 0)
 		s_preferredDepth = maxDepth;
+
+#if VID_dolog
+	dbglog_writelnNum("VideoDevice::init maxDepth", maxDepth);
+	dbglog_writelnNum("  width", width);
+	dbglog_writelnNum("  height", height);
+	dbglog_writelnNum("  vidROMSize", cfg.vidROMSize);
+	dbglog_writelnNum("  vidMemSize", cfg.vidMemSize);
+#endif
 
 	SlotROMWriter w(g_vidROM, cfg.vidROMSize);
 
@@ -214,6 +222,10 @@ bool VideoDevice::init()
 
 	/* --- Pad + trailer --- */
 	uint32_t usedSoFar = (uint32_t)w.pos() + 20;
+#if VID_dolog
+	dbglog_writelnNum("  ROM used bytes", (long)usedSoFar);
+	dbglog_writelnNum("  ROM modes built", maxDepth + 1);
+#endif
 	if (usedSoFar > cfg.vidROMSize) {
 		ReportAbnormalID(AbnormalID::kVIDEO_vidROMSize_too_small,
 			"vidROMSize too small");
@@ -483,17 +495,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #if VID_dolog
 						dbglog_WriteNote(
 							"Video_Access kCmndVideoControl, VidReset");
+						dbglog_writelnNum("  returning mode", Vid_GetMode());
 #endif
-						{
-							uint16_t mode = vidReset();
-							put_vm_word(csParam + VDPageInfo_csMode,
-								mode);
-							put_vm_word(csParam + VDPageInfo_csPage, 0);
-							put_vm_long(csParam + VDPageInfo_csBaseAddr,
-								VidBaseAddr);
-							FillScreenWithGrayPattern();
-							result = tMacErr::noErr;
-						}
+						put_vm_word(csParam + VDPageInfo_csMode,
+							Vid_GetMode());
+						put_vm_word(csParam + VDPageInfo_csPage, 0);
+						put_vm_long(csParam + VDPageInfo_csBaseAddr,
+							VidBaseAddr);
+						result = tMacErr::noErr;
 						break;
 					case 1: /* KillIO */
 #if VID_dolog
@@ -507,6 +516,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						dbglog_WriteNote(
 							"Video_Access kCmndVideoControl, "
 							"SetVidMode");
+						dbglog_writelnNum("  requested mode",
+							get_vm_word(csParam + VDPageInfo_csMode));
 #endif
 						if (0 != get_vm_word(
 							csParam + VDPageInfo_csPage))
@@ -877,7 +888,11 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 								csParam + VDVidParams_csDepthMode);
 							uint32_t vpPtr = get_vm_long(
 								csParam + VDVidParams_csVPBlockPtr);
-
+#if VID_dolog
+							dbglog_writelnNum("  displayModeID", displayModeID);
+							dbglog_writelnNum("  depthMode", depthMode);
+							dbglog_writelnNum("  s_maxDepth", s_maxDepth);
+#endif
 							int depth = depthMode - 0x80;
 							if (displayModeID != 1
 								|| depth < 0 || depth > s_maxDepth)
