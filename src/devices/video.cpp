@@ -23,6 +23,8 @@
 #include "devices/sony.h"
 #include "core/abnormal_ids.h"
 
+#include <cstring>
+
 /*
 	ReportAbnormalID unused 0x0A08 - 0x0AFF
 */
@@ -802,6 +804,99 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							result = tMacErr::noErr;
 						}
 						break;
+					case 10: /* SwitchMode (Display Manager 2.0) */
+#if VID_dolog
+						dbglog_WriteNote(
+							"Video_Access kCmndVideoControl, "
+							"SwitchMode");
+#endif
+						{
+							uint16_t mode = get_vm_word(
+								csParam + VDSwitchInfo_csMode);
+							uint32_t modeID = get_vm_long(
+								csParam + VDSwitchInfo_csData);
+							uint16_t page = get_vm_word(
+								csParam + VDSwitchInfo_csPage);
+#if VID_dolog
+							dbglog_writelnNum("  mode", mode);
+							dbglog_writelnNum("  displayModeID", modeID);
+							dbglog_writelnNum("  page", page);
+#endif
+							/* Write current base addr in case we fail */
+							put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
+								VidBaseAddr);
+
+							if (page != 0) {
+								result = tMacErr::paramErr;
+								break;
+							}
+
+							const ResolutionEntry* res = findResolution(modeID);
+							if (!res) {
+								result = tMacErr::paramErr;
+								break;
+							}
+
+							int newDepth = mode - 0x80;
+							if (newDepth < 0 || newDepth > s_maxDepth) {
+								result = tMacErr::paramErr;
+								break;
+							}
+
+							/* Validate VRAM fits */
+							uint32_t needBytes = (uint32_t)res->width
+								* res->height * (1 << newDepth) / 8;
+							if (needBytes > g_machine->config().vidMemSize) {
+								result = tMacErr::paramErr;
+								break;
+							}
+
+							bool resChanged =
+								(res->width != s_currentWidth ||
+								 res->height != s_currentHeight);
+
+							/* Update video state */
+							s_currentDepth = newDepth;
+							s_currentWidth = res->width;
+							s_currentHeight = res->height;
+							s_currentDisplayModeID = modeID;
+
+							/* Write through to DisplayState */
+							g_screenWidth = res->width;
+							g_screenHeight = res->height;
+							g_screenDepth = newDepth;
+							g_useColorMode = (newDepth > 0);
+							g_colorMappingChanged = true;
+
+							/* Reinit CLUT for indexed modes */
+							if (newDepth > 0 && newDepth < 4) {
+								int cs = clutSizeForDepth(newDepth);
+								CLUT_reds[0] = 0xFFFF;
+								CLUT_greens[0] = 0xFFFF;
+								CLUT_blues[0] = 0xFFFF;
+								CLUT_reds[cs - 1] = 0;
+								CLUT_greens[cs - 1] = 0;
+								CLUT_blues[cs - 1] = 0;
+							}
+
+							if (resChanged) {
+								s_resolutionChanged = true;
+								/* Reset screen compare buffer to
+								   force full redraw */
+								if (g_screenCompareBuff) {
+									uint32_t bufSz = (uint32_t)res->width
+										* res->height * (1 << newDepth) / 8;
+									std::memset(g_screenCompareBuff, 0xFF, bufSz);
+								}
+							}
+
+							FillScreenWithGrayPattern();
+
+							put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
+								VidBaseAddr);
+							result = tMacErr::noErr;
+						}
+						break;
 					case 16: /* SavePreferredConfiguration */
 #if VID_dolog
 						dbglog_WriteNote(
@@ -961,8 +1056,34 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, "
 							"GetModeTiming");
 #endif
-						/* Return timingApple_FixedRateSub for our single timing */
-						result = tMacErr::statusErr;
+						{
+							/* VDTimingInfo: csTimingMode at +0 contains
+							   the displayModeID.  We need to confirm it
+							   exists and return timing flags. */
+							uint32_t timingModeID = get_vm_long(
+								csParam + 0);
+							/* Offsets: +4 reserved, +8 csTimingFormat,
+							   +12 csTimingData, +16 csTimingFlags */
+							const ResolutionEntry* res =
+								findResolution(timingModeID);
+							if (!res) {
+								result = tMacErr::paramErr;
+							} else {
+								put_vm_long(csParam + 8,
+									0x6465636C); /* 'decl' */
+								put_vm_long(csParam + 12, 0);
+								/* Flags: mode valid (1), safe (2),
+								   shown in Monitors (8).
+								   Add default (4) if this is the
+								   preferred mode. */
+								uint32_t flags = 0x000B;
+								if ((int)timingModeID ==
+									s_preferredDisplayModeID)
+									flags |= 0x0004;
+								put_vm_long(csParam + 16, flags);
+								result = tMacErr::noErr;
+							}
+						}
 						break;
 					case 14: /* GetModeBaseAddress */
 #if VID_dolog

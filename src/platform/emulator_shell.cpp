@@ -20,6 +20,7 @@
 #include "platform/common/tick_timer.h"
 #include "platform/screen_convert.h"
 #include "platform/platform.h"
+#include "devices/video.h"
 
 #include <sys/stat.h>
 #include <cstdio>
@@ -493,6 +494,15 @@ bool EmulatorShell::isSpeedStopped() const
 
 void EmulatorShell::doneWithDrawingForTick()
 {
+	/* Check if the guest switched resolution via SwitchMode */
+	if (Vid_ResolutionChanged()) {
+		Vid_ClearResolutionChanged();
+		uint16_t newW = Vid_CurrentWidth();
+		uint16_t newH = Vid_CurrentHeight();
+		backend_->onResolutionChanged(newW, newH);
+		display_.screenChanged = true;
+	}
+
 	if (g_haveMouseMotion) {
 		AutoScrollScreen();
 	}
