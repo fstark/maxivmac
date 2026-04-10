@@ -112,10 +112,21 @@ bool VideoDevice::init()
 	uint16_t height = cfg.screenHeight;
 
 	s_maxDepth = maxDepth;
-	s_currentDepth = maxDepth;
-	g_useColorMode = (maxDepth > 0);
+
+	/*
+		Boot at the highest indexed (CLUT) depth, not a direct-color
+		mode.  Direct modes (16 bpp / 32 bpp) require QuickDraw 32-bit
+		support that the System only enables after the Slot Manager has
+		probed the card.  Booting straight into a direct mode hangs.
+		The user can switch to Thousands / Millions via Monitors once
+		the desktop is up.
+	*/
+	int bootDepth = (maxDepth >= 4) ? 3 : maxDepth;
+	s_currentDepth = bootDepth;
+	g_screenDepth = bootDepth;
+	g_useColorMode = (bootDepth > 0);
 	if (s_preferredDepth < 0)
-		s_preferredDepth = maxDepth;
+		s_preferredDepth = bootDepth;
 
 #if VID_dolog
 	dbglog_writelnNum("VideoDevice::init maxDepth", maxDepth);
@@ -249,12 +260,12 @@ bool VideoDevice::init()
 
 	ChecksumSlotROM();
 
-	/* Initialize CLUT with white at 0, black at end */
-	if (maxDepth > 0 && maxDepth < 4) {
+	/* Initialize CLUT for the boot depth (indexed modes only) */
+	if (bootDepth > 0 && bootDepth < 4) {
 		CLUT_reds[0] = 0xFFFF;
 		CLUT_greens[0] = 0xFFFF;
 		CLUT_blues[0] = 0xFFFF;
-		int clutEnd = clutSizeForDepth(maxDepth) - 1;
+		int clutEnd = clutSizeForDepth(bootDepth) - 1;
 		CLUT_reds[clutEnd] = 0;
 		CLUT_greens[clutEnd] = 0;
 		CLUT_blues[clutEnd] = 0;
@@ -415,29 +426,32 @@ void VideoDevice::reset()
 	vidReset();
 }
 
-/* Write a VPBlock to guest memory at guestPtr */
+/*
+	Write a VPBlock to guest memory at guestPtr.
+	Note: physBlockSize is a ROM sBlock header, NOT part of the
+	VPBlock struct.  The guest buffer starts at vpBaseOffset.
+*/
 static void writeVPBlockToGuest(int depth, uint16_t width,
 	uint16_t height, uint32_t guestPtr)
 {
 	VPBlock vp = VPBlock::forMode(depth, width, height);
 
-	put_vm_long(guestPtr + 0, vp.physBlockSize);
-	put_vm_long(guestPtr + 4, vp.baseOffset);
-	put_vm_word(guestPtr + 8, vp.rowBytes);
-	put_vm_word(guestPtr + 10, vp.boundsTop);
-	put_vm_word(guestPtr + 12, vp.boundsLeft);
-	put_vm_word(guestPtr + 14, vp.boundsBottom);
-	put_vm_word(guestPtr + 16, vp.boundsRight);
-	put_vm_word(guestPtr + 18, vp.version);
-	put_vm_word(guestPtr + 20, vp.packType);
-	put_vm_long(guestPtr + 22, vp.packSize);
-	put_vm_long(guestPtr + 26, vp.hRes);
-	put_vm_long(guestPtr + 30, vp.vRes);
-	put_vm_word(guestPtr + 34, vp.pixelType);
-	put_vm_word(guestPtr + 36, vp.pixelSize);
-	put_vm_word(guestPtr + 38, vp.cmpCount);
-	put_vm_word(guestPtr + 40, vp.cmpSize);
-	put_vm_long(guestPtr + 42, vp.planeBytes);
+	put_vm_long(guestPtr +  0, vp.baseOffset);
+	put_vm_word(guestPtr +  4, vp.rowBytes);
+	put_vm_word(guestPtr +  6, vp.boundsTop);
+	put_vm_word(guestPtr +  8, vp.boundsLeft);
+	put_vm_word(guestPtr + 10, vp.boundsBottom);
+	put_vm_word(guestPtr + 12, vp.boundsRight);
+	put_vm_word(guestPtr + 14, vp.version);
+	put_vm_word(guestPtr + 16, vp.packType);
+	put_vm_long(guestPtr + 18, vp.packSize);
+	put_vm_long(guestPtr + 22, vp.hRes);
+	put_vm_long(guestPtr + 26, vp.vRes);
+	put_vm_word(guestPtr + 30, vp.pixelType);
+	put_vm_word(guestPtr + 32, vp.pixelSize);
+	put_vm_word(guestPtr + 34, vp.cmpCount);
+	put_vm_word(guestPtr + 36, vp.cmpSize);
+	put_vm_long(guestPtr + 38, vp.planeBytes);
 }
 
 /*

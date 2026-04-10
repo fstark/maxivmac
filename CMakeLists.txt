@@ -235,3 +235,14 @@ if(MAXIVMAC_COVERAGE)
     target_link_options(maxivmac PRIVATE
         -fprofile-instr-generate -fcoverage-mapping)
 endif()
+
+# ---------------------------------------------------------------------------
+# Sanitizers (ASan + UBSan)
+# ---------------------------------------------------------------------------
+option(MAXIVMAC_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+if(MAXIVMAC_SANITIZE)
+    target_compile_options(maxivmac PRIVATE
+        -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(maxivmac PRIVATE
+        -fsanitize=address,undefined)
+endif()

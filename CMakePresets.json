@@ -54,6 +54,23 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Darwin"
             }
+        },
+        {
+            "name": "macos-asan",
+            "displayName": "macOS (Headless + ASan/UBSan)",
+            "description": "Headless backend with AddressSanitizer and UndefinedBehaviorSanitizer",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/bld/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "MAXIVMAC_BACKEND": "headless",
+                "MAXIVMAC_SANITIZE": "ON"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            }
         }
     ],
     "buildPresets": [
@@ -68,6 +85,10 @@
         {
             "name": "macos-coverage",
             "configurePreset": "macos-coverage"
+        },
+        {
+            "name": "macos-asan",
+            "configurePreset": "macos-asan"
         }
     ]
 }
