@@ -15,21 +15,8 @@
 #define UNUSED(p) (void)(p)
 #define UNUSED(p) (void)(p)
 
-/* Endian/alignment support */
-#ifndef BIG_ENDIAN_UNALIGNED
-#define BIG_ENDIAN_UNALIGNED 0
-#endif
-
-#ifndef LITTLE_ENDIAN_UNALIGNED
-#define LITTLE_ENDIAN_UNALIGNED 0
-#endif
-
 #ifndef HAVE_ASR
 #define HAVE_ASR 0
-#endif
-
-#ifndef HAVE_SWAP_UI5R
-#define HAVE_SWAP_UI5R 0
 #endif
 
 /* 64-bit integer types (for FPU emulation) */

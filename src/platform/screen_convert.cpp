@@ -163,15 +163,9 @@ void ConvertRectSlow(uint8_t* dest, int pitch, int bpp,
 					break;
 				case 3:
 					/* Slow 24-bpp mode */
-#if BIG_ENDIAN_UNALIGNED
-					bufp[0] = (pixel >> 16) & 0xff;
-					bufp[1] = (pixel >> 8) & 0xff;
-					bufp[2] = pixel & 0xff;
-#else
 					bufp[0] = pixel & 0xff;
 					bufp[1] = (pixel >> 8) & 0xff;
 					bufp[2] = (pixel >> 16) & 0xff;
-#endif
 					break;
 				case 4: /* 32-bpp */
 					*(uint32_t *)bufp = pixel;

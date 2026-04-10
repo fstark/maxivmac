@@ -1390,22 +1390,14 @@ static void DecodeSetSrcDst_RegB(uint32_t v, uint8_t ArgDat)
 {
 	uint32_t *p = &V_regs.regs[ArgDat];
 
-#if LITTLE_ENDIAN_UNALIGNED
-	*reinterpret_cast<uint8_t *>(p) = v;
-#else
 	*p = (*p & ~ 0xff) | ((v) & 0xff);
-#endif
 }
 
 static void DecodeSetSrcDst_RegW(uint32_t v, uint8_t ArgDat)
 {
 	uint32_t *p = &V_regs.regs[ArgDat];
 
-#if LITTLE_ENDIAN_UNALIGNED
-	*reinterpret_cast<uint16_t *>(p) = v;
-#else
 	*p = (*p & ~ 0xffff) | ((v) & 0xffff);
-#endif
 }
 
 static void DecodeSetSrcDst_RegL(uint32_t v, uint8_t ArgDat)
@@ -1651,22 +1643,14 @@ static void ArgSetDstRegBValue(uint32_t v)
 {
 	uint32_t *p = V_regs.ArgAddr.rga;
 
-#if LITTLE_ENDIAN_UNALIGNED
-	*reinterpret_cast<uint8_t *>(p) = v;
-#else
 	*p = (*p & ~ 0xff) | ((v) & 0xff);
-#endif
 }
 
 static void ArgSetDstRegWValue(uint32_t v)
 {
 	uint32_t *p = V_regs.ArgAddr.rga;
 
-#if LITTLE_ENDIAN_UNALIGNED
-	*reinterpret_cast<uint16_t *>(p) = v;
-#else
 	*p = (*p & ~ 0xffff) | ((v) & 0xffff);
-#endif
 }
 
 static void ArgSetDstRegLValue(uint32_t v)
@@ -3895,11 +3879,7 @@ static void DoCodeDBF()
 	uint32_t dstvalue = static_cast<uint32_t>(static_cast<int16_t>(*dstp));
 
 	--dstvalue;
-#if LITTLE_ENDIAN_UNALIGNED
-	*reinterpret_cast<uint16_t *>(dstp) = dstvalue;
-#else
 	*dstp = (*dstp & ~ 0xffff) | ((dstvalue) & 0xffff);
-#endif
 
 	if (static_cast<int32_t>(dstvalue) == -1) {
 		V_MaxCyclesToGo -= (14 * kCycleScale + 3 * RdAvgXtraCyc);
@@ -5642,11 +5622,7 @@ static void DoCodeEXTW()
 
 	HaveSetUpFlags();
 
-#if LITTLE_ENDIAN_UNALIGNED
-	*reinterpret_cast<uint16_t *>(dstp) = dstvalue;
-#else
 	*dstp = (*dstp & ~ 0xffff) | (dstvalue & 0xffff);
-#endif
 }
 
 static void DoCodeNegB()
