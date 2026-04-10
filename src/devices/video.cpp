@@ -248,10 +248,12 @@ bool VideoDevice::init()
 	/* Find the boot resolution — pick the classic entry matching
 	   the configured screen size, or default to 640×480 (ID 3). */
 	const ResolutionEntry* bootRes = nullptr;
+	int bootIndex = -1;
 	for (int i = 0; i < s_numResolutions; i++) {
 		if (s_resolutions[i].width == bootWidth &&
 			s_resolutions[i].height == bootHeight) {
 			bootRes = &s_resolutions[i];
+			bootIndex = i;
 			break;
 		}
 	}
@@ -259,6 +261,19 @@ bool VideoDevice::init()
 		/* Configured resolution not in table; use 640×480 */
 		bootRes = findResolution(3);
 		if (!bootRes) bootRes = &s_resolutions[0];
+		for (int i = 0; i < s_numResolutions; i++)
+			if (&s_resolutions[i] == bootRes) { bootIndex = i; break; }
+	}
+
+	/* Move boot resolution to front of table so its sResource
+	   (ID 0x80) is the first video functional sResource in the
+	   directory.  The Slot Manager boots from the first video
+	   sResource when PRAM has no saved preference. */
+	if (bootIndex > 0) {
+		ResolutionEntry tmp = s_resolutions[0];
+		s_resolutions[0] = s_resolutions[bootIndex];
+		s_resolutions[bootIndex] = tmp;
+		bootRes = &s_resolutions[0];
 	}
 
 	s_currentWidth = bootRes->width;
