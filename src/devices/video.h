@@ -20,6 +20,14 @@ public:
 	void extnVideoAccess(uint32_t p);
 };
 
+/* Set host desktop size before VideoDevice::init() so host-derived
+   resolutions (displayModeIDs 100, 101) can be added to the table. */
+void Vid_SetHostDesktop(uint16_t w, uint16_t h);
+
+/* Return the maximum resolution dimensions across all resolutions
+   (classic + host-derived).  Must be called after Vid_SetHostDesktop. */
+void Vid_MaxResolutionSize(uint32_t* outW, uint32_t* outH);
+
 /* Check/clear the resolution-changed flag (set by SwitchMode). */
 bool Vid_ResolutionChanged();
 void Vid_ClearResolutionChanged();

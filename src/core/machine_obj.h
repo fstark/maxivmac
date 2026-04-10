@@ -30,6 +30,7 @@ public:
 
 	// Accessors
 	const MachineConfig& config() const { return config_; }
+	MachineConfig& configMut() { return config_; }
 	WireBus&       wireBus()       { return wireBus_; }
 	ICTScheduler&  ict()           { return ict_; }
 

@@ -59,6 +59,10 @@ static uint16_t s_currentHeight = 480;
 /* Flag for host to detect resolution change */
 static bool s_resolutionChanged = false;
 
+/* Host desktop size — set by platform layer before init() */
+static uint16_t s_hostDesktopW = 0;
+static uint16_t s_hostDesktopH = 0;
+
 static const uint8_t VidDrvr_contents[] = {
 0x4C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 0x00, 0x2A, 0x00, 0x00, 0x00, 0xE2, 0x00, 0xEC,
@@ -157,7 +161,10 @@ static int maxDepthForResolution(uint16_t w, uint16_t h, uint32_t vidMemSize)
 	return best;
 }
 
-/* Build the classic resolution table.  Called during init(). */
+/* Build the classic resolution table.  Called during init().
+   If host desktop dimensions were set via Vid_SetHostDesktop(),
+   append host-derived resolutions (IDs 100, 101) provided they
+   differ from the classic set and fit within 15 MB VRAM. */
 static void buildResolutionTable()
 {
 	static const struct { uint32_t id; uint16_t w, h; } kClassic[] = {
@@ -174,6 +181,48 @@ static void buildResolutionTable()
 		s_resolutions[s_numResolutions].displayModeID = kClassic[i].id;
 		s_resolutions[s_numResolutions].width  = kClassic[i].w;
 		s_resolutions[s_numResolutions].height = kClassic[i].h;
+		s_numResolutions++;
+	}
+
+	/* Host-derived resolutions: full desktop (ID 100) and half (ID 101).
+	   Only added if they differ from every classic entry (±8 px tolerance)
+	   and their framebuffer at 32 bpp fits in 15 MB (NuBus super-slot
+	   limit before ROM space). */
+	static const uint32_t kMaxVRAM = 15u * 1024 * 1024;
+	struct { uint32_t id; uint16_t w, h; } hostRes[2];
+	int hostCount = 0;
+
+	if (s_hostDesktopW > 0 && s_hostDesktopH > 0) {
+		hostRes[0] = { 100, s_hostDesktopW, s_hostDesktopH };
+		hostRes[1] = { 101, (uint16_t)(s_hostDesktopW / 2),
+		               (uint16_t)(s_hostDesktopH / 2) };
+		hostCount = 2;
+	}
+
+	for (int hi = 0; hi < hostCount; hi++) {
+		uint16_t hw = hostRes[hi].w, hh = hostRes[hi].h;
+		if (hw < 512 || hh < 342) continue; /* too small */
+
+		/* Check VRAM cap at 32 bpp */
+		uint32_t fb32 = (uint32_t)hw * hh * 4;
+		if (fb32 > kMaxVRAM) continue;
+
+		/* Check for near-duplicate of a classic entry */
+		bool dup = false;
+		for (int ci = 0; ci < s_numResolutions; ci++) {
+			int dw = (int)hw - (int)s_resolutions[ci].width;
+			int dh = (int)hh - (int)s_resolutions[ci].height;
+			if (dw >= -8 && dw <= 8 && dh >= -8 && dh <= 8) {
+				dup = true;
+				break;
+			}
+		}
+		if (dup) continue;
+
+		if (s_numResolutions >= kMaxResolutions) break;
+		s_resolutions[s_numResolutions].displayModeID = hostRes[hi].id;
+		s_resolutions[s_numResolutions].width  = hw;
+		s_resolutions[s_numResolutions].height = hh;
 		s_numResolutions++;
 	}
 }
@@ -453,6 +502,29 @@ uint16_t VideoDevice::vidReset()
 	s_currentDepth = defDepth;
 	g_screenDepth = defDepth;
 	g_useColorMode = (defDepth > 0);
+
+	/* Restore preferred resolution (pre-DM2 reboot path).
+	   On older Systems the user selects a resolution in Monitors,
+	   then reboots; the System calls GetPreferredConfiguration
+	   on startup but the video card must also boot into the
+	   preferred resolution. */
+	if (s_preferredDisplayModeID >= 0) {
+		const ResolutionEntry* res =
+			findResolution((uint32_t)s_preferredDisplayModeID);
+		if (res) {
+			uint32_t needBytes = (uint32_t)res->width * res->height
+				* (1 << defDepth) / 8;
+			if (needBytes <= g_machine->config().vidMemSize) {
+				s_currentWidth = res->width;
+				s_currentHeight = res->height;
+				s_currentDisplayModeID = (uint32_t)s_preferredDisplayModeID;
+				g_screenWidth = res->width;
+				g_screenHeight = res->height;
+				s_resolutionChanged = true;
+			}
+		}
+	}
+
 	return 0x80 + defDepth;
 }
 
@@ -1220,4 +1292,28 @@ uint16_t Vid_CurrentWidth()
 uint16_t Vid_CurrentHeight()
 {
 	return s_currentHeight;
+}
+
+void Vid_SetHostDesktop(uint16_t w, uint16_t h)
+{
+	s_hostDesktopW = w;
+	s_hostDesktopH = h;
+}
+
+void Vid_MaxResolutionSize(uint32_t* outW, uint32_t* outH)
+{
+	/* Classic maximums */
+	uint32_t maxW = 1152, maxH = 870;
+
+	/* Include host-derived if set */
+	if (s_hostDesktopW > 0 && s_hostDesktopH > 0) {
+		static const uint32_t kMaxVRAM = 15u * 1024 * 1024;
+		if ((uint32_t)s_hostDesktopW * s_hostDesktopH * 4 <= kMaxVRAM) {
+			if (s_hostDesktopW > maxW) maxW = s_hostDesktopW;
+			if (s_hostDesktopH > maxH) maxH = s_hostDesktopH;
+		}
+	}
+
+	*outW = maxW;
+	*outH = maxH;
 }

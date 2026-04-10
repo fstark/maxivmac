@@ -181,6 +181,30 @@ bool EmulatorShell::initMachine()
 	if (!s_machineRom.empty())
 		romPath_ = const_cast<char*>(s_machineRom.c_str());
 
+	/* Query host desktop size (SDL is initialized by initPlatform)
+	   and inform the video subsystem so it can add host-derived
+	   resolutions.  Then bump VRAM if the host desktop at 32 bpp
+	   exceeds the current allocation. */
+	if (g_machine->config().emVidCard) {
+		PlatformDisplayBounds db;
+		if (backend_->getDisplayBounds(&db) && db.w > 0 && db.h > 0) {
+			Vid_SetHostDesktop((uint16_t)db.w, (uint16_t)db.h);
+		}
+		uint32_t maxW, maxH;
+		Vid_MaxResolutionSize(&maxW, &maxH);
+		uint32_t fbSize = maxW * maxH * 4;
+		/* Round up to next power of two */
+		fbSize--;
+		fbSize |= fbSize >> 1;
+		fbSize |= fbSize >> 2;
+		fbSize |= fbSize >> 4;
+		fbSize |= fbSize >> 8;
+		fbSize |= fbSize >> 16;
+		fbSize++;
+		if (fbSize > g_machine->config().vidMemSize)
+			g_machine->configMut().vidMemSize = fbSize;
+	}
+
 	if (!allocMyMemory()) return false;
 	if (!scanCommandLine()) return false;
 	if (!LoadMacRom(romPath_, d_arg_, appParent_, pref_dir_)) return false;
@@ -197,10 +221,11 @@ bool EmulatorShell::initMachine()
 	if (!ProgramMain()) return false;
 
 	/* Allocate ARGB framebuffer for screen conversion.
-	   Size for the largest classic resolution (1152×870) at 32 bpp
-	   so resolution switches don't need reallocation. */
+	   Size for the largest resolution (classic + host-derived) at
+	   32 bpp so resolution switches don't need reallocation. */
 	{
-		const uint32_t maxW = 1152, maxH = 870;
+		uint32_t maxW, maxH;
+		Vid_MaxResolutionSize(&maxW, &maxH);
 		uint32_t allocW = (vMacScreenWidth > (long)maxW)
 			? (uint32_t)vMacScreenWidth : maxW;
 		uint32_t allocH = (vMacScreenHeight > (long)maxH)
@@ -847,7 +872,8 @@ bool EmulatorShell::allocMyMemory()
 	   at the deepest mode (32 bpp) so resolution switches don't
 	   need reallocation. */
 	{
-		const uint32_t maxW = 1152, maxH = 870;
+		uint32_t maxW, maxH;
+		Vid_MaxResolutionSize(&maxW, &maxH);
 		uint32_t allocW = ((uint32_t)g_screenWidth > maxW)
 			? (uint32_t)g_screenWidth : maxW;
 		uint32_t allocH = ((uint32_t)g_screenHeight > maxH)
