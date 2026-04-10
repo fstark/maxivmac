@@ -25,6 +25,17 @@ void BuildClutTable(int bpp);
    Fills clut32[256] in the DisplayState.  For use with ConvertScreen(). */
 void BuildPalette();
 
+/* New unified screen converter (replaces ConvertRect + ConvertRectSlow).
+   Converts the full Mac framebuffer to ARGB8888.
+   palette is clut32[] for indexed depths (0−3), or nullptr for direct (4−5). */
+void ConvertScreen(
+	const uint8_t* src,
+	uint32_t*      dst,
+	const uint32_t* palette,
+	int depth,
+	int width,
+	int height);
+
 /* Fast-path dispatcher: selects the correct depth-copy based on
    vMacScreenDepth, g_useColorMode, and bpp. */
 void ConvertRect(int bpp, int16_t top, int16_t left, int16_t bottom, int16_t right);

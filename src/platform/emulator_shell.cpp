@@ -200,6 +200,9 @@ bool EmulatorShell::initMachine()
 		calloc(vMacScreenWidth * vMacScreenHeight * 4, 1));
 	if (!argbBuffer_) return false;
 
+	/* Build initial palette (B&W default for non-colour models) */
+	BuildPalette();
+
 	machineInited_ = true;
 	return true;
 }
@@ -490,37 +493,33 @@ void EmulatorShell::doneWithDrawingForTick()
 void EmulatorShell::drawChangesAndClear()
 {
 	if (display_.screenChanged) {
-		convertFramebuffer(0, 0, vMacScreenHeight, vMacScreenWidth);
+		int depth = (display_.useColorMode && vMacScreenDepth > 0)
+			? vMacScreenDepth : 0;
+
+		if (depth < 4)
+			BuildPalette();
+
+		const uint32_t* pal = (depth < 4) ? display_.clut32 : nullptr;
+
+		ConvertScreen(g_screenCompareBuff,
+			reinterpret_cast<uint32_t*>(argbBuffer_),
+			pal, depth, vMacScreenWidth, vMacScreenHeight);
+
 		display_.screenChanged = false;
 		framebufferDirty_ = true;
 	}
 }
 
-void EmulatorShell::convertFramebuffer(uint16_t top, uint16_t left,
-	uint16_t bottom, uint16_t right)
+void EmulatorShell::convertFramebuffer(uint16_t /*top*/, uint16_t /*left*/,
+	uint16_t /*bottom*/, uint16_t /*right*/)
 {
-	if (useFullScreen_) {
-		if (top < g_viewVStart) top = g_viewVStart;
-		if (left < g_viewHStart) left = g_viewHStart;
-		if (bottom > g_viewVStart + g_viewVSize)
-			bottom = g_viewVStart + g_viewVSize;
-		if (right > g_viewHStart + g_viewHSize)
-			right = g_viewHStart + g_viewHSize;
-		if ((top >= bottom) || (left >= right)) return;
-	}
+	int depth = (display_.useColorMode && vMacScreenDepth > 0)
+		? vMacScreenDepth : 0;
+	const uint32_t* pal = (depth < 4) ? display_.clut32 : nullptr;
 
-	int bpp = 4; /* ARGB8888 always */
-	uint32_t ExpectedPitch = vMacScreenWidth * bpp;
-
-	display_.scalingBuff = argbBuffer_;
-
-	if (vMacScreenDepth <= 3 || !display_.useColorMode) {
-		BuildClutTable(bpp);
-		ConvertRect(bpp, top, left, bottom, right);
-	} else {
-		ConvertRectSlow(argbBuffer_, ExpectedPitch, bpp,
-			top, left, bottom, right);
-	}
+	ConvertScreen(g_screenCompareBuff,
+		reinterpret_cast<uint32_t*>(argbBuffer_),
+		pal, depth, vMacScreenWidth, vMacScreenHeight);
 }
 
 /* --- Mouse --- */
