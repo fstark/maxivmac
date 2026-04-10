@@ -48,9 +48,9 @@ void BuildClutTable(int bpp)
 		for (k = PixPerByte; --k >= 0; ) {
 
 			if (g_useColorMode && vMacScreenDepth > 0 && vMacScreenDepth < 4) {
+				int pixelMask = (1 << (1 << vMacScreenDepth)) - 1;
 				v = CLUT_pixel[
-					(vMacScreenDepth == 3) ? i :
-					((i >> (k << vMacScreenDepth)) & (CLUT_size - 1))
+					(i >> (k << vMacScreenDepth)) & pixelMask
 				];
 			} else {
 				v = BWLUT_pixel[(i >> k) & 1];

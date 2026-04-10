@@ -73,6 +73,11 @@ static bool parseScreenSpec(const char* s, uint16_t& w, uint16_t& h, uint8_t& d)
 {
 	unsigned int tw, th, td;
 	if (sscanf(s, "%ux%ux%u", &tw, &th, &td) == 3) {
+		// Validate: depth must be a power of 2 in {1,2,4,8,16,32}
+		if (td == 0 || (td & (td - 1)) != 0 || td > 32) {
+			fprintf(stderr, "Invalid bit depth %u: must be 1, 2, 4, 8, 16, or 32\n", td);
+			return false;
+		}
 		w = (uint16_t)tw;
 		h = (uint16_t)th;
 		// Convert bpp to log2: 1→0, 2→1, 4→2, 8→3, 16→4, 32→5
@@ -357,6 +362,27 @@ MachineConfig BuildMachineConfig(const LaunchConfig& launch)
 			config.includeVidMem = true;
 			config.vidMemSize = fbSize;
 		}
+	}
+
+	/*
+		Mac II family: ensure vidMemSize is large enough for the
+		configured screen dimensions and depth (the model default
+		is 512 KB, which overflows at 640x480x16 and above).
+	*/
+	if (config.includeVidMem && config.isIIFamily()) {
+		uint32_t fbSize =
+			(((uint32_t)config.screenWidth * config.screenHeight
+				<< config.screenDepth) + 7) >> 3;
+		/* Round up to next power of two */
+		fbSize--;
+		fbSize |= fbSize >> 1;
+		fbSize |= fbSize >> 2;
+		fbSize |= fbSize >> 4;
+		fbSize |= fbSize >> 8;
+		fbSize |= fbSize >> 16;
+		fbSize++;
+		if (fbSize > config.vidMemSize)
+			config.vidMemSize = fbSize;
 	}
 
 	return config;
