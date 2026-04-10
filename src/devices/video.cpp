@@ -113,6 +113,7 @@ bool VideoDevice::init()
 
 	s_maxDepth = maxDepth;
 	s_currentDepth = maxDepth;
+	g_useColorMode = (maxDepth > 0);
 	if (s_preferredDepth < 0)
 		s_preferredDepth = maxDepth;
 
