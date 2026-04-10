@@ -14,12 +14,10 @@
 #include "core/common.h"
 
 #include "devices/video.h"
+#include "devices/slot_rom.h"
 #include "core/wire_bus.h"
 #include "core/machine_obj.h"
 #include "devices/via2.h"
-
-
-
 
 #include "cpu/m68k.h"
 #include "devices/sony.h"
@@ -30,6 +28,14 @@
 */
 
 #define VID_dolog 0
+
+/* Maximum number of modes (depth 0..5) */
+#define kMaxModes 6
+
+/* Current depth and configured max depth (set during init) */
+static int s_currentDepth = 0;
+static int s_maxDepth     = 0;
+static int s_preferredDepth = -1; /* -1 = use configured depth */
 
 static const uint8_t VidDrvr_contents[] = {
 0x4C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -84,310 +90,161 @@ static void ChecksumSlotROM()
 	do_put_mem_long(p - 12, crc);
 }
 
-static uint8_t * pPatch;
-
-static void PatchAByte(uint8_t v)
+/* Return the CLUT size for a given depth (0 for direct modes) */
+static int clutSizeForDepth(int depth)
 {
-	*pPatch++ = v;
-}
-
-static void PatchAWord(uint16_t v)
-{
-	PatchAByte(v >> 8);
-	PatchAByte(v & 0x00FF);
-}
-
-static void PatchALong(uint32_t v)
-{
-	PatchAWord(v >> 16);
-	PatchAWord(v & 0x0000FFFF);
-}
-
-
-static void PatchAOSLstEntry(uint8_t Id, uint8_t * Offset)
-{
-	PatchALong((Id << 24) | ((Offset - pPatch) & 0x00FFFFFF));
-}
-
-static uint8_t * ReservePatchOSLstEntry()
-{
-	uint8_t * v = pPatch;
-	pPatch += 4;
-	return v;
-}
-
-static void PatchAReservedOSLstEntry(uint8_t * p, uint8_t Id)
-{
-	uint8_t * pPatchSave = pPatch;
-	pPatch = p;
-	PatchAOSLstEntry(Id, pPatchSave);
-	pPatch = pPatchSave;
-}
-
-static void PatchADatLstEntry(uint8_t Id, uint32_t Data)
-{
-	PatchALong((Id << 24) | (Data & 0x00FFFFFF));
-}
-
-static void PatchAnEndOfLst()
-{
-	PatchADatLstEntry(0xFF /* endOfList */, 0x00000000);
+	if (depth <= 0) return 2;
+	if (depth >= 4) return 0; /* direct mode, no CLUT */
+	return 1 << (1 << depth);
 }
 
 /*
-	Build the Mac II slot g_rom image in g_vidROM.
+	Build the Mac II slot ROM image in g_vidROM.
 	Constructs sResource directory, board/video type entries,
-	video driver code, and mode parameter blocks for mono
-	and (optionally) color modes.
+	video driver code, and mode parameter blocks for all
+	depths from 0 (1 bpp) through maxDepth.
 */
- bool VideoDevice::init()
+bool VideoDevice::init()
 {
-	int i;
-	uint32_t UsedSoFar;
+	const auto& cfg = g_machine->config();
+	int maxDepth = cfg.screenDepth;
+	uint16_t width = cfg.screenWidth;
+	uint16_t height = cfg.screenHeight;
 
-	uint8_t * pAt_sRsrcDir;
-	uint8_t * pTo_sRsrc_Board;
-	uint8_t * pTo_BoardType;
-	uint8_t * pTo_BoardName;
-	uint8_t * pTo_VenderInfo;
-	uint8_t * pTo_VendorID;
-	uint8_t * pTo_RevLevel;
-	uint8_t * pTo_PartNum;
-	uint8_t * pTo_sRsrc_Video;
-	uint8_t * pTo_VideoType;
-	uint8_t * pTo_VideoName;
-	uint8_t * pTo_MinorBase;
-	uint8_t * pTo_MinorLength;
-	uint8_t * pTo_VidDrvrDir;
-	uint8_t * pTo_sMacOS68020;
-	uint8_t * pTo_OneBitMode;
-	uint8_t * pTo_OneVidParams;
-	uint8_t * pTo_ColorBitMode = nullptr;
-	uint8_t * pTo_ColorVidParams = nullptr;
+	s_maxDepth = maxDepth;
+	s_currentDepth = maxDepth;
+	if (s_preferredDepth < 0)
+		s_preferredDepth = maxDepth;
 
-	pPatch = g_vidROM;
+	SlotROMWriter w(g_vidROM, cfg.vidROMSize);
 
-	pAt_sRsrcDir = pPatch;
-	pTo_sRsrc_Board = ReservePatchOSLstEntry();
-	pTo_sRsrc_Video = ReservePatchOSLstEntry();
-	PatchAnEndOfLst();
+	/* --- sResource directory --- */
+	size_t sRsrcDir = w.pos();
+	auto rBoard = w.reserve();
+	auto rVideo = w.reserve();
+	w.writeEndOfList();
 
-	PatchAReservedOSLstEntry(pTo_sRsrc_Board, 0x01 /* sRsrc_Board */);
-	pTo_BoardType = ReservePatchOSLstEntry();
-	pTo_BoardName = ReservePatchOSLstEntry();
-	PatchADatLstEntry(0x20 /* BoardId */, 0x0000764D);
-		/* 'vM', for Mini vMac */
-	pTo_VenderInfo = ReservePatchOSLstEntry();
-	PatchAnEndOfLst();
+	/* --- Board sResource --- */
+	w.patchOffset(rBoard, 0x01);
+	auto rBoardType = w.reserve();
+	auto rBoardName = w.reserve();
+	w.writeDataEntry(0x20, 0x00764D);  /* BoardId: 'vM' */
+	auto rVendorInfo = w.reserve();
+	w.writeEndOfList();
 
-	PatchAReservedOSLstEntry(pTo_BoardType, 0x01 /* sRsrcType */);
-	PatchAWord(0x0001);
-	PatchAWord(0x0000);
-	PatchAWord(0x0000);
-	PatchAWord(0x0000);
+	w.patchOffset(rBoardType, 0x01);
+	w.writeWord(0x0001);  /* catDisplay */
+	w.writeWord(0x0000);
+	w.writeWord(0x0000);
+	w.writeWord(0x0000);
 
-	PatchAReservedOSLstEntry(pTo_BoardName, 0x02 /* sRsrcName */);
-	/*
-		'Mini vMac video card' as ascii c string
-		(null terminated), and
-		zero padded to end aligned long.
-	*/
-	PatchALong(0x4D696E69);
-	PatchALong(0x20764D61);
-	PatchALong(0x63207669);
-	PatchALong(0x64656F20);
-	PatchALong(0x63617264);
-	PatchALong(0x00000000);
+	w.patchOffset(rBoardName, 0x02);
+	w.writeString("maxivmac video card");
 
-	PatchAReservedOSLstEntry(pTo_VenderInfo, 0x24 /* vendorInfo */);
+	/* --- Vendor info --- */
+	w.patchOffset(rVendorInfo, 0x24);
+	auto rVendorID = w.reserve();
+	auto rRevLevel = w.reserve();
+	auto rPartNum  = w.reserve();
+	w.writeEndOfList();
 
-	pTo_VendorID = ReservePatchOSLstEntry();
-	pTo_RevLevel = ReservePatchOSLstEntry();
-	pTo_PartNum = ReservePatchOSLstEntry();
-	PatchAnEndOfLst();
+	w.patchOffset(rVendorID, 0x01);
+	w.writeString("maxivmac");
 
-	PatchAReservedOSLstEntry(pTo_VendorID, 0x01 /* vendorId */);
-	/*
-		'Paul C. Pratt' as ascii c string
-		(null terminated), and
-		zero padded to end aligned long.
-	*/
-	PatchALong(0x5061756C);
-	PatchALong(0x20432E20);
-	PatchALong(0x50726174);
-	PatchALong(0x74000000);
+	w.patchOffset(rRevLevel, 0x03);
+	w.writeString("2.0");
 
-	PatchAReservedOSLstEntry(pTo_RevLevel, 0x03 /* revLevel */);
-	/*
-		'1.0' as ascii c string
-		(null terminated), and
-		zero padded to end aligned long.
-	*/
-	PatchALong(0x312E3000);
+	w.patchOffset(rPartNum, 0x04);
+	w.writeString("MVMv-1");
 
-	PatchAReservedOSLstEntry(pTo_PartNum, 0x04 /* partNum */);
-	/*
-		'TFB-1' as ascii c string
-		(null terminated), and
-		zero padded to end aligned long.
-	*/
-	PatchALong(0x5446422D);
-	PatchALong(0x31000000);
+	/* --- Video sResource --- */
+	w.patchOffset(rVideo, 0x80);
 
-	PatchAReservedOSLstEntry(pTo_sRsrc_Video, 0x80 /* sRsrc_Video */);
+	auto rVideoType = w.reserve();
+	auto rVideoName = w.reserve();
+	auto rVidDrvrDir = w.reserve();
+	w.writeDataEntry(0x08, 0x00000001);  /* sRsrcHWDevId */
+	auto rMinorBase   = w.reserve();
+	auto rMinorLength = w.reserve();
 
-	pTo_VideoType = ReservePatchOSLstEntry();
-	pTo_VideoName = ReservePatchOSLstEntry();
-	pTo_VidDrvrDir = ReservePatchOSLstEntry();
-	PatchADatLstEntry(0x08 /* sRsrcHWDevId */, 0x00000001);
-	pTo_MinorBase = ReservePatchOSLstEntry();
-	pTo_MinorLength = ReservePatchOSLstEntry();
-	pTo_OneBitMode = ReservePatchOSLstEntry();
-	if (0 != vMacScreenDepth) {
-		if (g_colorModeWorks) {
-			pTo_ColorBitMode = ReservePatchOSLstEntry();
-		}
-	}
-	PatchAnEndOfLst();
+	/* Reserve one entry per mode (0x80 + depth) */
+	size_t rModes[kMaxModes];
+	for (int d = 0; d <= maxDepth; d++)
+		rModes[d] = w.reserve();
+	w.writeEndOfList();
 
-	PatchAReservedOSLstEntry(pTo_VideoType, 0x01 /* sRsrcType */);
+	w.patchOffset(rVideoType, 0x01);
+	w.writeWord(0x0003);  /* catDisplay */
+	w.writeWord(0x0001);  /* typVideo */
+	w.writeWord(0x0001);  /* drSwApple */
+	w.writeWord(0x0001);  /* drHwTFB */
 
-	PatchAWord(0x0003); /* catDisplay */
-	PatchAWord(0x0001); /* typVideo */
-	PatchAWord(0x0001); /* drSwApple */
-	PatchAWord(0x0001); /* drHwTFB */
+	w.patchOffset(rVideoName, 0x02);
+	w.writeString("Display_Video_Apple_TFB");
 
-	PatchAReservedOSLstEntry(pTo_VideoName, 0x02 /* sRsrcName */);
-	/*
-		'Display_Video_Apple_TFB' as ascii c string
-		(null terminated), and
-		zero padded to end aligned long.
-	*/
-	PatchALong(0x44697370);
-	PatchALong(0x6C61795F);
-	PatchALong(0x56696465);
-	PatchALong(0x6F5F4170);
-	PatchALong(0x706C655F);
-	PatchALong(0x54464200);
+	w.patchOffset(rMinorBase, 0x0A);
+	w.writeLong(0x00000000);
 
-	PatchAReservedOSLstEntry(pTo_MinorBase, 0x0A /* MinorBaseOS */);
-	PatchALong(0x00000000);
+	w.patchOffset(rMinorLength, 0x0B);
+	w.writeLong(cfg.vidMemSize);
 
-	PatchAReservedOSLstEntry(pTo_MinorLength, 0x0B /* MinorLength */);
-	PatchALong(g_machine->config().vidMemSize);
+	/* --- Driver directory --- */
+	w.patchOffset(rVidDrvrDir, 0x04);
+	auto rDriverEntry = w.reserve();
+	w.writeEndOfList();
 
+	w.patchOffset(rDriverEntry, 0x02);  /* sMacOS68020 */
+	w.writeLong(4 + sizeof(VidDrvr_contents) + 8);
+	w.writeBytes(VidDrvr_contents, sizeof(VidDrvr_contents));
+	w.writeWord(kcom_callcheck);
+	w.writeWord(kExtnVideo);
+	w.writeLong(cfg.extnBlockBase);
 
-	PatchAReservedOSLstEntry(pTo_VidDrvrDir, 0x04 /* sRsrcDrvrDir */);
-	pTo_sMacOS68020 = ReservePatchOSLstEntry();
-	PatchAnEndOfLst();
+	/* --- Mode entries and VPBlocks --- */
+	for (int d = 0; d <= maxDepth; d++) {
+		w.patchOffset(rModes[d], 0x80 + d);
+		auto rVP = w.reserve();
+		w.writeDataEntry(0x03, 0x00000001);  /* mPageCnt = 1 */
+		w.writeDataEntry(0x04, (d < 4) ? 0x00000000 : 0x00000002); /* mDevType */
+		w.writeEndOfList();
 
-	PatchAReservedOSLstEntry(pTo_sMacOS68020, 0x02 /* sMacOS68020 */);
-
-	PatchALong(4 + sizeof(VidDrvr_contents) + 8);
-	MoveBytes(const_cast<uint8_t *>(VidDrvr_contents),
-		pPatch, sizeof(VidDrvr_contents));
-	pPatch += sizeof(VidDrvr_contents);
-	PatchAWord(kcom_callcheck);
-	PatchAWord(kExtnVideo);
-	PatchALong(g_machine->config().extnBlockBase);
-
-	PatchAReservedOSLstEntry(pTo_OneBitMode, 0x80 /* oneBitMode */);
-	pTo_OneVidParams = ReservePatchOSLstEntry();
-	PatchADatLstEntry(0x03 /* mVidParams */, 0x00000001);
-	PatchADatLstEntry(0x04 /* mDevType */, 0x00000000);
-	PatchAnEndOfLst();
-
-	PatchAReservedOSLstEntry(pTo_OneVidParams, 0x01 /* mVidParams */);
-	PatchALong(0x0000002E); /* physical Block Size */
-	PatchALong(0x00000000); /* defmBaseOffset */
-	PatchAWord(vMacScreenWidth / 8);
-		/* (Bounds.R-Bounds.L)*PixelSize/8 */
-	PatchAWord(0x0000); /* Bounds.T */
-	PatchAWord(0x0000); /* Bounds.L */
-	PatchAWord(vMacScreenHeight); /* Bounds.B */
-	PatchAWord(vMacScreenWidth); /* Bounds.R */
-	PatchAWord(0x0000); /* bmVersion */
-	PatchAWord(0x0000); /* packType not used */
-	PatchALong(0x00000000); /* packSize not used */
-	PatchALong(0x00480000); /* bmHRes */
-	PatchALong(0x00480000); /* bmVRes */
-	PatchAWord(0x0000); /* bmPixelType */
-	PatchAWord(0x0001); /* bmPixelSize */
-	PatchAWord(0x0001); /* bmCmpCount */
-	PatchAWord(0x0001); /* bmCmpSize */
-	PatchALong(0x00000000); /* bmPlaneBytes */
-
-	if (0 != vMacScreenDepth) {
-		if (g_colorModeWorks) {
-
-			PatchAReservedOSLstEntry(pTo_ColorBitMode, 0x81);
-			pTo_ColorVidParams = ReservePatchOSLstEntry();
-			PatchADatLstEntry(0x03 /* mVidParams */, 0x00000001);
-			PatchADatLstEntry(0x04 /* mDevType */,
-				(vMacScreenDepth < 4) ? 0x00000000 : 0x00000002);
-				/* 2 for direct devices, according to Basilisk II */
-			PatchAnEndOfLst();
-
-			PatchAReservedOSLstEntry(pTo_ColorVidParams, 0x01);
-			PatchALong(0x0000002E); /* physical Block Size */
-			PatchALong(0x00000000); /* defmBaseOffset */
-			PatchAWord(vMacScreenByteWidth);
-			PatchAWord(0x0000); /* Bounds.T */
-			PatchAWord(0x0000); /* Bounds.L */
-			PatchAWord(vMacScreenHeight); /* Bounds.B */
-			PatchAWord(vMacScreenWidth); /* Bounds.R */
-			PatchAWord(0x0000); /* bmVersion */
-			PatchAWord(0x0000); /* packType not used */
-			PatchALong(0x00000000); /* packSize not used */
-			PatchALong(0x00480000); /* bmHRes */
-			PatchALong(0x00480000); /* bmVRes */
-			PatchAWord((vMacScreenDepth < 4) ? 0x0000 : 0x0010);
-				/* bmPixelType */
-			PatchAWord(1 << vMacScreenDepth); /* bmPixelSize */
-			PatchAWord((vMacScreenDepth < 4) ? 0x0001 : 0x0003);
-				/* bmCmpCount */
-			if (4 == vMacScreenDepth) {
-				PatchAWord(0x0005); /* bmCmpSize */
-			} else if (5 == vMacScreenDepth) {
-				PatchAWord(0x0008); /* bmCmpSize */
-			} else {
-				PatchAWord(1 << vMacScreenDepth); /* bmCmpSize */
-			}
-			PatchALong(0x00000000); /* bmPlaneBytes */
-
-		}
+		w.patchOffset(rVP, 0x01);  /* mVidParams */
+		VPBlock::forMode(d, width, height).writeTo(w);
 	}
 
-	const auto& vidCfg = g_machine->config();
-	UsedSoFar = (pPatch - g_vidROM) + 20;
-	if (UsedSoFar > vidCfg.vidROMSize) {
-		ReportAbnormalID(AbnormalID::kVIDEO_vidROMSize_too_small, "vidROMSize too small");
+	/* --- Pad + trailer --- */
+	uint32_t usedSoFar = (uint32_t)w.pos() + 20;
+	if (usedSoFar > cfg.vidROMSize) {
+		ReportAbnormalID(AbnormalID::kVIDEO_vidROMSize_too_small,
+			"vidROMSize too small");
 		return false;
 	}
 
-	for (i = vidCfg.vidROMSize - UsedSoFar; --i >= 0; ) {
-		PatchAByte(0);
-	}
+	size_t padBytes = cfg.vidROMSize - usedSoFar;
+	for (size_t i = 0; i < padBytes; i++)
+		w.writeByte(0);
 
-	pPatch = (vidCfg.vidROMSize - 20) + g_vidROM;
-	PatchALong((pAt_sRsrcDir - pPatch) & 0x00FFFFFF);
-	PatchALong(/* 0x0000041E */ vidCfg.vidROMSize);
-	PatchALong(0x00000000);
-	PatchAByte(0x01);
-	PatchAByte(0x01);
-	PatchALong(0x5A932BC7);
-	PatchAByte(0x00);
-	PatchAByte(0x0F);
+	/* ROM trailer (last 20 bytes) */
+	w.writeLong((uint32_t)(sRsrcDir - (cfg.vidROMSize - 20)) & 0x00FFFFFF);
+	w.writeLong(cfg.vidROMSize);
+	w.writeLong(0x00000000);  /* CRC placeholder */
+	w.writeByte(0x01);  /* revision level */
+	w.writeByte(0x01);  /* format */
+	w.writeLong(0x5A932BC7);  /* test pattern */
+	w.writeByte(0x00);  /* reserved */
+	w.writeByte(0x0F);  /* byte lanes */
 
 	ChecksumSlotROM();
 
-	if ((0 != vMacScreenDepth) && (vMacScreenDepth < 4)) {
+	/* Initialize CLUT with white at 0, black at end */
+	if (maxDepth > 0 && maxDepth < 4) {
 		CLUT_reds[0] = 0xFFFF;
 		CLUT_greens[0] = 0xFFFF;
 		CLUT_blues[0] = 0xFFFF;
-		CLUT_reds[CLUT_size - 1] = 0;
-		CLUT_greens[CLUT_size - 1] = 0;
-		CLUT_blues[CLUT_size - 1] = 0;
+		int clutEnd = clutSizeForDepth(maxDepth) - 1;
+		CLUT_reds[clutEnd] = 0;
+		CLUT_greens[clutEnd] = 0;
+		CLUT_blues[clutEnd] = 0;
 	}
 
 	return true;
@@ -404,28 +261,46 @@ void VideoDevice::update()
 
 static uint16_t Vid_GetMode()
 {
-	return (0 != vMacScreenDepth && g_useColorMode) ? 129 : 128;
+	return 0x80 + s_currentDepth;
 }
 
-static tMacErr Vid_SetMode(uint16_t v)
+static tMacErr Vid_SetMode(uint16_t modeID)
 {
-	if (0 == vMacScreenDepth) {
-		UNUSED(v);
-	} else {
-		if (g_useColorMode != ((v != 128) && g_colorModeWorks)) {
-			g_useColorMode = ! g_useColorMode;
-			g_colorMappingChanged = true;
-		}
+	int newDepth = modeID - 0x80;
+	if (newDepth < 0 || newDepth > s_maxDepth)
+		return tMacErr::paramErr;
+	if (newDepth == s_currentDepth)
+		return tMacErr::noErr;
+
+	s_currentDepth = newDepth;
+	g_screenDepth = newDepth;
+	g_useColorMode = (newDepth > 0);
+	g_colorMappingChanged = true;
+
+	/* Re-initialize CLUT for indexed modes */
+	if (newDepth > 0 && newDepth < 4) {
+		int cs = clutSizeForDepth(newDepth);
+		CLUT_reds[0] = 0xFFFF;
+		CLUT_greens[0] = 0xFFFF;
+		CLUT_blues[0] = 0xFFFF;
+		CLUT_reds[cs - 1] = 0;
+		CLUT_greens[cs - 1] = 0;
+		CLUT_blues[cs - 1] = 0;
 	}
+
 	return tMacErr::noErr;
 }
 
- uint16_t VideoDevice::vidReset()
+uint16_t VideoDevice::vidReset()
 {
-	if (0 != vMacScreenDepth) {
-		g_useColorMode = false;
-	}
-	return 128;
+	int defDepth = (s_preferredDepth >= 0) ? s_preferredDepth : 0;
+	if (defDepth > s_maxDepth)
+		defDepth = s_maxDepth;
+
+	s_currentDepth = defDepth;
+	g_screenDepth = defDepth;
+	g_useColorMode = (defDepth > 0);
+	return 0x80 + defDepth;
 }
 
 #define kCmndVideoFeatures 1
@@ -449,8 +324,35 @@ static constexpr int kCmndVideoControl = 6;
 
 #define VDGammaRecord_csGTable 0
 
+/* VDSwitchInfoRec offsets (used by GetCurrentMode) */
+#define VDSwitchInfo_csMode 0
+#define VDSwitchInfo_csData 2
+#define VDSwitchInfo_csPage 6
+#define VDSwitchInfo_csBaseAddr 8
+
+/* VDVideoParametersInfoRec offsets */
+#define VDVidParams_csDisplayModeID 0
+#define VDVidParams_csDepthMode 4
+#define VDVidParams_csVPBlockPtr 6
+#define VDVidParams_csPageCount 10
+
+/* VDResolutionInfoRec offsets */
+#define VDResInfo_csPreviousDisplayModeID 0
+#define VDResInfo_csRIDisplayModeID 4
+#define VDResInfo_csHorizontalPixels 8
+#define VDResInfo_csVerticalLines 12
+#define VDResInfo_csRefreshRate 16
+#define VDResInfo_csMaxDepthMode 20
+
+/* VDDisplayConnectInfoRec offsets */
+#define VDConnectInfo_csDisplayType 0
+#define VDConnectInfo_csConnectTaggedType 2
+#define VDConnectInfo_csConnectTaggedData 3
+#define VDConnectInfo_csConnectFlags 4
+#define VDConnectInfo_csDisplayComponent 8
+#define VDConnectInfo_csConnectReserved 12
+
 #define VidBaseAddr 0xF9900000
-	/* appears to be completely ignored */
 
 static bool s_useGrayTones = false;
 
@@ -459,10 +361,11 @@ static void FillScreenWithGrayPattern()
 	int i;
 	int j;
 	uint32_t *p1 = reinterpret_cast<uint32_t *>(g_vidMem);
+	int depth = s_currentDepth;
 
-	if (0 != vMacScreenDepth && g_useColorMode) {
+	if (depth > 0) {
 		uint32_t pat;
-		switch (vMacScreenDepth) {
+		switch (depth) {
 			case 1: pat = 0xCCCCCCCC; break;
 			case 2: pat = 0xF0F0F0F0; break;
 			case 3: pat = 0xFF00FF00; break;
@@ -470,16 +373,17 @@ static void FillScreenWithGrayPattern()
 			case 5: pat = 0x00000000; break;
 			default: pat = 0xAAAAAAAA; break;
 		}
+		int byteWidth = (int)((uint32_t)vMacScreenWidth * (1 << depth) / 8);
 		for (i = vMacScreenHeight; --i >= 0; ) {
-			for (j = vMacScreenByteWidth >> 2; --j >= 0; ) {
+			for (j = byteWidth >> 2; --j >= 0; ) {
 				*p1++ = pat;
-				if (vMacScreenDepth == 5) {
+				if (depth == 5) {
 					pat = (~ pat) & 0x00FFFFFF;
 				}
 			}
 			pat = (~ pat);
-			if (vMacScreenDepth == 4) pat &= 0x7FFF7FFF;
-			else if (vMacScreenDepth == 5) pat &= 0x00FFFFFF;
+			if (depth == 4) pat &= 0x7FFF7FFF;
+			else if (depth == 5) pat &= 0x00FFFFFF;
 		}
 	} else {
 		uint32_t pat = 0xAAAAAAAA;
@@ -498,11 +402,37 @@ void VideoDevice::reset()
 	vidReset();
 }
 
+/* Write a VPBlock to guest memory at guestPtr */
+static void writeVPBlockToGuest(int depth, uint16_t width,
+	uint16_t height, uint32_t guestPtr)
+{
+	VPBlock vp = VPBlock::forMode(depth, width, height);
+
+	put_vm_long(guestPtr + 0, vp.physBlockSize);
+	put_vm_long(guestPtr + 4, vp.baseOffset);
+	put_vm_word(guestPtr + 8, vp.rowBytes);
+	put_vm_word(guestPtr + 10, vp.boundsTop);
+	put_vm_word(guestPtr + 12, vp.boundsLeft);
+	put_vm_word(guestPtr + 14, vp.boundsBottom);
+	put_vm_word(guestPtr + 16, vp.boundsRight);
+	put_vm_word(guestPtr + 18, vp.version);
+	put_vm_word(guestPtr + 20, vp.packType);
+	put_vm_long(guestPtr + 22, vp.packSize);
+	put_vm_long(guestPtr + 26, vp.hRes);
+	put_vm_long(guestPtr + 30, vp.vRes);
+	put_vm_word(guestPtr + 34, vp.pixelType);
+	put_vm_word(guestPtr + 36, vp.pixelSize);
+	put_vm_word(guestPtr + 38, vp.cmpCount);
+	put_vm_word(guestPtr + 40, vp.cmpSize);
+	put_vm_long(guestPtr + 42, vp.planeBytes);
+}
+
 /*
 	Handle video extension trap from the guest driver.
 	Dispatches control (SetVidMode, SetEntries, SetGamma,
-	GrayScreen) and status (GetMode, GetPages, GetGray)
-	commands.
+	GrayScreen) and status (GetMode, GetPages, GetGray,
+	GetCurrentMode, GetConnection, GetVideoParameters,
+	GetNextResolution, etc.) commands.
 */
 void VideoDevice::extnVideoAccess(uint32_t p)
 {
@@ -554,14 +484,16 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						dbglog_WriteNote(
 							"Video_Access kCmndVideoControl, VidReset");
 #endif
-						put_vm_word(csParam + VDPageInfo_csMode,
-							Vid_GetMode());
-						put_vm_word(csParam + VDPageInfo_csPage, 0);
-							/* page is always 0 */
-						put_vm_long(csParam + VDPageInfo_csBaseAddr,
-							VidBaseAddr);
-
-						result = tMacErr::noErr;
+						{
+							uint16_t mode = vidReset();
+							put_vm_word(csParam + VDPageInfo_csMode,
+								mode);
+							put_vm_word(csParam + VDPageInfo_csPage, 0);
+							put_vm_long(csParam + VDPageInfo_csBaseAddr,
+								VidBaseAddr);
+							FillScreenWithGrayPattern();
+							result = tMacErr::noErr;
+						}
 						break;
 					case 1: /* KillIO */
 #if VID_dolog
@@ -579,7 +511,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						if (0 != get_vm_word(
 							csParam + VDPageInfo_csPage))
 						{
-							/* return tMacErr::controlErr, page must be 0 */
 							ReportAbnormalID(AbnormalID::kVIDEO_SetVidMode_not_page_0,
 								"SetVidMode not page 0");
 						} else {
@@ -595,82 +526,81 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoControl, "
 							"SetEntries");
 #endif
-						if ((0 != vMacScreenDepth) && (vMacScreenDepth < 4) && g_useColorMode) {
-							uint32_t csTable = get_vm_long(
-								csParam + VDSetEntryRecord_csTable);
-							uint16_t csStart = get_vm_word(
-								csParam + VDSetEntryRecord_csStart);
-							uint16_t csCount = 1 + get_vm_word(
-								csParam + VDSetEntryRecord_csCount);
+						{
+							int cs = clutSizeForDepth(s_currentDepth);
+							if (s_currentDepth > 0 && s_currentDepth < 4) {
+								uint32_t csTable = get_vm_long(
+									csParam + VDSetEntryRecord_csTable);
+								uint16_t csStart = get_vm_word(
+									csParam + VDSetEntryRecord_csStart);
+								uint16_t csCount = 1 + get_vm_word(
+									csParam + VDSetEntryRecord_csCount);
 
-							if (((uint16_t) 0xFFFF) == csStart) {
-								int i;
+								if (((uint16_t) 0xFFFF) == csStart) {
+									int i;
 
-								result = tMacErr::noErr;
-								for (i = 0; i < csCount; ++i) {
-									uint16_t j = get_vm_word(csTable + 0);
-									if (j == 0) {
-										/* ignore input, leave white */
-									} else
-									if (j == CLUT_size - 1) {
-										/* ignore input, leave black */
-									} else
-									if (j >= CLUT_size) {
-										/* out of range */
-										result = tMacErr::paramErr;
-									} else
-									{
-										uint16_t r =
-											get_vm_word(csTable + 2);
-										uint16_t g =
-											get_vm_word(csTable + 4);
-										uint16_t b =
-											get_vm_word(csTable + 6);
-										CLUT_reds[j] = r;
-										CLUT_greens[j] = g;
-										CLUT_blues[j] = b;
+									result = tMacErr::noErr;
+									for (i = 0; i < csCount; ++i) {
+										uint16_t j = get_vm_word(csTable + 0);
+										if (j == 0) {
+											/* ignore input, leave white */
+										} else
+										if (j == (uint16_t)(cs - 1)) {
+											/* ignore input, leave black */
+										} else
+										if (j >= cs) {
+											result = tMacErr::paramErr;
+										} else
+										{
+											uint16_t r =
+												get_vm_word(csTable + 2);
+											uint16_t g =
+												get_vm_word(csTable + 4);
+											uint16_t b =
+												get_vm_word(csTable + 6);
+											CLUT_reds[j] = r;
+											CLUT_greens[j] = g;
+											CLUT_blues[j] = b;
+										}
+										csTable += 8;
 									}
-									csTable += 8;
-								}
-								g_colorMappingChanged = true;
-							} else
-							if (csStart + csCount < csStart) {
-								/* overflow */
-								result = tMacErr::paramErr;
-							} else
-							if (csStart + csCount > CLUT_size) {
-								result = tMacErr::paramErr;
-							} else
-							{
-								int i;
+									g_colorMappingChanged = true;
+								} else
+								if (csStart + csCount < csStart) {
+									result = tMacErr::paramErr;
+								} else
+								if (csStart + csCount > cs) {
+									result = tMacErr::paramErr;
+								} else
+								{
+									int i;
 
-								for (i = 0; i < csCount; ++i) {
-									int j = i + csStart;
+									for (i = 0; i < csCount; ++i) {
+										int j = i + csStart;
 
-									if (j == 0) {
-										/* ignore input, leave white */
-									} else
-									if (j == CLUT_size - 1) {
-										/* ignore input, leave black */
-									} else
-									{
-										uint16_t r =
-											get_vm_word(csTable + 2);
-										uint16_t g =
-											get_vm_word(csTable + 4);
-										uint16_t b =
-											get_vm_word(csTable + 6);
-										CLUT_reds[j] = r;
-										CLUT_greens[j] = g;
-										CLUT_blues[j] = b;
+										if (j == 0) {
+											/* ignore input, leave white */
+										} else
+										if (j == cs - 1) {
+											/* ignore input, leave black */
+										} else
+										{
+											uint16_t r =
+												get_vm_word(csTable + 2);
+											uint16_t g =
+												get_vm_word(csTable + 4);
+											uint16_t b =
+												get_vm_word(csTable + 6);
+											CLUT_reds[j] = r;
+											CLUT_greens[j] = g;
+											CLUT_blues[j] = b;
+										}
+										csTable += 8;
 									}
-									csTable += 8;
+									g_colorMappingChanged = true;
+									result = tMacErr::noErr;
 								}
-								g_colorMappingChanged = true;
-								result = tMacErr::noErr;
 							}
-						} else {
-							/* not implemented */
 						}
 						break;
 					case 4: /* SetGamma */
@@ -678,8 +608,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						dbglog_WriteNote(
 							"Video_Access kCmndVideoControl, SetGamma");
 #endif
-						{
-						}
 						result = tMacErr::noErr;
 						break;
 					case 5: /* GrayScreen */
@@ -701,11 +629,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						{
 							uint8_t csMode = get_vm_byte(
 								csParam + VDPageInfo_csMode);
-								/*
-									"Designing Cards and Drivers" book
-									says this is a word, but it seems
-									to be a byte.
-								*/
 
 							s_useGrayTones = (csMode != 0);
 							result = tMacErr::noErr;
@@ -717,11 +640,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoControl, "
 							"SetDefaultMode");
 #endif
-						/* not handled yet */
-						/*
-							seen when close Monitors control panel
-							in system 7.5.5
-						*/
+						{
+							uint16_t mode = get_vm_word(
+								csParam + VDSwitchInfo_csMode);
+							int depth = mode - 0x80;
+							if (depth >= 0 && depth <= s_maxDepth)
+								s_preferredDepth = depth;
+							result = tMacErr::noErr;
+						}
 						break;
 					case 16: /* SavePreferredConfiguration */
 #if VID_dolog
@@ -729,11 +655,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoControl, "
 							"SavePreferredConfiguration");
 #endif
-						/* not handled yet */
-						/*
-							seen when close Monitors control panel
-							in system 7.5.5
-						*/
+						{
+							uint16_t mode = get_vm_word(
+								csParam + VDSwitchInfo_csMode);
+							int depth = mode - 0x80;
+							if (depth >= 0 && depth <= s_maxDepth)
+								s_preferredDepth = depth;
+							result = tMacErr::noErr;
+						}
 						break;
 					default:
 						ReportAbnormalID(AbnormalID::kVIDEO_kCmndVideoControl_unknown_csCode,
@@ -761,7 +690,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						put_vm_word(csParam + VDPageInfo_csMode,
 							Vid_GetMode());
 						put_vm_word(csParam + VDPageInfo_csPage, 0);
-							/* page is always 0 */
 						put_vm_long(csParam + VDPageInfo_csBaseAddr,
 							VidBaseAddr);
 						result = tMacErr::noErr;
@@ -773,7 +701,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"GetEntries");
 #endif
 						{
-								ReportAbnormalID(AbnormalID::kVIDEO_GetEntries_not_implemented,
+							ReportAbnormalID(AbnormalID::kVIDEO_GetEntries_not_implemented,
 								"GetEntries not implemented");
 						}
 						break;
@@ -783,7 +711,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, GetPages");
 #endif
 						put_vm_word(csParam + VDPageInfo_csPage, 1);
-							/* always 1 page */
 						result = tMacErr::noErr;
 						break;
 					case 5: /* GetPageAddr */
@@ -815,11 +742,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 						put_vm_word(csParam + VDPageInfo_csMode,
 							s_useGrayTones ? 0x0100 : 0);
-							/*
-								"Designing Cards and Drivers" book
-								says this is a word, but it seems
-								to be a byte.
-							*/
 						result = tMacErr::noErr;
 						break;
 					case 8: /* GetGamma */
@@ -828,11 +750,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, "
 							"GetGamma");
 #endif
-						/* not handled yet */
-						/*
-							seen when close Monitors control panel
-							in system 7.5.5
-						*/
+						/* stub — log if requested */
+						result = tMacErr::statusErr;
 						break;
 					case 9: /* GetDefaultMode */
 #if VID_dolog
@@ -840,8 +759,13 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, "
 							"GetDefaultMode");
 #endif
-						/* not handled yet */
-						/* seen in System 7.5.5 boot */
+						{
+							int defDepth = (s_preferredDepth >= 0)
+								? s_preferredDepth : s_maxDepth;
+							put_vm_word(csParam + VDSwitchInfo_csMode,
+								0x80 + defDepth);
+							result = tMacErr::noErr;
+						}
 						break;
 					case 10: /* GetCurrentMode */
 #if VID_dolog
@@ -849,6 +773,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, "
 							"GetCurrentMode");
 #endif
+						put_vm_word(csParam + VDSwitchInfo_csMode,
+							0x80 + s_currentDepth);
+						put_vm_long(csParam + VDSwitchInfo_csData,
+							1); /* displayModeID = 1 */
+						put_vm_word(csParam + VDSwitchInfo_csPage, 0);
+						put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
+							VidBaseAddr);
+						result = tMacErr::noErr;
 						break;
 					case 12: /* GetConnection */
 #if VID_dolog
@@ -856,17 +788,24 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, "
 							"GetConnection");
 #endif
-						/* not handled yet */
-						/* seen in System 7.5.5 boot */
+						put_vm_word(csParam + VDConnectInfo_csDisplayType,
+							6); /* kVGAConnect */
+						put_vm_byte(csParam + VDConnectInfo_csConnectTaggedType, 0);
+						put_vm_byte(csParam + VDConnectInfo_csConnectTaggedData, 0);
+						put_vm_long(csParam + VDConnectInfo_csConnectFlags,
+							0x000E); /* kAllModes | kAllFlags */
+						put_vm_long(csParam + VDConnectInfo_csDisplayComponent, 0);
+						put_vm_long(csParam + VDConnectInfo_csConnectReserved, 0);
+						result = tMacErr::noErr;
 						break;
-					case 13: /* GetCurrentMode */
+					case 13: /* GetModeTiming */
 #if VID_dolog
 						dbglog_WriteNote(
 							"Video_Access kCmndVideoStatus, "
-							"GetCurrentMode");
+							"GetModeTiming");
 #endif
-						/* not handled yet */
-						/* seen in System 7.5.5 boot */
+						/* Return timingApple_FixedRateSub for our single timing */
+						result = tMacErr::statusErr;
 						break;
 					case 14: /* GetModeBaseAddress */
 #if VID_dolog
@@ -874,10 +813,9 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, "
 							"GetModeBaseAddress");
 #endif
-						/* not handled yet */
-						/*
-							seen in System 7.5.5 Monitors control panel
-						*/
+						put_vm_long(csParam + VDPageInfo_csBaseAddr,
+							VidBaseAddr);
+						result = tMacErr::noErr;
 						break;
 					case 16: /* GetPreferredConfiguration */
 #if VID_dolog
@@ -885,8 +823,15 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, "
 							"GetPreferredConfiguration");
 #endif
-						/* not handled yet */
-						/* seen in System 7.5.5 boot */
+						{
+							int defDepth = (s_preferredDepth >= 0)
+								? s_preferredDepth : s_maxDepth;
+							put_vm_word(csParam + VDSwitchInfo_csMode,
+								0x80 + defDepth);
+							put_vm_long(csParam + VDSwitchInfo_csData,
+								1); /* displayModeID = 1 */
+							result = tMacErr::noErr;
+						}
 						break;
 					case 17: /* GetNextResolution */
 #if VID_dolog
@@ -894,11 +839,30 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, "
 							"GetNextResolution");
 #endif
-						/* not handled yet */
-						/*
-							seen in System 7.5.5 monitors control panel
-							option button
-						*/
+						{
+							uint32_t prevID = get_vm_long(
+								csParam + VDResInfo_csPreviousDisplayModeID);
+							if (prevID == 0) {
+								/* First resolution */
+								put_vm_long(csParam + VDResInfo_csRIDisplayModeID, 1);
+								put_vm_long(csParam + VDResInfo_csHorizontalPixels,
+									vMacScreenWidth);
+								put_vm_long(csParam + VDResInfo_csVerticalLines,
+									vMacScreenHeight);
+								put_vm_long(csParam + VDResInfo_csRefreshRate,
+									0x00420000); /* ~66.67 Hz fixed-point */
+								put_vm_word(csParam + VDResInfo_csMaxDepthMode,
+									0x80 + s_maxDepth);
+								result = tMacErr::noErr;
+							} else if (prevID == 1) {
+								/* No more resolutions */
+								put_vm_long(csParam + VDResInfo_csRIDisplayModeID,
+									0xFFFFFFFE); /* kDisplayModeIDNoMoreResolutions */
+								result = tMacErr::noErr;
+							} else {
+								result = tMacErr::paramErr;
+							}
+						}
 						break;
 					case 18: /* GetVideoParameters */
 #if VID_dolog
@@ -906,8 +870,28 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoStatus, "
 							"GetVideoParameters");
 #endif
-						/* not handled yet */
-						/* seen in System 7.5.5 boot */
+						{
+							uint32_t displayModeID = get_vm_long(
+								csParam + VDVidParams_csDisplayModeID);
+							uint16_t depthMode = get_vm_word(
+								csParam + VDVidParams_csDepthMode);
+							uint32_t vpPtr = get_vm_long(
+								csParam + VDVidParams_csVPBlockPtr);
+
+							int depth = depthMode - 0x80;
+							if (displayModeID != 1
+								|| depth < 0 || depth > s_maxDepth)
+							{
+								result = tMacErr::paramErr;
+							} else {
+								writeVPBlockToGuest(depth,
+									g_machine->config().screenWidth,
+									g_machine->config().screenHeight,
+									vpPtr);
+								put_vm_long(csParam + VDVidParams_csPageCount, 1);
+								result = tMacErr::noErr;
+							}
+						}
 						break;
 					default:
 						ReportAbnormalID(AbnormalID::kVIDEO_Video_Access_kCmndVideoStatus,

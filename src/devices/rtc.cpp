@@ -224,12 +224,8 @@ bool RTCDevice::init()
 		/* video board id */
 		s_rtc.PARAMRAM[0x46] = /* 0x42 */ 0x76; /* 'v' */
 		s_rtc.PARAMRAM[0x47] = /* 0x32 */ 0x4D; /* 'M' */
-		/* mode */
-		if (vMacScreenDepth == 0) {
-			s_rtc.PARAMRAM[0x48] = 0x80;
-		} else {
-			s_rtc.PARAMRAM[0x48] = 0x81;
-		}
+		/* boot mode = 0x80 + configured depth */
+		s_rtc.PARAMRAM[0x48] = 0x80 + (uint8_t)vMacScreenDepth;
 	}
 
 	if (g_machine->config().isIIFamily()) {
