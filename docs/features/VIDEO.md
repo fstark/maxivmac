@@ -36,10 +36,13 @@ are at different ROM offsets.  Always 1 bpp.
 * **Default:** 640×480, 8 bpp (256-colour CLUT)
 * **VRAM size:** auto-sized to fit the configured depth (minimum 512 KB)
 * **Colour:** depths 0–5 (1/2/4/8/16/32 bpp) configurable via `--screen`
-* **NuBus slot ROM:** built at runtime by `VideoDevice::init()` with
-  mode parameter blocks for mono (0x80) and one colour mode (0x81)
-* **PRAM gate:** `PRAM[0x48]` = 0x81 for any non-B&W depth, 0x80 for
-  depth 0
+* **NuBus slot ROM:** built at runtime by `VideoDevice::init()` using
+  `SlotROMWriter`, with mode parameter blocks for all depths from
+  0x80 (1 bpp) through `0x80 + maxDepth`
+* **Boot depth:** capped at 8 bpp (depth 3) when maxDepth ≥ 4, because
+  direct colour requires 32-Bit QuickDraw (System 7+).  User can
+  switch to Thousands/Millions via Monitors CP after boot.
+* **PRAM gate:** `PRAM[0x48]` = `0x80 + bootDepth`
 
 ### 2.4 PowerBook 100
 
@@ -188,45 +191,61 @@ dirty on the first tick.
 The Mac II video card (`VideoDevice`) builds a NuBus declaration ROM
 containing:
 
-* Board resource (vendor "Paul C. Pratt", board "Mini vMac video card")
-* **Mode 0x80** — 1 bpp monochrome (always present)
-* **Mode 0x81** — colour at the single configured depth (only when
-  depth > 0 and `g_colorModeWorks`)
+* Board resource (vendor "maxivmac", board "maxivmac video card")
+* **Modes 0x80 through 0x80+maxDepth** — all depths from 1 bpp mono
+  up to the configured maximum (e.g. 16 bpp for `--screen=640x480x16`)
 
-The slot ROM is built once at `VideoDevice::init()` and checksummed.
-The mode parameter blocks (VPBlock) describe resolution, row bytes,
+The slot ROM is built once at `VideoDevice::init()` using
+`SlotROMWriter` (in `slot_rom.h`) and checksummed.  `VPBlock::forMode()`
+generates the mode parameter blocks describing resolution, row bytes,
 pixel size, component count/size, and device type (CLUT vs direct).
 
-### 7.1 Video driver traps (current state)
+### 7.1 Video driver traps
+
+**Status calls (kCmndVideoStatus):**
 
 | csCode | Name | Status |
 |:---:|---|:---:|
-| 0 | VidReset | ✅ returns mode 128 |
-| 1 | KillIO | ✅ |
-| 2 | SetVidMode / GetMode | ✅ binary toggle (128 ↔ 129) |
-| 3 | SetEntries / GetEntries | ✅ / stub |
+| 2 | GetMode | ✅ current mode, page, base address |
+| 3 | GetEntries | stub (logs abnormal) |
 | 4 | GetPages | ✅ returns 1 |
 | 5 | GetPageAddr | ✅ returns VidBaseAddr |
-| 6 | SetGray / GetGray | ✅ |
-| 7, 8 | SetGamma / GetGamma | stubs |
-| 9 | SetDefaultMode | **stub** (logged, no-op) |
-| 10 | GetCurrentMode | **not handled** |
-| 12 | GetConnection | **not handled** |
-| 14 | GetModeBaseAddress | **not handled** |
-| 16 | SavePreferredConfiguration | **stub** (logged, no-op) |
-| 17 | GetNextResolution | **not handled** |
-| 18 | GetVideoParameters | **not handled** |
+| 6 | GetGray | ✅ |
+| 8 | GetGamma | stub (returns statusErr) |
+| 9 | GetDefaultMode | ✅ returns preferred depth |
+| 10 | GetCurrentMode | ✅ mode, displayModeID, page, base |
+| 12 | GetConnection | ✅ kVGAConnect, kAllModes |
+| 13 | GetModeTiming | stub (returns statusErr) |
+| 14 | GetModeBaseAddress | ✅ VidBaseAddr |
+| 16 | GetPreferredConfiguration | ✅ preferred mode + displayModeID |
+| 17 | GetNextResolution | ✅ single resolution enumeration |
+| 18 | GetVideoParameters | ✅ VPBlock + page count for any mode |
+
+**Control calls (kCmndVideoControl):**
+
+| csCode | Name | Status |
+|:---:|---|:---:|
+| 0 | VidReset | ✅ returns current mode (no state reset) |
+| 1 | KillIO | ✅ |
+| 2 | SetVidMode | ✅ full depth switching (0x80–0x85) |
+| 3 | SetEntries | ✅ CLUT update for indexed depths |
+| 4 | SetGamma | stub (returns noErr) |
+| 5 | GrayScreen | ✅ fills VRAM with gray pattern |
+| 6 | SetGray | ✅ |
+| 9 | SetDefaultMode | ✅ saves preferred depth |
+| 16 | SavePreferredConfiguration | ✅ saves preferred depth |
 
 ### 7.2 Mode switching
 
-`Vid_SetMode(v)` toggles `g_useColorMode` between mode 128 (B&W) and
-129 (colour at the configured depth).  The mode change propagates via
-`g_colorMappingChanged` → palette rebuild + full-screen redraw.
+`Vid_SetMode(modeID)` switches depth by updating `s_currentDepth`,
+`g_screenDepth`, and `g_useColorMode`.  For indexed modes (depth 1–3),
+it re-initializes the CLUT with white at index 0 and black at the
+last index.  The mode change propagates via `g_colorMappingChanged`
+→ palette rebuild + full-screen redraw.
 
-There is **no runtime depth switching**.  The slot ROM contains exactly
-two modes, and the mode-enumeration traps (csCode 9, 10, 17, 18) are
-absent or stubbed.  The Monitors control panel cannot discover
-additional depths.
+The slot ROM contains modes 0x80 through `0x80 + maxDepth`, and the
+mode-enumeration traps (csCode 17, 18) allow the Monitors control
+panel to discover and switch between all available depths.
 
 ### 7.3 VRAM mapping
 
@@ -299,43 +318,27 @@ matching `GL_BGRA + UNSIGNED_INT_8_8_8_8_REV`.
 
 ## 9. Limitations
 
-### L1 — Only one colour depth per session
+### L1 — Direct-colour boot requires System 7
 
-The slot ROM is built once with a single colour mode.  Mode-enumeration
-traps are unimplemented.  The Monitors control panel sees only 1 bpp
-and one colour depth (the one passed at launch).
+Direct-colour modes (16/32 bpp) require 32-Bit QuickDraw, available
+in System 7.0+ or System 6 with the separate 32-Bit QuickDraw INIT.
+The emulator boots at 8 bpp and lets the user switch via Monitors CP.
 
-### L2 — Direct-colour modes (16/32 bpp) crash
+### L2 — No gamma support
 
-Depths 4 and 5 can be configured and the converter handles them
-correctly, but the guest OS crashes during startup.  The likely cause
-is incomplete video driver emulation: the ROM's display init code may
-call unimplemented status traps (GetCurrentMode, GetVideoParameters)
-or expect mode-enumeration to succeed.
+GetGamma returns statusErr, SetGamma is a no-op stub.
 
-### L3 — No gamma support
-
-### L4 — PRAM not persisted
+### L3 — PRAM not persisted
 
 Guest Monitors preference survives via the disk image, not PRAM.
 
-### L5 — Compact Macs are always 1 bpp
+### L4 — Compact Macs are always 1 bpp
 
 The screen hack patches geometry only; `--screen=512x342x8` on a
 MacPlus would silently misbehave.
 
-## 10. Future: multi-depth NuBus card
+### L5 — Single resolution
 
-The correct fix for L1 and L2 is to implement a proper multi-mode
-video card:
-
-1. Build the slot ROM with mode entries for all supported depths
-   (0x80–0x85 for 1/2/4/8/16/32 bpp)
-2. Implement mode-enumeration traps (csCode 10, 17, 18) so the
-   Monitors CP can discover depths
-3. Implement `SetVidMode` with actual depth switching (update
-   `vMacScreenDepth` at runtime, resize/reallocate ARGB buffer)
-4. Direct-colour would then work because the guest OS properly
-   negotiates the mode instead of being forced via PRAM
-
-See `VIDEO_PLAN.md` for the implementation plan.
+Only one resolution per session (set at launch via `--screen`).  The
+card reports a single displayModeID.  Multi-resolution would require
+VRAM reallocation and host window resizing.
