@@ -290,6 +290,46 @@ research into a proper fix.
 resolution is computed from VRAM capacity, not from the boot depth.
 With 4 MB VRAM at 640×480, all depths through 32 bpp are available.
 
+#### The `--screen` option and boot flow
+
+The `--screen=WxHxD` CLI flag sets the initial screen geometry and
+depth.  Its behaviour differs by model family:
+
+**Compact Macs (Plus, SE, Classic, PB100):**  `--screen` sets the
+screen geometry via ROM patches (the "screen hack").  Depth is ignored
+— compact Macs are always 1 bpp monochrome.  The geometry set by
+`--screen` is the only resolution for the entire session; there is no
+resolution switching.
+
+**Mac II family:**  `--screen` sets the **boot resolution and depth**.
+The boot depth is capped at 8 bpp (depth 3) even if a higher depth is
+specified, because direct-colour modes require 32-Bit QuickDraw to be
+fully initialised.  The boot resolution must match one of the entries
+in the resolution table (the six classic resolutions plus any
+host-derived ones); if the requested resolution is not in the table,
+boot **falls back to 640×480** — exotic resolutions are not added to
+the table dynamically.
+
+The Mac does not automatically replace the boot resolution.  It stays
+at the `--screen` resolution unless changed by one of:
+
+1. **DM2 disk preference:** On System 7.5.3+, the Monitors CP saves
+   the user's preferred resolution into the System file on the disk
+   image.  On the next boot, Display Manager 2.0 reads this
+   preference and issues a `SwitchMode` call shortly after init,
+   live-switching to the saved resolution.  The boot sequence is
+   therefore: start at `--screen` resolution → DM2 reads disk
+   preference → `SwitchMode` → resolution changes.
+2. **PRAM preference (partially implemented):** `vidReset()` checks
+   `s_preferredDisplayModeID` and can switch resolution before the
+   desktop appears.  However, because maxivmac does not persist PRAM
+   across sessions, this value always starts at -1 (= boot
+   resolution).  If PRAM persistence were implemented, the Mac II
+   would boot directly into the saved resolution without needing the
+   DM2 disk-preference path.
+3. **User action:** The user switches resolution via Monitors CP →
+   Options during the current session.
+
 ### 7.3 VRAM mapping
 
 ```
@@ -373,7 +413,11 @@ GetGamma returns statusErr, SetGamma is a no-op stub.
 
 ### L3 — PRAM not persisted
 
-Guest Monitors preference survives via the disk image, not PRAM.
+PRAM is not saved across emulator sessions.  The guest's Monitors
+preference for resolution and depth survives via the System file on
+the disk image (read by Display Manager 2.0 at boot), not via PRAM.
+If PRAM persistence were implemented, the video card would boot
+directly into the saved resolution without waiting for DM2.
 
 ### L4 — Compact Macs are always 1 bpp
 
