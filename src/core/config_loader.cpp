@@ -120,6 +120,8 @@ void PrintUsage(const char* progname)
 		"  --trace-cpu=PATH Write CPU-only text trace to file\n"
 		"  --snapshot-interval=N  Instructions between snapshots (default: 100000)\n"
 		"  --max-instructions=N   Instruction budget (default: 20000000)\n"
+		"  --serial-a=MODE  Modem port backend: loopback, file:tx=PATH[,rx=PATH], pty\n"
+		"  --serial-b=MODE  Printer port backend (same modes as --serial-a)\n"
 		"  -h, --help       Show this help\n"
 		"\n"
 		"ROM auto-detection searches: ./<MODEL>.ROM, <romdir>/<MODEL>.ROM, roms/<MODEL>.ROM\n"
@@ -233,6 +235,14 @@ LaunchConfig ParseCommandLine(int argc, char* argv[])
 		}
 		if (strncmp(arg, "--romdir=", 9) == 0) {
 			lc.romDir = arg + 9;
+			continue;
+		}
+		if (strncmp(arg, "--serial-a=", 11) == 0) {
+			lc.serialA = arg + 11;
+			continue;
+		}
+		if (strncmp(arg, "--serial-b=", 11) == 0) {
+			lc.serialB = arg + 11;
 			continue;
 		}
 

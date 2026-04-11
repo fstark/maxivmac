@@ -38,6 +38,10 @@ struct LaunchConfig {
 	std::string traceCpuPath;     // --trace-cpu=<path> (CPU-only text)
 	uint32_t    snapshotInterval = 0; // --snapshot-interval=N (0=default 100K)
 	uint64_t    maxInstructions  = 0; // --max-instructions=N (0=default 20M)
+
+	// Serial port backends
+	std::string serialA;  // --serial-a=MODE (modem port, SCC channel A)
+	std::string serialB;  // --serial-b=MODE (printer port, SCC channel B)
 };
 
 // Parse command-line arguments into a LaunchConfig.

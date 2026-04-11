@@ -5,6 +5,9 @@
 
 #include "devices/device.h"
 #include <cstdint>
+#include <memory>
+
+class SerialBackend;
 
 // Internal state remains as file-scope statics in scc.cpp for now
 // due to heavy conditional compilation (EmLocalTalk, SCC_TrackMore).
@@ -18,6 +21,14 @@ public:
 
 	// Return whether SCC master interrupt enable is set.
 	bool interruptsEnabled();
+
+	// Attach a serial backend to a channel (0 = A/modem, 1 = B/printer).
+	// Takes ownership.  Pass nullptr to detach.
+	void setBackend(int chan, std::unique_ptr<SerialBackend> backend);
+
+	// Poll attached backends and deliver received bytes into the SCC.
+	// Called once per 1/60s tick from SixtiethSecondNotify.
+	void serialTick();
 
 #ifdef EmLocalTalk
 	void localTalkTick();

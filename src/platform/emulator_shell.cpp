@@ -21,6 +21,8 @@
 #include "platform/screen_convert.h"
 #include "platform/platform.h"
 #include "devices/video.h"
+#include "devices/scc.h"
+#include "devices/serial_factory.h"
 
 #include <sys/stat.h>
 #include <cstdio>
@@ -243,6 +245,18 @@ bool EmulatorShell::initMachine()
 	BuildPalette();
 
 	machineInited_ = true;
+
+	/* Attach serial backends from command-line options. */
+	{
+		const LaunchConfig& slc = GetLaunchConfig();
+		if (auto* scc = g_machine->findDevice<SCCDevice>()) {
+			if (auto b = CreateSerialBackend(slc.serialA, 0))
+				scc->setBackend(0, std::move(b));
+			if (auto b = CreateSerialBackend(slc.serialB, 1))
+				scc->setBackend(1, std::move(b));
+		}
+	}
+
 	return true;
 }
 

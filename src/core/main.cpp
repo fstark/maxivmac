@@ -150,6 +150,7 @@ static void SixtiethSecondNotify()
 	if (auto* d = g_machine->findDevice<VIA1Device>()) d->iCA1_PulseNtfy(); /* Vertical Blanking Interrupt */
 	if (auto* d = g_machine->findDevice<SonyDevice>()) d->update();
 
+	if (auto* d = g_machine->findDevice<SCCDevice>()) d->serialTick();
 #if EmLocalTalk
 	if (auto* d = g_machine->findDevice<SCCDevice>()) d->localTalkTick();
 #endif

@@ -61,6 +61,7 @@ set(COMMON_SOURCES
     src/devices/via2.cpp
     src/devices/iwm.cpp
     src/devices/scc.cpp
+    src/devices/serial_factory.cpp
     src/devices/rtc.cpp
     src/devices/rom.cpp
     src/devices/scsi.cpp

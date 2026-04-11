@@ -24,9 +24,13 @@
 #include "core/common.h"
 
 #include "devices/scc.h"
+#include "devices/serial_backend.h"
 #include "core/wire_bus.h"
 #include "core/machine_obj.h"
 #include "core/abnormal_ids.h"
+
+/* Serial backends — one per channel (0 = A/modem, 1 = B/printer). */
+static std::unique_ptr<SerialBackend> s_serialBackend[2];
 
 /* Global singleton */
 
@@ -333,17 +337,13 @@ struct Channel_Ty {
 	bool TxUnderrun;
 	bool SyncHunt;
 	bool TxIP; /* Transmit Interrupt Pending */
-#if EmLocalTalk
 	uint8_t RxBuff;
-#endif
-#if EmLocalTalk
-	/* otherwise TxBufferEmpty always true */
 	/*
-		though should behave as went false
-		for an instant when write to transmit buffer
+		TxBufferEmpty: true when the transmit buffer is empty.
+		Without EmLocalTalk or a serial backend this is always
+		true, but the field must exist unconditionally now.
 	*/
 	bool TxBufferEmpty;
-#endif
 #if EmLocalTalk || SCC_TrackMore
 	bool ExtIE;
 #endif
@@ -407,24 +407,17 @@ struct Channel_Ty {
 #if SCC_TrackMore
 	uint8_t TBitsPerChar;
 #endif
-#if EmLocalTalk || SCC_TrackMore
 	uint8_t RxIntMode;
-#endif
-#if EmLocalTalk || SCC_TrackMore
 	bool FirstChar;
-#endif
 #if EmLocalTalk || SCC_TrackMore
 	uint8_t SyncMode;
 #endif
 #if SCC_TrackMore
 	uint8_t StopBits;
 #endif
-#if EmLocalTalk
-	/* otherwise RxChrAvail always false */
 	bool RxChrAvail;
-#endif
 #if EmLocalTalk
-	/* otherwise EndOfFrame always false */
+	/* EndOfFrame only used by LocalTalk framing */
 	bool EndOfFrame;
 #endif
 #if SCC_TrackMore /* don't care about CTS_IE */
@@ -476,53 +469,74 @@ static void CheckSCCInterruptFlag()
 {
 	uint8_t NewSCCInterruptRequest;
 
-#if EmLocalTalk
+	/* --- Channel A receive interrupts (serial backend) --- */
+	bool ReceiveAInterrupt = false;
+	bool RxSpclAInterrupt = false;
+
+	if (s_serialBackend[0]) {
+		switch (s_scc.a[0].RxIntMode) {
+			case 0: break;
+			case 1:
+				if (s_scc.a[0].RxChrAvail && s_scc.a[0].FirstChar)
+					ReceiveAInterrupt = true;
+				break;
+			case 2:
+				if (s_scc.a[0].RxChrAvail)
+					ReceiveAInterrupt = true;
+				break;
+			case 3: break;
+		}
+	}
+
+	/* --- Channel B receive interrupts (LocalTalk or serial backend) --- */
 	bool ReceiveBInterrupt = false;
 	bool RxSpclBInterrupt = false
-		/* otherwise EndOfFrame always false */
-		| s_scc.a[1].EndOfFrame
-		;
-#endif
-
 #if EmLocalTalk
-	switch (s_scc.a[1].RxIntMode) {
-		case 0:
-			/* disabled */
-			RxSpclBInterrupt = false;
-			break;
-		case 1:
-			/* Rx INT on 1st char or special condition */
-			if (s_scc.a[1].RxChrAvail && s_scc.a[1].FirstChar) {
-				ReceiveBInterrupt = true;
-			}
-			break;
-		case 2:
-			/* INT on all Rx char or special condition */
-			if (s_scc.a[1].RxChrAvail) {
-				ReceiveBInterrupt = true;
-			}
-			break;
-		case 3:
-			/* Rx INT on special condition only */
-			break;
-	}
+		| s_scc.a[1].EndOfFrame
 #endif
+		;
+
+	if (s_serialBackend[1]
+#if EmLocalTalk
+		|| true /* LocalTalk also uses these fields on ch B */
+#endif
+	) {
+		switch (s_scc.a[1].RxIntMode) {
+			case 0:
+				RxSpclBInterrupt = false;
+				break;
+			case 1:
+				if (s_scc.a[1].RxChrAvail && s_scc.a[1].FirstChar)
+					ReceiveBInterrupt = true;
+				break;
+			case 2:
+				if (s_scc.a[1].RxChrAvail)
+					ReceiveBInterrupt = true;
+				break;
+			case 3: break;
+		}
+	}
 
 	/* Master Interrupt Enable */
 	if (! s_scc.MIE) {
 		s_scc.SCC_Interrupt_Type = 0;
 	} else
+	/* Z8530 priority: A Rx > A Tx > B Rx > B Tx */
+	if (ReceiveAInterrupt) {
+		s_scc.SCC_Interrupt_Type = SCC_A_Rx;
+	} else
+	if (RxSpclAInterrupt) {
+		s_scc.SCC_Interrupt_Type = SCC_A_Rx_Spec;
+	} else
 	if (s_scc.a[0].TxIP && s_scc.a[0].TxIE) {
 		s_scc.SCC_Interrupt_Type = SCC_A_Tx_Empty;
 	} else
-#if EmLocalTalk
 	if (ReceiveBInterrupt) {
 		s_scc.SCC_Interrupt_Type = SCC_B_Rx;
 	} else
 	if (RxSpclBInterrupt) {
 		s_scc.SCC_Interrupt_Type = SCC_B_Rx_Spec;
 	} else
-#endif
 	if (s_scc.a[1].TxIP && s_scc.a[1].TxIE) {
 		s_scc.SCC_Interrupt_Type = SCC_B_Tx_Empty;
 	} else
@@ -572,17 +586,9 @@ static void SCC_InitChannel(int chan)
 static void SCC_ResetChannel(int chan)
 {
 /* RR 0 */
-#if EmLocalTalk
 	s_scc.a[chan].RxBuff = 0;
-#endif
-#if EmLocalTalk
-	/* otherwise RxChrAvail always false */
 	s_scc.a[chan].RxChrAvail = false;
-#endif
-#if EmLocalTalk
-	/* otherwise TxBufferEmpty always true */
 	s_scc.a[chan].TxBufferEmpty = true;
-#endif
 	s_scc.a[chan].TxUnderrun = true;
 /* RR 1 */
 #if EmLocalTalk
@@ -647,12 +653,8 @@ static void SCC_ResetChannel(int chan)
 #if SCC_TrackMore
 	s_scc.a[chan].TBitsPerChar = 0;
 #endif
-#if EmLocalTalk || SCC_TrackMore
 	s_scc.a[chan].RxIntMode = 0;
-#endif
-#if EmLocalTalk || SCC_TrackMore
 	s_scc.a[chan].FirstChar = false;
-#endif
 #if EmLocalTalk || SCC_TrackMore
 	s_scc.a[chan].SyncMode = 0;
 #endif
@@ -829,16 +831,11 @@ static uint8_t SCC_GetRR0(int chan)
 	return 0
 		| (s_scc.a[chan].TxUnderrun ? (1 << 6) : 0)
 		| (s_scc.a[chan].SyncHunt ? (1 << 4) : 0)
-#if EmLocalTalk
 		| (s_scc.a[chan].TxBufferEmpty ? (1 << 2) : 0)
-#else
-		/* otherwise TxBufferEmpty always true */
-		| (1 << 2)
-#endif
-#if EmLocalTalk
-		/* otherwise RxChrAvail always false */
 		| (s_scc.a[chan].RxChrAvail ? (1 << 0) : 0)
-#endif
+		/* When a serial backend is attached, assert DCD (bit 3)
+		   and CTS (bit 5) so guest software sees a connected device. */
+		| (s_serialBackend[chan] ? ((1 << 5) | (1 << 3)) : 0)
 		;
 }
 
@@ -938,6 +935,13 @@ static uint8_t SCC_GetRR8(int chan)
 	/* Receive Buffer */
 	/* happens on boot with appletalk on */
 	if (s_scc.a[chan].RxEnable) {
+		if (s_serialBackend[chan] && s_scc.a[chan].RxChrAvail) {
+			/* Serial backend path: return buffered byte */
+			value = s_scc.a[chan].RxBuff;
+			s_scc.a[chan].RxChrAvail = false;
+			s_scc.a[chan].FirstChar = false;
+			CheckSCCInterruptFlag();
+		} else
 #if EmLocalTalk
 		if (0 != chan) {
 			/*
@@ -1194,7 +1198,6 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 	}
 #endif
 
-#if EmLocalTalk || SCC_TrackMore
 	{
 		uint8_t NewRxIntMode = (Data >> 3) & 3;
 		if (s_scc.a[chan].RxIntMode != NewRxIntMode) {
@@ -1232,7 +1235,6 @@ static void SCC_PutWR1(uint8_t Data, int chan)
 			}
 		}
 	}
-#endif
 
 #if SCC_TrackMore
 	{
@@ -1786,7 +1788,9 @@ static void SCC_PutWR8(uint8_t Data, int chan)
 	/* happens in Print to ImageWriter */
 
 #if ! (EmLocalTalk || SCC_dolog)
-	UNUSED(Data);
+	/* Data always consumed when a serial backend is attached,
+	   but suppress the warning for the no-backend-no-LocalTalk path. */
+	(void)Data;
 #endif
 
 #if SCC_dolog
@@ -1803,14 +1807,19 @@ static void SCC_PutWR8(uint8_t Data, int chan)
 	if (s_scc.a[chan].TxEnable) { /* Tx Enable */
 		/* Output (Data) to Modem(B) or Printer(A) Port */
 
-		/* happens on boot with appletalk on */
+		if (s_serialBackend[chan]) {
+			s_serialBackend[chan]->txByte(Data);
+		} else
+		{
+			/* happens on boot with appletalk on */
 #if EmLocalTalk
-		if (0 != chan) {
-			SCC_TxBuffPut(Data);
-		}
+			if (0 != chan) {
+				SCC_TxBuffPut(Data);
+			}
 #else
-		s_scc.a[chan].TxUnderrun = true; /* underrun ? */
+			s_scc.a[chan].TxUnderrun = true; /* underrun ? */
 #endif
+		}
 
 		s_scc.a[chan].TxIP = true;
 		CheckSCCInterruptFlag();
@@ -2505,4 +2514,31 @@ static void SCC_PutReg(uint8_t Data, int chan, uint8_t SCC_Reg)
 	}
 
 	return Data;
+}
+
+/* --- Serial backend support --- */
+
+void SCCDevice::setBackend(int chan, std::unique_ptr<SerialBackend> backend)
+{
+	if (chan < 0 || chan > 1) return;
+	s_serialBackend[chan] = std::move(backend);
+}
+
+void SCCDevice::serialTick()
+{
+	for (int chan = 0; chan < 2; ++chan) {
+		if (!s_serialBackend[chan]) continue;
+
+		s_serialBackend[chan]->poll();
+
+		/* Deliver one received byte if the channel is ready. */
+		if (s_scc.a[chan].RxEnable
+			&& !s_scc.a[chan].RxChrAvail
+			&& s_serialBackend[chan]->rxReady())
+		{
+			s_scc.a[chan].RxBuff = s_serialBackend[chan]->rxByte();
+			s_scc.a[chan].RxChrAvail = true;
+			CheckSCCInterruptFlag();
+		}
+	}
 }
