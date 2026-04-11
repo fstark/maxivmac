@@ -39,7 +39,12 @@ All trace output in the subsystem should use the macro.  Setting
 
 | Tag | Subsystem | File | Flag |
 |:---:|---|---|---|
+| SER | Serial backends | `src/devices/scc.cpp` | `SER_dolog` |
 | VID | Video card / display | `src/devices/video.cpp` | `VID_dolog` |
+
+Note: backend attachment lines (`[SER] ch0: PTY backend -> ...`) are
+always printed regardless of `SER_dolog`, so the user always sees which
+PTY to connect to.
 
 New subsystems should follow the same pattern: three uppercase letters,
 a `_dolog` flag, and a `_LOG` macro.

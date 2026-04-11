@@ -41,6 +41,16 @@ static std::unique_ptr<SerialBackend> s_serialBackend[2];
 #define SCC_dolog 0
 #define SCC_TrackMore 0
 
+/* Serial backend byte-level tracing.  Set to 1 to see TX/RX/poll on stderr. */
+#define SER_dolog 1
+
+#if SER_dolog
+#include <cstdio>
+#define SER_LOG(fmt, ...) std::fprintf(stderr, "[SER] " fmt "\n", ##__VA_ARGS__)
+#else
+#define SER_LOG(fmt, ...) ((void)0)
+#endif
+
 #if EmLocalTalk
 
 static bool s_ctsPacketPending = false;
@@ -1808,6 +1818,8 @@ static void SCC_PutWR8(uint8_t Data, int chan)
 		/* Output (Data) to Modem(B) or Printer(A) Port */
 
 		if (s_serialBackend[chan]) {
+			SER_LOG("ch%d TX 0x%02X '%c'", chan, Data,
+				(Data >= 0x20 && Data < 0x7F) ? (char)Data : '.');
 			s_serialBackend[chan]->txByte(Data);
 		} else
 		{
@@ -2538,6 +2550,11 @@ void SCCDevice::serialTick()
 		{
 			s_scc.a[chan].RxBuff = s_serialBackend[chan]->rxByte();
 			s_scc.a[chan].RxChrAvail = true;
+			SER_LOG("ch%d RX 0x%02X '%c' (RxIntMode=%d)", chan,
+				s_scc.a[chan].RxBuff,
+				(s_scc.a[chan].RxBuff >= 0x20 && s_scc.a[chan].RxBuff < 0x7F)
+					? (char)s_scc.a[chan].RxBuff : '.',
+				s_scc.a[chan].RxIntMode);
 			CheckSCCInterruptFlag();
 		}
 	}
