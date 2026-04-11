@@ -13,6 +13,7 @@
 #include <libslirp.h>
 #include <memory>
 #include <queue>
+#include <string>
 #include <vector>
 
 class SlirpBackend : public SerialBackend
@@ -30,10 +31,22 @@ public:
 	/* libslirp callback: a packet arrived from the network */
 	void onSlirpOutput(const uint8_t *pkt, size_t len);
 
+	/* Add a host->guest port forward.  Call after construction. */
+	bool addHostFwd(bool isUDP, uint16_t hostPort, const char *guestIP, uint16_t guestPort);
+
+	/* poll fd tracking for slirp_pollfds_fill_socket / poll / get_revents */
+	struct PollEntry
+	{
+		int fd;
+		int events;
+		int revents;
+	};
+
 private:
 	Slirp *slirp_ = nullptr;
-	slip::Decoder decoder_;			/* guest TX: decode SLIP → IP */
+	slip::Decoder decoder_;			/* guest TX: decode SLIP -> IP */
 	std::queue<uint8_t> txToGuest_; /* guest RX: SLIP-encoded queue */
+	std::vector<PollEntry> pollFds_;
 };
 
 #endif /* HAVE_SLIRP */
