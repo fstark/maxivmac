@@ -26,7 +26,7 @@ RTC Parameter RAM
 16, A8
 17, 0
 18, 0
-19, 22
+19, 21
 20, CC
 21, A
 22, CC
