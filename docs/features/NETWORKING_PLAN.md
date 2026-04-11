@@ -1,11 +1,11 @@
 # Networking Implementation Plan
 
-## Status: Not started — blocked on SERIAL_PLAN.md
+## Status: Phases 1–4 complete — networking infrastructure built
 
 Companion docs:
 - `docs/features/NETWORKING.md` — architecture, rationale, guest setup
 - `docs/features/SERIAL.md` — serial port subsystem (prerequisite)
-- `SERIAL_PLAN.md` — serial implementation plan (must be completed first)
+- `SERIAL_PLAN.md` — serial implementation plan (completed)
 
 ## Prerequisite
 
@@ -19,12 +19,12 @@ directions with proper SCC interrupt generation.
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | SLIP codec (pure library, unit-tested) | Not started |
-| 2 | CMake libslirp integration | Not started |
-| 3 | SlirpBackend implementation | Not started |
-| 4 | `--serial-a=slip` wiring | Not started |
-| 5 | Integration test: MacTCP Ping | Not started |
-| 6 | TCP/DNS validation + polish | Not started |
+| 1 | SLIP codec (pure library, unit-tested) | Done (08983b0) |
+| 2 | CMake libslirp integration | Done (c552eb1) |
+| 3 | SlirpBackend implementation | Done (d314f7c) |
+| 4 | `--serial-a=slip` wiring | Done (e87cb19) |
+| 5 | Integration test: MacTCP Ping | Not started (manual) |
+| 6 | TCP/DNS validation + polish | Not started (manual) |
 
 Build gate: `cmake --build bld/macos && cmake --build bld/macos-headless`
 Test gate:  `cd test && ./verify.sh`
