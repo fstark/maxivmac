@@ -12,7 +12,7 @@
 /* -----------------------------------------------------------------------
    LOG — SLP subsystem (SLIP framing)
    ----------------------------------------------------------------------- */
-#define SLP_dolog 1
+#define SLP_dolog 0
 
 #if SLP_dolog
 #define SLP_LOG(fmt, ...) std::fprintf(stderr, "[SLP] " fmt "\n", ##__VA_ARGS__)
@@ -32,7 +32,6 @@ constexpr uint8_t ESC_ESC = 0xDD;
 /* Encode an IP packet into SLIP-framed bytes appended to `out`. */
 inline void encode(const uint8_t *pkt, size_t len, std::vector<uint8_t> &out)
 {
-	size_t before = out.size();
 	out.push_back(END); /* flush any line noise */
 	for (size_t i = 0; i < len; ++i)
 	{
@@ -52,7 +51,7 @@ inline void encode(const uint8_t *pkt, size_t len, std::vector<uint8_t> &out)
 		}
 	}
 	out.push_back(END);
-	SLP_LOG("encode: %zu bytes -> %zu framed", len, out.size() - before);
+	SLP_LOG("encode: %zu bytes -> %zu framed", len, out.size());
 }
 
 /*

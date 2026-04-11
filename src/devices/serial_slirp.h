@@ -43,6 +43,8 @@ public:
 	};
 
 private:
+	void handleArp(const uint8_t *frame, size_t len);
+
 	Slirp *slirp_ = nullptr;
 	slip::Decoder decoder_;			/* guest TX: decode SLIP -> IP */
 	std::queue<uint8_t> txToGuest_; /* guest RX: SLIP-encoded queue */

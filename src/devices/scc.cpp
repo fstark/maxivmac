@@ -42,7 +42,7 @@ static std::unique_ptr<SerialBackend> s_serialBackend[2];
 #define SCC_TrackMore 0
 
 /* Serial backend byte-level tracing.  Set to 1 to see TX/RX/poll on stderr. */
-#define SER_dolog 1
+#define SER_dolog 0
 
 #if SER_dolog
 #include <cstdio>
@@ -1006,6 +1006,15 @@ static uint8_t SCC_GetRR8(int chan)
 			value = s_scc.a[chan].RxBuff;
 			s_scc.a[chan].RxChrAvail = false;
 			s_scc.a[chan].FirstChar = false;
+
+			/* Immediately refill from backend so the next read
+			   doesn't have to wait for the 1/60s serialTick(). */
+			if (s_serialBackend[chan]->rxReady())
+			{
+				s_scc.a[chan].RxBuff = s_serialBackend[chan]->rxByte();
+				s_scc.a[chan].RxChrAvail = true;
+			}
+
 			CheckSCCInterruptFlag();
 		}
 		else
