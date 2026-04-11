@@ -13,37 +13,38 @@
 #include "platform/display_state.h"
 #include <cstdint>
 
-class EmulatorShell {
+class EmulatorShell
+{
 public:
-	explicit EmulatorShell(PlatformBackend* backend);
+	explicit EmulatorShell(PlatformBackend *backend);
 	~EmulatorShell();
 
 	/* --- Lifecycle --- */
-	bool init(int argc, char** argv);
+	bool init(int argc, char **argv);
 
 	/* Two-phase init for the model selector flow:
 	   initPlatform() sets up backend, window, paths — no emulation.
 	   initMachine() does everything else (ROM, RAM, devices, boot).
 	   The old init() is equivalent to initPlatform() + initMachine(). */
-	bool initPlatform(int argc, char** argv);
+	bool initPlatform(int argc, char **argv);
 	bool initMachine();
 
 	bool isMachineInited() const { return machineInited_; }
 	bool isRomLoaded() const { return romLoaded_; }
 	void setRomLoaded(bool v) { romLoaded_ = v; }
-	char* getAppParent() const { return appParent_; }
-	DisplayState& display() { return display_; }
+	char *getAppParent() const { return appParent_; }
+	DisplayState &display() { return display_; }
 
-	void queueMessage(const char* brief, const char* longMsg, bool fatal);
+	void queueMessage(const char *brief, const char *longMsg, bool fatal);
 	bool hasQueuedMessage() const { return savedBriefMsg_ != nullptr; }
-	const char* getBriefMsg() const { return savedBriefMsg_; }
-	const char* getLongMsg() const { return savedLongMsg_; }
+	const char *getBriefMsg() const { return savedBriefMsg_; }
+	const char *getLongMsg() const { return savedLongMsg_; }
 	void clearQueuedMessage() { savedBriefMsg_ = nullptr; }
 
 	void shutdown();
 
 	/* --- Event dispatch (from backend) --- */
-	void dispatchEvent(const PlatformEvent& evt);
+	void dispatchEvent(const PlatformEvent &evt);
 
 	/* --- State machine (called once per loop iteration) --- */
 	void processSavedTasks();
@@ -59,12 +60,12 @@ public:
 
 	/* --- Framebuffer --- */
 	bool isFramebufferDirty() const { return framebufferDirty_; }
-	const uint8_t* getFramebuffer() const { return argbBuffer_; }
+	const uint8_t *getFramebuffer() const { return argbBuffer_; }
 	void clearDirtyFlag() { framebufferDirty_ = false; }
 	void doneWithDrawingForTick();
 
 	/* --- Disk --- */
-	bool insertDiskOrRom(const char* path, bool silent);
+	bool insertDiskOrRom(const char *path, bool silent);
 
 	/* --- Fullscreen toggle (called from control_mode.cpp) --- */
 	void toggleWantFullScreen();
@@ -76,7 +77,7 @@ public:
 	void setFullscreenHint(bool fs) { fullscreenHint_ = fs; }
 
 	/* --- Window title --- */
-	const char* windowTitle() const;
+	const char *windowTitle() const;
 
 	/* --- Video accessors --- */
 	bool useMagnify() const { return useMagnify_; }
@@ -104,7 +105,7 @@ private:
 	void uninitWhereAmI();
 	bool loadInitialImages();
 
-	PlatformBackend* backend_;
+	PlatformBackend *backend_;
 
 	/* --- Video state --- */
 	int hOffset_ = 0;
@@ -126,8 +127,18 @@ private:
 	bool fullscreenHint_ = false;
 
 	/* --- Window position tracking --- */
-	enum { kMagStateNormal = 0, kMagStateMagnifgy = 1, kNumMagStates = 2 };
-	enum { kWinStateWindowed = 0, kWinStateFullScreen = 1, kNumWinStates = 2 };
+	enum
+	{
+		kMagStateNormal = 0,
+		kMagStateMagnifgy = 1,
+		kNumMagStates = 2
+	};
+	enum
+	{
+		kWinStateWindowed = 0,
+		kWinStateFullScreen = 1,
+		kNumWinStates = 2
+	};
 	static constexpr int kMagStateAuto = kNumMagStates;
 
 	int curWinIndx_ = 0;
@@ -137,16 +148,16 @@ private:
 	int winMagStates_[kNumWinStates] = {};
 
 	/* --- Command line / paths --- */
-	char* d_arg_ = nullptr;
-	char* n_arg_ = nullptr;
-	char* pref_dir_ = nullptr;
-	char* romPath_ = nullptr;
-	char* appParent_ = nullptr;
+	char *d_arg_ = nullptr;
+	char *n_arg_ = nullptr;
+	char *pref_dir_ = nullptr;
+	char *romPath_ = nullptr;
+	char *appParent_ = nullptr;
 	int argc_ = 0;
-	char** argv_ = nullptr;
+	char **argv_ = nullptr;
 
 	/* --- Framebuffer --- */
-	uint8_t* argbBuffer_ = nullptr;
+	uint8_t *argbBuffer_ = nullptr;
 	bool framebufferDirty_ = false;
 
 	/* --- Init state --- */
@@ -157,12 +168,12 @@ private:
 	DisplayState display_;
 
 	/* --- Queued error message (single-slot) --- */
-	const char* savedBriefMsg_ = nullptr;
-	const char* savedLongMsg_ = nullptr;
+	const char *savedBriefMsg_ = nullptr;
+	const char *savedLongMsg_ = nullptr;
 	bool savedFatalMsg_ = false;
 };
 
 /* Global shell pointer for free-function wrappers. */
-extern EmulatorShell* g_shell;
+extern EmulatorShell *g_shell;
 
 #endif /* EMULATOR_SHELL_H */

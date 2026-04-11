@@ -14,21 +14,21 @@
 
 
 #include "platform/platform_defs.h"
-	/*
-		Configuration file independent of user options
-		for operating system glue.
-		Application metadata and standard library includes.
-	*/
+/*
+	Configuration file independent of user options
+	for operating system glue.
+	Application metadata and standard library includes.
+*/
 #include "core/types.h"
-	/*
-		Configuration file independent of user options
-		for all code.
-		In particular, configuration for current compiler.
-	*/
+/*
+	Configuration file independent of user options
+	for all code.
+	In particular, configuration for current compiler.
+*/
 #include "core/defaults.h"
-	/*
-		Default configuration of compiler
-		If options for compiler haven't been defined in any
-		configuration files, they are defined here.
-	*/
+/*
+	Default configuration of compiler
+	If options for compiler haven't been defined in any
+	configuration files, they are defined here.
+*/
 #include "core/endian.h"

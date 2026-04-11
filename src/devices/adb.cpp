@@ -6,7 +6,6 @@
 #include "core/ict_scheduler.h"
 
 
-
 #include "devices/adb.h"
 #include "devices/via.h"
 #include "core/wire_bus.h"
@@ -36,9 +35,11 @@ void ADBDevice::doNewState()
 #endif
 	{
 		g_wires.set(Wire_VIA1_iB3_ADB_Int, 1);
-		switch (state) {
+		switch (state)
+		{
 			case 0: /* Start a new command */
-				if (ADB_ListenDatBuf) {
+				if (ADB_ListenDatBuf)
+				{
 					ADB_ListenDatBuf = false;
 					ADB_SzDatBuf = ADB_IndexDatBuf;
 					ADB_EndListen();
@@ -46,13 +47,15 @@ void ADBDevice::doNewState()
 				s_adbTalkDatBuf = false;
 				ADB_IndexDatBuf = 0;
 				ADB_CurCmd = machine_->findDevice<VIA1Device>()->shiftOutData();
-					/* which sets interrupt, acknowleding command */
+				/* which sets interrupt, acknowleding command */
 #ifdef _VIA_Debug
 				fprintf(stderr, "in: %d\n", ADB_CurCmd);
 #endif
-				switch ((ADB_CurCmd >> 2) & 3) {
+				switch ((ADB_CurCmd >> 2) & 3)
+				{
 					case 0: /* reserved */
-						switch (ADB_CurCmd & 3) {
+						switch (ADB_CurCmd & 3)
+						{
 							case 0: /* Send Reset */
 								ADB_DoReset();
 								break;
@@ -62,13 +65,13 @@ void ADBDevice::doNewState()
 							case 2: /* reserved */
 							case 3: /* reserved */
 								ReportAbnormalID(AbnormalID::kADB_Reserved_ADB_command,
-									"Reserved ADB command");
+												 "Reserved ADB command");
 								break;
 						}
 						break;
 					case 1: /* reserved */
 						ReportAbnormalID(AbnormalID::kADB_Reserved_ADB_command_2,
-							"Reserved ADB command");
+										 "Reserved ADB command");
 						break;
 					case 2: /* listen */
 						ADB_ListenDatBuf = true;
@@ -83,55 +86,72 @@ void ADBDevice::doNewState()
 				break;
 			case 1: /* Transfer date byte (even) */
 			case 2: /* Transfer date byte (odd) */
-				if (! ADB_ListenDatBuf) {
+				if (!ADB_ListenDatBuf)
+				{
 					/*
 						will get here even if no pending talk data,
 						when there is pending event from device
 						other than the one polled by the last talk
 						command. this probably indicates a bug.
 					*/
-					if ((! s_adbTalkDatBuf)
-						|| (ADB_IndexDatBuf >= ADB_SzDatBuf))
+					if ((!s_adbTalkDatBuf) || (ADB_IndexDatBuf >= ADB_SzDatBuf))
 					{
 						machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
-					g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
-					g_wires.set(Wire_VIA1_iB3_ADB_Int, 0);
-					} else {
+						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
+						g_wires.set(Wire_VIA1_iB3_ADB_Int, 0);
+					}
+					else
+					{
 #ifdef _VIA_Debug
 						fprintf(stderr, "*** talk one\n");
 #endif
-						machine_->findDevice<VIA1Device>()->shiftInData(ADB_DatBuf[ADB_IndexDatBuf]);
-					g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
+						machine_->findDevice<VIA1Device>()->shiftInData(
+							ADB_DatBuf[ADB_IndexDatBuf]);
+						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 						ADB_IndexDatBuf += 1;
 					}
-				} else {
-					if (ADB_IndexDatBuf >= ADB_MaxSzDatBuf) {
-						ReportAbnormalID(AbnormalID::kADB_ADB_listen_too_much, "ADB listen too much");
-							/* ADB_MaxSzDatBuf isn't big enough */
-						(void) machine_->findDevice<VIA1Device>()->shiftOutData();
-					} else {
+				}
+				else
+				{
+					if (ADB_IndexDatBuf >= ADB_MaxSzDatBuf)
+					{
+						ReportAbnormalID(AbnormalID::kADB_ADB_listen_too_much,
+										 "ADB listen too much");
+						/* ADB_MaxSzDatBuf isn't big enough */
+						(void)machine_->findDevice<VIA1Device>()->shiftOutData();
+					}
+					else
+					{
 #ifdef _VIA_Debug
 						fprintf(stderr, "*** listen one\n");
 #endif
-						ADB_DatBuf[ADB_IndexDatBuf] = machine_->findDevice<VIA1Device>()->shiftOutData();
+						ADB_DatBuf[ADB_IndexDatBuf] =
+							machine_->findDevice<VIA1Device>()->shiftOutData();
 						ADB_IndexDatBuf += 1;
 					}
 				}
 				break;
 			case 3: /* idle */
-				if (ADB_ListenDatBuf) {
-					ReportAbnormalID(AbnormalID::kADB_ADB_idle_follows_listen, "ADB idle follows listen");
+				if (ADB_ListenDatBuf)
+				{
+					ReportAbnormalID(AbnormalID::kADB_ADB_idle_follows_listen,
+									 "ADB idle follows listen");
 					/* apparently doesn't happen */
 				}
-				if (s_adbTalkDatBuf) {
-					if (ADB_IndexDatBuf != 0) {
+				if (s_adbTalkDatBuf)
+				{
+					if (ADB_IndexDatBuf != 0)
+					{
 						ReportAbnormalID(AbnormalID::kADB_idle_when_not_done_talking,
-							"idle when not done talking");
+										 "idle when not done talking");
 					}
 					machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
 					/* ADB_Int = 0; */
-				} else if (CheckForADBanyEvt()) {
-					if (((ADB_CurCmd >> 2) & 3) == 3) {
+				}
+				else if (CheckForADBanyEvt())
+				{
+					if (((ADB_CurCmd >> 2) & 3) == 3)
+					{
 						ADB_DoTalk();
 					}
 					machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
@@ -145,23 +165,21 @@ void ADBDevice::doNewState()
 void ADBDevice::stateChangeNtfy()
 {
 #ifdef _VIA_Debug
-	fprintf(stderr, "ADBstate_ChangeNtfy: %d, %d, %d\n",
-		ADB_st1, ADB_st0, g_ict.getCurrent());
+	fprintf(stderr, "ADBstate_ChangeNtfy: %d, %d, %d\n", ADB_st1, ADB_st0, g_ict.getCurrent());
 #endif
-	g_ict.add(kICT_ADB_NewState,
-		348160UL * kCycleScale / 64 * machine_->config().clockMult);
-		/*
-			Macintosh Family Hardware Reference say device "must respond
-			to talk command within 260 microseconds", which translates
-			to about 190 instructions. But haven't seen much problems
-			even for very large values (tens of thousands), and do see
-			problems for small values. 50 is definitely too small,
-			mouse doesn't move smoothly. There may still be some
-			signs of this problem with 150.
+	g_ict.add(kICT_ADB_NewState, 348160UL * kCycleScale / 64 * machine_->config().clockMult);
+	/*
+		Macintosh Family Hardware Reference say device "must respond
+		to talk command within 260 microseconds", which translates
+		to about 190 instructions. But haven't seen much problems
+		even for very large values (tens of thousands), and do see
+		problems for small values. 50 is definitely too small,
+		mouse doesn't move smoothly. There may still be some
+		signs of this problem with 150.
 
-			On the other hand, how fast the device must respond may
-			not be related to how fast the ADB transceiver responds.
-		*/
+		On the other hand, how fast the device must respond may
+		not be related to how fast the ADB transceiver responds.
+	*/
 }
 
 void ADBDevice::dataLineChngNtfy()
@@ -175,21 +193,25 @@ void ADBDevice::update()
 {
 	uint8_t state = ADB_st1 * 2 + ADB_st0;
 
-	if (state == 3) { /* idle */
-		if (s_adbTalkDatBuf) {
-			/* ignore, presumably being taken care of */
-		} else if (CheckForADBanyEvt())
+	if (state == 3)
+	{ /* idle */
+		if (s_adbTalkDatBuf)
 		{
-			if (((ADB_CurCmd >> 2) & 3) == 3) {
+			/* ignore, presumably being taken care of */
+		}
+		else if (CheckForADBanyEvt())
+		{
+			if (((ADB_CurCmd >> 2) & 3) == 3)
+			{
 				ADB_DoTalk();
 			}
 			machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
-				/*
-					Wouldn't expect this would be needed unless
-					there is actually talk data. But without it,
-					ADB never polls the other devices. Clearing
-					ADB_Int has no effect.
-				*/
+			/*
+				Wouldn't expect this would be needed unless
+				there is actually talk data. But without it,
+				ADB never polls the other devices. Clearing
+				ADB_Int has no effect.
+			*/
 			/*
 				ADB_Int = 0;
 				seems to have no effect, which probably indicates a bug

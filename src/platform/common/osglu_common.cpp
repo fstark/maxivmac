@@ -18,7 +18,7 @@ extern void dbglog_close0();
 
 /* --- global variables --- */
 
-uint8_t * g_rom = nullptr;
+uint8_t *g_rom = nullptr;
 
 uint32_t g_sonyWritableMask = 0;
 uint32_t g_sonyInsertedMask = 0;
@@ -65,13 +65,13 @@ uint8_t g_ltNodeHint = 0;
 bool g_certainlyNotMyPacket = false;
 #endif
 
-uint8_t * g_ltTxBuffer = nullptr;
+uint8_t *g_ltTxBuffer = nullptr;
 
 /* Transmit state */
 uint16_t g_ltTxBuffSz = 0;
 
 /* Receive state */
-uint8_t * g_ltRxBuffer = nullptr;
+uint8_t *g_ltRxBuffer = nullptr;
 uint32_t g_ltRxBuffSz = 0;
 
 #endif
@@ -87,8 +87,10 @@ bool FirstFreePbuf(PbufIndex *r)
 {
 	PbufIndex i;
 
-	for (i = 0; i < NumPbufs; ++i) {
-		if (! PbufIsAllocated(i)) {
+	for (i = 0; i < NumPbufs; ++i)
+	{
+		if (!PbufIsAllocated(i))
+		{
 			*r = i;
 			return true;
 		}
@@ -104,18 +106,23 @@ void PbufNewNotify(PbufIndex pbufNo, uint32_t count)
 
 void PbufDisposeNotify(PbufIndex pbufNo)
 {
-	g_pbufAllocatedMask &= ~ ((uint32_t)1 << pbufNo);
+	g_pbufAllocatedMask &= ~((uint32_t)1 << pbufNo);
 }
 
 tMacErr CheckPbuf(PbufIndex pbufNo)
 {
 	tMacErr result;
 
-	if (pbufNo >= NumPbufs) {
+	if (pbufNo >= NumPbufs)
+	{
 		result = tMacErr::nsDrvErr;
-	} else if (! PbufIsAllocated(pbufNo)) {
+	}
+	else if (!PbufIsAllocated(pbufNo))
+	{
 		result = tMacErr::offLinErr;
-	} else {
+	}
+	else
+	{
 		result = tMacErr::noErr;
 	}
 
@@ -126,7 +133,8 @@ tMacErr PbufGetSize(PbufIndex pbufNo, uint32_t *count)
 {
 	tMacErr result = CheckPbuf(pbufNo);
 
-	if (tMacErr::noErr == result) {
+	if (tMacErr::noErr == result)
+	{
 		*count = PbufSize[pbufNo];
 	}
 
@@ -139,9 +147,12 @@ bool FirstFreeDisk(DriveIndex *driveNo)
 {
 	DriveIndex i;
 
-	for (i = 0; i < NumDrives; ++i) {
-		if (! vSonyIsInserted(i)) {
-			if (nullptr != driveNo) {
+	for (i = 0; i < NumDrives; ++i)
+	{
+		if (!vSonyIsInserted(i))
+		{
+			if (nullptr != driveNo)
+			{
 				*driveNo = i;
 			}
 			return true;
@@ -157,14 +168,15 @@ bool AnyDiskInserted()
 
 void DiskRevokeWritable(DriveIndex driveNo)
 {
-	g_sonyWritableMask &= ~ ((uint32_t)1 << driveNo);
+	g_sonyWritableMask &= ~((uint32_t)1 << driveNo);
 }
 
 void DiskInsertNotify(DriveIndex driveNo, bool locked)
 {
 	fprintf(stderr, "DISK_INSERT drive=%d locked=%d\n", (int)driveNo, (int)locked);
 	g_sonyInsertedMask |= ((uint32_t)1 << driveNo);
-	if (! locked) {
+	if (!locked)
+	{
 		g_sonyWritableMask |= ((uint32_t)1 << driveNo);
 	}
 
@@ -173,8 +185,8 @@ void DiskInsertNotify(DriveIndex driveNo, bool locked)
 
 void DiskEjectedNotify(DriveIndex driveNo)
 {
-	g_sonyWritableMask &= ~ ((uint32_t)1 << driveNo);
-	g_sonyInsertedMask &= ~ ((uint32_t)1 << driveNo);
+	g_sonyWritableMask &= ~((uint32_t)1 << driveNo);
+	g_sonyInsertedMask &= ~((uint32_t)1 << driveNo);
 }
 
 /* --- Screen change detection --- */
@@ -182,11 +194,12 @@ void DiskEjectedNotify(DriveIndex driveNo)
 /* Compare current screen buffer against shadow buffer.
    If anything changed (or the color palette was modified),
    snapshot the current buffer and set g_screenChanged. */
-static bool ScreenFindChanges(uint8_t * screencurrentbuff)
+static bool ScreenFindChanges(uint8_t *screencurrentbuff)
 {
 	uint32_t bufSize;
 
-	if (g_colorMappingChanged) {
+	if (g_colorMappingChanged)
+	{
 		g_colorMappingChanged = false;
 		g_colorTransValid = false;
 		bufSize = (uint32_t)vMacScreenHeight * vMacScreenByteWidth;
@@ -194,13 +207,17 @@ static bool ScreenFindChanges(uint8_t * screencurrentbuff)
 		return true;
 	}
 
-	if (vMacScreenDepth != 0 && g_useColorMode) {
+	if (vMacScreenDepth != 0 && g_useColorMode)
+	{
 		bufSize = (uint32_t)vMacScreenHeight * vMacScreenByteWidth;
-	} else {
+	}
+	else
+	{
 		bufSize = (uint32_t)vMacScreenHeight * vMacScreenMonoByteWidth;
 	}
 
-	if (0 != memcmp(screencurrentbuff, g_screenCompareBuff, bufSize)) {
+	if (0 != memcmp(screencurrentbuff, g_screenCompareBuff, bufSize))
+	{
 		MoveBytes(screencurrentbuff, g_screenCompareBuff, bufSize);
 		return true;
 	}
@@ -217,9 +234,10 @@ void ScreenChangedAll()
 
 /* Detect whether the screen changed since last frame and
    flag it for the platform layer to redraw. */
-void Screen_OutputFrame(uint8_t * screencurrentbuff)
+void Screen_OutputFrame(uint8_t *screencurrentbuff)
 {
-	if (ScreenFindChanges(screencurrentbuff)) {
+	if (ScreenFindChanges(screencurrentbuff))
+	{
 		g_screenChanged = true;
 		QuietEnds();
 	}
@@ -239,60 +257,72 @@ void AutoScrollScreen()
 	int16_t Shift;
 	int16_t Limit;
 
-	if (vMacScreenWidth != g_viewHSize) {
+	if (vMacScreenWidth != g_viewHSize)
+	{
 		Shift = 0;
-		Limit = g_viewHStart
-			+ (g_viewHSize / 16);
-		if (g_curMouseH < Limit) {
-			Shift = (Limit - g_curMouseH + 1) & (~ 1);
+		Limit = g_viewHStart + (g_viewHSize / 16);
+		if (g_curMouseH < Limit)
+		{
+			Shift = (Limit - g_curMouseH + 1) & (~1);
 			Limit = g_viewHStart;
-			if (Shift >= Limit) {
+			if (Shift >= Limit)
+			{
 				Shift = Limit;
 			}
-			Shift = - Shift;
-		} else {
-			Limit = g_viewHStart + g_viewHSize
-				- (g_viewHSize / 16);
-			if (g_curMouseH > Limit) {
-				Shift = (g_curMouseH - Limit + 1) & (~ 1);
+			Shift = -Shift;
+		}
+		else
+		{
+			Limit = g_viewHStart + g_viewHSize - (g_viewHSize / 16);
+			if (g_curMouseH > Limit)
+			{
+				Shift = (g_curMouseH - Limit + 1) & (~1);
 				Limit = vMacScreenWidth - g_viewHSize - g_viewHStart;
-				if (Shift >= Limit) {
+				if (Shift >= Limit)
+				{
 					Shift = Limit;
 				}
 			}
 		}
 
-		if (Shift != 0) {
+		if (Shift != 0)
+		{
 			g_viewHStart += Shift;
 			g_savedMouseH += Shift;
 			ScreenChangedAll();
 		}
 	}
 
-	if (vMacScreenHeight != g_viewVSize) {
+	if (vMacScreenHeight != g_viewVSize)
+	{
 		Shift = 0;
-		Limit = g_viewVStart
-			+ (g_viewVSize / 16);
-		if (g_curMouseV < Limit) {
-			Shift = (Limit - g_curMouseV + 1) & (~ 1);
+		Limit = g_viewVStart + (g_viewVSize / 16);
+		if (g_curMouseV < Limit)
+		{
+			Shift = (Limit - g_curMouseV + 1) & (~1);
 			Limit = g_viewVStart;
-			if (Shift >= Limit) {
+			if (Shift >= Limit)
+			{
 				Shift = Limit;
 			}
-			Shift = - Shift;
-		} else {
-			Limit = g_viewVStart + g_viewVSize
-				- (g_viewVSize / 16);
-			if (g_curMouseV > Limit) {
-				Shift = (g_curMouseV - Limit + 1) & (~ 1);
+			Shift = -Shift;
+		}
+		else
+		{
+			Limit = g_viewVStart + g_viewVSize - (g_viewVSize / 16);
+			if (g_curMouseV > Limit)
+			{
+				Shift = (g_curMouseV - Limit + 1) & (~1);
 				Limit = vMacScreenHeight - g_viewVSize - g_viewVStart;
-				if (Shift >= Limit) {
+				if (Shift >= Limit)
+				{
 					Shift = Limit;
 				}
 			}
 		}
 
-		if (Shift != 0) {
+		if (Shift != 0)
+		{
 			g_viewVStart += Shift;
 			g_savedMouseV += Shift;
 			ScreenChangedAll();
@@ -306,18 +336,21 @@ static void SetLongs(uint32_t *p, long n)
 {
 	long i;
 
-	for (i = n; --i >= 0; ) {
-		*p++ = (uint32_t) -1;
+	for (i = n; --i >= 0;)
+	{
+		*p++ = (uint32_t)-1;
 	}
 }
 
 bool AllocBlock(uint8_t **p, uint32_t n, bool fillOnes)
 {
 	*p = static_cast<uint8_t *>(calloc(1, n));
-	if (*p == nullptr) {
+	if (*p == nullptr)
+	{
 		return false;
 	}
-	if (fillOnes) {
+	if (fillOnes)
+	{
 		SetLongs(reinterpret_cast<uint32_t *>(*p), n / 4);
 	}
 	return true;
@@ -345,8 +378,7 @@ static char *dbglog_bufp = nullptr;
 
 bool dbglog_ReserveAlloc()
 {
-	return AllocBlock((uint8_t * *)&dbglog_bufp, dbglog_bufsz,
-		false);
+	return AllocBlock((uint8_t **)&dbglog_bufp, dbglog_bufsz, false);
 }
 
 #define dbglog_open dbglog_open0
@@ -354,7 +386,8 @@ bool dbglog_ReserveAlloc()
 static void dbglog_close()
 {
 	uint32_t n = MOD_POW2(dbglog_bufpos, dbglog_buflnsz);
-	if (n != 0) {
+	if (n != 0)
+	{
 		dbglog_write0(dbglog_bufp, n);
 	}
 
@@ -369,20 +402,24 @@ static void dbglog_write(char *p, uint32_t L)
 	uint32_t newbufpos = dbglog_bufpos + L;
 	uint32_t newbufdiv = FLOOR_DIV_POW2(newbufpos, dbglog_buflnsz);
 
-	for (;;) {
+	for (;;)
+	{
 		curbufdiv = FLOOR_DIV_POW2(dbglog_bufpos, dbglog_buflnsz);
 		bufposmod = MOD_POW2(dbglog_bufpos, dbglog_buflnsz);
-		if (newbufdiv == curbufdiv) {
+		if (newbufdiv == curbufdiv)
+		{
 			break;
 		}
 		r = dbglog_bufsz - bufposmod;
-		MoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), r);
+		MoveBytes(reinterpret_cast<uint8_t *>(p),
+				  reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), r);
 		dbglog_write0(dbglog_bufp, dbglog_bufsz);
 		L -= r;
 		p += r;
 		dbglog_bufpos += r;
 	}
-	MoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), L);
+	MoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod),
+			  L);
 	dbglog_bufpos = newbufpos;
 }
 
@@ -392,7 +429,8 @@ static uint32_t CStrLength(char *s)
 {
 	char *p = s;
 
-	while (*p++ != 0) {
+	while (*p++ != 0)
+	{
 	}
 	return p - s - 1;
 }
@@ -414,11 +452,15 @@ void dbglog_writeHex(uint32_t x)
 	char *p = s + 16;
 	uint32_t n = 0;
 
-	do {
+	do
+	{
 		v = x & 0x0F;
-		if (v < 10) {
+		if (v < 10)
+		{
 			*--p = '0' + v;
-		} else {
+		}
+		else
+		{
 			*--p = 'A' + v - 10;
 		}
 		x >>= 4;
@@ -435,7 +477,8 @@ void dbglog_writeNum(uint32_t x)
 	char *p = s + 16;
 	uint32_t n = 0;
 
-	do {
+	do
+	{
 		newx = x / (uint32_t)10;
 		*--p = '0' + (x - newx * 10);
 		x = newx;
@@ -449,9 +492,12 @@ void dbglog_writeMacChar(uint8_t x)
 {
 	char s;
 
-	if ((x > 32) && (x < 127)) {
+	if ((x > 32) && (x < 127))
+	{
 		s = x;
-	} else {
+	}
+	else
+	{
 		s = '?';
 	}
 
@@ -486,17 +532,17 @@ void dbglog_writelnNum(char *s, int32_t v)
 }
 
 
-
 /* --- event queue --- */
 
 EvtQEl EvtQA[MyEvtQSz];
 uint16_t EvtQIn = 0;
 uint16_t EvtQOut = 0;
 
-EvtQEl * EvtQOutP()
+EvtQEl *EvtQOutP()
 {
 	EvtQEl *p = nullptr;
-	if (EvtQIn != EvtQOut) {
+	if (EvtQIn != EvtQOut)
+	{
 		p = &EvtQA[EvtQOut & MyEvtQIMask];
 	}
 	return p;
@@ -509,22 +555,26 @@ void EvtQOutDone()
 
 bool EvtQNeedRecover = false;
 
-EvtQEl * EvtQElPreviousIn()
+EvtQEl *EvtQElPreviousIn()
 {
 	EvtQEl *p = nullptr;
-	if (EvtQIn - EvtQOut != 0) {
+	if (EvtQIn - EvtQOut != 0)
+	{
 		p = &EvtQA[(EvtQIn - 1) & MyEvtQIMask];
 	}
 
 	return p;
 }
 
-EvtQEl * EvtQElAlloc()
+EvtQEl *EvtQElAlloc()
 {
 	EvtQEl *p = nullptr;
-	if (EvtQIn - EvtQOut >= MyEvtQSz) {
+	if (EvtQIn - EvtQOut >= MyEvtQSz)
+	{
 		EvtQNeedRecover = true;
-	} else {
+	}
+	else
+	{
 		p = &EvtQA[EvtQIn & MyEvtQIMask];
 
 		++EvtQIn;
@@ -544,17 +594,22 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 	uint8_t *kp = reinterpret_cast<uint8_t *>(theKeys);
 	uint8_t *kpi = &kp[k / 8];
 	bool CurDown = ((*kpi & bit) != 0);
-	if (CurDown != down) {
+	if (CurDown != down)
+	{
 		EvtQEl *p = EvtQElAlloc();
-		if (nullptr != p) {
+		if (nullptr != p)
+		{
 			p->kind = EvtQElKind::Key;
 			p->u.press.key = k;
 			p->u.press.down = down;
 
-			if (down) {
+			if (down)
+			{
 				*kpi |= bit;
-			} else {
-				*kpi &= ~ bit;
+			}
+			else
+			{
+				*kpi &= ~bit;
 			}
 		}
 
@@ -566,9 +621,11 @@ bool g_mouseButtonState = false;
 
 void MyMouseButtonSet(bool down)
 {
-	if (g_mouseButtonState != down) {
+	if (g_mouseButtonState != down)
+	{
 		EvtQEl *p = EvtQElAlloc();
-		if (nullptr != p) {
+		if (nullptr != p)
+		{
 			p->kind = EvtQElKind::MouseButton;
 			p->u.press.down = down;
 
@@ -581,14 +638,19 @@ void MyMouseButtonSet(bool down)
 
 void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
-	if ((dh != 0) || (dv != 0)) {
+	if ((dh != 0) || (dv != 0))
+	{
 		EvtQEl *p = EvtQElPreviousIn();
-		if ((nullptr != p) && (EvtQElKind::MouseDelta == p->kind)) {
+		if ((nullptr != p) && (EvtQElKind::MouseDelta == p->kind))
+		{
 			p->u.pos.h += dh;
 			p->u.pos.v += dv;
-		} else {
+		}
+		else
+		{
 			p = EvtQElAlloc();
-			if (nullptr != p) {
+			if (nullptr != p)
+			{
 				p->kind = EvtQElKind::MouseDelta;
 				p->u.pos.h = dh;
 				p->u.pos.v = dv;
@@ -601,12 +663,15 @@ void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 
 void MyMousePositionSet(uint16_t h, uint16_t v)
 {
-	if ((h != g_curMouseH) || (v != g_curMouseV)) {
+	if ((h != g_curMouseH) || (v != g_curMouseV))
+	{
 		EvtQEl *p = EvtQElPreviousIn();
-		if ((nullptr == p) || (EvtQElKind::MousePos != p->kind)) {
+		if ((nullptr == p) || (EvtQElKind::MousePos != p->kind))
+		{
 			p = EvtQElAlloc();
 		}
-		if (nullptr != p) {
+		if (nullptr != p)
+		{
 			p->kind = EvtQElKind::MousePos;
 			p->u.pos.h = h;
 			p->u.pos.v = v;
@@ -631,22 +696,40 @@ void DisconnectKeyCodes(uint32_t keepMask)
 	int key;
 	uint32_t m;
 
-	for (j = 0; j < 16; ++j) {
+	for (j = 0; j < 16; ++j)
+	{
 		uint8_t k1 = (reinterpret_cast<uint8_t *>(theKeys))[j];
-		if (0 != k1) {
+		if (0 != k1)
+		{
 			uint8_t bit = 1;
-			for (b = 0; b < 8; ++b) {
-				if (0 != (k1 & bit)) {
+			for (b = 0; b < 8; ++b)
+			{
+				if (0 != (k1 & bit))
+				{
 					key = j * 8 + b;
-					switch (key) {
-						case MKC_Control: m = kKeepMaskControl; break;
-						case MKC_CapsLock: m = kKeepMaskCapsLock; break;
-						case MKC_Command: m = kKeepMaskCommand; break;
-						case MKC_Option: m = kKeepMaskOption; break;
-						case MKC_Shift: m = kKeepMaskShift; break;
-						default: m = 0; break;
+					switch (key)
+					{
+						case MKC_Control:
+							m = kKeepMaskControl;
+							break;
+						case MKC_CapsLock:
+							m = kKeepMaskCapsLock;
+							break;
+						case MKC_Command:
+							m = kKeepMaskCommand;
+							break;
+						case MKC_Option:
+							m = kKeepMaskOption;
+							break;
+						case MKC_Shift:
+							m = kKeepMaskShift;
+							break;
+						default:
+							m = 0;
+							break;
 					}
-					if (0 == (keepMask & m)) {
+					if (0 == (keepMask & m))
+					{
 						Keyboard_UpdateKeyMap(key, false);
 					}
 				}
@@ -666,7 +749,8 @@ void EvtQTryRecoverFromFull()
 
 void MacMsg(const char *briefMsg, const char *longMsg, bool fatal)
 {
-	if (g_shell) {
+	if (g_shell)
+	{
 		g_shell->queueMessage(briefMsg, longMsg, fatal);
 	}
 }
@@ -684,9 +768,7 @@ void WarnMsgAbnormalID(uint16_t id)
 
 #if EmLocalTalk
 
-uint32_t e_p[2] = {
-	0, 0
-	};
+uint32_t e_p[2] = {0, 0};
 
 static void EntropyPoolStir()
 {
@@ -711,11 +793,12 @@ static void EntropyPoolAddByte(uint8_t v)
 	EntropyPoolStir();
 }
 
-void EntropyPoolAddPtr(uint8_t * p, uint32_t n)
+void EntropyPoolAddPtr(uint8_t *p, uint32_t n)
 {
 	uint32_t i;
 
-	for (i = n + 1; 0 != --i; ) {
+	for (i = n + 1; 0 != --i;)
+	{
 		EntropyPoolAddByte(*p++);
 	}
 
@@ -725,7 +808,6 @@ void EntropyPoolAddPtr(uint8_t * p, uint32_t n)
 	dbglog_writeHex(e_p[1]);
 	dbglog_writeReturn();
 }
-
 
 
 uint32_t g_ltMyStamp = 0;
@@ -739,17 +821,20 @@ void LT_PickStampNodeHint()
 	{
 		int i = 8 + 1;
 
-		for (;;) {
+		for (;;)
+		{
 			/* user node should be in 1-127 */
 
 			g_ltNodeHint = e_p[1] & 0x7F;
 
 			dbglog_writelnNum("LT_NodeHint ", g_ltNodeHint);
 
-			if (0 != g_ltNodeHint) {
+			if (0 != g_ltNodeHint)
+			{
 				break;
 			}
-			if (0 == --i) {
+			if (0 == --i)
+			{
 				/* just maybe, randomness is broken */
 				g_ltNodeHint = 4;
 				break;

@@ -28,9 +28,9 @@
 */
 bool Mouse_Enabled()
 {
-	if (g_machine->config().emClassicKbrd) {
-		if (auto* scc = g_machine->findDevice<SCCDevice>())
-			return scc->interruptsEnabled();
+	if (g_machine->config().emClassicKbrd)
+	{
+		if (auto *scc = g_machine->findDevice<SCCDevice>()) return scc->interruptsEnabled();
 		return false;
 	}
 	return !ADBMouseDisabled;
@@ -43,7 +43,8 @@ bool Mouse_Enabled()
    for Classic keyboard models via VIA1 wire. */
 void MouseDevice::update()
 {
-	if (0 != MasterEvtQLock) {
+	if (0 != MasterEvtQLock)
+	{
 		--MasterEvtQLock;
 	}
 
@@ -57,40 +58,42 @@ void MouseDevice::update()
 		if start doing this too soon after boot,
 		will mess up memory check
 	*/
-	if (Mouse_Enabled()) {
+	if (Mouse_Enabled())
+	{
 		EvtQEl *p;
 
-		if (
-			(0 == MasterEvtQLock) &&
-			(nullptr != (p = EvtQOutP())))
+		if ((0 == MasterEvtQLock) && (nullptr != (p = EvtQOutP())))
 		{
-			if (g_machine->config().emClassicKbrd
-				&& EvtQElKind::MouseDelta == p->kind)
+			if (g_machine->config().emClassicKbrd && EvtQElKind::MouseDelta == p->kind)
 			{
-				if ((p->u.pos.h != 0) || (p->u.pos.v != 0)) {
-					put_ram_word(0x0828,
-						get_ram_word(0x0828) + p->u.pos.v);
-					put_ram_word(0x082A,
-						get_ram_word(0x082A) + p->u.pos.h);
+				if ((p->u.pos.h != 0) || (p->u.pos.v != 0))
+				{
+					put_ram_word(0x0828, get_ram_word(0x0828) + p->u.pos.v);
+					put_ram_word(0x082A, get_ram_word(0x082A) + p->u.pos.h);
 					put_ram_byte(0x08CE, get_ram_byte(0x08CF));
-						/* Tell MacOS to redraw the Mouse */
+					/* Tell MacOS to redraw the Mouse */
 				}
 				EvtQOutDone();
-			} else
-			if (EvtQElKind::MousePos == p->kind) {
+			}
+			else if (EvtQElKind::MousePos == p->kind)
+			{
 				uint32_t NewMouse = (p->u.pos.v << 16) | p->u.pos.h;
 
-				if (get_ram_long(0x0828) != NewMouse) {
+				if (get_ram_long(0x0828) != NewMouse)
+				{
 					put_ram_long(0x0828, NewMouse);
-						/* Set Mouse Position */
+					/* Set Mouse Position */
 					put_ram_long(0x082C, NewMouse);
-					if (g_machine->config().emClassicKbrd) {
+					if (g_machine->config().emClassicKbrd)
+					{
 						put_ram_byte(0x08CE, get_ram_byte(0x08CF));
-							/* Tell MacOS to redraw the Mouse */
-					} else {
+						/* Tell MacOS to redraw the Mouse */
+					}
+					else
+					{
 						put_ram_long(0x0830, NewMouse);
 						put_ram_byte(0x08CE, 0xFF);
-							/* Tell MacOS to redraw the Mouse */
+						/* Tell MacOS to redraw the Mouse */
 					}
 				}
 				EvtQOutDone();
@@ -102,11 +105,10 @@ void MouseDevice::update()
 	{
 		EvtQEl *p;
 
-		if (
-			(0 == MasterEvtQLock) &&
-			(nullptr != (p = EvtQOutP())))
+		if ((0 == MasterEvtQLock) && (nullptr != (p = EvtQOutP())))
 		{
-			if (EvtQElKind::MouseButton == p->kind) {
+			if (EvtQElKind::MouseButton == p->kind)
+			{
 				g_wires.set(Wire_VIA1_iB3, p->u.press.down ? 0 : 1);
 				EvtQOutDone();
 				MasterEvtQLock = 4;
@@ -119,7 +121,8 @@ void MouseDevice::update()
    layer so the host cursor can track the emulated pointer. */
 void MouseDevice::endTickNotify()
 {
-	if (Mouse_Enabled()) {
+	if (Mouse_Enabled())
+	{
 		/* tell platform specific code where the mouse went */
 		g_curMouseV = get_ram_word(0x082C);
 		g_curMouseH = get_ram_word(0x082E);

@@ -19,8 +19,8 @@ extern bool g_speedStopped;
 extern bool g_runInBackground;
 extern bool g_wantNotAutoSlow;
 
-bool ControlOverlay::draw(UIState currentState, EmulatorShell* shell,
-	ImGuiBackend* backend, UIState& requestedState)
+bool ControlOverlay::draw(UIState currentState, EmulatorShell *shell, ImGuiBackend *backend,
+						  UIState &requestedState)
 {
 	bool stateChanged = false;
 	requestedState = currentState;
@@ -30,9 +30,9 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell* shell,
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(displaySize);
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.55f));
-	ImGuiWindowFlags bgFlags = ImGuiWindowFlags_NoDecoration
-		| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
-		| ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs;
+	ImGuiWindowFlags bgFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+							   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings |
+							   ImGuiWindowFlags_NoInputs;
 	ImGui::Begin("##OverlayBg", nullptr, bgFlags);
 	ImGui::End();
 	ImGui::PopStyleColor();
@@ -40,37 +40,39 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell* shell,
 	/* Centered overlay panel */
 	float panelW = 400;
 	float panelH = 320;
-	ImVec2 panelPos((displaySize.x - panelW) * 0.5f,
-	                (displaySize.y - panelH) * 0.5f);
+	ImVec2 panelPos((displaySize.x - panelW) * 0.5f, (displaySize.y - panelH) * 0.5f);
 	ImGui::SetNextWindowPos(panelPos, ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(panelW, panelH), ImGuiCond_Always);
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.12f, 0.16f, 0.95f));
-	ImGuiWindowFlags panelFlags = ImGuiWindowFlags_NoDecoration
-		| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
-		| ImGuiWindowFlags_NoSavedSettings;
+	ImGuiWindowFlags panelFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+								  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
 
-	if (ImGui::Begin("##OverlayPanel", nullptr, panelFlags)) {
-		if (ImGui::BeginTabBar("OverlayTabs")) {
-			if (ImGui::BeginTabItem("Machine")) {
+	if (ImGui::Begin("##OverlayPanel", nullptr, panelFlags))
+	{
+		if (ImGui::BeginTabBar("OverlayTabs"))
+		{
+			if (ImGui::BeginTabItem("Machine"))
+			{
 				drawMachineTab(shell);
 				ImGui::EndTabItem();
 			}
-			if (ImGui::BeginTabItem("Display")) {
+			if (ImGui::BeginTabItem("Display"))
+			{
 				drawDisplayTab(currentState, backend, requestedState);
-				if (requestedState != currentState)
-					stateChanged = true;
+				if (requestedState != currentState) stateChanged = true;
 				ImGui::EndTabItem();
 			}
-			if (ImGui::BeginTabItem("Speed")) {
+			if (ImGui::BeginTabItem("Speed"))
+			{
 				drawSpeedTab();
 				ImGui::EndTabItem();
 			}
-			if (ImGui::BeginTabItem("Advanced")) {
+			if (ImGui::BeginTabItem("Advanced"))
+			{
 				drawAdvancedTab(currentState, requestedState);
-				if (requestedState != currentState)
-					stateChanged = true;
+				if (requestedState != currentState) stateChanged = true;
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
@@ -85,7 +87,7 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell* shell,
 
 /* ── Machine tab ─────────────────────────────────────── */
 
-void ControlOverlay::drawMachineTab(EmulatorShell* shell)
+void ControlOverlay::drawMachineTab(EmulatorShell *shell)
 {
 	ImGui::Spacing();
 
@@ -94,15 +96,18 @@ void ControlOverlay::drawMachineTab(EmulatorShell* shell)
 	float spacing = 12;
 
 	/* Row 1: Insert Disk, Eject */
-	if (ImGui::Button("Insert Disk", ImVec2(btnW, btnH))) {
+	if (ImGui::Button("Insert Disk", ImVec2(btnW, btnH)))
+	{
 		g_requestInsertDisk = true;
 	}
 	ImGui::SameLine(0, spacing);
 	/* Eject all drives — individual per-drive only possible if we
 	   expose which drives are loaded (future improvement) */
-	if (ImGui::Button("Eject All", ImVec2(btnW, btnH))) {
+	if (ImGui::Button("Eject All", ImVec2(btnW, btnH)))
+	{
 		/* Request eject for drives 1-6 */
-		for (int i = 1; i <= 6; ++i) {
+		for (int i = 1; i <= 6; ++i)
+		{
 			g_requestIthDisk = 0; /* TODO: per-drive eject */
 		}
 	}
@@ -110,16 +115,19 @@ void ControlOverlay::drawMachineTab(EmulatorShell* shell)
 	ImGui::Spacing();
 
 	/* Row 2: Interrupt, Reboot, Power Off */
-	if (ImGui::Button("Interrupt", ImVec2(btnW, btnH))) {
+	if (ImGui::Button("Interrupt", ImVec2(btnW, btnH)))
+	{
 		g_wantMacInterrupt = true;
 	}
 	ImGui::SameLine(0, spacing);
-	if (ImGui::Button("Reboot", ImVec2(btnW, btnH))) {
+	if (ImGui::Button("Reboot", ImVec2(btnW, btnH)))
+	{
 		g_wantMacReset = true;
 	}
 	ImGui::SameLine(0, spacing);
 	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.15f, 0.15f, 1.0f));
-	if (ImGui::Button("Power Off", ImVec2(btnW, btnH))) {
+	if (ImGui::Button("Power Off", ImVec2(btnW, btnH)))
+	{
 		g_requestMacOff = true;
 	}
 	ImGui::PopStyleColor();
@@ -127,7 +135,8 @@ void ControlOverlay::drawMachineTab(EmulatorShell* shell)
 	ImGui::Spacing();
 
 	/* Row 3: Screenshot */
-	if (ImGui::Button("Screenshot", ImVec2(btnW, btnH))) {
+	if (ImGui::Button("Screenshot", ImVec2(btnW, btnH)))
+	{
 		/* TODO: capture framebuffer to clipboard */
 		(void)shell;
 	}
@@ -135,8 +144,8 @@ void ControlOverlay::drawMachineTab(EmulatorShell* shell)
 
 /* ── Display tab ─────────────────────────────────────── */
 
-void ControlOverlay::drawDisplayTab(UIState currentState,
-	ImGuiBackend* backend, UIState& requestedState)
+void ControlOverlay::drawDisplayTab(UIState currentState, ImGuiBackend *backend,
+									UIState &requestedState)
 {
 	ImGui::Spacing();
 	ImGui::Text("Zoom");
@@ -145,11 +154,13 @@ void ControlOverlay::drawDisplayTab(UIState currentState,
 	/* Zoom: maps to g_wantMagnify. For now, simple 1x/2x toggle
 	   since the backend uses windowScale_. */
 	bool magnified = g_wantMagnify;
-	if (ImGui::RadioButton("1x", !magnified)) {
+	if (ImGui::RadioButton("1x", !magnified))
+	{
 		g_wantMagnify = false;
 	}
 	ImGui::SameLine();
-	if (ImGui::RadioButton("2x", magnified)) {
+	if (ImGui::RadioButton("2x", magnified))
+	{
 		g_wantMagnify = true;
 	}
 
@@ -159,11 +170,13 @@ void ControlOverlay::drawDisplayTab(UIState currentState,
 	ImGui::Text("Filter");
 	ImGui::SameLine(80);
 	bool isNearest = (backend->textureFilter() == TextureFilter::Nearest);
-	if (ImGui::RadioButton("Nearest", isNearest)) {
+	if (ImGui::RadioButton("Nearest", isNearest))
+	{
 		backend->setTextureFilter(TextureFilter::Nearest);
 	}
 	ImGui::SameLine();
-	if (ImGui::RadioButton("Linear", !isNearest)) {
+	if (ImGui::RadioButton("Linear", !isNearest))
+	{
 		backend->setTextureFilter(TextureFilter::Linear);
 	}
 
@@ -173,8 +186,7 @@ void ControlOverlay::drawDisplayTab(UIState currentState,
 
 	/* Fullscreen toggle */
 	bool isFullscreen = (currentState == UIState::Fullscreen);
-	if (ImGui::Button(isFullscreen ? "Windowed" : "Fullscreen",
-		ImVec2(120, 36)))
+	if (ImGui::Button(isFullscreen ? "Windowed" : "Fullscreen", ImVec2(120, 36)))
 	{
 		requestedState = isFullscreen ? UIState::Windowed : UIState::Fullscreen;
 	}
@@ -188,19 +200,19 @@ void ControlOverlay::drawSpeedTab()
 	ImGui::Text("Emulation Speed");
 	ImGui::Spacing();
 
-	struct SpeedOption { const char* label; uint8_t value; };
+	struct SpeedOption
+	{
+		const char *label;
+		uint8_t value;
+	};
 	static const SpeedOption speeds[] = {
-		{ "1x",        1 },
-		{ "2x",        2 },
-		{ "4x",        4 },
-		{ "8x",        8 },
-		{ "16x",      16 },
-		{ "32x",      32 },
-		{ "Unlimited", 0 },
+		{"1x", 1}, {"2x", 2}, {"4x", 4}, {"8x", 8}, {"16x", 16}, {"32x", 32}, {"Unlimited", 0},
 	};
 
-	for (const auto& s : speeds) {
-		if (ImGui::RadioButton(s.label, g_speedValue == s.value)) {
+	for (const auto &s : speeds)
+	{
+		if (ImGui::RadioButton(s.label, g_speedValue == s.value))
+		{
 			g_speedValue = s.value;
 		}
 		ImGui::SameLine();
@@ -215,25 +227,25 @@ void ControlOverlay::drawSpeedTab()
 	ImGui::Checkbox("Run in Background", &g_runInBackground);
 
 	bool autoSlow = !g_wantNotAutoSlow;
-	if (ImGui::Checkbox("AutoSlow", &autoSlow)) {
+	if (ImGui::Checkbox("AutoSlow", &autoSlow))
+	{
 		g_wantNotAutoSlow = !autoSlow;
 	}
 }
 
 /* ── Advanced tab ────────────────────────────────────── */
 
-void ControlOverlay::drawAdvancedTab(UIState currentState,
-	UIState& requestedState)
+void ControlOverlay::drawAdvancedTab(UIState currentState, UIState &requestedState)
 {
 	ImGui::Spacing();
 
 	bool isDeveloper = (currentState == UIState::Developer);
-	if (ImGui::Button(isDeveloper ? "Exit Developer Mode" : "Developer Mode",
-		ImVec2(200, 36)))
+	if (ImGui::Button(isDeveloper ? "Exit Developer Mode" : "Developer Mode", ImVec2(200, 36)))
 	{
 		requestedState = isDeveloper ? UIState::Windowed : UIState::Developer;
 	}
-	if (!isDeveloper) {
+	if (!isDeveloper)
+	{
 		ImGui::SameLine();
 		ImGui::TextDisabled("Debug tools");
 	}

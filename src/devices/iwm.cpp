@@ -27,22 +27,22 @@
 	ReportAbnormalID unused 0x0603 - 0x06FF
 */
 
-#define kph0L     0x00 /* CA0 off (0) */
-#define kph0H     0x01 /* CA0 on (1) */
-#define kph1L     0x02 /* CA1 off (0) */
-#define kph1H     0x03 /* CA1 on (1) */
-#define kph2L     0x04 /* CA2 off (0) */
-#define kph2H     0x05 /* CA2 on (1) */
-#define kph3L     0x06 /* LSTRB off (low) */
-#define kph3H     0x07 /* LSTRB on (high) */
-#define kmtrOff   0x08 /* disk enable off */
-#define kmtrOn    0x09 /* disk enable on */
+#define kph0L 0x00	   /* CA0 off (0) */
+#define kph0H 0x01	   /* CA0 on (1) */
+#define kph1L 0x02	   /* CA1 off (0) */
+#define kph1H 0x03	   /* CA1 on (1) */
+#define kph2L 0x04	   /* CA2 off (0) */
+#define kph2H 0x05	   /* CA2 on (1) */
+#define kph3L 0x06	   /* LSTRB off (low) */
+#define kph3H 0x07	   /* LSTRB on (high) */
+#define kmtrOff 0x08   /* disk enable off */
+#define kmtrOn 0x09	   /* disk enable on */
 #define kintDrive 0x0A /* select internal drive */
 #define kextDrive 0x0B /* select external drive */
-#define kq6L      0x0C /* Q6 off */
-#define kq6H      0x0D /* Q6 on */
-#define kq7L      0x0E /* Q7 off */
-#define kq7H      0x0F /* Q7 on */
+#define kq6L 0x0C	   /* Q6 off */
+#define kq6H 0x0D	   /* Q6 on */
+#define kq7L 0x0E	   /* Q7 off */
+#define kq7H 0x0F	   /* Q7 on */
 
 #define kph0 0x01
 #define kph1 0x02
@@ -50,37 +50,43 @@
 #define kph3 0x08
 #define kmtr 0x10
 #define kdrv 0x20
-#define kq6  0x40
-#define kq7  0x80
+#define kq6 0x40
+#define kq7 0x80
 
 struct IWM_Ty
 {
-	uint8_t DataIn;    /* Read Data Register */
+	uint8_t DataIn;	   /* Read Data Register */
 	uint8_t Handshake; /* Read Handshake Register */
-	uint8_t Status;    /* Read Status Register */
+	uint8_t Status;	   /* Read Status Register */
 	uint8_t Mode;
-		/* Drive Off : Write Mode Register */
-		/* Drive On  : Write Data Register */
-	uint8_t DataOut;   /* Write Data Register */
-	uint8_t Lines;     /* Used to Access Disk Drive Registers */
+	/* Drive Off : Write Mode Register */
+	/* Drive On  : Write Data Register */
+	uint8_t DataOut; /* Write Data Register */
+	uint8_t Lines;	 /* Used to Access Disk Drive Registers */
 };
 
 static IWM_Ty IWM;
 
 void IWMDevice::reset()
 {
-	IWM.DataIn = IWM.Handshake = IWM.Status = IWM.Mode =
-		IWM.DataOut = IWM.Lines = 0;
+	IWM.DataIn = IWM.Handshake = IWM.Status = IWM.Mode = IWM.DataOut = IWM.Lines = 0;
 }
 
-typedef enum {On, Off} Mode_Ty;
+typedef enum
+{
+	On,
+	Off
+} Mode_Ty;
 
 // Set or clear a control line bit in IWM.Lines.
 static void IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
 {
-	if (the_mode == Off) {
+	if (the_mode == Off)
+	{
 		IWM.Lines &= (0xFF - line);
-	} else {
+	}
+	else
+	{
 		IWM.Lines |= line;
 	}
 }
@@ -89,31 +95,33 @@ static void IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
    data, status, or handshake. */
 static uint8_t IWM_Read_Reg()
 {
-	switch ((IWM.Lines & (kq6 + kq7)) >> 6) {
-		case 0 :
-		if (!g_machine->config().isSEOrLater()) {
-			ReportAbnormalID(AbnormalID::kVIA2_IWM_Data_Read, "IWM Data Read");
-		}
+	switch ((IWM.Lines & (kq6 + kq7)) >> 6)
+	{
+		case 0:
+			if (!g_machine->config().isSEOrLater())
+			{
+				ReportAbnormalID(AbnormalID::kVIA2_IWM_Data_Read, "IWM Data Read");
+			}
 #if IWM_dolog
 			dbglog_WriteNote("IWM Data Read");
 #endif
 			return IWM.DataIn;
 			break;
-		case 1 :
+		case 1:
 #if IWM_dolog
 			dbglog_WriteNote("IWM Status Read");
 #endif
 			return IWM.Status;
 			break;
-		case 2 :
+		case 2:
 			ReportAbnormalID(AbnormalID::kVIA2_IWM_Handshake_Read, "IWM Handshake Read");
 #if IWM_dolog
 			dbglog_WriteNote("IWM Handshake Read");
 #endif
 			return IWM.Handshake;
 			break;
-		case 3 :
-		default :
+		case 3:
+		default:
 			/*
 				should alway be in 0-3,
 				but compiler warnings don't know that
@@ -126,7 +134,8 @@ static uint8_t IWM_Read_Reg()
 // Write the mode register (only when motor is off).
 static void IWM_Write_Reg(uint8_t in)
 {
-	if (((IWM.Lines & kmtr) >> 4) == 0) {
+	if (((IWM.Lines & kmtr) >> 4) == 0)
+	{
 #if IWM_dolog
 		dbglog_WriteNote("IWM Mode Register Write");
 #endif
@@ -137,65 +146,68 @@ static void IWM_Write_Reg(uint8_t in)
 
 /* Dispatch a memory-mapped IWM register access.
    Decodes the address into a control-line toggle, read, or write. */
- uint32_t IWMDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
+uint32_t IWMDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 {
 #if IWM_dolog
 	dbglog_AddrAccess("IWM", Data, WriteMem, addr);
 #endif
 
-	switch (addr) {
-		case kph0L :
+	switch (addr)
+	{
+		case kph0L:
 			IWM_Set_Lines(kph0, Off);
 			break;
-		case kph0H :
+		case kph0H:
 			IWM_Set_Lines(kph0, On);
 			break;
-		case kph1L :
+		case kph1L:
 			IWM_Set_Lines(kph1, Off);
 			break;
-		case kph1H :
+		case kph1H:
 			IWM_Set_Lines(kph1, On);
 			break;
-		case kph2L :
+		case kph2L:
 			IWM_Set_Lines(kph2, Off);
 			break;
-		case kph2H :
+		case kph2H:
 			IWM_Set_Lines(kph2, On);
 			break;
-		case kph3L :
+		case kph3L:
 			IWM_Set_Lines(kph3, Off);
 			break;
-		case kph3H :
+		case kph3H:
 			IWM_Set_Lines(kph3, On);
 			break;
-		case kmtrOff :
+		case kmtrOff:
 			IWM.Status &= 0xDF;
 			IWM_Set_Lines(kmtr, Off);
 			break;
-		case kmtrOn :
+		case kmtrOn:
 			IWM.Status |= 0x20;
 			IWM_Set_Lines(kmtr, On);
 			break;
-		case kintDrive :
+		case kintDrive:
 			IWM_Set_Lines(kdrv, Off);
 			break;
-		case kextDrive :
+		case kextDrive:
 			IWM_Set_Lines(kdrv, On);
 			break;
-		case kq6L :
+		case kq6L:
 			IWM_Set_Lines(kq6, Off);
 			break;
-		case kq6H :
+		case kq6H:
 			IWM_Set_Lines(kq6, On);
 			break;
-		case kq7L :
-			if (! WriteMem) {
+		case kq7L:
+			if (!WriteMem)
+			{
 				Data = IWM_Read_Reg();
 			}
 			IWM_Set_Lines(kq7, Off);
 			break;
-		case kq7H :
-			if (WriteMem) {
+		case kq7H:
+			if (WriteMem)
+			{
 				IWM_Write_Reg(Data);
 			}
 			IWM_Set_Lines(kq7, On);

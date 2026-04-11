@@ -7,13 +7,13 @@
 #include <cstdint>
 #include <string.h>
 
-class SonyDevice : public Device {
+class SonyDevice : public Device
+{
 public:
-	uint32_t access(uint32_t data, bool /*writeMem*/, uint32_t /*addr*/) override
-		{ return data; }
+	uint32_t access(uint32_t data, bool /*writeMem*/, uint32_t /*addr*/) override { return data; }
 	void zap() override {}
 	void reset() override;
-	const char* name() const override { return "Sony"; }
+	const char *name() const override { return "Sony"; }
 
 	// Extension trap handlers for disk/Sony toolbox calls.
 	void extnDiskAccess(uint32_t p);
@@ -22,4 +22,3 @@ public:
 	void ejectAllDisks();
 	void update();
 };
-

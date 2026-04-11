@@ -10,7 +10,8 @@
 
 #include <cstdint>
 
-class SerialBackend {
+class SerialBackend
+{
 public:
 	virtual ~SerialBackend() = default;
 
@@ -28,5 +29,5 @@ public:
 	virtual void poll() = 0;
 
 	/* Human-readable name for logging. */
-	virtual const char* name() const = 0;
+	virtual const char *name() const = 0;
 };

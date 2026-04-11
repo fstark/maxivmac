@@ -39,11 +39,12 @@ typedef unsigned char flagtype; /* must be 0 or 1, not boolean */
 
 /* Memory Address Translation Cache record */
 
-struct MATCr {
+struct MATCr
+{
 	uint32_t cmpmask;
 	uint32_t cmpvalu;
 	uint32_t usemask;
-	uint8_t * usebase;
+	uint8_t *usebase;
 };
 using MATCp = MATCr *;
 
@@ -51,12 +52,14 @@ using MATCp = MATCr *;
 #define AKMemory 0
 #define AKRegister 1
 
-union ArgAddrT {
+union ArgAddrT
+{
 	uint32_t mem;
 	uint32_t *rga;
 };
 
-enum {
+enum
+{
 	kLazyFlagsDefault,
 	kLazyFlagsTstB,
 	kLazyFlagsTstW,
@@ -90,8 +93,8 @@ static struct regstruct
 {
 	uint32_t regs[16]; /* Data and Address registers */
 
-	uint8_t * pc_p;
-	uint8_t * pc_pHi;
+	uint8_t *pc_p;
+	uint8_t *pc_pHi;
 	int32_t MaxCyclesToGo;
 
 	DecOpR *CurDecOp;
@@ -109,7 +112,7 @@ static struct regstruct
 	ArgSetDstP ArgSetDst;
 	uint32_t SrcVal;
 
-	uint8_t * pc_pLo;
+	uint8_t *pc_pLo;
 	uint32_t pc; /* Program Counter */
 
 	MATCr MATCrdB;
@@ -124,10 +127,10 @@ static struct regstruct
 
 	/* Status Register */
 	uint32_t intmask; /* bits 10-8 : interrupt priority mask */
-	flagtype t1; /* bit 15: Trace mode 1 */
-	flagtype t0; /* bit 14: Trace mode 0 */
-	flagtype s; /* bit 13: Supervisor or user privilege level */
-	flagtype m; /* bit 12: Master or interrupt mode */
+	flagtype t1;	  /* bit 15: Trace mode 1 */
+	flagtype t0;	  /* bit 14: Trace mode 0 */
+	flagtype s;		  /* bit 13: Supervisor or user privilege level */
+	flagtype m;		  /* bit 12: Master or interrupt mode */
 
 	flagtype x; /* bit 4: eXtend */
 	flagtype n; /* bit 3: Negative */
@@ -144,19 +147,19 @@ static struct regstruct
 	struct regstruct *save_regs;
 #endif
 
-	uint32_t usp; /* User Stack Pointer */
-	uint32_t isp; /* Interrupt Stack Pointer */
-	uint32_t msp; /* Master Stack Pointer */
-	uint32_t sfc; /* Source Function Code register */
-	uint32_t dfc; /* Destination Function Code register */
-	uint32_t vbr; /* Vector Base Register */
+	uint32_t usp;  /* User Stack Pointer */
+	uint32_t isp;  /* Interrupt Stack Pointer */
+	uint32_t msp;  /* Master Stack Pointer */
+	uint32_t sfc;  /* Source Function Code register */
+	uint32_t dfc;  /* Destination Function Code register */
+	uint32_t vbr;  /* Vector Base Register */
 	uint32_t cacr; /* Cache Control Register */
-		/*
-			bit 0 : Enable Cache
-			bit 1 : Freeze Cache
-			bit 2 : Clear Entry In Cache (write only)
-			bit 3 : Clear Cache (write only)
-		*/
+				   /*
+					   bit 0 : Enable Cache
+					   bit 1 : Freeze Cache
+					   bit 2 : Clear Entry In Cache (write only)
+					   bit 3 : Clear Cache (write only)
+				   */
 	uint32_t caar; /* Cache Address Register */
 
 #define disp_table_sz (256 * 256)
@@ -170,7 +173,7 @@ static const MachineConfig *s_cpuConfig = nullptr;
 /* Global instruction counter, and logging window [g_LogStart, g_LogEnd). */
 uint32_t g_InstructionCount = 0;
 uint32_t g_LogStart = 0;
-uint32_t g_LogEnd   = 0;
+uint32_t g_LogEnd = 0;
 
 #define ui5r_MSBisSet(x) (((int32_t)(x)) < 0)
 
@@ -178,28 +181,28 @@ uint32_t g_LogEnd   = 0;
 
 
 #ifdef r_regs
-register struct regstruct *g_regs asm (r_regs);
+register struct regstruct *g_regs asm(r_regs);
 #define V_regs (*g_regs)
 #else
 #define V_regs regs
 #endif
 
 #ifdef r_pc_p
-register uint8_t * g_pc_p asm (r_pc_p);
+register uint8_t *g_pc_p asm(r_pc_p);
 #define V_pc_p g_pc_p
 #else
 #define V_pc_p V_regs.pc_p
 #endif
 
 #ifdef r_MaxCyclesToGo
-register int32_t g_MaxCyclesToGo asm (r_MaxCyclesToGo);
+register int32_t g_MaxCyclesToGo asm(r_MaxCyclesToGo);
 #define V_MaxCyclesToGo g_MaxCyclesToGo
 #else
 #define V_MaxCyclesToGo V_regs.MaxCyclesToGo
 #endif
 
 #ifdef r_pc_pHi
-register uint8_t * g_pc_pHi asm (r_pc_pHi);
+register uint8_t *g_pc_pHi asm(r_pc_pHi);
 #define V_pc_pHi g_pc_pHi
 #else
 #define V_pc_pHi V_regs.pc_pHi
@@ -232,7 +235,8 @@ static inline uint16_t nextiword()
 	uint16_t r = do_get_mem_word(V_pc_p);
 	V_pc_p += 2;
 
-	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]]
+	{
 		Recalc_PC_Block();
 	}
 
@@ -244,7 +248,8 @@ static inline uint32_t nextiSByte()
 	uint32_t r = static_cast<uint32_t>(static_cast<int8_t>(do_get_mem_byte(V_pc_p + 1)));
 	V_pc_p += 2;
 
-	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]]
+	{
 		return Recalc_PC_BlockReturnUi5r(r);
 	}
 
@@ -257,7 +262,8 @@ static inline uint32_t nextiSWord()
 	uint32_t r = static_cast<uint32_t>(static_cast<int16_t>(do_get_mem_word(V_pc_p)));
 	V_pc_p += 2;
 
-	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]]
+	{
 		return Recalc_PC_BlockReturnUi5r(r);
 	}
 
@@ -272,7 +278,8 @@ static inline uint32_t nextilong()
 	V_pc_p += 4;
 
 	/* could be two words in different blocks */
-	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]]
+	{
 		r = nextilong_ext();
 	}
 
@@ -283,7 +290,8 @@ static inline void BackupPC()
 {
 	V_pc_p -= 2;
 
-	if (V_pc_p < V_regs.pc_pLo) [[unlikely]] {
+	if (V_pc_p < V_regs.pc_pLo) [[unlikely]]
+	{
 		Recalc_PC_Block();
 	}
 }
@@ -464,182 +472,180 @@ static void DoCodeFPU_dflt();
 
 typedef void (*func_pointer_t)();
 
-static const func_pointer_t OpDispatch[kNumIKinds + 1] = {
-	DoCodeTst /* kIKindTst */,
-	DoCodeCmpB /* kIKindCmpB */,
-	DoCodeCmpW /* kIKindCmpW */,
-	DoCodeCmpL /* kIKindCmpL */,
-	DoCodeBccB /* kIKindBccB */,
-	DoCodeBccW /* kIKindBccW */,
-	DoCodeBraB /* kIKindBraB */,
-	DoCodeBraW /* kIKindBraW */,
-	DoCodeDBcc /* kIKindDBcc */,
-	DoCodeDBF /* kIKindDBF */,
-	DoCodeSwap /* kIKindSwap */,
-	DoCodeMoveL /* kIKindMoveL */,
-	DoCodeMoveW /* kIKindMoveW */,
-	DoCodeMoveB /* kIKindMoveB */,
-	DoCodeMoveA /* kIKindMoveAL */,
-	DoCodeMoveA /* kIKindMoveAW */,
-	DoCodeMoveQ /* kIKindMoveQ */,
-	DoCodeAddB /* kIKindAddB */,
-	DoCodeAddW /* kIKindAddW */,
-	DoCodeAddL /* kIKindAddL */,
-	DoCodeSubB /* kIKindSubB */,
-	DoCodeSubW /* kIKindSubW */,
-	DoCodeSubL /* kIKindSubL */,
-	DoCodeLea /* kIKindLea */,
-	DoCodePEA /* kIKindPEA */,
-	DoCodeA /* kIKindA */,
-	DoCodeBsrB /* kIKindBsrB */,
-	DoCodeBsrW /* kIKindBsrW */,
-	DoCodeJsr /* kIKindJsr */,
-	DoCodeLinkA6 /* kIKindLinkA6 */,
-	DoCodeMOVEMRmML /* kIKindMOVEMRmML */,
-	DoCodeMOVEMApRL /* kIKindMOVEMApRL */,
-	DoCodeUnlkA6 /* kIKindUnlkA6 */,
-	DoCodeRts /* kIKindRts */,
-	DoCodeJmp /* kIKindJmp */,
-	DoCodeClr /* kIKindClr */,
-	DoCodeAddA /* kIKindAddA */,
-	DoCodeAddA /* kIKindAddQA */,
-	DoCodeSubA /* kIKindSubA */,
-	DoCodeSubA /* kIKindSubQA */,
-	DoCodeCmpA /* kIKindCmpA */,
-	DoCodeAddXB /* kIKindAddXB */,
-	DoCodeAddXW /* kIKindAddXW */,
-	DoCodeAddXL /* kIKindAddXL */,
-	DoCodeSubXB /* kIKindSubXB */,
-	DoCodeSubXW /* kIKindSubXW */,
-	DoCodeSubXL /* kIKindSubXL */,
-	DoCodeAslB /* kIKindAslB */,
-	DoCodeAslW /* kIKindAslW */,
-	DoCodeAslL /* kIKindAslL */,
-	DoCodeAsrB /* kIKindAsrB */,
-	DoCodeAsrW /* kIKindAsrW */,
-	DoCodeAsrL /* kIKindAsrL */,
-	DoCodeLslB /* kIKindLslB */,
-	DoCodeLslW /* kIKindLslW */,
-	DoCodeLslL /* kIKindLslL */,
-	DoCodeLsrB /* kIKindLsrB */,
-	DoCodeLsrW /* kIKindLsrW */,
-	DoCodeLsrL /* kIKindLsrL */,
-	DoCodeRxlB /* kIKindRxlB */,
-	DoCodeRxlW /* kIKindRxlW */,
-	DoCodeRxlL /* kIKindRxlL */,
-	DoCodeRxrB /* kIKindRxrB */,
-	DoCodeRxrW /* kIKindRxrW */,
-	DoCodeRxrL /* kIKindRxrL */,
-	DoCodeRolB /* kIKindRolB */,
-	DoCodeRolW /* kIKindRolW */,
-	DoCodeRolL /* kIKindRolL */,
-	DoCodeRorB /* kIKindRorB */,
-	DoCodeRorW /* kIKindRorW */,
-	DoCodeRorL /* kIKindRorL */,
-	DoCodeBTstB /* kIKindBTstB */,
-	DoCodeBChgB /* kIKindBChgB */,
-	DoCodeBClrB /* kIKindBClrB */,
-	DoCodeBSetB /* kIKindBSetB */,
-	DoCodeBTstL /* kIKindBTstL */,
-	DoCodeBChgL /* kIKindBChgL */,
-	DoCodeBClrL /* kIKindBClrL */,
-	DoCodeBSetL /* kIKindBSetL */,
-	DoCodeAnd /* kIKindAndI */,
-	DoCodeAnd /* kIKindAndEaD */,
-	DoCodeAnd /* kIKindAndDEa */,
-	DoCodeOr /* kIKindOrI */,
-	DoCodeOr /* kIKindOrDEa */,
-	DoCodeOr /* kIKindOrEaD */,
-	DoCodeEor /* kIKindEor */,
-	DoCodeEor /* kIKindEorI */,
-	DoCodeNot /* kIKindNot */,
-	DoCodeScc /* kIKindScc */,
-	DoCodeNegXB /* kIKindNegXB */,
-	DoCodeNegXW /* kIKindNegXW */,
-	DoCodeNegXL /* kIKindNegXL */,
-	DoCodeNegB /* kIKindNegB */,
-	DoCodeNegW /* kIKindNegW */,
-	DoCodeNegL /* kIKindNegL */,
-	DoCodeEXTW /* kIKindEXTW */,
-	DoCodeEXTL /* kIKindEXTL */,
-	DoCodeMulU /* kIKindMulU */,
-	DoCodeMulS /* kIKindMulS */,
-	DoCodeDivU /* kIKindDivU */,
-	DoCodeDivS /* kIKindDivS */,
-	DoCodeExg /* kIKindExg */,
-	DoCodeMoveEaCR /* kIKindMoveEaCCR */,
-	DoCodeMoveSREa /* kIKindMoveSREa */,
-	DoCodeMoveEaSR /* kIKindMoveEaSR */,
-	DoCodeOrISR /* kIKindOrISR */,
-	DoCodeAndISR /* kIKindAndISR */,
-	DoCodeEorISR /* kIKindEorISR */,
-	DoCodeOrICCR /* kIKindOrICCR */,
-	DoCodeAndICCR /* kIKindAndICCR */,
-	DoCodeEorICCR /* kIKindEorICCR */,
-	DoCodeMOVEMApRW /* kIKindMOVEMApRW */,
-	DoCodeMOVEMRmMW /* kIKindMOVEMRmMW */,
-	DoCodeMOVEMrmW /* kIKindMOVEMrmW */,
-	DoCodeMOVEMrmL /* kIKindMOVEMrmL */,
-	DoCodeMOVEMmrW /* kIKindMOVEMmrW */,
-	DoCodeMOVEMmrL /* kIKindMOVEMmrL */,
-	DoCodeAbcd /* kIKindAbcd */,
-	DoCodeSbcd /* kIKindSbcd */,
-	DoCodeNbcd /* kIKindNbcd */,
-	DoCodeRte /* kIKindRte */,
-	DoCodeNop /* kIKindNop */,
-	DoCodeMoveP0 /* kIKindMoveP0 */,
-	DoCodeMoveP1 /* kIKindMoveP1 */,
-	DoCodeMoveP2 /* kIKindMoveP2 */,
-	DoCodeMoveP3 /* kIKindMoveP3 */,
-	op_illg /* kIKindIllegal */,
-	DoCodeChk /* kIKindChkW */,
-	DoCodeTrap /* kIKindTrap */,
-	DoCodeTrapV /* kIKindTrapV */,
-	DoCodeRtr /* kIKindRtr */,
-	DoCodeLink /* kIKindLink */,
-	DoCodeUnlk /* kIKindUnlk */,
-	DoCodeMoveRUSP /* kIKindMoveRUSP */,
-	DoCodeMoveUSPR /* kIKindMoveUSPR */,
-	DoCodeTas /* kIKindTas */,
-	DoCodeFdefault /* kIKindFdflt */,
-	DoCodeStop /* kIKindStop */,
-	DoCodeReset /* kIKindReset */,
+static const func_pointer_t OpDispatch[kNumIKinds + 1] = {DoCodeTst /* kIKindTst */,
+														  DoCodeCmpB /* kIKindCmpB */,
+														  DoCodeCmpW /* kIKindCmpW */,
+														  DoCodeCmpL /* kIKindCmpL */,
+														  DoCodeBccB /* kIKindBccB */,
+														  DoCodeBccW /* kIKindBccW */,
+														  DoCodeBraB /* kIKindBraB */,
+														  DoCodeBraW /* kIKindBraW */,
+														  DoCodeDBcc /* kIKindDBcc */,
+														  DoCodeDBF /* kIKindDBF */,
+														  DoCodeSwap /* kIKindSwap */,
+														  DoCodeMoveL /* kIKindMoveL */,
+														  DoCodeMoveW /* kIKindMoveW */,
+														  DoCodeMoveB /* kIKindMoveB */,
+														  DoCodeMoveA /* kIKindMoveAL */,
+														  DoCodeMoveA /* kIKindMoveAW */,
+														  DoCodeMoveQ /* kIKindMoveQ */,
+														  DoCodeAddB /* kIKindAddB */,
+														  DoCodeAddW /* kIKindAddW */,
+														  DoCodeAddL /* kIKindAddL */,
+														  DoCodeSubB /* kIKindSubB */,
+														  DoCodeSubW /* kIKindSubW */,
+														  DoCodeSubL /* kIKindSubL */,
+														  DoCodeLea /* kIKindLea */,
+														  DoCodePEA /* kIKindPEA */,
+														  DoCodeA /* kIKindA */,
+														  DoCodeBsrB /* kIKindBsrB */,
+														  DoCodeBsrW /* kIKindBsrW */,
+														  DoCodeJsr /* kIKindJsr */,
+														  DoCodeLinkA6 /* kIKindLinkA6 */,
+														  DoCodeMOVEMRmML /* kIKindMOVEMRmML */,
+														  DoCodeMOVEMApRL /* kIKindMOVEMApRL */,
+														  DoCodeUnlkA6 /* kIKindUnlkA6 */,
+														  DoCodeRts /* kIKindRts */,
+														  DoCodeJmp /* kIKindJmp */,
+														  DoCodeClr /* kIKindClr */,
+														  DoCodeAddA /* kIKindAddA */,
+														  DoCodeAddA /* kIKindAddQA */,
+														  DoCodeSubA /* kIKindSubA */,
+														  DoCodeSubA /* kIKindSubQA */,
+														  DoCodeCmpA /* kIKindCmpA */,
+														  DoCodeAddXB /* kIKindAddXB */,
+														  DoCodeAddXW /* kIKindAddXW */,
+														  DoCodeAddXL /* kIKindAddXL */,
+														  DoCodeSubXB /* kIKindSubXB */,
+														  DoCodeSubXW /* kIKindSubXW */,
+														  DoCodeSubXL /* kIKindSubXL */,
+														  DoCodeAslB /* kIKindAslB */,
+														  DoCodeAslW /* kIKindAslW */,
+														  DoCodeAslL /* kIKindAslL */,
+														  DoCodeAsrB /* kIKindAsrB */,
+														  DoCodeAsrW /* kIKindAsrW */,
+														  DoCodeAsrL /* kIKindAsrL */,
+														  DoCodeLslB /* kIKindLslB */,
+														  DoCodeLslW /* kIKindLslW */,
+														  DoCodeLslL /* kIKindLslL */,
+														  DoCodeLsrB /* kIKindLsrB */,
+														  DoCodeLsrW /* kIKindLsrW */,
+														  DoCodeLsrL /* kIKindLsrL */,
+														  DoCodeRxlB /* kIKindRxlB */,
+														  DoCodeRxlW /* kIKindRxlW */,
+														  DoCodeRxlL /* kIKindRxlL */,
+														  DoCodeRxrB /* kIKindRxrB */,
+														  DoCodeRxrW /* kIKindRxrW */,
+														  DoCodeRxrL /* kIKindRxrL */,
+														  DoCodeRolB /* kIKindRolB */,
+														  DoCodeRolW /* kIKindRolW */,
+														  DoCodeRolL /* kIKindRolL */,
+														  DoCodeRorB /* kIKindRorB */,
+														  DoCodeRorW /* kIKindRorW */,
+														  DoCodeRorL /* kIKindRorL */,
+														  DoCodeBTstB /* kIKindBTstB */,
+														  DoCodeBChgB /* kIKindBChgB */,
+														  DoCodeBClrB /* kIKindBClrB */,
+														  DoCodeBSetB /* kIKindBSetB */,
+														  DoCodeBTstL /* kIKindBTstL */,
+														  DoCodeBChgL /* kIKindBChgL */,
+														  DoCodeBClrL /* kIKindBClrL */,
+														  DoCodeBSetL /* kIKindBSetL */,
+														  DoCodeAnd /* kIKindAndI */,
+														  DoCodeAnd /* kIKindAndEaD */,
+														  DoCodeAnd /* kIKindAndDEa */,
+														  DoCodeOr /* kIKindOrI */,
+														  DoCodeOr /* kIKindOrDEa */,
+														  DoCodeOr /* kIKindOrEaD */,
+														  DoCodeEor /* kIKindEor */,
+														  DoCodeEor /* kIKindEorI */,
+														  DoCodeNot /* kIKindNot */,
+														  DoCodeScc /* kIKindScc */,
+														  DoCodeNegXB /* kIKindNegXB */,
+														  DoCodeNegXW /* kIKindNegXW */,
+														  DoCodeNegXL /* kIKindNegXL */,
+														  DoCodeNegB /* kIKindNegB */,
+														  DoCodeNegW /* kIKindNegW */,
+														  DoCodeNegL /* kIKindNegL */,
+														  DoCodeEXTW /* kIKindEXTW */,
+														  DoCodeEXTL /* kIKindEXTL */,
+														  DoCodeMulU /* kIKindMulU */,
+														  DoCodeMulS /* kIKindMulS */,
+														  DoCodeDivU /* kIKindDivU */,
+														  DoCodeDivS /* kIKindDivS */,
+														  DoCodeExg /* kIKindExg */,
+														  DoCodeMoveEaCR /* kIKindMoveEaCCR */,
+														  DoCodeMoveSREa /* kIKindMoveSREa */,
+														  DoCodeMoveEaSR /* kIKindMoveEaSR */,
+														  DoCodeOrISR /* kIKindOrISR */,
+														  DoCodeAndISR /* kIKindAndISR */,
+														  DoCodeEorISR /* kIKindEorISR */,
+														  DoCodeOrICCR /* kIKindOrICCR */,
+														  DoCodeAndICCR /* kIKindAndICCR */,
+														  DoCodeEorICCR /* kIKindEorICCR */,
+														  DoCodeMOVEMApRW /* kIKindMOVEMApRW */,
+														  DoCodeMOVEMRmMW /* kIKindMOVEMRmMW */,
+														  DoCodeMOVEMrmW /* kIKindMOVEMrmW */,
+														  DoCodeMOVEMrmL /* kIKindMOVEMrmL */,
+														  DoCodeMOVEMmrW /* kIKindMOVEMmrW */,
+														  DoCodeMOVEMmrL /* kIKindMOVEMmrL */,
+														  DoCodeAbcd /* kIKindAbcd */,
+														  DoCodeSbcd /* kIKindSbcd */,
+														  DoCodeNbcd /* kIKindNbcd */,
+														  DoCodeRte /* kIKindRte */,
+														  DoCodeNop /* kIKindNop */,
+														  DoCodeMoveP0 /* kIKindMoveP0 */,
+														  DoCodeMoveP1 /* kIKindMoveP1 */,
+														  DoCodeMoveP2 /* kIKindMoveP2 */,
+														  DoCodeMoveP3 /* kIKindMoveP3 */,
+														  op_illg /* kIKindIllegal */,
+														  DoCodeChk /* kIKindChkW */,
+														  DoCodeTrap /* kIKindTrap */,
+														  DoCodeTrapV /* kIKindTrapV */,
+														  DoCodeRtr /* kIKindRtr */,
+														  DoCodeLink /* kIKindLink */,
+														  DoCodeUnlk /* kIKindUnlk */,
+														  DoCodeMoveRUSP /* kIKindMoveRUSP */,
+														  DoCodeMoveUSPR /* kIKindMoveUSPR */,
+														  DoCodeTas /* kIKindTas */,
+														  DoCodeFdefault /* kIKindFdflt */,
+														  DoCodeStop /* kIKindStop */,
+														  DoCodeReset /* kIKindReset */,
 
-	DoCodeCallMorRtm /* kIKindCallMorRtm */,
-	DoCodeBraL /* kIKindBraL */,
-	DoCodeBccL /* kIKindBccL */,
-	DoCodeBsrL /* kIKindBsrL */,
-	DoCodeEXTBL /* kIKindEXTBL */,
-	DoCodeTRAPcc /* kIKindTRAPcc */,
-	DoCodeChk /* kIKindChkL */,
-	DoCodeBkpt /* kIKindBkpt */,
-	DoCodeDivL /* kIKindDivL */,
-	DoCodeMulL /* kIKindMulL */,
-	DoCodeRtd /* kIKindRtd */,
-	DoCodeMoveCCREa /* kIKindMoveCCREa */,
-	DoMoveFromControl /* kIKindMoveCEa */,
-	DoMoveToControl /* kIKindMoveEaC */,
-	DoCodeLinkL /* kIKindLinkL */,
-	DoCodePack /* kIKindPack */,
-	DoCodeUnpk /* kIKindUnpk */,
-	DoCHK2orCMP2 /* kIKindCHK2orCMP2 */,
-	DoCAS2 /* kIKindCAS2 */,
-	DoCAS /* kIKindCAS */,
-	DoMOVES /* kIKindMoveS */,
-	DoBitField /* kIKindBitField */,
-	DoCodeMMU /* kIKindMMU */,
-	DoCodeFPU_md60 /* kIKindFPUmd60 */,
-	DoCodeFPU_DBcc /* kIKindFPUDBcc */,
-	DoCodeFPU_Trapcc /* kIKindFPUTrapcc */,
-	DoCodeFPU_Scc /* kIKindFPUScc */,
-	DoCodeFPU_FBccW /* kIKindFPUFBccW */,
-	DoCodeFPU_FBccL /* kIKindFPUFBccL */,
-	DoCodeFPU_Save /* kIKindFPUSave */,
-	DoCodeFPU_Restore /* kIKindFPURestore */,
-	DoCodeFPU_dflt /* kIKindFPUdflt */,
+														  DoCodeCallMorRtm /* kIKindCallMorRtm */,
+														  DoCodeBraL /* kIKindBraL */,
+														  DoCodeBccL /* kIKindBccL */,
+														  DoCodeBsrL /* kIKindBsrL */,
+														  DoCodeEXTBL /* kIKindEXTBL */,
+														  DoCodeTRAPcc /* kIKindTRAPcc */,
+														  DoCodeChk /* kIKindChkL */,
+														  DoCodeBkpt /* kIKindBkpt */,
+														  DoCodeDivL /* kIKindDivL */,
+														  DoCodeMulL /* kIKindMulL */,
+														  DoCodeRtd /* kIKindRtd */,
+														  DoCodeMoveCCREa /* kIKindMoveCCREa */,
+														  DoMoveFromControl /* kIKindMoveCEa */,
+														  DoMoveToControl /* kIKindMoveEaC */,
+														  DoCodeLinkL /* kIKindLinkL */,
+														  DoCodePack /* kIKindPack */,
+														  DoCodeUnpk /* kIKindUnpk */,
+														  DoCHK2orCMP2 /* kIKindCHK2orCMP2 */,
+														  DoCAS2 /* kIKindCAS2 */,
+														  DoCAS /* kIKindCAS */,
+														  DoMOVES /* kIKindMoveS */,
+														  DoBitField /* kIKindBitField */,
+														  DoCodeMMU /* kIKindMMU */,
+														  DoCodeFPU_md60 /* kIKindFPUmd60 */,
+														  DoCodeFPU_DBcc /* kIKindFPUDBcc */,
+														  DoCodeFPU_Trapcc /* kIKindFPUTrapcc */,
+														  DoCodeFPU_Scc /* kIKindFPUScc */,
+														  DoCodeFPU_FBccW /* kIKindFPUFBccW */,
+														  DoCodeFPU_FBccL /* kIKindFPUFBccL */,
+														  DoCodeFPU_Save /* kIKindFPUSave */,
+														  DoCodeFPU_Restore /* kIKindFPURestore */,
+														  DoCodeFPU_dflt /* kIKindFPUdflt */,
 
-	0
-};
+														  0};
 
 #ifndef WantBreakPoint
 #define WantBreakPoint 0
@@ -661,8 +667,7 @@ static void BreakPointAction()
 
 #endif
 
-static inline void DecodeNextInstruction(func_pointer_t *d, uint16_t *Cycles,
-	DecOpYR *y)
+static inline void DecodeNextInstruction(func_pointer_t *d, uint16_t *Cycles, DecOpYR *y)
 {
 	uint32_t opcode;
 	DecOpR *p;
@@ -677,7 +682,7 @@ static inline void DecodeNextInstruction(func_pointer_t *d, uint16_t *Cycles,
 	*Cycles = p->x.Cycles;
 	*y = p->y;
 #if WantDumpTable
-	DumpTable[MainClas] ++;
+	DumpTable[MainClas]++;
 #endif
 	*d = OpDispatch[MainClas];
 }
@@ -694,7 +699,7 @@ static inline void UnDecodeNextInstruction(uint16_t Cycles)
 		DecOpR *p = &V_regs.disp_table[opcode];
 		uint16_t MainClas = p->x.MainClas;
 
-		DumpTable[MainClas] --;
+		DumpTable[MainClas]--;
 	}
 #endif
 }
@@ -717,39 +722,45 @@ static void m68k_go_MaxCycles()
 
 	V_MaxCyclesToGo -= Cycles;
 
-	do {
+	do
+	{
 		V_regs.CurDecOpY = y;
 
 		/* Log instructions in [g_LogStart, g_LogEnd) to stderr */
 		{
 			uint32_t pc = m68k_getpc() - 2;
-			if (g_LogEnd > 0) {
-				if (g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd) {
+			if (g_LogEnd > 0)
+			{
+				if (g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd)
+				{
 					uint16_t opcode = do_get_mem_word(V_pc_p - 2);
-					std::fprintf(stderr, "%u %08X: %04X c=%d D=%08X %08X %08X %08X %08X %08X %08X %08X A=%08X %08X %08X %08X %08X %08X %08X %08X\n",
-						(unsigned)g_InstructionCount, (unsigned int)pc, (unsigned int)opcode, (int)V_MaxCyclesToGo,
-						(unsigned)m68k_dreg(0), (unsigned)m68k_dreg(1), (unsigned)m68k_dreg(2), (unsigned)m68k_dreg(3),
-						(unsigned)m68k_dreg(4), (unsigned)m68k_dreg(5), (unsigned)m68k_dreg(6), (unsigned)m68k_dreg(7),
-						(unsigned)m68k_areg(0), (unsigned)m68k_areg(1), (unsigned)m68k_areg(2), (unsigned)m68k_areg(3),
-						(unsigned)m68k_areg(4), (unsigned)m68k_areg(5), (unsigned)m68k_areg(6), (unsigned)m68k_areg(7));
+					std::fprintf(
+						stderr,
+						"%u %08X: %04X c=%d D=%08X %08X %08X %08X %08X %08X %08X %08X A=%08X %08X "
+						"%08X %08X %08X %08X %08X %08X\n",
+						(unsigned)g_InstructionCount, (unsigned int)pc, (unsigned int)opcode,
+						(int)V_MaxCyclesToGo, (unsigned)m68k_dreg(0), (unsigned)m68k_dreg(1),
+						(unsigned)m68k_dreg(2), (unsigned)m68k_dreg(3), (unsigned)m68k_dreg(4),
+						(unsigned)m68k_dreg(5), (unsigned)m68k_dreg(6), (unsigned)m68k_dreg(7),
+						(unsigned)m68k_areg(0), (unsigned)m68k_areg(1), (unsigned)m68k_areg(2),
+						(unsigned)m68k_areg(3), (unsigned)m68k_areg(4), (unsigned)m68k_areg(5),
+						(unsigned)m68k_areg(6), (unsigned)m68k_areg(7));
 					std::fflush(stderr);
 				}
-				if (g_InstructionCount == g_LogEnd) {
+				if (g_InstructionCount == g_LogEnd)
+				{
 					std::exit(0);
 				}
 			}
 
 			/* StateRecorder hook */
-			if (g_recorder.active()) {
+			if (g_recorder.active())
+			{
 				uint16_t sr = m68k_getSR();
-				uint32_t dregs[8] = {
-					m68k_dreg(0), m68k_dreg(1), m68k_dreg(2), m68k_dreg(3),
-					m68k_dreg(4), m68k_dreg(5), m68k_dreg(6), m68k_dreg(7)
-				};
-				uint32_t aregs[8] = {
-					m68k_areg(0), m68k_areg(1), m68k_areg(2), m68k_areg(3),
-					m68k_areg(4), m68k_areg(5), m68k_areg(6), m68k_areg(7)
-				};
+				uint32_t dregs[8] = {m68k_dreg(0), m68k_dreg(1), m68k_dreg(2), m68k_dreg(3),
+									 m68k_dreg(4), m68k_dreg(5), m68k_dreg(6), m68k_dreg(7)};
+				uint32_t aregs[8] = {m68k_areg(0), m68k_areg(1), m68k_areg(2), m68k_areg(3),
+									 m68k_areg(4), m68k_areg(5), m68k_areg(6), m68k_areg(7)};
 				g_recorder.cpu(g_InstructionCount, pc, sr, dregs, aregs);
 			}
 
@@ -760,7 +771,8 @@ static void m68k_go_MaxCycles()
 			uint32_t pc = m68k_getpc() - 2;
 			DisasmOneOrSave(pc);
 #if WantBreakPoint
-			if (BreakPointAddress == pc) {
+			if (BreakPointAddress == pc)
+			{
 				BreakPointAction();
 			}
 #endif
@@ -781,11 +793,14 @@ static uint32_t get_byte_ext(uint32_t addr);
 
 static uint32_t get_byte(uint32_t addr)
 {
-	uint8_t * m = (addr & V_regs.MATCrdB.usemask) + V_regs.MATCrdB.usebase;
+	uint8_t *m = (addr & V_regs.MATCrdB.usemask) + V_regs.MATCrdB.usebase;
 
-	if ((addr & V_regs.MATCrdB.cmpmask) == V_regs.MATCrdB.cmpvalu) {
+	if ((addr & V_regs.MATCrdB.cmpmask) == V_regs.MATCrdB.cmpvalu)
+	{
 		return static_cast<uint32_t>(static_cast<int8_t>(*m));
-	} else {
+	}
+	else
+	{
 		return get_byte_ext(addr);
 	}
 }
@@ -794,10 +809,13 @@ static void put_byte_ext(uint32_t addr, uint32_t b);
 
 static void put_byte(uint32_t addr, uint32_t b)
 {
-	uint8_t * m = (addr & V_regs.MATCwrB.usemask) + V_regs.MATCwrB.usebase;
-	if ((addr & V_regs.MATCwrB.cmpmask) == V_regs.MATCwrB.cmpvalu) {
+	uint8_t *m = (addr & V_regs.MATCwrB.usemask) + V_regs.MATCwrB.usebase;
+	if ((addr & V_regs.MATCwrB.cmpmask) == V_regs.MATCwrB.cmpvalu)
+	{
 		*m = b;
-	} else {
+	}
+	else
+	{
 		put_byte_ext(addr, b);
 	}
 }
@@ -806,10 +824,13 @@ static uint32_t get_word_ext(uint32_t addr);
 
 static uint32_t get_word(uint32_t addr)
 {
-	uint8_t * m = (addr & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
-	if ((addr & V_regs.MATCrdW.cmpmask) == V_regs.MATCrdW.cmpvalu) {
+	uint8_t *m = (addr & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
+	if ((addr & V_regs.MATCrdW.cmpmask) == V_regs.MATCrdW.cmpvalu)
+	{
 		return static_cast<uint32_t>(static_cast<int16_t>(do_get_mem_word(m)));
-	} else {
+	}
+	else
+	{
 		return get_word_ext(addr);
 	}
 }
@@ -818,10 +839,13 @@ static void put_word_ext(uint32_t addr, uint32_t w);
 
 static void put_word(uint32_t addr, uint32_t w)
 {
-	uint8_t * m = (addr & V_regs.MATCwrW.usemask) + V_regs.MATCwrW.usebase;
-	if ((addr & V_regs.MATCwrW.cmpmask) == V_regs.MATCwrW.cmpvalu) {
+	uint8_t *m = (addr & V_regs.MATCwrW.usemask) + V_regs.MATCwrW.usebase;
+	if ((addr & V_regs.MATCwrW.cmpmask) == V_regs.MATCwrW.cmpvalu)
+	{
 		do_put_mem_word(m, w);
-	} else {
+	}
+	else
+	{
 		put_word_ext(addr, w);
 	}
 }
@@ -831,18 +855,19 @@ static uint32_t get_long_misaligned_ext(uint32_t addr);
 static uint32_t get_long_misaligned(uint32_t addr)
 {
 	uint32_t addr2 = addr + 2;
-	uint8_t * m = (addr & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
-	uint8_t * m2 = (addr2 & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
-	if (((addr & V_regs.MATCrdW.cmpmask) == V_regs.MATCrdW.cmpvalu)
-		&& ((addr2 & V_regs.MATCrdW.cmpmask) == V_regs.MATCrdW.cmpvalu))
+	uint8_t *m = (addr & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
+	uint8_t *m2 = (addr2 & V_regs.MATCrdW.usemask) + V_regs.MATCrdW.usebase;
+	if (((addr & V_regs.MATCrdW.cmpmask) == V_regs.MATCrdW.cmpvalu) &&
+		((addr2 & V_regs.MATCrdW.cmpmask) == V_regs.MATCrdW.cmpvalu))
 	{
 		uint32_t hi = do_get_mem_word(m);
 		uint32_t lo = do_get_mem_word(m2);
-		uint32_t Data = ((hi << 16) & 0xFFFF0000)
-			| (lo & 0x0000FFFF);
+		uint32_t Data = ((hi << 16) & 0xFFFF0000) | (lo & 0x0000FFFF);
 
 		return static_cast<uint32_t>(Data);
-	} else {
+	}
+	else
+	{
 		return get_long_misaligned_ext(addr);
 	}
 }
@@ -854,14 +879,16 @@ static void put_long_misaligned_ext(uint32_t addr, uint32_t l);
 static void put_long_misaligned(uint32_t addr, uint32_t l)
 {
 	uint32_t addr2 = addr + 2;
-	uint8_t * m = (addr & V_regs.MATCwrW.usemask) + V_regs.MATCwrW.usebase;
-	uint8_t * m2 = (addr2 & V_regs.MATCwrW.usemask) + V_regs.MATCwrW.usebase;
-	if (((addr & V_regs.MATCwrW.cmpmask) == V_regs.MATCwrW.cmpvalu)
-		&& ((addr2 & V_regs.MATCwrW.cmpmask) == V_regs.MATCwrW.cmpvalu))
+	uint8_t *m = (addr & V_regs.MATCwrW.usemask) + V_regs.MATCwrW.usebase;
+	uint8_t *m2 = (addr2 & V_regs.MATCwrW.usemask) + V_regs.MATCwrW.usebase;
+	if (((addr & V_regs.MATCwrW.cmpmask) == V_regs.MATCwrW.cmpvalu) &&
+		((addr2 & V_regs.MATCwrW.cmpmask) == V_regs.MATCwrW.cmpvalu))
 	{
 		do_put_mem_word(m, l >> 16);
 		do_put_mem_word(m2, l);
-	} else {
+	}
+	else
+	{
 		put_long_misaligned_ext(addr, l);
 	}
 }
@@ -873,27 +900,34 @@ static uint32_t get_disp_ea(uint32_t base)
 	uint16_t dp = nextiword();
 	int regno = (dp >> 12) & 0x0F;
 	int32_t regd = V_regs.regs[regno];
-	if ((dp & 0x0800) == 0) {
+	if ((dp & 0x0800) == 0)
+	{
 		regd = (int32_t)(int16_t)regd;
 	}
-	if (s_cpuConfig->use68020) {
+	if (s_cpuConfig->use68020)
+	{
 		regd <<= (dp >> 9) & 3;
-		if (dp & 0x0100) {
-			if ((dp & 0x80) != 0) {
+		if (dp & 0x0100)
+		{
+			if ((dp & 0x80) != 0)
+			{
 				base = 0;
 				/* ReportAbnormal("Extension Word: suppress base"); */
 				/* used by Sys 7.5.5 boot */
 			}
-			if ((dp & 0x40) != 0) {
+			if ((dp & 0x40) != 0)
+			{
 				regd = 0;
 				/* ReportAbnormal("Extension Word: suppress regd"); */
 				/* used by Mac II boot */
 			}
 
-			switch ((dp >> 4) & 0x03) {
+			switch ((dp >> 4) & 0x03)
+			{
 				case 0:
 					/* reserved */
-					ReportAbnormalID(AbnormalID::kCPU_Extension_Word_dp_reserved, "Extension Word: dp reserved");
+					ReportAbnormalID(AbnormalID::kCPU_Extension_Word_dp_reserved,
+									 "Extension Word: dp reserved");
 					break;
 				case 1:
 					/* no displacement */
@@ -916,27 +950,35 @@ static uint32_t get_disp_ea(uint32_t base)
 					break;
 			}
 
-			if ((dp & 0x03) == 0) {
+			if ((dp & 0x03) == 0)
+			{
 				base += regd;
-				if ((dp & 0x04) != 0) {
+				if ((dp & 0x04) != 0)
+				{
 					ReportAbnormalID(AbnormalID::kCPU_Extension_Word_reserved_dp_form,
-						"Extension Word: reserved dp form");
+									 "Extension Word: reserved dp form");
 				}
 				/* ReportAbnormal("Extension Word: noindex"); */
 				/* used by Sys 7.5.5 boot */
-			} else {
-				if ((dp & 0x04) != 0) {
+			}
+			else
+			{
+				if ((dp & 0x04) != 0)
+				{
 					base = get_long(base);
 					base += regd;
 					/* ReportAbnormal("Extension Word: postindex"); */
 					/* used by Sys 7.5.5 boot */
-				} else {
+				}
+				else
+				{
 					base += regd;
 					base = get_long(base);
 					/* ReportAbnormal("Extension Word: preindex"); */
 					/* used by Sys 7.5.5 boot */
 				}
-				switch (dp & 0x03) {
+				switch (dp & 0x03)
+				{
 					case 1:
 						/* null outer displacement */
 						/*
@@ -1074,42 +1116,24 @@ static uint32_t DecodeAddr_PCIndex(uint8_t ArgDat)
 typedef uint32_t (*DecodeAddrP)(uint8_t ArgDat);
 
 static const DecodeAddrP DecodeAddrDispatch[kNumAMds] = {
-	(DecodeAddrP)nullptr /* kAMdRegB */,
-	(DecodeAddrP)nullptr /* kAMdRegW */,
-	(DecodeAddrP)nullptr /* kAMdRegL */,
-	DecodeAddr_Indirect /* kAMdIndirectB */,
-	DecodeAddr_Indirect /* kAMdIndirectW */,
-	DecodeAddr_Indirect /* kAMdIndirectL */,
-	DecodeAddr_APosIncB /* kAMdAPosIncB */,
-	DecodeAddr_APosIncW /* kAMdAPosIncW */,
-	DecodeAddr_APosIncL /* kAMdAPosIncL */,
-	DecodeAddr_APosIncW /* kAMdAPosInc7B */,
-	DecodeAddr_APreDecB /* kAMdAPreDecB */,
-	DecodeAddr_APreDecW /* kAMdAPreDecW */,
-	DecodeAddr_APreDecL /* kAMdAPreDecL */,
-	DecodeAddr_APreDecW /* kAMdAPreDec7B */,
-	DecodeAddr_ADisp /* kAMdADispB */,
-	DecodeAddr_ADisp /* kAMdADispW */,
-	DecodeAddr_ADisp /* kAMdADispL */,
-	DecodeAddr_AIndex /* kAMdAIndexB */,
-	DecodeAddr_AIndex /* kAMdAIndexW */,
-	DecodeAddr_AIndex /* kAMdAIndexL */,
-	DecodeAddr_AbsW /* kAMdAbsWB */,
-	DecodeAddr_AbsW /* kAMdAbsWW */,
-	DecodeAddr_AbsW /* kAMdAbsWL */,
-	DecodeAddr_AbsL /* kAMdAbsLB */,
-	DecodeAddr_AbsL /* kAMdAbsLW */,
-	DecodeAddr_AbsL /* kAMdAbsLL */,
-	DecodeAddr_PCDisp /* kAMdPCDispB */,
-	DecodeAddr_PCDisp /* kAMdPCDispW */,
-	DecodeAddr_PCDisp /* kAMdPCDispL */,
-	DecodeAddr_PCIndex /* kAMdPCIndexB */,
-	DecodeAddr_PCIndex /* kAMdPCIndexW */,
-	DecodeAddr_PCIndex /* kAMdPCIndexL */,
-	(DecodeAddrP)nullptr /* kAMdImmedB */,
-	(DecodeAddrP)nullptr /* kAMdImmedW */,
-	(DecodeAddrP)nullptr /* kAMdImmedL */,
-	(DecodeAddrP)nullptr /* kAMdDat4 */
+	(DecodeAddrP) nullptr /* kAMdRegB */,	 (DecodeAddrP) nullptr /* kAMdRegW */,
+	(DecodeAddrP) nullptr /* kAMdRegL */,	 DecodeAddr_Indirect /* kAMdIndirectB */,
+	DecodeAddr_Indirect /* kAMdIndirectW */, DecodeAddr_Indirect /* kAMdIndirectL */,
+	DecodeAddr_APosIncB /* kAMdAPosIncB */,	 DecodeAddr_APosIncW /* kAMdAPosIncW */,
+	DecodeAddr_APosIncL /* kAMdAPosIncL */,	 DecodeAddr_APosIncW /* kAMdAPosInc7B */,
+	DecodeAddr_APreDecB /* kAMdAPreDecB */,	 DecodeAddr_APreDecW /* kAMdAPreDecW */,
+	DecodeAddr_APreDecL /* kAMdAPreDecL */,	 DecodeAddr_APreDecW /* kAMdAPreDec7B */,
+	DecodeAddr_ADisp /* kAMdADispB */,		 DecodeAddr_ADisp /* kAMdADispW */,
+	DecodeAddr_ADisp /* kAMdADispL */,		 DecodeAddr_AIndex /* kAMdAIndexB */,
+	DecodeAddr_AIndex /* kAMdAIndexW */,	 DecodeAddr_AIndex /* kAMdAIndexL */,
+	DecodeAddr_AbsW /* kAMdAbsWB */,		 DecodeAddr_AbsW /* kAMdAbsWW */,
+	DecodeAddr_AbsW /* kAMdAbsWL */,		 DecodeAddr_AbsL /* kAMdAbsLB */,
+	DecodeAddr_AbsL /* kAMdAbsLW */,		 DecodeAddr_AbsL /* kAMdAbsLL */,
+	DecodeAddr_PCDisp /* kAMdPCDispB */,	 DecodeAddr_PCDisp /* kAMdPCDispW */,
+	DecodeAddr_PCDisp /* kAMdPCDispL */,	 DecodeAddr_PCIndex /* kAMdPCIndexB */,
+	DecodeAddr_PCIndex /* kAMdPCIndexW */,	 DecodeAddr_PCIndex /* kAMdPCIndexL */,
+	(DecodeAddrP) nullptr /* kAMdImmedB */,	 (DecodeAddrP) nullptr /* kAMdImmedW */,
+	(DecodeAddrP) nullptr /* kAMdImmedL */,	 (DecodeAddrP) nullptr /* kAMdDat4 */
 };
 
 static inline uint32_t DecodeAddrSrcDst(DecArgR *f)
@@ -1343,42 +1367,24 @@ static uint32_t DecodeGetSrcDst_Dat4(uint8_t ArgDat)
 typedef uint32_t (*DecodeGetSrcDstP)(uint8_t ArgDat);
 
 static const DecodeGetSrcDstP DecodeGetSrcDstDispatch[kNumAMds] = {
-	DecodeGetSrcDst_RegB /* kAMdRegB */,
-	DecodeGetSrcDst_RegW /* kAMdRegW */,
-	DecodeGetSrcDst_RegL /* kAMdRegL */,
-	DecodeGetSrcDst_IndirectB /* kAMdIndirectB */,
-	DecodeGetSrcDst_IndirectW /* kAMdIndirectW */,
-	DecodeGetSrcDst_IndirectL /* kAMdIndirectL */,
-	DecodeGetSrcDst_APosIncB /* kAMdAPosIncB */,
-	DecodeGetSrcDst_APosIncW /* kAMdAPosIncW */,
-	DecodeGetSrcDst_APosIncL /* kAMdAPosIncL */,
-	DecodeGetSrcDst_APosInc7B /* kAMdAPosInc7B */,
-	DecodeGetSrcDst_APreDecB /* kAMdAPreDecB */,
-	DecodeGetSrcDst_APreDecW /* kAMdAPreDecW */,
-	DecodeGetSrcDst_APreDecL /* kAMdAPreDecL */,
-	DecodeGetSrcDst_APreDec7B /* kAMdAPreDec7B */,
-	DecodeGetSrcDst_ADispB /* kAMdADispB */,
-	DecodeGetSrcDst_ADispW /* kAMdADispW */,
-	DecodeGetSrcDst_ADispL /* kAMdADispL */,
-	DecodeGetSrcDst_AIndexB /* kAMdAIndexB */,
-	DecodeGetSrcDst_AIndexW /* kAMdAIndexW */,
-	DecodeGetSrcDst_AIndexL /* kAMdAIndexL */,
-	DecodeGetSrcDst_AbsWB /* kAMdAbsWB */,
-	DecodeGetSrcDst_AbsWW /* kAMdAbsWW */,
-	DecodeGetSrcDst_AbsWL /* kAMdAbsWL */,
-	DecodeGetSrcDst_AbsLB /* kAMdAbsLB */,
-	DecodeGetSrcDst_AbsLW /* kAMdAbsLW */,
-	DecodeGetSrcDst_AbsLL /* kAMdAbsLL */,
-	DecodeGetSrcDst_PCDispB /* kAMdPCDispB */,
-	DecodeGetSrcDst_PCDispW /* kAMdPCDispW */,
-	DecodeGetSrcDst_PCDispL /* kAMdPCDispL */,
-	DecodeGetSrcDst_PCIndexB /* kAMdPCIndexB */,
-	DecodeGetSrcDst_PCIndexW /* kAMdPCIndexW */,
-	DecodeGetSrcDst_PCIndexL /* kAMdPCIndexL */,
-	DecodeGetSrcDst_ImmedB /* kAMdImmedB */,
-	DecodeGetSrcDst_ImmedW /* kAMdImmedW */,
-	DecodeGetSrcDst_ImmedL /* kAMdImmedL */,
-	DecodeGetSrcDst_Dat4 /* kAMdDat4 */
+	DecodeGetSrcDst_RegB /* kAMdRegB */,		   DecodeGetSrcDst_RegW /* kAMdRegW */,
+	DecodeGetSrcDst_RegL /* kAMdRegL */,		   DecodeGetSrcDst_IndirectB /* kAMdIndirectB */,
+	DecodeGetSrcDst_IndirectW /* kAMdIndirectW */, DecodeGetSrcDst_IndirectL /* kAMdIndirectL */,
+	DecodeGetSrcDst_APosIncB /* kAMdAPosIncB */,   DecodeGetSrcDst_APosIncW /* kAMdAPosIncW */,
+	DecodeGetSrcDst_APosIncL /* kAMdAPosIncL */,   DecodeGetSrcDst_APosInc7B /* kAMdAPosInc7B */,
+	DecodeGetSrcDst_APreDecB /* kAMdAPreDecB */,   DecodeGetSrcDst_APreDecW /* kAMdAPreDecW */,
+	DecodeGetSrcDst_APreDecL /* kAMdAPreDecL */,   DecodeGetSrcDst_APreDec7B /* kAMdAPreDec7B */,
+	DecodeGetSrcDst_ADispB /* kAMdADispB */,	   DecodeGetSrcDst_ADispW /* kAMdADispW */,
+	DecodeGetSrcDst_ADispL /* kAMdADispL */,	   DecodeGetSrcDst_AIndexB /* kAMdAIndexB */,
+	DecodeGetSrcDst_AIndexW /* kAMdAIndexW */,	   DecodeGetSrcDst_AIndexL /* kAMdAIndexL */,
+	DecodeGetSrcDst_AbsWB /* kAMdAbsWB */,		   DecodeGetSrcDst_AbsWW /* kAMdAbsWW */,
+	DecodeGetSrcDst_AbsWL /* kAMdAbsWL */,		   DecodeGetSrcDst_AbsLB /* kAMdAbsLB */,
+	DecodeGetSrcDst_AbsLW /* kAMdAbsLW */,		   DecodeGetSrcDst_AbsLL /* kAMdAbsLL */,
+	DecodeGetSrcDst_PCDispB /* kAMdPCDispB */,	   DecodeGetSrcDst_PCDispW /* kAMdPCDispW */,
+	DecodeGetSrcDst_PCDispL /* kAMdPCDispL */,	   DecodeGetSrcDst_PCIndexB /* kAMdPCIndexB */,
+	DecodeGetSrcDst_PCIndexW /* kAMdPCIndexW */,   DecodeGetSrcDst_PCIndexL /* kAMdPCIndexL */,
+	DecodeGetSrcDst_ImmedB /* kAMdImmedB */,	   DecodeGetSrcDst_ImmedW /* kAMdImmedW */,
+	DecodeGetSrcDst_ImmedL /* kAMdImmedL */,	   DecodeGetSrcDst_Dat4 /* kAMdDat4 */
 };
 
 static inline uint32_t DecodeGetSrcDst(DecArgR *f)
@@ -1390,14 +1396,14 @@ static void DecodeSetSrcDst_RegB(uint32_t v, uint8_t ArgDat)
 {
 	uint32_t *p = &V_regs.regs[ArgDat];
 
-	*p = (*p & ~ 0xff) | ((v) & 0xff);
+	*p = (*p & ~0xff) | ((v) & 0xff);
 }
 
 static void DecodeSetSrcDst_RegW(uint32_t v, uint8_t ArgDat)
 {
 	uint32_t *p = &V_regs.regs[ArgDat];
 
-	*p = (*p & ~ 0xffff) | ((v) & 0xffff);
+	*p = (*p & ~0xffff) | ((v) & 0xffff);
 }
 
 static void DecodeSetSrcDst_RegL(uint32_t v, uint8_t ArgDat)
@@ -1502,20 +1508,17 @@ static void DecodeSetSrcDst_APreDec7B(uint32_t v, uint8_t ArgDat)
 
 static void DecodeSetSrcDst_ADispB(uint32_t v, uint8_t ArgDat)
 {
-	put_byte(V_regs.regs[ArgDat]
-		+ nextiSWord(), v);
+	put_byte(V_regs.regs[ArgDat] + nextiSWord(), v);
 }
 
 static void DecodeSetSrcDst_ADispW(uint32_t v, uint8_t ArgDat)
 {
-	put_word(V_regs.regs[ArgDat]
-		+ nextiSWord(), v);
+	put_word(V_regs.regs[ArgDat] + nextiSWord(), v);
 }
 
 static void DecodeSetSrcDst_ADispL(uint32_t v, uint8_t ArgDat)
 {
-	put_long(V_regs.regs[ArgDat]
-		+ nextiSWord(), v);
+	put_long(V_regs.regs[ArgDat] + nextiSWord(), v);
 }
 
 static void DecodeSetSrcDst_AIndexB(uint32_t v, uint8_t ArgDat)
@@ -1596,42 +1599,24 @@ static void DecodeSetSrcDst_PCIndexL(uint32_t v, uint8_t ArgDat)
 typedef void (*DecodeSetSrcDstP)(uint32_t v, uint8_t ArgDat);
 
 static const DecodeSetSrcDstP DecodeSetSrcDstDispatch[kNumAMds] = {
-	DecodeSetSrcDst_RegB /* kAMdRegB */,
-	DecodeSetSrcDst_RegW /* kAMdRegW */,
-	DecodeSetSrcDst_RegL /* kAMdRegL */,
-	DecodeSetSrcDst_IndirectB /* kAMdIndirectB */,
-	DecodeSetSrcDst_IndirectW /* kAMdIndirectW */,
-	DecodeSetSrcDst_IndirectL /* kAMdIndirectL*/,
-	DecodeSetSrcDst_APosIncB /* kAMdAPosIncB */,
-	DecodeSetSrcDst_APosIncW /* kAMdAPosIncW */,
-	DecodeSetSrcDst_APosIncL /* kAMdAPosIncL */,
-	DecodeSetSrcDst_APosInc7B /* kAMdAPosInc7B */,
-	DecodeSetSrcDst_APreDecB /* kAMdAPreDecB */,
-	DecodeSetSrcDst_APreDecW /* kAMdAPreDecW */,
-	DecodeSetSrcDst_APreDecL /* kAMdAPreDecL */,
-	DecodeSetSrcDst_APreDec7B /* kAMdAPreDec7B */,
-	DecodeSetSrcDst_ADispB /* kAMdADispB */,
-	DecodeSetSrcDst_ADispW /* kAMdADispW */,
-	DecodeSetSrcDst_ADispL /* kAMdADispL */,
-	DecodeSetSrcDst_AIndexB /* kAMdAIndexB */,
-	DecodeSetSrcDst_AIndexW /* kAMdAIndexW */,
-	DecodeSetSrcDst_AIndexL /* kAMdAIndexL */,
-	DecodeSetSrcDst_AbsWB /* kAMdAbsWB */,
-	DecodeSetSrcDst_AbsWW /* kAMdAbsWW */,
-	DecodeSetSrcDst_AbsWL /* kAMdAbsWL */,
-	DecodeSetSrcDst_AbsLB /* kAMdAbsLB */,
-	DecodeSetSrcDst_AbsLW /* kAMdAbsLW */,
-	DecodeSetSrcDst_AbsLL /* kAMdAbsLL */,
-	DecodeSetSrcDst_PCDispB /* kAMdPCDispB */,
-	DecodeSetSrcDst_PCDispW /* kAMdPCDispW */,
-	DecodeSetSrcDst_PCDispL /* kAMdPCDispL */,
-	DecodeSetSrcDst_PCIndexB /* kAMdPCIndexB */,
-	DecodeSetSrcDst_PCIndexW /* kAMdPCIndexW */,
-	DecodeSetSrcDst_PCIndexL /* kAMdPCIndexL */,
-	(DecodeSetSrcDstP)nullptr /* kAMdImmedB */,
-	(DecodeSetSrcDstP)nullptr /* kAMdImmedW */,
-	(DecodeSetSrcDstP)nullptr /* kAMdImmedL */,
-	(DecodeSetSrcDstP)nullptr /* kAMdDat4 */
+	DecodeSetSrcDst_RegB /* kAMdRegB */,		   DecodeSetSrcDst_RegW /* kAMdRegW */,
+	DecodeSetSrcDst_RegL /* kAMdRegL */,		   DecodeSetSrcDst_IndirectB /* kAMdIndirectB */,
+	DecodeSetSrcDst_IndirectW /* kAMdIndirectW */, DecodeSetSrcDst_IndirectL /* kAMdIndirectL*/,
+	DecodeSetSrcDst_APosIncB /* kAMdAPosIncB */,   DecodeSetSrcDst_APosIncW /* kAMdAPosIncW */,
+	DecodeSetSrcDst_APosIncL /* kAMdAPosIncL */,   DecodeSetSrcDst_APosInc7B /* kAMdAPosInc7B */,
+	DecodeSetSrcDst_APreDecB /* kAMdAPreDecB */,   DecodeSetSrcDst_APreDecW /* kAMdAPreDecW */,
+	DecodeSetSrcDst_APreDecL /* kAMdAPreDecL */,   DecodeSetSrcDst_APreDec7B /* kAMdAPreDec7B */,
+	DecodeSetSrcDst_ADispB /* kAMdADispB */,	   DecodeSetSrcDst_ADispW /* kAMdADispW */,
+	DecodeSetSrcDst_ADispL /* kAMdADispL */,	   DecodeSetSrcDst_AIndexB /* kAMdAIndexB */,
+	DecodeSetSrcDst_AIndexW /* kAMdAIndexW */,	   DecodeSetSrcDst_AIndexL /* kAMdAIndexL */,
+	DecodeSetSrcDst_AbsWB /* kAMdAbsWB */,		   DecodeSetSrcDst_AbsWW /* kAMdAbsWW */,
+	DecodeSetSrcDst_AbsWL /* kAMdAbsWL */,		   DecodeSetSrcDst_AbsLB /* kAMdAbsLB */,
+	DecodeSetSrcDst_AbsLW /* kAMdAbsLW */,		   DecodeSetSrcDst_AbsLL /* kAMdAbsLL */,
+	DecodeSetSrcDst_PCDispB /* kAMdPCDispB */,	   DecodeSetSrcDst_PCDispW /* kAMdPCDispW */,
+	DecodeSetSrcDst_PCDispL /* kAMdPCDispL */,	   DecodeSetSrcDst_PCIndexB /* kAMdPCIndexB */,
+	DecodeSetSrcDst_PCIndexW /* kAMdPCIndexW */,   DecodeSetSrcDst_PCIndexL /* kAMdPCIndexL */,
+	(DecodeSetSrcDstP) nullptr /* kAMdImmedB */,   (DecodeSetSrcDstP) nullptr /* kAMdImmedW */,
+	(DecodeSetSrcDstP) nullptr /* kAMdImmedL */,   (DecodeSetSrcDstP) nullptr /* kAMdDat4 */
 };
 
 static inline void DecodeSetSrcDst(uint32_t v, DecArgR *f)
@@ -1643,14 +1628,14 @@ static void ArgSetDstRegBValue(uint32_t v)
 {
 	uint32_t *p = V_regs.ArgAddr.rga;
 
-	*p = (*p & ~ 0xff) | ((v) & 0xff);
+	*p = (*p & ~0xff) | ((v) & 0xff);
 }
 
 static void ArgSetDstRegWValue(uint32_t v)
 {
 	uint32_t *p = V_regs.ArgAddr.rga;
 
-	*p = (*p & ~ 0xffff) | ((v) & 0xffff);
+	*p = (*p & ~0xffff) | ((v) & 0xffff);
 }
 
 static void ArgSetDstRegLValue(uint32_t v)
@@ -1826,20 +1811,17 @@ static uint32_t DecodeGetSetSrcDst_APreDec7B(uint8_t ArgDat)
 
 static uint32_t DecodeGetSetSrcDst_ADispB(uint8_t ArgDat)
 {
-	return getarg_byte(V_regs.regs[ArgDat]
-		+ nextiSWord());
+	return getarg_byte(V_regs.regs[ArgDat] + nextiSWord());
 }
 
 static uint32_t DecodeGetSetSrcDst_ADispW(uint8_t ArgDat)
 {
-	return getarg_word(V_regs.regs[ArgDat]
-		+ nextiSWord());
+	return getarg_word(V_regs.regs[ArgDat] + nextiSWord());
 }
 
 static uint32_t DecodeGetSetSrcDst_ADispL(uint8_t ArgDat)
 {
-	return getarg_long(V_regs.regs[ArgDat]
-		+ nextiSWord());
+	return getarg_long(V_regs.regs[ArgDat] + nextiSWord());
 }
 
 static uint32_t DecodeGetSetSrcDst_AIndexB(uint8_t ArgDat)
@@ -1919,9 +1901,7 @@ static uint32_t DecodeGetSetSrcDst_PCIndexL(uint8_t ArgDat)
 
 typedef uint32_t (*DecodeGetSetSrcDstP)(uint8_t ArgDat);
 
-static const DecodeGetSetSrcDstP
-	DecodeGetSetSrcDstDispatch[kNumAMds] =
-{
+static const DecodeGetSetSrcDstP DecodeGetSetSrcDstDispatch[kNumAMds] = {
 	DecodeGetSetSrcDst_RegB /* kAMdRegB */,
 	DecodeGetSetSrcDst_RegW /* kAMdRegW */,
 	DecodeGetSetSrcDst_RegL /* kAMdRegL */,
@@ -1954,10 +1934,10 @@ static const DecodeGetSetSrcDstP
 	DecodeGetSetSrcDst_PCIndexB /* kAMdPCIndexB */,
 	DecodeGetSetSrcDst_PCIndexW /* kAMdPCIndexW */,
 	DecodeGetSetSrcDst_PCIndexL /* kAMdPCIndexL */,
-	(DecodeGetSetSrcDstP)nullptr /* kAMdImmedB */,
-	(DecodeGetSetSrcDstP)nullptr /* kAMdImmedW */,
-	(DecodeGetSetSrcDstP)nullptr /* kAMdImmedL */,
-	(DecodeGetSetSrcDstP)nullptr /* kAMdDat4 */
+	(DecodeGetSetSrcDstP) nullptr /* kAMdImmedB */,
+	(DecodeGetSetSrcDstP) nullptr /* kAMdImmedW */,
+	(DecodeGetSetSrcDstP) nullptr /* kAMdImmedL */,
+	(DecodeGetSetSrcDstP) nullptr /* kAMdDat4 */
 };
 
 static inline uint32_t DecodeGetSetSrcDst(DecArgR *f)
@@ -2027,126 +2007,168 @@ static void cctrue_F(cond_actP t_act, cond_actP f_act)
 
 static void cctrue_HI(cond_actP t_act, cond_actP f_act)
 {
-	if (0 == (CFLG | ZFLG)) {
+	if (0 == (CFLG | ZFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_LS(cond_actP t_act, cond_actP f_act)
 {
-	if (0 != (CFLG | ZFLG)) {
+	if (0 != (CFLG | ZFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CC(cond_actP t_act, cond_actP f_act)
 {
-	if (0 == (CFLG)) {
+	if (0 == (CFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CS(cond_actP t_act, cond_actP f_act)
 {
-	if (0 != (CFLG)) {
+	if (0 != (CFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_NE(cond_actP t_act, cond_actP f_act)
 {
-	if (0 == (ZFLG)) {
+	if (0 == (ZFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_EQ(cond_actP t_act, cond_actP f_act)
 {
-	if (0 != (ZFLG)) {
+	if (0 != (ZFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_VC(cond_actP t_act, cond_actP f_act)
 {
-	if (0 == (VFLG)) {
+	if (0 == (VFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_VS(cond_actP t_act, cond_actP f_act)
 {
-	if (0 != (VFLG)) {
+	if (0 != (VFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_PL(cond_actP t_act, cond_actP f_act)
 {
-	if (0 == (NFLG)) {
+	if (0 == (NFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_MI(cond_actP t_act, cond_actP f_act)
 {
-	if (0 != (NFLG)) {
+	if (0 != (NFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_GE(cond_actP t_act, cond_actP f_act)
 {
-	if (0 == (NFLG ^ VFLG)) {
+	if (0 == (NFLG ^ VFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_LT(cond_actP t_act, cond_actP f_act)
 {
-	if (0 != (NFLG ^ VFLG)) {
+	if (0 != (NFLG ^ VFLG))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_GT(cond_actP t_act, cond_actP f_act)
 {
-	if (0 == (ZFLG | (NFLG ^ VFLG))) {
+	if (0 == (ZFLG | (NFLG ^ VFLG)))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_LE(cond_actP t_act, cond_actP f_act)
 {
-	if (0 != (ZFLG | (NFLG ^ VFLG))) {
+	if (0 != (ZFLG | (NFLG ^ VFLG)))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2158,9 +2180,12 @@ static uint32_t Ui5rASR(uint32_t x, uint32_t s)
 {
 	uint32_t v;
 
-	if (ui5r_MSBisSet(x)) {
-		v = ~ ((~ x) >> s);
-	} else {
+	if (ui5r_MSBisSet(x))
+	{
+		v = ~((~x) >> s);
+	}
+	else
+	{
 		v = x >> s;
 	}
 
@@ -2170,101 +2195,133 @@ static uint32_t Ui5rASR(uint32_t x, uint32_t s)
 
 static void cctrue_TstL_HI(cond_actP t_act, cond_actP f_act)
 {
-	if (((uint32_t)V_regs.LazyFlagArgDst) > ((uint32_t)0)) {
+	if (((uint32_t)V_regs.LazyFlagArgDst) > ((uint32_t)0))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_TstL_LS(cond_actP t_act, cond_actP f_act)
 {
-	if (((uint32_t)V_regs.LazyFlagArgDst) <= ((uint32_t)0)) {
+	if (((uint32_t)V_regs.LazyFlagArgDst) <= ((uint32_t)0))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 
-
 static void cctrue_TstL_NE(cond_actP t_act, cond_actP f_act)
 {
-	if (V_regs.LazyFlagArgDst != 0) {
+	if (V_regs.LazyFlagArgDst != 0)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_TstL_EQ(cond_actP t_act, cond_actP f_act)
 {
-	if (V_regs.LazyFlagArgDst == 0) {
+	if (V_regs.LazyFlagArgDst == 0)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_TstL_PL(cond_actP t_act, cond_actP f_act)
 {
-	if (((int32_t)(V_regs.LazyFlagArgDst)) >= 0) {
+	if (((int32_t)(V_regs.LazyFlagArgDst)) >= 0)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_TstL_MI(cond_actP t_act, cond_actP f_act)
 {
-	if (((int32_t)(V_regs.LazyFlagArgDst)) < 0) {
+	if (((int32_t)(V_regs.LazyFlagArgDst)) < 0)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_TstL_GE(cond_actP t_act, cond_actP f_act)
 {
-	if (((int32_t)V_regs.LazyFlagArgDst) >= ((int32_t)0)) {
+	if (((int32_t)V_regs.LazyFlagArgDst) >= ((int32_t)0))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_TstL_LT(cond_actP t_act, cond_actP f_act)
 {
-	if (((int32_t)V_regs.LazyFlagArgDst) < ((int32_t)0)) {
+	if (((int32_t)V_regs.LazyFlagArgDst) < ((int32_t)0))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_TstL_GT(cond_actP t_act, cond_actP f_act)
 {
-	if (((int32_t)V_regs.LazyFlagArgDst) > ((int32_t)0)) {
+	if (((int32_t)V_regs.LazyFlagArgDst) > ((int32_t)0))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_TstL_LE(cond_actP t_act, cond_actP f_act)
 {
-	if (((int32_t)V_regs.LazyFlagArgDst) <= ((int32_t)0)) {
+	if (((int32_t)V_regs.LazyFlagArgDst) <= ((int32_t)0))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpB_HI(cond_actP t_act, cond_actP f_act)
 {
-	if (((uint8_t)V_regs.LazyFlagArgDst) > ((uint8_t)V_regs.LazyFlagArgSrc)) {
+	if (((uint8_t)V_regs.LazyFlagArgDst) > ((uint8_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2274,7 +2331,9 @@ static void cctrue_CmpB_LS(cond_actP t_act, cond_actP f_act)
 	if (((uint8_t)V_regs.LazyFlagArgDst) <= ((uint8_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2284,7 +2343,9 @@ static void cctrue_CmpB_CC(cond_actP t_act, cond_actP f_act)
 	if (((uint8_t)V_regs.LazyFlagArgDst) >= ((uint8_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2294,7 +2355,9 @@ static void cctrue_CmpB_CS(cond_actP t_act, cond_actP f_act)
 	if (((uint8_t)V_regs.LazyFlagArgDst) < ((uint8_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2304,7 +2367,9 @@ static void cctrue_CmpB_NE(cond_actP t_act, cond_actP f_act)
 	if (((uint8_t)V_regs.LazyFlagArgDst) != ((uint8_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2314,25 +2379,33 @@ static void cctrue_CmpB_EQ(cond_actP t_act, cond_actP f_act)
 	if (((uint8_t)V_regs.LazyFlagArgDst) == ((uint8_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpB_PL(cond_actP t_act, cond_actP f_act)
 {
-	if (((int8_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) >= 0) {
+	if (((int8_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) >= 0)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpB_MI(cond_actP t_act, cond_actP f_act)
 {
-	if (((int8_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) < 0) {
+	if (((int8_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) < 0)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2342,25 +2415,33 @@ static void cctrue_CmpB_GE(cond_actP t_act, cond_actP f_act)
 	if (((int8_t)V_regs.LazyFlagArgDst) >= ((int8_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpB_LT(cond_actP t_act, cond_actP f_act)
 {
-	if (((int8_t)V_regs.LazyFlagArgDst) < ((int8_t)V_regs.LazyFlagArgSrc)) {
+	if (((int8_t)V_regs.LazyFlagArgDst) < ((int8_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpB_GT(cond_actP t_act, cond_actP f_act)
 {
-	if (((int8_t)V_regs.LazyFlagArgDst) > ((int8_t)V_regs.LazyFlagArgSrc)) {
+	if (((int8_t)V_regs.LazyFlagArgDst) > ((int8_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2370,7 +2451,9 @@ static void cctrue_CmpB_LE(cond_actP t_act, cond_actP f_act)
 	if (((int8_t)V_regs.LazyFlagArgDst) <= ((int8_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2380,7 +2463,9 @@ static void cctrue_CmpW_HI(cond_actP t_act, cond_actP f_act)
 	if (((uint16_t)V_regs.LazyFlagArgDst) > ((uint16_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2390,7 +2475,9 @@ static void cctrue_CmpW_LS(cond_actP t_act, cond_actP f_act)
 	if (((uint16_t)V_regs.LazyFlagArgDst) <= ((uint16_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2400,16 +2487,21 @@ static void cctrue_CmpW_CC(cond_actP t_act, cond_actP f_act)
 	if (((uint16_t)V_regs.LazyFlagArgDst) >= ((uint16_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpW_CS(cond_actP t_act, cond_actP f_act)
 {
-	if (((uint16_t)V_regs.LazyFlagArgDst) < ((uint16_t)V_regs.LazyFlagArgSrc)) {
+	if (((uint16_t)V_regs.LazyFlagArgDst) < ((uint16_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2419,7 +2511,9 @@ static void cctrue_CmpW_NE(cond_actP t_act, cond_actP f_act)
 	if (((uint16_t)V_regs.LazyFlagArgDst) != ((uint16_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2429,25 +2523,33 @@ static void cctrue_CmpW_EQ(cond_actP t_act, cond_actP f_act)
 	if (((uint16_t)V_regs.LazyFlagArgDst) == ((uint16_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpW_PL(cond_actP t_act, cond_actP f_act)
 {
-	if (((int16_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) >= 0) {
+	if (((int16_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) >= 0)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpW_MI(cond_actP t_act, cond_actP f_act)
 {
-	if (((int16_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) < 0) {
+	if (((int16_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) < 0)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2457,25 +2559,33 @@ static void cctrue_CmpW_GE(cond_actP t_act, cond_actP f_act)
 	if (((int16_t)V_regs.LazyFlagArgDst) >= ((int16_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpW_LT(cond_actP t_act, cond_actP f_act)
 {
-	if (((int16_t)V_regs.LazyFlagArgDst) < ((int16_t)V_regs.LazyFlagArgSrc)) {
+	if (((int16_t)V_regs.LazyFlagArgDst) < ((int16_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpW_GT(cond_actP t_act, cond_actP f_act)
 {
-	if (((int16_t)V_regs.LazyFlagArgDst) > ((int16_t)V_regs.LazyFlagArgSrc)) {
+	if (((int16_t)V_regs.LazyFlagArgDst) > ((int16_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2485,16 +2595,21 @@ static void cctrue_CmpW_LE(cond_actP t_act, cond_actP f_act)
 	if (((int16_t)V_regs.LazyFlagArgDst) <= ((int16_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpL_HI(cond_actP t_act, cond_actP f_act)
 {
-	if (((uint32_t)V_regs.LazyFlagArgDst) > ((uint32_t)V_regs.LazyFlagArgSrc)) {
+	if (((uint32_t)V_regs.LazyFlagArgDst) > ((uint32_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2504,7 +2619,9 @@ static void cctrue_CmpL_LS(cond_actP t_act, cond_actP f_act)
 	if (((uint32_t)V_regs.LazyFlagArgDst) <= ((uint32_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2514,34 +2631,45 @@ static void cctrue_CmpL_CC(cond_actP t_act, cond_actP f_act)
 	if (((uint32_t)V_regs.LazyFlagArgDst) >= ((uint32_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpL_CS(cond_actP t_act, cond_actP f_act)
 {
-	if (((uint32_t)V_regs.LazyFlagArgDst) < ((uint32_t)V_regs.LazyFlagArgSrc)) {
+	if (((uint32_t)V_regs.LazyFlagArgDst) < ((uint32_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpL_NE(cond_actP t_act, cond_actP f_act)
 {
-	if (V_regs.LazyFlagArgDst != V_regs.LazyFlagArgSrc) {
+	if (V_regs.LazyFlagArgDst != V_regs.LazyFlagArgSrc)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpL_EQ(cond_actP t_act, cond_actP f_act)
 {
-	if (V_regs.LazyFlagArgDst == V_regs.LazyFlagArgSrc) {
+	if (V_regs.LazyFlagArgDst == V_regs.LazyFlagArgSrc)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2551,16 +2679,21 @@ static void cctrue_CmpL_PL(cond_actP t_act, cond_actP f_act)
 	if ((((int32_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) >= 0))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpL_MI(cond_actP t_act, cond_actP f_act)
 {
-	if ((((int32_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) < 0)) {
+	if ((((int32_t)(V_regs.LazyFlagArgDst - V_regs.LazyFlagArgSrc)) < 0))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2570,25 +2703,33 @@ static void cctrue_CmpL_GE(cond_actP t_act, cond_actP f_act)
 	if (((int32_t)V_regs.LazyFlagArgDst) >= ((int32_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpL_LT(cond_actP t_act, cond_actP f_act)
 {
-	if (((int32_t)V_regs.LazyFlagArgDst) < ((int32_t)V_regs.LazyFlagArgSrc)) {
+	if (((int32_t)V_regs.LazyFlagArgDst) < ((int32_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_CmpL_GT(cond_actP t_act, cond_actP f_act)
 {
-	if (((int32_t)V_regs.LazyFlagArgDst) > ((int32_t)V_regs.LazyFlagArgSrc)) {
+	if (((int32_t)V_regs.LazyFlagArgDst) > ((int32_t)V_regs.LazyFlagArgSrc))
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2598,51 +2739,57 @@ static void cctrue_CmpL_LE(cond_actP t_act, cond_actP f_act)
 	if (((int32_t)V_regs.LazyFlagArgDst) <= ((int32_t)V_regs.LazyFlagArgSrc))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_Asr_CC(cond_actP t_act, cond_actP f_act)
 {
-	if (0 ==
-		((V_regs.LazyFlagArgDst >> (V_regs.LazyFlagArgSrc - 1)) & 1))
+	if (0 == ((V_regs.LazyFlagArgDst >> (V_regs.LazyFlagArgSrc - 1)) & 1))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_Asr_CS(cond_actP t_act, cond_actP f_act)
 {
-	if (0 !=
-		((V_regs.LazyFlagArgDst >> (V_regs.LazyFlagArgSrc - 1)) & 1))
+	if (0 != ((V_regs.LazyFlagArgDst >> (V_regs.LazyFlagArgSrc - 1)) & 1))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_AslB_CC(cond_actP t_act, cond_actP f_act)
 {
-	if (0 ==
-		((V_regs.LazyFlagArgDst >> (8 - V_regs.LazyFlagArgSrc)) & 1))
+	if (0 == ((V_regs.LazyFlagArgDst >> (8 - V_regs.LazyFlagArgSrc)) & 1))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_AslB_CS(cond_actP t_act, cond_actP f_act)
 {
-	if (0 !=
-		((V_regs.LazyFlagArgDst >> (8 - V_regs.LazyFlagArgSrc)) & 1))
+	if (0 != ((V_regs.LazyFlagArgDst >> (8 - V_regs.LazyFlagArgSrc)) & 1))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2652,9 +2799,12 @@ static void cctrue_AslB_VC(cond_actP t_act, cond_actP f_act)
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = static_cast<uint32_t>(static_cast<int8_t>(V_regs.LazyFlagArgDst << cnt));
 
-	if (Ui5rASR(dst, cnt) == V_regs.LazyFlagArgDst) {
+	if (Ui5rASR(dst, cnt) == V_regs.LazyFlagArgDst)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2664,31 +2814,36 @@ static void cctrue_AslB_VS(cond_actP t_act, cond_actP f_act)
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = static_cast<uint32_t>(static_cast<int8_t>(V_regs.LazyFlagArgDst << cnt));
 
-	if (Ui5rASR(dst, cnt) != V_regs.LazyFlagArgDst) {
+	if (Ui5rASR(dst, cnt) != V_regs.LazyFlagArgDst)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_AslW_CC(cond_actP t_act, cond_actP f_act)
 {
-	if (0 ==
-		((V_regs.LazyFlagArgDst >> (16 - V_regs.LazyFlagArgSrc)) & 1))
+	if (0 == ((V_regs.LazyFlagArgDst >> (16 - V_regs.LazyFlagArgSrc)) & 1))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_AslW_CS(cond_actP t_act, cond_actP f_act)
 {
-	if (0 !=
-		((V_regs.LazyFlagArgDst >> (16 - V_regs.LazyFlagArgSrc)) & 1))
+	if (0 != ((V_regs.LazyFlagArgDst >> (16 - V_regs.LazyFlagArgSrc)) & 1))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2698,9 +2853,12 @@ static void cctrue_AslW_VC(cond_actP t_act, cond_actP f_act)
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = static_cast<uint32_t>(static_cast<int16_t>(V_regs.LazyFlagArgDst << cnt));
 
-	if (Ui5rASR(dst, cnt) == V_regs.LazyFlagArgDst) {
+	if (Ui5rASR(dst, cnt) == V_regs.LazyFlagArgDst)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2710,31 +2868,36 @@ static void cctrue_AslW_VS(cond_actP t_act, cond_actP f_act)
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = static_cast<uint32_t>(static_cast<int16_t>(V_regs.LazyFlagArgDst << cnt));
 
-	if (Ui5rASR(dst, cnt) != V_regs.LazyFlagArgDst) {
+	if (Ui5rASR(dst, cnt) != V_regs.LazyFlagArgDst)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_AslL_CC(cond_actP t_act, cond_actP f_act)
 {
-	if (0 ==
-		((V_regs.LazyFlagArgDst >> (32 - V_regs.LazyFlagArgSrc)) & 1))
+	if (0 == ((V_regs.LazyFlagArgDst >> (32 - V_regs.LazyFlagArgSrc)) & 1))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
 
 static void cctrue_AslL_CS(cond_actP t_act, cond_actP f_act)
 {
-	if (0 !=
-		((V_regs.LazyFlagArgDst >> (32 - V_regs.LazyFlagArgSrc)) & 1))
+	if (0 != ((V_regs.LazyFlagArgDst >> (32 - V_regs.LazyFlagArgSrc)) & 1))
 	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2744,9 +2907,12 @@ static void cctrue_AslL_VC(cond_actP t_act, cond_actP f_act)
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = static_cast<uint32_t>(V_regs.LazyFlagArgDst << cnt);
 
-	if (Ui5rASR(dst, cnt) == V_regs.LazyFlagArgDst) {
+	if (Ui5rASR(dst, cnt) == V_regs.LazyFlagArgDst)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -2756,9 +2922,12 @@ static void cctrue_AslL_VS(cond_actP t_act, cond_actP f_act)
 	uint32_t cnt = V_regs.LazyFlagArgSrc;
 	uint32_t dst = static_cast<uint32_t>(V_regs.LazyFlagArgDst << cnt);
 
-	if (Ui5rASR(dst, cnt) != V_regs.LazyFlagArgDst) {
+	if (Ui5rASR(dst, cnt) != V_regs.LazyFlagArgDst)
+	{
 		t_act();
-	} else {
+	}
+	else
+	{
 		f_act();
 	}
 }
@@ -3161,34 +3330,29 @@ static const cctrueP cctrueDispatch[CCdispSz + 1] = {
 	cctrue_Dflt /* kLazyFlagsZSet GT */,
 	cctrue_Dflt /* kLazyFlagsZSet LE */,
 
-	0
-};
+	0};
 
 static inline void cctrue(cond_actP t_act, cond_actP f_act)
 {
-	(cctrueDispatch[V_regs.LazyFlagKind * 16
-		+ V_regs.CurDecOpY.v[0].ArgDat])(t_act, f_act);
+	(cctrueDispatch[V_regs.LazyFlagKind * 16 + V_regs.CurDecOpY.v[0].ArgDat])(t_act, f_act);
 }
 
 
 static void NeedDefaultLazyXFlagSubB()
 {
-	XFLG = Bool2Bit(((uint8_t)V_regs.LazyXFlagArgDst)
-		< ((uint8_t)V_regs.LazyXFlagArgSrc));
+	XFLG = Bool2Bit(((uint8_t)V_regs.LazyXFlagArgDst) < ((uint8_t)V_regs.LazyXFlagArgSrc));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
 static void NeedDefaultLazyXFlagSubW()
 {
-	XFLG = Bool2Bit(((uint16_t)V_regs.LazyXFlagArgDst)
-		< ((uint16_t)V_regs.LazyXFlagArgSrc));
+	XFLG = Bool2Bit(((uint16_t)V_regs.LazyXFlagArgDst) < ((uint16_t)V_regs.LazyXFlagArgSrc));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
 static void NeedDefaultLazyXFlagSubL()
 {
-	XFLG = Bool2Bit(((uint32_t)V_regs.LazyXFlagArgDst)
-		< ((uint32_t)V_regs.LazyXFlagArgSrc));
+	XFLG = Bool2Bit(((uint32_t)V_regs.LazyXFlagArgDst) < ((uint32_t)V_regs.LazyXFlagArgSrc));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
@@ -3224,22 +3388,19 @@ static void NeedDefaultLazyXFlagAddL()
 
 static void NeedDefaultLazyXFlagNegB()
 {
-	XFLG = Bool2Bit(((uint8_t)0)
-		< ((uint8_t)V_regs.LazyXFlagArgDst));
+	XFLG = Bool2Bit(((uint8_t)0) < ((uint8_t)V_regs.LazyXFlagArgDst));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
 static void NeedDefaultLazyXFlagNegW()
 {
-	XFLG = Bool2Bit(((uint16_t)0)
-		< ((uint16_t)V_regs.LazyXFlagArgDst));
+	XFLG = Bool2Bit(((uint16_t)0) < ((uint16_t)V_regs.LazyXFlagArgDst));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
 static void NeedDefaultLazyXFlagNegL()
 {
-	XFLG = Bool2Bit(((uint32_t)0)
-		< ((uint32_t)V_regs.LazyXFlagArgDst));
+	XFLG = Bool2Bit(((uint32_t)0) < ((uint32_t)V_regs.LazyXFlagArgDst));
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
@@ -3274,15 +3435,11 @@ static void NeedDefaultLazyXFlagAslL()
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 }
 
-static void NeedDefaultLazyXFlagDefault()
-{
-}
+static void NeedDefaultLazyXFlagDefault() {}
 
 typedef void (*NeedLazyFlagP)();
 
-static const NeedLazyFlagP
-	NeedLazyXFlagDispatch[kNumLazyFlagsKinds + 1] =
-{
+static const NeedLazyFlagP NeedLazyXFlagDispatch[kNumLazyFlagsKinds + 1] = {
 	NeedDefaultLazyXFlagDefault /* kLazyFlagsDefault */,
 	0 /* kLazyFlagsTstB */,
 	0 /* kLazyFlagsTstW */,
@@ -3299,16 +3456,15 @@ static const NeedLazyFlagP
 	NeedDefaultLazyXFlagNegB /* kLazyFlagsNegB */,
 	NeedDefaultLazyXFlagNegW /* kLazyFlagsNegW */,
 	NeedDefaultLazyXFlagNegL /* kLazyFlagsNegL */,
-	NeedDefaultLazyXFlagAsr  /* kLazyFlagsAsrB */,
-	NeedDefaultLazyXFlagAsr  /* kLazyFlagsAsrW */,
-	NeedDefaultLazyXFlagAsr  /* kLazyFlagsAsrL */,
+	NeedDefaultLazyXFlagAsr /* kLazyFlagsAsrB */,
+	NeedDefaultLazyXFlagAsr /* kLazyFlagsAsrW */,
+	NeedDefaultLazyXFlagAsr /* kLazyFlagsAsrL */,
 	NeedDefaultLazyXFlagAslB /* kLazyFlagsAslB */,
 	NeedDefaultLazyXFlagAslW /* kLazyFlagsAslW */,
 	NeedDefaultLazyXFlagAslL /* kLazyFlagsAslL */,
 	0 /* kLazyFlagsZSet */,
 
-	0
-};
+	0};
 
 static void NeedDefaultLazyXFlag()
 {
@@ -3332,8 +3488,7 @@ static void NeedDefaultLazyFlagsCmpB()
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
 	uint32_t result0 = dst - src;
-	uint32_t result1 = ui5r_FromUByte(dst)
-		- ui5r_FromUByte(src);
+	uint32_t result1 = ui5r_FromUByte(dst) - ui5r_FromUByte(src);
 	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
@@ -3355,8 +3510,8 @@ static void NeedDefaultLazyFlagsCmpW()
 
 	VFLG = (((result0 >> 1) ^ result0) >> 15) & 1;
 	{
-		uint32_t result1 = ui5r_FromUWord(V_regs.LazyFlagArgDst)
-			- ui5r_FromUWord(V_regs.LazyFlagArgSrc);
+		uint32_t result1 =
+			ui5r_FromUWord(V_regs.LazyFlagArgDst) - ui5r_FromUWord(V_regs.LazyFlagArgSrc);
 
 		CFLG = (result1 >> 16) & 1;
 	}
@@ -3394,8 +3549,7 @@ static void NeedDefaultLazyFlagsSubB()
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
 	uint32_t result0 = dst - src;
-	uint32_t result1 = ui5r_FromUByte(dst)
-		- ui5r_FromUByte(src);
+	uint32_t result1 = ui5r_FromUByte(dst) - ui5r_FromUByte(src);
 	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
@@ -3418,8 +3572,8 @@ static void NeedDefaultLazyFlagsSubW()
 
 	VFLG = (((result0 >> 1) ^ result0) >> 15) & 1;
 	{
-		uint32_t result1 = ui5r_FromUWord(V_regs.LazyFlagArgDst)
-			- ui5r_FromUWord(V_regs.LazyFlagArgSrc);
+		uint32_t result1 =
+			ui5r_FromUWord(V_regs.LazyFlagArgDst) - ui5r_FromUWord(V_regs.LazyFlagArgSrc);
 
 		CFLG = (result1 >> 16) & 1;
 	}
@@ -3459,8 +3613,7 @@ static void NeedDefaultLazyFlagsAddB()
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
 	uint32_t result0 = dst + src;
-	uint32_t result1 = ui5r_FromUByte(dst)
-		+ ui5r_FromUByte(src);
+	uint32_t result1 = ui5r_FromUByte(dst) + ui5r_FromUByte(src);
 	uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
@@ -3478,8 +3631,7 @@ static void NeedDefaultLazyFlagsAddW()
 	uint32_t src = V_regs.LazyFlagArgSrc;
 	uint32_t dst = V_regs.LazyFlagArgDst;
 	uint32_t result0 = dst + src;
-	uint32_t result1 = ui5r_FromUWord(dst)
-		+ ui5r_FromUWord(src);
+	uint32_t result1 = ui5r_FromUWord(dst) + ui5r_FromUWord(src);
 	uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(result0));
 
 	ZFLG = Bool2Bit(result == 0);
@@ -3506,19 +3658,15 @@ static void NeedDefaultLazyFlagsAddL()
 	{
 		uint32_t result1;
 		uint32_t result0;
-		uint32_t MidCarry = (ui5r_FromUWord(dst)
-			+ ui5r_FromUWord(src)) >> 16;
+		uint32_t MidCarry = (ui5r_FromUWord(dst) + ui5r_FromUWord(src)) >> 16;
 
 		dst >>= 16;
 		src >>= 16;
 
-		result1 = ui5r_FromUWord(dst)
-			+ ui5r_FromUWord(src)
-			+ MidCarry;
+		result1 = ui5r_FromUWord(dst) + ui5r_FromUWord(src) + MidCarry;
 		CFLG = (result1 >> 16);
-		result0 = static_cast<uint32_t>(static_cast<int16_t>(dst))
-			+ static_cast<uint32_t>(static_cast<int16_t>(src))
-			+ MidCarry;
+		result0 = static_cast<uint32_t>(static_cast<int16_t>(dst)) +
+				  static_cast<uint32_t>(static_cast<int16_t>(src)) + MidCarry;
 		VFLG = (((result0 >> 1) ^ result0) >> 15) & 1;
 	}
 
@@ -3526,8 +3674,7 @@ static void NeedDefaultLazyFlagsAddL()
 	V_regs.LazyFlagKind = kLazyFlagsDefault;
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 #else
-	uint32_t result = static_cast<uint32_t>(V_regs.LazyFlagArgDst
-		+ V_regs.LazyFlagArgSrc);
+	uint32_t result = static_cast<uint32_t>(V_regs.LazyFlagArgDst + V_regs.LazyFlagArgSrc);
 
 	NeedDefaultLazyFlagsAddCommon(result);
 #endif
@@ -3657,9 +3804,7 @@ static void NeedDefaultLazyFlagsAslL()
 
 static void NeedDefaultLazyFlagsZSet();
 
-static const NeedLazyFlagP
-	NeedLazyFlagDispatch[kNumLazyFlagsKinds + 1] =
-{
+static const NeedLazyFlagP NeedLazyFlagDispatch[kNumLazyFlagsKinds + 1] = {
 	NeedDefaultLazyXFlag /* kLazyFlagsDefault */,
 	0 /* kLazyFlagsTstB */,
 	0 /* kLazyFlagsTstW */,
@@ -3676,16 +3821,15 @@ static const NeedLazyFlagP
 	NeedDefaultLazyFlagsNegB /* kLazyFlagsNegB */,
 	NeedDefaultLazyFlagsNegW /* kLazyFlagsNegW */,
 	NeedDefaultLazyFlagsNegL /* kLazyFlagsNegL */,
-	NeedDefaultLazyFlagsAsr  /* kLazyFlagsAsrB */,
-	NeedDefaultLazyFlagsAsr  /* kLazyFlagsAsrW */,
-	NeedDefaultLazyFlagsAsr  /* kLazyFlagsAsrL */,
+	NeedDefaultLazyFlagsAsr /* kLazyFlagsAsrB */,
+	NeedDefaultLazyFlagsAsr /* kLazyFlagsAsrW */,
+	NeedDefaultLazyFlagsAsr /* kLazyFlagsAsrL */,
 	NeedDefaultLazyFlagsAslB /* kLazyFlagsAslB */,
 	NeedDefaultLazyFlagsAslW /* kLazyFlagsAslW */,
 	NeedDefaultLazyFlagsAslL /* kLazyFlagsAslL */,
 	NeedDefaultLazyFlagsZSet /* kLazyFlagsZSet */,
 
-	0
-};
+	0};
 
 static void NeedDefaultLazyAllFlags0()
 {
@@ -3711,7 +3855,6 @@ static void cctrue_Dflt(cond_actP t_act, cond_actP f_act)
 	NeedDefaultLazyAllFlags();
 	cctrue(t_act, f_act);
 }
-
 
 
 static void DoCodeCmpB()
@@ -3798,12 +3941,11 @@ static void DoCodeTst()
 static void DoCodeBraB()
 {
 	int32_t offset = (int32_t)(int8_t)(uint8_t)(V_regs.CurDecOpY.v[1].ArgDat);
-	uint8_t * s = V_pc_p + offset;
+	uint8_t *s = V_pc_p + offset;
 
 	V_pc_p = s;
 
-	if (s >= V_pc_pHi
-		|| s < V_regs.pc_pLo) [[unlikely]]
+	if (s >= V_pc_pHi || s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -3812,13 +3954,12 @@ static void DoCodeBraB()
 static void DoCodeBraW()
 {
 	int32_t offset = (int32_t)(int16_t)(uint16_t)do_get_mem_word(V_pc_p);
-		/* note that pc not incremented here */
-	uint8_t * s = V_pc_p + offset;
+	/* note that pc not incremented here */
+	uint8_t *s = V_pc_p + offset;
 
 	V_pc_p = s;
 
-	if (s >= V_pc_pHi
-		|| s < V_regs.pc_pLo) [[unlikely]]
+	if (s >= V_pc_pHi || s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -3833,7 +3974,7 @@ static void DoCodeBccB_t()
 static void DoCodeBccB_f()
 {
 	V_MaxCyclesToGo -= (8 * kCycleScale + RdAvgXtraCyc);
-		/* do nothing */
+	/* do nothing */
 }
 
 static void DoCodeBccB()
@@ -3846,7 +3987,8 @@ static void SkipiWord()
 {
 	V_pc_p += 2;
 
-	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]]
+	{
 		Recalc_PC_Block();
 	}
 }
@@ -3879,12 +4021,15 @@ static void DoCodeDBF()
 	uint32_t dstvalue = static_cast<uint32_t>(static_cast<int16_t>(*dstp));
 
 	--dstvalue;
-	*dstp = (*dstp & ~ 0xffff) | ((dstvalue) & 0xffff);
+	*dstp = (*dstp & ~0xffff) | ((dstvalue) & 0xffff);
 
-	if (static_cast<int32_t>(dstvalue) == -1) {
+	if (static_cast<int32_t>(dstvalue) == -1)
+	{
 		V_MaxCyclesToGo -= (14 * kCycleScale + 3 * RdAvgXtraCyc);
 		SkipiWord();
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RdAvgXtraCyc);
 		DoCodeBraW();
 	}
@@ -3909,8 +4054,7 @@ static void DoCodeSwap()
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t src = *dstp;
-	uint32_t dst = static_cast<uint32_t>(((src >> 16) & 0xFFFF)
-		| ((src & 0xFFFF) << 16));
+	uint32_t dst = static_cast<uint32_t>(((src >> 16) & 0xFFFF) | ((src & 0xFFFF) << 16));
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dst;
@@ -4117,8 +4261,7 @@ static void m68k_setpc(uint32_t newpc)
 
 
 	V_pc_p = V_regs.pc_pLo + (newpc - V_regs.pc);
-	if (V_pc_p >= V_pc_pHi
-		|| V_pc_p < V_regs.pc_pLo) [[unlikely]]
+	if (V_pc_p >= V_pc_pHi || V_pc_p < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -4208,8 +4351,7 @@ static uint16_t m68k_getCR()
 {
 	NeedDefaultLazyAllFlags();
 
-	return (XFLG << 4) | (NFLG << 3) | (ZFLG << 2)
-		| (VFLG << 1) | CFLG;
+	return (XFLG << 4) | (NFLG << 3) | (ZFLG << 2) | (VFLG << 1) | CFLG;
 }
 
 static void m68k_setCR(uint16_t newcr)
@@ -4227,28 +4369,28 @@ static void m68k_setCR(uint16_t newcr)
 
 static uint16_t m68k_getSR()
 {
-	uint16_t sr = m68k_getCR()
-			| (V_regs.t1 << 15)
-			| (V_regs.s << 13)
-			| (V_regs.intmask << 8);
-	if (s_cpuConfig->use68020) {
-		sr |= (V_regs.t0 << 14)
-			| (V_regs.m << 12);
+	uint16_t sr = m68k_getCR() | (V_regs.t1 << 15) | (V_regs.s << 13) | (V_regs.intmask << 8);
+	if (s_cpuConfig->use68020)
+	{
+		sr |= (V_regs.t0 << 14) | (V_regs.m << 12);
 	}
 	return sr;
 }
 
 static void NeedToGetOut()
 {
-	if (V_MaxCyclesToGo <= 0) {
+	if (V_MaxCyclesToGo <= 0)
+	{
 		/*
 			already have gotten out, and exception processing has
 			caused another exception, such as because a bad
 			stack pointer pointing to a memory mapped device.
 		*/
-	} else {
+	}
+	else
+	{
 		V_regs.MoreCyclesToGo += V_MaxCyclesToGo;
-			/* not counting the current instruction */
+		/* not counting the current instruction */
 		V_MaxCyclesToGo = 0;
 	}
 }
@@ -4262,43 +4404,53 @@ static void SetExternalInterruptPending()
 static void m68k_setSR(uint16_t newsr)
 {
 	uint32_t *pnewstk;
-	uint32_t *poldstk = (V_regs.s != 0) ? (
-		(s_cpuConfig->use68020 && V_regs.m != 0) ? &V_regs.msp :
-		&V_regs.isp) : &V_regs.usp;
+	uint32_t *poldstk = (V_regs.s != 0)
+							? ((s_cpuConfig->use68020 && V_regs.m != 0) ? &V_regs.msp : &V_regs.isp)
+							: &V_regs.usp;
 	uint32_t oldintmask = V_regs.intmask;
 
 	V_regs.t1 = (newsr >> 15) & 1;
-	if (s_cpuConfig->use68020) {
+	if (s_cpuConfig->use68020)
+	{
 		V_regs.t0 = (newsr >> 14) & 1;
-		if (V_regs.t0 != 0) {
-			ReportAbnormalID(AbnormalID::kCPU_t0_flag_set_in_m68k_setSR, "t0 flag set in m68k_setSR");
+		if (V_regs.t0 != 0)
+		{
+			ReportAbnormalID(AbnormalID::kCPU_t0_flag_set_in_m68k_setSR,
+							 "t0 flag set in m68k_setSR");
 		}
 	}
 	V_regs.s = (newsr >> 13) & 1;
-	if (s_cpuConfig->use68020) {
+	if (s_cpuConfig->use68020)
+	{
 		V_regs.m = (newsr >> 12) & 1;
-		if (V_regs.m != 0) {
+		if (V_regs.m != 0)
+		{
 			ReportAbnormalID(AbnormalID::kCPU_m_flag_set_in_m68k_setSR, "m flag set in m68k_setSR");
 		}
 	}
 	V_regs.intmask = (newsr >> 8) & 7;
 
-	pnewstk = (V_regs.s != 0) ? (
-		(s_cpuConfig->use68020 && V_regs.m != 0) ? &V_regs.msp :
-		&V_regs.isp) : &V_regs.usp;
+	pnewstk = (V_regs.s != 0)
+				  ? ((s_cpuConfig->use68020 && V_regs.m != 0) ? &V_regs.msp : &V_regs.isp)
+				  : &V_regs.usp;
 
-	if (poldstk != pnewstk) {
+	if (poldstk != pnewstk)
+	{
 		*poldstk = m68k_areg(7);
 		m68k_areg(7) = *pnewstk;
 	}
 
-	if (V_regs.intmask != oldintmask) {
+	if (V_regs.intmask != oldintmask)
+	{
 		SetExternalInterruptPending();
 	}
 
-	if (V_regs.t1 != 0) {
+	if (V_regs.t1 != 0)
+	{
 		NeedToGetOut();
-	} else {
+	}
+	else
+	{
 		/* V_regs.TracePending = false; */
 	}
 
@@ -4309,15 +4461,16 @@ static void ExceptionTo(uint32_t newpc, int nr)
 {
 	uint16_t saveSR = m68k_getSR();
 
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		V_regs.usp = m68k_areg(7);
-		m68k_areg(7) =
-			(s_cpuConfig->use68020 && V_regs.m != 0) ? V_regs.msp :
-			V_regs.isp;
+		m68k_areg(7) = (s_cpuConfig->use68020 && V_regs.m != 0) ? V_regs.msp : V_regs.isp;
 		V_regs.s = 1;
 	}
-	if (s_cpuConfig->use68020) {
-		switch (nr) {
+	if (s_cpuConfig->use68020)
+	{
+		switch (nr)
+		{
 			case 5: /* Zero Divide */
 			case 6: /* CHK, CHK2 */
 			case 7: /* cpTRAPcc, TRAPCcc, TRAPv */
@@ -4340,7 +4493,8 @@ static void ExceptionTo(uint32_t newpc, int nr)
 	put_word(m68k_areg(7), saveSR);
 	m68k_setpc(newpc);
 	V_regs.t1 = 0;
-	if (s_cpuConfig->use68020) {
+	if (s_cpuConfig->use68020)
+	{
 		V_regs.t0 = 0;
 		V_regs.m = 0;
 	}
@@ -4350,7 +4504,8 @@ static void ExceptionTo(uint32_t newpc, int nr)
 static void Exception(int nr)
 {
 	uint32_t vectorAddr = 4 * nr;
-	if (s_cpuConfig->use68020) {
+	if (s_cpuConfig->use68020)
+	{
 		vectorAddr += V_regs.vbr;
 	}
 	ExceptionTo(get_long(vectorAddr), nr);
@@ -4379,24 +4534,30 @@ static void DoCodeMOVEMRmML()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t p = *dstp;
 
-	if (s_cpuConfig->use68020) {
+	if (s_cpuConfig->use68020)
+	{
 		int n = 0;
 
-		for (z = 0; z < 16; ++z) {
-			if ((regmask & (1 << z)) != 0) {
+		for (z = 0; z < 16; ++z)
+		{
+			if ((regmask & (1 << z)) != 0)
+			{
 				n++;
 			}
 		}
 		*dstp = p - n * 4;
 	}
-	for (z = 16; --z >= 0; ) {
-		if ((regmask & (1 << (15 - z))) != 0) {
+	for (z = 16; --z >= 0;)
+	{
+		if ((regmask & (1 << (15 - z))) != 0)
+		{
 			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * WrAvgXtraCyc);
 			p -= 4;
 			put_long(p, V_regs.regs[z]);
 		}
 	}
-	if (! s_cpuConfig->use68020) {
+	if (!s_cpuConfig->use68020)
+	{
 		*dstp = p;
 	}
 }
@@ -4410,8 +4571,10 @@ static void DoCodeMOVEMApRL()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t p = *dstp;
 
-	for (z = 0; z < 16; ++z) {
-		if ((regmask & (1 << z)) != 0) {
+	for (z = 0; z < 16; ++z)
+	{
+		if ((regmask & (1 << z)) != 0)
+		{
 			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * RdAvgXtraCyc);
 			V_regs.regs[z] = get_long(p);
 			p += 4;
@@ -4420,8 +4583,7 @@ static void DoCodeMOVEMApRL()
 	*dstp = p;
 }
 
-static void SetCCRforAddX(uint32_t dstvalue, uint32_t srcvalue,
-	uint32_t result)
+static void SetCCRforAddX(uint32_t dstvalue, uint32_t srcvalue, uint32_t result)
 {
 	ZFLG &= Bool2Bit(result == 0);
 
@@ -4456,8 +4618,7 @@ static void DoCodeAddXB()
 
 static void DoCodeAddXW()
 {
-	if ((kLazyFlagsDefault != V_regs.LazyFlagKind)
-		|| (kLazyFlagsDefault != V_regs.LazyXFlagKind))
+	if ((kLazyFlagsDefault != V_regs.LazyFlagKind) || (kLazyFlagsDefault != V_regs.LazyXFlagKind))
 	{
 		NeedDefaultLazyAllFlags();
 	}
@@ -4473,7 +4634,8 @@ static void DoCodeAddXW()
 
 static void DoCodeAddXL()
 {
-	if (kLazyFlagsAddL == V_regs.LazyFlagKind) {
+	if (kLazyFlagsAddL == V_regs.LazyFlagKind)
+	{
 		uint32_t src = V_regs.LazyFlagArgSrc;
 		uint32_t dst = V_regs.LazyFlagArgDst;
 		uint32_t result = ui5r_FromULong(dst + src);
@@ -4483,12 +4645,13 @@ static void DoCodeAddXL()
 
 		V_regs.LazyFlagKind = kLazyFlagsDefault;
 		V_regs.LazyXFlagKind = kLazyFlagsDefault;
-	} else
-	if ((kLazyFlagsDefault == V_regs.LazyFlagKind)
-		&& (kLazyFlagsDefault == V_regs.LazyXFlagKind))
+	}
+	else if ((kLazyFlagsDefault == V_regs.LazyFlagKind) &&
+			 (kLazyFlagsDefault == V_regs.LazyXFlagKind))
 	{
 		/* ok */
-	} else
+	}
+	else
 	{
 		NeedDefaultLazyAllFlags();
 	}
@@ -4502,8 +4665,7 @@ static void DoCodeAddXL()
 	}
 }
 
-static void SetCCRforSubX(uint32_t dstvalue, uint32_t srcvalue,
-	uint32_t result)
+static void SetCCRforSubX(uint32_t dstvalue, uint32_t srcvalue, uint32_t result)
 {
 	ZFLG &= Bool2Bit(result == 0);
 
@@ -4537,8 +4699,7 @@ static void DoCodeSubXB()
 
 static void DoCodeSubXW()
 {
-	if ((kLazyFlagsDefault != V_regs.LazyFlagKind)
-		|| (kLazyFlagsDefault != V_regs.LazyXFlagKind))
+	if ((kLazyFlagsDefault != V_regs.LazyFlagKind) || (kLazyFlagsDefault != V_regs.LazyXFlagKind))
 	{
 		NeedDefaultLazyAllFlags();
 	}
@@ -4554,7 +4715,8 @@ static void DoCodeSubXW()
 
 static void DoCodeSubXL()
 {
-	if (kLazyFlagsSubL == V_regs.LazyFlagKind) {
+	if (kLazyFlagsSubL == V_regs.LazyFlagKind)
+	{
 		uint32_t src = V_regs.LazyFlagArgSrc;
 		uint32_t dst = V_regs.LazyFlagArgDst;
 		uint32_t result = static_cast<uint32_t>(dst - src);
@@ -4564,12 +4726,13 @@ static void DoCodeSubXL()
 
 		V_regs.LazyFlagKind = kLazyFlagsDefault;
 		V_regs.LazyXFlagKind = kLazyFlagsDefault;
-	} else
-	if ((kLazyFlagsDefault == V_regs.LazyFlagKind)
-		&& (kLazyFlagsDefault == V_regs.LazyXFlagKind))
+	}
+	else if ((kLazyFlagsDefault == V_regs.LazyFlagKind) &&
+			 (kLazyFlagsDefault == V_regs.LazyXFlagKind))
 	{
 		/* ok */
-	} else
+	}
+	else
 	{
 		NeedDefaultLazyAllFlags();
 	}
@@ -4624,18 +4787,27 @@ static void DoCodeAslB()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		if (cnt >= 8) {
-			if (cnt == 8) {
+		if (cnt >= 8)
+		{
+			if (cnt == 8)
+			{
 				DoCodeMaxAsr(dstvalue);
-			} else {
+			}
+			else
+			{
 				DoCodeOverAsl(dstvalue);
 			}
-		} else {
+		}
+		else
+		{
 			uint32_t result = static_cast<uint32_t>(static_cast<int8_t>(dstvalue << cnt));
 
 			V_regs.LazyFlagKind = kLazyFlagsAslB;
@@ -4658,18 +4830,27 @@ static void DoCodeAslW()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		if (cnt >= 16) {
-			if (cnt == 16) {
+		if (cnt >= 16)
+		{
+			if (cnt == 16)
+			{
 				DoCodeMaxAsr(dstvalue);
-			} else {
+			}
+			else
+			{
 				DoCodeOverAsl(dstvalue);
 			}
-		} else {
+		}
+		else
+		{
 			uint32_t result = static_cast<uint32_t>(static_cast<int16_t>(dstvalue << cnt));
 
 			V_regs.LazyFlagKind = kLazyFlagsAslW;
@@ -4692,18 +4873,27 @@ static void DoCodeAslL()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		if (cnt >= 32) {
-			if (cnt == 32) {
+		if (cnt >= 32)
+		{
+			if (cnt == 32)
+			{
 				DoCodeMaxAsr(dstvalue);
-			} else {
+			}
+			else
+			{
 				DoCodeOverAsl(dstvalue);
 			}
-		} else {
+		}
+		else
+		{
 			uint32_t result = static_cast<uint32_t>(dstvalue << cnt);
 
 			V_regs.LazyFlagKind = kLazyFlagsAslL;
@@ -4745,14 +4935,17 @@ static void DoCodeOverShiftN()
 	V_regs.LazyXFlagKind = kLazyFlagsDefault;
 	V_regs.LazyFlagKind = kLazyFlagsDefault;
 
-	ArgSetDstValue(~ 0);
+	ArgSetDstValue(~0);
 }
 
 static void DoCodeOverAShift(uint32_t dstvalue)
 {
-	if (ui5r_MSBisSet(dstvalue)) {
+	if (ui5r_MSBisSet(dstvalue))
+	{
 		DoCodeOverShiftN();
-	} else {
+	}
+	else
+	{
 		DoCodeOverShift();
 	}
 }
@@ -4762,14 +4955,20 @@ static void DoCodeAsrB()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		if (cnt >= 8) {
+		if (cnt >= 8)
+		{
 			DoCodeOverAShift(dstvalue);
-		} else {
+		}
+		else
+		{
 			uint32_t result = Ui5rASR(dstvalue, cnt);
 
 			V_regs.LazyFlagKind = kLazyFlagsAsrB;
@@ -4792,14 +4991,20 @@ static void DoCodeAsrW()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		if (cnt >= 16) {
+		if (cnt >= 16)
+		{
 			DoCodeOverAShift(dstvalue);
-		} else {
+		}
+		else
+		{
 			uint32_t result = Ui5rASR(dstvalue, cnt);
 
 			V_regs.LazyFlagKind = kLazyFlagsAsrW;
@@ -4822,14 +5027,20 @@ static void DoCodeAsrL()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		if (cnt >= 32) {
+		if (cnt >= 32)
+		{
 			DoCodeOverAShift(dstvalue);
-		} else {
+		}
+		else
+		{
 			uint32_t result = Ui5rASR(dstvalue, cnt);
 
 			V_regs.LazyFlagKind = kLazyFlagsAsrL;
@@ -4865,18 +5076,27 @@ static void DoCodeLslB()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		if (cnt >= 8) {
-			if (cnt == 8) {
+		if (cnt >= 8)
+		{
+			if (cnt == 8)
+			{
 				DoCodeMaxLslShift(dstvalue);
-			} else {
+			}
+			else
+			{
 				DoCodeOverShift();
 			}
-		} else {
+		}
+		else
+		{
 			CFLG = (dstvalue >> (8 - cnt)) & 1;
 			dstvalue = dstvalue << cnt;
 			dstvalue = static_cast<uint32_t>(static_cast<int8_t>(dstvalue));
@@ -4898,18 +5118,27 @@ static void DoCodeLslW()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		if (cnt >= 16) {
-			if (cnt == 16) {
+		if (cnt >= 16)
+		{
+			if (cnt == 16)
+			{
 				DoCodeMaxLslShift(dstvalue);
-			} else {
+			}
+			else
+			{
 				DoCodeOverShift();
 			}
-		} else {
+		}
+		else
+		{
 			CFLG = (dstvalue >> (16 - cnt)) & 1;
 			dstvalue = dstvalue << cnt;
 			dstvalue = static_cast<uint32_t>(static_cast<int16_t>(dstvalue));
@@ -4931,18 +5160,27 @@ static void DoCodeLslL()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		if (cnt >= 32) {
-			if (cnt == 32) {
+		if (cnt >= 32)
+		{
+			if (cnt == 32)
+			{
 				DoCodeMaxLslShift(dstvalue);
-			} else {
+			}
+			else
+			{
 				DoCodeOverShift();
 			}
-		} else {
+		}
+		else
+		{
 			CFLG = (dstvalue >> (32 - cnt)) & 1;
 			dstvalue = dstvalue << cnt;
 			dstvalue = static_cast<uint32_t>(dstvalue);
@@ -4966,18 +5204,23 @@ static void DoCodeLsrB()
 
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else if (cnt > 32) {
+	}
+	else if (cnt > 32)
+	{
 		DoCodeOverShift();
-	} else {
+	}
+	else
+	{
 		dstvalue = ui5r_FromUByte(dstvalue);
 		dstvalue = dstvalue >> (cnt - 1);
 		CFLG = XFLG = (dstvalue & 1);
 		dstvalue = dstvalue >> 1;
 		ZFLG = Bool2Bit(dstvalue == 0);
 		NFLG = 0 /* Bool2Bit(ui5r_MSBisSet(dstvalue)) */;
-			/* if cnt != 0, always false */
+		/* if cnt != 0, always false */
 		VFLG = 0;
 		V_regs.LazyXFlagKind = kLazyFlagsDefault;
 		V_regs.LazyFlagKind = kLazyFlagsDefault;
@@ -4993,18 +5236,23 @@ static void DoCodeLsrW()
 
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else if (cnt > 32) {
+	}
+	else if (cnt > 32)
+	{
 		DoCodeOverShift();
-	} else {
+	}
+	else
+	{
 		dstvalue = ui5r_FromUWord(dstvalue);
 		dstvalue = dstvalue >> (cnt - 1);
 		CFLG = XFLG = (dstvalue & 1);
 		dstvalue = dstvalue >> 1;
 		ZFLG = Bool2Bit(dstvalue == 0);
 		NFLG = 0 /* Bool2Bit(ui5r_MSBisSet(dstvalue)) */;
-			/* if cnt != 0, always false */
+		/* if cnt != 0, always false */
 		VFLG = 0;
 		V_regs.LazyXFlagKind = kLazyFlagsDefault;
 		V_regs.LazyFlagKind = kLazyFlagsDefault;
@@ -5020,18 +5268,23 @@ static void DoCodeLsrL()
 
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else if (cnt > 32) {
+	}
+	else if (cnt > 32)
+	{
 		DoCodeOverShift();
-	} else {
+	}
+	else
+	{
 		dstvalue = ui5r_FromULong(dstvalue);
 		dstvalue = dstvalue >> (cnt - 1);
 		CFLG = XFLG = (dstvalue & 1);
 		dstvalue = dstvalue >> 1;
 		ZFLG = Bool2Bit(dstvalue == 0);
 		NFLG = 0 /* Bool2Bit(ui5r_MSBisSet(dstvalue)) */;
-			/* if cnt != 0, always false */
+		/* if cnt != 0, always false */
 		VFLG = 0;
 		V_regs.LazyXFlagKind = kLazyFlagsDefault;
 		V_regs.LazyFlagKind = kLazyFlagsDefault;
@@ -5063,12 +5316,16 @@ static void DoCodeRxlB()
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullXShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		for (; cnt; --cnt) {
+		for (; cnt; --cnt)
+		{
 			CFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
 			dstvalue = (dstvalue << 1) | XFLG;
 			dstvalue = static_cast<uint32_t>(static_cast<int8_t>(dstvalue));
@@ -5088,12 +5345,16 @@ static void DoCodeRxlW()
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullXShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		for (; cnt; --cnt) {
+		for (; cnt; --cnt)
+		{
 			CFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
 			dstvalue = (dstvalue << 1) | XFLG;
 			dstvalue = static_cast<uint32_t>(static_cast<int16_t>(dstvalue));
@@ -5113,12 +5374,16 @@ static void DoCodeRxlL()
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullXShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-		for (; cnt; --cnt) {
+		for (; cnt; --cnt)
+		{
 			CFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
 			dstvalue = (dstvalue << 1) | XFLG;
 			dstvalue = static_cast<uint32_t>(dstvalue);
@@ -5138,13 +5403,17 @@ static void DoCodeRxrB()
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullXShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
 		dstvalue = ui5r_FromUByte(dstvalue);
-		for (; cnt; --cnt) {
+		for (; cnt; --cnt)
+		{
 			CFLG = dstvalue & 1;
 			dstvalue = (dstvalue >> 1) | (((uint32_t)XFLG) << 7);
 			XFLG = CFLG;
@@ -5164,13 +5433,17 @@ static void DoCodeRxrW()
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullXShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
 		dstvalue = ui5r_FromUWord(dstvalue);
-		for (; cnt; --cnt) {
+		for (; cnt; --cnt)
+		{
 			CFLG = dstvalue & 1;
 			dstvalue = (dstvalue >> 1) | (((uint32_t)XFLG) << 15);
 			XFLG = CFLG;
@@ -5190,13 +5463,17 @@ static void DoCodeRxrL()
 	uint32_t dstvalue = DecodeGetSrcSetDstValueDfltFlags_nm();
 	uint32_t cnt = V_regs.SrcVal & 63;
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullXShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
 		dstvalue = ui5r_FromULong(dstvalue);
-		for (; cnt; --cnt) {
+		for (; cnt; --cnt)
+		{
 			CFLG = dstvalue & 1;
 			dstvalue = (dstvalue >> 1) | (((uint32_t)XFLG) << 31);
 			XFLG = CFLG;
@@ -5218,16 +5495,18 @@ static void DoCodeRolB()
 
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		cnt &= 7;
-		if (0 != cnt) {
+		if (0 != cnt)
+		{
 			uint8_t dst = (uint8_t)dstvalue;
 
-			dst = (dst >> (8 - cnt))
-					| ((dst & ((1 << (8 - cnt)) - 1))
-						<< cnt);
+			dst = (dst >> (8 - cnt)) | ((dst & ((1 << (8 - cnt)) - 1)) << cnt);
 
 			dstvalue = (uint32_t)(int32_t)(int8_t)dst;
 		}
@@ -5248,16 +5527,18 @@ static void DoCodeRolW()
 
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		cnt &= 15;
-		if (0 != cnt) {
+		if (0 != cnt)
+		{
 			uint16_t dst = (uint16_t)dstvalue;
 
-			dst = (dst >> (16 - cnt))
-					| ((dst & ((1 << (16 - cnt)) - 1))
-						<< cnt);
+			dst = (dst >> (16 - cnt)) | ((dst & ((1 << (16 - cnt)) - 1)) << cnt);
 
 			dstvalue = (uint32_t)(int32_t)(int16_t)dst;
 		}
@@ -5278,16 +5559,18 @@ static void DoCodeRolL()
 
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		cnt &= 31;
-		if (0 != cnt) {
+		if (0 != cnt)
+		{
 			uint32_t dst = (uint32_t)dstvalue;
 
-			dst = (dst >> (32 - cnt))
-					| ((dst & ((1 << (32 - cnt)) - 1))
-						<< cnt);
+			dst = (dst >> (32 - cnt)) | ((dst & ((1 << (32 - cnt)) - 1)) << cnt);
 
 			dstvalue = (uint32_t)(int32_t)(int32_t)dst;
 		}
@@ -5308,16 +5591,18 @@ static void DoCodeRorB()
 
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		cnt &= 7;
-		if (0 != cnt) {
+		if (0 != cnt)
+		{
 			uint8_t dst = (uint8_t)dstvalue;
 
-			dst = (dst >> cnt)
-					| ((dst & ((1 << cnt) - 1))
-						<< (8 - cnt));
+			dst = (dst >> cnt) | ((dst & ((1 << cnt) - 1)) << (8 - cnt));
 
 			dstvalue = (uint32_t)(int32_t)(int8_t)dst;
 		}
@@ -5339,16 +5624,18 @@ static void DoCodeRorW()
 
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		cnt &= 15;
-		if (0 != cnt) {
+		if (0 != cnt)
+		{
 			uint16_t dst = (uint16_t)dstvalue;
 
-			dst = (dst >> cnt)
-					| ((dst & ((1 << cnt) - 1))
-						<< (16 - cnt));
+			dst = (dst >> cnt) | ((dst & ((1 << cnt) - 1)) << (16 - cnt));
 
 			dstvalue = (uint32_t)(int32_t)(int16_t)dst;
 		}
@@ -5370,16 +5657,18 @@ static void DoCodeRorL()
 
 	V_MaxCyclesToGo -= (cnt * 2 * kCycleScale);
 
-	if (0 == cnt) {
+	if (0 == cnt)
+	{
 		DoCodeNullShift(dstvalue);
-	} else {
+	}
+	else
+	{
 		cnt &= 31;
-		if (0 != cnt) {
+		if (0 != cnt)
+		{
 			uint32_t dst = (uint32_t)dstvalue;
 
-			dst = (dst >> cnt)
-					| ((dst & ((1 << cnt) - 1))
-						<< (32 - cnt));
+			dst = (dst >> cnt) | ((dst & ((1 << cnt) - 1)) << (32 - cnt));
 
 			dstvalue = (uint32_t)(int32_t)(int32_t)dst;
 		}
@@ -5397,11 +5686,16 @@ static void DoCodeRorL()
 
 static void WillSetZFLG()
 {
-	if (kLazyFlagsZSet == V_regs.LazyFlagKind) {
+	if (kLazyFlagsZSet == V_regs.LazyFlagKind)
+	{
 		/* ok */
-	} else if (kLazyFlagsDefault == V_regs.LazyFlagKind) {
+	}
+	else if (kLazyFlagsDefault == V_regs.LazyFlagKind)
+	{
 		/* also ok */
-	} else {
+	}
+	else
+	{
 		V_regs.LazyFlagZSavedKind = V_regs.LazyFlagKind;
 		V_regs.LazyFlagKind = kLazyFlagsZSet;
 	}
@@ -5466,7 +5760,7 @@ static void DoCodeBClrB()
 
 	ZFLG = ((dstvalue >> srcvalue) ^ 1) & 1;
 
-	dstvalue &= ~ (1 << srcvalue);
+	dstvalue &= ~(1 << srcvalue);
 	ArgSetDstValue(dstvalue);
 }
 
@@ -5477,7 +5771,7 @@ static void DoCodeBClrL()
 
 	ZFLG = ((dstvalue >> srcvalue) ^ 1) & 1;
 
-	dstvalue &= ~ (1 << srcvalue);
+	dstvalue &= ~(1 << srcvalue);
 	ArgSetDstValue(dstvalue);
 }
 
@@ -5509,10 +5803,10 @@ static void DoCodeAnd()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 
 	dstvalue &= V_regs.SrcVal;
-		/*
-			don't need to extend, since excess high
-			bits all the same as desired high bit.
-		*/
+	/*
+		don't need to extend, since excess high
+		bits all the same as desired high bit.
+	*/
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5528,10 +5822,10 @@ static void DoCodeOr()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 
 	dstvalue |= V_regs.SrcVal;
-		/*
-			don't need to extend, since excess high
-			bits all the same as desired high bit.
-		*/
+	/*
+		don't need to extend, since excess high
+		bits all the same as desired high bit.
+	*/
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5548,10 +5842,10 @@ static void DoCodeEor()
 	uint32_t dstvalue = DecodeGetSrcSetDstValue();
 
 	dstvalue ^= V_regs.SrcVal;
-		/*
-			don't need to extend, since excess high
-			bits all the same as desired high bit.
-		*/
+	/*
+		don't need to extend, since excess high
+		bits all the same as desired high bit.
+	*/
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5566,7 +5860,7 @@ static void DoCodeNot()
 	/* Not 01000110ssmmmrrr */
 	uint32_t dstvalue = DecodeGetSetDstValue();
 
-	dstvalue = ~ dstvalue;
+	dstvalue = ~dstvalue;
 
 	V_regs.LazyFlagKind = kLazyFlagsTstL;
 	V_regs.LazyFlagArgDst = dstvalue;
@@ -5578,7 +5872,8 @@ static void DoCodeNot()
 
 static void DoCodeScc_t()
 {
-	if (kAMdRegB == V_regs.CurDecOpY.v[1].AMd) {
+	if (kAMdRegB == V_regs.CurDecOpY.v[1].AMd)
+	{
 		V_MaxCyclesToGo -= (2 * kCycleScale);
 	}
 	DecodeSetDstValue(0xff);
@@ -5622,7 +5917,7 @@ static void DoCodeEXTW()
 
 	HaveSetUpFlags();
 
-	*dstp = (*dstp & ~ 0xffff) | (dstvalue & 0xffff);
+	*dstp = (*dstp & ~0xffff) | (dstvalue & 0xffff);
 }
 
 static void DoCodeNegB()
@@ -5700,8 +5995,7 @@ static void DoCodeNegXB()
 
 static void DoCodeNegXW()
 {
-	if ((kLazyFlagsDefault != V_regs.LazyFlagKind)
-		|| (kLazyFlagsDefault != V_regs.LazyXFlagKind))
+	if ((kLazyFlagsDefault != V_regs.LazyFlagKind) || (kLazyFlagsDefault != V_regs.LazyXFlagKind))
 	{
 		NeedDefaultLazyAllFlags();
 	}
@@ -5716,14 +6010,16 @@ static void DoCodeNegXW()
 
 static void DoCodeNegXL()
 {
-	if (kLazyFlagsNegL == V_regs.LazyFlagKind) {
+	if (kLazyFlagsNegL == V_regs.LazyFlagKind)
+	{
 		NeedDefaultLazyFlagsNegL();
-	} else
-	if ((kLazyFlagsDefault == V_regs.LazyFlagKind)
-		&& (kLazyFlagsDefault == V_regs.LazyXFlagKind))
+	}
+	else if ((kLazyFlagsDefault == V_regs.LazyFlagKind) &&
+			 (kLazyFlagsDefault == V_regs.LazyXFlagKind))
 	{
 		/* ok */
-	} else
+	}
+	else
 	{
 		NeedDefaultLazyAllFlags();
 	}
@@ -5744,13 +6040,14 @@ static void DoCodeMulU()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t dstvalue = *dstp;
 
-	dstvalue = static_cast<uint32_t>(ui5r_FromUWord(dstvalue)
-		* ui5r_FromUWord(srcvalue));
+	dstvalue = static_cast<uint32_t>(ui5r_FromUWord(dstvalue) * ui5r_FromUWord(srcvalue));
 	{
 		uint32_t v = srcvalue;
 
-		while (v != 0) {
-			if ((v & 1) != 0) {
+		while (v != 0)
+		{
+			if ((v & 1) != 0)
+			{
 				V_MaxCyclesToGo -= (2 * kCycleScale);
 			}
 			v >>= 1;
@@ -5773,13 +6070,14 @@ static void DoCodeMulS()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t dstvalue = *dstp;
 
-	dstvalue = static_cast<uint32_t>((int32_t)(int16_t)dstvalue
-		* (int32_t)(int16_t)srcvalue);
+	dstvalue = static_cast<uint32_t>((int32_t)(int16_t)dstvalue * (int32_t)(int16_t)srcvalue);
 	{
 		uint32_t v = (srcvalue << 1);
 
-		while (v != 0) {
-			if ((v & 1) != ((v >> 1) & 1)) {
+		while (v != 0)
+		{
+			if ((v & 1) != ((v >> 1) & 1))
+			{
 				V_MaxCyclesToGo -= (2 * kCycleScale);
 			}
 			v >>= 1;
@@ -5802,23 +6100,28 @@ static void DoCodeDivU()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t dstvalue = *dstp;
 
-	if (srcvalue == 0) {
-		V_MaxCyclesToGo -=
-			(38 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+	if (srcvalue == 0)
+	{
+		V_MaxCyclesToGo -= (38 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 		Exception(5);
 #if m68k_logExceptions
 		dbglog_WriteNote("*** zero devide exception");
 #endif
-	} else {
+	}
+	else
+	{
 		uint32_t newv = (uint32_t)dstvalue / (uint32_t)(uint16_t)srcvalue;
 		uint32_t rem = (uint32_t)dstvalue % (uint32_t)(uint16_t)srcvalue;
 		V_MaxCyclesToGo -= (133 * kCycleScale);
-		if (newv > 0xffff) {
+		if (newv > 0xffff)
+		{
 			NeedDefaultLazyAllFlags();
 
 			VFLG = NFLG = 1;
 			CFLG = 0;
-		} else {
+		}
+		else
+		{
 			VFLG = CFLG = 0;
 			ZFLG = Bool2Bit(((int16_t)(newv)) == 0);
 			NFLG = Bool2Bit(((int16_t)(newv)) < 0);
@@ -5841,27 +6144,31 @@ static void DoCodeDivS()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t dstvalue = *dstp;
 
-	if (srcvalue == 0) {
-		V_MaxCyclesToGo -=
-			(38 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+	if (srcvalue == 0)
+	{
+		V_MaxCyclesToGo -= (38 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 		Exception(5);
 #if m68k_logExceptions
 		dbglog_WriteNote("*** zero devide exception");
 #endif
-	} else {
+	}
+	else
+	{
 		int32_t newv = (int32_t)dstvalue / (int32_t)(int16_t)srcvalue;
 		uint16_t rem = (int32_t)dstvalue % (int32_t)(int16_t)srcvalue;
 		V_MaxCyclesToGo -= (150 * kCycleScale);
-		if (((newv & 0xffff8000) != 0) &&
-			((newv & 0xffff8000) != 0xffff8000))
+		if (((newv & 0xffff8000) != 0) && ((newv & 0xffff8000) != 0xffff8000))
 		{
 			NeedDefaultLazyAllFlags();
 
 			VFLG = NFLG = 1;
 			CFLG = 0;
-		} else {
-			if (((int16_t)rem < 0) != ((int32_t)dstvalue < 0)) {
-				rem = - rem;
+		}
+		else
+		{
+			if (((int16_t)rem < 0) != ((int32_t)dstvalue < 0))
+			{
+				rem = -rem;
 			}
 			VFLG = CFLG = 0;
 			ZFLG = Bool2Bit(((int16_t)(newv)) == 0);
@@ -5902,8 +6209,7 @@ static void DoCodeMoveEaCR()
 static void DoPrivilegeViolation()
 {
 	V_MaxCyclesToGo += GetDcoCycles(V_regs.CurDecOp);
-	V_MaxCyclesToGo -=
-		(34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+	V_MaxCyclesToGo -= (34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 	BackupPC();
 	Exception(8);
 #if m68k_logExceptions
@@ -5914,9 +6220,11 @@ static void DoPrivilegeViolation()
 static void DoCodeMoveSREa()
 {
 	/* Move from SR 0100000011mmmrrr */
-	if (s_cpuConfig->use68020 && 0 == V_regs.s) {
+	if (s_cpuConfig->use68020 && 0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else
+	}
+	else
 	{
 		DecodeSetDstValue(m68k_getSR());
 	}
@@ -5925,18 +6233,24 @@ static void DoCodeMoveSREa()
 static void DoCodeMoveEaSR()
 {
 	/* 0100011011mmmrrr */
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		m68k_setSR(DecodeGetDstValue());
 	}
 }
 
 static void DoCodeOrISR()
 {
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		V_regs.SrcVal = nextiword_nm();
 
 		m68k_setSR(m68k_getSR() | V_regs.SrcVal);
@@ -5945,9 +6259,12 @@ static void DoCodeOrISR()
 
 static void DoCodeAndISR()
 {
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		V_regs.SrcVal = nextiword_nm();
 
 		m68k_setSR(m68k_getSR() & V_regs.SrcVal);
@@ -5956,9 +6273,12 @@ static void DoCodeAndISR()
 
 static void DoCodeEorISR()
 {
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		V_regs.SrcVal = nextiword_nm();
 
 		m68k_setSR(m68k_getSR() ^ V_regs.SrcVal);
@@ -5995,8 +6315,10 @@ static void DoCodeMOVEMApRW()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t p = *dstp;
 
-	for (z = 0; z < 16; ++z) {
-		if ((regmask & (1 << z)) != 0) {
+	for (z = 0; z < 16; ++z)
+	{
+		if ((regmask & (1 << z)) != 0)
+		{
 			V_MaxCyclesToGo -= (4 * kCycleScale + RdAvgXtraCyc);
 			V_regs.regs[z] = get_word(p);
 			p += 2;
@@ -6014,24 +6336,30 @@ static void DoCodeMOVEMRmMW()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t p = *dstp;
 
-	if (s_cpuConfig->use68020) {
+	if (s_cpuConfig->use68020)
+	{
 		int n = 0;
 
-		for (z = 0; z < 16; ++z) {
-			if ((regmask & (1 << z)) != 0) {
+		for (z = 0; z < 16; ++z)
+		{
+			if ((regmask & (1 << z)) != 0)
+			{
 				n++;
 			}
 		}
 		*dstp = p - n * 2;
 	}
-	for (z = 16; --z >= 0; ) {
-		if ((regmask & (1 << (15 - z))) != 0) {
+	for (z = 16; --z >= 0;)
+	{
+		if ((regmask & (1 << (15 - z))) != 0)
+		{
 			V_MaxCyclesToGo -= (4 * kCycleScale + WrAvgXtraCyc);
 			p -= 2;
 			put_word(p, V_regs.regs[z]);
 		}
 	}
-	if (! s_cpuConfig->use68020) {
+	if (!s_cpuConfig->use68020)
+	{
 		*dstp = p;
 	}
 }
@@ -6043,10 +6371,11 @@ static void DoCodeMOVEMrmW()
 	uint32_t regmask = nextiword_nm();
 	uint32_t p = DecodeDst();
 
-	for (z = 0; z < 16; ++z) {
-		if ((regmask & (1 << z)) != 0) {
-			V_MaxCyclesToGo -=
-				(4 * kCycleScale + WrAvgXtraCyc);
+	for (z = 0; z < 16; ++z)
+	{
+		if ((regmask & (1 << z)) != 0)
+		{
+			V_MaxCyclesToGo -= (4 * kCycleScale + WrAvgXtraCyc);
 			put_word(p, V_regs.regs[z]);
 			p += 2;
 		}
@@ -6060,10 +6389,11 @@ static void DoCodeMOVEMrmL()
 	uint32_t regmask = nextiword_nm();
 	uint32_t p = DecodeDst();
 
-	for (z = 0; z < 16; ++z) {
-		if ((regmask & (1 << z)) != 0) {
-			V_MaxCyclesToGo -=
-				(8 * kCycleScale + 2 * WrAvgXtraCyc);
+	for (z = 0; z < 16; ++z)
+	{
+		if ((regmask & (1 << z)) != 0)
+		{
+			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * WrAvgXtraCyc);
 			put_long(p, V_regs.regs[z]);
 			p += 4;
 		}
@@ -6077,10 +6407,11 @@ static void DoCodeMOVEMmrW()
 	uint32_t regmask = nextiword_nm();
 	uint32_t p = DecodeDst();
 
-	for (z = 0; z < 16; ++z) {
-		if ((regmask & (1 << z)) != 0) {
-			V_MaxCyclesToGo -=
-				(4 * kCycleScale + RdAvgXtraCyc);
+	for (z = 0; z < 16; ++z)
+	{
+		if ((regmask & (1 << z)) != 0)
+		{
+			V_MaxCyclesToGo -= (4 * kCycleScale + RdAvgXtraCyc);
 			V_regs.regs[z] = get_word(p);
 			p += 2;
 		}
@@ -6094,10 +6425,11 @@ static void DoCodeMOVEMmrL()
 	uint32_t regmask = nextiword_nm();
 	uint32_t p = DecodeDst();
 
-	for (z = 0; z < 16; ++z) {
-		if ((regmask & (1 << z)) != 0) {
-			V_MaxCyclesToGo -=
-				(8 * kCycleScale + 2 * RdAvgXtraCyc);
+	for (z = 0; z < 16; ++z)
+	{
+		if ((regmask & (1 << z)) != 0)
+		{
+			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * RdAvgXtraCyc);
 			V_regs.regs[z] = get_long(p);
 			p += 4;
 		}
@@ -6116,21 +6448,23 @@ static void DoCodeAbcd()
 		/* if (V_regs.opsize != 1) a bug */
 		int flgs = ui5r_MSBisSet(srcvalue);
 		int flgo = ui5r_MSBisSet(dstvalue);
-		uint16_t newv_lo =
-			(srcvalue & 0xF) + (dstvalue & 0xF) + XFLG;
+		uint16_t newv_lo = (srcvalue & 0xF) + (dstvalue & 0xF) + XFLG;
 		uint16_t newv_hi = (srcvalue & 0xF0) + (dstvalue & 0xF0);
 		uint16_t newv;
 
-		if (newv_lo > 9) {
+		if (newv_lo > 9)
+		{
 			newv_lo += 6;
 		}
 		newv = newv_hi + newv_lo;
 		CFLG = XFLG = Bool2Bit((newv & 0x1F0) > 0x90);
-		if (CFLG != 0) {
+		if (CFLG != 0)
+		{
 			newv += 0x60;
 		}
 		dstvalue = static_cast<uint32_t>(static_cast<int8_t>(newv));
-		if (dstvalue != 0) {
+		if (dstvalue != 0)
+		{
 			ZFLG = 0;
 		}
 		NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -6152,22 +6486,24 @@ static void DoCodeSbcd()
 	{
 		int flgs = ui5r_MSBisSet(srcvalue);
 		int flgo = ui5r_MSBisSet(dstvalue);
-		uint16_t newv_lo =
-			(dstvalue & 0xF) - (srcvalue & 0xF) - XFLG;
+		uint16_t newv_lo = (dstvalue & 0xF) - (srcvalue & 0xF) - XFLG;
 		uint16_t newv_hi = (dstvalue & 0xF0) - (srcvalue & 0xF0);
 		uint16_t newv;
 
-		if (newv_lo > 9) {
+		if (newv_lo > 9)
+		{
 			newv_lo -= 6;
 			newv_hi -= 0x10;
 		}
 		newv = newv_hi + (newv_lo & 0xF);
 		CFLG = XFLG = Bool2Bit((newv_hi & 0x1F0) > 0x90);
-		if (CFLG != 0) {
+		if (CFLG != 0)
+		{
 			newv -= 0x60;
 		}
 		dstvalue = static_cast<uint32_t>(static_cast<int8_t>(newv));
-		if (dstvalue != 0) {
+		if (dstvalue != 0)
+		{
 			ZFLG = 0;
 		}
 		NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
@@ -6189,23 +6525,26 @@ static void DoCodeNbcd()
 	NeedDefaultLazyAllFlags();
 
 	{
-		uint16_t newv_lo = - (dstvalue & 0xF) - XFLG;
-		uint16_t newv_hi = - (dstvalue & 0xF0);
+		uint16_t newv_lo = -(dstvalue & 0xF) - XFLG;
+		uint16_t newv_hi = -(dstvalue & 0xF0);
 		uint16_t newv;
 
-		if (newv_lo > 9) {
+		if (newv_lo > 9)
+		{
 			newv_lo -= 6;
 			newv_hi -= 0x10;
 		}
 		newv = newv_hi + (newv_lo & 0xF);
 		CFLG = XFLG = Bool2Bit((newv_hi & 0x1F0) > 0x90);
-		if (CFLG != 0) {
+		if (CFLG != 0)
+		{
 			newv -= 0x60;
 		}
 
 		dstvalue = static_cast<uint32_t>(static_cast<int8_t>(newv));
 		NFLG = Bool2Bit(ui5r_MSBisSet(dstvalue));
-		if (dstvalue != 0) {
+		if (dstvalue != 0)
+		{
 			ZFLG = 0;
 		}
 	}
@@ -6216,9 +6555,12 @@ static void DoCodeNbcd()
 static void DoCodeRte()
 {
 	/* Rte 0100111001110011 */
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		uint32_t NewPC;
 		uint32_t stackp = m68k_areg(7);
 		uint32_t NewSR = get_word(stackp);
@@ -6226,43 +6568,45 @@ static void DoCodeRte()
 		NewPC = get_long(stackp);
 		stackp += 4;
 
-		if (s_cpuConfig->use68020) {
+		if (s_cpuConfig->use68020)
+		{
 			uint16_t format = get_word(stackp);
 			stackp += 2;
 
-			switch ((format >> 12) & 0x0F) {
+			switch ((format >> 12) & 0x0F)
+			{
 				case 0:
 					/* ReportAbnormal("rte stack frame format 0"); */
 					break;
 				case 1:
 					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_1,
-						"rte stack frame format 1");
+									 "rte stack frame format 1");
 					NewPC = m68k_getpc() - 2;
-						/* rerun instruction */
+					/* rerun instruction */
 					break;
 				case 2:
 					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_2,
-						"rte stack frame format 2");
+									 "rte stack frame format 2");
 					stackp += 4;
 					break;
 				case 9:
 					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_9,
-						"rte stack frame format 9");
+									 "rte stack frame format 9");
 					stackp += 12;
 					break;
 				case 10:
 					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_10,
-						"rte stack frame format 10");
+									 "rte stack frame format 10");
 					stackp += 24;
 					break;
 				case 11:
 					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_11,
-						"rte stack frame format 11");
+									 "rte stack frame format 11");
 					stackp += 84;
 					break;
 				default:
 					ReportAbnormalID(AbnormalID::kCPU_unknown_rte_stack_frame_format,
-						"unknown rte stack frame format");
+									 "unknown rte stack frame format");
 					Exception(14);
 					return;
 					break;
@@ -6288,15 +6632,12 @@ static void DoCodeMoveP0()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 
 	uint32_t Displacement = nextiword_nm();
-		/* shouldn't this sign extend ? */
+	/* shouldn't this sign extend ? */
 	uint32_t memp = *srcp + Displacement;
 
-	uint16_t val = ((get_byte(memp) & 0x00FF) << 8)
-		| (get_byte(memp + 2) & 0x00FF);
+	uint16_t val = ((get_byte(memp) & 0x00FF) << 8) | (get_byte(memp + 2) & 0x00FF);
 
-	*dstp =
-		(*dstp & ~ 0xffff) | (val & 0xffff);
-
+	*dstp = (*dstp & ~0xffff) | (val & 0xffff);
 }
 
 static void DoCodeMoveP1()
@@ -6308,13 +6649,11 @@ static void DoCodeMoveP1()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 
 	uint32_t Displacement = nextiword_nm();
-		/* shouldn't this sign extend ? */
+	/* shouldn't this sign extend ? */
 	uint32_t memp = *srcp + Displacement;
 
-	uint32_t val = ((get_byte(memp) & 0x00FF) << 24)
-		| ((get_byte(memp + 2) & 0x00FF) << 16)
-		| ((get_byte(memp + 4) & 0x00FF) << 8)
-		| (get_byte(memp + 6) & 0x00FF);
+	uint32_t val = ((get_byte(memp) & 0x00FF) << 24) | ((get_byte(memp + 2) & 0x00FF) << 16) |
+				   ((get_byte(memp + 4) & 0x00FF) << 8) | (get_byte(memp + 6) & 0x00FF);
 
 	*dstp = val;
 }
@@ -6328,7 +6667,7 @@ static void DoCodeMoveP2()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 
 	uint32_t Displacement = nextiword_nm();
-		/* shouldn't this sign extend ? */
+	/* shouldn't this sign extend ? */
 	uint32_t memp = *srcp + Displacement;
 
 	uint16_t val = *dstp;
@@ -6346,7 +6685,7 @@ static void DoCodeMoveP3()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 
 	uint32_t Displacement = nextiword_nm();
-		/* shouldn't this sign extend ? */
+	/* shouldn't this sign extend ? */
 	uint32_t memp = *srcp + Displacement;
 
 	uint32_t val = *dstp;
@@ -6371,18 +6710,19 @@ static void DoCodeChk()
 	uint32_t dstvalue = DecodeGetSrcGetDstValue();
 	uint32_t srcvalue = V_regs.SrcVal;
 
-	if (ui5r_MSBisSet(srcvalue)) {
+	if (ui5r_MSBisSet(srcvalue))
+	{
 		NeedDefaultLazyAllFlags();
 
-		V_MaxCyclesToGo -=
-			(30 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		V_MaxCyclesToGo -= (30 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 		NFLG = 1;
 		Exception(6);
-	} else if (((int32_t)srcvalue) > ((int32_t)dstvalue)) {
+	}
+	else if (((int32_t)srcvalue) > ((int32_t)dstvalue))
+	{
 		NeedDefaultLazyAllFlags();
 
-		V_MaxCyclesToGo -=
-			(30 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		V_MaxCyclesToGo -= (30 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 		NFLG = 0;
 		Exception(6);
 	}
@@ -6399,10 +6739,10 @@ static void DoCodeTrapV()
 	/* TrapV 0100111001110110 */
 	NeedDefaultLazyAllFlags();
 
-	if (VFLG != 0) {
+	if (VFLG != 0)
+	{
 		V_MaxCyclesToGo += GetDcoCycles(V_regs.CurDecOp);
-		V_MaxCyclesToGo -=
-			(34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		V_MaxCyclesToGo -= (34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 		Exception(7);
 	}
 }
@@ -6439,11 +6779,14 @@ static void DoCodeUnlk()
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint32_t *dstp = &V_regs.regs[dstreg];
 
-	if (dstreg != 7 + 8) {
+	if (dstreg != 7 + 8)
+	{
 		uint32_t src = *dstp;
 		*dstp = get_long(src);
 		m68k_areg(7) = src + 4;
-	} else {
+	}
+	else
+	{
 		/* wouldn't expect this to happen */
 		m68k_areg(7) = get_long(m68k_areg(7)) + 4;
 	}
@@ -6452,9 +6795,12 @@ static void DoCodeUnlk()
 static void DoCodeMoveRUSP()
 {
 	/* MOVE USP 0100111001100aaa */
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 		uint32_t *dstp = &V_regs.regs[dstreg];
 
@@ -6465,9 +6811,12 @@ static void DoCodeMoveRUSP()
 static void DoCodeMoveUSPR()
 {
 	/* MOVE USP 0100111001101aaa */
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 		uint32_t *dstp = &V_regs.regs[dstreg];
 
@@ -6508,9 +6857,12 @@ static void m68k_setstopped()
 static void DoCodeStop()
 {
 	/* Stop 0100111001110010 */
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		m68k_setSR(nextiword_nm());
 		m68k_setstopped();
 	}
@@ -6521,9 +6873,12 @@ static void local_customreset();
 static void DoCodeReset()
 {
 	/* Reset 0100111001110000 */
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		local_customreset();
 	}
 }
@@ -6544,12 +6899,11 @@ static void DoCodeBraL()
 {
 	/* Bra 0110ccccnnnnnnnn */
 	int32_t offset = ((int32_t)(uint32_t)nextilong()) - 4;
-	uint8_t * s = V_pc_p + offset;
+	uint8_t *s = V_pc_p + offset;
 
 	V_pc_p = s;
 
-	if (s >= V_pc_pHi
-		|| s < V_regs.pc_pLo) [[unlikely]]
+	if (s >= V_pc_pHi || s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -6559,7 +6913,8 @@ static void SkipiLong()
 {
 	V_pc_p += 4;
 
-	if (V_pc_p >= V_pc_pHi) [[unlikely]] {
+	if (V_pc_p >= V_pc_pHi) [[unlikely]]
+	{
 		Recalc_PC_Block();
 	}
 }
@@ -6573,14 +6928,13 @@ static void DoCodeBccL()
 static void DoCodeBsrL()
 {
 	int32_t offset = ((int32_t)(uint32_t)nextilong()) - 4;
-	uint8_t * s = V_pc_p + offset;
+	uint8_t *s = V_pc_p + offset;
 
 	m68k_areg(7) -= 4;
 	put_long(m68k_areg(7), m68k_getpc());
 	V_pc_p = s;
 
-	if (s >= V_pc_pHi
-		|| s < V_regs.pc_pLo) [[unlikely]]
+	if (s >= V_pc_pHi || s < V_regs.pc_pLo) [[unlikely]]
 	{
 		Recalc_PC_Block();
 	}
@@ -6616,29 +6970,39 @@ static void DoCHK2orCMP2()
 	uint32_t *srcp = &V_regs.regs[srcreg];
 
 	/* ReportAbnormal("CHK2 or CMP2 instruction"); */
-	switch (V_regs.CurDecOpY.v[0].ArgDat) {
+	switch (V_regs.CurDecOpY.v[0].ArgDat)
+	{
 		case 1:
-			if ((extra & 0x8000) == 0) {
+			if ((extra & 0x8000) == 0)
+			{
 				regv = static_cast<uint32_t>(static_cast<int8_t>(*srcp));
-			} else {
+			}
+			else
+			{
 				regv = static_cast<uint32_t>(*srcp);
 			}
 			lower = get_byte(DstAddr);
 			upper = get_byte(DstAddr + 1);
 			break;
 		case 2:
-			if ((extra & 0x8000) == 0) {
+			if ((extra & 0x8000) == 0)
+			{
 				regv = static_cast<uint32_t>(static_cast<int16_t>(*srcp));
-			} else {
+			}
+			else
+			{
 				regv = static_cast<uint32_t>(*srcp);
 			}
 			lower = get_word(DstAddr);
 			upper = get_word(DstAddr + 2);
 			break;
 		default:
-			if ((extra & 0x8000) == 0) {
+			if ((extra & 0x8000) == 0)
+			{
 				regv = static_cast<uint32_t>(*srcp);
-			} else {
+			}
+			else
+			{
 				regv = static_cast<uint32_t>(*srcp);
 			}
 			lower = get_long(DstAddr);
@@ -6649,13 +7013,13 @@ static void DoCHK2orCMP2()
 	NeedDefaultLazyAllFlags();
 
 	ZFLG = Bool2Bit((upper == regv) || (lower == regv));
-	CFLG = Bool2Bit((((int32_t)lower) <= ((int32_t)upper))
-			? (((int32_t)regv) < ((int32_t)lower)
-				|| ((int32_t)regv) > ((int32_t)upper))
-			: (((int32_t)regv) > ((int32_t)upper)
-				|| ((int32_t)regv) < ((int32_t)lower)));
+	CFLG =
+		Bool2Bit((((int32_t)lower) <= ((int32_t)upper))
+					 ? (((int32_t)regv) < ((int32_t)lower) || ((int32_t)regv) > ((int32_t)upper))
+					 : (((int32_t)regv) > ((int32_t)upper) || ((int32_t)regv) < ((int32_t)lower)));
 
-	if ((extra & 0x800) && (CFLG != 0)) {
+	if ((extra & 0x800) && (CFLG != 0))
+	{
 		Exception(6);
 	}
 }
@@ -6671,7 +7035,8 @@ static void DoCAS()
 	int rc = src & 7;
 
 	ReportAbnormalID(AbnormalID::kCPU_CAS_instruction, "CAS instruction");
-	switch (V_regs.CurDecOpY.v[0].ArgDat) {
+	switch (V_regs.CurDecOpY.v[0].ArgDat)
+	{
 		case 1:
 			srcvalue = static_cast<uint32_t>(static_cast<int8_t>(V_regs.regs[rc]));
 			break;
@@ -6688,35 +7053,43 @@ static void DoCAS()
 		int flgs = ((int32_t)srcvalue) < 0;
 		int flgo = ((int32_t)dstvalue) < 0;
 		uint32_t newv = dstvalue - srcvalue;
-		if (V_regs.CurDecOpY.v[0].ArgDat == 1) {
+		if (V_regs.CurDecOpY.v[0].ArgDat == 1)
+		{
 			newv = static_cast<uint32_t>(static_cast<int8_t>(newv));
-		} else if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
+		}
+		else if (V_regs.CurDecOpY.v[0].ArgDat == 2)
+		{
 			newv = static_cast<uint32_t>(static_cast<int16_t>(newv));
-		} else {
+		}
+		else
+		{
 			newv = static_cast<uint32_t>(newv);
 		}
 		ZFLG = Bool2Bit(((int32_t)newv) == 0);
 		NFLG = Bool2Bit(((int32_t)newv) < 0);
 		VFLG = Bool2Bit((flgs != flgo) && ((NFLG != 0) != flgo));
-		CFLG = Bool2Bit(
-			(flgs && ! flgo) || ((NFLG != 0) && ((! flgo) || flgs)));
+		CFLG = Bool2Bit((flgs && !flgo) || ((NFLG != 0) && ((!flgo) || flgs)));
 
 		V_regs.LazyFlagKind = kLazyFlagsDefault;
 
-		if (ZFLG != 0) {
+		if (ZFLG != 0)
+		{
 			ArgSetDstValue(m68k_dreg(ru));
-		} else {
+		}
+		else
+		{
 			V_regs.ArgAddr.rga = &V_regs.regs[rc];
 
-			if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
-				*V_regs.ArgAddr.rga =
-					(*V_regs.ArgAddr.rga & ~ 0xffff)
-						| ((dstvalue) & 0xffff);
-			} else if (V_regs.CurDecOpY.v[0].ArgDat < 2) {
-				*V_regs.ArgAddr.rga =
-					(*V_regs.ArgAddr.rga & ~ 0xff)
-						| ((dstvalue) & 0xff);
-			} else {
+			if (V_regs.CurDecOpY.v[0].ArgDat == 2)
+			{
+				*V_regs.ArgAddr.rga = (*V_regs.ArgAddr.rga & ~0xffff) | ((dstvalue) & 0xffff);
+			}
+			else if (V_regs.CurDecOpY.v[0].ArgDat < 2)
+			{
+				*V_regs.ArgAddr.rga = (*V_regs.ArgAddr.rga & ~0xff) | ((dstvalue) & 0xff);
+			}
+			else
+			{
 				*V_regs.ArgAddr.rga = dstvalue;
 			}
 		}
@@ -6738,11 +7111,14 @@ static void DoCAS2()
 	int32_t dst2;
 
 	ReportAbnormalID(AbnormalID::kCPU_DoCAS2_instruction, "DoCAS2 instruction");
-	if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
+	if (V_regs.CurDecOpY.v[0].ArgDat == 2)
+	{
 		dst1 = get_word(rn1);
 		dst2 = get_word(rn2);
 		src = (int32_t)(int16_t)src;
-	} else {
+	}
+	else
+	{
 		dst1 = get_long(rn1);
 		dst2 = get_long(rn2);
 	}
@@ -6750,53 +7126,61 @@ static void DoCAS2()
 		int flgs = src < 0;
 		int flgo = dst1 < 0;
 		int32_t newv = dst1 - src;
-		if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
+		if (V_regs.CurDecOpY.v[0].ArgDat == 2)
+		{
 			newv = (uint16_t)newv;
 		}
 		ZFLG = Bool2Bit(newv == 0);
 		NFLG = Bool2Bit(newv < 0);
 		VFLG = Bool2Bit((flgs != flgo) && ((NFLG != 0) != flgo));
-		CFLG = Bool2Bit(
-			(flgs && ! flgo) || ((NFLG != 0) && ((! flgo) || flgs)));
+		CFLG = Bool2Bit((flgs && !flgo) || ((NFLG != 0) && ((!flgo) || flgs)));
 
 		V_regs.LazyFlagKind = kLazyFlagsDefault;
 
-		if (ZFLG != 0) {
+		if (ZFLG != 0)
+		{
 			src = m68k_dreg(dc2);
-			if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
+			if (V_regs.CurDecOpY.v[0].ArgDat == 2)
+			{
 				src = (int32_t)(int16_t)src;
 			}
 			flgs = src < 0;
 			flgo = dst2 < 0;
 			newv = dst2 - src;
-			if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
+			if (V_regs.CurDecOpY.v[0].ArgDat == 2)
+			{
 				newv = (uint16_t)newv;
 			}
 			ZFLG = Bool2Bit(newv == 0);
 			NFLG = Bool2Bit(newv < 0);
 			VFLG = Bool2Bit((flgs != flgo) && ((NFLG != 0) != flgo));
-			CFLG = Bool2Bit((flgs && ! flgo)
-				|| ((NFLG != 0) && ((! flgo) || flgs)));
+			CFLG = Bool2Bit((flgs && !flgo) || ((NFLG != 0) && ((!flgo) || flgs)));
 
 			V_regs.LazyFlagKind = kLazyFlagsDefault;
-			if (ZFLG != 0) {
-				if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
+			if (ZFLG != 0)
+			{
+				if (V_regs.CurDecOpY.v[0].ArgDat == 2)
+				{
 					put_word(rn1, m68k_dreg(du1));
 					put_word(rn2, m68k_dreg(du2));
-				} else {
+				}
+				else
+				{
 					put_word(rn1, m68k_dreg(du1));
 					put_word(rn2, m68k_dreg(du2));
 				}
 			}
 		}
 	}
-	if (ZFLG == 0) {
-		if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
-			m68k_dreg(du1) =
-				(m68k_dreg(du1) & ~ 0xffff) | ((uint32_t)dst1 & 0xffff);
-			m68k_dreg(du2) =
-				(m68k_dreg(du2) & ~ 0xffff) | ((uint32_t)dst2 & 0xffff);
-		} else {
+	if (ZFLG == 0)
+	{
+		if (V_regs.CurDecOpY.v[0].ArgDat == 2)
+		{
+			m68k_dreg(du1) = (m68k_dreg(du1) & ~0xffff) | ((uint32_t)dst1 & 0xffff);
+			m68k_dreg(du2) = (m68k_dreg(du2) & ~0xffff) | ((uint32_t)dst2 & 0xffff);
+		}
+		else
+		{
 			m68k_dreg(du1) = dst1;
 			m68k_dreg(du2) = dst2;
 		}
@@ -6807,30 +7191,40 @@ static void DoMOVES()
 {
 	/* MoveS 00001110ssmmmrrr */
 	ReportAbnormalID(AbnormalID::kCPU_MoveS_instruction, "MoveS instruction");
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		uint16_t extra = nextiword_nm();
-		if (extra & 0x0800) {
+		if (extra & 0x0800)
+		{
 			uint32_t src = V_regs.regs[(extra >> 12) & 0x0F];
 			DecodeSetDstValue(src);
-		} else {
+		}
+		else
+		{
 			uint32_t srcvalue = DecodeGetDstValue();
 			uint32_t rr = (extra >> 12) & 7;
-			if (extra & 0x8000) {
+			if (extra & 0x8000)
+			{
 				m68k_areg(rr) = srcvalue;
-			} else {
+			}
+			else
+			{
 				V_regs.ArgAddr.rga = &V_regs.regs[rr];
 
-				if (V_regs.CurDecOpY.v[0].ArgDat == 2) {
-					*V_regs.ArgAddr.rga =
-						(*V_regs.ArgAddr.rga & ~ 0xffff)
-							| ((srcvalue) & 0xffff);
-				} else if (V_regs.CurDecOpY.v[0].ArgDat < 2) {
-					*V_regs.ArgAddr.rga =
-						(*V_regs.ArgAddr.rga & ~ 0xff)
-							| ((srcvalue) & 0xff);
-				} else {
+				if (V_regs.CurDecOpY.v[0].ArgDat == 2)
+				{
+					*V_regs.ArgAddr.rga = (*V_regs.ArgAddr.rga & ~0xffff) | ((srcvalue) & 0xffff);
+				}
+				else if (V_regs.CurDecOpY.v[0].ArgDat < 2)
+				{
+					*V_regs.ArgAddr.rga = (*V_regs.ArgAddr.rga & ~0xff) | ((srcvalue) & 0xff);
+				}
+				else
+				{
 					*V_regs.ArgAddr.rga = srcvalue;
 				}
 			}
@@ -6841,16 +7235,18 @@ static void DoMOVES()
 #define ui5b_lo(x) ((x) & 0x0000FFFF)
 #define ui5b_hi(x) (((x) >> 16) & 0x0000FFFF)
 
-struct ui6r0 {
+struct ui6r0
+{
 	uint32_t hi;
 	uint32_t lo;
 };
 
 static void Ui6r_Negate(ui6r0 *v)
 {
-	v->hi = ~ v->hi;
-	v->lo = - v->lo;
-	if (v->lo == 0) {
+	v->hi = ~v->hi;
+	v->lo = -v->lo;
+	if (v->lo == 0)
+	{
 		v->hi++;
 	}
 }
@@ -6883,8 +7279,7 @@ static void mul_unsigned(uint32_t src1, uint32_t src2, ui6r0 *dst)
 	dst->hi = ui5b_hi(ra1) + ui5b_hi(r1) + ui5b_hi(r2) + r3;
 }
 
-static bool div_unsigned(ui6r0 *src, uint32_t div,
-	uint32_t *quot, uint32_t *rem)
+static bool div_unsigned(ui6r0 *src, uint32_t div, uint32_t *quot, uint32_t *rem)
 {
 	int i;
 	uint32_t q = 0;
@@ -6892,18 +7287,22 @@ static bool div_unsigned(ui6r0 *src, uint32_t div,
 	uint32_t src_hi = src->hi;
 	uint32_t src_lo = src->lo;
 
-	if (div <= src_hi) {
+	if (div <= src_hi)
+	{
 		return true;
 	}
-	for (i = 0 ; i < 32 ; i++) {
+	for (i = 0; i < 32; i++)
+	{
 		cbit = src_hi & 0x80000000ul;
 		src_hi <<= 1;
-		if (src_lo & 0x80000000ul) {
+		if (src_lo & 0x80000000ul)
+		{
 			src_hi++;
 		}
 		src_lo <<= 1;
 		q = q << 1;
-		if (cbit || div <= src_hi) {
+		if (cbit || div <= src_hi)
+		{
 			q |= 1;
 			src_hi -= div;
 		}
@@ -6923,7 +7322,8 @@ static void DoCodeMulL()
 	uint32_t dstvalue = m68k_dreg(r2);
 	uint32_t srcvalue = DecodeGetDstValue();
 
-	if (extra & 0x800) {
+	if (extra & 0x800)
+	{
 		/* MULS.L - signed */
 
 		int32_t src1 = (int32_t)srcvalue;
@@ -6934,14 +7334,17 @@ static void DoCodeMulL()
 
 		/* ReportAbnormal("MULS.L"); */
 		/* used by Sys 7.5.5 boot extensions */
-		if (s1) {
-			src1 = - src1;
+		if (s1)
+		{
+			src1 = -src1;
 		}
-		if (s2) {
-			src2 = - src2;
+		if (s2)
+		{
+			src2 = -src2;
 		}
 		mul_unsigned((uint32_t)src1, (uint32_t)src2, &dst);
-		if (sr) {
+		if (sr)
+		{
 			Ui6r_Negate(&dst);
 		}
 		VFLG = CFLG = 0;
@@ -6950,20 +7353,30 @@ static void DoCodeMulL()
 
 		V_regs.LazyFlagKind = kLazyFlagsDefault;
 
-		if (extra & 0x400) {
+		if (extra & 0x400)
+		{
 			m68k_dreg(extra & 7) = dst.hi;
-		} else {
-			if ((dst.lo & 0x80000000) != 0) {
-				if ((dst.hi & 0xffffffff) != 0xffffffff) {
+		}
+		else
+		{
+			if ((dst.lo & 0x80000000) != 0)
+			{
+				if ((dst.hi & 0xffffffff) != 0xffffffff)
+				{
 					VFLG = 1;
 				}
-			} else {
-				if (dst.hi != 0) {
+			}
+			else
+			{
+				if (dst.hi != 0)
+				{
 					VFLG = 1;
 				}
 			}
 		}
-	} else {
+	}
+	else
+	{
 		/* MULU.L - unsigned */
 
 		/* ReportAbnormal("MULU.U"); */
@@ -6977,10 +7390,14 @@ static void DoCodeMulL()
 
 		V_regs.LazyFlagKind = kLazyFlagsDefault;
 
-		if (extra & 0x400) {
+		if (extra & 0x400)
+		{
 			m68k_dreg(extra & 7) = dst.hi;
-		} else {
-			if (dst.hi != 0) {
+		}
+		else
+		{
+			if (dst.hi != 0)
+			{
 				VFLG = 1;
 			}
 		}
@@ -7001,46 +7418,56 @@ static void DoCodeDivL()
 	uint32_t rDq = (extra >> 12) & 7;
 	uint32_t src = (uint32_t)(int32_t)DecodeGetDstValue();
 
-	if (src == 0) {
+	if (src == 0)
+	{
 		Exception(5);
 #if m68k_logExceptions
 		dbglog_WriteNote("*** zero devide exception");
 #endif
 		return;
 	}
-	if (0 != (extra & 0x0800)) {
+	if (0 != (extra & 0x0800))
+	{
 		/* signed variant */
 		bool sr;
 		bool s2;
 		bool s1 = ((int32_t)src < 0);
 
 		v2.lo = (int32_t)m68k_dreg(rDq);
-		if (extra & 0x0400) {
+		if (extra & 0x0400)
+		{
 			v2.hi = (int32_t)m68k_dreg(rDr);
-		} else {
+		}
+		else
+		{
 			v2.hi = ((int32_t)v2.lo) < 0 ? -1 : 0;
 		}
 		s2 = Ui6r_IsNeg(&v2);
 		sr = (s1 != s2);
-		if (s2) {
+		if (s2)
+		{
 			Ui6r_Negate(&v2);
 		}
-		if (s1) {
-			src = - src;
+		if (s1)
+		{
+			src = -src;
 		}
-		if (div_unsigned(&v2, src, &quot, &rem)
-			|| (sr ? quot > 0x80000000 : quot > 0x7fffffff))
+		if (div_unsigned(&v2, src, &quot, &rem) || (sr ? quot > 0x80000000 : quot > 0x7fffffff))
 		{
 			NeedDefaultLazyAllFlags();
 
 			VFLG = NFLG = 1;
 			CFLG = 0;
-		} else {
-			if (sr) {
-				quot = - quot;
+		}
+		else
+		{
+			if (sr)
+			{
+				quot = -quot;
 			}
-			if (((int32_t)rem < 0) != s2) {
-				rem = - rem;
+			if (((int32_t)rem < 0) != s2)
+			{
+				rem = -rem;
 			}
 			VFLG = CFLG = 0;
 			ZFLG = Bool2Bit(((int32_t)quot) == 0);
@@ -7051,21 +7478,29 @@ static void DoCodeDivL()
 			m68k_dreg(rDr) = rem;
 			m68k_dreg(rDq) = quot;
 		}
-	} else {
+	}
+	else
+	{
 		/* unsigned */
 
 		v2.lo = (uint32_t)m68k_dreg(rDq);
-		if (extra & 0x400) {
+		if (extra & 0x400)
+		{
 			v2.hi = (uint32_t)m68k_dreg(rDr);
-		} else {
+		}
+		else
+		{
 			v2.hi = 0;
 		}
-		if (div_unsigned(&v2, src, &quot, &rem)) {
+		if (div_unsigned(&v2, src, &quot, &rem))
+		{
 			NeedDefaultLazyAllFlags();
 
 			VFLG = NFLG = 1;
 			CFLG = 0;
-		} else {
+		}
+		else
+		{
 			VFLG = CFLG = 0;
 			ZFLG = Bool2Bit(((int32_t)quot) == 0);
 			NFLG = Bool2Bit(((int32_t)quot) < 0);
@@ -7080,14 +7515,18 @@ static void DoCodeDivL()
 
 static void DoMoveToControl()
 {
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		uint16_t src = nextiword_nm();
 		int regno = (src >> 12) & 0x0F;
 		uint32_t v = V_regs.regs[regno];
 
-		switch (src & 0x0FFF) {
+		switch (src & 0x0FFF)
+		{
 			case 0x0000:
 				V_regs.sfc = v & 7;
 				/* ReportAbnormal("DoMoveToControl: sfc"); */
@@ -7112,13 +7551,14 @@ static void DoMoveToControl()
 				/* happens on entering macsbug */
 				break;
 			case 0x0802:
-				V_regs.caar = v &0xfc;
+				V_regs.caar = v & 0xfc;
 				/* ReportAbnormal("DoMoveToControl: caar"); */
 				/* happens on entering macsbug */
 				break;
 			case 0x0803:
 				V_regs.msp = v;
-				if (V_regs.m == 1) {
+				if (V_regs.m == 1)
+				{
 					m68k_areg(7) = V_regs.msp;
 				}
 				/* ReportAbnormal("DoMoveToControl: msp"); */
@@ -7126,7 +7566,8 @@ static void DoMoveToControl()
 				break;
 			case 0x0804:
 				V_regs.isp = v;
-				if (V_regs.m == 0) {
+				if (V_regs.m == 0)
+				{
 					m68k_areg(7) = V_regs.isp;
 				}
 				ReportAbnormalID(AbnormalID::kCPU_DoMoveToControl_isp, "DoMoveToControl: isp");
@@ -7134,7 +7575,7 @@ static void DoMoveToControl()
 			default:
 				op_illg();
 				ReportAbnormalID(AbnormalID::kCPU_DoMoveToControl_unknown_reg,
-					"DoMoveToControl: unknown reg");
+								 "DoMoveToControl: unknown reg");
 				break;
 		}
 	}
@@ -7142,14 +7583,18 @@ static void DoMoveToControl()
 
 static void DoMoveFromControl()
 {
-	if (0 == V_regs.s) {
+	if (0 == V_regs.s)
+	{
 		DoPrivilegeViolation();
-	} else {
+	}
+	else
+	{
 		uint32_t v;
 		uint16_t src = nextiword_nm();
 		int regno = (src >> 12) & 0x0F;
 
-		switch (src & 0x0FFF) {
+		switch (src & 0x0FFF)
+		{
 			case 0x0000:
 				v = V_regs.sfc;
 				/* ReportAbnormal("DoMoveFromControl: sfc"); */
@@ -7180,22 +7625,18 @@ static void DoMoveFromControl()
 				/* happens on entering macsbug */
 				break;
 			case 0x0803:
-				v = (V_regs.m == 1)
-					? m68k_areg(7)
-					: V_regs.msp;
+				v = (V_regs.m == 1) ? m68k_areg(7) : V_regs.msp;
 				/* ReportAbnormal("DoMoveFromControl: msp"); */
 				/* happens on entering macsbug */
 				break;
 			case 0x0804:
-				v = (V_regs.m == 0)
-					? m68k_areg(7)
-					: V_regs.isp;
+				v = (V_regs.m == 0) ? m68k_areg(7) : V_regs.isp;
 				ReportAbnormalID(AbnormalID::kCPU_DoMoveFromControl_isp, "DoMoveFromControl: isp");
 				break;
 			default:
 				v = 0;
 				ReportAbnormalID(AbnormalID::kCPU_DoMoveFromControl_unknown_reg,
-					"DoMoveFromControl: unknown reg");
+								 "DoMoveFromControl: unknown reg");
 				op_illg();
 				break;
 		}
@@ -7245,15 +7686,14 @@ static void DoCodeTRAPcc_t()
 	/* pc pushed onto stack wrong */
 }
 
-static void DoCodeTRAPcc_f()
-{
-}
+static void DoCodeTRAPcc_f() {}
 
 static void DoCodeTRAPcc()
 {
 	/* TRAPcc 0101cccc11111sss */
 	/* ReportAbnormal("TRAPcc"); */
-	switch (V_regs.CurDecOpY.v[1].ArgDat) {
+	switch (V_regs.CurDecOpY.v[1].ArgDat)
+	{
 		case 2:
 			ReportAbnormalID(AbnormalID::kCPU_TRAPcc_word_data, "TRAPcc word data");
 			SkipiWord();
@@ -7308,26 +7748,26 @@ static void DoBitField()
 	uint8_t bf1;
 	uint32_t dstreg = V_regs.CurDecOpY.v[1].ArgDat;
 	uint16_t extra = nextiword();
-	uint32_t offset = ((extra & 0x0800) != 0)
-		? m68k_dreg((extra >> 6) & 7)
-		: ((extra >> 6) & 0x1f);
-	uint32_t width = ((extra & 0x0020) != 0)
-		? m68k_dreg(extra & 7)
-		: extra;
+	uint32_t offset = ((extra & 0x0800) != 0) ? m68k_dreg((extra >> 6) & 7) : ((extra >> 6) & 0x1f);
+	uint32_t width = ((extra & 0x0020) != 0) ? m68k_dreg(extra & 7) : extra;
 	uint8_t bfa[5];
 	uint32_t offwid = 0;
 
 	/* ReportAbnormal("Bit Field operator"); */
 	/* width = ((width - 1) & 0x1f) + 1; */ /* 0 -> 32 */
-	width &= 0x001F; /* except width == 0 really means 32 */
-	if (V_regs.CurDecOpY.v[0].AMd == 0) {
+	width &= 0x001F;						/* except width == 0 really means 32 */
+	if (V_regs.CurDecOpY.v[0].AMd == 0)
+	{
 		bf0 = m68k_dreg(dstreg);
 		offset &= 0x1f;
 		tmp = bf0;
-		if (0 != offset) {
+		if (0 != offset)
+		{
 			tmp = (tmp << offset) | (tmp >> (32 - offset));
 		}
-	} else {
+	}
+	else
+	{
 		/*
 			V_regs.ArgKind == AKMemory,
 			otherwise illegal and don't get here
@@ -7342,22 +7782,26 @@ static void DoBitField()
 			bfa[0] = bf1;
 			tmp = ((uint32_t)bf1) << (24 + offset);
 		}
-		if (offwid > 8) {
+		if (offwid > 8)
+		{
 			bf1 = get_byte(dsta + 1);
 			bfa[1] = bf1;
 			tmp |= ((uint32_t)bf1) << (16 + offset);
 		}
-		if (offwid > 16) {
+		if (offwid > 16)
+		{
 			bf1 = get_byte(dsta + 2);
 			bfa[2] = bf1;
 			tmp |= ((uint32_t)bf1) << (8 + offset);
 		}
-		if (offwid > 24) {
+		if (offwid > 24)
+		{
 			bf1 = get_byte(dsta + 3);
 			bfa[3] = bf1;
 			tmp |= ((uint32_t)bf1) << (offset);
 		}
-		if (offwid > 32) {
+		if (offwid > 32)
+		{
 			bf1 = get_byte(dsta + 4);
 			bfa[4] = bf1;
 			tmp |= ((uint32_t)bf1) >> (8 - offset);
@@ -7365,7 +7809,8 @@ static void DoBitField()
 	}
 
 	NFLG = Bool2Bit(((int32_t)tmp) < 0);
-	if (width != 0) {
+	if (width != 0)
+	{
 		tmp >>= (32 - width);
 	}
 	ZFLG = (tmp == 0);
@@ -7376,7 +7821,8 @@ static void DoBitField()
 
 	newtmp = tmp;
 
-	switch (V_regs.CurDecOpY.v[0].ArgDat) {
+	switch (V_regs.CurDecOpY.v[0].ArgDat)
+	{
 		case 0: /* BFTST */
 			/* do nothing */
 			break;
@@ -7384,16 +7830,19 @@ static void DoBitField()
 			m68k_dreg((extra >> 12) & 7) = tmp;
 			break;
 		case 2: /* BFCHG */
-			newtmp = ~ newtmp;
-			if (width != 0) {
+			newtmp = ~newtmp;
+			if (width != 0)
+			{
 				newtmp &= ((1 << width) - 1);
 			}
 			break;
 		case 3: /* BFEXTS */
-			if (NFLG != 0) {
-				m68k_dreg((extra >> 12) & 7) = tmp
-					| ((width == 0) ? 0 : (-1 << width));
-			} else {
+			if (NFLG != 0)
+			{
+				m68k_dreg((extra >> 12) & 7) = tmp | ((width == 0) ? 0 : (-1 << width));
+			}
+			else
+			{
 				m68k_dreg((extra >> 12) & 7) = tmp;
 			}
 			break;
@@ -7401,23 +7850,25 @@ static void DoBitField()
 			newtmp = 0;
 			break;
 		case 5: /* BFFFO */
-			{
-				uint32_t mask = 1 << ((width == 0) ? 31 : (width - 1));
-				uint32_t i = offset;
+		{
+			uint32_t mask = 1 << ((width == 0) ? 31 : (width - 1));
+			uint32_t i = offset;
 
-				while ((0 != mask) && (0 == (tmp & mask))) {
-					mask >>= 1;
-					i++;
-				}
-				m68k_dreg((extra >> 12) & 7) = i;
+			while ((0 != mask) && (0 == (tmp & mask)))
+			{
+				mask >>= 1;
+				i++;
 			}
-			break;
+			m68k_dreg((extra >> 12) & 7) = i;
+		}
+		break;
 		case 6: /* BFSET */
-			newtmp = (width == 0) ? ~ 0 : ((1 << width) - 1);
+			newtmp = (width == 0) ? ~0 : ((1 << width) - 1);
 			break;
 		case 7: /* BFINS */
 			newtmp = m68k_dreg((extra >> 12) & 7);
-			if (width != 0) {
+			if (width != 0)
+			{
 				newtmp &= ((1 << width) - 1);
 			}
 
@@ -7428,7 +7879,8 @@ static void DoBitField()
 			{
 				uint32_t t = newtmp;
 
-				if (width != 0) {
+				if (width != 0)
+				{
 					t <<= (32 - width);
 				}
 
@@ -7438,62 +7890,78 @@ static void DoBitField()
 			break;
 	}
 
-	if (newtmp != tmp) {
+	if (newtmp != tmp)
+	{
 
-		if (width != 0) {
+		if (width != 0)
+		{
 			newtmp <<= (32 - width);
 		}
 
-		if (V_regs.CurDecOpY.v[0].AMd == 0) {
-			uint32_t mask = ~ 0;
+		if (V_regs.CurDecOpY.v[0].AMd == 0)
+		{
+			uint32_t mask = ~0;
 
-			if (width != 0) {
+			if (width != 0)
+			{
 				mask <<= (32 - width);
 			}
 
-			if (0 != offset) {
+			if (0 != offset)
+			{
 				newtmp = (newtmp >> offset) | (newtmp << (32 - offset));
 				mask = (mask >> offset) | (mask << (32 - offset));
 			}
 
-			bf0 = (bf0 & ~ mask) | (newtmp);
+			bf0 = (bf0 & ~mask) | (newtmp);
 			m68k_dreg(dstreg) = bf0;
-		} else {
+		}
+		else
+		{
 
 			/* if (offwid > 0) */ {
-				uint8_t mask = ~ (0xFF >> offset);
+				uint8_t mask = ~(0xFF >> offset);
 
 				bf1 = newtmp >> (24 + offset);
-				if (offwid < 8) {
+				if (offwid < 8)
+				{
 					mask |= (0xFF >> offwid);
 				}
-				if (mask != 0) {
+				if (mask != 0)
+				{
 					bf1 |= bfa[0] & mask;
 				}
 				put_byte(dsta + 0, bf1);
 			}
-			if (offwid > 8) {
+			if (offwid > 8)
+			{
 				bf1 = newtmp >> (16 + offset);
-				if (offwid < 16) {
+				if (offwid < 16)
+				{
 					bf1 |= (bfa[1] & (0xFF >> (offwid - 8)));
 				}
 				put_byte(dsta + 1, bf1);
 			}
-			if (offwid > 16) {
+			if (offwid > 16)
+			{
 				bf1 = newtmp >> (8 + offset);
-				if (offwid < 24) {
+				if (offwid < 24)
+				{
 					bf1 |= (bfa[2] & (0xFF >> (offwid - 16)));
 				}
 				put_byte(dsta + 2, bf1);
 			}
-			if (offwid > 24) {
+			if (offwid > 24)
+			{
 				bf1 = newtmp >> (offset);
-				if (offwid < 32) {
+				if (offwid < 32)
+				{
 					bf1 |= (bfa[3] & (0xFF >> (offwid - 24)));
 				}
 				put_byte(dsta + 3, bf1);
 			}
-			if (offwid > 32) {
+			if (offwid > 32)
+			{
 				bf1 = newtmp << (8 - offset);
 				bf1 |= (bfa[4] & (0xFF >> (offwid - 32)));
 				put_byte(dsta + 4, bf1);
@@ -7509,80 +7977,88 @@ static bool DecodeModeRegister(uint32_t sz)
 	uint16_t themode = (Dat >> 3) & 7;
 	uint16_t thereg = Dat & 7;
 
-	switch (themode) {
-		case 0 :
+	switch (themode)
+	{
+		case 0:
 			V_regs.ArgKind = AKRegister;
 			V_regs.ArgAddr.rga = &V_regs.regs[thereg];
 			IsOk = true;
 			break;
-		case 1 :
+		case 1:
 			V_regs.ArgKind = AKRegister;
 			V_regs.ArgAddr.rga = &V_regs.regs[thereg + 8];
 			IsOk = true;
 			break;
-		case 2 :
+		case 2:
 			V_regs.ArgKind = AKMemory;
 			V_regs.ArgAddr.mem = m68k_areg(thereg);
 			IsOk = true;
 			break;
-		case 3 :
+		case 3:
 			V_regs.ArgKind = AKMemory;
 			V_regs.ArgAddr.mem = m68k_areg(thereg);
-			if ((thereg == 7) && (sz == 1)) {
+			if ((thereg == 7) && (sz == 1))
+			{
 				m68k_areg(thereg) += 2;
-			} else {
+			}
+			else
+			{
 				m68k_areg(thereg) += sz;
 			}
 			IsOk = true;
 			break;
-		case 4 :
+		case 4:
 			V_regs.ArgKind = AKMemory;
-			if ((thereg == 7) && (sz == 1)) {
+			if ((thereg == 7) && (sz == 1))
+			{
 				m68k_areg(thereg) -= 2;
-			} else {
+			}
+			else
+			{
 				m68k_areg(thereg) -= sz;
 			}
 			V_regs.ArgAddr.mem = m68k_areg(thereg);
 			IsOk = true;
 			break;
-		case 5 :
+		case 5:
 			V_regs.ArgKind = AKMemory;
-			V_regs.ArgAddr.mem = m68k_areg(thereg)
-				+ nextiSWord();
+			V_regs.ArgAddr.mem = m68k_areg(thereg) + nextiSWord();
 			IsOk = true;
 			break;
-		case 6 :
+		case 6:
 			V_regs.ArgKind = AKMemory;
 			V_regs.ArgAddr.mem = get_disp_ea(m68k_areg(thereg));
 			IsOk = true;
 			break;
-		case 7 :
-			switch (thereg) {
-				case 0 :
+		case 7:
+			switch (thereg)
+			{
+				case 0:
 					V_regs.ArgKind = AKMemory;
 					V_regs.ArgAddr.mem = nextiSWord();
 					IsOk = true;
 					break;
-				case 1 :
+				case 1:
 					V_regs.ArgKind = AKMemory;
 					V_regs.ArgAddr.mem = nextilong();
 					IsOk = true;
 					break;
-				case 2 :
+				case 2:
 					V_regs.ArgKind = AKMemory;
 					V_regs.ArgAddr.mem = m68k_getpc();
 					V_regs.ArgAddr.mem += nextiSWord();
 					IsOk = true;
 					break;
-				case 3 :
+				case 3:
 					V_regs.ArgKind = AKMemory;
 					V_regs.ArgAddr.mem = get_disp_ea(m68k_getpc());
 					IsOk = true;
 					break;
-				case 4 :
+				case 4:
 					V_regs.ArgKind = AKMemory;
 					V_regs.ArgAddr.mem = m68k_getpc();
-					if (sz == 1) {
+					if (sz == 1)
+					{
 						++V_regs.ArgAddr.mem;
 					}
 					m68k_setpc(V_regs.ArgAddr.mem + sz);
@@ -7605,9 +8081,12 @@ static uint32_t GetArgValueL()
 {
 	uint32_t v;
 
-	if (AKMemory == V_regs.ArgKind) {
+	if (AKMemory == V_regs.ArgKind)
+	{
 		v = get_long(V_regs.ArgAddr.mem);
-	} else {
+	}
+	else
+	{
 		/* must be AKRegister */
 		v = static_cast<uint32_t>(*V_regs.ArgAddr.rga);
 	}
@@ -7619,9 +8098,12 @@ static uint32_t GetArgValueW()
 {
 	uint32_t v;
 
-	if (AKMemory == V_regs.ArgKind) {
+	if (AKMemory == V_regs.ArgKind)
+	{
 		v = get_word(V_regs.ArgAddr.mem);
-	} else {
+	}
+	else
+	{
 		/* must be AKRegister */
 		v = static_cast<uint32_t>(static_cast<int16_t>(*V_regs.ArgAddr.rga));
 	}
@@ -7633,9 +8115,12 @@ static uint32_t GetArgValueB()
 {
 	uint32_t v;
 
-	if (AKMemory == V_regs.ArgKind) {
+	if (AKMemory == V_regs.ArgKind)
+	{
 		v = get_byte(V_regs.ArgAddr.mem);
-	} else {
+	}
+	else
+	{
 		/* must be AKRegister */
 		v = static_cast<uint32_t>(static_cast<int8_t>(*V_regs.ArgAddr.rga));
 	}
@@ -7645,9 +8130,12 @@ static uint32_t GetArgValueB()
 
 static void SetArgValueL(uint32_t v)
 {
-	if (AKMemory == V_regs.ArgKind) {
+	if (AKMemory == V_regs.ArgKind)
+	{
 		put_long(V_regs.ArgAddr.mem, v);
-	} else {
+	}
+	else
+	{
 		/* must be AKRegister */
 		*V_regs.ArgAddr.rga = v;
 	}
@@ -7655,23 +8143,27 @@ static void SetArgValueL(uint32_t v)
 
 static void SetArgValueW(uint32_t v)
 {
-	if (AKMemory == V_regs.ArgKind) {
+	if (AKMemory == V_regs.ArgKind)
+	{
 		put_word(V_regs.ArgAddr.mem, v);
-	} else {
+	}
+	else
+	{
 		/* must be AKRegister */
-		*V_regs.ArgAddr.rga =
-			(*V_regs.ArgAddr.rga & ~ 0xffff) | ((v) & 0xffff);
+		*V_regs.ArgAddr.rga = (*V_regs.ArgAddr.rga & ~0xffff) | ((v) & 0xffff);
 	}
 }
 
 static void SetArgValueB(uint32_t v)
 {
-	if (AKMemory == V_regs.ArgKind) {
+	if (AKMemory == V_regs.ArgKind)
+	{
 		put_byte(V_regs.ArgAddr.mem, v);
-	} else {
+	}
+	else
+	{
 		/* must be AKRegister */
-		*V_regs.ArgAddr.rga =
-			(*V_regs.ArgAddr.rga & ~ 0xff) | ((v) & 0xff);
+		*V_regs.ArgAddr.rga = (*V_regs.ArgAddr.rga & ~0xff) | ((v) & 0xff);
 	}
 }
 
@@ -7685,30 +8177,38 @@ static void DoCodeMMU()
 		And implement a few more PMOVE operations seen
 		when running Disk Copy 6.3.3 and MacsBug.
 	*/
-	uint16_t opcode = ((uint16_t)(V_regs.CurDecOpY.v[0].AMd) << 8)
-		| V_regs.CurDecOpY.v[0].ArgDat;
-	if (opcode == 0xF010) {
+	uint16_t opcode = ((uint16_t)(V_regs.CurDecOpY.v[0].AMd) << 8) | V_regs.CurDecOpY.v[0].ArgDat;
+	if (opcode == 0xF010)
+	{
 		uint16_t ew = (int)nextiword_nm();
-		if (ew == 0x4200) {
+		if (ew == 0x4200)
+		{
 			/* PMOVE TC, (A0) */
 			/* fprintf(stderr, "0xF010 0x4200\n"); */
-			if (DecodeModeRegister(4)) {
+			if (DecodeModeRegister(4))
+			{
 				SetArgValueL(0);
 				return;
 			}
-		} else if ((ew == 0x4E00) || (ew == 0x4A00)) {
+		}
+		else if ((ew == 0x4E00) || (ew == 0x4A00))
+		{
 			/* PMOVE CRP, (A0) and PMOVE SRP, (A0) */
 			/* fprintf(stderr, "0xF010 %x\n", ew); */
-			if (DecodeModeRegister(4)) {
+			if (DecodeModeRegister(4))
+			{
 				SetArgValueL(0x7FFF0001);
 				V_regs.ArgAddr.mem += 4;
 				SetArgValueL(0);
 				return;
 			}
-		} else if (ew == 0x6200) {
+		}
+		else if (ew == 0x6200)
+		{
 			/* PMOVE MMUSR, (A0) */
 			/* fprintf(stderr, "0xF010 %x\n", ew); */
-			if (DecodeModeRegister(2)) {
+			if (DecodeModeRegister(2))
+			{
 				SetArgValueW(0);
 				return;
 			}
@@ -7747,8 +8247,10 @@ static ATTep LocalFindATTel(uint32_t addr)
 	ATTep p;
 
 	p = V_regs.HeadATTel;
-	if ((addr & p->cmpmask) != p->cmpvalu) {
-		do {
+	if ((addr & p->cmpmask) != p->cmpvalu)
+	{
+		do
+		{
 			prev = p;
 			p = p->Next;
 		} while ((addr & p->cmpmask) != p->cmpvalu);
@@ -7756,9 +8258,12 @@ static ATTep LocalFindATTel(uint32_t addr)
 		{
 			ATTep next = p->Next;
 
-			if (nullptr == next) {
+			if (nullptr == next)
+			{
 				/* don't move the end guard */
-			} else {
+			}
+			else
+			{
 				/* move to first */
 				prev->Next = next;
 				p->Next = V_regs.HeadATTel;
@@ -7770,9 +8275,7 @@ static ATTep LocalFindATTel(uint32_t addr)
 	return p;
 }
 
-static void SetUpMATC(
-	MATCp CurMATC,
-	ATTep p)
+static void SetUpMATC(MATCp CurMATC, ATTep p)
 {
 	CurMATC->cmpmask = p->cmpmask;
 	CurMATC->usemask = p->usemask;
@@ -7783,7 +8286,7 @@ static void SetUpMATC(
 static uint32_t get_byte_ext(uint32_t addr)
 {
 	ATTep p;
-	uint8_t * m;
+	uint8_t *m;
 	uint32_t AccFlags;
 	uint32_t Data;
 
@@ -7791,20 +8294,30 @@ Label_Retry:
 	p = LocalFindATTel(addr);
 	AccFlags = p->Access;
 
-	if (0 != (AccFlags & kATTA_readreadymask)) {
+	if (0 != (AccFlags & kATTA_readreadymask))
+	{
 		SetUpMATC(&V_regs.MATCrdB, p);
 		m = p->usebase + (addr & p->usemask);
 
 		Data = *m;
-	} else if (0 != (AccFlags & kATTA_mmdvmask)) {
+	}
+	else if (0 != (AccFlags & kATTA_mmdvmask))
+	{
 		Data = LocalMMDV_Access(p, 0, false, true, addr);
-	} else if (0 != (AccFlags & kATTA_ntfymask)) {
-		if (LocalMemAccessNtfy(p)) {
+	}
+	else if (0 != (AccFlags & kATTA_ntfymask))
+	{
+		if (LocalMemAccessNtfy(p))
+		{
 			goto Label_Retry;
-		} else {
+		}
+		else
+		{
 			Data = 0; /* fail */
 		}
-	} else {
+	}
+	else
+	{
 		Data = 0; /* fail */
 	}
 
@@ -7814,27 +8327,36 @@ Label_Retry:
 static void put_byte_ext(uint32_t addr, uint32_t b)
 {
 	ATTep p;
-	uint8_t * m;
+	uint8_t *m;
 	uint32_t AccFlags;
 
 Label_Retry:
 	p = LocalFindATTel(addr);
 	AccFlags = p->Access;
 
-	if (0 != (AccFlags & kATTA_writereadymask)) {
+	if (0 != (AccFlags & kATTA_writereadymask))
+	{
 		SetUpMATC(&V_regs.MATCwrB, p);
 		m = p->usebase + (addr & p->usemask);
 		*m = b;
-	} else if (0 != (AccFlags & kATTA_mmdvmask)) {
-		(void) LocalMMDV_Access(p, b & 0x00FF,
-			true, true, addr);
-	} else if (0 != (AccFlags & kATTA_ntfymask)) {
-		if (LocalMemAccessNtfy(p)) {
+	}
+	else if (0 != (AccFlags & kATTA_mmdvmask))
+	{
+		(void)LocalMMDV_Access(p, b & 0x00FF, true, true, addr);
+	}
+	else if (0 != (AccFlags & kATTA_ntfymask))
+	{
+		if (LocalMemAccessNtfy(p))
+		{
 			goto Label_Retry;
-		} else {
+		}
+		else
+		{
 			/* fail */
 		}
-	} else {
+	}
+	else
+	{
 		/* fail */
 	}
 }
@@ -7843,34 +8365,46 @@ static uint32_t get_word_ext(uint32_t addr)
 {
 	uint32_t Data;
 
-	if (0 != (addr & 0x01)) {
+	if (0 != (addr & 0x01))
+	{
 		uint32_t hi = get_byte(addr);
 		uint32_t lo = get_byte(addr + 1);
-		Data = ((hi << 8) & 0x0000FF00)
-			| (lo & 0x000000FF);
-	} else {
+		Data = ((hi << 8) & 0x0000FF00) | (lo & 0x000000FF);
+	}
+	else
+	{
 		ATTep p;
-		uint8_t * m;
+		uint8_t *m;
 		uint32_t AccFlags;
 
-Label_Retry:
+	Label_Retry:
 		p = LocalFindATTel(addr);
 		AccFlags = p->Access;
 
-		if (0 != (AccFlags & kATTA_readreadymask)) {
+		if (0 != (AccFlags & kATTA_readreadymask))
+		{
 			SetUpMATC(&V_regs.MATCrdW, p);
 			V_regs.MATCrdW.cmpmask |= 0x01;
 			m = p->usebase + (addr & p->usemask);
 			Data = do_get_mem_word(m);
-		} else if (0 != (AccFlags & kATTA_mmdvmask)) {
+		}
+		else if (0 != (AccFlags & kATTA_mmdvmask))
+		{
 			Data = LocalMMDV_Access(p, 0, false, false, addr);
-		} else if (0 != (AccFlags & kATTA_ntfymask)) {
-			if (LocalMemAccessNtfy(p)) {
+		}
+		else if (0 != (AccFlags & kATTA_ntfymask))
+		{
+			if (LocalMemAccessNtfy(p))
+			{
 				goto Label_Retry;
-			} else {
+			}
+			else
+			{
 				Data = 0; /* fail */
 			}
-		} else {
+		}
+		else
+		{
 			Data = 0; /* fail */
 		}
 	}
@@ -7880,33 +8414,45 @@ Label_Retry:
 
 static void put_word_ext(uint32_t addr, uint32_t w)
 {
-	if (0 != (addr & 0x01)) {
+	if (0 != (addr & 0x01))
+	{
 		put_byte(addr, w >> 8);
 		put_byte(addr + 1, w);
-	} else {
+	}
+	else
+	{
 		ATTep p;
-		uint8_t * m;
+		uint8_t *m;
 		uint32_t AccFlags;
 
-Label_Retry:
+	Label_Retry:
 		p = LocalFindATTel(addr);
 		AccFlags = p->Access;
 
-		if (0 != (AccFlags & kATTA_writereadymask)) {
+		if (0 != (AccFlags & kATTA_writereadymask))
+		{
 			SetUpMATC(&V_regs.MATCwrW, p);
 			V_regs.MATCwrW.cmpmask |= 0x01;
 			m = p->usebase + (addr & p->usemask);
 			do_put_mem_word(m, w);
-		} else if (0 != (AccFlags & kATTA_mmdvmask)) {
-			(void) LocalMMDV_Access(p, w & 0x0000FFFF,
-				true, false, addr);
-		} else if (0 != (AccFlags & kATTA_ntfymask)) {
-			if (LocalMemAccessNtfy(p)) {
+		}
+		else if (0 != (AccFlags & kATTA_mmdvmask))
+		{
+			(void)LocalMMDV_Access(p, w & 0x0000FFFF, true, false, addr);
+		}
+		else if (0 != (AccFlags & kATTA_ntfymask))
+		{
+			if (LocalMemAccessNtfy(p))
+			{
 				goto Label_Retry;
-			} else {
+			}
+			else
+			{
 				/* fail */
 			}
-		} else {
+		}
+		else
+		{
 			/* fail */
 		}
 	}
@@ -7916,8 +8462,7 @@ static uint32_t get_long_misaligned_ext(uint32_t addr)
 {
 	uint32_t hi = get_word(addr);
 	uint32_t lo = get_word(addr + 2);
-	uint32_t Data = ((hi << 16) & 0xFFFF0000)
-		| (lo & 0x0000FFFF);
+	uint32_t Data = ((hi << 16) & 0xFFFF0000) | (lo & 0x0000FFFF);
 
 	return static_cast<uint32_t>(Data);
 }
@@ -7935,9 +8480,12 @@ static void Recalc_PC_Block()
 
 Label_Retry:
 	p = LocalFindATTel(curpc);
-	if (0 == (p->Access & kATTA_readreadymask)) [[unlikely]] {
-		if (0 != (p->Access & kATTA_ntfymask)) {
-			if (LocalMemAccessNtfy(p)) {
+	if (0 == (p->Access & kATTA_readreadymask)) [[unlikely]]
+	{
+		if (0 != (p->Access & kATTA_ntfymask))
+		{
+			if (LocalMemAccessNtfy(p))
+			{
 				goto Label_Retry;
 			}
 		}
@@ -7947,9 +8495,11 @@ Label_Retry:
 		V_pc_p = V_regs.pc_pLo;
 		V_pc_pHi = V_regs.pc_pLo + 2;
 		V_regs.pc = curpc;
-	} else {
-		uint32_t m2 = p->usemask & ~ p->cmpmask;
-		m2 = m2 & ~ (m2 + 1);
+	}
+	else
+	{
+		uint32_t m2 = p->usemask & ~p->cmpmask;
+		m2 = m2 & ~(m2 + 1);
 
 		V_pc_p = p->usebase + (curpc & p->usemask);
 		V_regs.pc_pLo = V_pc_p - (curpc & m2);
@@ -7979,8 +8529,7 @@ static uint32_t nextilong_ext()
 	{
 		uint32_t hi = nextiword();
 		uint32_t lo = nextiword();
-		r = ((hi << 16) & 0xFFFF0000)
-			| (lo & 0x0000FFFF);
+		r = ((hi << 16) & 0xFFFF0000) | (lo & 0x0000FFFF);
 	}
 
 	return r;
@@ -7989,9 +8538,9 @@ static uint32_t nextilong_ext()
 static void DoCheckExternalInterruptPending()
 {
 	uint8_t level = *V_regs.fIPL;
-	if ((level > V_regs.intmask) || (level == 7)) {
-		V_MaxCyclesToGo -=
-			(44 * kCycleScale + 5 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+	if ((level > V_regs.intmask) || (level == 7))
+	{
+		V_MaxCyclesToGo -= (44 * kCycleScale + 5 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 		Exception(24 + level);
 		V_regs.intmask = level;
 	}
@@ -8007,18 +8556,21 @@ void m68k_go_nCycles(uint32_t n)
 {
 	Em_Enter();
 	V_MaxCyclesToGo += (n + V_regs.ResidualCycles);
-	while (V_MaxCyclesToGo > 0) {
+	while (V_MaxCyclesToGo > 0)
+	{
 
-		if (V_regs.TracePending) {
-			V_MaxCyclesToGo -= (34 * kCycleScale
-				+ 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		if (V_regs.TracePending)
+		{
+			V_MaxCyclesToGo -= (34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
 			Exception(9);
 		}
-		if (V_regs.ExternalInterruptPending) {
+		if (V_regs.ExternalInterruptPending)
+		{
 			V_regs.ExternalInterruptPending = false;
 			DoCheckExternalInterruptPending();
 		}
-		if (V_regs.t1 != 0) {
+		if (V_regs.t1 != 0)
+		{
 			do_trace();
 		}
 		m68k_go_MaxCycles();
@@ -8031,7 +8583,7 @@ void m68k_go_nCycles(uint32_t n)
 	Em_Exit();
 }
 
- int32_t GetCyclesRemaining()
+int32_t GetCyclesRemaining()
 {
 	int32_t v;
 
@@ -8046,17 +8598,20 @@ void SetCyclesRemaining(int32_t n)
 {
 	Em_Enter();
 
-	if (V_MaxCyclesToGo >= n) {
+	if (V_MaxCyclesToGo >= n)
+	{
 		V_regs.MoreCyclesToGo = 0;
 		V_MaxCyclesToGo = n;
-	} else {
+	}
+	else
+	{
 		V_regs.MoreCyclesToGo = n - V_MaxCyclesToGo;
 	}
 
 	Em_Exit();
 }
 
- ATTep FindATTel(uint32_t addr)
+ATTep FindATTel(uint32_t addr)
 {
 	ATTep v;
 
@@ -8067,34 +8622,34 @@ void SetCyclesRemaining(int32_t n)
 	return v;
 }
 
- uint8_t get_vm_byte(uint32_t addr)
+uint8_t get_vm_byte(uint32_t addr)
 {
 	uint8_t v;
 
 	Em_Enter();
-	v = (uint8_t) get_byte(addr);
+	v = (uint8_t)get_byte(addr);
 	Em_Exit();
 
 	return v;
 }
 
- uint16_t get_vm_word(uint32_t addr)
+uint16_t get_vm_word(uint32_t addr)
 {
 	uint16_t v;
 
 	Em_Enter();
-	v = (uint16_t) get_word(addr);
+	v = (uint16_t)get_word(addr);
 	Em_Exit();
 
 	return v;
 }
 
- uint32_t get_vm_long(uint32_t addr)
+uint32_t get_vm_long(uint32_t addr)
 {
 	uint32_t v;
 
 	Em_Enter();
-	v = (uint32_t) get_long(addr);
+	v = (uint32_t)get_long(addr);
 	Em_Exit();
 
 	return v;
@@ -8134,9 +8689,9 @@ void SetHeadATTel(ATTep p)
 	V_regs.MATCwrW.cmpmask = 0;
 	V_regs.MATCwrW.cmpvalu = 0xFFFFFFFF;
 	/* force Recalc_PC_Block soon */
-		V_regs.pc = m68k_getpc();
-		V_regs.pc_pLo = V_pc_p;
-		V_pc_pHi = V_regs.pc_pLo + 2;
+	V_regs.pc = m68k_getpc();
+	V_regs.pc_pLo = V_pc_p;
+	V_pc_pHi = V_regs.pc_pLo + 2;
 	V_regs.HeadATTel = p;
 
 	Em_Exit();
@@ -8157,7 +8712,8 @@ void m68k_IPLchangeNtfy()
 	{
 		uint8_t level = *V_regs.fIPL;
 
-		if ((level > V_regs.intmask) || (level == 7)) {
+		if ((level > V_regs.intmask) || (level == 7))
+		{
 			SetExternalInterruptPending();
 		}
 	}
@@ -8169,7 +8725,8 @@ static void InitDumpTable()
 {
 	int32_t i;
 
-	for (i = 0; i < kNumIKinds; ++i) {
+	for (i = 0; i < kNumIKinds; ++i)
+	{
 		DumpTable[i] = 0;
 	}
 }
@@ -8178,7 +8735,8 @@ static void DumpATable(uint32_t *p, uint32_t n)
 {
 	int32_t i;
 
-	for (i = 0; i < n; ++i) {
+	for (i = 0; i < n; ++i)
+	{
 		dbglog_writeNum(p[i]);
 		dbglog_writeReturn();
 	}
@@ -8206,16 +8764,17 @@ void m68k_reset()
 	V_regs.pc_pLo = nullptr;
 
 	do_put_mem_word(V_regs.fakeword, 0x4AFC);
-		/* illegal instruction opcode */
+	/* illegal instruction opcode */
 
-/* Sets the MC68000 reset jump vector... */
+	/* Sets the MC68000 reset jump vector... */
 	m68k_setpc(get_long(0x00000004));
 
-/* Sets the initial stack vector... */
+	/* Sets the initial stack vector... */
 	m68k_areg(7) = get_long(0x00000000);
 
 	V_regs.s = 1;
-	if (s_cpuConfig->use68020) {
+	if (s_cpuConfig->use68020)
+	{
 		V_regs.m = 0;
 		V_regs.t0 = 0;
 	}
@@ -8229,7 +8788,8 @@ void m68k_reset()
 	V_regs.TracePending = false;
 	V_regs.intmask = 7;
 
-	if (s_cpuConfig->use68020) {
+	if (s_cpuConfig->use68020)
+	{
 		V_regs.sfc = 0;
 		V_regs.dfc = 0;
 		V_regs.vbr = 0;
@@ -8241,9 +8801,7 @@ void m68k_reset()
 }
 
 
-
-void MINEM68K_Init(
-	uint8_t *fIPL, const MachineConfig *config)
+void MINEM68K_Init(uint8_t *fIPL, const MachineConfig *config)
 {
 	s_cpuConfig = config;
 	regs.fIPL = fIPL;
@@ -8258,7 +8816,8 @@ void MINEM68K_Init(
 
 void m68k_getRegs(uint32_t *d, uint32_t *a)
 {
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 8; i++)
+	{
 		d[i] = V_regs.regs[i];
 		a[i] = V_regs.regs[i + 8];
 	}
@@ -8274,7 +8833,19 @@ uint16_t m68k_getSR_public()
 	return m68k_getSR();
 }
 
-uint32_t m68k_getUSP()  { return V_regs.usp; }
-uint32_t m68k_getISP()  { return V_regs.isp; }
-uint32_t m68k_getMSP()  { return V_regs.msp; }
-uint32_t m68k_getVBR()  { return V_regs.vbr; }
+uint32_t m68k_getUSP()
+{
+	return V_regs.usp;
+}
+uint32_t m68k_getISP()
+{
+	return V_regs.isp;
+}
+uint32_t m68k_getMSP()
+{
+	return V_regs.msp;
+}
+uint32_t m68k_getVBR()
+{
+	return V_regs.vbr;
+}

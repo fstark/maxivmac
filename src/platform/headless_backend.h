@@ -12,18 +12,27 @@
 #include "platform/platform_backend.h"
 #include <cstdio>
 
-class HeadlessBackend : public PlatformBackend {
+class HeadlessBackend : public PlatformBackend
+{
 public:
-	bool init(EmulatorShell* shell) override;
+	bool init(EmulatorShell *shell) override;
 	void shutdown() override;
 	void runLoop() override;
 
 	/* Window — all no-ops */
-	bool createWindow(const char*, int, int, bool) override { return true; }
+	bool createWindow(const char *, int, int, bool) override { return true; }
 	void destroyWindow() override {}
-	bool recreateWindow(const char*, int, int, bool) override { return true; }
-	void getWindowSize(int* w, int* h) override { *w = 0; *h = 0; }
-	void getWindowPosition(int* x, int* y) override { *x = 0; *y = 0; }
+	bool recreateWindow(const char *, int, int, bool) override { return true; }
+	void getWindowSize(int *w, int *h) override
+	{
+		*w = 0;
+		*h = 0;
+	}
+	void getWindowPosition(int *x, int *y) override
+	{
+		*x = 0;
+		*y = 0;
+	}
 	void setWindowPosition(int, int) override {}
 	void setFullscreen(bool) override {}
 	void clearScreen() override {}
@@ -44,23 +53,24 @@ public:
 	void restoreKeyRepeat() override {}
 
 	/* Dialog — print to stderr */
-	void showMessageBox(const char* title, const char* message) override {
+	void showMessageBox(const char *title, const char *message) override
+	{
 		fprintf(stderr, "%s: %s\n", title, message);
 	}
 
 	/* Query — no display */
-	bool getDisplayBounds(PlatformDisplayBounds*) override { return false; }
+	bool getDisplayBounds(PlatformDisplayBounds *) override { return false; }
 
 	/* Resolution change — no-op (no window to resize) */
 	void onResolutionChanged(uint16_t, uint16_t) override {}
 
 	/* Paths — use POSIX equivalents */
-	const char* getAppParent() override;
-	char* getPrefDir(const char* org, const char* app) override;
-	void freePath(void* path) override;
+	const char *getAppParent() override;
+	char *getPrefDir(const char *org, const char *app) override;
+	void freePath(void *path) override;
 
 private:
-	EmulatorShell* shell_ = nullptr;
+	EmulatorShell *shell_ = nullptr;
 };
 
 #endif /* HEADLESS_BACKEND_H */

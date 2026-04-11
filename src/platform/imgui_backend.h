@@ -18,32 +18,36 @@
 typedef unsigned int GLuint;
 
 /* UI state machine — determines what the backend draws each frame. */
-enum class UIState {
-	ModelSelector,   // Pre-boot: user picks a model + config
-	Windowed,        // Running emulation in a window (no chrome)
-	Fullscreen,      // Running emulation fullscreen
-	Developer,       // Running emulation + dockable debug tools
+enum class UIState
+{
+	ModelSelector, // Pre-boot: user picks a model + config
+	Windowed,	   // Running emulation in a window (no chrome)
+	Fullscreen,	   // Running emulation fullscreen
+	Developer,	   // Running emulation + dockable debug tools
 };
 
 /* GL texture filter for the emulator viewport. */
-enum class TextureFilter { Nearest, Linear };
+enum class TextureFilter
+{
+	Nearest,
+	Linear
+};
 
-class ImGuiBackend : public PlatformBackend {
+class ImGuiBackend : public PlatformBackend
+{
 public:
 	ImGuiBackend() = default;
 	~ImGuiBackend() override = default;
 
-	bool init(EmulatorShell* shell) override;
+	bool init(EmulatorShell *shell) override;
 	void shutdown() override;
 	void runLoop() override;
 
-	bool createWindow(const char* title,
-		int width, int height, bool fullscreen) override;
+	bool createWindow(const char *title, int width, int height, bool fullscreen) override;
 	void destroyWindow() override;
-	bool recreateWindow(const char* title,
-		int width, int height, bool fullscreen) override;
-	void getWindowSize(int* w, int* h) override;
-	void getWindowPosition(int* x, int* y) override;
+	bool recreateWindow(const char *title, int width, int height, bool fullscreen) override;
+	void getWindowSize(int *w, int *h) override;
+	void getWindowPosition(int *x, int *y) override;
 	void setWindowPosition(int x, int y) override;
 	void setFullscreen(bool fullscreen) override;
 	void clearScreen() override;
@@ -60,13 +64,13 @@ public:
 	void disableKeyRepeat() override;
 	void restoreKeyRepeat() override;
 
-	void showMessageBox(const char* title, const char* message) override;
-	bool getDisplayBounds(PlatformDisplayBounds* bounds) override;
+	void showMessageBox(const char *title, const char *message) override;
+	bool getDisplayBounds(PlatformDisplayBounds *bounds) override;
 	void onResolutionChanged(uint16_t newW, uint16_t newH) override;
 
-	const char* getAppParent() override;
-	char* getPrefDir(const char* org, const char* app) override;
-	void freePath(void* path) override;
+	const char *getAppParent() override;
+	char *getPrefDir(const char *org, const char *app) override;
+	void freePath(void *path) override;
 
 	/* UI state transitions */
 	void setUIState(UIState state) { uiState_ = state; }
@@ -80,15 +84,15 @@ public:
 	bool createSelectorWindow();
 
 	/* Tool registry for developer mode */
-	ToolRegistry& getToolRegistry() { return toolRegistry_; }
+	ToolRegistry &getToolRegistry() { return toolRegistry_; }
 
 	/* GL texture filter */
 	void setTextureFilter(TextureFilter f);
 	TextureFilter textureFilter() const { return textureFilter_; }
 
 private:
-	EmulatorShell* shell_ = nullptr;
-	SDL_Window* window_ = nullptr;
+	EmulatorShell *shell_ = nullptr;
+	SDL_Window *window_ = nullptr;
 	SDL_GLContext glContext_ = nullptr;
 	GLuint emuTextureId_ = 0;
 	int emuTexW_ = 0;
@@ -103,8 +107,8 @@ private:
 
 	/* UI state */
 	UIState uiState_ = UIState::ModelSelector;
-	bool    overlayVisible_ = false;
-	bool    pendingBoot_ = false;
+	bool overlayVisible_ = false;
+	bool pendingBoot_ = false;
 	LaunchConfig pendingBootConfig_;
 
 	/* Overlay */
@@ -114,8 +118,8 @@ private:
 	int savedWinX_ = 0, savedWinY_ = 0;
 	int savedWinW_ = 0, savedWinH_ = 0;
 
-	PlatformEvent translateSdlEvent(SDL_Event& event);
-	bool imGuiConsumedEvent(const SDL_Event& event) const;
+	PlatformEvent translateSdlEvent(SDL_Event &event);
+	bool imGuiConsumedEvent(const SDL_Event &event) const;
 	void uploadFramebuffer();
 	void drawMenuBar();
 	void drawEmulatorViewport();
@@ -127,7 +131,7 @@ private:
 	/* Model selector (pre-boot) */
 	ModelSelector modelSelector_;
 	void drawModelSelector();
-	void bootFromSelector(const LaunchConfig& config);
+	void bootFromSelector(const LaunchConfig &config);
 
 	/* Tool registry for developer mode */
 	ToolRegistry toolRegistry_;

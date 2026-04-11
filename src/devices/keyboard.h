@@ -8,13 +8,16 @@
 
 class VIA1Device;
 
-class KeyboardDevice : public Device {
+class KeyboardDevice : public Device
+{
 public:
 	uint32_t access(uint32_t data, bool /*writeMem*/, uint32_t /*addr*/) override
-		{ return data; } // Not memory-mapped
+	{
+		return data;
+	} // Not memory-mapped
 	void zap() override {}
 	void reset() override;
-	const char* name() const override { return "Keyboard"; }
+	const char *name() const override { return "Keyboard"; }
 
 	// VIA1 data-line change: start receiving a command byte.
 	void dataLineChngNtfy();
@@ -28,11 +31,12 @@ public:
 
 private:
 	// Helper to access VIA1
-	VIA1Device* via1() const;
+	VIA1Device *via1() const;
 	void gotKeyBoardData(uint8_t v);
 	bool attemptToFinishInquiry();
 
-	enum KybdState {
+	enum KybdState
+	{
 		kKybdStateIdle,
 		kKybdStateRecievingCommand,
 		kKybdStateRecievedCommand,
@@ -46,4 +50,3 @@ private:
 	uint8_t instantCommandData_ = 0x7B;
 	int inquiryCommandTimer_ = 0;
 };
-

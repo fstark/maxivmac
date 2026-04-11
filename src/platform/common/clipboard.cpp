@@ -19,19 +19,25 @@ tMacErr HTCEexport(PbufIndex i)
 #ifdef HAVE_SDL
 	tMacErr err;
 	char *p;
-	uint8_t * s = static_cast<uint8_t *>(PbufDat[i]);
+	uint8_t *s = static_cast<uint8_t *>(PbufDat[i]);
 	uint32_t L = PbufSize[i];
 	uint32_t sz = MacRoman2UniCodeSize(s, L);
 
-	if (nullptr == (p = static_cast<char *>(malloc(sz + 1)))) {
+	if (nullptr == (p = static_cast<char *>(malloc(sz + 1))))
+	{
 		err = tMacErr::miscErr;
-	} else {
+	}
+	else
+	{
 		MacRoman2UniCodeData(s, L, p);
 		p[sz] = 0;
 
-		if (0 != SDL_SetClipboardText(p)) {
+		if (0 != SDL_SetClipboardText(p))
+		{
 			err = tMacErr::miscErr;
-		} else {
+		}
+		else
+		{
 			err = tMacErr::noErr;
 		}
 		free(p);
@@ -52,19 +58,19 @@ tMacErr HTCEimport(PbufIndex *r)
 	char *s = nullptr;
 	PbufIndex t = NOT_A_PBUF;
 
-	if (nullptr == (s = SDL_GetClipboardText())) {
+	if (nullptr == (s = SDL_GetClipboardText()))
+	{
 		err = tMacErr::miscErr;
-	} else
-	if (tMacErr::noErr != (err =
-		UniCodeStrLength(s, &L)))
+	}
+	else if (tMacErr::noErr != (err = UniCodeStrLength(s, &L)))
 	{
 		/* fail */
-	} else
-	if (tMacErr::noErr != (err =
-		PbufNew(L, &t)))
+	}
+	else if (tMacErr::noErr != (err = PbufNew(L, &t)))
 	{
 		/* fail */
-	} else
+	}
+	else
 	{
 		err = tMacErr::noErr;
 
@@ -73,10 +79,12 @@ tMacErr HTCEimport(PbufIndex *r)
 		t = NOT_A_PBUF;
 	}
 
-	if (NOT_A_PBUF != t) {
+	if (NOT_A_PBUF != t)
+	{
 		PbufDispose(t);
 	}
-	if (nullptr != s) {
+	if (nullptr != s)
+	{
 		SDL_free(s);
 	}
 
@@ -104,7 +112,8 @@ std::string hostClipGetTextMacRoman()
 	char *utf8 = SDL_GetClipboardText();
 	if (!utf8) return {};
 	uint32_t len;
-	if (UniCodeStrLength(utf8, &len) != tMacErr::noErr) {
+	if (UniCodeStrLength(utf8, &len) != tMacErr::noErr)
+	{
 		SDL_free(utf8);
 		return {};
 	}
@@ -112,7 +121,8 @@ std::string hostClipGetTextMacRoman()
 	UniCodeStr2MacRoman(utf8, result.data());
 	SDL_free(utf8);
 	/* Host uses LF (0x0A), Mac uses CR (0x0D) */
-	for (auto &ch : result) {
+	for (auto &ch : result)
+	{
 		if (ch == '\n') ch = '\r';
 	}
 	return result;
@@ -126,7 +136,8 @@ void hostClipSetText(const uint8_t *macRoman, uint32_t len)
 #ifdef HAVE_SDL
 	/* Mac uses CR (0x0D), host uses LF (0x0A) */
 	std::vector<uint8_t> buf(macRoman, macRoman + len);
-	for (auto &ch : buf) {
+	for (auto &ch : buf)
+	{
 		if (ch == '\r') ch = '\n';
 	}
 	uint32_t sz = MacRoman2UniCodeSize(buf.data(), len);

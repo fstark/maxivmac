@@ -15,7 +15,7 @@
 #include "core/machine_obj.h"
 
 
-VIA1Device* SoundDevice::via1() const
+VIA1Device *SoundDevice::via1() const
 {
 	return machine_->findDevice<VIA1Device>();
 }
@@ -40,23 +40,15 @@ static constexpr int kSnd_Main_Offset = 0x0300;
 	= {approx} (x - kCenterSound) / (8 - SoundVolume) + kCenterSound;
 */
 
-static const uint16_t vol_mult[] = {
-	8192, 9362, 10922, 13107, 16384, 21845, 32768
-};
+static const uint16_t vol_mult[] = {8192, 9362, 10922, 13107, 16384, 21845, 32768};
 
-static const RawSoundSample vol_offset[] = {
-	28672, 28087, 27307, 26215, 24576, 21846, 16384, 0
-};
+static const RawSoundSample vol_offset[] = {28672, 28087, 27307, 26215, 24576, 21846, 16384, 0};
 
-static const uint16_t SubTick_offset[kNumSubTicks] = {
-	0,    25,  50,  90, 102, 115, 138, 161,
-	185, 208, 231, 254, 277, 300, 323, 346
-};
+static const uint16_t SubTick_offset[kNumSubTicks] = {0,   25,	50,	 90,  102, 115, 138, 161,
+													  185, 208, 231, 254, 277, 300, 323, 346};
 
-static const uint8_t SubTick_n[kNumSubTicks] = {
-	25,   25,  40,  12,  13,  23,  23,  24,
-	23,   23,  23,  23,  23,  23,  23,  24
-};
+static const uint8_t SubTick_n[kNumSubTicks] = {25, 25, 40, 12, 13, 23, 23, 24,
+												23, 23, 23, 23, 23, 23, 23, 24};
 
 /*
 	One version of free form sound driver
@@ -97,16 +89,15 @@ void SoundDevice::subTick(int subTick)
 #ifdef SoundBuffer
 		(SoundBuffer == 0) ? (ramSz - kSnd_Alt_Offset) :
 #endif
-		(ramSz - kSnd_Main_Offset);
+						   (ramSz - kSnd_Main_Offset);
 #ifndef ln2mtb
-	uint8_t * addr = addy + (2 * StartOffset) + g_ram;
+	uint8_t *addr = addy + (2 * StartOffset) + g_ram;
 #else
 	uint32_t addr = addy + (2 * StartOffset);
 #endif
 	uint16_t SoundInvertTime = via1()->getT1InvertTime();
-	uint8_t SoundVolume = g_wires.get(Wire_SoundVolb0)
-		| (g_wires.get(Wire_SoundVolb1) << 1)
-		| (g_wires.get(Wire_SoundVolb2) << 2);
+	uint8_t SoundVolume = g_wires.get(Wire_SoundVolb0) | (g_wires.get(Wire_SoundVolb1) << 1) |
+						  (g_wires.get(Wire_SoundVolb2) << 2);
 
 #if 0
 	dbglog_StartLine();
@@ -117,18 +108,25 @@ void SoundDevice::subTick(int subTick)
 	dbglog_writeReturn();
 #endif
 
-	while (n > 0) {
+	while (n > 0)
+	{
 		p = Sound_BeginWrite(n, &actL);
-		if (actL <= 0) {
+		if (actL <= 0)
+		{
 			break;
 		}
-		if (g_wires.get(Wire_SoundDisable) && (SoundInvertTime == 0)) {
-			for (i = 0; i < actL; i++) {
+		if (g_wires.get(Wire_SoundDisable) && (SoundInvertTime == 0))
+		{
+			for (i = 0; i < actL; i++)
+			{
 				/* But this avoids more clicks. */
 				*p++ = kCenterSound;
 			}
-		} else {
-			for (i = 0; i < actL; i++) {
+		}
+		else
+		{
+			for (i = 0; i < actL; i++)
+			{
 				/* Copy sound data, high byte of each word */
 				*p++ =
 #ifndef ln2mtb
@@ -136,36 +134,43 @@ void SoundDevice::subTick(int subTick)
 #else
 					get_vm_byte(addr)
 #endif
-					<< 8
-					;
+					<< 8;
 
 				/* Move the address on */
 				addr += 2;
 			}
 
-			if (SoundInvertTime != 0) {
+			if (SoundInvertTime != 0)
+			{
 				uint32_t PhaseIncr = (uint32_t)SoundInvertTime * (uint32_t)20;
 				p -= actL;
 
-				for (i = 0; i < actL; i++) {
-					if (soundInvertPhase_ < 704) {
+				for (i = 0; i < actL; i++)
+				{
+					if (soundInvertPhase_ < 704)
+					{
 						uint32_t OnPortion = 0;
 						uint32_t LastPhase = 0;
-						do {
-							if (! soundInvertState_) {
-								OnPortion +=
-									(soundInvertPhase_ - LastPhase);
+						do
+						{
+							if (!soundInvertState_)
+							{
+								OnPortion += (soundInvertPhase_ - LastPhase);
 							}
-							soundInvertState_ = ! soundInvertState_;
+							soundInvertState_ = !soundInvertState_;
 							LastPhase = soundInvertPhase_;
 							soundInvertPhase_ += PhaseIncr;
 						} while (soundInvertPhase_ < 704);
-						if (! soundInvertState_) {
+						if (!soundInvertState_)
+						{
 							OnPortion += 704 - LastPhase;
 						}
 						*p = (*p * OnPortion) / 704;
-					} else {
-						if (soundInvertState_) {
+					}
+					else
+					{
+						if (soundInvertState_)
+						{
 							*p = 0;
 						}
 					}
@@ -175,7 +180,8 @@ void SoundDevice::subTick(int subTick)
 			}
 		}
 
-		if (SoundVolume < 7) {
+		if (SoundVolume < 7)
+		{
 			/*
 				Usually have volume at 7, so this
 				is just for completeness.
@@ -184,7 +190,8 @@ void SoundDevice::subTick(int subTick)
 			RawSoundSample offset = vol_offset[SoundVolume];
 
 			p -= actL;
-			for (i = 0; i < actL; i++) {
+			for (i = 0; i < actL; i++)
+			{
 				*p = (RawSoundSample)((uint32_t)(*p) * mult >> 16) + offset;
 				++p;
 			}

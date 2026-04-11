@@ -29,7 +29,8 @@
 
 void RegistersTool::draw()
 {
-	if (!ImGui::Begin(name(), &visible)) {
+	if (!ImGui::Begin(name(), &visible))
+	{
 		ImGui::End();
 		return;
 	}
@@ -43,22 +44,18 @@ void RegistersTool::draw()
 	ImGui::Text("SR  %04X", sr);
 	ImGui::Separator();
 
-	ImGui::Text("Flags: %c%c%c%c%c  IPL=%d  %c%c",
-		(sr & 0x10) ? 'X' : '-',
-		(sr & 0x08) ? 'N' : '-',
-		(sr & 0x04) ? 'Z' : '-',
-		(sr & 0x02) ? 'V' : '-',
-		(sr & 0x01) ? 'C' : '-',
-		(sr >> 8) & 7,
-		(sr & 0x2000) ? 'S' : 'U',
-		(sr & 0x8000) ? 'T' : '-');
+	ImGui::Text("Flags: %c%c%c%c%c  IPL=%d  %c%c", (sr & 0x10) ? 'X' : '-', (sr & 0x08) ? 'N' : '-',
+				(sr & 0x04) ? 'Z' : '-', (sr & 0x02) ? 'V' : '-', (sr & 0x01) ? 'C' : '-',
+				(sr >> 8) & 7, (sr & 0x2000) ? 'S' : 'U', (sr & 0x8000) ? 'T' : '-');
 	ImGui::Separator();
 
-	if (ImGui::BeginTable("regs", 2)) {
+	if (ImGui::BeginTable("regs", 2))
+	{
 		ImGui::TableSetupColumn("Data");
 		ImGui::TableSetupColumn("Address");
 		ImGui::TableHeadersRow();
-		for (int i = 0; i < 8; ++i) {
+		for (int i = 0; i < 8; ++i)
+		{
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 			ImGui::Text("D%d  %08X", i, d[i]);
@@ -81,7 +78,8 @@ void RegistersTool::draw()
 
 void DisassemblyTool::draw()
 {
-	if (!ImGui::Begin(name(), &visible)) {
+	if (!ImGui::Begin(name(), &visible))
+	{
 		ImGui::End();
 		return;
 	}
@@ -91,34 +89,30 @@ void DisassemblyTool::draw()
 
 	ImGui::Checkbox("Follow PC", &followPC);
 	ImGui::SameLine();
-	if (!followPC) {
+	if (!followPC)
+	{
 		ImGui::SetNextItemWidth(100);
-		ImGui::InputScalar("Address", ImGuiDataType_U32,
-			&disasmAddr, nullptr, nullptr, "%08X",
-			ImGuiInputTextFlags_CharsHexadecimal);
+		ImGui::InputScalar("Address", ImGuiDataType_U32, &disasmAddr, nullptr, nullptr, "%08X",
+						   ImGuiInputTextFlags_CharsHexadecimal);
 	}
 
 	uint32_t pc = m68k_getPC_public();
 	uint32_t addr = followPC ? pc : disasmAddr;
 
 	if (ImGui::BeginChild("disasm_listing", ImVec2(0, 0), ImGuiChildFlags_None,
-		ImGuiWindowFlags_HorizontalScrollbar))
+						  ImGuiWindowFlags_HorizontalScrollbar))
 	{
-		for (int i = 0; i < 32; ++i) {
+		for (int i = 0; i < 32; ++i)
+		{
 			uint32_t lineAddr = addr;
 			std::string text = Disassemble(addr);
 
 			bool isCurrent = (lineAddr == pc);
-			if (isCurrent)
-				ImGui::PushStyleColor(ImGuiCol_Text,
-					ImVec4(1.0f, 1.0f, 0.3f, 1.0f));
+			if (isCurrent) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.3f, 1.0f));
 
-			ImGui::Text("%s%08X  %s",
-				isCurrent ? ">" : " ",
-				lineAddr, text.c_str());
+			ImGui::Text("%s%08X  %s", isCurrent ? ">" : " ", lineAddr, text.c_str());
 
-			if (isCurrent)
-				ImGui::PopStyleColor();
+			if (isCurrent) ImGui::PopStyleColor();
 		}
 	}
 	ImGui::EndChild();
@@ -130,7 +124,8 @@ void DisassemblyTool::draw()
 
 void MemoryTool::draw()
 {
-	if (!ImGui::Begin(name(), &visible)) {
+	if (!ImGui::Begin(name(), &visible))
+	{
 		ImGui::End();
 		return;
 	}
@@ -139,15 +134,15 @@ void MemoryTool::draw()
 	static int bytesPerRow = 16;
 
 	ImGui::SetNextItemWidth(100);
-	ImGui::InputScalar("Address", ImGuiDataType_U32,
-		&memAddr, nullptr, nullptr, "%08X",
-		ImGuiInputTextFlags_CharsHexadecimal);
+	ImGui::InputScalar("Address", ImGuiDataType_U32, &memAddr, nullptr, nullptr, "%08X",
+					   ImGuiInputTextFlags_CharsHexadecimal);
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(60);
-	if (ImGui::BeginCombo("##bpr", std::to_string(bytesPerRow).c_str())) {
-		for (int n : {8, 16, 32}) {
-			if (ImGui::Selectable(std::to_string(n).c_str(), bytesPerRow == n))
-				bytesPerRow = n;
+	if (ImGui::BeginCombo("##bpr", std::to_string(bytesPerRow).c_str()))
+	{
+		for (int n : {8, 16, 32})
+		{
+			if (ImGui::Selectable(std::to_string(n).c_str(), bytesPerRow == n)) bytesPerRow = n;
 		}
 		ImGui::EndCombo();
 	}
@@ -156,26 +151,29 @@ void MemoryTool::draw()
 	uint8_t *ram = g_ram;
 
 	if (ImGui::BeginChild("mem_hex", ImVec2(0, 0), ImGuiChildFlags_None,
-		ImGuiWindowFlags_HorizontalScrollbar))
+						  ImGuiWindowFlags_HorizontalScrollbar))
 	{
 		int rows = 32;
-		for (int r = 0; r < rows; ++r) {
+		for (int r = 0; r < rows; ++r)
+		{
 			uint32_t rowAddr = memAddr + (uint32_t)(r * bytesPerRow);
 			char line[256];
 			int pos = snprintf(line, sizeof(line), "%08X  ", rowAddr);
 
 			char ascii[64];
 			int apos = 0;
-			for (int b = 0; b < bytesPerRow; ++b) {
+			for (int b = 0; b < bytesPerRow; ++b)
+			{
 				uint32_t a = rowAddr + (uint32_t)b;
-				if (ram && a < ramSz) {
+				if (ram && a < ramSz)
+				{
 					uint8_t v = ram[a];
-					pos += snprintf(line + pos, sizeof(line) - (size_t)pos,
-						"%02X ", v);
+					pos += snprintf(line + pos, sizeof(line) - (size_t)pos, "%02X ", v);
 					ascii[apos++] = (v >= 0x20 && v < 0x7F) ? (char)v : '.';
-				} else {
-					pos += snprintf(line + pos, sizeof(line) - (size_t)pos,
-						"?? ");
+				}
+				else
+				{
+					pos += snprintf(line + pos, sizeof(line) - (size_t)pos, "?? ");
 					ascii[apos++] = '?';
 				}
 			}
@@ -193,28 +191,25 @@ void MemoryTool::draw()
 void VIATool::draw()
 {
 	if (!g_machine) return;
-	if (!ImGui::Begin(name(), &visible)) {
+	if (!ImGui::Begin(name(), &visible))
+	{
 		ImGui::End();
 		return;
 	}
 
-	auto drawVIA = [](const char* label, VIABase* via) {
+	auto drawVIA = [](const char *label, VIABase *via)
+	{
 		if (!via) return;
-		if (!ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen))
-			return;
+		if (!ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen)) return;
 
-		auto& d = via->d_;
+		auto &d = via->d_;
 		ImGui::Text("ORA  %02X  ORB  %02X", d.ORA, d.ORB);
 		ImGui::Text("DDRA %02X  DDRB %02X", d.DDR_A, d.DDR_B);
-		ImGui::Text("T1C  %08X  T1L  %02X%02X",
-			d.T1C_F, d.T1L_H, d.T1L_L);
-		ImGui::Text("T2C  %08X  T2L  %02X",
-			d.T2C_F, d.T2L_L);
-		ImGui::Text("SR   %02X  ACR  %02X  PCR  %02X",
-			d.SR, d.ACR, d.PCR);
+		ImGui::Text("T1C  %08X  T1L  %02X%02X", d.T1C_F, d.T1L_H, d.T1L_L);
+		ImGui::Text("T2C  %08X  T2L  %02X", d.T2C_F, d.T2L_L);
+		ImGui::Text("SR   %02X  ACR  %02X  PCR  %02X", d.SR, d.ACR, d.PCR);
 		ImGui::Text("IFR  %02X  IER  %02X", d.IFR, d.IER);
-		ImGui::Text("T1Active %d  T2Active %d",
-			via->T1_Active, via->T2_Active);
+		ImGui::Text("T1Active %d  T2Active %d", via->T1_Active, via->T2_Active);
 	};
 
 	drawVIA("VIA1", g_machine->findDevice<VIA1Device>());
@@ -227,14 +222,16 @@ void VIATool::draw()
 
 void TrapsTool::draw()
 {
-	if (!ImGui::Begin(name(), &visible)) {
+	if (!ImGui::Begin(name(), &visible))
+	{
 		ImGui::End();
 		return;
 	}
 
 	/* Lazy-init: load defaults on first open */
 	static bool inited = false;
-	if (!inited) {
+	if (!inited)
+	{
 		trap_watch_load_defaults();
 		inited = true;
 	}
@@ -247,21 +244,26 @@ void TrapsTool::draw()
 	ImGui::Text("Add trap:");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(200);
-	bool inputChanged = ImGui::InputText("##trap_search", searchBuf,
-		sizeof(searchBuf));
-	if (inputChanged) {
+	bool inputChanged = ImGui::InputText("##trap_search", searchBuf, sizeof(searchBuf));
+	if (inputChanged)
+	{
 		trap_dict_search(searchBuf, suggestions, 10);
 		selectedSuggestion = -1;
 	}
 
-	if (searchBuf[0] && !suggestions.empty()) {
+	if (searchBuf[0] && !suggestions.empty())
+	{
 		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 0), ImVec2(400, 200));
-		if (ImGui::BeginChild("##suggestions", ImVec2(400, 0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Border)) {
-			for (int i = 0; i < (int)suggestions.size(); ++i) {
+		if (ImGui::BeginChild("##suggestions", ImVec2(400, 0),
+							  ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Border))
+		{
+			for (int i = 0; i < (int)suggestions.size(); ++i)
+			{
 				char label[80];
-				snprintf(label, sizeof(label), "%s ($%04X)",
-					suggestions[i].name, suggestions[i].trapWord);
-				if (ImGui::Selectable(label, i == selectedSuggestion)) {
+				snprintf(label, sizeof(label), "%s ($%04X)", suggestions[i].name,
+						 suggestions[i].trapWord);
+				if (ImGui::Selectable(label, i == selectedSuggestion))
+				{
 					trap_watch_add(suggestions[i].trapWord);
 					searchBuf[0] = '\0';
 					suggestions.clear();
@@ -273,11 +275,13 @@ void TrapsTool::draw()
 	}
 
 	ImGui::SameLine();
-	if (ImGui::Button("Reset Counts")) {
+	if (ImGui::Button("Reset Counts"))
+	{
 		trap_counter_reset();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Defaults")) {
+	if (ImGui::Button("Defaults"))
+	{
 		trap_watch_load_defaults();
 	}
 
@@ -287,46 +291,60 @@ void TrapsTool::draw()
 	auto entries = trap_watch_snapshot();
 
 	if (ImGui::BeginTable("traps", 5,
-		ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
-		ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
+						  ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+							  ImGuiTableFlags_Sortable | ImGuiTableFlags_SizingStretchProp))
 	{
-		ImGui::TableSetupColumn("##del",     ImGuiTableColumnFlags_NoSort |
-			ImGuiTableColumnFlags_WidthFixed, 24.0f, 0);
-		ImGui::TableSetupColumn("Name",      ImGuiTableColumnFlags_DefaultSort, 0.0f, 1);
-		ImGui::TableSetupColumn("Trap",      ImGuiTableColumnFlags_None, 0.0f, 2);
-		ImGui::TableSetupColumn("Handler",   ImGuiTableColumnFlags_None, 0.0f, 3);
-		ImGui::TableSetupColumn("Count",     ImGuiTableColumnFlags_DefaultSort |
-			ImGuiTableColumnFlags_PreferSortDescending, 0.0f, 4);
+		ImGui::TableSetupColumn(
+			"##del", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed, 24.0f, 0);
+		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort, 0.0f, 1);
+		ImGui::TableSetupColumn("Trap", ImGuiTableColumnFlags_None, 0.0f, 2);
+		ImGui::TableSetupColumn("Handler", ImGuiTableColumnFlags_None, 0.0f, 3);
+		ImGui::TableSetupColumn(
+			"Count", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending,
+			0.0f, 4);
 		ImGui::TableHeadersRow();
 
 		/* Sort if user clicks a column header */
-		if (ImGuiTableSortSpecs* specs = ImGui::TableGetSortSpecs()) {
-			if (specs->SpecsCount > 0) {
+		if (ImGuiTableSortSpecs *specs = ImGui::TableGetSortSpecs())
+		{
+			if (specs->SpecsCount > 0)
+			{
 				auto &s = specs->Specs[0];
 				bool asc = (s.SortDirection == ImGuiSortDirection_Ascending);
 				std::sort(entries.begin(), entries.end(),
-					[&s, asc](const WatchEntry &a, const WatchEntry &b) {
-						int cmp = 0;
-						switch (s.ColumnUserID) {
-						case 1: cmp = strcmp(a.name, b.name); break;
-						case 2: cmp = (int)a.trapWord - (int)b.trapWord; break;
-						case 3: cmp = (int)a.trapWord - (int)b.trapWord; break;
-						case 4: cmp = (a.count < b.count) ? -1
-							: (a.count > b.count) ? 1 : 0; break;
-						}
-						return asc ? (cmp < 0) : (cmp > 0);
-					});
+						  [&s, asc](const WatchEntry &a, const WatchEntry &b)
+						  {
+							  int cmp = 0;
+							  switch (s.ColumnUserID)
+							  {
+								  case 1:
+									  cmp = strcmp(a.name, b.name);
+									  break;
+								  case 2:
+									  cmp = (int)a.trapWord - (int)b.trapWord;
+									  break;
+								  case 3:
+									  cmp = (int)a.trapWord - (int)b.trapWord;
+									  break;
+								  case 4:
+									  cmp = (a.count < b.count) ? -1 : (a.count > b.count) ? 1 : 0;
+									  break;
+							  }
+							  return asc ? (cmp < 0) : (cmp > 0);
+						  });
 			}
 		}
 
 		uint16_t toRemove = 0;
-		for (int i = 0; i < (int)entries.size(); ++i) {
+		for (int i = 0; i < (int)entries.size(); ++i)
+		{
 			ImGui::TableNextRow();
 
 			/* Delete button */
 			ImGui::TableNextColumn();
 			ImGui::PushID(i);
-			if (ImGui::SmallButton("X")) {
+			if (ImGui::SmallButton("X"))
+			{
 				toRemove = entries[i].trapWord;
 			}
 			ImGui::PopID();
@@ -359,8 +377,7 @@ void TrapsTool::draw()
 		}
 		ImGui::EndTable();
 
-		if (toRemove)
-			trap_watch_remove(toRemove);
+		if (toRemove) trap_watch_remove(toRemove);
 	}
 
 	ImGui::End();
@@ -381,19 +398,19 @@ void TrapsTool::draw()
 	  n bytes  data   (padded to even)
 */
 
-static std::string macRomanToDisplay(const uint8_t *data, uint32_t len,
-	uint32_t maxChars)
+static std::string macRomanToDisplay(const uint8_t *data, uint32_t len, uint32_t maxChars)
 {
 	uint32_t n = (len < maxChars) ? len : maxChars;
 	uint32_t sz = MacRoman2UniCodeSize(const_cast<uint8_t *>(data), n);
 	std::string out(sz, '\0');
-	MacRoman2UniCodeData(const_cast<uint8_t *>(data), n,
-		const_cast<char *>(out.data()));
+	MacRoman2UniCodeData(const_cast<uint8_t *>(data), n, const_cast<char *>(out.data()));
 	/* CR (0x0D) -> newline for display */
-	for (auto &c : out) {
+	for (auto &c : out)
+	{
 		if (c == '\r') c = '\n';
 	}
-	if (len > maxChars) {
+	if (len > maxChars)
+	{
 		out += "...";
 	}
 	return out;
@@ -401,38 +418,43 @@ static std::string macRomanToDisplay(const uint8_t *data, uint32_t len,
 
 void ScrapTool::draw()
 {
-	if (!ImGui::Begin(name(), &visible)) {
+	if (!ImGui::Begin(name(), &visible))
+	{
 		ImGui::End();
 		return;
 	}
 
 	/* Read low-memory globals */
-	uint32_t scrapSize   = get_vm_long(0x0960);
+	uint32_t scrapSize = get_vm_long(0x0960);
 	uint32_t scrapHandle = get_vm_long(0x0964);
-	int16_t  scrapCount  = (int16_t)get_vm_word(0x0968);
-	int16_t  scrapState  = (int16_t)get_vm_word(0x096A);
+	int16_t scrapCount = (int16_t)get_vm_word(0x0968);
+	int16_t scrapState = (int16_t)get_vm_word(0x096A);
 
 	ImGui::Text("ScrapSize   %u ($%X)", scrapSize, scrapSize);
 	ImGui::Text("ScrapHandle $%08X", scrapHandle);
 	ImGui::Text("ScrapCount  %d", scrapCount);
 	ImGui::Text("ScrapState  %d  %s", scrapState,
-		scrapState > 0 ? "(in memory)" :
-		scrapState == 0 ? "(on disk)" : "(uninitialized)");
+				scrapState > 0	  ? "(in memory)"
+				: scrapState == 0 ? "(on disk)"
+								  : "(uninitialized)");
 	ImGui::Separator();
 
-	if (scrapState < 0) {
+	if (scrapState < 0)
+	{
 		ImGui::TextDisabled("Scrap not initialized");
 		ImGui::End();
 		return;
 	}
 
-	if (scrapState == 0) {
+	if (scrapState == 0)
+	{
 		ImGui::TextDisabled("Scrap on disk — not readable from RAM");
 		ImGui::End();
 		return;
 	}
 
-	if (scrapHandle == 0) {
+	if (scrapHandle == 0)
+	{
 		ImGui::TextDisabled("ScrapHandle is NULL");
 		ImGui::End();
 		return;
@@ -440,7 +462,8 @@ void ScrapTool::draw()
 
 	/* Dereference handle: handle -> master pointer -> data */
 	uint32_t masterPtr = get_vm_long(scrapHandle);
-	if (masterPtr == 0) {
+	if (masterPtr == 0)
+	{
 		ImGui::TextDisabled("Master pointer is NULL (purged?)");
 		ImGui::End();
 		return;
@@ -454,13 +477,15 @@ void ScrapTool::draw()
 	int entryIdx = 0;
 	uint32_t ramSz = g_machine ? g_machine->ramSize() : 0;
 
-	while (offset + 8 <= scrapSize) {
+	while (offset + 8 <= scrapSize)
+	{
 		uint32_t entryAddr = masterPtr + offset;
 
 		/* Bounds check */
-		if (entryAddr + 8 > ramSz) {
+		if (entryAddr + 8 > ramSz)
+		{
 			ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
-				"Entry %d: address $%08X out of RAM bounds", entryIdx, entryAddr);
+							   "Entry %d: address $%08X out of RAM bounds", entryIdx, entryAddr);
 			break;
 		}
 
@@ -473,64 +498,67 @@ void ScrapTool::draw()
 		uint32_t entryLen = get_vm_long(entryAddr + 4);
 
 		/* Sanity check */
-		if (entryLen > scrapSize - offset - 8) {
+		if (entryLen > scrapSize - offset - 8)
+		{
 			ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
-				"Entry %d '%s': length %u exceeds remaining scrap (%u)",
-				entryIdx, type, entryLen, scrapSize - offset - 8);
+							   "Entry %d '%s': length %u exceeds remaining scrap (%u)", entryIdx,
+							   type, entryLen, scrapSize - offset - 8);
 			break;
 		}
 
 		uint32_t dataAddr = entryAddr + 8;
 
 		char header[64];
-		snprintf(header, sizeof(header), "Entry %d: '%s'  %u bytes  @$%08X",
-			entryIdx, type, entryLen, dataAddr);
+		snprintf(header, sizeof(header), "Entry %d: '%s'  %u bytes  @$%08X", entryIdx, type,
+				 entryLen, dataAddr);
 
-		if (ImGui::CollapsingHeader(header,
-			ImGuiTreeNodeFlags_DefaultOpen))
+		if (ImGui::CollapsingHeader(header, ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			if (entryLen == 0) {
+			if (entryLen == 0)
+			{
 				ImGui::TextDisabled("  (empty)");
-			} else if (memcmp(type, "TEXT", 4) == 0) {
+			}
+			else if (memcmp(type, "TEXT", 4) == 0)
+			{
 				/* Decode TEXT — read bytes from guest, convert MacRoman */
 				uint32_t previewLen = (entryLen < 4096) ? entryLen : 4096;
 				std::vector<uint8_t> buf(previewLen);
 				for (uint32_t i = 0; i < previewLen; i++)
 					buf[i] = get_vm_byte(dataAddr + i);
 
-				std::string display = macRomanToDisplay(
-					buf.data(), entryLen, previewLen);
+				std::string display = macRomanToDisplay(buf.data(), entryLen, previewLen);
 
 				ImGui::Text("  Length: %u chars", entryLen);
 				ImGui::Indent();
-				ImGui::PushStyleColor(ImGuiCol_Text,
-					ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
 				ImGui::TextWrapped("%s", display.c_str());
 				ImGui::PopStyleColor();
 				ImGui::Unindent();
-			} else {
+			}
+			else
+			{
 				/* Non-TEXT: hex dump first 128 bytes */
 				uint32_t dumpLen = (entryLen < 128) ? entryLen : 128;
 				ImGui::Text("  Hex (%u of %u bytes):", dumpLen, entryLen);
 				ImGui::Indent();
 
-				for (uint32_t row = 0; row < dumpLen; row += 16) {
+				for (uint32_t row = 0; row < dumpLen; row += 16)
+				{
 					char line[80];
 					int pos = snprintf(line, sizeof(line), "  %04X  ", row);
 					char ascii[17];
 					uint32_t cols = (dumpLen - row < 16) ? dumpLen - row : 16;
 
-					for (uint32_t c = 0; c < cols; c++) {
+					for (uint32_t c = 0; c < cols; c++)
+					{
 						uint8_t v = get_vm_byte(dataAddr + row + c);
-						pos += snprintf(line + pos, sizeof(line) - (size_t)pos,
-							"%02X ", v);
+						pos += snprintf(line + pos, sizeof(line) - (size_t)pos, "%02X ", v);
 						ascii[c] = (v >= 0x20 && v < 0x7F) ? (char)v : '.';
 					}
 					ascii[cols] = '\0';
 					/* Pad if short row */
 					for (uint32_t c = cols; c < 16; c++)
-						pos += snprintf(line + pos, sizeof(line) - (size_t)pos,
-							"   ");
+						pos += snprintf(line + pos, sizeof(line) - (size_t)pos, "   ");
 					ImGui::Text("%s %s", line, ascii);
 				}
 
@@ -544,7 +572,8 @@ void ScrapTool::draw()
 		entryIdx++;
 	}
 
-	if (entryIdx == 0 && scrapSize > 0) {
+	if (entryIdx == 0 && scrapSize > 0)
+	{
 		ImGui::TextDisabled("No scrap entries found (size=%u)", scrapSize);
 	}
 
@@ -557,32 +586,34 @@ void ScrapTool::draw()
 
 void ConsoleTool::draw()
 {
-	if (!ImGui::Begin(name(), &visible)) {
+	if (!ImGui::Begin(name(), &visible))
+	{
 		ImGui::End();
 		return;
 	}
 
 	ImGui::Checkbox("Auto-scroll", &autoScroll);
 	ImGui::SameLine();
-	if (ImGui::Button("Clear")) {
+	if (ImGui::Button("Clear"))
+	{
 		extnDbgConsoleClear();
 	}
 	ImGui::Separator();
 
-	ImGui::BeginChild("ConsoleScroll", ImVec2(0, 0), false,
-		ImGuiWindowFlags_HorizontalScrollbar);
+	ImGui::BeginChild("ConsoleScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 
 	const auto &lines = extnDbgConsoleLines();
 	ImGuiListClipper clipper;
 	clipper.Begin(static_cast<int>(lines.size()));
-	while (clipper.Step()) {
-		for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
+	while (clipper.Step())
+	{
+		for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+		{
 			ImGui::TextUnformatted(lines[i].c_str());
 		}
 	}
 
-	if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
-		ImGui::SetScrollHereY(1.0f);
+	if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) ImGui::SetScrollHereY(1.0f);
 
 	ImGui::EndChild();
 	ImGui::End();
@@ -590,7 +621,7 @@ void ConsoleTool::draw()
 
 /* ── Registration helper ───────────────────────────── */
 
-void RegisterDebugTools(ToolRegistry& registry)
+void RegisterDebugTools(ToolRegistry &registry)
 {
 	registry.registerTool(std::make_unique<RegistersTool>());
 	registry.registerTool(std::make_unique<DisassemblyTool>());

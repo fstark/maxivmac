@@ -45,19 +45,19 @@ static void EmulatedHardwareZap()
 {
 	memoryReset();
 	g_ict.zap();
-	if (auto* d = g_machine->findDevice<IWMDevice>()) d->reset();
-	if (auto* d = g_machine->findDevice<SCCDevice>()) d->reset();
-	if (auto* d = g_machine->findDevice<SCSIDevice>()) d->reset();
-	if (auto* d = g_machine->findDevice<VIA1Device>()) d->zap();
-	if (auto* d = g_machine->findDevice<VIA2Device>()) d->zap();
-	if (auto* d = g_machine->findDevice<SonyDevice>()) d->reset();
+	if (auto *d = g_machine->findDevice<IWMDevice>()) d->reset();
+	if (auto *d = g_machine->findDevice<SCCDevice>()) d->reset();
+	if (auto *d = g_machine->findDevice<SCSIDevice>()) d->reset();
+	if (auto *d = g_machine->findDevice<VIA1Device>()) d->zap();
+	if (auto *d = g_machine->findDevice<VIA2Device>()) d->zap();
+	if (auto *d = g_machine->findDevice<SonyDevice>()) d->reset();
 	extnReset();
 	g_cpu.reset();
 }
 
 static void DoMacReset()
 {
-	if (auto* d = g_machine->findDevice<SonyDevice>()) d->ejectAllDisks();
+	if (auto *d = g_machine->findDevice<SonyDevice>()) d->ejectAllDisks();
 	EmulatedHardwareZap();
 }
 
@@ -65,16 +65,18 @@ static void DoMacReset()
 static void InterruptReset_Update()
 {
 	SetInterruptButton(false);
-		/*
-			in case has been set. so only stays set
-			for 60th of a second.
-		*/
+	/*
+		in case has been set. so only stays set
+		for 60th of a second.
+	*/
 
-	if (g_wantMacInterrupt) {
+	if (g_wantMacInterrupt)
+	{
 		SetInterruptButton(true);
 		g_wantMacInterrupt = false;
 	}
-	if (g_wantMacReset) {
+	if (g_wantMacReset)
+	{
 		DoMacReset();
 		g_wantMacReset = false;
 	}
@@ -83,11 +85,16 @@ static void InterruptReset_Update()
 // Route audio sub-tick to the active sound device.
 static void SubTickNotify(int SubTick)
 {
-	if (g_machine->config().emClassicSnd) {
-		if (auto* d = g_machine->findDevice<SoundDevice>()) d->subTick(SubTick);
-	} else if (g_machine->config().emASC) {
-		if (auto* d = g_machine->findDevice<ASCDevice>()) d->subTick(SubTick);
-	} else {
+	if (g_machine->config().emClassicSnd)
+	{
+		if (auto *d = g_machine->findDevice<SoundDevice>()) d->subTick(SubTick);
+	}
+	else if (g_machine->config().emASC)
+	{
+		if (auto *d = g_machine->findDevice<ASCDevice>()) d->subTick(SubTick);
+	}
+	else
+	{
 		UNUSED(SubTick);
 	}
 }
@@ -102,7 +109,8 @@ static void SubTickTaskDo()
 {
 	SubTickNotify(s_subTickCounter);
 	++s_subTickCounter;
-	if (s_subTickCounter < (kNumSubTicks - 1)) {
+	if (s_subTickCounter < (kNumSubTicks - 1))
+	{
 		/*
 			final SubTick handled by SubTickTaskEnd,
 			since CyclesScaledPerSubTick * kNumSubTicks
@@ -136,27 +144,29 @@ static void SixtiethSecondNotify()
 #if 0
 	dbglog_WriteNote("begin new Sixtieth");
 #endif
-	if (++s_ticksSinceSecond >= 60) {
+	if (++s_ticksSinceSecond >= 60)
+	{
 		s_ticksSinceSecond = 0;
 		g_curMacDateInSeconds++;
 	}
-	if (auto* d = g_machine->findDevice<MouseDevice>()) d->update();
+	if (auto *d = g_machine->findDevice<MouseDevice>()) d->update();
 	InterruptReset_Update();
 	if (g_machine->config().emClassicKbrd)
-		if (auto* d = g_machine->findDevice<KeyboardDevice>()) d->update();
+		if (auto *d = g_machine->findDevice<KeyboardDevice>()) d->update();
 	if (g_machine->config().emADB)
-		if (auto* d = g_machine->findDevice<ADBDevice>()) d->update();
+		if (auto *d = g_machine->findDevice<ADBDevice>()) d->update();
 
-	if (auto* d = g_machine->findDevice<VIA1Device>()) d->iCA1_PulseNtfy(); /* Vertical Blanking Interrupt */
-	if (auto* d = g_machine->findDevice<SonyDevice>()) d->update();
+	if (auto *d = g_machine->findDevice<VIA1Device>())
+		d->iCA1_PulseNtfy(); /* Vertical Blanking Interrupt */
+	if (auto *d = g_machine->findDevice<SonyDevice>()) d->update();
 
-	if (auto* d = g_machine->findDevice<SCCDevice>()) d->serialTick();
+	if (auto *d = g_machine->findDevice<SCCDevice>()) d->serialTick();
 #if EmLocalTalk
-	if (auto* d = g_machine->findDevice<SCCDevice>()) d->localTalkTick();
+	if (auto *d = g_machine->findDevice<SCCDevice>()) d->localTalkTick();
 #endif
-	if (auto* d = g_machine->findDevice<RTCDevice>()) d->interrupt();
+	if (auto *d = g_machine->findDevice<RTCDevice>()) d->interrupt();
 	if (g_machine->config().emVidCard)
-		if (auto* d = g_machine->findDevice<VideoDevice>()) d->update();
+		if (auto *d = g_machine->findDevice<VideoDevice>()) d->update();
 
 	SubTickTaskStart();
 }
@@ -165,8 +175,8 @@ static void SixtiethSecondNotify()
 static void SixtiethEndNotify()
 {
 	SubTickTaskEnd();
-	if (auto* d = g_machine->findDevice<MouseDevice>()) d->endTickNotify();
-	if (auto* d = g_machine->findDevice<ScreenDevice>()) d->endTickNotify();
+	if (auto *d = g_machine->findDevice<MouseDevice>()) d->endTickNotify();
+	if (auto *d = g_machine->findDevice<ScreenDevice>()) d->endTickNotify();
 #if 0
 	dbglog_WriteNote("end Sixtieth");
 #endif
@@ -174,38 +184,36 @@ static void SixtiethEndNotify()
 
 static void ExtraTimeBeginNotify()
 {
-	if (auto* d = g_machine->findDevice<VIA1Device>()) d->extraTimeBegin();
-	if (auto* d = g_machine->findDevice<VIA2Device>()) d->extraTimeBegin();
+	if (auto *d = g_machine->findDevice<VIA1Device>()) d->extraTimeBegin();
+	if (auto *d = g_machine->findDevice<VIA2Device>()) d->extraTimeBegin();
 }
 
 static void ExtraTimeEndNotify()
 {
-	if (auto* d = g_machine->findDevice<VIA1Device>()) d->extraTimeEnd();
-	if (auto* d = g_machine->findDevice<VIA2Device>()) d->extraTimeEnd();
+	if (auto *d = g_machine->findDevice<VIA1Device>()) d->extraTimeEnd();
+	if (auto *d = g_machine->findDevice<VIA2Device>()) d->extraTimeEnd();
 }
 
 // Allocate RAM, VidROM, and VidMem buffers per machine config.
 bool EmulationReserveAlloc()
 {
-	const auto& cfg = g_machine->config();
-	if (!AllocBlock(&g_ram,
-		cfg.ramSize() + RAMSafetyMarginFudge, false))
-		return false;
+	const auto &cfg = g_machine->config();
+	if (!AllocBlock(&g_ram, cfg.ramSize() + RAMSafetyMarginFudge, false)) return false;
 	if (cfg.emVidCard)
-		if (!AllocBlock(&g_vidROM, cfg.vidROMSize, false))
-			return false;
+		if (!AllocBlock(&g_vidROM, cfg.vidROMSize, false)) return false;
 	if (cfg.includeVidMem)
-		if (!AllocBlock(&g_vidMem,
-			cfg.vidMemSize + RAMSafetyMarginFudge, true))
-			return false;
+		if (!AllocBlock(&g_vidMem, cfg.vidMemSize + RAMSafetyMarginFudge, true)) return false;
 	return true;
 }
 
 void EmulationFreeAlloc()
 {
-	free(g_ram); g_ram = nullptr;
-	free(g_vidROM); g_vidROM = nullptr;
-	free(g_vidMem); g_vidMem = nullptr;
+	free(g_ram);
+	g_ram = nullptr;
+	free(g_vidROM);
+	g_vidROM = nullptr;
+	free(g_vidMem);
+	g_vidMem = nullptr;
 }
 
 /*
@@ -216,42 +224,88 @@ void EmulationFreeAlloc()
 bool InitEmulation()
 {
 	/* Wire ICT scheduler to CPU cycle counters */
-	g_ict.setCycleAccessors(
-		[]() { return g_cpu.getCyclesRemaining(); },
-		[](int32_t n) { g_cpu.setCyclesRemaining(n); }
-	);
+	g_ict.setCycleAccessors([]() { return g_cpu.getCyclesRemaining(); },
+							[](int32_t n) { g_cpu.setCyclesRemaining(n); });
 
 	/* Register ICT task handlers */
 	g_ict.registerTask(kICT_SubTick, SubTickTaskDo);
-	if (g_machine->config().emClassicKbrd) {
-		g_ict.registerTask(kICT_Kybd_ReceiveEndCommand, [](){ if (auto* d = g_machine->findDevice<KeyboardDevice>()) d->receiveEndCommand(); });
-		g_ict.registerTask(kICT_Kybd_ReceiveCommand, [](){ if (auto* d = g_machine->findDevice<KeyboardDevice>()) d->receiveCommand(); });
+	if (g_machine->config().emClassicKbrd)
+	{
+		g_ict.registerTask(kICT_Kybd_ReceiveEndCommand,
+						   []()
+						   {
+							   if (auto *d = g_machine->findDevice<KeyboardDevice>())
+								   d->receiveEndCommand();
+						   });
+		g_ict.registerTask(kICT_Kybd_ReceiveCommand,
+						   []()
+						   {
+							   if (auto *d = g_machine->findDevice<KeyboardDevice>())
+								   d->receiveCommand();
+						   });
 	}
 	if (g_machine->config().emADB)
-		g_ict.registerTask(kICT_ADB_NewState, [](){ if (auto* d = g_machine->findDevice<ADBDevice>()) d->doNewState(); });
+		g_ict.registerTask(kICT_ADB_NewState,
+						   []()
+						   {
+							   if (auto *d = g_machine->findDevice<ADBDevice>()) d->doNewState();
+						   });
 	if (g_machine->config().emPMU)
-		g_ict.registerTask(kICT_PMU_Task, [](){ if (auto* d = g_machine->findDevice<PMUDevice>()) d->doTask(); });
-	if (g_machine->config().emVIA1) {
-		g_ict.registerTask(kICT_VIA1_Timer1Check, [](){ if (auto* d = g_machine->findDevice<VIA1Device>()) d->doTimer1Check(); });
-		g_ict.registerTask(kICT_VIA1_Timer2Check, [](){ if (auto* d = g_machine->findDevice<VIA1Device>()) d->doTimer2Check(); });
+		g_ict.registerTask(kICT_PMU_Task,
+						   []()
+						   {
+							   if (auto *d = g_machine->findDevice<PMUDevice>()) d->doTask();
+						   });
+	if (g_machine->config().emVIA1)
+	{
+		g_ict.registerTask(kICT_VIA1_Timer1Check,
+						   []()
+						   {
+							   if (auto *d = g_machine->findDevice<VIA1Device>())
+								   d->doTimer1Check();
+						   });
+		g_ict.registerTask(kICT_VIA1_Timer2Check,
+						   []()
+						   {
+							   if (auto *d = g_machine->findDevice<VIA1Device>())
+								   d->doTimer2Check();
+						   });
 	}
-	if (g_machine->config().emVIA2) {
-		g_ict.registerTask(kICT_VIA2_Timer1Check, [](){ if (auto* d = g_machine->findDevice<VIA2Device>()) d->doTimer1Check(); });
-		g_ict.registerTask(kICT_VIA2_Timer2Check, [](){ if (auto* d = g_machine->findDevice<VIA2Device>()) d->doTimer2Check(); });
+	if (g_machine->config().emVIA2)
+	{
+		g_ict.registerTask(kICT_VIA2_Timer1Check,
+						   []()
+						   {
+							   if (auto *d = g_machine->findDevice<VIA2Device>())
+								   d->doTimer1Check();
+						   });
+		g_ict.registerTask(kICT_VIA2_Timer2Check,
+						   []()
+						   {
+							   if (auto *d = g_machine->findDevice<VIA2Device>())
+								   d->doTimer2Check();
+						   });
 	}
 
 	bool ok = true;
-	if (ok && g_machine->config().emRTC) {
-		auto* rtc = g_machine->findDevice<RTCDevice>();
+	if (ok && g_machine->config().emRTC)
+	{
+		auto *rtc = g_machine->findDevice<RTCDevice>();
 		ok = rtc ? rtc->init() : false;
 	}
-	if (ok) { auto* rom = g_machine->findDevice<ROMDevice>(); ok = rom ? rom->init() : false; }
-	if (ok && g_machine->config().emVidCard) {
-		auto* vid = g_machine->findDevice<VideoDevice>();
+	if (ok)
+	{
+		auto *rom = g_machine->findDevice<ROMDevice>();
+		ok = rom ? rom->init() : false;
+	}
+	if (ok && g_machine->config().emVidCard)
+	{
+		auto *vid = g_machine->findDevice<VideoDevice>();
 		ok = vid ? vid->init() : false;
 	}
 	if (ok) ok = AddrSpac_Init();
-	if (ok) {
+	if (ok)
+	{
 		EmulatedHardwareZap();
 		return true;
 	}
@@ -267,7 +321,8 @@ static void m68k_go_nCycles_1(uint32_t n)
 {
 	uint32_t n2;
 	uint32_t StopiCount = g_ict.nextCount + n;
-	do {
+	do
+	{
 		g_ict.doCurrentTasks();
 		n2 = g_ict.doGetNext(n);
 #if 0
@@ -298,7 +353,8 @@ static void DoEmulateOneTick()
 	{
 		uint32_t NewQuietTime = g_quietTime + 1;
 
-		if (NewQuietTime > g_quietTime) {
+		if (NewQuietTime > g_quietTime)
+		{
 			/* if not overflow */
 			g_quietTime = NewQuietTime;
 		}
@@ -306,7 +362,8 @@ static void DoEmulateOneTick()
 	{
 		uint32_t NewQuietSubTicks = g_quietSubTicks + kNumSubTicks;
 
-		if (NewQuietSubTicks > g_quietSubTicks) {
+		if (NewQuietSubTicks > g_quietSubTicks)
+		{
 			/* if not overflow */
 			g_quietSubTicks = NewQuietSubTicks;
 		}
@@ -318,14 +375,18 @@ static void DoEmulateOneTick()
 
 	SixtiethEndNotify();
 
-	if ((uint8_t) -1 == g_speedValue) {
-		s_extraSubTicksToDo = (uint32_t) -1;
-	} else {
+	if ((uint8_t)-1 == g_speedValue)
+	{
+		s_extraSubTicksToDo = (uint32_t)-1;
+	}
+	else
+	{
 		uint32_t ExtraAdd = (kNumSubTicks << g_speedValue) - kNumSubTicks;
 		uint32_t ExtraLimit = ExtraAdd << 3;
 
 		s_extraSubTicksToDo += ExtraAdd;
-		if (s_extraSubTicksToDo > ExtraLimit) {
+		if (s_extraSubTicksToDo > ExtraLimit)
+		{
 			s_extraSubTicksToDo = ExtraLimit;
 		}
 	}
@@ -341,13 +402,16 @@ void DoEmulateExtraTime()
 	/* Run extra sub-ticks for speed multiplier (anything over 1x).
 	   VIA timers are frozen for the duration. */
 
-	if (MoreSubTicksToDo()) {
+	if (MoreSubTicksToDo())
+	{
 		ExtraTimeBeginNotify();
-		do {
+		do
+		{
 			{
 				uint32_t NewQuietSubTicks = g_quietSubTicks + 1;
 
-				if (NewQuietSubTicks > g_quietSubTicks) {
+				if (NewQuietSubTicks > g_quietSubTicks)
+				{
 					/* if not overflow */
 					g_quietSubTicks = NewQuietSubTicks;
 				}
@@ -379,23 +443,23 @@ static LaunchConfig s_launchConfig;
 static MachineConfig s_machineConfig;
 static EmulatorConfig s_emulatorConfig;
 
-const LaunchConfig& GetLaunchConfig()
+const LaunchConfig &GetLaunchConfig()
 {
 	return s_launchConfig;
 }
 
-void SetLaunchConfig(const LaunchConfig& lc)
+void SetLaunchConfig(const LaunchConfig &lc)
 {
 	/* Merge selector choices onto the CLI-parsed config.
 	   The selector only sets model-specific fields (model, rom, ram,
 	   speed, disks).  CLI flags like --silent, --romdir, --title,
 	   --fullscreen, --scale must survive. */
-	s_launchConfig.model         = lc.model;
+	s_launchConfig.model = lc.model;
 	s_launchConfig.modelExplicit = lc.modelExplicit;
-	s_launchConfig.romPath       = lc.romPath;
-	s_launchConfig.ramMB         = lc.ramMB;
-	s_launchConfig.speed         = lc.speed;
-	s_launchConfig.diskPaths     = lc.diskPaths;
+	s_launchConfig.romPath = lc.romPath;
+	s_launchConfig.ramMB = lc.ramMB;
+	s_launchConfig.speed = lc.speed;
+	s_launchConfig.diskPaths = lc.diskPaths;
 
 	s_machineConfig = BuildMachineConfig(s_launchConfig);
 	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
@@ -403,12 +467,12 @@ void SetLaunchConfig(const LaunchConfig& lc)
 	s_machine->init();
 }
 
-const EmulatorConfig& GetEmulatorConfig()
+const EmulatorConfig &GetEmulatorConfig()
 {
 	return s_emulatorConfig;
 }
 
-EmulatorConfig& GetEmulatorConfigMut()
+EmulatorConfig &GetEmulatorConfigMut()
 {
 	return s_emulatorConfig;
 }
@@ -419,33 +483,35 @@ EmulatorConfig& GetEmulatorConfigMut()
 	When no model is specified, the Machine is created later by
 	SetLaunchConfig() after the user picks one in the selector.
 */
-void ProgramEarlyInit(int argc, char* argv[])
+void ProgramEarlyInit(int argc, char *argv[])
 {
 	s_launchConfig = ParseCommandLine(argc, argv);
 	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
 
-	if (s_launchConfig.help) {
+	if (s_launchConfig.help)
+	{
 		PrintUsage(argv[0]);
 		// Help flag will be checked by caller to exit early
 	}
 
 	/* Set up instruction-logging window from CLI args */
-	if (s_launchConfig.logCount > 0) {
+	if (s_launchConfig.logCount > 0)
+	{
 		g_LogStart = s_launchConfig.logStart;
-		g_LogEnd   = s_launchConfig.logStart + s_launchConfig.logCount;
+		g_LogEnd = s_launchConfig.logStart + s_launchConfig.logCount;
 	}
 
 	/* No model specified — defer machine creation to SetLaunchConfig().
 	   --verify implies a model (read from the golden header below). */
-	if (!s_launchConfig.modelExplicit
-		&& s_launchConfig.verifyPath.empty())
-		return;
+	if (!s_launchConfig.modelExplicit && s_launchConfig.verifyPath.empty()) return;
 
 	/* When verifying, source emulation params from the golden file */
 	StateRecorder::HeaderInfo goldenHdr;
 	bool haveGoldenHdr = false;
-	if (!s_launchConfig.verifyPath.empty()) {
-		if (!StateRecorder::readHeader(s_launchConfig.verifyPath, goldenHdr)) {
+	if (!s_launchConfig.verifyPath.empty())
+	{
+		if (!StateRecorder::readHeader(s_launchConfig.verifyPath, goldenHdr))
+		{
 			std::fprintf(stderr, "Cannot read golden file header, aborting.\n");
 			std::exit(1);
 		}
@@ -460,42 +526,51 @@ void ProgramEarlyInit(int argc, char* argv[])
 	s_machineConfig = BuildMachineConfig(s_launchConfig);
 
 	/* Override MachineConfig with exact values from golden header */
-	if (haveGoldenHdr) {
+	if (haveGoldenHdr)
+	{
 		uint32_t ram = goldenHdr.ramSize;
-		if (s_machineConfig.ramBSize > 0) {
+		if (s_machineConfig.ramBSize > 0)
+		{
 			s_machineConfig.ramASize = ram / 2;
 			s_machineConfig.ramBSize = ram / 2;
-		} else {
+		}
+		else
+		{
 			s_machineConfig.ramASize = ram;
 		}
-		s_machineConfig.screenWidth  = goldenHdr.screenWidth;
+		s_machineConfig.screenWidth = goldenHdr.screenWidth;
 		s_machineConfig.screenHeight = goldenHdr.screenHeight;
-		s_machineConfig.screenDepth  = goldenHdr.screenDepth;
+		s_machineConfig.screenDepth = goldenHdr.screenDepth;
 	}
 
 	{
 		StateRecorder::Config rc;
 
-		if (!s_launchConfig.recordPath.empty()) {
+		if (!s_launchConfig.recordPath.empty())
+		{
 			rc.mode = RecorderMode::Record;
 			rc.goldenPath = s_launchConfig.recordPath;
-		} else if (!s_launchConfig.verifyPath.empty()) {
+		}
+		else if (!s_launchConfig.verifyPath.empty())
+		{
 			rc.mode = RecorderMode::Verify;
 			rc.goldenPath = s_launchConfig.verifyPath;
 		}
 
-		if (!s_launchConfig.tracePath.empty()) {
+		if (!s_launchConfig.tracePath.empty())
+		{
 			rc.textLog = TextLog::CpuAndIo;
 			rc.textPath = s_launchConfig.tracePath;
-		} else if (!s_launchConfig.traceCpuPath.empty()) {
+		}
+		else if (!s_launchConfig.traceCpuPath.empty())
+		{
 			rc.textLog = TextLog::CpuOnly;
 			rc.textPath = s_launchConfig.traceCpuPath;
 		}
 
 		if (s_launchConfig.snapshotInterval > 0)
 			rc.snapshotInterval = s_launchConfig.snapshotInterval;
-		if (s_launchConfig.maxInstructions > 0)
-			rc.maxInstructions = s_launchConfig.maxInstructions;
+		if (s_launchConfig.maxInstructions > 0) rc.maxInstructions = s_launchConfig.maxInstructions;
 
 		rc.modelId = static_cast<uint32_t>(s_launchConfig.model);
 		rc.speedValue = g_speedValue;
@@ -505,15 +580,17 @@ void ProgramEarlyInit(int argc, char* argv[])
 		rc.screenDepth = s_machineConfig.screenDepth;
 
 		// Hash ROM file
-		std::string resolvedRom = ResolveRomPath(s_launchConfig.romPath, s_launchConfig.model, s_launchConfig.romDir);
-		if (!resolvedRom.empty())
-			md5_file(resolvedRom.c_str(), rc.romHash);
+		std::string resolvedRom =
+			ResolveRomPath(s_launchConfig.romPath, s_launchConfig.model, s_launchConfig.romDir);
+		if (!resolvedRom.empty()) md5_file(resolvedRom.c_str(), rc.romHash);
 		// Hash first disk
 		if (!s_launchConfig.diskPaths.empty())
 			md5_file(s_launchConfig.diskPaths[0].c_str(), rc.diskHash);
 
-		if (rc.mode != RecorderMode::Off || rc.textLog != TextLog::None) {
-			if (!g_recorder.init(rc)) {
+		if (rc.mode != RecorderMode::Off || rc.textLog != TextLog::None)
+		{
+			if (!g_recorder.init(rc))
+			{
 				std::fprintf(stderr, "StateRecorder init failed, aborting.\n");
 				std::exit(1);
 			}

@@ -13,9 +13,10 @@
 #pragma once
 #include <cstdint>
 
-class Machine;  // forward declaration
+class Machine; // forward declaration
 
-class Device {
+class Device
+{
 public:
 	virtual ~Device() = default;
 
@@ -25,13 +26,13 @@ public:
 	virtual uint32_t access(uint32_t data, bool writeMem, uint32_t addr);
 
 	// Lifecycle
-	virtual void zap()   {}  // Cold start (power-on)
-	virtual void reset() {}  // Warm reset
+	virtual void zap() {}	// Cold start (power-on)
+	virtual void reset() {} // Warm reset
 
 	// Identity
-	virtual const char* name() const = 0;
+	virtual const char *name() const = 0;
 
 protected:
-	Machine* machine_ = nullptr;  // set by Machine when device is registered
+	Machine *machine_ = nullptr; // set by Machine when device is registered
 	friend class Machine;
 };

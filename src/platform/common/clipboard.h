@@ -9,6 +9,6 @@
 	Used by extn_clip.cpp (which must not depend on SDL).
 */
 
-bool        hostClipHasText();
+bool hostClipHasText();
 std::string hostClipGetTextMacRoman();
-void        hostClipSetText(const uint8_t *macRoman, uint32_t len);
+void hostClipSetText(const uint8_t *macRoman, uint32_t len);

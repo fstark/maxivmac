@@ -149,8 +149,8 @@ inline constexpr uint8_t MKC_AngleBracket = 0x0A /* found on german keyboard */;
 
 inline constexpr uint8_t MKC_CM = 0x80;
 inline constexpr uint8_t MKC_real_CapsLock = 0x81;
-	/*
-		for use in platform specific code
-		when CapsLocks need special handling.
-	*/
+/*
+	for use in platform specific code
+	when CapsLocks need special handling.
+*/
 inline constexpr uint8_t MKC_None = 0xFF;

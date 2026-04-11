@@ -15,57 +15,77 @@ static void CheckAltKeyUseMode()
 {
 	bool NewAltKeysTextOn;
 
-	s_altKeysModOn = s_altKeysTrueCmnd
-		|| s_altKeysTrueOption || s_altKeysTrueShift;
+	s_altKeysModOn = s_altKeysTrueCmnd || s_altKeysTrueOption || s_altKeysTrueShift;
 	NewAltKeysTextOn = s_altKeysLockText || s_altKeysModOn;
-	if (NewAltKeysTextOn != s_altKeysTextOn) {
-		DisconnectKeyCodes(kKeepMaskControl | kKeepMaskCapsLock
-			| (s_altKeysTrueCmnd ? kKeepMaskCommand : 0)
-			| (s_altKeysTrueOption ? kKeepMaskOption : 0)
-			| (s_altKeysTrueShift ? kKeepMaskShift : 0));
+	if (NewAltKeysTextOn != s_altKeysTextOn)
+	{
+		DisconnectKeyCodes(kKeepMaskControl | kKeepMaskCapsLock |
+						   (s_altKeysTrueCmnd ? kKeepMaskCommand : 0) |
+						   (s_altKeysTrueOption ? kKeepMaskOption : 0) |
+						   (s_altKeysTrueShift ? kKeepMaskShift : 0));
 		s_altKeysTextOn = NewAltKeysTextOn;
 	}
 }
 
 static void Keyboard_UpdateKeyMap1(uint8_t key, bool down)
 {
-	if (MKC_Command == key) {
+	if (MKC_Command == key)
+	{
 		s_altKeysTrueCmnd = down;
 		CheckAltKeyUseMode();
 		Keyboard_UpdateKeyMap(key, down);
-	} else if (MKC_Option == key) {
+	}
+	else if (MKC_Option == key)
+	{
 		s_altKeysTrueOption = down;
 		CheckAltKeyUseMode();
 		Keyboard_UpdateKeyMap(key, down);
-	} else if (MKC_Shift == key) {
+	}
+	else if (MKC_Shift == key)
+	{
 		s_altKeysTrueShift = down;
 		CheckAltKeyUseMode();
 		Keyboard_UpdateKeyMap(key, down);
-	} else if (MKC_SemiColon == key) {
-		if (down && ! s_altKeysModOn) {
-			if (s_altKeysLockText) {
+	}
+	else if (MKC_SemiColon == key)
+	{
+		if (down && !s_altKeysModOn)
+		{
+			if (s_altKeysLockText)
+			{
 				s_altKeysLockText = false;
 				g_needWholeScreenDraw = true;
 				SpecialModeClr(SpclModeAltKeyText);
 
 				CheckAltKeyUseMode();
 			}
-		} else {
+		}
+		else
+		{
 			Keyboard_UpdateKeyMap(key, down);
 		}
-	} else if (s_altKeysTextOn) {
+	}
+	else if (s_altKeysTextOn)
+	{
 		Keyboard_UpdateKeyMap(key, down);
-	} else if (MKC_M == key) {
-		if (down) {
-			if (! s_altKeysLockText) {
+	}
+	else if (MKC_M == key)
+	{
+		if (down)
+		{
+			if (!s_altKeysLockText)
+			{
 				s_altKeysLockText = true;
 				SpecialModeSet(SpclModeAltKeyText);
 				g_needWholeScreenDraw = true;
 				CheckAltKeyUseMode();
 			}
 		}
-	} else {
-		switch (key) {
+	}
+	else
+	{
+		switch (key)
+		{
 			case MKC_A:
 				key = MKC_SemiColon;
 				break;
@@ -155,17 +175,19 @@ static void DisconnectKeyCodes1(uint32_t KeepMask)
 {
 	DisconnectKeyCodes(KeepMask);
 
-	if (! (0 != (KeepMask & kKeepMaskCommand))) {
+	if (!(0 != (KeepMask & kKeepMaskCommand)))
+	{
 		s_altKeysTrueCmnd = false;
 	}
-	if (! (0 != (KeepMask & kKeepMaskOption))) {
+	if (!(0 != (KeepMask & kKeepMaskOption)))
+	{
 		s_altKeysTrueOption = false;
 	}
-	if (! (0 != (KeepMask & kKeepMaskShift))) {
+	if (!(0 != (KeepMask & kKeepMaskShift)))
+	{
 		s_altKeysTrueShift = false;
 	}
-	s_altKeysModOn = s_altKeysTrueCmnd
-		|| s_altKeysTrueOption || s_altKeysTrueShift;
+	s_altKeysModOn = s_altKeysTrueCmnd || s_altKeysTrueOption || s_altKeysTrueShift;
 	s_altKeysTextOn = s_altKeysLockText || s_altKeysModOn;
 }
 
@@ -177,12 +199,14 @@ static void DrawAltKeyMode()
 	CurCellh0 = ControlBoxh0;
 
 	DrawCellAdvance(kInsertText00);
-	for (i = (ControlBoxw - 4) / 2; --i >= 0; ) {
+	for (i = (ControlBoxw - 4) / 2; --i >= 0;)
+	{
 		DrawCellAdvance(kInsertText04);
 	}
 	DrawCellAdvance(kInsertText01);
 	DrawCellAdvance(kInsertText02);
-	for (i = (ControlBoxw - 4) / 2; --i >= 0; ) {
+	for (i = (ControlBoxw - 4) / 2; --i >= 0;)
+	{
 		DrawCellAdvance(kInsertText04);
 	}
 	DrawCellAdvance(kInsertText03);

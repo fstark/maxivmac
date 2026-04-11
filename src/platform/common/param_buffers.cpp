@@ -18,10 +18,13 @@ tMacErr PbufNewFromPtr(void *p, uint32_t count, PbufIndex *r)
 	PbufIndex i;
 	tMacErr err;
 
-	if (! FirstFreePbuf(&i)) {
+	if (!FirstFreePbuf(&i))
+	{
 		free(p);
 		err = tMacErr::miscErr;
-	} else {
+	}
+	else
+	{
 		*r = i;
 		PbufDat[i] = p;
 		PbufNewNotify(i, count);
@@ -44,7 +47,8 @@ tMacErr PbufNew(uint32_t count, PbufIndex *r)
 	tMacErr err = tMacErr::miscErr;
 
 	void *p = calloc(1, count);
-	if (nullptr != p) {
+	if (nullptr != p)
+	{
 		err = PbufNewFromPtr(p, count, r);
 	}
 
@@ -65,26 +69,30 @@ void UnInitPbufs()
 {
 	PbufIndex i;
 
-	for (i = 0; i < NumPbufs; ++i) {
-		if (PbufIsAllocated(i)) {
+	for (i = 0; i < NumPbufs; ++i)
+	{
+		if (PbufIsAllocated(i))
+		{
 			PbufDispose(i);
 		}
 	}
 }
 
-uint8_t * PbufLock(PbufIndex i)
+uint8_t *PbufLock(PbufIndex i)
 {
 	return static_cast<uint8_t *>(PbufDat[i]);
 }
 
 /* Copy data between a Pbuf and host memory at the given offset. */
-void PbufTransfer(uint8_t * buffer,
-	PbufIndex i, uint32_t offset, uint32_t count, bool isWrite)
+void PbufTransfer(uint8_t *buffer, PbufIndex i, uint32_t offset, uint32_t count, bool isWrite)
 {
 	void *p = static_cast<uint8_t *>(PbufDat[i]) + offset;
-	if (isWrite) {
-		(void) memcpy(p, buffer, count);
-	} else {
-		(void) memcpy(buffer, p, count);
+	if (isWrite)
+	{
+		(void)memcpy(p, buffer, count);
+	}
+	else
+	{
+		(void)memcpy(buffer, p, count);
 	}
 }

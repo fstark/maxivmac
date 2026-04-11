@@ -17,10 +17,11 @@ struct ATTer;
 
 struct MachineConfig;
 
-class CPU {
+class CPU
+{
 public:
 	// Initialization
-	void init(uint8_t* iplPtr, const MachineConfig* config);
+	void init(uint8_t *iplPtr, const MachineConfig *config);
 	void reset();
 
 	// Execution
@@ -28,7 +29,7 @@ public:
 
 	// Cycle accounting
 	int32_t getCyclesRemaining() const;
-	void    setCyclesRemaining(int32_t n);
+	void setCyclesRemaining(int32_t n);
 
 	// Interrupt priority level change notification
 	void iplChangeNotify();
@@ -37,8 +38,8 @@ public:
 	void diskInsertedPseudoException(uint32_t newpc, uint32_t data);
 
 	// Address Translation Table
-	void    setHeadATTel(ATTer* p);
-	ATTer*  findATTel(uint32_t addr);
+	void setHeadATTel(ATTer *p);
+	ATTer *findATTel(uint32_t addr);
 };
 
 // Global CPU instance (will move to Machine in a later step)

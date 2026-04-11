@@ -9,20 +9,22 @@
 
 #include <cstdint>
 
-enum LMType {
-	LM_BYTE,       /*  1 byte  */
-	LM_WORD,       /*  2 bytes */
-	LM_LONG,       /*  4 bytes */
-	LM_POINTER,    /*  4 bytes, displayed as address */
-	LM_HANDLE,     /*  4 bytes, displayed as handle */
-	LM_PSTRING,    /* length-prefixed Pascal string */
-	LM_BYTES,      /* raw byte array */
-	LM_RECT,       /*  8 bytes: top, left, bottom, right */
-	LM_PATTERN,    /*  8 bytes pattern */
-	LM_OSType,     /*  4 bytes four-char code */
+enum LMType
+{
+	LM_BYTE,	/*  1 byte  */
+	LM_WORD,	/*  2 bytes */
+	LM_LONG,	/*  4 bytes */
+	LM_POINTER, /*  4 bytes, displayed as address */
+	LM_HANDLE,	/*  4 bytes, displayed as handle */
+	LM_PSTRING, /* length-prefixed Pascal string */
+	LM_BYTES,	/* raw byte array */
+	LM_RECT,	/*  8 bytes: top, left, bottom, right */
+	LM_PATTERN, /*  8 bytes pattern */
+	LM_OSType,	/*  4 bytes four-char code */
 };
 
-enum LMCategory {
+enum LMCategory
+{
 	LM_CAT_SYSTEM,
 	LM_CAT_HARDWARE,
 	LM_CAT_TIMING,
@@ -42,21 +44,22 @@ enum LMCategory {
 	LM_CAT_COUNT
 };
 
-struct LMGlobal {
+struct LMGlobal
+{
 	const char *name;
-	uint32_t    addr;
-	uint16_t    size;
-	LMType      type;
-	LMCategory  category;
+	uint32_t addr;
+	uint16_t size;
+	LMType type;
+	LMCategory category;
 	const char *brief;
 };
 
 /* Full table (sorted by address). */
 extern const LMGlobal kLowMemGlobals[];
-extern const int      kLowMemCount;
+extern const int kLowMemCount;
 
 /* Human-readable category labels (LM_CAT_COUNT entries). */
-extern const char * const kLMCategoryLabels[];
+extern const char *const kLMCategoryLabels[];
 
 /* Take a 4 KB snapshot of low memory ($000–$FFF) from g_ram. */
 void lomem_snapshot_take(uint8_t *snapshot);

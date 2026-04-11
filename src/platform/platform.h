@@ -28,37 +28,38 @@ extern void dbglog_writeln(char *s);
 extern void dbglog_writelnHex(char *s, uint32_t x);
 extern void dbglog_writelnNum(char *s, int32_t v);
 
-extern void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount);
+extern void MoveBytes(uint8_t *srcPtr, uint8_t *destPtr, int32_t byteCount);
 
 extern bool AllocBlock(uint8_t **p, uint32_t n, bool fillOnes);
 
-extern uint8_t * g_rom;
+extern uint8_t *g_rom;
 
 /*
 	error codes returned by Mini vMac extensions
 	(passed back to the emulated 68k code).
 */
 
-enum class tMacErr : uint16_t {
-	noErr            = 0x0000,  /*    0 - No Error */
-	miscErr          = 0xFFFF,  /*   -1 - Should probably replace these */
-	controlErr       = 0xFFEF,  /*  -17 - I/O System Errors */
-	statusErr        = 0xFFEE,  /*  -18 - Driver can't respond to Status call */
-	closErr          = 0xFFE8,  /*  -24 - I/O System Errors */
-	eofErr           = 0xFFD9,  /*  -39 - End of file */
-	tmfoErr          = 0xFFD6,  /*  -42 - too many files open */
-	fnfErr           = 0xFFD5,  /*  -43 - File not found */
-	wPrErr           = 0xFFD4,  /*  -44 - diskette is write protected */
-	vLckdErr         = 0xFFD2,  /*  -46 - volume is locked */
-	dupFNErr         = 0xFFD0,  /*  -48 - duplicate filename */
-	opWrErr          = 0xFFCF,  /*  -49 - file already open with write permission */
-	paramErr         = 0xFFCE,  /*  -50 - error in parameter list */
-	permErr          = 0xFFCA,  /*  -54 - permissions error (on file open) */
-	nsDrvErr         = 0xFFC8,  /*  -56 - No Such Drive */
-	wrPermErr        = 0xFFC3,  /*  -61 - write permissions error */
-	offLinErr        = 0xFFBF,  /*  -65 - off-line drive */
-	dirNFErr         = 0xFF88,  /* -120 - directory not found */
-	afpAccessDenied  = 0xEC78,  /* -5000 - Insufficient access privileges */
+enum class tMacErr : uint16_t
+{
+	noErr = 0x0000,			  /*    0 - No Error */
+	miscErr = 0xFFFF,		  /*   -1 - Should probably replace these */
+	controlErr = 0xFFEF,	  /*  -17 - I/O System Errors */
+	statusErr = 0xFFEE,		  /*  -18 - Driver can't respond to Status call */
+	closErr = 0xFFE8,		  /*  -24 - I/O System Errors */
+	eofErr = 0xFFD9,		  /*  -39 - End of file */
+	tmfoErr = 0xFFD6,		  /*  -42 - too many files open */
+	fnfErr = 0xFFD5,		  /*  -43 - File not found */
+	wPrErr = 0xFFD4,		  /*  -44 - diskette is write protected */
+	vLckdErr = 0xFFD2,		  /*  -46 - volume is locked */
+	dupFNErr = 0xFFD0,		  /*  -48 - duplicate filename */
+	opWrErr = 0xFFCF,		  /*  -49 - file already open with write permission */
+	paramErr = 0xFFCE,		  /*  -50 - error in parameter list */
+	permErr = 0xFFCA,		  /*  -54 - permissions error (on file open) */
+	nsDrvErr = 0xFFC8,		  /*  -56 - No Such Drive */
+	wrPermErr = 0xFFC3,		  /*  -61 - write permissions error */
+	offLinErr = 0xFFBF,		  /*  -65 - off-line drive */
+	dirNFErr = 0xFF88,		  /* -120 - directory not found */
+	afpAccessDenied = 0xEC78, /* -5000 - Insufficient access privileges */
 };
 
 using PbufIndex = uint16_t;
@@ -70,8 +71,8 @@ extern tMacErr PbufGetSize(PbufIndex pbufNo, uint32_t *count);
 
 extern tMacErr PbufNew(uint32_t count, PbufIndex *r);
 extern void PbufDispose(PbufIndex i);
-extern void PbufTransfer(uint8_t * buffer,
-	PbufIndex i, uint32_t offset, uint32_t count, bool isWrite);
+extern void PbufTransfer(uint8_t *buffer, PbufIndex i, uint32_t offset, uint32_t count,
+						 bool isWrite);
 
 
 using DriveIndex = uint16_t;
@@ -79,12 +80,10 @@ using DriveIndex = uint16_t;
 extern uint32_t g_sonyWritableMask;
 extern uint32_t g_sonyInsertedMask;
 
-#define vSonyIsInserted(driveNo) \
-	((g_sonyInsertedMask & ((uint32_t)1 << (driveNo))) != 0)
+#define vSonyIsInserted(driveNo) ((g_sonyInsertedMask & ((uint32_t)1 << (driveNo))) != 0)
 
-extern tMacErr vSonyTransfer(bool isWrite, uint8_t * buffer,
-	DriveIndex driveNo, uint32_t sonyStart, uint32_t sonyCount,
-	uint32_t *sonyActCount);
+extern tMacErr vSonyTransfer(bool isWrite, uint8_t *buffer, DriveIndex driveNo, uint32_t sonyStart,
+							 uint32_t sonyCount, uint32_t *sonyActCount);
 extern tMacErr vSonyEject(DriveIndex driveNo);
 extern tMacErr vSonyGetSize(DriveIndex driveNo, uint32_t *sonyCount);
 
@@ -110,23 +109,22 @@ extern uint32_t g_curMacDateInSeconds;
 extern uint32_t g_curMacLatitude;
 extern uint32_t g_curMacLongitude;
 extern uint32_t g_curMacDelta;
-	/* (dlsDelta << 24) | (gmtDelta & 0x00FFFFFF) */
+/* (dlsDelta << 24) | (gmtDelta & 0x00FFFFFF) */
 
 
 /* --- Runtime screen dimensions (via DisplayState struct) --- */
 #include "platform/display_state.h"
-DisplayState& GetDisplayState();
+DisplayState &GetDisplayState();
 
-#define g_screenWidth       (GetDisplayState().screenWidth)
-#define g_screenHeight      (GetDisplayState().screenHeight)
-#define g_screenDepth       (GetDisplayState().screenDepth)
+#define g_screenWidth (GetDisplayState().screenWidth)
+#define g_screenHeight (GetDisplayState().screenHeight)
+#define g_screenDepth (GetDisplayState().screenDepth)
 
-#define vMacScreenWidth  ((long)g_screenWidth)
+#define vMacScreenWidth ((long)g_screenWidth)
 #define vMacScreenHeight ((long)g_screenHeight)
-#define vMacScreenDepth  ((int)g_screenDepth)
+#define vMacScreenDepth ((int)g_screenDepth)
 
-#define vMacScreenNumPixels \
-	((long)vMacScreenHeight * (long)vMacScreenWidth)
+#define vMacScreenNumPixels ((long)vMacScreenHeight * (long)vMacScreenWidth)
 #define vMacScreenNumBits (vMacScreenNumPixels << vMacScreenDepth)
 #define vMacScreenNumBytes (vMacScreenNumBits / 8)
 #define vMacScreenBitWidth ((long)vMacScreenWidth << vMacScreenDepth)
@@ -135,22 +133,22 @@ DisplayState& GetDisplayState();
 #define vMacScreenMonoNumBytes (vMacScreenNumPixels / 8)
 #define vMacScreenMonoByteWidth ((long)vMacScreenWidth / 8)
 
-#define g_useColorMode      (GetDisplayState().useColorMode)
-#define g_colorModeWorks    (GetDisplayState().colorModeWorks)
+#define g_useColorMode (GetDisplayState().useColorMode)
+#define g_colorModeWorks (GetDisplayState().colorModeWorks)
 
 #define g_colorMappingChanged (GetDisplayState().colorMappingChanged)
 
 #define CLUT_size 256
 
-#define CLUT_reds           (GetDisplayState().clutReds)
-#define CLUT_greens         (GetDisplayState().clutGreens)
-#define CLUT_blues          (GetDisplayState().clutBlues)
+#define CLUT_reds (GetDisplayState().clutReds)
+#define CLUT_greens (GetDisplayState().clutGreens)
+#define CLUT_blues (GetDisplayState().clutBlues)
 
 #define g_screenCompareBuff (GetDisplayState().screenCompareBuff)
-#define g_screenChanged     (GetDisplayState().screenChanged)
-#define g_colorTransValid   (GetDisplayState().colorTransValid)
+#define g_screenChanged (GetDisplayState().screenChanged)
+#define g_colorTransValid (GetDisplayState().colorTransValid)
 
-extern void Screen_OutputFrame(uint8_t * screencurrentbuff);
+extern void Screen_OutputFrame(uint8_t *screencurrentbuff);
 extern void DoneWithDrawingForTick();
 
 extern bool g_forceMacOff;
@@ -172,11 +170,11 @@ extern uint16_t g_curMouseH;
 extern uint32_t g_quietTime;
 extern uint32_t g_quietSubTicks;
 
-#define QuietEnds() \
-{ \
-	g_quietTime = 0; \
-	g_quietSubTicks = 0; \
-}
+#define QuietEnds()                                                                                \
+	{                                                                                              \
+		g_quietTime = 0;                                                                           \
+		g_quietSubTicks = 0;                                                                       \
+	}
 
 using RawSoundSample = uint16_t;
 using BufferedSoundSample = uint16_t;
@@ -198,12 +196,12 @@ extern bool g_certainlyNotMyPacket;
 #endif
 
 #define LT_TxBfMxSz 1024
-extern uint8_t * g_ltTxBuffer;
+extern uint8_t *g_ltTxBuffer;
 extern uint16_t g_ltTxBuffSz;
 
 extern void LT_TransmitPacket();
 
-extern uint8_t * g_ltRxBuffer;
+extern uint8_t *g_ltRxBuffer;
 extern uint32_t g_ltRxBuffSz;
 
 extern void LT_ReceivePacket();
@@ -212,30 +210,35 @@ extern void LT_ReceivePacket();
 
 extern void WaitForNextTick();
 
-enum class EvtQElKind : uint8_t {
-	Key        = 0,
+enum class EvtQElKind : uint8_t
+{
+	Key = 0,
 	MouseButton = 1,
-	MousePos   = 2,
+	MousePos = 2,
 	MouseDelta = 3,
 };
 
-struct EvtQEl {
+struct EvtQEl
+{
 	/* expected size : 8 bytes */
 	EvtQElKind kind;
 	uint8_t pad[3];
-	union {
-		struct {
+	union
+	{
+		struct
+		{
 			uint8_t down;
 			uint8_t key;
 		} press;
-		struct {
+		struct
+		{
 			uint16_t h;
 			uint16_t v;
 		} pos;
 	} u;
 };
 
-extern EvtQEl * EvtQOutP();
+extern EvtQEl *EvtQOutP();
 extern void EvtQOutDone();
 
 #include "keycodes.h"

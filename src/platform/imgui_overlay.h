@@ -12,16 +12,16 @@ class EmulatorShell;
 class ImGuiBackend;
 enum class UIState;
 
-class ControlOverlay {
+class ControlOverlay
+{
 public:
 	/* Draw the overlay. Returns true if a UIState change was requested. */
-	bool draw(UIState currentState, EmulatorShell* shell,
-		ImGuiBackend* backend, UIState& requestedState);
+	bool draw(UIState currentState, EmulatorShell *shell, ImGuiBackend *backend,
+			  UIState &requestedState);
 
 private:
-	void drawMachineTab(EmulatorShell* shell);
-	void drawDisplayTab(UIState currentState, ImGuiBackend* backend,
-		UIState& requestedState);
+	void drawMachineTab(EmulatorShell *shell);
+	void drawDisplayTab(UIState currentState, ImGuiBackend *backend, UIState &requestedState);
 	void drawSpeedTab();
-	void drawAdvancedTab(UIState currentState, UIState& requestedState);
+	void drawAdvancedTab(UIState currentState, UIState &requestedState);
 };

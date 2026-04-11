@@ -15,15 +15,16 @@
 
 static constexpr int kMaxWires = 64;
 
-class WireBus {
+class WireBus
+{
 public:
 	using ChangeCallback = std::function<void()>;
 
 	void init(int numWires);
 
-	uint8_t  get(int wireId) const        { return wires_[wireId]; }
-	void     set(int wireId, uint8_t val);  // sets value + fires callback if changed
-	uint8_t* data()                       { return wires_.data(); } // compat with Wires pointer
+	uint8_t get(int wireId) const { return wires_[wireId]; }
+	void set(int wireId, uint8_t val);		  // sets value + fires callback if changed
+	uint8_t *data() { return wires_.data(); } // compat with Wires pointer
 
 	// Register a callback for when a wire changes value.
 	// Multiple callbacks per wire are supported (appended).

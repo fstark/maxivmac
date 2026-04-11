@@ -12,14 +12,14 @@
 #pragma once
 
 #include "core/types.h"
-	/* see OSGCOMUI.h for comment */
+/* see OSGCOMUI.h for comment */
 #include "core/defaults.h"
-	/* see OSGCOMUI.h for comment */
+/* see OSGCOMUI.h for comment */
 #include "core/endian.h"
 #include "platform/platform.h"
 #include "core/emulation_config.h"
-	/*
-		Configuration file dependent on user options
-		suitable for platform indendent code.
-	*/
+/*
+	Configuration file dependent on user options
+	suitable for platform indendent code.
+*/
 #include "core/machine.h"

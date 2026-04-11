@@ -52,7 +52,8 @@
    is always available when the deeper modes are in use. */
 static const uint32_t kMaxVRAM = 6u * 1024 * 1024;
 
-struct ResolutionEntry {
+struct ResolutionEntry
+{
 	uint32_t displayModeID;
 	uint16_t width;
 	uint16_t height;
@@ -84,56 +85,39 @@ static uint16_t s_hostDesktopH = 0;
    sResource card has to tell the Graphics Device Manager about a
    resolution change — Basilisk II does the same thing. */
 static size_t s_vpBlockROMOffset[kMaxModes];
-static int    s_numVPBlocks = 0;
+static int s_numVPBlocks = 0;
 
 static const uint8_t VidDrvr_contents[] = {
-0x4C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-0x00, 0x2A, 0x00, 0x00, 0x00, 0xE2, 0x00, 0xEC,
-0x00, 0xB6, 0x15, 0x2E, 0x44, 0x69, 0x73, 0x70,
-0x6C, 0x61, 0x79, 0x5F, 0x56, 0x69, 0x64, 0x65,
-0x6F, 0x5F, 0x53, 0x61, 0x6D, 0x70, 0x6C, 0x65,
-0x00, 0x00, 0x24, 0x48, 0x26, 0x49, 0x70, 0x04,
-0xA4, 0x40, 0x70, 0x04, 0xA7, 0x22, 0x66, 0x00,
-0x00, 0x50, 0x27, 0x48, 0x00, 0x14, 0xA0, 0x29,
-0x49, 0xFA, 0x00, 0x4A, 0x70, 0x10, 0xA7, 0x1E,
-0x66, 0x00, 0x00, 0x3E, 0x31, 0x7C, 0x00, 0x06,
-0x00, 0x04, 0x21, 0x4C, 0x00, 0x08, 0x21, 0x4B,
-0x00, 0x0C, 0x70, 0x00, 0x10, 0x2B, 0x00, 0x28,
-0xA0, 0x75, 0x66, 0x24, 0x22, 0x6B, 0x00, 0x14,
-0x22, 0x51, 0x22, 0x88, 0x3F, 0x3C, 0x00, 0x01,
-0x55, 0x4F, 0x3F, 0x3C, 0x00, 0x03, 0x41, 0xFA,
-0x00, 0x9C, 0x2F, 0x18, 0x20, 0x50, 0x20, 0x8F,
-0xDE, 0xFC, 0x00, 0x0A, 0x70, 0x00, 0x60, 0x02,
-0x70, 0xE9, 0x4E, 0x75, 0x2F, 0x08, 0x55, 0x4F,
-0x3F, 0x3C, 0x00, 0x04, 0x41, 0xFA, 0x00, 0x7E,
-0x2F, 0x18, 0x20, 0x50, 0x20, 0x8F, 0x50, 0x4F,
-0x20, 0x29, 0x00, 0x2A, 0xE1, 0x98, 0x02, 0x40,
-0x00, 0x0F, 0x20, 0x78, 0x0D, 0x28, 0x4E, 0x90,
-0x20, 0x5F, 0x70, 0x01, 0x4E, 0x75, 0x2F, 0x0B,
-0x26, 0x69, 0x00, 0x14, 0x42, 0x67, 0x55, 0x4F,
-0x3F, 0x3C, 0x00, 0x03, 0x41, 0xFA, 0x00, 0x4E,
-0x2F, 0x18, 0x20, 0x50, 0x20, 0x8F, 0xDE, 0xFC,
-0x00, 0x0A, 0x20, 0x53, 0x20, 0x50, 0xA0, 0x76,
-0x20, 0x4B, 0xA0, 0x23, 0x70, 0x00, 0x26, 0x5F,
-0x4E, 0x75, 0x2F, 0x08, 0x55, 0x4F, 0x3F, 0x3C,
-0x00, 0x06, 0x60, 0x08, 0x2F, 0x08, 0x55, 0x4F,
-0x3F, 0x3C, 0x00, 0x05, 0x41, 0xFA, 0x00, 0x1E,
-0x2F, 0x18, 0x20, 0x50, 0x20, 0x8F, 0x5C, 0x4F,
-0x30, 0x1F, 0x20, 0x5F, 0x08, 0x28, 0x00, 0x09,
-0x00, 0x06, 0x67, 0x02, 0x4E, 0x75, 0x20, 0x78,
-0x08, 0xFC, 0x4E, 0xD0
-};
+	0x4C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A, 0x00, 0x00, 0x00, 0xE2, 0x00, 0xEC,
+	0x00, 0xB6, 0x15, 0x2E, 0x44, 0x69, 0x73, 0x70, 0x6C, 0x61, 0x79, 0x5F, 0x56, 0x69, 0x64, 0x65,
+	0x6F, 0x5F, 0x53, 0x61, 0x6D, 0x70, 0x6C, 0x65, 0x00, 0x00, 0x24, 0x48, 0x26, 0x49, 0x70, 0x04,
+	0xA4, 0x40, 0x70, 0x04, 0xA7, 0x22, 0x66, 0x00, 0x00, 0x50, 0x27, 0x48, 0x00, 0x14, 0xA0, 0x29,
+	0x49, 0xFA, 0x00, 0x4A, 0x70, 0x10, 0xA7, 0x1E, 0x66, 0x00, 0x00, 0x3E, 0x31, 0x7C, 0x00, 0x06,
+	0x00, 0x04, 0x21, 0x4C, 0x00, 0x08, 0x21, 0x4B, 0x00, 0x0C, 0x70, 0x00, 0x10, 0x2B, 0x00, 0x28,
+	0xA0, 0x75, 0x66, 0x24, 0x22, 0x6B, 0x00, 0x14, 0x22, 0x51, 0x22, 0x88, 0x3F, 0x3C, 0x00, 0x01,
+	0x55, 0x4F, 0x3F, 0x3C, 0x00, 0x03, 0x41, 0xFA, 0x00, 0x9C, 0x2F, 0x18, 0x20, 0x50, 0x20, 0x8F,
+	0xDE, 0xFC, 0x00, 0x0A, 0x70, 0x00, 0x60, 0x02, 0x70, 0xE9, 0x4E, 0x75, 0x2F, 0x08, 0x55, 0x4F,
+	0x3F, 0x3C, 0x00, 0x04, 0x41, 0xFA, 0x00, 0x7E, 0x2F, 0x18, 0x20, 0x50, 0x20, 0x8F, 0x50, 0x4F,
+	0x20, 0x29, 0x00, 0x2A, 0xE1, 0x98, 0x02, 0x40, 0x00, 0x0F, 0x20, 0x78, 0x0D, 0x28, 0x4E, 0x90,
+	0x20, 0x5F, 0x70, 0x01, 0x4E, 0x75, 0x2F, 0x0B, 0x26, 0x69, 0x00, 0x14, 0x42, 0x67, 0x55, 0x4F,
+	0x3F, 0x3C, 0x00, 0x03, 0x41, 0xFA, 0x00, 0x4E, 0x2F, 0x18, 0x20, 0x50, 0x20, 0x8F, 0xDE, 0xFC,
+	0x00, 0x0A, 0x20, 0x53, 0x20, 0x50, 0xA0, 0x76, 0x20, 0x4B, 0xA0, 0x23, 0x70, 0x00, 0x26, 0x5F,
+	0x4E, 0x75, 0x2F, 0x08, 0x55, 0x4F, 0x3F, 0x3C, 0x00, 0x06, 0x60, 0x08, 0x2F, 0x08, 0x55, 0x4F,
+	0x3F, 0x3C, 0x00, 0x05, 0x41, 0xFA, 0x00, 0x1E, 0x2F, 0x18, 0x20, 0x50, 0x20, 0x8F, 0x5C, 0x4F,
+	0x30, 0x1F, 0x20, 0x5F, 0x08, 0x28, 0x00, 0x09, 0x00, 0x06, 0x67, 0x02, 0x4E, 0x75, 0x20, 0x78,
+	0x08, 0xFC, 0x4E, 0xD0};
 
 static void ChecksumSlotROM()
 {
 	/* Calculate CRC */
 	/* assuming check sum field initialized to zero */
 	int i;
-	uint8_t * p = g_vidROM;
+	uint8_t *p = g_vidROM;
 	uint32_t crc = 0;
 
-	const auto& cfg = g_machine->config();
-	for (i = cfg.vidROMSize; --i >= 0; ) {
+	const auto &cfg = g_machine->config();
+	for (i = cfg.vidROMSize; --i >= 0;)
+	{
 		crc = ((crc << 1) | (crc >> 31)) + *p++;
 	}
 	do_put_mem_long(p - 12, crc);
@@ -154,10 +138,11 @@ static void ChecksumSlotROM()
 */
 static void patchSlotROMVPBlocks(uint16_t newW, uint16_t newH)
 {
-	const auto& cfg = g_machine->config();
+	const auto &cfg = g_machine->config();
 	SlotROMWriter w(g_vidROM, cfg.vidROMSize);
 
-	for (int d = 0; d < s_numVPBlocks; d++) {
+	for (int d = 0; d < s_numVPBlocks; d++)
+	{
 		w.seek(s_vpBlockROMOffset[d]);
 		VPBlock::forMode(d, newW, newH).writeTo(w);
 	}
@@ -166,8 +151,7 @@ static void patchSlotROMVPBlocks(uint16_t newW, uint16_t newH)
 	do_put_mem_long(g_vidROM + cfg.vidROMSize - 12, 0);
 	ChecksumSlotROM();
 
-	VID_LOG("patchSlotROMVPBlocks → %ux%u (%d modes)",
-		newW, newH, s_numVPBlocks);
+	VID_LOG("patchSlotROMVPBlocks → %ux%u (%d modes)", newW, newH, s_numVPBlocks);
 }
 
 /* Return the CLUT size for a given depth (0 for direct modes) */
@@ -179,11 +163,11 @@ static int clutSizeForDepth(int depth)
 }
 
 /* Look up a resolution by displayModeID.  Returns nullptr if not found. */
-static const ResolutionEntry* findResolution(uint32_t displayModeID)
+static const ResolutionEntry *findResolution(uint32_t displayModeID)
 {
-	for (int i = 0; i < s_numResolutions; i++) {
-		if (s_resolutions[i].displayModeID == displayModeID)
-			return &s_resolutions[i];
+	for (int i = 0; i < s_numResolutions; i++)
+	{
+		if (s_resolutions[i].displayModeID == displayModeID) return &s_resolutions[i];
 	}
 	return nullptr;
 }
@@ -191,16 +175,17 @@ static const ResolutionEntry* findResolution(uint32_t displayModeID)
 /* Return the next resolution after prevID, or nullptr if exhausted. */
 /* DM2 sentinel values for GetNextResolution iteration */
 static constexpr uint32_t kDisplayModeIDFindFirstResolution = 0xFFFFFFFE;
-static constexpr uint32_t kDisplayModeIDNoMoreResolutions   = 0xFFFFFFFD;
+static constexpr uint32_t kDisplayModeIDNoMoreResolutions = 0xFFFFFFFD;
 
-static const ResolutionEntry* nextResolution(uint32_t prevID)
+static const ResolutionEntry *nextResolution(uint32_t prevID)
 {
 	if (prevID == 0 || prevID == kDisplayModeIDFindFirstResolution)
 		return (s_numResolutions > 0) ? &s_resolutions[0] : nullptr;
-	for (int i = 0; i < s_numResolutions; i++) {
-		if (s_resolutions[i].displayModeID == prevID) {
-			if (i + 1 < s_numResolutions)
-				return &s_resolutions[i + 1];
+	for (int i = 0; i < s_numResolutions; i++)
+	{
+		if (s_resolutions[i].displayModeID == prevID)
+		{
+			if (i + 1 < s_numResolutions) return &s_resolutions[i + 1];
 			return nullptr;
 		}
 	}
@@ -217,10 +202,10 @@ static uint32_t VRAMForResolution(uint16_t w, uint16_t h, int depth)
 static int maxDepthForResolution(uint16_t w, uint16_t h, uint32_t vidMemSize)
 {
 	int best = 0;
-	for (int d = 0; d <= 5; d++) {
+	for (int d = 0; d <= 5; d++)
+	{
 		uint32_t bytes = (uint32_t)w * h * (1 << d) / 8;
-		if (bytes <= vidMemSize)
-			best = d;
+		if (bytes <= vidMemSize) best = d;
 	}
 	return best;
 }
@@ -231,19 +216,19 @@ static int maxDepthForResolution(uint16_t w, uint16_t h, uint32_t vidMemSize)
    differ from the classic set and fit within 15 MB VRAM. */
 static void buildResolutionTable()
 {
-	static const struct { uint32_t id; uint16_t w, h; } kClassic[] = {
-		{ 1,  512,  342 },
-		{ 2,  512,  384 },
-		{ 3,  640,  480 },
-		{ 4,  832,  624 },
-		{ 5, 1024,  768 },
-		{ 6, 1152,  870 },
+	static const struct
+	{
+		uint32_t id;
+		uint16_t w, h;
+	} kClassic[] = {
+		{1, 512, 342}, {2, 512, 384}, {3, 640, 480}, {4, 832, 624}, {5, 1024, 768}, {6, 1152, 870},
 	};
 	s_numResolutions = 0;
-	for (int i = 0; i < (int)(sizeof(kClassic) / sizeof(kClassic[0])); i++) {
+	for (int i = 0; i < (int)(sizeof(kClassic) / sizeof(kClassic[0])); i++)
+	{
 		if (s_numResolutions >= kMaxResolutions) break;
 		s_resolutions[s_numResolutions].displayModeID = kClassic[i].id;
-		s_resolutions[s_numResolutions].width  = kClassic[i].w;
+		s_resolutions[s_numResolutions].width = kClassic[i].w;
 		s_resolutions[s_numResolutions].height = kClassic[i].h;
 		s_numResolutions++;
 	}
@@ -253,17 +238,22 @@ static void buildResolutionTable()
 	   and fit in VRAM at 1 bpp minimum.  Higher depths are gated per-
 	   resolution by maxDepthForResolution() which checks VRAM capacity
 	   (capped at kMaxVRAM by the NuBus slot 9 address space). */
-	struct { uint32_t id; uint16_t w, h; } hostRes[2];
+	struct
+	{
+		uint32_t id;
+		uint16_t w, h;
+	} hostRes[2];
 	int hostCount = 0;
 
-	if (s_hostDesktopW > 0 && s_hostDesktopH > 0) {
-		hostRes[0] = { 100, s_hostDesktopW, s_hostDesktopH };
-		hostRes[1] = { 101, (uint16_t)(s_hostDesktopW / 2),
-		               (uint16_t)(s_hostDesktopH / 2) };
+	if (s_hostDesktopW > 0 && s_hostDesktopH > 0)
+	{
+		hostRes[0] = {100, s_hostDesktopW, s_hostDesktopH};
+		hostRes[1] = {101, (uint16_t)(s_hostDesktopW / 2), (uint16_t)(s_hostDesktopH / 2)};
 		hostCount = 2;
 	}
 
-	for (int hi = 0; hi < hostCount; hi++) {
+	for (int hi = 0; hi < hostCount; hi++)
+	{
 		uint16_t hw = hostRes[hi].w, hh = hostRes[hi].h;
 		if (hw < 512 || hh < 342) continue; /* too small */
 
@@ -272,10 +262,12 @@ static void buildResolutionTable()
 
 		/* Check for near-duplicate of a classic entry */
 		bool dup = false;
-		for (int ci = 0; ci < s_numResolutions; ci++) {
+		for (int ci = 0; ci < s_numResolutions; ci++)
+		{
 			int dw = (int)hw - (int)s_resolutions[ci].width;
 			int dh = (int)hh - (int)s_resolutions[ci].height;
-			if (dw >= -8 && dw <= 8 && dh >= -8 && dh <= 8) {
+			if (dw >= -8 && dw <= 8 && dh >= -8 && dh <= 8)
+			{
 				dup = true;
 				break;
 			}
@@ -284,7 +276,7 @@ static void buildResolutionTable()
 
 		if (s_numResolutions >= kMaxResolutions) break;
 		s_resolutions[s_numResolutions].displayModeID = hostRes[hi].id;
-		s_resolutions[s_numResolutions].width  = hw;
+		s_resolutions[s_numResolutions].width = hw;
 		s_resolutions[s_numResolutions].height = hh;
 		s_numResolutions++;
 	}
@@ -298,7 +290,7 @@ static void buildResolutionTable()
 */
 bool VideoDevice::init()
 {
-	const auto& cfg = g_machine->config();
+	const auto &cfg = g_machine->config();
 	uint16_t bootWidth = cfg.screenWidth;
 	uint16_t bootHeight = cfg.screenHeight;
 
@@ -307,29 +299,36 @@ bool VideoDevice::init()
 
 	/* Find the boot resolution — pick the classic entry matching
 	   the configured screen size, or default to 640×480 (ID 3). */
-	const ResolutionEntry* bootRes = nullptr;
+	const ResolutionEntry *bootRes = nullptr;
 	int bootIndex = -1;
-	for (int i = 0; i < s_numResolutions; i++) {
-		if (s_resolutions[i].width == bootWidth &&
-			s_resolutions[i].height == bootHeight) {
+	for (int i = 0; i < s_numResolutions; i++)
+	{
+		if (s_resolutions[i].width == bootWidth && s_resolutions[i].height == bootHeight)
+		{
 			bootRes = &s_resolutions[i];
 			bootIndex = i;
 			break;
 		}
 	}
-	if (!bootRes) {
+	if (!bootRes)
+	{
 		/* Configured resolution not in table; use 640×480 */
 		bootRes = findResolution(3);
 		if (!bootRes) bootRes = &s_resolutions[0];
 		for (int i = 0; i < s_numResolutions; i++)
-			if (&s_resolutions[i] == bootRes) { bootIndex = i; break; }
+			if (&s_resolutions[i] == bootRes)
+			{
+				bootIndex = i;
+				break;
+			}
 	}
 
 	/* Move boot resolution to front of table so its sResource
 	   (ID 0x80) is the first video functional sResource in the
 	   directory.  The Slot Manager boots from the first video
 	   sResource when PRAM has no saved preference. */
-	if (bootIndex > 0) {
+	if (bootIndex > 0)
+	{
 		ResolutionEntry tmp = s_resolutions[0];
 		s_resolutions[0] = s_resolutions[bootIndex];
 		s_resolutions[bootIndex] = tmp;
@@ -348,18 +347,15 @@ bool VideoDevice::init()
 		The user can switch to Thousands / Millions via Monitors once
 		the desktop is up.
 	*/
-	int bootResMaxDepth = maxDepthForResolution(
-		bootRes->width, bootRes->height, cfg.vidMemSize);
+	int bootResMaxDepth = maxDepthForResolution(bootRes->width, bootRes->height, cfg.vidMemSize);
 	int bootDepth = (bootResMaxDepth >= 4) ? 3 : bootResMaxDepth;
 	s_currentDepth = bootDepth;
 	g_screenDepth = bootDepth;
 	g_screenWidth = bootRes->width;
 	g_screenHeight = bootRes->height;
 	g_useColorMode = (bootDepth > 0);
-	if (s_preferredDepth < 0)
-		s_preferredDepth = bootDepth;
-	if (s_preferredDisplayModeID < 0)
-		s_preferredDisplayModeID = (int)bootRes->displayModeID;
+	if (s_preferredDepth < 0) s_preferredDepth = bootDepth;
+	if (s_preferredDisplayModeID < 0) s_preferredDisplayModeID = (int)bootRes->displayModeID;
 
 #if VID_dolog
 	dbglog_writelnNum("VideoDevice::init bootResMaxDepth", bootResMaxDepth);
@@ -370,13 +366,11 @@ bool VideoDevice::init()
 	dbglog_writelnNum("  vidROMSize", cfg.vidROMSize);
 	dbglog_writelnNum("  vidMemSize", cfg.vidMemSize);
 #endif
-	VID_LOG("init: boot=%ux%u bootDepth=%d bootResMaxDepth=%d vidMem=%u numRes=%d",
-		bootRes->width, bootRes->height, bootDepth, bootResMaxDepth,
-		cfg.vidMemSize, s_numResolutions);
+	VID_LOG("init: boot=%ux%u bootDepth=%d bootResMaxDepth=%d vidMem=%u numRes=%d", bootRes->width,
+			bootRes->height, bootDepth, bootResMaxDepth, cfg.vidMemSize, s_numResolutions);
 	for (int ri = 0; ri < s_numResolutions; ri++)
-		VID_LOG("  res[%d]: id=%u %ux%u",
-			ri, s_resolutions[ri].displayModeID,
-			s_resolutions[ri].width, s_resolutions[ri].height);
+		VID_LOG("  res[%d]: id=%u %ux%u", ri, s_resolutions[ri].displayModeID,
+				s_resolutions[ri].width, s_resolutions[ri].height);
 
 	SlotROMWriter w(g_vidROM, cfg.vidROMSize);
 
@@ -396,12 +390,12 @@ bool VideoDevice::init()
 	w.patchOffset(rBoard, 0x01);
 	auto rBoardType = w.reserve();
 	auto rBoardName = w.reserve();
-	w.writeDataEntry(0x20, 0x00764D);  /* BoardId: 'vM' */
+	w.writeDataEntry(0x20, 0x00764D); /* BoardId: 'vM' */
 	auto rVendorInfo = w.reserve();
 	w.writeEndOfList();
 
 	w.patchOffset(rBoardType, 0x01);
-	w.writeWord(0x0001);  /* catDisplay */
+	w.writeWord(0x0001); /* catDisplay */
 	w.writeWord(0x0000);
 	w.writeWord(0x0000);
 	w.writeWord(0x0000);
@@ -413,7 +407,7 @@ bool VideoDevice::init()
 	w.patchOffset(rVendorInfo, 0x24);
 	auto rVendorID = w.reserve();
 	auto rRevLevel = w.reserve();
-	auto rPartNum  = w.reserve();
+	auto rPartNum = w.reserve();
 	w.writeEndOfList();
 
 	w.patchOffset(rVendorID, 0x01);
@@ -429,16 +423,15 @@ bool VideoDevice::init()
 	   Contains depth mode entries for the boot resolution.
 	   Other resolutions are exposed via GetNextResolution. */
 	{
-		int bootMaxDepth = maxDepthForResolution(
-			bootRes->width, bootRes->height, cfg.vidMemSize);
+		int bootMaxDepth = maxDepthForResolution(bootRes->width, bootRes->height, cfg.vidMemSize);
 
 		w.patchOffset(rVideo, 0x80);
 
 		auto rVideoType = w.reserve();
 		auto rVideoName = w.reserve();
 		auto rVidDrvrDir = w.reserve();
-		w.writeDataEntry(0x08, 0x00000001);  /* sRsrcHWDevId */
-		auto rMinorBase   = w.reserve();
+		w.writeDataEntry(0x08, 0x00000001); /* sRsrcHWDevId */
+		auto rMinorBase = w.reserve();
 		auto rMinorLength = w.reserve();
 
 		/* Reserve one entry per depth mode */
@@ -448,10 +441,10 @@ bool VideoDevice::init()
 		w.writeEndOfList();
 
 		w.patchOffset(rVideoType, 0x01);
-		w.writeWord(0x0003);  /* catDisplay */
-		w.writeWord(0x0001);  /* typVideo */
-		w.writeWord(0x0001);  /* drSwApple */
-		w.writeWord(0x0001);  /* drHwTFB */
+		w.writeWord(0x0003); /* catDisplay */
+		w.writeWord(0x0001); /* typVideo */
+		w.writeWord(0x0001); /* drSwApple */
+		w.writeWord(0x0001); /* drHwTFB */
 
 		w.patchOffset(rVideoName, 0x02);
 		w.writeString("Display_Video_Apple_TFB");
@@ -467,7 +460,7 @@ bool VideoDevice::init()
 		auto rDriverEntry = w.reserve();
 		w.writeEndOfList();
 
-		w.patchOffset(rDriverEntry, 0x02);  /* sMacOS68020 */
+		w.patchOffset(rDriverEntry, 0x02); /* sMacOS68020 */
 		w.writeLong(4 + sizeof(VidDrvr_contents) + 8);
 		w.writeBytes(VidDrvr_contents, sizeof(VidDrvr_contents));
 		w.writeWord(kcom_callcheck);
@@ -475,14 +468,15 @@ bool VideoDevice::init()
 		w.writeLong(cfg.extnBlockBase);
 
 		/* Mode entries and VPBlocks for the boot resolution */
-		for (int d = 0; d <= bootMaxDepth; d++) {
+		for (int d = 0; d <= bootMaxDepth; d++)
+		{
 			w.patchOffset(rModes[d], 0x80 + d);
 			auto rVP = w.reserve();
-			w.writeDataEntry(0x03, 0x00000001);  /* mPageCnt = 1 */
+			w.writeDataEntry(0x03, 0x00000001); /* mPageCnt = 1 */
 			w.writeDataEntry(0x04, (d < 4) ? 0x00000000 : 0x00000002);
 			w.writeEndOfList();
 
-			w.patchOffset(rVP, 0x01);  /* mVidParams */
+			w.patchOffset(rVP, 0x01); /* mVidParams */
 			s_vpBlockROMOffset[d] = w.pos();
 			VPBlock::forMode(d, bootRes->width, bootRes->height).writeTo(w);
 		}
@@ -495,9 +489,9 @@ bool VideoDevice::init()
 	dbglog_writelnNum("  ROM used bytes", (long)usedSoFar);
 	dbglog_writelnNum("  ROM resolutions", s_numResolutions);
 #endif
-	if (usedSoFar > cfg.vidROMSize) {
-		ReportAbnormalID(AbnormalID::kVIDEO_vidROMSize_too_small,
-			"vidROMSize too small");
+	if (usedSoFar > cfg.vidROMSize)
+	{
+		ReportAbnormalID(AbnormalID::kVIDEO_vidROMSize_too_small, "vidROMSize too small");
 		return false;
 	}
 
@@ -508,17 +502,18 @@ bool VideoDevice::init()
 	/* ROM trailer (last 20 bytes) */
 	w.writeLong((uint32_t)(sRsrcDir - (cfg.vidROMSize - 20)) & 0x00FFFFFF);
 	w.writeLong(cfg.vidROMSize);
-	w.writeLong(0x00000000);  /* CRC placeholder */
-	w.writeByte(0x01);  /* revision level */
-	w.writeByte(0x01);  /* format */
-	w.writeLong(0x5A932BC7);  /* test pattern */
-	w.writeByte(0x00);  /* reserved */
-	w.writeByte(0x0F);  /* byte lanes */
+	w.writeLong(0x00000000); /* CRC placeholder */
+	w.writeByte(0x01);		 /* revision level */
+	w.writeByte(0x01);		 /* format */
+	w.writeLong(0x5A932BC7); /* test pattern */
+	w.writeByte(0x00);		 /* reserved */
+	w.writeByte(0x0F);		 /* byte lanes */
 
 	ChecksumSlotROM();
 
 	/* Initialize CLUT for the boot depth (indexed modes only) */
-	if (bootDepth > 0 && bootDepth < 4) {
+	if (bootDepth > 0 && bootDepth < 4)
+	{
 		CLUT_reds[0] = 0xFFFF;
 		CLUT_greens[0] = 0xFFFF;
 		CLUT_blues[0] = 0xFFFF;
@@ -533,10 +528,10 @@ bool VideoDevice::init()
 
 void VideoDevice::update()
 {
-	if (! Vid_VBLintunenbl) {
+	if (!Vid_VBLintunenbl)
+	{
 		g_wires.set(Wire_VBLinterrupt, 0);
-		if (auto* via2 = machine_->findDevice<VIA2Device>())
-			via2->iCA1_PulseNtfy();
+		if (auto *via2 = machine_->findDevice<VIA2Device>()) via2->iCA1_PulseNtfy();
 	}
 }
 
@@ -548,15 +543,13 @@ static uint16_t Vid_GetMode()
 static tMacErr Vid_SetMode(uint16_t modeID)
 {
 	int newDepth = modeID - 0x80;
-	if (newDepth < 0 || newDepth > 5)
-		return tMacErr::paramErr;
+	if (newDepth < 0 || newDepth > 5) return tMacErr::paramErr;
 
 	/* Verify the current resolution fits in VRAM at this depth */
-	if (VRAMForResolution(s_currentWidth, s_currentHeight, newDepth)
-	    > g_machine->config().vidMemSize)
+	if (VRAMForResolution(s_currentWidth, s_currentHeight, newDepth) >
+		g_machine->config().vidMemSize)
 		return tMacErr::paramErr;
-	if (newDepth == s_currentDepth)
-		return tMacErr::noErr;
+	if (newDepth == s_currentDepth) return tMacErr::noErr;
 
 	s_currentDepth = newDepth;
 	g_screenDepth = newDepth;
@@ -564,7 +557,8 @@ static tMacErr Vid_SetMode(uint16_t modeID)
 	g_colorMappingChanged = true;
 
 	/* Re-initialize CLUT for indexed modes */
-	if (newDepth > 0 && newDepth < 4) {
+	if (newDepth > 0 && newDepth < 4)
+	{
 		int cs = clutSizeForDepth(newDepth);
 		CLUT_reds[0] = 0xFFFF;
 		CLUT_greens[0] = 0xFFFF;
@@ -581,10 +575,9 @@ uint16_t VideoDevice::vidReset()
 {
 	int defDepth = (s_preferredDepth >= 0) ? s_preferredDepth : 0;
 	/* Clamp to what fits at current resolution */
-	int resMax = maxDepthForResolution(s_currentWidth, s_currentHeight,
-		g_machine->config().vidMemSize);
-	if (defDepth > resMax)
-		defDepth = resMax;
+	int resMax =
+		maxDepthForResolution(s_currentWidth, s_currentHeight, g_machine->config().vidMemSize);
+	if (defDepth > resMax) defDepth = resMax;
 
 	s_currentDepth = defDepth;
 	g_screenDepth = defDepth;
@@ -595,13 +588,14 @@ uint16_t VideoDevice::vidReset()
 	   then reboots; the System calls GetPreferredConfiguration
 	   on startup but the video card must also boot into the
 	   preferred resolution. */
-	if (s_preferredDisplayModeID >= 0) {
-		const ResolutionEntry* res =
-			findResolution((uint32_t)s_preferredDisplayModeID);
-		if (res) {
-			uint32_t needBytes = VRAMForResolution(
-				res->width, res->height, defDepth);
-			if (needBytes <= g_machine->config().vidMemSize) {
+	if (s_preferredDisplayModeID >= 0)
+	{
+		const ResolutionEntry *res = findResolution((uint32_t)s_preferredDisplayModeID);
+		if (res)
+		{
+			uint32_t needBytes = VRAMForResolution(res->width, res->height, defDepth);
+			if (needBytes <= g_machine->config().vidMemSize)
+			{
 				s_currentWidth = res->width;
 				s_currentHeight = res->height;
 				s_currentDisplayModeID = (uint32_t)s_preferredDisplayModeID;
@@ -623,7 +617,7 @@ static constexpr int kCmndVideoClearInt = 4;
 static constexpr int kCmndVideoStatus = 5;
 static constexpr int kCmndVideoControl = 6;
 
-#define CntrlParam_csCode 0x1A /* control/status code [word] */
+#define CntrlParam_csCode 0x1A	/* control/status code [word] */
 #define CntrlParam_csParam 0x1C /* operation-defined parameters */
 
 #define VDPageInfo_csMode 0
@@ -676,36 +670,59 @@ static void FillScreenWithGrayPattern()
 	uint32_t *p1 = reinterpret_cast<uint32_t *>(g_vidMem);
 	int depth = s_currentDepth;
 
-	if (depth > 0) {
+	if (depth > 0)
+	{
 		uint32_t pat;
-		switch (depth) {
-			case 1: pat = 0xCCCCCCCC; break;
-			case 2: pat = 0xF0F0F0F0; break;
-			case 3: pat = 0xFF00FF00; break;
-			case 4: pat = 0x00007FFF; break;
-			case 5: pat = 0x00000000; break;
-			default: pat = 0xAAAAAAAA; break;
+		switch (depth)
+		{
+			case 1:
+				pat = 0xCCCCCCCC;
+				break;
+			case 2:
+				pat = 0xF0F0F0F0;
+				break;
+			case 3:
+				pat = 0xFF00FF00;
+				break;
+			case 4:
+				pat = 0x00007FFF;
+				break;
+			case 5:
+				pat = 0x00000000;
+				break;
+			default:
+				pat = 0xAAAAAAAA;
+				break;
 		}
 		int byteWidth = (int)((uint32_t)vMacScreenWidth * (1 << depth) / 8);
-		for (i = vMacScreenHeight; --i >= 0; ) {
-			for (j = byteWidth >> 2; --j >= 0; ) {
+		for (i = vMacScreenHeight; --i >= 0;)
+		{
+			for (j = byteWidth >> 2; --j >= 0;)
+			{
 				*p1++ = pat;
-				if (depth == 5) {
-					pat = (~ pat) & 0x00FFFFFF;
+				if (depth == 5)
+				{
+					pat = (~pat) & 0x00FFFFFF;
 				}
 			}
-			pat = (~ pat);
-			if (depth == 4) pat &= 0x7FFF7FFF;
-			else if (depth == 5) pat &= 0x00FFFFFF;
+			pat = (~pat);
+			if (depth == 4)
+				pat &= 0x7FFF7FFF;
+			else if (depth == 5)
+				pat &= 0x00FFFFFF;
 		}
-	} else {
+	}
+	else
+	{
 		uint32_t pat = 0xAAAAAAAA;
 
-		for (i = vMacScreenHeight; --i >= 0; ) {
-			for (j = vMacScreenMonoByteWidth >> 2; --j >= 0; ) {
+		for (i = vMacScreenHeight; --i >= 0;)
+		{
+			for (j = vMacScreenMonoByteWidth >> 2; --j >= 0;)
+			{
 				*p1++ = pat;
 			}
-			pat = ~ pat;
+			pat = ~pat;
 		}
 	}
 }
@@ -720,15 +737,14 @@ void VideoDevice::reset()
 	Note: physBlockSize is a ROM sBlock header, NOT part of the
 	VPBlock struct.  The guest buffer starts at vpBaseOffset.
 */
-static void writeVPBlockToGuest(int depth, uint16_t width,
-	uint16_t height, uint32_t guestPtr)
+static void writeVPBlockToGuest(int depth, uint16_t width, uint16_t height, uint32_t guestPtr)
 {
 	VPBlock vp = VPBlock::forMode(depth, width, height);
 
-	put_vm_long(guestPtr +  0, vp.baseOffset);
-	put_vm_word(guestPtr +  4, vp.rowBytes);
-	put_vm_word(guestPtr +  6, vp.boundsTop);
-	put_vm_word(guestPtr +  8, vp.boundsLeft);
+	put_vm_long(guestPtr + 0, vp.baseOffset);
+	put_vm_word(guestPtr + 4, vp.rowBytes);
+	put_vm_word(guestPtr + 6, vp.boundsTop);
+	put_vm_word(guestPtr + 8, vp.boundsLeft);
 	put_vm_word(guestPtr + 10, vp.boundsBottom);
 	put_vm_word(guestPtr + 12, vp.boundsRight);
 	put_vm_word(guestPtr + 14, vp.version);
@@ -754,7 +770,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
 
-	switch (get_vm_word(p + ExtnDat_commnd)) {
+	switch (get_vm_word(p + ExtnDat_commnd))
+	{
 		case kCmndVersion:
 #if VID_dolog
 			dbglog_WriteNote("Video_Access kCmndVersion");
@@ -766,17 +783,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #if VID_dolog
 			dbglog_WriteNote("Video_Access kCmndVideoGetIntEnbl");
 #endif
-			put_vm_word(p + 8,
-				Vid_VBLintunenbl ? 0 : 1);
+			put_vm_word(p + 8, Vid_VBLintunenbl ? 0 : 1);
 			result = tMacErr::noErr;
 			break;
 		case kCmndVideoSetIntEnbl:
 #if VID_dolog
 			dbglog_WriteNote("Video_Access kCmndVideoSetIntEnbl");
 #endif
-			g_wires.set(Wire_VBLintunenbl,
-				(0 == get_vm_word(p + 8))
-					? 1 : 0);
+			g_wires.set(Wire_VBLintunenbl, (0 == get_vm_word(p + 8)) ? 1 : 0);
 			result = tMacErr::noErr;
 			break;
 		case kCmndVideoClearInt:
@@ -787,604 +801,552 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 			result = tMacErr::noErr;
 			break;
 		case kCmndVideoControl:
-			{
-				uint32_t CntrlParams = get_vm_long(p + 8);
-				uint32_t csParam =
-					get_vm_long(CntrlParams + CntrlParam_csParam);
-				uint16_t csCode =
-					get_vm_word(CntrlParams + CntrlParam_csCode);
+		{
+			uint32_t CntrlParams = get_vm_long(p + 8);
+			uint32_t csParam = get_vm_long(CntrlParams + CntrlParam_csParam);
+			uint16_t csCode = get_vm_word(CntrlParams + CntrlParam_csCode);
 
-				VID_LOG("Control csCode=%u", csCode);
-					switch (csCode) {
-					case 0: /* VidReset */
+			VID_LOG("Control csCode=%u", csCode);
+			switch (csCode)
+			{
+				case 0: /* VidReset */
 #if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, VidReset");
-						dbglog_writelnNum("  returning mode", Vid_GetMode());
+					dbglog_WriteNote("Video_Access kCmndVideoControl, VidReset");
+					dbglog_writelnNum("  returning mode", Vid_GetMode());
 #endif
-						VID_LOG("VidReset → mode=0x%02X", Vid_GetMode());
-						put_vm_word(csParam + VDPageInfo_csMode,
-							Vid_GetMode());
-						put_vm_word(csParam + VDPageInfo_csPage, 0);
-						put_vm_long(csParam + VDPageInfo_csBaseAddr,
-							VidBaseAddr);
-						result = tMacErr::noErr;
-						break;
-					case 1: /* KillIO */
+					VID_LOG("VidReset → mode=0x%02X", Vid_GetMode());
+					put_vm_word(csParam + VDPageInfo_csMode, Vid_GetMode());
+					put_vm_word(csParam + VDPageInfo_csPage, 0);
+					put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+					result = tMacErr::noErr;
+					break;
+				case 1: /* KillIO */
 #if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, KillIO");
+					dbglog_WriteNote("Video_Access kCmndVideoControl, KillIO");
 #endif
-						result = tMacErr::noErr;
-						break;
-					case 2: /* SetVidMode */
+					result = tMacErr::noErr;
+					break;
+				case 2: /* SetVidMode */
 #if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, "
-							"SetVidMode");
-						dbglog_writelnNum("  requested mode",
-							get_vm_word(csParam + VDPageInfo_csMode));
+					dbglog_WriteNote("Video_Access kCmndVideoControl, "
+									 "SetVidMode");
+					dbglog_writelnNum("  requested mode", get_vm_word(csParam + VDPageInfo_csMode));
 #endif
-						if (0 != get_vm_word(
-							csParam + VDPageInfo_csPage))
-						{
-							ReportAbnormalID(AbnormalID::kVIDEO_SetVidMode_not_page_0,
-								"SetVidMode not page 0");
-						} else {
-							result = Vid_SetMode(get_vm_word(
-								csParam + VDPageInfo_csMode));
-							VID_LOG("SetVidMode → mode=0x%02X",
+					if (0 != get_vm_word(csParam + VDPageInfo_csPage))
+					{
+						ReportAbnormalID(AbnormalID::kVIDEO_SetVidMode_not_page_0,
+										 "SetVidMode not page 0");
+					}
+					else
+					{
+						result = Vid_SetMode(get_vm_word(csParam + VDPageInfo_csMode));
+						VID_LOG("SetVidMode → mode=0x%02X",
 								get_vm_word(csParam + VDPageInfo_csMode));
-							put_vm_long(csParam + VDPageInfo_csBaseAddr,
-								VidBaseAddr);
-						}
-						break;
-					case 3: /* SetEntries */
+						put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+					}
+					break;
+				case 3: /* SetEntries */
 #if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, "
-							"SetEntries");
+					dbglog_WriteNote("Video_Access kCmndVideoControl, "
+									 "SetEntries");
 #endif
+					{
+						int cs = clutSizeForDepth(s_currentDepth);
+						if (s_currentDepth > 0 && s_currentDepth < 4)
 						{
-							int cs = clutSizeForDepth(s_currentDepth);
-							if (s_currentDepth > 0 && s_currentDepth < 4) {
-								uint32_t csTable = get_vm_long(
-									csParam + VDSetEntryRecord_csTable);
-								uint16_t csStart = get_vm_word(
-									csParam + VDSetEntryRecord_csStart);
-								uint16_t csCount = 1 + get_vm_word(
-									csParam + VDSetEntryRecord_csCount);
+							uint32_t csTable = get_vm_long(csParam + VDSetEntryRecord_csTable);
+							uint16_t csStart = get_vm_word(csParam + VDSetEntryRecord_csStart);
+							uint16_t csCount = 1 + get_vm_word(csParam + VDSetEntryRecord_csCount);
 
-								if (((uint16_t) 0xFFFF) == csStart) {
-									int i;
-
-									result = tMacErr::noErr;
-									for (i = 0; i < csCount; ++i) {
-										uint16_t j = get_vm_word(csTable + 0);
-										if (j == 0) {
-											/* ignore input, leave white */
-										} else
-										if (j == (uint16_t)(cs - 1)) {
-											/* ignore input, leave black */
-										} else
-										if (j >= cs) {
-											result = tMacErr::paramErr;
-										} else
-										{
-											uint16_t r =
-												get_vm_word(csTable + 2);
-											uint16_t g =
-												get_vm_word(csTable + 4);
-											uint16_t b =
-												get_vm_word(csTable + 6);
-											CLUT_reds[j] = r;
-											CLUT_greens[j] = g;
-											CLUT_blues[j] = b;
-										}
-										csTable += 8;
-									}
-									g_colorMappingChanged = true;
-								} else
-								if (csStart + csCount < csStart) {
-									result = tMacErr::paramErr;
-								} else
-								if (csStart + csCount > cs) {
-									result = tMacErr::paramErr;
-								} else
-								{
-									int i;
-
-									for (i = 0; i < csCount; ++i) {
-										int j = i + csStart;
-
-										if (j == 0) {
-											/* ignore input, leave white */
-										} else
-										if (j == cs - 1) {
-											/* ignore input, leave black */
-										} else
-										{
-											uint16_t r =
-												get_vm_word(csTable + 2);
-											uint16_t g =
-												get_vm_word(csTable + 4);
-											uint16_t b =
-												get_vm_word(csTable + 6);
-											CLUT_reds[j] = r;
-											CLUT_greens[j] = g;
-											CLUT_blues[j] = b;
-										}
-										csTable += 8;
-									}
-									g_colorMappingChanged = true;
-									result = tMacErr::noErr;
-								}
-							}
-						}
-						break;
-					case 4: /* SetGamma */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, SetGamma");
-#endif
-						result = tMacErr::noErr;
-						break;
-					case 5: /* GrayScreen */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, "
-							"GrayScreen");
-#endif
-						{
-							FillScreenWithGrayPattern();
-							result = tMacErr::noErr;
-						}
-						break;
-					case 6: /* SetGray */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, SetGray");
-#endif
-						{
-							uint8_t csMode = get_vm_byte(
-								csParam + VDPageInfo_csMode);
-
-							s_useGrayTones = (csMode != 0);
-							result = tMacErr::noErr;
-						}
-						break;
-					case 9: /* SetDefaultMode */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, "
-							"SetDefaultMode");
-#endif
-						{
-							uint16_t mode = get_vm_word(
-								csParam + VDSwitchInfo_csMode);
-							int depth = mode - 0x80;
-							if (depth >= 0 && depth <= 5)
-								s_preferredDepth = depth;
-							result = tMacErr::noErr;
-						}
-						break;
-					case 10: /* SwitchMode (Display Manager 2.0) */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, "
-							"SwitchMode");
-#endif
-						{
-							uint16_t mode = get_vm_word(
-								csParam + VDSwitchInfo_csMode);
-							uint32_t modeID = get_vm_long(
-								csParam + VDSwitchInfo_csData);
-							uint16_t page = get_vm_word(
-								csParam + VDSwitchInfo_csPage);
-#if VID_dolog
-							dbglog_writelnNum("  mode", mode);
-							dbglog_writelnNum("  displayModeID", modeID);
-							dbglog_writelnNum("  page", page);
-#endif
-							VID_LOG("SwitchMode mode=0x%02X modeID=%u page=%u",
-								mode, modeID, page);
-							/* Write current base addr in case we fail */
-							put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
-								VidBaseAddr);
-
-							if (page != 0) {
-								result = tMacErr::paramErr;
-								break;
-							}
-
-							const ResolutionEntry* res = findResolution(modeID);
-							if (!res) {
-								result = tMacErr::paramErr;
-								break;
-							}
-
-							int newDepth = mode - 0x80;
-							if (newDepth < 0 || newDepth > 5) {
-								result = tMacErr::paramErr;
-								break;
-							}
-
-							/* Validate VRAM fits */
-							if (VRAMForResolution(res->width, res->height,
-							    newDepth) > g_machine->config().vidMemSize) {
-								result = tMacErr::paramErr;
-								break;
-							}
-
-							bool resChanged =
-								(res->width != s_currentWidth ||
-								 res->height != s_currentHeight);
-
-							/* Update video state */
-							s_currentDepth = newDepth;
-							s_currentWidth = res->width;
-							s_currentHeight = res->height;
-							s_currentDisplayModeID = modeID;
-
-							/* Write through to DisplayState */
-							g_screenWidth = res->width;
-							g_screenHeight = res->height;
-							g_screenDepth = newDepth;
-							g_useColorMode = (newDepth > 0);
-							g_colorMappingChanged = true;
-
-							/* Reinit CLUT for indexed modes */
-							if (newDepth > 0 && newDepth < 4) {
-								int cs = clutSizeForDepth(newDepth);
-								CLUT_reds[0] = 0xFFFF;
-								CLUT_greens[0] = 0xFFFF;
-								CLUT_blues[0] = 0xFFFF;
-								CLUT_reds[cs - 1] = 0;
-								CLUT_greens[cs - 1] = 0;
-								CLUT_blues[cs - 1] = 0;
-							}
-
-							if (resChanged) {
-								s_resolutionChanged = true;
-								/* Patch VPBlocks in the slot ROM so
-								   the Slot Manager / GDevice Manager
-								   sees the new resolution */
-								patchSlotROMVPBlocks(res->width,
-									res->height);
-								/* Reset screen compare buffer to
-								   force full redraw */
-								if (g_screenCompareBuff) {
-									uint32_t bufSz = (uint32_t)res->width
-										* res->height * (1 << newDepth) / 8;
-									std::memset(g_screenCompareBuff, 0xFF, bufSz);
-								}
-							}
-
-							FillScreenWithGrayPattern();
-
-							put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
-								VidBaseAddr);
-							VID_LOG("SwitchMode OK → %ux%u depth=%d resChanged=%d",
-								res->width, res->height, newDepth, resChanged);
-							result = tMacErr::noErr;
-						}
-						break;
-					case 16: /* SavePreferredConfiguration */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoControl, "
-							"SavePreferredConfiguration");
-#endif
-						{
-							uint16_t mode = get_vm_word(
-								csParam + VDSwitchInfo_csMode);
-							uint32_t modeID = get_vm_long(
-								csParam + VDSwitchInfo_csData);
-							int depth = mode - 0x80;
-							if (depth >= 0 && depth <= 5)
-								s_preferredDepth = depth;
-							if (findResolution(modeID))
-								s_preferredDisplayModeID = (int)modeID;
-							result = tMacErr::noErr;
-						}
-						break;
-					default:
-						ReportAbnormalID(AbnormalID::kVIDEO_kCmndVideoControl_unknown_csCode,
-							"kCmndVideoControl, unknown csCode");
-						dbglog_writelnNum("csCode", csCode);
-						break;
-				}
-			}
-			break;
-		case kCmndVideoStatus:
-			{
-				uint32_t CntrlParams = get_vm_long(p + 8);
-				uint32_t csParam = get_vm_long(
-					CntrlParams + CntrlParam_csParam);
-				uint16_t csCode = get_vm_word(
-					CntrlParams + CntrlParam_csCode);
-
-				result = tMacErr::statusErr;
-				VID_LOG("Status csCode=%u", csCode);
-				switch (csCode) {
-					case 2: /* GetMode */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, GetMode");
-#endif
-						put_vm_word(csParam + VDPageInfo_csMode,
-							Vid_GetMode());
-						put_vm_word(csParam + VDPageInfo_csPage, 0);
-						put_vm_long(csParam + VDPageInfo_csBaseAddr,
-							VidBaseAddr);
-						result = tMacErr::noErr;
-						break;
-					case 3: /* GetEntries */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetEntries");
-#endif
-						{
-							ReportAbnormalID(AbnormalID::kVIDEO_GetEntries_not_implemented,
-								"GetEntries not implemented");
-						}
-						break;
-					case 4: /* GetPages */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, GetPages");
-#endif
-						put_vm_word(csParam + VDPageInfo_csPage, 1);
-						result = tMacErr::noErr;
-						break;
-					case 5: /* GetPageAddr */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus,"
-							" GetPageAddr");
-#endif
-						{
-							uint16_t csPage = get_vm_word(
-								csParam + VDPageInfo_csPage);
-							if (0 != csPage) {
-								/*
-									return tMacErr::statusErr,
-									page must be 0
-								*/
-							} else {
-								put_vm_long(
-									csParam + VDPageInfo_csBaseAddr,
-									VidBaseAddr);
-								result = tMacErr::noErr;
-							}
-						}
-						break;
-					case 6: /* GetGray */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, GetGray");
-#endif
-						put_vm_word(csParam + VDPageInfo_csMode,
-							s_useGrayTones ? 0x0100 : 0);
-						result = tMacErr::noErr;
-						break;
-					case 8: /* GetGamma */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetGamma");
-#endif
-						/* stub — log if requested */
-						result = tMacErr::statusErr;
-						break;
-					case 9: /* GetDefaultMode */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetDefaultMode");
-#endif
-						{
-							int defDepth = (s_preferredDepth >= 0)
-								? s_preferredDepth : s_currentDepth;
-							put_vm_word(csParam + VDSwitchInfo_csMode,
-								0x80 + defDepth);
-							result = tMacErr::noErr;
-						}
-						break;
-					case 10: /* GetCurrentMode */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetCurrentMode");
-#endif
-						put_vm_word(csParam + VDSwitchInfo_csMode,
-							0x80 + s_currentDepth);
-						put_vm_long(csParam + VDSwitchInfo_csData,
-							s_currentDisplayModeID);
-						put_vm_word(csParam + VDSwitchInfo_csPage, 0);
-						put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
-							VidBaseAddr);
-						VID_LOG("GetCurrentMode → mode=0x%02X displayModeID=%u",
-							0x80 + s_currentDepth, s_currentDisplayModeID);
-						result = tMacErr::noErr;
-						break;
-					case 12: /* GetConnection */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetConnection");
-#endif
-						put_vm_word(csParam + VDConnectInfo_csDisplayType,
-							6); /* kVGAConnect */
-						put_vm_byte(csParam + VDConnectInfo_csConnectTaggedType, 0);
-						put_vm_byte(csParam + VDConnectInfo_csConnectTaggedData, 0);
-						put_vm_long(csParam + VDConnectInfo_csConnectFlags,
-							0x000E); /* kAllModes | kAllFlags */
-						put_vm_long(csParam + VDConnectInfo_csDisplayComponent, 0);
-						put_vm_long(csParam + VDConnectInfo_csConnectReserved, 0);
-						VID_LOG("GetConnection → displayType=6 flags=0x000E");
-						result = tMacErr::noErr;
-						break;
-					case 13: /* GetModeTiming */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetModeTiming");
-#endif
-						{
-							/* VDTimingInfo: csTimingMode at +0 contains
-							   the displayModeID.  We need to confirm it
-							   exists and return timing flags. */
-							uint32_t timingModeID = get_vm_long(
-								csParam + 0);
-							/* Offsets: +4 reserved, +8 csTimingFormat,
-							   +12 csTimingData, +16 csTimingFlags */
-							const ResolutionEntry* res =
-								findResolution(timingModeID);
-							if (!res) {
-								VID_LOG("GetModeTiming modeID=%u → paramErr (not found)",
-									timingModeID);
-								result = tMacErr::paramErr;
-							} else {
-								put_vm_long(csParam + 8,
-									0x6465636C); /* 'decl' */
-								put_vm_long(csParam + 12, 0);
-								/* Flags: mode valid (1), safe (2),
-								   shown in Monitors (8).
-								   Add default (4) if this is the
-								   preferred mode. */
-								uint32_t flags = 0x000B;
-								if ((int)timingModeID ==
-									s_preferredDisplayModeID)
-									flags |= 0x0004;
-								put_vm_long(csParam + 16, flags);
-								VID_LOG("GetModeTiming modeID=%u → flags=0x%04X (%ux%u)",
-									timingModeID, flags, res->width, res->height);
-								result = tMacErr::noErr;
-							}
-						}
-						break;
-					case 14: /* GetModeBaseAddress */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetModeBaseAddress");
-#endif
-						put_vm_long(csParam + VDPageInfo_csBaseAddr,
-							VidBaseAddr);
-						result = tMacErr::noErr;
-						break;
-					case 16: /* GetPreferredConfiguration */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetPreferredConfiguration");
-#endif
-						{
-							int defDepth = (s_preferredDepth >= 0)
-								? s_preferredDepth : s_currentDepth;
-							uint32_t prefMode = (s_preferredDisplayModeID >= 0)
-								? (uint32_t)s_preferredDisplayModeID
-								: s_currentDisplayModeID;
-							put_vm_word(csParam + VDSwitchInfo_csMode,
-								0x80 + defDepth);
-							put_vm_long(csParam + VDSwitchInfo_csData,
-								prefMode);
-							result = tMacErr::noErr;
-						}
-						break;
-					case 17: /* GetNextResolution */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetNextResolution");
-#endif
-						{
-							uint32_t prevID = get_vm_long(
-								csParam + VDResInfo_csPreviousDisplayModeID);
-							const ResolutionEntry* next = nextResolution(prevID);
-							if (next) {
-								int resMax = maxDepthForResolution(
-									next->width, next->height,
-									g_machine->config().vidMemSize);
-								put_vm_long(csParam + VDResInfo_csRIDisplayModeID,
-									next->displayModeID);
-								put_vm_long(csParam + VDResInfo_csHorizontalPixels,
-									next->width);
-								put_vm_long(csParam + VDResInfo_csVerticalLines,
-									next->height);
-								put_vm_long(csParam + VDResInfo_csRefreshRate,
-									0x00420000); /* ~66.67 Hz fixed-point */
-								put_vm_word(csParam + VDResInfo_csMaxDepthMode,
-									0x80 + resMax);
-								VID_LOG("GetNextResolution prev=%u → id=%u %ux%u maxDepth=0x%02X",
-									prevID, next->displayModeID, next->width, next->height, 0x80 + resMax);
-								result = tMacErr::noErr;
-							} else if (prevID != 0 && findResolution(prevID)) {
-								/* prevID was the last — no more */
-								put_vm_long(csParam + VDResInfo_csRIDisplayModeID,
-									kDisplayModeIDNoMoreResolutions);
-								VID_LOG("GetNextResolution prev=%u → END-OF-LIST", prevID);
-								result = tMacErr::noErr;
-							} else {
-								VID_LOG("GetNextResolution prev=%u → paramErr", prevID);
-								result = tMacErr::paramErr;
-							}
-						}
-						break;
-					case 18: /* GetVideoParameters */
-#if VID_dolog
-						dbglog_WriteNote(
-							"Video_Access kCmndVideoStatus, "
-							"GetVideoParameters");
-#endif
-						{
-							uint32_t displayModeID = get_vm_long(
-								csParam + VDVidParams_csDisplayModeID);
-							uint16_t depthMode = get_vm_word(
-								csParam + VDVidParams_csDepthMode);
-							uint32_t vpPtr = get_vm_long(
-								csParam + VDVidParams_csVPBlockPtr);
-#if VID_dolog
-							dbglog_writelnNum("  displayModeID", displayModeID);
-							dbglog_writelnNum("  depthMode", depthMode);
-#endif
-							int depth = depthMode - 0x80;
-							const ResolutionEntry* res =
-								findResolution(displayModeID);
-							int resMaxDepth = res
-								? maxDepthForResolution(res->width,
-									res->height,
-									g_machine->config().vidMemSize)
-								: -1;
-							if (!res || depth < 0 || depth > resMaxDepth)
+							if (((uint16_t)0xFFFF) == csStart)
 							{
-								VID_LOG("GetVideoParameters modeID=%u depth=0x%02X → paramErr (res=%p depth=%d max=%d)",
-									displayModeID, depthMode, (void*)res, depth, resMaxDepth);
+								int i;
+
+								result = tMacErr::noErr;
+								for (i = 0; i < csCount; ++i)
+								{
+									uint16_t j = get_vm_word(csTable + 0);
+									if (j == 0)
+									{
+										/* ignore input, leave white */
+									}
+									else if (j == (uint16_t)(cs - 1))
+									{
+										/* ignore input, leave black */
+									}
+									else if (j >= cs)
+									{
+										result = tMacErr::paramErr;
+									}
+									else
+									{
+										uint16_t r = get_vm_word(csTable + 2);
+										uint16_t g = get_vm_word(csTable + 4);
+										uint16_t b = get_vm_word(csTable + 6);
+										CLUT_reds[j] = r;
+										CLUT_greens[j] = g;
+										CLUT_blues[j] = b;
+									}
+									csTable += 8;
+								}
+								g_colorMappingChanged = true;
+							}
+							else if (csStart + csCount < csStart)
+							{
 								result = tMacErr::paramErr;
-							} else {
-								writeVPBlockToGuest(depth,
-									res->width, res->height, vpPtr);
-								put_vm_long(csParam + VDVidParams_csPageCount, 1);
-								VID_LOG("GetVideoParameters modeID=%u depth=0x%02X → %ux%u OK",
-									displayModeID, depthMode, res->width, res->height);
+							}
+							else if (csStart + csCount > cs)
+							{
+								result = tMacErr::paramErr;
+							}
+							else
+							{
+								int i;
+
+								for (i = 0; i < csCount; ++i)
+								{
+									int j = i + csStart;
+
+									if (j == 0)
+									{
+										/* ignore input, leave white */
+									}
+									else if (j == cs - 1)
+									{
+										/* ignore input, leave black */
+									}
+									else
+									{
+										uint16_t r = get_vm_word(csTable + 2);
+										uint16_t g = get_vm_word(csTable + 4);
+										uint16_t b = get_vm_word(csTable + 6);
+										CLUT_reds[j] = r;
+										CLUT_greens[j] = g;
+										CLUT_blues[j] = b;
+									}
+									csTable += 8;
+								}
+								g_colorMappingChanged = true;
 								result = tMacErr::noErr;
 							}
 						}
-						break;
-					default:
-						ReportAbnormalID(AbnormalID::kVIDEO_Video_Access_kCmndVideoStatus,
-							"Video_Access kCmndVideoStatus, "
-								"unknown csCode");
-						dbglog_writelnNum("csCode", csCode);
-						break;
-				}
+					}
+					break;
+				case 4: /* SetGamma */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoControl, SetGamma");
+#endif
+					result = tMacErr::noErr;
+					break;
+				case 5: /* GrayScreen */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoControl, "
+									 "GrayScreen");
+#endif
+					{
+						FillScreenWithGrayPattern();
+						result = tMacErr::noErr;
+					}
+					break;
+				case 6: /* SetGray */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoControl, SetGray");
+#endif
+					{
+						uint8_t csMode = get_vm_byte(csParam + VDPageInfo_csMode);
+
+						s_useGrayTones = (csMode != 0);
+						result = tMacErr::noErr;
+					}
+					break;
+				case 9: /* SetDefaultMode */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoControl, "
+									 "SetDefaultMode");
+#endif
+					{
+						uint16_t mode = get_vm_word(csParam + VDSwitchInfo_csMode);
+						int depth = mode - 0x80;
+						if (depth >= 0 && depth <= 5) s_preferredDepth = depth;
+						result = tMacErr::noErr;
+					}
+					break;
+				case 10: /* SwitchMode (Display Manager 2.0) */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoControl, "
+									 "SwitchMode");
+#endif
+					{
+						uint16_t mode = get_vm_word(csParam + VDSwitchInfo_csMode);
+						uint32_t modeID = get_vm_long(csParam + VDSwitchInfo_csData);
+						uint16_t page = get_vm_word(csParam + VDSwitchInfo_csPage);
+#if VID_dolog
+						dbglog_writelnNum("  mode", mode);
+						dbglog_writelnNum("  displayModeID", modeID);
+						dbglog_writelnNum("  page", page);
+#endif
+						VID_LOG("SwitchMode mode=0x%02X modeID=%u page=%u", mode, modeID, page);
+						/* Write current base addr in case we fail */
+						put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VidBaseAddr);
+
+						if (page != 0)
+						{
+							result = tMacErr::paramErr;
+							break;
+						}
+
+						const ResolutionEntry *res = findResolution(modeID);
+						if (!res)
+						{
+							result = tMacErr::paramErr;
+							break;
+						}
+
+						int newDepth = mode - 0x80;
+						if (newDepth < 0 || newDepth > 5)
+						{
+							result = tMacErr::paramErr;
+							break;
+						}
+
+						/* Validate VRAM fits */
+						if (VRAMForResolution(res->width, res->height, newDepth) >
+							g_machine->config().vidMemSize)
+						{
+							result = tMacErr::paramErr;
+							break;
+						}
+
+						bool resChanged =
+							(res->width != s_currentWidth || res->height != s_currentHeight);
+
+						/* Update video state */
+						s_currentDepth = newDepth;
+						s_currentWidth = res->width;
+						s_currentHeight = res->height;
+						s_currentDisplayModeID = modeID;
+
+						/* Write through to DisplayState */
+						g_screenWidth = res->width;
+						g_screenHeight = res->height;
+						g_screenDepth = newDepth;
+						g_useColorMode = (newDepth > 0);
+						g_colorMappingChanged = true;
+
+						/* Reinit CLUT for indexed modes */
+						if (newDepth > 0 && newDepth < 4)
+						{
+							int cs = clutSizeForDepth(newDepth);
+							CLUT_reds[0] = 0xFFFF;
+							CLUT_greens[0] = 0xFFFF;
+							CLUT_blues[0] = 0xFFFF;
+							CLUT_reds[cs - 1] = 0;
+							CLUT_greens[cs - 1] = 0;
+							CLUT_blues[cs - 1] = 0;
+						}
+
+						if (resChanged)
+						{
+							s_resolutionChanged = true;
+							/* Patch VPBlocks in the slot ROM so
+							   the Slot Manager / GDevice Manager
+							   sees the new resolution */
+							patchSlotROMVPBlocks(res->width, res->height);
+							/* Reset screen compare buffer to
+							   force full redraw */
+							if (g_screenCompareBuff)
+							{
+								uint32_t bufSz =
+									(uint32_t)res->width * res->height * (1 << newDepth) / 8;
+								std::memset(g_screenCompareBuff, 0xFF, bufSz);
+							}
+						}
+
+						FillScreenWithGrayPattern();
+
+						put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VidBaseAddr);
+						VID_LOG("SwitchMode OK → %ux%u depth=%d resChanged=%d", res->width,
+								res->height, newDepth, resChanged);
+						result = tMacErr::noErr;
+					}
+					break;
+				case 16: /* SavePreferredConfiguration */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoControl, "
+									 "SavePreferredConfiguration");
+#endif
+					{
+						uint16_t mode = get_vm_word(csParam + VDSwitchInfo_csMode);
+						uint32_t modeID = get_vm_long(csParam + VDSwitchInfo_csData);
+						int depth = mode - 0x80;
+						if (depth >= 0 && depth <= 5) s_preferredDepth = depth;
+						if (findResolution(modeID)) s_preferredDisplayModeID = (int)modeID;
+						result = tMacErr::noErr;
+					}
+					break;
+				default:
+					ReportAbnormalID(AbnormalID::kVIDEO_kCmndVideoControl_unknown_csCode,
+									 "kCmndVideoControl, unknown csCode");
+					dbglog_writelnNum("csCode", csCode);
+					break;
 			}
-			break;
+		}
+		break;
+		case kCmndVideoStatus:
+		{
+			uint32_t CntrlParams = get_vm_long(p + 8);
+			uint32_t csParam = get_vm_long(CntrlParams + CntrlParam_csParam);
+			uint16_t csCode = get_vm_word(CntrlParams + CntrlParam_csCode);
+
+			result = tMacErr::statusErr;
+			VID_LOG("Status csCode=%u", csCode);
+			switch (csCode)
+			{
+				case 2: /* GetMode */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, GetMode");
+#endif
+					put_vm_word(csParam + VDPageInfo_csMode, Vid_GetMode());
+					put_vm_word(csParam + VDPageInfo_csPage, 0);
+					put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+					result = tMacErr::noErr;
+					break;
+				case 3: /* GetEntries */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetEntries");
+#endif
+					{
+						ReportAbnormalID(AbnormalID::kVIDEO_GetEntries_not_implemented,
+										 "GetEntries not implemented");
+					}
+					break;
+				case 4: /* GetPages */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, GetPages");
+#endif
+					put_vm_word(csParam + VDPageInfo_csPage, 1);
+					result = tMacErr::noErr;
+					break;
+				case 5: /* GetPageAddr */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus,"
+									 " GetPageAddr");
+#endif
+					{
+						uint16_t csPage = get_vm_word(csParam + VDPageInfo_csPage);
+						if (0 != csPage)
+						{
+							/*
+								return tMacErr::statusErr,
+								page must be 0
+							*/
+						}
+						else
+						{
+							put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+							result = tMacErr::noErr;
+						}
+					}
+					break;
+				case 6: /* GetGray */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, GetGray");
+#endif
+					put_vm_word(csParam + VDPageInfo_csMode, s_useGrayTones ? 0x0100 : 0);
+					result = tMacErr::noErr;
+					break;
+				case 8: /* GetGamma */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetGamma");
+#endif
+					/* stub — log if requested */
+					result = tMacErr::statusErr;
+					break;
+				case 9: /* GetDefaultMode */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetDefaultMode");
+#endif
+					{
+						int defDepth = (s_preferredDepth >= 0) ? s_preferredDepth : s_currentDepth;
+						put_vm_word(csParam + VDSwitchInfo_csMode, 0x80 + defDepth);
+						result = tMacErr::noErr;
+					}
+					break;
+				case 10: /* GetCurrentMode */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetCurrentMode");
+#endif
+					put_vm_word(csParam + VDSwitchInfo_csMode, 0x80 + s_currentDepth);
+					put_vm_long(csParam + VDSwitchInfo_csData, s_currentDisplayModeID);
+					put_vm_word(csParam + VDSwitchInfo_csPage, 0);
+					put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VidBaseAddr);
+					VID_LOG("GetCurrentMode → mode=0x%02X displayModeID=%u", 0x80 + s_currentDepth,
+							s_currentDisplayModeID);
+					result = tMacErr::noErr;
+					break;
+				case 12: /* GetConnection */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetConnection");
+#endif
+					put_vm_word(csParam + VDConnectInfo_csDisplayType, 6); /* kVGAConnect */
+					put_vm_byte(csParam + VDConnectInfo_csConnectTaggedType, 0);
+					put_vm_byte(csParam + VDConnectInfo_csConnectTaggedData, 0);
+					put_vm_long(csParam + VDConnectInfo_csConnectFlags,
+								0x000E); /* kAllModes | kAllFlags */
+					put_vm_long(csParam + VDConnectInfo_csDisplayComponent, 0);
+					put_vm_long(csParam + VDConnectInfo_csConnectReserved, 0);
+					VID_LOG("GetConnection → displayType=6 flags=0x000E");
+					result = tMacErr::noErr;
+					break;
+				case 13: /* GetModeTiming */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetModeTiming");
+#endif
+					{
+						/* VDTimingInfo: csTimingMode at +0 contains
+						   the displayModeID.  We need to confirm it
+						   exists and return timing flags. */
+						uint32_t timingModeID = get_vm_long(csParam + 0);
+						/* Offsets: +4 reserved, +8 csTimingFormat,
+						   +12 csTimingData, +16 csTimingFlags */
+						const ResolutionEntry *res = findResolution(timingModeID);
+						if (!res)
+						{
+							VID_LOG("GetModeTiming modeID=%u → paramErr (not found)", timingModeID);
+							result = tMacErr::paramErr;
+						}
+						else
+						{
+							put_vm_long(csParam + 8, 0x6465636C); /* 'decl' */
+							put_vm_long(csParam + 12, 0);
+							/* Flags: mode valid (1), safe (2),
+							   shown in Monitors (8).
+							   Add default (4) if this is the
+							   preferred mode. */
+							uint32_t flags = 0x000B;
+							if ((int)timingModeID == s_preferredDisplayModeID) flags |= 0x0004;
+							put_vm_long(csParam + 16, flags);
+							VID_LOG("GetModeTiming modeID=%u → flags=0x%04X (%ux%u)", timingModeID,
+									flags, res->width, res->height);
+							result = tMacErr::noErr;
+						}
+					}
+					break;
+				case 14: /* GetModeBaseAddress */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetModeBaseAddress");
+#endif
+					put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+					result = tMacErr::noErr;
+					break;
+				case 16: /* GetPreferredConfiguration */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetPreferredConfiguration");
+#endif
+					{
+						int defDepth = (s_preferredDepth >= 0) ? s_preferredDepth : s_currentDepth;
+						uint32_t prefMode = (s_preferredDisplayModeID >= 0)
+												? (uint32_t)s_preferredDisplayModeID
+												: s_currentDisplayModeID;
+						put_vm_word(csParam + VDSwitchInfo_csMode, 0x80 + defDepth);
+						put_vm_long(csParam + VDSwitchInfo_csData, prefMode);
+						result = tMacErr::noErr;
+					}
+					break;
+				case 17: /* GetNextResolution */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetNextResolution");
+#endif
+					{
+						uint32_t prevID = get_vm_long(csParam + VDResInfo_csPreviousDisplayModeID);
+						const ResolutionEntry *next = nextResolution(prevID);
+						if (next)
+						{
+							int resMax = maxDepthForResolution(next->width, next->height,
+															   g_machine->config().vidMemSize);
+							put_vm_long(csParam + VDResInfo_csRIDisplayModeID, next->displayModeID);
+							put_vm_long(csParam + VDResInfo_csHorizontalPixels, next->width);
+							put_vm_long(csParam + VDResInfo_csVerticalLines, next->height);
+							put_vm_long(csParam + VDResInfo_csRefreshRate,
+										0x00420000); /* ~66.67 Hz fixed-point */
+							put_vm_word(csParam + VDResInfo_csMaxDepthMode, 0x80 + resMax);
+							VID_LOG("GetNextResolution prev=%u → id=%u %ux%u maxDepth=0x%02X",
+									prevID, next->displayModeID, next->width, next->height,
+									0x80 + resMax);
+							result = tMacErr::noErr;
+						}
+						else if (prevID != 0 && findResolution(prevID))
+						{
+							/* prevID was the last — no more */
+							put_vm_long(csParam + VDResInfo_csRIDisplayModeID,
+										kDisplayModeIDNoMoreResolutions);
+							VID_LOG("GetNextResolution prev=%u → END-OF-LIST", prevID);
+							result = tMacErr::noErr;
+						}
+						else
+						{
+							VID_LOG("GetNextResolution prev=%u → paramErr", prevID);
+							result = tMacErr::paramErr;
+						}
+					}
+					break;
+				case 18: /* GetVideoParameters */
+#if VID_dolog
+					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
+									 "GetVideoParameters");
+#endif
+					{
+						uint32_t displayModeID = get_vm_long(csParam + VDVidParams_csDisplayModeID);
+						uint16_t depthMode = get_vm_word(csParam + VDVidParams_csDepthMode);
+						uint32_t vpPtr = get_vm_long(csParam + VDVidParams_csVPBlockPtr);
+#if VID_dolog
+						dbglog_writelnNum("  displayModeID", displayModeID);
+						dbglog_writelnNum("  depthMode", depthMode);
+#endif
+						int depth = depthMode - 0x80;
+						const ResolutionEntry *res = findResolution(displayModeID);
+						int resMaxDepth =
+							res ? maxDepthForResolution(res->width, res->height,
+														g_machine->config().vidMemSize)
+								: -1;
+						if (!res || depth < 0 || depth > resMaxDepth)
+						{
+							VID_LOG("GetVideoParameters modeID=%u depth=0x%02X → paramErr (res=%p "
+									"depth=%d max=%d)",
+									displayModeID, depthMode, (void *)res, depth, resMaxDepth);
+							result = tMacErr::paramErr;
+						}
+						else
+						{
+							writeVPBlockToGuest(depth, res->width, res->height, vpPtr);
+							put_vm_long(csParam + VDVidParams_csPageCount, 1);
+							VID_LOG("GetVideoParameters modeID=%u depth=0x%02X → %ux%u OK",
+									displayModeID, depthMode, res->width, res->height);
+							result = tMacErr::noErr;
+						}
+					}
+					break;
+				default:
+					ReportAbnormalID(AbnormalID::kVIDEO_Video_Access_kCmndVideoStatus,
+									 "Video_Access kCmndVideoStatus, "
+									 "unknown csCode");
+					dbglog_writelnNum("csCode", csCode);
+					break;
+			}
+		}
+		break;
 		default:
 			ReportAbnormalID(AbnormalID::kVIDEO_Video_Access_unknown_commnd,
-				"Video_Access, unknown commnd");
+							 "Video_Access, unknown commnd");
 			break;
 	}
 
@@ -1419,15 +1381,17 @@ void Vid_SetHostDesktop(uint16_t w, uint16_t h)
 	s_hostDesktopH = h;
 }
 
-void Vid_MaxResolutionSize(uint32_t* outW, uint32_t* outH)
+void Vid_MaxResolutionSize(uint32_t *outW, uint32_t *outH)
 {
 	/* Classic maximums */
 	uint32_t maxW = 1152, maxH = 870;
 
 	/* Include host-derived if set — resolution is valid as long as it
 	   fits in VRAM at 1 bpp; deeper modes are gated per-resolution. */
-	if (s_hostDesktopW > 0 && s_hostDesktopH > 0) {
-		if (VRAMForResolution(s_hostDesktopW, s_hostDesktopH, 0) <= kMaxVRAM) {
+	if (s_hostDesktopW > 0 && s_hostDesktopH > 0)
+	{
+		if (VRAMForResolution(s_hostDesktopW, s_hostDesktopH, 0) <= kMaxVRAM)
+		{
 			if (s_hostDesktopW > maxW) maxW = s_hostDesktopW;
 			if (s_hostDesktopH > maxH) maxH = s_hostDesktopH;
 		}

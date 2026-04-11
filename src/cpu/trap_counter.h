@@ -26,8 +26,9 @@ uint32_t trap_counter_get(uint16_t trapWord);
 
 /* ── Trap dictionary ──────────────────────────────── */
 
-struct TrapInfo {
-	uint16_t    trapWord;
+struct TrapInfo
+{
+	uint16_t trapWord;
 	const char *name;
 };
 
@@ -43,15 +44,15 @@ const char *trap_dict_name(uint16_t trapWord);
 /* Search dictionary for entries whose name starts with prefix
    (case-insensitive).  Appends matching TrapInfo to results.
    Stops after maxResults matches. */
-void trap_dict_search(const char *prefix, std::vector<TrapInfo> &results,
-	int maxResults = 20);
+void trap_dict_search(const char *prefix, std::vector<TrapInfo> &results, int maxResults = 20);
 
 /* ── Watchlist ────────────────────────────────────── */
 
-struct WatchEntry {
-	uint16_t    trapWord;
-	const char *name;     /* points into dictionary — stable */
-	uint32_t    count;    /* snapshot, not live */
+struct WatchEntry
+{
+	uint16_t trapWord;
+	const char *name; /* points into dictionary — stable */
+	uint32_t count;	  /* snapshot, not live */
 };
 
 /* Add a trap to the watchlist.  No-op if already present. */

@@ -6,25 +6,33 @@
 tMacErr LoadMacRomFrom(char *path)
 {
 	tMacErr err;
-	FILE * ROM_File;
+	FILE *ROM_File;
 	int File_Size;
 
 	ROM_File = fopen(path, "rb");
-	if (nullptr == ROM_File) {
+	if (nullptr == ROM_File)
+	{
 		err = tMacErr::fnfErr;
-	} else {
+	}
+	else
+	{
 		const uint32_t romSize = g_machine->config().romSize;
 		File_Size = fread(g_rom, 1, romSize, ROM_File);
-		if ((uint32_t)File_Size != romSize) {
+		if ((uint32_t)File_Size != romSize)
+		{
 			if (feof(ROM_File))
 			{
 				fprintf(stderr, "Error: ROM file too short\n");
 				err = tMacErr::eofErr;
-			} else {
+			}
+			else
+			{
 				fprintf(stderr, "Error: ROM file read error\n");
 				err = tMacErr::miscErr;
 			}
-		} else {
+		}
+		else
+		{
 			err = ROM_IsValid();
 		}
 		fclose(ROM_File);
@@ -40,19 +48,19 @@ static tMacErr LoadMacRomFromPrefDir(char *pref_dir)
 	char *t2 = nullptr;
 	const char *romFileName = g_machine->config().romFileName;
 
-	if (nullptr == pref_dir) {
+	if (nullptr == pref_dir)
+	{
 		err = tMacErr::fnfErr;
-	} else
-	if (tMacErr::noErr != (err =
-		ChildPath(pref_dir, "mnvm_rom", &t)))
+	}
+	else if (tMacErr::noErr != (err = ChildPath(pref_dir, "mnvm_rom", &t)))
 	{
 		/* fail */
-	} else
-	if (tMacErr::noErr != (err =
-		ChildPath(t, const_cast<char*>(romFileName), &t2)))
+	}
+	else if (tMacErr::noErr != (err = ChildPath(t, const_cast<char *>(romFileName), &t2)))
 	{
 		/* fail */
-	} else
+	}
+	else
 	{
 		err = LoadMacRomFrom(t2);
 	}
@@ -67,21 +75,21 @@ static tMacErr LoadMacRomFromAppPar(char *d_arg, char *app_parent)
 {
 	tMacErr err;
 	const char *romFileName = g_machine->config().romFileName;
-	char *d =
-		(nullptr == d_arg) ? app_parent :
-		d_arg;
+	char *d = (nullptr == d_arg) ? app_parent : d_arg;
 
-	if (nullptr == d) {
+	if (nullptr == d)
+	{
 		err = tMacErr::fnfErr;
-	} else
+	}
+	else
 	{
 		char *t = nullptr;
 
-		if (tMacErr::noErr != (err =
-			ChildPath(d, const_cast<char*>(romFileName), &t)))
+		if (tMacErr::noErr != (err = ChildPath(d, const_cast<char *>(romFileName), &t)))
 		{
 			/* fail */
-		} else
+		}
+		else
 		{
 			err = LoadMacRomFrom(t);
 		}
@@ -96,13 +104,13 @@ bool LoadMacRom(char *rom_path, char *d_arg, char *app_parent, char *pref_dir)
 {
 	tMacErr err;
 
-	if ((nullptr == rom_path)
-		|| (tMacErr::fnfErr == (err = LoadMacRomFrom(rom_path))))
-	if (tMacErr::fnfErr == (err = LoadMacRomFromAppPar(d_arg, app_parent)))
-	if (tMacErr::fnfErr == (err = LoadMacRomFromPrefDir(pref_dir)))
-	if (tMacErr::fnfErr == (err = LoadMacRomFrom(const_cast<char*>(g_machine->config().romFileName))))
-	{
-	}
+	if ((nullptr == rom_path) || (tMacErr::fnfErr == (err = LoadMacRomFrom(rom_path))))
+		if (tMacErr::fnfErr == (err = LoadMacRomFromAppPar(d_arg, app_parent)))
+			if (tMacErr::fnfErr == (err = LoadMacRomFromPrefDir(pref_dir)))
+				if (tMacErr::fnfErr ==
+					(err = LoadMacRomFrom(const_cast<char *>(g_machine->config().romFileName))))
+				{
+				}
 
 	return true; /* keep launching Mini vMac, regardless */
 }

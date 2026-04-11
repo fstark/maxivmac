@@ -18,9 +18,9 @@ void WireBus::init(int numWires)
 		Initialize all wires to 1.  This matches the original AddrSpac_Init
 		behavior and the idle state of most bus signals:
 		  - ADBMouseDisabled=1: mouse disabled until ADB polls (Mac II), or
-		    until Mouse_Enabled() uses SCC path (Plus/SE/128K)
+			until Mouse_Enabled() uses SCC path (Plus/SE/128K)
 		  - VBLintunenbl=1: VBL interrupts disabled until g_rom video driver
-		    calls kCmndVideoSetIntEnbl
+			calls kCmndVideoSetIntEnbl
 		  - VBLinterrupt=1: no VBL interrupt pending (goes to 0 to fire)
 		  - SoundDisable=1: sound disabled until g_rom configures VIA port B
 
@@ -35,15 +35,19 @@ void WireBus::init(int numWires)
 	wires_[Wire_VIA2_InterruptRequest] = 0;
 	wires_[Wire_SCCInterruptRequest] = 0;
 
-	for (auto& cbs : changeCallbacks_) cbs.clear();
-	for (auto& cbs : pulseCallbacks_)  cbs.clear();
+	for (auto &cbs : changeCallbacks_)
+		cbs.clear();
+	for (auto &cbs : pulseCallbacks_)
+		cbs.clear();
 }
 
 void WireBus::set(int wireId, uint8_t val)
 {
-	if (wires_[wireId] != val) {
+	if (wires_[wireId] != val)
+	{
 		wires_[wireId] = val;
-		for (auto& cb : changeCallbacks_[wireId]) {
+		for (auto &cb : changeCallbacks_[wireId])
+		{
 			cb();
 		}
 	}
@@ -61,7 +65,8 @@ void WireBus::onPulse(int wireId, ChangeCallback cb)
 
 void WireBus::pulse(int wireId)
 {
-	for (auto& cb : pulseCallbacks_[wireId]) {
+	for (auto &cb : pulseCallbacks_[wireId])
+	{
 		cb();
 	}
 }

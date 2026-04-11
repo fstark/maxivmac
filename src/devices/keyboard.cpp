@@ -26,7 +26,7 @@
 	ReportAbnormalID unused 0x0B03 - 0x0BFF
 */
 
-VIA1Device* KeyboardDevice::via1() const
+VIA1Device *KeyboardDevice::via1() const
 {
 	return machine_->findDevice<VIA1Device>();
 }
@@ -42,10 +42,13 @@ void KeyboardDevice::reset()
 
 void KeyboardDevice::gotKeyBoardData(uint8_t v)
 {
-	if (kybdState_ != kKybdStateIdle) {
+	if (kybdState_ != kKybdStateIdle)
+	{
 		haveKeyBoardResult_ = true;
 		keyBoardResult_ = v;
-	} else {
+	}
+	else
+	{
 		via1()->shiftInData(v);
 		g_wires.set(Wire_VIA1_iCB2, 1);
 	}
@@ -57,33 +60,41 @@ bool KeyboardDevice::attemptToFinishInquiry()
 	bool KeyDown;
 	uint8_t Keyboard_Data;
 
-	if (FindKeyEvent(&i, &KeyDown)) {
-		if (i < 64) {
+	if (FindKeyEvent(&i, &KeyDown))
+	{
+		if (i < 64)
+		{
 			Keyboard_Data = i << 1;
-			if (! KeyDown) {
+			if (!KeyDown)
+			{
 				Keyboard_Data += 128;
 			}
-		} else {
+		}
+		else
+		{
 			Keyboard_Data = 121;
 			instantCommandData_ = (i - 64) << 1;
-			if (! KeyDown) {
+			if (!KeyDown)
+			{
 				instantCommandData_ += 128;
 			}
 		}
 		gotKeyBoardData(Keyboard_Data);
 		return true;
-	} else {
+	}
+	else
+	{
 		return false;
 	}
 }
 
 #define MAX_KEYBOARD_WAIT 16 /* in 60ths of a second */
-	/*
-		Code in the mac rom will reset the keyboard if
-		it hasn't been heard from in 32/60th of a second.
-		So time out and send something before that
-		to keep connection.
-	*/
+							 /*
+								 Code in the mac rom will reset the keyboard if
+								 it hasn't been heard from in 32/60th of a second.
+								 So time out and send something before that
+								 to keep connection.
+							 */
 
 /*
 	ICT callback: read the command byte from VIA1 shift register.
@@ -91,39 +102,44 @@ bool KeyboardDevice::attemptToFinishInquiry()
 */
 void KeyboardDevice::receiveCommand()
 {
-	if (kybdState_ != kKybdStateRecievingCommand) {
+	if (kybdState_ != kKybdStateRecievingCommand)
+	{
 		ReportAbnormalID(AbnormalID::kKYBD_KybdState_kKybdStateRecievingCommand,
-			"KybdState != kKybdStateRecievingCommand");
-	} else {
+						 "KybdState != kKybdStateRecievingCommand");
+	}
+	else
+	{
 		uint8_t in = via1()->shiftOutData();
 
 		kybdState_ = kKybdStateRecievedCommand;
 
-		switch (in) {
-			case 0x10 : /* Inquiry Command */
-				if (! attemptToFinishInquiry()) {
+		switch (in)
+		{
+			case 0x10: /* Inquiry Command */
+				if (!attemptToFinishInquiry())
+				{
 					inquiryCommandTimer_ = MAX_KEYBOARD_WAIT;
 				}
 				break;
-			case 0x14 : /* Instant Command */
+			case 0x14: /* Instant Command */
 				gotKeyBoardData(instantCommandData_);
 				instantCommandData_ = 0x7B;
 				break;
-			case 0x16 : /* Model Command */
+			case 0x16: /* Model Command */
 				gotKeyBoardData(0x0b /* 0x01 */);
-					/* Test value, means Model 0, no extra devices */
+				/* Test value, means Model 0, no extra devices */
 				/*
 					Fixed by Hoshi Takanori -
 						it uses the proper keyboard type now
 				*/
 				break;
-			case 0x36 : /* Test Command */
+			case 0x36: /* Test Command */
 				gotKeyBoardData(0x7D);
 				break;
 			case 0x00:
 				gotKeyBoardData(0);
 				break;
-			default :
+			default:
 				/* Debugger(); */
 				gotKeyBoardData(0);
 				break;
@@ -133,15 +149,19 @@ void KeyboardDevice::receiveCommand()
 
 void KeyboardDevice::receiveEndCommand()
 {
-	if (kybdState_ != kKybdStateRecievingEndCommand) {
+	if (kybdState_ != kKybdStateRecievingEndCommand)
+	{
 		ReportAbnormalID(AbnormalID::kKYBD_KybdState_kKybdStateRecievingEndCommand,
-			"KybdState != kKybdStateRecievingEndCommand");
-	} else {
+						 "KybdState != kKybdStateRecievingEndCommand");
+	}
+	else
+	{
 		kybdState_ = kKybdStateIdle;
 #ifdef _VIA_Debug
 		fprintf(stderr, "enter DoKybd_ReceiveEndCommand\n");
 #endif
-		if (haveKeyBoardResult_) {
+		if (haveKeyBoardResult_)
+		{
 #ifdef _VIA_Debug
 			fprintf(stderr, "HaveKeyBoardResult: %d\n", keyBoardResult_);
 #endif
@@ -158,30 +178,33 @@ void KeyboardDevice::receiveEndCommand()
 */
 void KeyboardDevice::dataLineChngNtfy()
 {
-	switch (kybdState_) {
+	switch (kybdState_)
+	{
 		case kKybdStateIdle:
-			if (g_wires.get(Wire_VIA1_iCB2) == 0) {
+			if (g_wires.get(Wire_VIA1_iCB2) == 0)
+			{
 				kybdState_ = kKybdStateRecievingCommand;
 #ifdef _VIA_Debug
 				fprintf(stderr, "posting kICT_Kybd_ReceiveCommand\n");
 #endif
 				g_ict.add(kICT_Kybd_ReceiveCommand,
-					6800UL * kCycleScale / 64 * machine_->config().clockMult);
+						  6800UL * kCycleScale / 64 * machine_->config().clockMult);
 
-				if (inquiryCommandTimer_ != 0) {
+				if (inquiryCommandTimer_ != 0)
+				{
 					inquiryCommandTimer_ = 0; /* abort Inquiry */
 				}
 			}
 			break;
 		case kKybdStateRecievedCommand:
-			if (g_wires.get(Wire_VIA1_iCB2) == 1) {
+			if (g_wires.get(Wire_VIA1_iCB2) == 1)
+			{
 				kybdState_ = kKybdStateRecievingEndCommand;
 #ifdef _VIA_Debug
-				fprintf(stderr,
-					"posting kICT_Kybd_ReceiveEndCommand\n");
+				fprintf(stderr, "posting kICT_Kybd_ReceiveEndCommand\n");
 #endif
 				g_ict.add(kICT_Kybd_ReceiveEndCommand,
-					6800UL * kCycleScale / 64 * machine_->config().clockMult);
+						  6800UL * kCycleScale / 64 * machine_->config().clockMult);
 			}
 			break;
 		default:
@@ -191,12 +214,17 @@ void KeyboardDevice::dataLineChngNtfy()
 
 void KeyboardDevice::update()
 {
-	if (inquiryCommandTimer_ != 0) {
-		if (attemptToFinishInquiry()) {
+	if (inquiryCommandTimer_ != 0)
+	{
+		if (attemptToFinishInquiry())
+		{
 			inquiryCommandTimer_ = 0;
-		} else {
+		}
+		else
+		{
 			--inquiryCommandTimer_;
-			if (inquiryCommandTimer_ == 0) {
+			if (inquiryCommandTimer_ == 0)
+			{
 				gotKeyBoardData(0x7B);
 			}
 		}

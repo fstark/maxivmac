@@ -37,12 +37,12 @@ extern void ReconnectKeyCodes3();
 extern void DisconnectKeyCodes3();
 
 /* Global shell pointer for free-function wrappers. */
-EmulatorShell* g_shell = nullptr;
+EmulatorShell *g_shell = nullptr;
 
 /* Early DisplayState for code that runs before g_shell is set. */
 static DisplayState s_earlyDisplay;
 
-DisplayState& GetDisplayState()
+DisplayState &GetDisplayState()
 {
 	if (g_shell) return g_shell->display();
 	return s_earlyDisplay;
@@ -68,35 +68,41 @@ void WaitForNextTick()
 	   Stub retained for the extern declaration in platform.h. */
 }
 
-void MoveBytes(uint8_t * srcPtr, uint8_t * destPtr, int32_t byteCount)
+void MoveBytes(uint8_t *srcPtr, uint8_t *destPtr, int32_t byteCount)
 {
-	(void) memcpy(reinterpret_cast<char *>(destPtr),
-		reinterpret_cast<char *>(srcPtr), byteCount);
+	(void)memcpy(reinterpret_cast<char *>(destPtr), reinterpret_cast<char *>(srcPtr), byteCount);
 }
 
 /* --- Disk insertion helpers --- */
 
 static bool Sony_Insert1a_impl(char *drivepath, bool silentfail)
 {
-	if (! g_shell->isRomLoaded()) {
+	if (!g_shell->isRomLoaded())
+	{
 		return (tMacErr::noErr == LoadMacRomFrom(drivepath));
-	} else {
+	}
+	else
+	{
 		return Sony_Insert1(drivepath, silentfail);
 	}
 }
 
-static char* s_d_arg = nullptr; /* set by shell init */
+static char *s_d_arg = nullptr; /* set by shell init */
 
 static bool Sony_Insert2_impl(char *s)
 {
 	char *d = (nullptr == s_d_arg) ? g_shell->getAppParent() : s_d_arg;
 	bool IsOk = false;
 
-	if (nullptr == d) {
+	if (nullptr == d)
+	{
 		IsOk = Sony_Insert1(s, true);
-	} else {
+	}
+	else
+	{
 		char *t = nullptr;
-		if (tMacErr::noErr == ChildPath(d, s, &t)) {
+		if (tMacErr::noErr == ChildPath(d, s, &t))
+		{
 			IsOk = Sony_Insert1(t, true);
 		}
 		free(t);
@@ -107,7 +113,8 @@ static bool Sony_Insert2_impl(char *s)
 
 static bool Sony_InsertIth_impl(int i)
 {
-	if ((i > 9) || ! FirstFreeDisk(nullptr)) {
+	if ((i > 9) || !FirstFreeDisk(nullptr))
+	{
 		return false;
 	}
 	char s[] = "disk?.dsk";
@@ -117,10 +124,7 @@ static bool Sony_InsertIth_impl(int i)
 
 /* --- EmulatorShell implementation --- */
 
-EmulatorShell::EmulatorShell(PlatformBackend* backend)
-	: backend_(backend)
-{
-}
+EmulatorShell::EmulatorShell(PlatformBackend *backend) : backend_(backend) {}
 
 EmulatorShell::~EmulatorShell()
 {
@@ -128,14 +132,14 @@ EmulatorShell::~EmulatorShell()
 	argbBuffer_ = nullptr;
 }
 
-bool EmulatorShell::init(int argc, char** argv)
+bool EmulatorShell::init(int argc, char **argv)
 {
 	if (!initPlatform(argc, argv)) return false;
 	if (!initMachine()) return false;
 	return true;
 }
 
-bool EmulatorShell::initPlatform(int argc, char** argv)
+bool EmulatorShell::initPlatform(int argc, char **argv)
 {
 	argc_ = argc;
 	argv_ = argv;
@@ -147,18 +151,20 @@ bool EmulatorShell::initPlatform(int argc, char** argv)
 	windowScale_ = GetEmulatorConfig().windowScale;
 	g_speedValue = GetEmulatorConfig().speed;
 
-	const LaunchConfig& lc = GetLaunchConfig();
+	const LaunchConfig &lc = GetLaunchConfig();
 
 	/* Seed options from launch config */
 	static std::string s_title;
 	static std::string s_romDir;
-	if (!lc.title.empty()) {
+	if (!lc.title.empty())
+	{
 		s_title = lc.title;
-		n_arg_ = const_cast<char*>(s_title.c_str());
+		n_arg_ = const_cast<char *>(s_title.c_str());
 	}
-	if (!lc.romDir.empty()) {
+	if (!lc.romDir.empty())
+	{
 		s_romDir = lc.romDir;
-		d_arg_ = const_cast<char*>(s_romDir.c_str());
+		d_arg_ = const_cast<char *>(s_romDir.c_str());
 	}
 	s_d_arg = d_arg_;
 
@@ -175,21 +181,22 @@ bool EmulatorShell::initPlatform(int argc, char** argv)
 
 bool EmulatorShell::initMachine()
 {
-	const LaunchConfig& lc = GetLaunchConfig();
+	const LaunchConfig &lc = GetLaunchConfig();
 
 	/* Resolve ROM path from the current LaunchConfig. */
 	static std::string s_machineRom;
 	s_machineRom = ResolveRomPath(lc.romPath, lc.model, lc.romDir);
-	if (!s_machineRom.empty())
-		romPath_ = const_cast<char*>(s_machineRom.c_str());
+	if (!s_machineRom.empty()) romPath_ = const_cast<char *>(s_machineRom.c_str());
 
 	/* Query host desktop size (SDL is initialized by initPlatform)
 	   and inform the video subsystem so it can add host-derived
 	   resolutions.  Then bump VRAM if the host desktop at 32 bpp
 	   exceeds the current allocation. */
-	if (g_machine->config().emVidCard) {
+	if (g_machine->config().emVidCard)
+	{
 		PlatformDisplayBounds db;
-		if (backend_->getDisplayBounds(&db) && db.w > 0 && db.h > 0) {
+		if (backend_->getDisplayBounds(&db) && db.w > 0 && db.h > 0)
+		{
 			Vid_SetHostDesktop((uint16_t)db.w, (uint16_t)db.h);
 		}
 		uint32_t maxW, maxH;
@@ -205,10 +212,8 @@ bool EmulatorShell::initMachine()
 		fbSize++;
 		/* Cap to NuBus slot 9 address-space limit */
 		uint32_t vramCap = Vid_MaxVRAM();
-		if (fbSize > vramCap)
-			fbSize = vramCap;
-		if (fbSize > g_machine->config().vidMemSize)
-			g_machine->configMut().vidMemSize = fbSize;
+		if (fbSize > vramCap) fbSize = vramCap;
+		if (fbSize > g_machine->config().vidMemSize) g_machine->configMut().vidMemSize = fbSize;
 	}
 
 	if (!allocMyMemory()) return false;
@@ -220,8 +225,9 @@ bool EmulatorShell::initMachine()
 	if (!createMainWindow()) return false;
 
 	/* Insert disk images from command line */
-	for (const auto& diskPath : lc.diskPaths) {
-		(void) Sony_Insert1(const_cast<char*>(diskPath.c_str()), false);
+	for (const auto &diskPath : lc.diskPaths)
+	{
+		(void)Sony_Insert1(const_cast<char *>(diskPath.c_str()), false);
 	}
 
 	if (!ProgramMain()) return false;
@@ -232,12 +238,9 @@ bool EmulatorShell::initMachine()
 	{
 		uint32_t maxW, maxH;
 		Vid_MaxResolutionSize(&maxW, &maxH);
-		uint32_t allocW = (vMacScreenWidth > (long)maxW)
-			? (uint32_t)vMacScreenWidth : maxW;
-		uint32_t allocH = (vMacScreenHeight > (long)maxH)
-			? (uint32_t)vMacScreenHeight : maxH;
-		argbBuffer_ = static_cast<uint8_t*>(
-			calloc(allocW * allocH * 4, 1));
+		uint32_t allocW = (vMacScreenWidth > (long)maxW) ? (uint32_t)vMacScreenWidth : maxW;
+		uint32_t allocH = (vMacScreenHeight > (long)maxH) ? (uint32_t)vMacScreenHeight : maxH;
+		argbBuffer_ = static_cast<uint8_t *>(calloc(allocW * allocH * 4, 1));
 	}
 	if (!argbBuffer_) return false;
 
@@ -248,21 +251,21 @@ bool EmulatorShell::initMachine()
 
 	/* Attach serial backends from command-line options. */
 	{
-		const LaunchConfig& slc = GetLaunchConfig();
-		if (auto* scc = g_machine->findDevice<SCCDevice>()) {
-			if (auto b = CreateSerialBackend(slc.serialA, 0))
-				scc->setBackend(0, std::move(b));
-			if (auto b = CreateSerialBackend(slc.serialB, 1))
-				scc->setBackend(1, std::move(b));
+		const LaunchConfig &slc = GetLaunchConfig();
+		if (auto *scc = g_machine->findDevice<SCCDevice>())
+		{
+			if (auto b = CreateSerialBackend(slc.serialA, 0)) scc->setBackend(0, std::move(b));
+			if (auto b = CreateSerialBackend(slc.serialB, 1)) scc->setBackend(1, std::move(b));
 		}
 	}
 
 	return true;
 }
 
-void EmulatorShell::queueMessage(const char* brief, const char* longMsg, bool fatal)
+void EmulatorShell::queueMessage(const char *brief, const char *longMsg, bool fatal)
 {
-	if (savedBriefMsg_ == nullptr) {
+	if (savedBriefMsg_ == nullptr)
+	{
 		savedBriefMsg_ = brief;
 		savedLongMsg_ = longMsg;
 		savedFatalMsg_ = fatal;
@@ -283,7 +286,8 @@ void EmulatorShell::shutdown()
 	dbglog_close();
 
 	/* Show any pending error message */
-	if (hasQueuedMessage()) {
+	if (hasQueuedMessage())
+	{
 		backend_->showMessageBox(getBriefMsg(), getLongMsg());
 		clearQueuedMessage();
 	}
@@ -297,12 +301,14 @@ void EmulatorShell::shutdown()
 
 /* --- Event dispatch --- */
 
-void EmulatorShell::dispatchEvent(const PlatformEvent& evt)
+void EmulatorShell::dispatchEvent(const PlatformEvent &evt)
 {
 	/* When backgrounded or speed-stopped, block mouse input to the
 	   guest.  Housekeeping events (focus, quit) still get through. */
-	if (curSpeedStopped_ || backgroundFlag_) {
-		switch (evt.type) {
+	if (curSpeedStopped_ || backgroundFlag_)
+	{
+		switch (evt.type)
+		{
 			case PlatformEvent::Type::MouseMove:
 			case PlatformEvent::Type::MouseButtonDown:
 			case PlatformEvent::Type::MouseButtonUp:
@@ -313,7 +319,8 @@ void EmulatorShell::dispatchEvent(const PlatformEvent& evt)
 		}
 	}
 
-	switch (evt.type) {
+	switch (evt.type)
+	{
 		case PlatformEvent::Type::Quit:
 			g_requestMacOff = true;
 			break;
@@ -333,23 +340,23 @@ void EmulatorShell::dispatchEvent(const PlatformEvent& evt)
 			backend_->clearScreen();
 			break;
 		case PlatformEvent::Type::MouseMove:
-			if (evt.isRelative) {
+			if (evt.isRelative)
+			{
 				MyMousePositionSetDelta(evt.dx, evt.dy);
 				wantCursorHidden_ = true;
-			} else {
+			}
+			else
+			{
 				mousePositionNotify(evt.x, evt.y);
-				if (evt.positionOnly)
-					wantCursorHidden_ = false;
+				if (evt.positionOnly) wantCursorHidden_ = false;
 			}
 			break;
 		case PlatformEvent::Type::MouseButtonDown:
-			if (!evt.isRelative)
-				mousePositionNotify(evt.x, evt.y);
+			if (!evt.isRelative) mousePositionNotify(evt.x, evt.y);
 			MyMouseButtonSet(true);
 			break;
 		case PlatformEvent::Type::MouseButtonUp:
-			if (!evt.isRelative)
-				mousePositionNotify(evt.x, evt.y);
+			if (!evt.isRelative) mousePositionNotify(evt.x, evt.y);
 			MyMouseButtonSet(false);
 			break;
 		case PlatformEvent::Type::KeyDown:
@@ -359,24 +366,31 @@ void EmulatorShell::dispatchEvent(const PlatformEvent& evt)
 			Keyboard_updateKeyMap2(evt.macKeyCode, false);
 			break;
 		case PlatformEvent::Type::MouseWheel:
-			if (evt.wheelX < 0) {
+			if (evt.wheelX < 0)
+			{
 				Keyboard_updateKeyMap2(MKC_Left, true);
 				Keyboard_updateKeyMap2(MKC_Left, false);
-			} else if (evt.wheelX > 0) {
+			}
+			else if (evt.wheelX > 0)
+			{
 				Keyboard_updateKeyMap2(MKC_Right, true);
 				Keyboard_updateKeyMap2(MKC_Right, false);
 			}
-			if (evt.wheelY < 0) {
+			if (evt.wheelY < 0)
+			{
 				Keyboard_updateKeyMap2(MKC_Down, true);
 				Keyboard_updateKeyMap2(MKC_Down, false);
-			} else if (evt.wheelY > 0) {
+			}
+			else if (evt.wheelY > 0)
+			{
 				Keyboard_updateKeyMap2(MKC_Up, true);
 				Keyboard_updateKeyMap2(MKC_Up, false);
 			}
 			break;
 		case PlatformEvent::Type::FileDrop:
-			if (evt.filePath) {
-				(void) Sony_Insert1a_impl(const_cast<char*>(evt.filePath), false);
+			if (evt.filePath)
+			{
+				(void)Sony_Insert1a_impl(const_cast<char *>(evt.filePath), false);
 			}
 			break;
 		default:
@@ -388,81 +402,102 @@ void EmulatorShell::dispatchEvent(const PlatformEvent& evt)
 
 void EmulatorShell::processSavedTasks()
 {
-	if (EvtQNeedRecover) {
+	if (EvtQNeedRecover)
+	{
 		EvtQNeedRecover = false;
 		EvtQTryRecoverFromFull();
 	}
 
-	if (g_requestMacOff) {
+	if (g_requestMacOff)
+	{
 		g_requestMacOff = false;
-		if (AnyDiskInserted()) {
+		if (AnyDiskInserted())
+		{
 			fprintf(stderr, "Warning: Quitting with disks still mounted. "
-				"Shut down the guest Mac first to avoid data loss.\n");
+							"Shut down the guest Mac first to avoid data loss.\n");
 		}
 		g_forceMacOff = true;
 	}
 
-	if (g_forceMacOff) {
+	if (g_forceMacOff)
+	{
 		return;
 	}
 
-	if (trueBackgroundFlag_ != backgroundFlag_) {
+	if (trueBackgroundFlag_ != backgroundFlag_)
+	{
 		backgroundFlag_ = trueBackgroundFlag_;
-		if (trueBackgroundFlag_) {
+		if (trueBackgroundFlag_)
+		{
 			enterBackground();
-		} else {
+		}
+		else
+		{
 			leaveBackground();
 		}
 	}
 
-	if (curSpeedStopped_ != (g_speedStopped ||
-		(backgroundFlag_ && ! g_runInBackground)))
+	if (curSpeedStopped_ != (g_speedStopped || (backgroundFlag_ && !g_runInBackground)))
 	{
-		curSpeedStopped_ = ! curSpeedStopped_;
-		if (curSpeedStopped_) {
+		curSpeedStopped_ = !curSpeedStopped_;
+		if (curSpeedStopped_)
+		{
 			enterSpeedStopped();
-		} else {
+		}
+		else
+		{
 			leaveSpeedStopped();
 		}
 	}
 
-	if ((useMagnify_ != g_wantMagnify)
-		|| (useFullScreen_ != g_wantFullScreen))
+	if ((useMagnify_ != g_wantMagnify) || (useFullScreen_ != g_wantFullScreen))
 	{
-		(void) reCreateMainWindow();
+		(void)reCreateMainWindow();
 	}
 
-	if (grabMachine_ != (
-		useFullScreen_ &&
-		! (trueBackgroundFlag_ || curSpeedStopped_)))
+	if (grabMachine_ != (useFullScreen_ && !(trueBackgroundFlag_ || curSpeedStopped_)))
 	{
-		grabMachine_ = ! grabMachine_;
-		if (grabMachine_) {
+		grabMachine_ = !grabMachine_;
+		if (grabMachine_)
+		{
 			grabMachine();
-		} else {
+		}
+		else
+		{
 			ungrabMachine();
 		}
 	}
 
-	if (0 != g_requestIthDisk) {
+	if (0 != g_requestIthDisk)
+	{
 		Sony_InsertIth_impl(g_requestIthDisk);
 		g_requestIthDisk = 0;
 	}
 
-	if (g_sonyNewDiskWanted) {
-		if (g_sonyNewDiskName != NOT_A_PBUF) {
+	if (g_sonyNewDiskWanted)
+	{
+		if (g_sonyNewDiskName != NOT_A_PBUF)
+		{
 			uint8_t *p = static_cast<uint8_t *>(PbufDat[g_sonyNewDiskName]);
 			uint32_t L = PbufSize[g_sonyNewDiskName];
 			char drivename[256];
 			uint32_t j = 0;
-			for (uint32_t i = 0; i < L && j < sizeof(drivename) - 1; ++i) {
+			for (uint32_t i = 0; i < L && j < sizeof(drivename) - 1; ++i)
+			{
 				uint8_t x = p[i];
-				if (x < 32) {
+				if (x < 32)
+				{
 					x = '-';
-				} else {
-					switch (x) {
-						case '/': case '<': case '>':
-						case '|': case ':':
+				}
+				else
+				{
+					switch (x)
+					{
+						case '/':
+						case '<':
+						case '>':
+						case '|':
+						case ':':
 							x = '-';
 						default:
 							break;
@@ -471,23 +506,25 @@ void EmulatorShell::processSavedTasks()
 				drivename[j++] = x;
 			}
 			drivename[j] = 0;
-			if (j > 0 && drivename[0] == '.') {
+			if (j > 0 && drivename[0] == '.')
+			{
 				drivename[0] = '-';
 			}
 			MakeNewDisk(g_sonyNewDiskSize, drivename);
 			PbufDispose(g_sonyNewDiskName);
 			g_sonyNewDiskName = NOT_A_PBUF;
-		} else {
+		}
+		else
+		{
 			char defaultName[] = "untitled.dsk";
 			MakeNewDisk(g_sonyNewDiskSize, defaultName);
 		}
 		g_sonyNewDiskWanted = false;
 	}
 
-	if (haveCursorHidden_ != (wantCursorHidden_
-		&& ! (trueBackgroundFlag_ || curSpeedStopped_)))
+	if (haveCursorHidden_ != (wantCursorHidden_ && !(trueBackgroundFlag_ || curSpeedStopped_)))
 	{
-		haveCursorHidden_ = ! haveCursorHidden_;
+		haveCursorHidden_ = !haveCursorHidden_;
 		haveCursorHidden_ ? backend_->hideCursor() : backend_->showCursor();
 	}
 }
@@ -496,7 +533,8 @@ void EmulatorShell::processSavedTasks()
 
 bool EmulatorShell::tickIsDue()
 {
-	if (g_SkipThrottle) {
+	if (g_SkipThrottle)
+	{
 		return true;
 	}
 	UpdateTrueEmulatedTime();
@@ -505,12 +543,15 @@ bool EmulatorShell::tickIsDue()
 
 void EmulatorShell::runOneTick()
 {
-	if (!g_SkipThrottle) {
-		if (CheckDateTime()) {
+	if (!g_SkipThrottle)
+	{
+		if (CheckDateTime())
+		{
 			Sound_SecondNotify();
 		}
-
-	} else {
+	}
+	else
+	{
 		drawChangesAndClear();
 	}
 
@@ -538,7 +579,8 @@ bool EmulatorShell::isSpeedStopped() const
 void EmulatorShell::doneWithDrawingForTick()
 {
 	/* Check if the guest switched resolution via SwitchMode */
-	if (Vid_ResolutionChanged()) {
+	if (Vid_ResolutionChanged())
+	{
 		Vid_ClearResolutionChanged();
 		uint16_t newW = Vid_CurrentWidth();
 		uint16_t newH = Vid_CurrentHeight();
@@ -546,7 +588,8 @@ void EmulatorShell::doneWithDrawingForTick()
 		display_.screenChanged = true;
 	}
 
-	if (g_haveMouseMotion) {
+	if (g_haveMouseMotion)
+	{
 		AutoScrollScreen();
 	}
 	drawChangesAndClear();
@@ -554,18 +597,16 @@ void EmulatorShell::doneWithDrawingForTick()
 
 void EmulatorShell::drawChangesAndClear()
 {
-	if (display_.screenChanged) {
-		int depth = (display_.useColorMode && vMacScreenDepth > 0)
-			? vMacScreenDepth : 0;
+	if (display_.screenChanged)
+	{
+		int depth = (display_.useColorMode && vMacScreenDepth > 0) ? vMacScreenDepth : 0;
 
-		if (depth < 4)
-			BuildPalette();
+		if (depth < 4) BuildPalette();
 
-		const uint32_t* pal = (depth < 4) ? display_.clut32 : nullptr;
+		const uint32_t *pal = (depth < 4) ? display_.clut32 : nullptr;
 
-		ConvertScreen(g_screenCompareBuff,
-			reinterpret_cast<uint32_t*>(argbBuffer_),
-			pal, depth, vMacScreenWidth, vMacScreenHeight);
+		ConvertScreen(g_screenCompareBuff, reinterpret_cast<uint32_t *>(argbBuffer_), pal, depth,
+					  vMacScreenWidth, vMacScreenHeight);
 
 		display_.screenChanged = false;
 		framebufferDirty_ = true;
@@ -574,13 +615,11 @@ void EmulatorShell::drawChangesAndClear()
 
 void EmulatorShell::convertFramebuffer()
 {
-	int depth = (display_.useColorMode && vMacScreenDepth > 0)
-		? vMacScreenDepth : 0;
-	const uint32_t* pal = (depth < 4) ? display_.clut32 : nullptr;
+	int depth = (display_.useColorMode && vMacScreenDepth > 0) ? vMacScreenDepth : 0;
+	const uint32_t *pal = (depth < 4) ? display_.clut32 : nullptr;
 
-	ConvertScreen(g_screenCompareBuff,
-		reinterpret_cast<uint32_t*>(argbBuffer_),
-		pal, depth, vMacScreenWidth, vMacScreenHeight);
+	ConvertScreen(g_screenCompareBuff, reinterpret_cast<uint32_t *>(argbBuffer_), pal, depth,
+				  vMacScreenWidth, vMacScreenHeight);
 }
 
 /* --- Mouse --- */
@@ -589,27 +628,35 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 {
 	bool ShouldHaveCursorHidden = true;
 
-	if (useFullScreen_) {
+	if (useFullScreen_)
+	{
 		NewMousePosh += g_viewHStart - hOffset_;
 		NewMousePosv += g_viewVStart - vOffset_;
 	}
 
-	if (NewMousePosh < 0) {
+	if (NewMousePosh < 0)
+	{
 		NewMousePosh = 0;
 		ShouldHaveCursorHidden = false;
-	} else if (NewMousePosh >= vMacScreenWidth) {
+	}
+	else if (NewMousePosh >= vMacScreenWidth)
+	{
 		NewMousePosh = vMacScreenWidth - 1;
 		ShouldHaveCursorHidden = false;
 	}
-	if (NewMousePosv < 0) {
+	if (NewMousePosv < 0)
+	{
 		NewMousePosv = 0;
 		ShouldHaveCursorHidden = false;
-	} else if (NewMousePosv >= vMacScreenHeight) {
+	}
+	else if (NewMousePosv >= vMacScreenHeight)
+	{
 		NewMousePosv = vMacScreenHeight - 1;
 		ShouldHaveCursorHidden = false;
 	}
 
-	if (useFullScreen_ || fullscreenHint_) {
+	if (useFullScreen_ || fullscreenHint_)
+	{
 		ShouldHaveCursorHidden = true;
 	}
 
@@ -617,7 +664,6 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 
 	wantCursorHidden_ = ShouldHaveCursorHidden;
 }
-
 
 
 /* --- Grab/ungrab --- */
@@ -638,7 +684,8 @@ void EmulatorShell::ungrabMachine()
 
 void EmulatorShell::forceShowCursor()
 {
-	if (haveCursorHidden_) {
+	if (haveCursorHidden_)
+	{
 		haveCursorHidden_ = false;
 		backend_->showCursor();
 	}
@@ -677,21 +724,28 @@ bool EmulatorShell::createMainWindow()
 	int NewWindowHeight = vMacScreenHeight;
 	int NewWindowWidth = vMacScreenWidth;
 
-	if (useMagnify_) {
+	if (useMagnify_)
+	{
 		NewWindowHeight *= windowScale_;
 		NewWindowWidth *= windowScale_;
 	}
 
-	if (useFullScreen_) {
+	if (useFullScreen_)
+	{
 		NewWindowX = 0x1FFF0000; /* SDL_WINDOWPOS_UNDEFINED */
 		NewWindowY = 0x1FFF0000;
-	} else {
+	}
+	else
+	{
 		int WinIndx = useMagnify_ ? kMagStateMagnifgy : kMagStateNormal;
 
-		if (! havePositionWins_[WinIndx]) {
+		if (!havePositionWins_[WinIndx])
+		{
 			NewWindowX = 0x2FFF0000; /* SDL_WINDOWPOS_CENTERED */
 			NewWindowY = 0x2FFF0000;
-		} else {
+		}
+		else
+		{
 			NewWindowX = winPositionsX_[WinIndx];
 			NewWindowY = winPositionsY_[WinIndx];
 		}
@@ -699,45 +753,58 @@ bool EmulatorShell::createMainWindow()
 		curWinIndx_ = WinIndx;
 	}
 
-	if (!backend_->createWindow(windowTitle(),
-		NewWindowWidth, NewWindowHeight, useFullScreen_))
+	if (!backend_->createWindow(windowTitle(), NewWindowWidth, NewWindowHeight, useFullScreen_))
 	{
 		return false;
 	}
 
 	backend_->setWindowPosition(NewWindowX, NewWindowY);
 
-	if (useFullScreen_) {
+	if (useFullScreen_)
+	{
 		int wr, hr;
 		backend_->getWindowSize(&wr, &hr);
 
 		g_viewHSize = wr;
 		g_viewVSize = hr;
-		if (useMagnify_) {
+		if (useMagnify_)
+		{
 			g_viewHSize /= windowScale_;
 			g_viewVSize /= windowScale_;
 		}
-		if (g_viewHSize >= vMacScreenWidth) {
+		if (g_viewHSize >= vMacScreenWidth)
+		{
 			g_viewHStart = 0;
 			g_viewHSize = vMacScreenWidth;
-		} else {
-			g_viewHSize &= ~ 1;
 		}
-		if (g_viewVSize >= vMacScreenHeight) {
+		else
+		{
+			g_viewHSize &= ~1;
+		}
+		if (g_viewVSize >= vMacScreenHeight)
+		{
 			g_viewVStart = 0;
 			g_viewVSize = vMacScreenHeight;
-		} else {
-			g_viewVSize &= ~ 1;
+		}
+		else
+		{
+			g_viewVSize &= ~1;
 		}
 
-		if (wr > NewWindowWidth) {
+		if (wr > NewWindowWidth)
+		{
 			hOffset_ = (wr - NewWindowWidth) / 2;
-		} else {
+		}
+		else
+		{
 			hOffset_ = 0;
 		}
-		if (hr > NewWindowHeight) {
+		if (hr > NewWindowHeight)
+		{
 			vOffset_ = (hr - NewWindowHeight) / 2;
-		} else {
+		}
+		else
+		{
 			vOffset_ = 0;
 		}
 	}
@@ -758,16 +825,16 @@ bool EmulatorShell::reCreateMainWindow()
 
 	winMagStates_[OldWinState] = OldMagState;
 
-	if (! useFullScreen_) {
-		backend_->getWindowPosition(
-			&winPositionsX_[curWinIndx_],
-			&winPositionsY_[curWinIndx_]);
+	if (!useFullScreen_)
+	{
+		backend_->getWindowPosition(&winPositionsX_[curWinIndx_], &winPositionsY_[curWinIndx_]);
 		havePositionWins_[curWinIndx_] = true;
 	}
 
 	forceShowCursor();
 
-	if (grabMachine_) {
+	if (grabMachine_)
+	{
 		grabMachine_ = false;
 		ungrabMachine();
 	}
@@ -778,14 +845,16 @@ bool EmulatorShell::reCreateMainWindow()
 	useMagnify_ = g_wantMagnify;
 	useFullScreen_ = g_wantFullScreen;
 
-	if (! createMainWindow()) {
+	if (!createMainWindow())
+	{
 		/* Restore old state if creation fails */
 		g_wantFullScreen = useFullScreen_;
 		g_wantMagnify = useMagnify_;
 		return false;
 	}
 
-	if (HadCursorHidden) {
+	if (HadCursorHidden)
+	{
 		/* Cursor was hidden before recreate — re-hide it.
 		   Position will update from the next mouse event. */
 		wantCursorHidden_ = true;
@@ -796,10 +865,12 @@ bool EmulatorShell::reCreateMainWindow()
 
 void EmulatorShell::zapWinStateVars()
 {
-	for (int i = 0; i < kNumMagStates; ++i) {
+	for (int i = 0; i < kNumMagStates; ++i)
+	{
 		havePositionWins_[i] = false;
 	}
-	for (int i = 0; i < kNumWinStates; ++i) {
+	for (int i = 0; i < kNumWinStates; ++i)
+	{
 		winMagStates_[i] = kMagStateAuto;
 	}
 }
@@ -808,7 +879,7 @@ void EmulatorShell::zapWinStateVars()
 
 void EmulatorShell::toggleWantFullScreen()
 {
-	g_wantFullScreen = ! g_wantFullScreen;
+	g_wantFullScreen = !g_wantFullScreen;
 
 	int OldWinState = useFullScreen_ ? kWinStateFullScreen : kWinStateWindowed;
 	int OldMagState = useMagnify_ ? kMagStateMagnifgy : kMagStateNormal;
@@ -816,15 +887,20 @@ void EmulatorShell::toggleWantFullScreen()
 	int NewMagState = winMagStates_[NewWinState];
 
 	winMagStates_[OldWinState] = OldMagState;
-	if (kMagStateAuto != NewMagState) {
+	if (kMagStateAuto != NewMagState)
+	{
 		g_wantMagnify = (kMagStateMagnifgy == NewMagState);
-	} else {
+	}
+	else
+	{
 		g_wantMagnify = false;
-		if (g_wantFullScreen) {
+		if (g_wantFullScreen)
+		{
 			PlatformDisplayBounds r;
-			if (backend_->getDisplayBounds(&r)) {
-				if ((r.w >= vMacScreenWidth * windowScale_)
-					&& (r.h >= vMacScreenHeight * windowScale_))
+			if (backend_->getDisplayBounds(&r))
+			{
+				if ((r.w >= vMacScreenWidth * windowScale_) &&
+					(r.h >= vMacScreenHeight * windowScale_))
 				{
 					g_wantMagnify = true;
 				}
@@ -835,14 +911,14 @@ void EmulatorShell::toggleWantFullScreen()
 
 /* --- Disk --- */
 
-bool EmulatorShell::insertDiskOrRom(const char* path, bool silent)
+bool EmulatorShell::insertDiskOrRom(const char *path, bool silent)
 {
-	return Sony_Insert1a_impl(const_cast<char*>(path), silent);
+	return Sony_Insert1a_impl(const_cast<char *>(path), silent);
 }
 
 /* --- Window title --- */
 
-const char* EmulatorShell::windowTitle() const
+const char *EmulatorShell::windowTitle() const
 {
 	return (nullptr != n_arg_) ? n_arg_ : kStrAppName;
 }
@@ -854,20 +930,30 @@ bool EmulatorShell::scanCommandLine()
 	char *pa;
 	int i = 1;
 
-	while (i < argc_) {
+	while (i < argc_)
+	{
 		pa = argv_[i++];
-		if ('-' == pa[0]) {
-			if (0 == strcmp(pa, "--rom")) {
-				if (i < argc_) {
+		if ('-' == pa[0])
+		{
+			if (0 == strcmp(pa, "--rom"))
+			{
+				if (i < argc_)
+				{
 					romPath_ = argv_[i++];
 				}
-			} else if (0 == strncmp(pa, "--rom=", 6)) {
+			}
+			else if (0 == strncmp(pa, "--rom=", 6))
+			{
 				romPath_ = pa + 6;
-			} else {
+			}
+			else
+			{
 				dbglog_writeln("ignoring command line argument");
 				dbglog_writeln(pa);
-				if ('-' == pa[1] && nullptr == strchr(pa, '=')) {
-					if (i < argc_ && '-' != argv_[i][0]) {
+				if ('-' == pa[1] && nullptr == strchr(pa, '='))
+				{
+					if (i < argc_ && '-' != argv_[i][0])
+					{
 						++i;
 					}
 				}
@@ -882,28 +968,21 @@ bool EmulatorShell::scanCommandLine()
 
 bool EmulatorShell::allocMyMemory()
 {
-	if (!dbglog_ReserveAlloc())
-		goto fail;
-	if (!AllocBlock(&g_rom, g_machine->config().romSize, false))
-		goto fail;
+	if (!dbglog_ReserveAlloc()) goto fail;
+	if (!AllocBlock(&g_rom, g_machine->config().romSize, false)) goto fail;
 	/* Allocate screen compare buffer for the largest resolution
 	   at the deepest mode (32 bpp) so resolution switches don't
 	   need reallocation. */
 	{
 		uint32_t maxW, maxH;
 		Vid_MaxResolutionSize(&maxW, &maxH);
-		uint32_t allocW = ((uint32_t)g_screenWidth > maxW)
-			? (uint32_t)g_screenWidth : maxW;
-		uint32_t allocH = ((uint32_t)g_screenHeight > maxH)
-			? (uint32_t)g_screenHeight : maxH;
+		uint32_t allocW = ((uint32_t)g_screenWidth > maxW) ? (uint32_t)g_screenWidth : maxW;
+		uint32_t allocH = ((uint32_t)g_screenHeight > maxH) ? (uint32_t)g_screenHeight : maxH;
 		uint32_t maxBytes = allocW * allocH * 4;
-		if (!display_.allocBuffers(maxBytes))
-			goto fail;
+		if (!display_.allocBuffers(maxBytes)) goto fail;
 	}
-	if (!Sound_AllocBuffer())
-		goto fail;
-	if (!EmulationReserveAlloc())
-		goto fail;
+	if (!Sound_AllocBuffer()) goto fail;
+	if (!EmulationReserveAlloc()) goto fail;
 
 	return true;
 fail:
@@ -913,7 +992,8 @@ fail:
 
 void EmulatorShell::unallocMyMemory()
 {
-	free(g_rom); g_rom = nullptr;
+	free(g_rom);
+	g_rom = nullptr;
 	display_.freeBuffers();
 	Sound_FreeBuffer();
 	EmulationFreeAlloc();
@@ -939,8 +1019,10 @@ void EmulatorShell::uninitWhereAmI()
 
 bool EmulatorShell::loadInitialImages()
 {
-	if (! AnyDiskInserted()) {
-		for (int i = 1; Sony_InsertIth_impl(i); ++i) {
+	if (!AnyDiskInserted())
+	{
+		for (int i = 1; Sony_InsertIth_impl(i); ++i)
+		{
 			/* stop on first error */
 		}
 	}

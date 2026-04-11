@@ -22,8 +22,7 @@ static inline uint16_t do_get_mem_word(uint8_t *a)
 
 static inline uint32_t do_get_mem_long(uint8_t *a)
 {
-	return ((uint32_t)a[0] << 24) | ((uint32_t)a[1] << 16)
-		| ((uint32_t)a[2] << 8) | (uint32_t)a[3];
+	return ((uint32_t)a[0] << 24) | ((uint32_t)a[1] << 16) | ((uint32_t)a[2] << 8) | (uint32_t)a[3];
 }
 
 static inline void do_put_mem_byte(uint8_t *a, uint8_t v)

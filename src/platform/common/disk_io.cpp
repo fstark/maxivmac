@@ -2,9 +2,8 @@
 
 #include <cstdio>
 
-FILE *Drives[NumDrives]; /* open disk image files */
+FILE *Drives[NumDrives];	 /* open disk image files */
 char *DriveNames[NumDrives]; /* paths of open disk images */
-
 
 
 void InitDrives()
@@ -15,15 +14,15 @@ void InitDrives()
 	*/
 	DriveIndex i;
 
-	for (i = 0; i < NumDrives; ++i) {
+	for (i = 0; i < NumDrives; ++i)
+	{
 		Drives[i] = nullptr;
 		DriveNames[i] = nullptr;
 	}
 }
 
- tMacErr vSonyTransfer(bool isWrite, uint8_t * buffer,
-	DriveIndex driveNo, uint32_t sonyStart, uint32_t sonyCount,
-	uint32_t *sonyActCount)
+tMacErr vSonyTransfer(bool isWrite, uint8_t *buffer, DriveIndex driveNo, uint32_t sonyStart,
+					  uint32_t sonyCount, uint32_t *sonyActCount)
 {
 	/*
 		OSGLUxxx common:
@@ -32,29 +31,35 @@ void InitDrives()
 		will do) on failure.
 	*/
 	tMacErr err = tMacErr::miscErr;
-	FILE * refnum = Drives[driveNo];
+	FILE *refnum = Drives[driveNo];
 	uint32_t newSonyCount = 0;
 
-	if (fseek(refnum, sonyStart, SEEK_SET) >= 0) {
-		if (isWrite) {
+	if (fseek(refnum, sonyStart, SEEK_SET) >= 0)
+	{
+		if (isWrite)
+		{
 			newSonyCount = fwrite(buffer, 1, sonyCount, refnum);
-		} else {
+		}
+		else
+		{
 			newSonyCount = fread(buffer, 1, sonyCount, refnum);
 		}
 
-		if (newSonyCount == sonyCount) {
+		if (newSonyCount == sonyCount)
+		{
 			err = tMacErr::noErr;
 		}
 	}
 
-	if (nullptr != sonyActCount) {
+	if (nullptr != sonyActCount)
+	{
 		*sonyActCount = newSonyCount;
 	}
 
 	return err; /*& figure out what really to return &*/
 }
 
- tMacErr vSonyGetSize(DriveIndex driveNo, uint32_t *sonyCount)
+tMacErr vSonyGetSize(DriveIndex driveNo, uint32_t *sonyCount)
 {
 	/*
 		OSGLUxxx common:
@@ -65,12 +70,14 @@ void InitDrives()
 		will do) on failure.
 	*/
 	tMacErr err = tMacErr::miscErr;
-	FILE * refnum = Drives[driveNo];
+	FILE *refnum = Drives[driveNo];
 	long v;
 
-	if (fseek(refnum, 0, SEEK_END) >= 0) {
+	if (fseek(refnum, 0, SEEK_END) >= 0)
+	{
 		v = ftell(refnum);
-		if (v >= 0) {
+		if (v >= 0)
+		{
 			*sonyCount = v;
 			err = tMacErr::noErr;
 		}
@@ -89,12 +96,13 @@ static tMacErr vSonyEject0(DriveIndex driveNo, bool deleteit)
 		Macintosh style error code, but -1
 		will do) on failure.
 	*/
-	FILE * refnum = Drives[driveNo];
+	FILE *refnum = Drives[driveNo];
 
 	DiskEjectedNotify(driveNo);
 
-	if (deleteit && DriveNames[driveNo] != nullptr) {
-		(void) remove(DriveNames[driveNo]);
+	if (deleteit && DriveNames[driveNo] != nullptr)
+	{
+		(void)remove(DriveNames[driveNo]);
 	}
 
 	fclose(refnum);
@@ -106,40 +114,46 @@ static tMacErr vSonyEject0(DriveIndex driveNo, bool deleteit)
 	return tMacErr::noErr;
 }
 
- tMacErr vSonyEject(DriveIndex driveNo)
+tMacErr vSonyEject(DriveIndex driveNo)
 {
 	return vSonyEject0(driveNo, false);
 }
 
- tMacErr vSonyEjectDelete(DriveIndex driveNo)
+tMacErr vSonyEjectDelete(DriveIndex driveNo)
 {
 	return vSonyEject0(driveNo, true);
 }
 
- tMacErr vSonyGetName(DriveIndex driveNo, PbufIndex *r)
+tMacErr vSonyGetName(DriveIndex driveNo, PbufIndex *r)
 {
 	char *path = DriveNames[driveNo];
-	if (nullptr == path) {
+	if (nullptr == path)
+	{
 		return tMacErr::miscErr;
 	}
 
 	/* extract last path component */
 	char *name = strrchr(path, '/');
-	if (name != nullptr) {
+	if (name != nullptr)
+	{
 		++name;
-	} else {
+	}
+	else
+	{
 		name = path;
 	}
 
 	uint32_t L;
 	tMacErr err = UniCodeStrLength(name, &L);
-	if (tMacErr::noErr != err) {
+	if (tMacErr::noErr != err)
+	{
 		return err;
 	}
 
 	PbufIndex t;
 	err = PbufNew(L, &t);
-	if (tMacErr::noErr != err) {
+	if (tMacErr::noErr != err)
+	{
 		return err;
 	}
 
@@ -152,15 +166,16 @@ void UnInitDrives()
 {
 	DriveIndex i;
 
-	for (i = 0; i < NumDrives; ++i) {
-		if (vSonyIsInserted(i)) {
-			(void) vSonyEject(i);
+	for (i = 0; i < NumDrives; ++i)
+	{
+		if (vSonyIsInserted(i))
+		{
+			(void)vSonyEject(i);
 		}
 	}
 }
 
-bool Sony_Insert0(FILE * refnum, bool locked,
-	char *drivepath)
+bool Sony_Insert0(FILE *refnum, bool locked, char *drivepath)
 {
 	/*
 		OSGLUxxx common:
@@ -171,22 +186,25 @@ bool Sony_Insert0(FILE * refnum, bool locked,
 	DriveIndex driveNo;
 	bool IsOk = false;
 
-	if (! FirstFreeDisk(&driveNo)) {
+	if (!FirstFreeDisk(&driveNo))
+	{
 		fprintf(stderr, "Error: Too many disk images\n");
-	} else {
+	}
+	else
+	{
 		/* printf("Sony_Insert0 %d\n", (int)driveNo); */
 
 		{
 			Drives[driveNo] = refnum;
-			DriveNames[driveNo] = (drivepath != nullptr)
-				? strdup(drivepath) : nullptr;
+			DriveNames[driveNo] = (drivepath != nullptr) ? strdup(drivepath) : nullptr;
 			DiskInsertNotify(driveNo, locked);
 
 			IsOk = true;
 		}
 	}
 
-	if (! IsOk) {
+	if (!IsOk)
+	{
 		fclose(refnum);
 	}
 
@@ -197,16 +215,21 @@ bool Sony_Insert1(char *drivepath, bool silentfail)
 {
 	bool locked = false;
 	/* printf("Sony_Insert1 %s\n", drivepath); */
-	FILE * refnum = fopen(drivepath, "rb+");
-	if (nullptr == refnum) {
+	FILE *refnum = fopen(drivepath, "rb+");
+	if (nullptr == refnum)
+	{
 		locked = true;
 		refnum = fopen(drivepath, "rb");
 	}
-	if (nullptr == refnum) {
-		if (! silentfail) {
+	if (nullptr == refnum)
+	{
+		if (!silentfail)
+		{
 			fprintf(stderr, "Error: Could not open disk image\n");
 		}
-	} else {
+	}
+	else
+	{
 		return Sony_Insert0(refnum, locked, drivepath);
 	}
 	return false;
@@ -217,9 +240,11 @@ static bool WriteZero(FILE *refnum, uint32_t L)
 	uint8_t buffer[2048];
 	memset(buffer, 0, sizeof(buffer));
 
-	while (L > 0) {
+	while (L > 0)
+	{
 		uint32_t i = (L > sizeof(buffer)) ? sizeof(buffer) : L;
-		if (fwrite(buffer, 1, i, refnum) != i) {
+		if (fwrite(buffer, 1, i, refnum) != i)
+		{
 			return false;
 		}
 		L -= i;
@@ -231,18 +256,24 @@ static void MakeNewDisk0(uint32_t L, char *drivepath)
 {
 	bool IsOk = false;
 	FILE *refnum = fopen(drivepath, "wb+");
-	if (nullptr == refnum) {
+	if (nullptr == refnum)
+	{
 		fprintf(stderr, "Error: Could not create disk image\n");
-	} else {
-		if (WriteZero(refnum, L)) {
+	}
+	else
+	{
+		if (WriteZero(refnum, L))
+		{
 			IsOk = Sony_Insert0(refnum, false, drivepath);
 			refnum = nullptr;
 		}
-		if (refnum != nullptr) {
+		if (refnum != nullptr)
+		{
 			fclose(refnum);
 		}
-		if (! IsOk) {
-			(void) remove(drivepath);
+		if (!IsOk)
+		{
+			(void)remove(drivepath);
 		}
 	}
 }
@@ -254,8 +285,7 @@ void MakeNewDisk(uint32_t L, char *drivename)
 
 	snprintf(s, sizeof(s), "out/%s", drivename);
 	/* Ensure "out" directory exists */
-	(void) mkdir("out", 0755);
+	(void)mkdir("out", 0755);
 	MakeNewDisk0(L, s);
 	fprintf(stderr, "Exported file: %s\n", s);
 }
-

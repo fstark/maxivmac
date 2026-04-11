@@ -17,7 +17,7 @@
 #define dbglog_ToSDL_Log 0
 #endif
 
-#if ! dbglog_ToStdErr
+#if !dbglog_ToStdErr
 static FILE *dbglog_File = nullptr;
 #endif
 
@@ -30,10 +30,12 @@ bool dbglog_open0(const char *appParent)
 	{
 		dbglog_File = fopen("dbglog.txt", "w");
 	}
-	else {
+	else
+	{
 		char *t = nullptr;
 
-		if (tMacErr::noErr == ChildPath(const_cast<char*>(appParent), "dbglog.txt", &t)) {
+		if (tMacErr::noErr == ChildPath(const_cast<char *>(appParent), "dbglog.txt", &t))
+		{
 			dbglog_File = fopen(t, "w");
 		}
 
@@ -47,31 +49,33 @@ bool dbglog_open0(const char *appParent)
 void dbglog_write0(char *s, uint32_t L)
 {
 #if dbglog_ToStdErr
-	(void) fwrite(s, 1, L, stderr);
+	(void)fwrite(s, 1, L, stderr);
 #elif dbglog_ToSDL_Log
 	char t[256 + 1];
 
-	if (L > 256) {
+	if (L > 256)
+	{
 		L = 256;
 	}
-	(void) memcpy(t, s, L);
+	(void)memcpy(t, s, L);
 	t[L] = 1;
 
 	SDL_Log("%s", t);
 #else
-	if (dbglog_File != nullptr) {
-		(void) fwrite(s, 1, L, dbglog_File);
+	if (dbglog_File != nullptr)
+	{
+		(void)fwrite(s, 1, L, dbglog_File);
 	}
 #endif
 }
 
 void dbglog_close0()
 {
-#if ! dbglog_ToStdErr
-	if (dbglog_File != nullptr) {
+#if !dbglog_ToStdErr
+	if (dbglog_File != nullptr)
+	{
 		fclose(dbglog_File);
 		dbglog_File = nullptr;
 	}
 #endif
 }
-

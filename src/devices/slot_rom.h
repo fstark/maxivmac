@@ -10,10 +10,10 @@
 #include <cstddef>
 #include <cstring>
 
-class SlotROMWriter {
+class SlotROMWriter
+{
 public:
-	SlotROMWriter(uint8_t* buf, size_t capacity)
-		: buf_(buf), capacity_(capacity), pos_(0) {}
+	SlotROMWriter(uint8_t *buf, size_t capacity) : buf_(buf), capacity_(capacity), pos_(0) {}
 
 	size_t pos() const { return pos_; }
 
@@ -42,17 +42,17 @@ public:
 		writeByte(v & 0xFF);
 	}
 
-	void writeBytes(const uint8_t* data, size_t len)
+	void writeBytes(const uint8_t *data, size_t len)
 	{
 		for (size_t i = 0; i < len; ++i)
 			writeByte(data[i]);
 	}
 
 	/* Write a C string (null-terminated), padded to 4-byte alignment */
-	void writeString(const char* s)
+	void writeString(const char *s)
 	{
 		size_t len = std::strlen(s) + 1; /* include NUL */
-		writeBytes(reinterpret_cast<const uint8_t*>(s), len);
+		writeBytes(reinterpret_cast<const uint8_t *>(s), len);
 		/* Pad to 4-byte alignment */
 		while (pos_ % 4 != 0)
 			writeByte(0);
@@ -92,42 +92,40 @@ public:
 	}
 
 	/* End-of-list marker: 0xFF000000 */
-	void writeEndOfList()
-	{
-		writeDataEntry(0xFF, 0x00000000);
-	}
+	void writeEndOfList() { writeDataEntry(0xFF, 0x00000000); }
 
 	bool overflowed() const { return overflow_ || pos_ > capacity_; }
 
 private:
-	uint8_t* buf_;
-	size_t   capacity_;
-	size_t   pos_;
-	bool     overflow_ = false;
+	uint8_t *buf_;
+	size_t capacity_;
+	size_t pos_;
+	bool overflow_ = false;
 };
 
 /*
 	VPBlock — Video Parameters Block (46 bytes, big-endian on wire).
 	Describes the framebuffer layout for a given display mode.
 */
-struct VPBlock {
-	uint32_t physBlockSize = 0x2E;  /* always 46 */
-	uint32_t baseOffset    = 0;
+struct VPBlock
+{
+	uint32_t physBlockSize = 0x2E; /* always 46 */
+	uint32_t baseOffset = 0;
 	uint16_t rowBytes;
-	uint16_t boundsTop     = 0;
-	uint16_t boundsLeft    = 0;
-	uint16_t boundsBottom;          /* height */
-	uint16_t boundsRight;           /* width  */
-	uint16_t version       = 0;
-	uint16_t packType      = 0;
-	uint32_t packSize      = 0;
-	uint32_t hRes          = 0x00480000;  /* 72 dpi fixed-point */
-	uint32_t vRes          = 0x00480000;
-	uint16_t pixelType;     /* 0=indexed, 0x10=direct */
-	uint16_t pixelSize;     /* 1,2,4,8,16,32 */
-	uint16_t cmpCount;      /* 1 or 3 */
-	uint16_t cmpSize;       /* 1,2,4,8 or 5 */
-	uint32_t planeBytes    = 0;
+	uint16_t boundsTop = 0;
+	uint16_t boundsLeft = 0;
+	uint16_t boundsBottom; /* height */
+	uint16_t boundsRight;  /* width  */
+	uint16_t version = 0;
+	uint16_t packType = 0;
+	uint32_t packSize = 0;
+	uint32_t hRes = 0x00480000; /* 72 dpi fixed-point */
+	uint32_t vRes = 0x00480000;
+	uint16_t pixelType; /* 0=indexed, 0x10=direct */
+	uint16_t pixelSize; /* 1,2,4,8,16,32 */
+	uint16_t cmpCount;	/* 1 or 3 */
+	uint16_t cmpSize;	/* 1,2,4,8 or 5 */
+	uint32_t planeBytes = 0;
 
 	/*
 		Factory: create VPBlock for a given depth (0..5) and resolution.
@@ -139,27 +137,30 @@ struct VPBlock {
 		int bpp = 1 << depth;
 
 		vp.boundsBottom = height;
-		vp.boundsRight  = width;
-		vp.rowBytes     = (uint16_t)((uint32_t)width * bpp / 8);
-		vp.pixelSize    = bpp;
+		vp.boundsRight = width;
+		vp.rowBytes = (uint16_t)((uint32_t)width * bpp / 8);
+		vp.pixelSize = bpp;
 
-		if (depth < 4) {
+		if (depth < 4)
+		{
 			/* Indexed (CLUT) modes: 1,2,4,8 bpp */
 			vp.pixelType = 0;
-			vp.cmpCount  = 1;
-			vp.cmpSize   = bpp;
-		} else {
+			vp.cmpCount = 1;
+			vp.cmpSize = bpp;
+		}
+		else
+		{
 			/* Direct modes: 16 bpp (5-5-5) or 32 bpp (xRGB) */
 			vp.pixelType = 0x10;
-			vp.cmpCount  = 3;
-			vp.cmpSize   = (depth == 4) ? 5 : 8;
+			vp.cmpCount = 3;
+			vp.cmpSize = (depth == 4) ? 5 : 8;
 		}
 
 		return vp;
 	}
 
 	/* Serialize the 46-byte block to a SlotROMWriter (big-endian) */
-	void writeTo(SlotROMWriter& w) const
+	void writeTo(SlotROMWriter &w) const
 	{
 		w.writeLong(physBlockSize);
 		w.writeLong(baseOffset);
@@ -181,6 +182,5 @@ struct VPBlock {
 	}
 
 	/* Write VPBlock directly to guest memory at the given address */
-	static void writeToGuest(int depth, uint16_t width, uint16_t height,
-	                          uint32_t guestPtr);
+	static void writeToGuest(int depth, uint16_t width, uint16_t height, uint32_t guestPtr);
 };

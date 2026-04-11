@@ -6,13 +6,13 @@
 #include "devices/device.h"
 #include <cstdint>
 
-class PMUDevice : public Device {
+class PMUDevice : public Device
+{
 public:
-	uint32_t access(uint32_t data, bool /*writeMem*/, uint32_t /*addr*/) override
-		{ return data; }
+	uint32_t access(uint32_t data, bool /*writeMem*/, uint32_t /*addr*/) override { return data; }
 	void zap() override {}
 	void reset() override;
-	const char* name() const override { return "PMU"; }
+	const char *name() const override { return "PMU"; }
 
 	// Respond to VIA-driven ready-line transitions.
 	void toReadyChangeNtfy();
@@ -24,7 +24,7 @@ private:
 	static constexpr int kBuffSz = 8;
 
 	uint8_t buffA_[kBuffSz] = {};
-	uint8_t* p_ = nullptr;
+	uint8_t *p_ = nullptr;
 	uint8_t rem_ = 0;
 	uint8_t i_ = 0;
 
@@ -43,4 +43,3 @@ private:
 	uint8_t getPMUbus() const;
 	void setPMUbus(uint8_t v);
 };
-

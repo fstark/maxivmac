@@ -18,39 +18,42 @@
 
 class Device;
 
-class Machine {
+class Machine
+{
 public:
 	explicit Machine(MachineConfig config);
 	~Machine();
 
 	// Lifecycle
-	bool init();        // allocate buffers, create devices, build ATT
-	void reset();       // warm reset all devices
-	void zap();         // cold start (power-on reset)
+	bool init();  // allocate buffers, create devices, build ATT
+	void reset(); // warm reset all devices
+	void zap();	  // cold start (power-on reset)
 
 	// Accessors
-	const MachineConfig& config() const { return config_; }
-	MachineConfig& configMut() { return config_; }
-	WireBus&       wireBus()       { return wireBus_; }
-	ICTScheduler&  ict()           { return ict_; }
+	const MachineConfig &config() const { return config_; }
+	MachineConfig &configMut() { return config_; }
+	WireBus &wireBus() { return wireBus_; }
+	ICTScheduler &ict() { return ict_; }
 
 	// Memory buffers
-	uint8_t* ram()    const { return ram_.get(); }
-	uint8_t* rom()    const { return rom_; }
-	uint8_t* vidMem() const { return vidMem_.get(); }
-	uint8_t* vidROM() const { return vidROM_.get(); }
+	uint8_t *ram() const { return ram_.get(); }
+	uint8_t *rom() const { return rom_; }
+	uint8_t *vidMem() const { return vidMem_.get(); }
+	uint8_t *vidROM() const { return vidROM_.get(); }
 
-	void setRom(uint8_t* r) { rom_ = r; }
+	void setRom(uint8_t *r) { rom_ = r; }
 
 	uint32_t ramSize() const { return config_.ramSize(); }
 
 	// Device registry
 	void addDevice(std::unique_ptr<Device> dev);
 
-	template<typename T>
-	T* findDevice() const {
-		for (auto& dev : devices_) {
-			if (auto* p = dynamic_cast<T*>(dev.get())) {
+	template <typename T> T *findDevice() const
+	{
+		for (auto &dev : devices_)
+		{
+			if (auto *p = dynamic_cast<T *>(dev.get()))
+			{
 				return p;
 			}
 		}
@@ -63,12 +66,12 @@ public:
 
 private:
 	MachineConfig config_;
-	WireBus       wireBus_;
-	ICTScheduler  ict_;
+	WireBus wireBus_;
+	ICTScheduler ict_;
 
 	// Memory buffers
 	std::unique_ptr<uint8_t[]> ram_;
-	uint8_t*                   rom_ = nullptr;  // set externally
+	uint8_t *rom_ = nullptr; // set externally
 	std::unique_ptr<uint8_t[]> vidMem_;
 	std::unique_ptr<uint8_t[]> vidROM_;
 
@@ -81,4 +84,4 @@ private:
 
 // Global Machine pointer — backward compatibility during migration.
 // Removed in final cleanup (Step 4.19).
-extern Machine* g_machine;
+extern Machine *g_machine;

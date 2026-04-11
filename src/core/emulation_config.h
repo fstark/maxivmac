@@ -32,5 +32,3 @@ constexpr int NumPbufs = 4;
 /* kExtn_Block_Base/kExtn_ln2Spc are now runtime — see MachineConfig */
 
 /* kROM_Base/kROM_ln2Spc are now runtime — see MachineConfig::romBase */
-
-

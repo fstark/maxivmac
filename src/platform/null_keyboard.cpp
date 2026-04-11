@@ -12,9 +12,7 @@
 #include "platform/common/keyboard_map.h"
 #include "platform/platform.h"
 
-void ReconnectKeyCodes3()
-{
-}
+void ReconnectKeyCodes3() {}
 
 void DisconnectKeyCodes3()
 {
@@ -22,10 +20,6 @@ void DisconnectKeyCodes3()
 	MyMouseButtonSet(false);
 }
 
-void DisableKeyRepeat()
-{
-}
+void DisableKeyRepeat() {}
 
-void RestoreKeyRepeat()
-{
-}
+void RestoreKeyRepeat() {}

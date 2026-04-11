@@ -19,7 +19,6 @@
 /* kAutoSlowSubTicks/kAutoSlowTime are now runtime — see MachineConfig */
 
 
-
 /* CaretBlinkTime and DoubleClickTime are model-dependent, set in rtc.cpp */
 
 #include "core/wire_macros.h"
@@ -29,5 +28,3 @@
 /* kExtn_Block_Base/kExtn_ln2Spc are now runtime — see MachineConfig */
 
 /* kROM_Base/kROM_ln2Spc are now runtime — see MachineConfig::romBase */
-
-

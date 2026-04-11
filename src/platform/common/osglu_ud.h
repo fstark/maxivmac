@@ -8,9 +8,9 @@
 #pragma once
 
 #include "platform/platform_config.h"
-	/*
-		Configuration file dependent on user options
-		for operating system glue.
-	*/
+/*
+	Configuration file dependent on user options
+	for operating system glue.
+*/
 #include "core/emulation_config.h"
 #include "platform/platform.h"

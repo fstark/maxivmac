@@ -8,12 +8,13 @@
 #include <memory>
 #include <vector>
 
-class ToolRegistry {
+class ToolRegistry
+{
 public:
 	void registerTool(std::unique_ptr<ToolPanel> tool);
 	void drawAllVisible();
-	void drawToolMenu();   /* ImGui menu items for each tool */
-	ToolPanel* findByName(const char* name);
+	void drawToolMenu(); /* ImGui menu items for each tool */
+	ToolPanel *findByName(const char *name);
 
 private:
 	std::vector<std::unique_ptr<ToolPanel>> tools_;

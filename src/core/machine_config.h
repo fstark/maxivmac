@@ -14,15 +14,16 @@
 #include <type_traits>
 
 // VIA port configuration — replaces compile-time VIA1_ORA_FloatVal etc.
-struct VIAConfig {
-	uint8_t oraFloatVal    = 0xFF;
-	uint8_t orbFloatVal    = 0xFF;
-	uint8_t oraCanIn       = 0x00;
-	uint8_t oraCanOut      = 0x00;
-	uint8_t orbCanIn       = 0x00;
-	uint8_t orbCanOut      = 0x00;
-	uint8_t ierNever0      = 0x00;
-	uint8_t ierNever1      = 0x00;
+struct VIAConfig
+{
+	uint8_t oraFloatVal = 0xFF;
+	uint8_t orbFloatVal = 0xFF;
+	uint8_t oraCanIn = 0x00;
+	uint8_t oraCanOut = 0x00;
+	uint8_t orbCanIn = 0x00;
+	uint8_t orbCanOut = 0x00;
+	uint8_t ierNever0 = 0x00;
+	uint8_t ierNever1 = 0x00;
 	uint8_t cb2ModesAllowed = 0x01;
 	uint8_t ca2ModesAllowed = 0x01;
 
@@ -30,102 +31,102 @@ struct VIAConfig {
 	// -1 means unconnected (no wire)
 	std::array<int, 8> portAWires = {-1, -1, -1, -1, -1, -1, -1, -1};
 	std::array<int, 8> portBWires = {-1, -1, -1, -1, -1, -1, -1, -1};
-	int cb2Wire       = -1;   // WireID for CB2
-	int interruptWire = -1;   // WireID for interrupt request output
+	int cb2Wire = -1;		// WireID for CB2
+	int interruptWire = -1; // WireID for interrupt request output
 };
 
 // Model IDs — same values as the existing #defines in machine.h
-enum class MacModel : int {
-	Twig43   = 0,
-	Twiggy   = 1,
-	Mac128K  = 2,
+enum class MacModel : int
+{
+	Twig43 = 0,
+	Twiggy = 1,
+	Mac128K = 2,
 	Mac512Ke = 3,
-	Kanji    = 4,
-	Plus     = 5,
-	SE       = 6,
-	SEFDHD   = 7,
-	Classic  = 8,
-	PB100    = 9,
-	II       = 10,
-	IIx      = 11,
+	Kanji = 4,
+	Plus = 5,
+	SE = 6,
+	SEFDHD = 7,
+	Classic = 8,
+	PB100 = 9,
+	II = 10,
+	IIx = 11,
 };
 
 /* Relational operators for MacModel — ordered by enum value. */
 using MacModel_ut = std::underlying_type_t<MacModel>;
-constexpr bool operator<(MacModel a, MacModel b) {
+constexpr bool operator<(MacModel a, MacModel b)
+{
 	return static_cast<MacModel_ut>(a) < static_cast<MacModel_ut>(b);
 }
-constexpr bool operator<=(MacModel a, MacModel b) {
+constexpr bool operator<=(MacModel a, MacModel b)
+{
 	return static_cast<MacModel_ut>(a) <= static_cast<MacModel_ut>(b);
 }
-constexpr bool operator>(MacModel a, MacModel b) {
+constexpr bool operator>(MacModel a, MacModel b)
+{
 	return static_cast<MacModel_ut>(a) > static_cast<MacModel_ut>(b);
 }
-constexpr bool operator>=(MacModel a, MacModel b) {
+constexpr bool operator>=(MacModel a, MacModel b)
+{
 	return static_cast<MacModel_ut>(a) >= static_cast<MacModel_ut>(b);
 }
 
-struct MachineConfig {
-	MacModel model       = MacModel::II;
-	bool     use68020    = true;
-	bool     emFPU       = true;
-	bool     emMMU       = false;
+struct MachineConfig
+{
+	MacModel model = MacModel::II;
+	bool use68020 = true;
+	bool emFPU = true;
+	bool emMMU = false;
 
-	uint32_t ramASize    = 0x00400000;  // 4 MB
-	uint32_t ramBSize    = 0x00400000;  // 4 MB
-	uint32_t vidMemSize  = 0x00080000;  // 512 KB
-	uint32_t vidROMSize  = 0x002000;    // 8 KB (multi-resolution ROM)
+	uint32_t ramASize = 0x00400000;	  // 4 MB
+	uint32_t ramBSize = 0x00400000;	  // 4 MB
+	uint32_t vidMemSize = 0x00080000; // 512 KB
+	uint32_t vidROMSize = 0x002000;	  // 8 KB (multi-resolution ROM)
 
 	// ROM configuration (set by model factory)
-	uint32_t    romSize     = 0x00040000;  // 256 KB default (Mac II)
-	uint32_t    romBase     = 0x00800000;  // Mac II ROM base
-	const char* romFileName = "MacII.ROM";
+	uint32_t romSize = 0x00040000; // 256 KB default (Mac II)
+	uint32_t romBase = 0x00800000; // Mac II ROM base
+	const char *romFileName = "MacII.ROM";
 
 	// Extension / NuBus space
-	uint32_t extnBlockBase = 0x50F0C000;  // Mac II/IIx default
-	uint8_t  extnLn2Spc    = 6;           // 64 bytes (legacy + register blocks)
+	uint32_t extnBlockBase = 0x50F0C000; // Mac II/IIx default
+	uint8_t extnLn2Spc = 6;				 // 64 bytes (legacy + register blocks)
 
 	// Derived feature flags (set by model factory)
-	bool emVIA1         = true;
-	bool emVIA2         = true;
-	bool emADB          = true;
-	bool emClassicKbrd  = false;
-	bool emRTC          = true;
-	bool emPMU          = false;
-	bool emASC          = true;
-	bool emClassicSnd   = false;
-	bool emVidCard      = true;
-	bool includeVidMem  = true;
+	bool emVIA1 = true;
+	bool emVIA2 = true;
+	bool emADB = true;
+	bool emClassicKbrd = false;
+	bool emRTC = true;
+	bool emPMU = false;
+	bool emASC = true;
+	bool emClassicSnd = false;
+	bool emVidCard = true;
+	bool includeVidMem = true;
 
-	int  clockMult      = 2;
-	int  autoSlowSubTicks = 16384;
-	int  autoSlowTime   = 60;
+	int clockMult = 2;
+	int autoSlowSubTicks = 16384;
+	int autoSlowTime = 60;
 
-	int  maxATTListN    = 20;
+	int maxATTListN = 20;
 
 	// Screen
-	uint16_t screenWidth  = 640;
+	uint16_t screenWidth = 640;
 	uint16_t screenHeight = 480;
-	uint8_t  screenDepth  = 3;  // log2 bpp: 0=1bpp, 3=8bpp
+	uint8_t screenDepth = 3; // log2 bpp: 0=1bpp, 3=8bpp
 
 	// VIA port configuration (populated by model factory)
 	VIAConfig via1Config;
 	VIAConfig via2Config;
 
 	// Helper predicates
-	bool isIIFamily() const {
-		return model == MacModel::II || model == MacModel::IIx;
+	bool isIIFamily() const { return model == MacModel::II || model == MacModel::IIx; }
+	bool isCompactMac() const { return model <= MacModel::Plus; }
+	bool isSEFamily() const
+	{
+		return model == MacModel::SE || model == MacModel::SEFDHD || model == MacModel::Classic;
 	}
-	bool isCompactMac() const {
-		return model <= MacModel::Plus;
-	}
-	bool isSEFamily() const {
-		return model == MacModel::SE || model == MacModel::SEFDHD
-		    || model == MacModel::Classic;
-	}
-	bool isSEOrLater() const {
-		return model >= MacModel::SE;
-	}
+	bool isSEOrLater() const { return model >= MacModel::SE; }
 	uint32_t ramSize() const { return ramASize + ramBSize; }
 };
 

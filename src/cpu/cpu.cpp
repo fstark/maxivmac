@@ -13,7 +13,7 @@
 
 CPU g_cpu;
 
-void CPU::init(uint8_t* iplPtr, const MachineConfig* config)
+void CPU::init(uint8_t *iplPtr, const MachineConfig *config)
 {
 	MINEM68K_Init(iplPtr, config);
 }
@@ -49,12 +49,12 @@ void CPU::diskInsertedPseudoException(uint32_t newpc, uint32_t data)
 	DiskInsertedPsuedoException(newpc, data);
 }
 
-void CPU::setHeadATTel(ATTer* p)
+void CPU::setHeadATTel(ATTer *p)
 {
 	SetHeadATTel(p);
 }
 
-ATTer* CPU::findATTel(uint32_t addr)
+ATTer *CPU::findATTel(uint32_t addr)
 {
 	return FindATTel(addr);
 }

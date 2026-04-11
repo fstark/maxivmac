@@ -17,12 +17,7 @@ void BuildPalette();
 /* Unified screen converter.
    Converts the full Mac framebuffer to ARGB8888.
    palette is clut32[] for indexed depths (0–3), or nullptr for direct (4–5). */
-void ConvertScreen(
-	const uint8_t* src,
-	uint32_t*      dst,
-	const uint32_t* palette,
-	int depth,
-	int width,
-	int height);
+void ConvertScreen(const uint8_t *src, uint32_t *dst, const uint32_t *palette, int depth, int width,
+				   int height);
 
 #endif /* SCREEN_CONVERT_H */

@@ -15,40 +15,43 @@ class EmulatorShell;
 class ImGuiBackend;
 
 /* Result returned when the user clicks Boot. */
-struct ModelSelectorResult {
-	bool        accepted = false;  // true = user clicked Boot
-	LaunchConfig config;           // populated with user choices
+struct ModelSelectorResult
+{
+	bool accepted = false; // true = user clicked Boot
+	LaunchConfig config;   // populated with user choices
 };
 
 /* Persistent state for the model selector UI. */
-class ModelSelector {
+class ModelSelector
+{
 public:
-	void init(const std::string& romDir);
+	void init(const std::string &romDir);
 	ModelSelectorResult draw();
 
 private:
 	/* Per-model metadata. */
-	struct ModelEntry {
-		MacModel    model;
-		const char* displayName;
-		const char* cpu;
-		const char* ram;
-		const char* resolution;
-		bool        romAvailable;
-		std::string romPath;        // resolved path (empty if missing)
+	struct ModelEntry
+	{
+		MacModel model;
+		const char *displayName;
+		const char *cpu;
+		const char *ram;
+		const char *resolution;
+		bool romAvailable;
+		std::string romPath; // resolved path (empty if missing)
 	};
 
-	void buildModelList(const std::string& romDir);
+	void buildModelList(const std::string &romDir);
 	void drawModelGrid();
 	void drawConfigPanel();
 
 	std::vector<ModelEntry> models_;
-	int  selectedIndex_ = -1;       // -1 = grid view, >= 0 = config view
+	int selectedIndex_ = -1; // -1 = grid view, >= 0 = config view
 
 	/* Config panel state */
-	int         ramChoice_ = 0;
-	int         speedChoice_ = 0;
-	int         configTab_ = 0;     // 0 = Machine, 1 = Disks
-	bool        bootClicked_ = false;
+	int ramChoice_ = 0;
+	int speedChoice_ = 0;
+	int configTab_ = 0; // 0 = Machine, 1 = Disks
+	bool bootClicked_ = false;
 	std::vector<std::string> diskPaths_;
 };

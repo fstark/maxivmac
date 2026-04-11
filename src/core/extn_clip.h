@@ -12,5 +12,5 @@
 void extnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult);
 
 /* Access the guest debug console log buffer (for UI display). */
-const std::deque<std::string>& extnDbgConsoleLines();
+const std::deque<std::string> &extnDbgConsoleLines();
 void extnDbgConsoleClear();

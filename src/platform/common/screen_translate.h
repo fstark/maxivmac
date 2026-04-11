@@ -42,22 +42,18 @@
 
 /* now define the procedure */
 
-static void ScrnTrns_DoTrans(int16_t top, int16_t left,
-	int16_t bottom, int16_t right)
+static void ScrnTrns_DoTrans(int16_t top, int16_t left, int16_t bottom, int16_t right)
 {
 	int i;
 	int j;
 	uint32_t t0;
 	uint32_t t1;
 	uint16_t jn = right - left;
-	uint16_t SrcSkip = vMacScreenByteWidth
-		- (jn << (ScrnTrns_SrcDepth - 3));
-	uint8_t *pSrc = (static_cast<uint8_t *>(ScrnTrns_Src))
-		+ (left << (ScrnTrns_SrcDepth - 3))
-		+ vMacScreenByteWidth * (uint32_t)top;
-	uint32_t *pDst = (reinterpret_cast<uint32_t *>(ScrnTrns_Dst))
-		+ left * ScrnTrns_Scale
-		+ (uint32_t)vMacScreenWidth * ScrnTrns_Scale * ScrnTrns_Scale * top;
+	uint16_t SrcSkip = vMacScreenByteWidth - (jn << (ScrnTrns_SrcDepth - 3));
+	uint8_t *pSrc = (static_cast<uint8_t *>(ScrnTrns_Src)) + (left << (ScrnTrns_SrcDepth - 3)) +
+					vMacScreenByteWidth * (uint32_t)top;
+	uint32_t *pDst = (reinterpret_cast<uint32_t *>(ScrnTrns_Dst)) + left * ScrnTrns_Scale +
+					 (uint32_t)vMacScreenWidth * ScrnTrns_Scale * ScrnTrns_Scale * top;
 	uint16_t DstSkip = (vMacScreenWidth - jn) * ScrnTrns_Scale;
 #if ScrnTrns_Scale > 1
 	int k;
@@ -65,30 +61,24 @@ static void ScrnTrns_DoTrans(int16_t top, int16_t left,
 	uint32_t *p4;
 #endif
 
-	for (i = bottom - top; --i >= 0; ) {
+	for (i = bottom - top; --i >= 0;)
+	{
 #if ScrnTrns_Scale > 1
 		p3 = pDst;
 #endif
 
-		for (j = jn; --j >= 0; ) {
+		for (j = jn; --j >= 0;)
+		{
 #if 4 == ScrnTrns_SrcDepth
 			t0 = do_get_mem_word(pSrc);
 			pSrc += 2;
 			t1 =
 #if ScrnTrns_DstZLo
-				((t0 & 0x7C00) << 17) |
-				((t0 & 0x7000) << 12) |
-				((t0 & 0x03E0) << 14) |
-				((t0 & 0x0380) << 9) |
-				((t0 & 0x001F) << 11) |
-				((t0 & 0x001C) << 6);
+				((t0 & 0x7C00) << 17) | ((t0 & 0x7000) << 12) | ((t0 & 0x03E0) << 14) |
+				((t0 & 0x0380) << 9) | ((t0 & 0x001F) << 11) | ((t0 & 0x001C) << 6);
 #else
-				((t0 & 0x7C00) << 9) |
-				((t0 & 0x7000) << 4) |
-				((t0 & 0x03E0) << 6) |
-				((t0 & 0x0380) << 1) |
-				((t0 & 0x001F) << 3) |
-				((t0 & 0x001C) >> 2);
+				((t0 & 0x7C00) << 9) | ((t0 & 0x7000) << 4) | ((t0 & 0x03E0) << 6) |
+				((t0 & 0x0380) << 1) | ((t0 & 0x001F) << 3) | ((t0 & 0x001C) >> 2);
 #endif
 
 #elif 5 == ScrnTrns_SrcDepth
@@ -102,7 +92,7 @@ static void ScrnTrns_DoTrans(int16_t top, int16_t left,
 #endif
 
 #if ScrnTrns_Scale > 1
-			for (k = ScrnTrns_Scale; --k >= 0; )
+			for (k = ScrnTrns_Scale; --k >= 0;)
 #endif
 			{
 				*pDst++ = t1;
@@ -113,11 +103,12 @@ static void ScrnTrns_DoTrans(int16_t top, int16_t left,
 
 #if ScrnTrns_Scale > 1
 #if ScrnTrns_Scale > 2
-		for (k = ScrnTrns_Scale - 1; --k >= 0; )
+		for (k = ScrnTrns_Scale - 1; --k >= 0;)
 #endif
 		{
 			p4 = p3;
-			for (j = ScrnTrns_Scale * jn; --j >= 0; ) {
+			for (j = ScrnTrns_Scale * jn; --j >= 0;)
+			{
 				*pDst++ = *p4++;
 			}
 			pDst += DstSkip;

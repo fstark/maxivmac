@@ -8,10 +8,11 @@
 
 #pragma once
 
-class ToolPanel {
+class ToolPanel
+{
 public:
 	virtual ~ToolPanel() = default;
-	virtual const char* name() const = 0;
+	virtual const char *name() const = 0;
 	virtual void draw() = 0;
 	bool visible = false;
 };

@@ -12,8 +12,7 @@ struct MachineConfig;
 /* --- Initialization and control --- */
 
 // Set up CPU state, instruction dispatch table, and IPL pointer.
-extern void MINEM68K_Init(
-	uint8_t *fIPL, const MachineConfig *config);
+extern void MINEM68K_Init(uint8_t *fIPL, const MachineConfig *config);
 
 // Notify CPU that the external interrupt priority level changed.
 extern void m68k_IPLchangeNtfy();

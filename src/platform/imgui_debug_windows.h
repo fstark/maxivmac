@@ -9,50 +9,58 @@
 
 #include "platform/imgui_tool.h"
 
-class RegistersTool : public ToolPanel {
+class RegistersTool : public ToolPanel
+{
 public:
-	const char* name() const override { return "Registers"; }
+	const char *name() const override { return "Registers"; }
 	void draw() override;
 };
 
-class DisassemblyTool : public ToolPanel {
+class DisassemblyTool : public ToolPanel
+{
 public:
-	const char* name() const override { return "Disassembly"; }
+	const char *name() const override { return "Disassembly"; }
 	void draw() override;
 };
 
-class MemoryTool : public ToolPanel {
+class MemoryTool : public ToolPanel
+{
 public:
-	const char* name() const override { return "Memory"; }
+	const char *name() const override { return "Memory"; }
 	void draw() override;
 };
 
-class VIATool : public ToolPanel {
+class VIATool : public ToolPanel
+{
 public:
-	const char* name() const override { return "VIA State"; }
+	const char *name() const override { return "VIA State"; }
 	void draw() override;
 };
 
-class TrapsTool : public ToolPanel {
+class TrapsTool : public ToolPanel
+{
 public:
-	const char* name() const override { return "Traps"; }
+	const char *name() const override { return "Traps"; }
 	void draw() override;
 };
 
-class ScrapTool : public ToolPanel {
+class ScrapTool : public ToolPanel
+{
 public:
-	const char* name() const override { return "Scrap"; }
+	const char *name() const override { return "Scrap"; }
 	void draw() override;
 };
 
-class ConsoleTool : public ToolPanel {
+class ConsoleTool : public ToolPanel
+{
 public:
-	const char* name() const override { return "Guest Console"; }
+	const char *name() const override { return "Guest Console"; }
 	void draw() override;
+
 private:
 	bool autoScroll = true;
 };
 
 /* Register all debug tools with the given registry. */
 class ToolRegistry;
-void RegisterDebugTools(ToolRegistry& registry);
+void RegisterDebugTools(ToolRegistry &registry);

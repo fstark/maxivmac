@@ -11,32 +11,38 @@
 #include "platform/imgui_debug_windows.h"
 #include "core/main.h"
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	ProgramEarlyInit(argc, argv);
-	const LaunchConfig& lc = GetLaunchConfig();
+	const LaunchConfig &lc = GetLaunchConfig();
 	if (lc.help) return 0;
 
 	ImGuiBackend backend;
 	EmulatorShell shell(&backend);
 
-	if (lc.modelExplicit) {
+	if (lc.modelExplicit)
+	{
 		/* Model specified on command line — full init, boot directly */
-		if (!shell.init(argc, argv)) {
+		if (!shell.init(argc, argv))
+		{
 			shell.shutdown();
 			ProgramCleanup();
 			return 1;
 		}
 		RegisterDebugTools(backend.getToolRegistry());
 		backend.setUIState(UIState::Windowed);
-	} else {
+	}
+	else
+	{
 		/* No model — platform init only, show model selector */
-		if (!shell.initPlatform(argc, argv)) {
+		if (!shell.initPlatform(argc, argv))
+		{
 			shell.shutdown();
 			ProgramCleanup();
 			return 1;
 		}
-		if (!backend.createSelectorWindow()) {
+		if (!backend.createSelectorWindow())
+		{
 			shell.shutdown();
 			ProgramCleanup();
 			return 1;

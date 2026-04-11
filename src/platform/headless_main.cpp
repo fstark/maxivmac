@@ -8,17 +8,18 @@
 #include "platform/emulator_shell.h"
 #include "core/main.h"
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	ProgramEarlyInit(argc, argv);
 
-	const LaunchConfig& lc = GetLaunchConfig();
+	const LaunchConfig &lc = GetLaunchConfig();
 	if (lc.help) return 0;
 
 	HeadlessBackend backend;
 	EmulatorShell shell(&backend);
 
-	if (!shell.init(argc, argv)) {
+	if (!shell.init(argc, argv))
+	{
 		shell.shutdown();
 		ProgramCleanup();
 		return 1;

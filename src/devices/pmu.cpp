@@ -16,7 +16,8 @@
 	ReportAbnormalID unused 0x0E0E - 0x0EFF
 */
 
-enum {
+enum
+{
 	kPMUStateReadyForCommand,
 	kPMUStateRecievingLength,
 	kPMUStateRecievingBuffer,
@@ -55,49 +56,65 @@ void PMUDevice::startSendResult(uint8_t resultCode, uint8_t len)
 */
 void PMUDevice::checkCommandOp()
 {
-	switch (curCommand_) {
+	switch (curCommand_)
+	{
 		case 0x10: /* kPMUpowerCntl - power plane/clock control */
 			break;
 		case 0x32: /* kPMUxPramWrite - write extended PRAM byte(s) */
-			if (kPMUStateRecievingBuffer == state_) {
-				if (0 == i_) {
-					if (buffL_ >= 2) {
+			if (kPMUStateRecievingBuffer == state_)
+			{
+				if (0 == i_)
+				{
+					if (buffL_ >= 2)
+					{
 						p_ = buffA_;
 						rem_ = 2;
-					} else {
-						ReportAbnormalID(AbnormalID::kPMU_PMU_BuffL_too_small_for_kPMUxPramWrite,
-							"PMU_BuffL too small for kPMUxPramWrite");
 					}
-				} else if (2 == i_) {
-					if ((buffA_[1] + 2 == buffL_)
-						&& (buffA_[0] + buffA_[1] <= 0x80))
+					else
+					{
+						ReportAbnormalID(AbnormalID::kPMU_PMU_BuffL_too_small_for_kPMUxPramWrite,
+										 "PMU_BuffL too small for kPMUxPramWrite");
+					}
+				}
+				else if (2 == i_)
+				{
+					if ((buffA_[1] + 2 == buffL_) && (buffA_[0] + buffA_[1] <= 0x80))
 					{
 						p_ = &paramRAM_[buffA_[0]];
 						rem_ = buffA_[1];
-					} else {
-						ReportAbnormalID(AbnormalID::kPMU_bad_range_for_kPMUxPramWrite,
-							"bad range for kPMUxPramWrite");
 					}
-				} else {
-					ReportAbnormalID(AbnormalID::kPMU_Wrong_PMU_i_for_kPMUpramWrite,
-						"Wrong PMU_i for kPMUpramWrite");
+					else
+					{
+						ReportAbnormalID(AbnormalID::kPMU_bad_range_for_kPMUxPramWrite,
+										 "bad range for kPMUxPramWrite");
+					}
 				}
-			} else if (kPMUStateRecievedCommand == state_) {
+				else
+				{
+					ReportAbnormalID(AbnormalID::kPMU_Wrong_PMU_i_for_kPMUpramWrite,
+									 "Wrong PMU_i for kPMUpramWrite");
+				}
+			}
+			else if (kPMUStateRecievedCommand == state_)
+			{
 				/* already done */
 			}
 			break;
 		case 0xE0: /* kPMUwritePmgrRAM - write to internal PMGR RAM */
 			break;
 		case 0x21: /* kPMUpMgrADBoff - turn ADB auto-poll off */
-			if (kPMUStateRecievedCommand == state_) {
-				if (0 != buffL_) {
+			if (kPMUStateRecievedCommand == state_)
+			{
+				if (0 != buffL_)
+				{
 					ReportAbnormalID(AbnormalID::kPMU_kPMUpMgrADBoff_nonzero_length,
-						"kPMUpMgrADBoff nonzero length");
+									 "kPMUpMgrADBoff nonzero length");
 				}
 			}
 			break;
 		case 0xEC: /* kPMUPmgrSelfTest - run the PMGR selftest */
-			if (kPMUStateRecievedCommand == state_) {
+			if (kPMUStateRecievedCommand == state_)
+			{
 				startSendResult(0, 0);
 			}
 			break;
@@ -111,21 +128,22 @@ void PMUDevice::checkCommandOp()
 			/*
 				kPMUsleepReq - put the system to sleep (sleepSig='MATT')
 			*/
-			if (kPMUStateRecievedCommand == state_) {
+			if (kPMUStateRecievedCommand == state_)
+			{
 				buffA_[0] = 0;
 				startSendResult(0, 1);
 			}
 			break;
 		case 0xE8: /* kPMUreadPmgrRAM - read from internal PMGR RAM */
-			if (kPMUStateRecievedCommand == state_) {
-				if ((3 == buffL_)
-					&& (0 == buffA_[0])
-					&& (0xEE == buffA_[1])
-					&& (1 == buffA_[2]))
+			if (kPMUStateRecievedCommand == state_)
+			{
+				if ((3 == buffL_) && (0 == buffA_[0]) && (0xEE == buffA_[1]) && (1 == buffA_[2]))
 				{
 					buffA_[0] = 1 << 5;
 					startSendResult(0, 1);
-				} else {
+				}
+				else
+				{
 					buffA_[0] = 0;
 					startSendResult(0, 1);
 					/* ReportAbnormal("Unknown kPMUreadPmgrRAM op"); */
@@ -133,30 +151,37 @@ void PMUDevice::checkCommandOp()
 			}
 			break;
 		case 0x3A: /* kPMUxPramRead - read extended PRAM byte(s) */
-			if (kPMUStateRecievedCommand == state_) {
-				if ((2 == buffL_)
-					&& (buffA_[0] + buffA_[1] <= 0x80))
+			if (kPMUStateRecievedCommand == state_)
+			{
+				if ((2 == buffL_) && (buffA_[0] + buffA_[1] <= 0x80))
 				{
 					p_ = &paramRAM_[buffA_[0]];
 					rem_ = buffA_[1];
 					startSendResult(0, rem_);
-				} else {
+				}
+				else
+				{
 					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUxPramRead_op,
-						"Unknown kPMUxPramRead op");
+									 "Unknown kPMUxPramRead op");
 				}
 			}
 			break;
 		case 0x38:
 			/* kPMUtimeRead - read the time from the clock chip */
-			if (kPMUStateRecievedCommand == state_) {
-				if (0 == buffL_) {
+			if (kPMUStateRecievedCommand == state_)
+			{
+				if (0 == buffL_)
+				{
 					buffA_[0] = 0;
 					buffA_[1] = 0;
 					buffA_[2] = 0;
 					buffA_[3] = 0;
 					startSendResult(0, 4);
-				} else {
-					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUtimeRead_op, "Unknown kPMUtimeRead op");
+				}
+				else
+				{
+					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUtimeRead_op,
+									 "Unknown kPMUtimeRead op");
 				}
 			}
 			break;
@@ -165,24 +190,36 @@ void PMUDevice::checkCommandOp()
 				kPMUpramWrite - write the original 20 bytes of PRAM
 				(Portable only)
 			*/
-			if (kPMUStateRecievedCommand == state_) {
-				if (20 == buffL_) {
+			if (kPMUStateRecievedCommand == state_)
+			{
+				if (20 == buffL_)
+				{
 					/* done */
-				} else {
-					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUpramWrite_op,
-						"Unknown kPMUpramWrite op");
 				}
-			} else if (kPMUStateRecievingBuffer == state_) {
-				if (20 == buffL_) {
-					if (0 == i_) {
+				else
+				{
+					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUpramWrite_op,
+									 "Unknown kPMUpramWrite op");
+				}
+			}
+			else if (kPMUStateRecievingBuffer == state_)
+			{
+				if (20 == buffL_)
+				{
+					if (0 == i_)
+					{
 						p_ = &paramRAM_[16];
 						rem_ = 16;
-					} else if (16 == i_) {
+					}
+					else if (16 == i_)
+					{
 						p_ = &paramRAM_[8];
 						rem_ = 4;
-					} else {
+					}
+					else
+					{
 						ReportAbnormalID(AbnormalID::kPMU_Wrong_PMU_i_for_kPMUpramWrite_2,
-							"Wrong PMU_i for kPMUpramWrite");
+										 "Wrong PMU_i for kPMUpramWrite");
 					}
 				}
 			}
@@ -192,27 +229,40 @@ void PMUDevice::checkCommandOp()
 				kPMUpramRead - read the original 20 bytes of PRAM
 				(Portable only)
 			*/
-			if (kPMUStateRecievedCommand == state_) {
-				if (0 == buffL_) {
+			if (kPMUStateRecievedCommand == state_)
+			{
+				if (0 == buffL_)
+				{
 					startSendResult(0, 20);
-				} else {
-					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUpramRead_op, "Unknown kPMUpramRead op");
 				}
-			} else if (kPMUStateSendBuffer == state_) {
-				if (0 == i_) {
+				else
+				{
+					ReportAbnormalID(AbnormalID::kPMU_Unknown_kPMUpramRead_op,
+									 "Unknown kPMUpramRead op");
+				}
+			}
+			else if (kPMUStateSendBuffer == state_)
+			{
+				if (0 == i_)
+				{
 					p_ = &paramRAM_[16];
 					rem_ = 16;
-				} else if (16 == i_) {
+				}
+				else if (16 == i_)
+				{
 					p_ = &paramRAM_[8];
 					rem_ = 4;
-				} else {
+				}
+				else
+				{
 					ReportAbnormalID(AbnormalID::kPMU_Wrong_PMU_i_for_kPMUpramRead,
-						"Wrong PMU_i for kPMUpramRead");
+									 "Wrong PMU_i for kPMUpramRead");
 				}
 			}
 			break;
 		default:
-			if (kPMUStateRecievedCommand == state_) {
+			if (kPMUStateRecievedCommand == state_)
+			{
 				ReportAbnormalID(AbnormalID::kPMU_Unknown_PMU_op, "Unknown PMU op");
 				dbglog_writeCStr("Unknown PMU op ");
 				dbglog_writeHex(curCommand_);
@@ -220,10 +270,12 @@ void PMUDevice::checkCommandOp()
 				dbglog_writeCStr("PMU_BuffL = ");
 				dbglog_writeHex(buffL_);
 				dbglog_writeReturn();
-				if (buffL_ <= kBuffSz) {
+				if (buffL_ <= kBuffSz)
+				{
 					int i;
 
-					for (i = 0; i < buffL_; ++i) {
+					for (i = 0; i < buffL_; ++i)
+					{
 						dbglog_writeCStr("PMU_BuffA[");
 						dbglog_writeNum(i);
 						dbglog_writeCStr("] = ");
@@ -240,7 +292,8 @@ void PMUDevice::locBuffSetUpNextChunk()
 {
 	p_ = buffA_;
 	rem_ = buffL_ - i_;
-	if (rem_ >= kBuffSz) {
+	if (rem_ >= kBuffSz)
+	{
 		rem_ = kBuffSz;
 	}
 }
@@ -289,21 +342,25 @@ void PMUDevice::setPMUbus(uint8_t v)
 
 void PMUDevice::checkCommandCompletion()
 {
-	if (i_ == buffL_) {
+	if (i_ == buffL_)
+	{
 		state_ = kPMUStateRecievedCommand;
 		checkCommandOp();
-		if ((curCommand_ & 0x08) == 0) {
+		if ((curCommand_ & 0x08) == 0)
+		{
 			state_ = kPMUStateReadyForCommand;
 			setPMUbus(0xFF);
-		} else {
-			if (state_ != kPMUStateSendLength) {
+		}
+		else
+		{
+			if (state_ != kPMUStateSendLength)
+			{
 				startSendResult(0xFF, 0);
 				state_ = kPMUStateSendLength;
 			}
 			i_ = 0;
 			sending_ = true;
-			g_ict.add(kICT_PMU_Task,
-				20400UL * kCycleScale / 64 * machine_->config().clockMult);
+			g_ict.add(kICT_PMU_Task, 20400UL * kCycleScale / 64 * machine_->config().clockMult);
 		}
 	}
 }
@@ -315,26 +372,34 @@ void PMUDevice::checkCommandCompletion()
 */
 void PMUDevice::toReadyChangeNtfy()
 {
-	if (sending_) {
+	if (sending_)
+	{
 		sending_ = false;
 		ReportAbnormalID(AbnormalID::kPMU_PmuToReady_ChangeNtfy_while_PMU_Sending,
-			"PmuToReady_ChangeNtfy while PMU_Sending");
+						 "PmuToReady_ChangeNtfy while PMU_Sending");
 		g_wires.set(Wire_PMU_FromReady, 0);
 	}
-	switch (state_) {
+	switch (state_)
+	{
 		case kPMUStateReadyForCommand:
-			if (! g_wires.get(Wire_PMU_ToReady)) {
+			if (!g_wires.get(Wire_PMU_ToReady))
+			{
 				g_wires.set(Wire_PMU_FromReady, 0);
-			} else {
+			}
+			else
+			{
 				curCommand_ = getPMUbus();
 				state_ = kPMUStateRecievingLength;
 				g_wires.set(Wire_PMU_FromReady, 1);
 			}
 			break;
 		case kPMUStateRecievingLength:
-			if (! g_wires.get(Wire_PMU_ToReady)) {
+			if (!g_wires.get(Wire_PMU_ToReady))
+			{
 				g_wires.set(Wire_PMU_FromReady, 0);
-			} else {
+			}
+			else
+			{
 				buffL_ = getPMUbus();
 				i_ = 0;
 				rem_ = 0;
@@ -344,22 +409,28 @@ void PMUDevice::toReadyChangeNtfy()
 			}
 			break;
 		case kPMUStateRecievingBuffer:
-			if (! g_wires.get(Wire_PMU_ToReady)) {
+			if (!g_wires.get(Wire_PMU_ToReady))
+			{
 				g_wires.set(Wire_PMU_FromReady, 0);
-			} else {
+			}
+			else
+			{
 				uint8_t v = getPMUbus();
-				if (0 == rem_) {
+				if (0 == rem_)
+				{
 					p_ = nullptr;
 					checkCommandOp();
-					if (nullptr == p_) {
+					if (nullptr == p_)
+					{
 						/* default handler */
 						locBuffSetUpNextChunk();
 					}
 				}
-				if (nullptr == p_) {
+				if (nullptr == p_)
+				{
 					/* mini vmac bug if ever happens */
 					ReportAbnormalID(AbnormalID::kPMU_PMU_p_null_while_kPMUStateRecievingBuffe,
-						"PMU_p null while kPMUStateRecievingBuffer");
+									 "PMU_p null while kPMUStateRecievingBuffer");
 				}
 				*p_++ = v;
 				--rem_;
@@ -369,30 +440,40 @@ void PMUDevice::toReadyChangeNtfy()
 			}
 			break;
 		case kPMUStateSendLength:
-			if (! g_wires.get(Wire_PMU_ToReady)) {
+			if (!g_wires.get(Wire_PMU_ToReady))
+			{
 				/* receiving */
 				g_wires.set(Wire_PMU_FromReady, 1);
-			} else {
+			}
+			else
+			{
 				sendNext_ = buffL_;
 				state_ = kPMUStateSendBuffer;
 				sending_ = true;
-				g_ict.add(kICT_PMU_Task,
-					20400UL * kCycleScale / 64 * machine_->config().clockMult);
+				g_ict.add(kICT_PMU_Task, 20400UL * kCycleScale / 64 * machine_->config().clockMult);
 			}
 			break;
 		case kPMUStateSendBuffer:
-			if (! g_wires.get(Wire_PMU_ToReady)) {
+			if (!g_wires.get(Wire_PMU_ToReady))
+			{
 				/* receiving */
 				g_wires.set(Wire_PMU_FromReady, 1);
-			} else {
-				if (i_ == buffL_) {
+			}
+			else
+			{
+				if (i_ == buffL_)
+				{
 					state_ = kPMUStateReadyForCommand;
 					setPMUbus(0xFF);
-				} else {
-					if (0 == rem_) {
+				}
+				else
+				{
+					if (0 == rem_)
+					{
 						p_ = nullptr;
 						checkCommandOp();
-						if (nullptr == p_) {
+						if (nullptr == p_)
+						{
 							/* default handler */
 							locBuffSetUpNextChunk();
 						}
@@ -402,7 +483,7 @@ void PMUDevice::toReadyChangeNtfy()
 					++i_;
 					sending_ = true;
 					g_ict.add(kICT_PMU_Task,
-						20400UL * kCycleScale / 64 * machine_->config().clockMult);
+							  20400UL * kCycleScale / 64 * machine_->config().clockMult);
 				}
 			}
 			break;
@@ -411,7 +492,8 @@ void PMUDevice::toReadyChangeNtfy()
 
 void PMUDevice::doTask()
 {
-	if (sending_) {
+	if (sending_)
+	{
 		sending_ = false;
 		setPMUbus(sendNext_);
 		g_wires.set(Wire_PMU_FromReady, 0);

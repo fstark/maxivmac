@@ -19,17 +19,40 @@
 #include <unistd.h>
 #include <queue>
 
-class PtyBackend : public SerialBackend {
+class PtyBackend : public SerialBackend
+{
 public:
 	explicit PtyBackend(int chan)
 	{
 		masterFd_ = posix_openpt(O_RDWR | O_NOCTTY);
-		if (masterFd_ < 0) { perror("[SER] posix_openpt"); return; }
-		if (grantpt(masterFd_) < 0)  { perror("[SER] grantpt");  close(masterFd_); masterFd_ = -1; return; }
-		if (unlockpt(masterFd_) < 0) { perror("[SER] unlockpt"); close(masterFd_); masterFd_ = -1; return; }
+		if (masterFd_ < 0)
+		{
+			perror("[SER] posix_openpt");
+			return;
+		}
+		if (grantpt(masterFd_) < 0)
+		{
+			perror("[SER] grantpt");
+			close(masterFd_);
+			masterFd_ = -1;
+			return;
+		}
+		if (unlockpt(masterFd_) < 0)
+		{
+			perror("[SER] unlockpt");
+			close(masterFd_);
+			masterFd_ = -1;
+			return;
+		}
 
-		const char* slavePath = ptsname(masterFd_);
-		if (!slavePath) { perror("[SER] ptsname"); close(masterFd_); masterFd_ = -1; return; }
+		const char *slavePath = ptsname(masterFd_);
+		if (!slavePath)
+		{
+			perror("[SER] ptsname");
+			close(masterFd_);
+			masterFd_ = -1;
+			return;
+		}
 
 		slavePath_ = slavePath;
 		fprintf(stderr, "[SER] ch%d: PTY backend -> %s\n", chan, slavePath_.c_str());
@@ -46,8 +69,7 @@ public:
 
 	void txByte(uint8_t byte) override
 	{
-		if (masterFd_ >= 0)
-			(void)write(masterFd_, &byte, 1);
+		if (masterFd_ >= 0) (void)write(masterFd_, &byte, 1);
 	}
 
 	bool rxReady() override { return !rxQueue_.empty(); }
@@ -65,7 +87,8 @@ public:
 
 		/* Non-blocking read: drain all available bytes into queue. */
 		uint8_t buf[256];
-		for (;;) {
+		for (;;)
+		{
 			ssize_t n = read(masterFd_, buf, sizeof(buf));
 			if (n <= 0) break;
 			for (ssize_t i = 0; i < n; ++i)
@@ -73,8 +96,8 @@ public:
 		}
 	}
 
-	const char* name() const override { return "pty"; }
-	const std::string& slavePath() const { return slavePath_; }
+	const char *name() const override { return "pty"; }
+	const std::string &slavePath() const { return slavePath_; }
 
 private:
 	int masterFd_ = -1;

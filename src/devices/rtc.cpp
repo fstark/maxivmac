@@ -106,9 +106,8 @@ static uint32_t s_lastRealDate;
 #define prb_volClickHi (SpeakerVol + (TrackSpeed << 3) + (AlarmOn << 7))
 #define prb_volClickLo (CaretBlinkTime + (DoubleClickTime << 4))
 #define prb_miscHi DiskCacheSz
-#define prb_miscLo \
-	((MenuBlink << 2) + (StartUpDisk << 4) \
-		+ (DiskCacheOn << 5) + (MouseScalingOn << 6))
+#define prb_miscLo                                                                                 \
+	((MenuBlink << 2) + (StartUpDisk << 4) + (DiskCacheOn << 5) + (MouseScalingOn << 6))
 
 extern void DumpRTC();
 
@@ -117,20 +116,22 @@ void DumpRTC()
 	int Counter;
 
 	dbglog_writeln("RTC Parameter RAM");
-	for (Counter = 0; Counter < PARAMRAMSize; Counter++) {
+	for (Counter = 0; Counter < PARAMRAMSize; Counter++)
+	{
 		dbglog_writeNum(Counter);
 		dbglog_writeCStr(", ");
 		dbglog_writeHex(s_rtc.PARAMRAM[Counter]);
 		dbglog_writeReturn();
 	}
 	dbglog_writeCStr("RTC Seconds: ");
-	dbglog_writeHex((s_rtc.Seconds_1[3] << 24) | (s_rtc.Seconds_1[2] << 16) | (s_rtc.Seconds_1[1] << 8) | s_rtc.Seconds_1[0]);
+	dbglog_writeHex((s_rtc.Seconds_1[3] << 24) | (s_rtc.Seconds_1[2] << 16) |
+					(s_rtc.Seconds_1[1] << 8) | s_rtc.Seconds_1[0]);
 	dbglog_writeReturn();
 }
 
- /*
-	Initialize PRAM with model-specific defaults and
-	set the clock from the host system date.
+/*
+   Initialize PRAM with model-specific defaults and
+   set the clock from the host system date.
 */
 bool RTCDevice::init()
 {
@@ -149,7 +150,8 @@ bool RTCDevice::init()
 	s_rtc.Seconds_1[2] = (secs & 0xFF0000) >> 16;
 	s_rtc.Seconds_1[3] = (secs & 0xFF000000) >> 24;
 
-	for (Counter = 0; Counter < PARAMRAMSize; Counter++) {
+	for (Counter = 0; Counter < PARAMRAMSize; Counter++)
+	{
 		s_rtc.PARAMRAM[Counter] = 0;
 	}
 
@@ -157,11 +159,12 @@ bool RTCDevice::init()
 
 #if EmLocalTalk
 	s_rtc.PARAMRAM[2 + Group1Base] = g_ltNodeHint;
-		/* set to constant instead for testing collisions */
+	/* set to constant instead for testing collisions */
 #else
-	if (g_machine->config().isIIFamily()) {
+	if (g_machine->config().isIIFamily())
+	{
 		s_rtc.PARAMRAM[2 + Group1Base] = 1;
-			/* node id hint for printer port (AppleTalk) */
+		/* node id hint for printer port (AppleTalk) */
 	}
 #endif
 
@@ -170,26 +173,27 @@ bool RTCDevice::init()
 #else
 	s_rtc.PARAMRAM[3 + Group1Base] = 0x22;
 #endif
-		/*
-			serial ports config bits: 4-7 A, 0-3 B
-				useFree   0 Use undefined
-				useATalk  1 AppleTalk
-				useAsync  2 Async
-				useExtClk 3 externally clocked
-		*/
+	/*
+		serial ports config bits: 4-7 A, 0-3 B
+			useFree   0 Use undefined
+			useATalk  1 AppleTalk
+			useAsync  2 Async
+			useExtClk 3 externally clocked
+	*/
 
 	s_rtc.PARAMRAM[4 + Group1Base] = 204; /* portA, high */
-	s_rtc.PARAMRAM[5 + Group1Base] = 10; /* portA, low */
+	s_rtc.PARAMRAM[5 + Group1Base] = 10;  /* portA, low */
 	s_rtc.PARAMRAM[6 + Group1Base] = 204; /* portB, high */
-	s_rtc.PARAMRAM[7 + Group1Base] = 10; /* portB, low */
+	s_rtc.PARAMRAM[7 + Group1Base] = 10;  /* portB, low */
 	s_rtc.PARAMRAM[13 + Group1Base] = prb_fontLo;
 	s_rtc.PARAMRAM[14 + Group1Base] = prb_kbdPrintHi;
-	if (g_machine->config().isIIFamily() || EmLocalTalk) {
+	if (g_machine->config().isIIFamily() || EmLocalTalk)
+	{
 		s_rtc.PARAMRAM[15 + Group1Base] = 1;
-			/*
-				printer, if any, connected to modem port
-				because printer port used for appletalk.
-			*/
+		/*
+			printer, if any, connected to modem port
+			because printer port used for appletalk.
+		*/
 	}
 
 #if prb_volClickHi != 0
@@ -197,28 +201,31 @@ bool RTCDevice::init()
 #endif
 	s_rtc.PARAMRAM[1 + Group2Base] = prb_volClickLo;
 	s_rtc.PARAMRAM[2 + Group2Base] = prb_miscHi;
-	s_rtc.PARAMRAM[3 + Group2Base] = prb_miscLo
-		| ((0 != vMacScreenDepth) ? 0x80 : 0x00)
-		;
+	s_rtc.PARAMRAM[3 + Group2Base] = prb_miscLo | ((0 != vMacScreenDepth) ? 0x80 : 0x00);
 
 	/* XPRAM: extended parameter ram signature */
-	if (g_machine->config().isIIFamily()) {
+	if (g_machine->config().isIIFamily())
+	{
 		s_rtc.PARAMRAM[12] = 0x4e;
 		s_rtc.PARAMRAM[13] = 0x75;
 		s_rtc.PARAMRAM[14] = 0x4d;
 		s_rtc.PARAMRAM[15] = 0x63;
-	} else {
+	}
+	else
+	{
 		s_rtc.PARAMRAM[12] = 0x42;
 		s_rtc.PARAMRAM[13] = 0x75;
 		s_rtc.PARAMRAM[14] = 0x67;
 		s_rtc.PARAMRAM[15] = 0x73;
 	}
 
-	if (g_machine->config().isSEFamily() || g_machine->config().isIIFamily()) {
+	if (g_machine->config().isSEFamily() || g_machine->config().isIIFamily())
+	{
 		s_rtc.PARAMRAM[0x01] = 0x80;
 		s_rtc.PARAMRAM[0x02] = 0x4F;
 	}
-	if (g_machine->config().isIIFamily()) {
+	if (g_machine->config().isIIFamily())
+	{
 		s_rtc.PARAMRAM[0x03] = 0x48;
 
 		/* video board id */
@@ -229,11 +236,13 @@ bool RTCDevice::init()
 		s_rtc.PARAMRAM[0x48] = 0x80 + bootDepth;
 	}
 
-	if (g_machine->config().isIIFamily()) {
+	if (g_machine->config().isIIFamily())
+	{
 		s_rtc.PARAMRAM[0x77] = 0x01;
 	}
 
-	if (g_machine->config().isSEFamily() || g_machine->config().isIIFamily()) {
+	if (g_machine->config().isSEFamily() || g_machine->config().isIIFamily())
+	{
 		/* start up disk (encoded how?) */
 		s_rtc.PARAMRAM[0x78] = 0x00;
 		s_rtc.PARAMRAM[0x79] = 0x01;
@@ -241,12 +250,14 @@ bool RTCDevice::init()
 		s_rtc.PARAMRAM[0x7B] = 0xFE;
 	}
 
-	if (g_machine->config().isIIFamily()) {
+	if (g_machine->config().isIIFamily())
+	{
 		s_rtc.PARAMRAM[0x80] = 0x09;
 		s_rtc.PARAMRAM[0x81] = 0x80;
 	}
 
-	if (g_machine->config().isIIFamily()) {
+	if (g_machine->config().isIIFamily())
+	{
 
 #define pr_HilColRedHi (pr_HilColRed >> 8)
 #if 0 != pr_HilColRedHi
@@ -286,12 +297,12 @@ bool RTCDevice::init()
 	{
 		int i;
 		fprintf(stderr, "PRAM_DUMP ");
-		for (i = 0; i < PARAMRAMSize; i++) {
+		for (i = 0; i < PARAMRAMSize; i++)
+		{
 			fprintf(stderr, "%02X", s_rtc.PARAMRAM[i]);
 		}
-		fprintf(stderr, " SEC=%02X%02X%02X%02X\n",
-			s_rtc.Seconds_1[3], s_rtc.Seconds_1[2],
-			s_rtc.Seconds_1[1], s_rtc.Seconds_1[0]);
+		fprintf(stderr, " SEC=%02X%02X%02X%02X\n", s_rtc.Seconds_1[3], s_rtc.Seconds_1[2],
+				s_rtc.Seconds_1[1], s_rtc.Seconds_1[0]);
 	}
 
 	return true;
@@ -304,9 +315,10 @@ void RTCDevice::interrupt()
 	uint32_t NewRealDate = g_curMacDateInSeconds;
 	uint32_t DateDelta = NewRealDate - s_lastRealDate;
 
-	if (DateDelta != 0) {
-		Seconds = (s_rtc.Seconds_1[3] << 24) + (s_rtc.Seconds_1[2] << 16)
-			+ (s_rtc.Seconds_1[1] << 8) + s_rtc.Seconds_1[0];
+	if (DateDelta != 0)
+	{
+		Seconds = (s_rtc.Seconds_1[3] << 24) + (s_rtc.Seconds_1[2] << 16) +
+				  (s_rtc.Seconds_1[1] << 8) + s_rtc.Seconds_1[0];
 		Seconds += DateDelta;
 		s_rtc.Seconds_1[0] = Seconds & 0xFF;
 		s_rtc.Seconds_1[1] = (Seconds & 0xFF00) >> 8;
@@ -315,21 +327,24 @@ void RTCDevice::interrupt()
 
 		s_lastRealDate = NewRealDate;
 
-		if (auto* via1 = machine_->findDevice<VIA1Device>())
-			via1->iCA2_PulseNtfy();
+		if (auto *via1 = machine_->findDevice<VIA1Device>()) via1->iCA2_PulseNtfy();
 	}
 }
 
 static uint8_t RTC_Access_PRAM_Reg(uint8_t Data, bool WriteReg, uint8_t t)
 {
-	if (WriteReg) {
-		if (! s_rtc.WrProtect) {
+	if (WriteReg)
+	{
+		if (!s_rtc.WrProtect)
+		{
 			s_rtc.PARAMRAM[t] = Data;
 #ifdef _RTC_Debug
 			printf("Writing Address %2x, Data %2x\n", t, Data);
 #endif
 		}
-	} else {
+	}
+	else
+	{
 		Data = s_rtc.PARAMRAM[t];
 	}
 	return Data;
@@ -338,35 +353,49 @@ static uint8_t RTC_Access_PRAM_Reg(uint8_t Data, bool WriteReg, uint8_t t)
 static uint8_t RTC_Access_Reg(uint8_t Data, bool WriteReg, uint8_t TheCmd)
 {
 	uint8_t t = (TheCmd & 0x7C) >> 2;
-	if (t < 8) {
-		if (WriteReg) {
-			if (! s_rtc.WrProtect) {
+	if (t < 8)
+	{
+		if (WriteReg)
+		{
+			if (!s_rtc.WrProtect)
+			{
 				s_rtc.Seconds_1[t & 0x03] = Data;
 			}
-		} else {
+		}
+		else
+		{
 			Data = s_rtc.Seconds_1[t & 0x03];
 		}
-	} else if (t < 12) {
-		Data = RTC_Access_PRAM_Reg(Data, WriteReg,
-			(t & 0x03) + Group2Base);
-	} else if (t < 16) {
-		if (WriteReg) {
-			switch (t) {
-				case 12 :
+	}
+	else if (t < 12)
+	{
+		Data = RTC_Access_PRAM_Reg(Data, WriteReg, (t & 0x03) + Group2Base);
+	}
+	else if (t < 16)
+	{
+		if (WriteReg)
+		{
+			switch (t)
+			{
+				case 12:
 					break; /* Test Write, do nothing */
-				case 13 :
+				case 13:
 					s_rtc.WrProtect = (Data & 0x80) != 0;
 					break; /* Write_Protect Register */
-				default :
-					ReportAbnormalID(AbnormalID::kRTC_Write_RTC_Reg_unknown, "Write RTC Reg unknown");
+				default:
+					ReportAbnormalID(AbnormalID::kRTC_Write_RTC_Reg_unknown,
+									 "Write RTC Reg unknown");
 					break;
 			}
-		} else {
+		}
+		else
+		{
 			ReportAbnormalID(AbnormalID::kRTC_Read_RTC_Reg_unknown, "Read RTC Reg unknown");
 		}
-	} else {
-		Data = RTC_Access_PRAM_Reg(Data, WriteReg,
-			(t & 0x0F) + Group1Base);
+	}
+	else
+	{
+		Data = RTC_Access_PRAM_Reg(Data, WriteReg, (t & 0x0F) + Group1Base);
 	}
 	return Data;
 }
@@ -378,46 +407,51 @@ static uint8_t RTC_Access_Reg(uint8_t Data, bool WriteReg, uint8_t TheCmd)
 */
 static void RTC_DoCmd()
 {
-	switch (s_rtc.Mode) {
+	switch (s_rtc.Mode)
+	{
 		case 0: /* This Byte is a RTC Command */
-			if ((s_rtc.ShiftData & 0x78) == 0x38) { /* Extended Command */
+			if ((s_rtc.ShiftData & 0x78) == 0x38)
+			{ /* Extended Command */
 				s_rtc.SavedCmd = s_rtc.ShiftData;
 				s_rtc.Mode = 2;
 #ifdef _RTC_Debug
 				printf("Extended command %2x\n", s_rtc.ShiftData);
 #endif
-			} else
+			}
+			else
 			{
-				if ((s_rtc.ShiftData & 0x80) != 0x00) { /* Read Command */
-					s_rtc.ShiftData =
-						RTC_Access_Reg(0, false, s_rtc.ShiftData);
+				if ((s_rtc.ShiftData & 0x80) != 0x00)
+				{ /* Read Command */
+					s_rtc.ShiftData = RTC_Access_Reg(0, false, s_rtc.ShiftData);
 					s_rtc.DataNextOut = 1;
-				} else { /* Write Command */
+				}
+				else
+				{ /* Write Command */
 					s_rtc.SavedCmd = s_rtc.ShiftData;
 					s_rtc.Mode = 1;
 				}
 			}
 			break;
 		case 1: /* This Byte is data for RTC Write */
-			(void) RTC_Access_Reg(s_rtc.ShiftData,
-				true, s_rtc.SavedCmd);
+			(void)RTC_Access_Reg(s_rtc.ShiftData, true, s_rtc.SavedCmd);
 			s_rtc.Mode = 0;
 			break;
 		case 2: /* This Byte is rest of Extended RTC command address */
 #ifdef _RTC_Debug
 			printf("Mode 2 %2x\n", s_rtc.ShiftData);
 #endif
-			s_rtc.Sector = ((s_rtc.SavedCmd & 0x07) << 5)
-				| ((s_rtc.ShiftData & 0x7C) >> 2);
-			if ((s_rtc.SavedCmd & 0x80) != 0x00) { /* Read Command */
+			s_rtc.Sector = ((s_rtc.SavedCmd & 0x07) << 5) | ((s_rtc.ShiftData & 0x7C) >> 2);
+			if ((s_rtc.SavedCmd & 0x80) != 0x00)
+			{ /* Read Command */
 				s_rtc.ShiftData = s_rtc.PARAMRAM[s_rtc.Sector];
 				s_rtc.DataNextOut = 1;
 				s_rtc.Mode = 0;
 #ifdef _RTC_Debug
-				printf("Reading X Address %2x, Data  %2x\n",
-					s_rtc.Sector, s_rtc.ShiftData);
+				printf("Reading X Address %2x, Data  %2x\n", s_rtc.Sector, s_rtc.ShiftData);
 #endif
-			} else {
+			}
+			else
+			{
 				s_rtc.Mode = 3;
 #ifdef _RTC_Debug
 				printf("Writing X Address %2x\n", s_rtc.Sector);
@@ -425,8 +459,7 @@ static void RTC_DoCmd()
 			}
 			break;
 		case 3: /* This Byte is data for an Extended RTC Write */
-			(void) RTC_Access_PRAM_Reg(s_rtc.ShiftData,
-				true, s_rtc.Sector);
+			(void)RTC_Access_PRAM_Reg(s_rtc.ShiftData, true, s_rtc.Sector);
 			s_rtc.Mode = 0;
 			break;
 	}
@@ -434,9 +467,11 @@ static void RTC_DoCmd()
 
 void RTCDevice::unEnabledChangeNtfy()
 {
-	if (RTCunEnabled) {
+	if (RTCunEnabled)
+	{
 		/* abort anything going on */
-		if (s_rtc.Counter != 0) {
+		if (s_rtc.Counter != 0)
+		{
 #ifdef _RTC_Debug
 			printf("aborting, %2x\n", s_rtc.Counter);
 #endif
@@ -452,23 +487,29 @@ void RTCDevice::unEnabledChangeNtfy()
 
 void RTCDevice::clockChangeNtfy()
 {
-	if (! RTCunEnabled) {
-		if (RTCclock) {
+	if (!RTCunEnabled)
+	{
+		if (RTCclock)
+		{
 			s_rtc.DataOut = s_rtc.DataNextOut;
 			s_rtc.Counter = (s_rtc.Counter - 1) & 0x07;
-			if (s_rtc.DataOut) {
-				g_wires.set(Wire_VIA1_iB0_RTCdataLine,
-					(s_rtc.ShiftData >> s_rtc.Counter) & 0x01);
+			if (s_rtc.DataOut)
+			{
+				g_wires.set(Wire_VIA1_iB0_RTCdataLine, (s_rtc.ShiftData >> s_rtc.Counter) & 0x01);
 				/*
 					should notify VIA if changed, so can check
 					data direction
 				*/
-				if (s_rtc.Counter == 0) {
+				if (s_rtc.Counter == 0)
+				{
 					s_rtc.DataNextOut = 0;
 				}
-			} else {
+			}
+			else
+			{
 				s_rtc.ShiftData = (s_rtc.ShiftData << 1) | RTCdataLine;
-				if (s_rtc.Counter == 0) {
+				if (s_rtc.Counter == 0)
+				{
 					RTC_DoCmd();
 				}
 			}
@@ -478,8 +519,10 @@ void RTCDevice::clockChangeNtfy()
 
 void RTCDevice::dataLineChangeNtfy()
 {
-	if (s_rtc.DataOut) {
-		if (! s_rtc.DataNextOut) {
+	if (s_rtc.DataOut)
+	{
+		if (!s_rtc.DataNextOut)
+		{
 			/*
 				ignore. The g_rom doesn't read from the RTC the
 				way described in the Hardware Reference.
@@ -490,11 +533,11 @@ void RTCDevice::dataLineChangeNtfy()
 				data line, which certainly can't really be
 				correct.
 			*/
-		} else {
+		}
+		else
+		{
 			ReportAbnormalID(AbnormalID::kRTC_write_RTC_Data_unexpected_direction,
-				"write RTC Data unexpected direction");
+							 "write RTC Data unexpected direction");
 		}
 	}
 }
-
-

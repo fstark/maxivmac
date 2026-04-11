@@ -6,7 +6,8 @@
 */
 #pragma once
 
-enum {
+enum
+{
 	kIKindTst,
 	kIKindCmpB,
 	kIKindCmpW,
@@ -183,7 +184,8 @@ enum {
 	kNumIKinds
 };
 
-enum {
+enum
+{
 	kAMdRegB,
 	kAMdRegW,
 	kAMdRegL,
@@ -227,26 +229,30 @@ enum {
 /* --- Decoded instruction structures --- */
 
 // Instruction class ID and cycle count.
-struct DecOpXR {
+struct DecOpXR
+{
 	/* expected size : 4 bytes */
 	uint16_t MainClas;
 	uint16_t Cycles;
 };
 
 // Addressing mode and operand data for one argument.
-struct DecArgR {
+struct DecArgR
+{
 	/* expected size : 2 bytes */
 	uint8_t AMd;
 	uint8_t ArgDat;
 };
 
-struct DecOpYR {
+struct DecOpYR
+{
 	/* expected size : 4 bytes */
 	DecArgR v[2];
 };
 
 // Complete decoded instruction record (class + two operands).
-struct DecOpR {
+struct DecOpR
+{
 	/* expected size : 8 bytes */
 	DecOpXR x;
 	DecOpYR y;

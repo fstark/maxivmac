@@ -17,12 +17,12 @@
 /* Match the SDL backend's buffer geometry so the write-offset
    arithmetic stays in sync with what device code expects. */
 #define kLn2SoundBuffers 4
-#define kLnOneBuffLen    9
-#define kLnAllBuffLen    (kLn2SoundBuffers + kLnOneBuffLen)
-#define kOneBuffLen      (1UL << kLnOneBuffLen)
-#define kAllBuffLen      (1UL << kLnAllBuffLen)
-#define kOneBuffMask     (kOneBuffLen - 1)
-#define kAllBuffMask     (kAllBuffLen - 1)
+#define kLnOneBuffLen 9
+#define kLnAllBuffLen (kLn2SoundBuffers + kLnOneBuffLen)
+#define kOneBuffLen (1UL << kLnOneBuffLen)
+#define kAllBuffLen (1UL << kLnAllBuffLen)
+#define kOneBuffMask (kOneBuffLen - 1)
+#define kAllBuffMask (kAllBuffLen - 1)
 
 static uint16_t s_soundBuffer[kAllBuffLen];
 static uint16_t s_writeOffset;
@@ -33,10 +33,16 @@ void Sound_Start()
 }
 
 void Sound_Stop() {}
-bool Sound_Init() { return true; }
+bool Sound_Init()
+{
+	return true;
+}
 void Sound_UnInit() {}
 void Sound_SecondNotify() {}
-bool Sound_AllocBuffer() { return true; }
+bool Sound_AllocBuffer()
+{
+	return true;
+}
 void Sound_FreeBuffer() {}
 
 /*
@@ -45,10 +51,10 @@ void Sound_FreeBuffer() {}
 */
 SoundSamplePtr Sound_BeginWrite(uint16_t n, uint16_t *actL)
 {
-	uint16_t WriteBuffContig =
-		kOneBuffLen - (s_writeOffset & kOneBuffMask);
+	uint16_t WriteBuffContig = kOneBuffLen - (s_writeOffset & kOneBuffMask);
 
-	if (WriteBuffContig < n) {
+	if (WriteBuffContig < n)
+	{
 		n = WriteBuffContig;
 	}
 

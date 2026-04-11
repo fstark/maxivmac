@@ -18,9 +18,8 @@ void ICTScheduler::zap()
 	active = 0;
 }
 
-void ICTScheduler::setCycleAccessors(
-	std::function<int32_t()> getCyclesRemaining,
-	std::function<void(int32_t)> setCyclesRemaining)
+void ICTScheduler::setCycleAccessors(std::function<int32_t()> getCyclesRemaining,
+									 std::function<void(int32_t)> setCyclesRemaining)
 {
 	getCyclesRemaining_ = std::move(getCyclesRemaining);
 	setCyclesRemaining_ = std::move(setCyclesRemaining);
@@ -48,7 +47,8 @@ void ICTScheduler::add(int taskId, uint32_t n)
 	when[taskId] = whenVal;
 	active |= (1 << taskId);
 
-	if (x > (int32_t)n) {
+	if (x > (int32_t)n)
+	{
 		setCyclesRemaining_(n);
 		nextCount = whenVal;
 	}
@@ -59,18 +59,24 @@ void ICTScheduler::doCurrentTasks()
 	int i = 0;
 	uint32_t m = active;
 
-	while (0 != m) {
-		if (0 != (m & 1)) {
-			if (i >= kMaxICTasks) {
+	while (0 != m)
+	{
+		if (0 != (m & 1))
+		{
+			if (i >= kMaxICTasks)
+			{
 				/* shouldn't happen */
 				active &= ((1 << kMaxICTasks) - 1);
 				m = 0;
-			} else if (when[i] == nextCount) {
+			}
+			else if (when[i] == nextCount)
+			{
 				active &= ~(1 << i);
 #ifdef _VIA_Debug
 				fprintf(stderr, "doing task %d, %d\n", nextCount, i);
 #endif
-				if (handlers_[i]) {
+				if (handlers_[i])
+				{
 					handlers_[i]();
 				}
 			}
@@ -86,18 +92,23 @@ int32_t ICTScheduler::doGetNext(uint32_t maxn) const
 	uint32_t m = active;
 	uint32_t v = maxn;
 
-	while (0 != m) {
-		if (0 != (m & 1)) {
-			if (i >= kMaxICTasks) {
+	while (0 != m)
+	{
+		if (0 != (m & 1))
+		{
+			if (i >= kMaxICTasks)
+			{
 				/* shouldn't happen */
 				m = 0;
-			} else {
+			}
+			else
+			{
 				uint32_t d = when[i] - nextCount;
 				/* at this point d must be > 0 */
-				if (d < v) {
+				if (d < v)
+				{
 #ifdef _VIA_Debug
-					fprintf(stderr, "coming task %d, %d, %d\n",
-						nextCount, i, d);
+					fprintf(stderr, "coming task %d, %d, %d\n", nextCount, i, d);
 #endif
 					v = d;
 				}

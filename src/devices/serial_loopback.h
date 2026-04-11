@@ -8,13 +8,19 @@
 #include "devices/serial_backend.h"
 #include <queue>
 
-class LoopbackBackend : public SerialBackend {
+class LoopbackBackend : public SerialBackend
+{
 public:
 	void txByte(uint8_t byte) override { queue_.push(byte); }
-	bool rxReady() override            { return !queue_.empty(); }
-	uint8_t rxByte() override          { uint8_t b = queue_.front(); queue_.pop(); return b; }
-	void poll() override               {}
-	const char* name() const override  { return "loopback"; }
+	bool rxReady() override { return !queue_.empty(); }
+	uint8_t rxByte() override
+	{
+		uint8_t b = queue_.front();
+		queue_.pop();
+		return b;
+	}
+	void poll() override {}
+	const char *name() const override { return "loopback"; }
 
 private:
 	std::queue<uint8_t> queue_;

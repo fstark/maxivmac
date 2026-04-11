@@ -9,7 +9,8 @@
 
 #include <cstdint>
 
-namespace AbnormalID {
+namespace AbnormalID
+{
 
 /* ADB */
 inline constexpr uint16_t kADB_Reserved_ADB_command = 0x0C01;

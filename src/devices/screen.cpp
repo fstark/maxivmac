@@ -20,15 +20,17 @@ static constexpr int kMain_Offset = 0x5900;
    for compacts) and push the frame to the platform display layer. */
 void ScreenDevice::endTickNotify()
 {
-	uint8_t * screencurrentbuff;
+	uint8_t *screencurrentbuff;
 
-	if (g_machine->config().includeVidMem) {
+	if (g_machine->config().includeVidMem)
+	{
 		screencurrentbuff = g_vidMem;
-	} else {
+	}
+	else
+	{
 		/* Compact Macs: screen buffer in main RAM
 		   (uses SCRNvPage2 wire for page selection — not yet wired) */
-		screencurrentbuff = get_ram_address(
-			g_machine->config().ramSize() - kMain_Offset);
+		screencurrentbuff = get_ram_address(g_machine->config().ramSize() - kMain_Offset);
 	}
 
 	Screen_OutputFrame(screencurrentbuff);

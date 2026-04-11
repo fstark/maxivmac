@@ -9,8 +9,10 @@
 
 VIA1Device::VIA1Device()
 	: VIABase(1, AbnormalID::kVIA1_Base, kICT_VIA1_Timer1Check, kICT_VIA1_Timer2Check)
-{}
+{
+}
 
-const VIAConfig& VIA1Device::viaConfig() const {
+const VIAConfig &VIA1Device::viaConfig() const
+{
 	return machine_->config().via1Config;
 }

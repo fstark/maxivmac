@@ -16,16 +16,16 @@ static uint32_t GetTicksMs()
 #define DBGLOG_OSG_INIT 0
 
 uint32_t g_trueEmulatedTime = 0;
-	/*
-		The amount of time the program has
-		been running, measured in Macintosh
-		"ticks". There are 60.14742 ticks per
-		second.
+/*
+	The amount of time the program has
+	been running, measured in Macintosh
+	"ticks". There are 60.14742 ticks per
+	second.
 
-		(time when the emulation is
-		stopped for more than a few ticks
-		should not be counted.)
-	*/
+	(time when the emulation is
+	stopped for more than a few ticks
+	should not be counted.)
+*/
 
 #define MyInvTimeDivPow 16
 #define MyInvTimeDiv (1 << MyInvTimeDivPow)
@@ -59,28 +59,37 @@ bool UpdateTrueEmulatedTime()
 	int32_t TimeDiff;
 
 	LatestTime = GetTicksMs();
-	if (LatestTime != s_lastTime) {
+	if (LatestTime != s_lastTime)
+	{
 		s_lastTime = LatestTime;
 		TimeDiff = (LatestTime - s_nextIntTime);
-			/* this should work even when time wraps */
-		if (TimeDiff >= 0) {
+		/* this should work even when time wraps */
+		if (TimeDiff >= 0)
+		{
 			/* One tick is due.  Never accumulate — if we fell
 			   behind, just reset the deadline to now so the
 			   next tick is due in ~16.6 ms. */
 			++g_trueEmulatedTime;
-			if (TimeDiff > 256) {
+			if (TimeDiff > 256)
+			{
 				/* big gap (debugger, sleep, etc.) */
 				InitNextTime();
-			} else {
+			}
+			else
+			{
 				IncrNextTime();
 				/* If still behind, drop the debt */
-				if ((int32_t)(LatestTime - s_nextIntTime) >= 0) {
+				if ((int32_t)(LatestTime - s_nextIntTime) >= 0)
+				{
 					InitNextTime();
 				}
 			}
 			return true;
-		} else {
-			if (TimeDiff < -256) {
+		}
+		else
+		{
+			if (TimeDiff < -256)
+			{
 				/* clock went backwards, reset */
 				InitNextTime();
 			}
@@ -96,7 +105,8 @@ bool CheckDateTime()
 	   SixtiethSecondNotify (60 ticks = 1 second), not wall clock.
 	   Just detect transitions for sound/demo notifications. */
 	static uint32_t lastSeenDate = 0;
-	if (g_curMacDateInSeconds != lastSeenDate) {
+	if (g_curMacDateInSeconds != lastSeenDate)
+	{
 		lastSeenDate = g_curMacDateInSeconds;
 		return true;
 	}

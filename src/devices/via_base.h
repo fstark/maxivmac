@@ -14,7 +14,8 @@
 #include "core/machine_config.h"
 #include <cstdint>
 
-class VIABase : public Device {
+class VIABase : public Device
+{
 public:
 	VIABase(int viaNum, uint16_t abnormalBase, int ictTimer1, int ictTimer2);
 
@@ -24,7 +25,7 @@ public:
 	void reset() override;
 
 	// Access the VIA configuration (port masks, wire mapping)
-	virtual const VIAConfig& viaConfig() const = 0;
+	virtual const VIAConfig &viaConfig() const = 0;
 
 	// Timer ICT callbacks
 	void doTimer1Check();
@@ -48,21 +49,22 @@ public:
 	uint16_t getT1InvertTime();
 
 	// Internal state - public for backward compatibility during migration
-	struct VIA_Ty {
-		uint32_t T1C_F;  /* Timer 1 Counter Fixed Point */
-		uint32_t T2C_F;  /* Timer 2 Counter Fixed Point */
-		uint8_t ORB;     /* Buffer B */
-		uint8_t DDR_B;   /* Data Direction Register B */
-		uint8_t DDR_A;   /* Data Direction Register A */
-		uint8_t T1L_L;   /* Timer 1 Latch Low */
-		uint8_t T1L_H;   /* Timer 1 Latch High */
-		uint8_t T2L_L;   /* Timer 2 Latch Low */
-		uint8_t SR;      /* Shift Register */
-		uint8_t ACR;     /* Auxiliary Control Register */
-		uint8_t PCR;     /* Peripheral Control Register */
-		uint8_t IFR;     /* Interrupt Flag Register */
-		uint8_t IER;     /* Interrupt Enable Register */
-		uint8_t ORA;     /* Buffer A */
+	struct VIA_Ty
+	{
+		uint32_t T1C_F; /* Timer 1 Counter Fixed Point */
+		uint32_t T2C_F; /* Timer 2 Counter Fixed Point */
+		uint8_t ORB;	/* Buffer B */
+		uint8_t DDR_B;	/* Data Direction Register B */
+		uint8_t DDR_A;	/* Data Direction Register A */
+		uint8_t T1L_L;	/* Timer 1 Latch Low */
+		uint8_t T1L_H;	/* Timer 1 Latch High */
+		uint8_t T2L_L;	/* Timer 2 Latch Low */
+		uint8_t SR;		/* Shift Register */
+		uint8_t ACR;	/* Auxiliary Control Register */
+		uint8_t PCR;	/* Peripheral Control Register */
+		uint8_t IFR;	/* Interrupt Flag Register */
+		uint8_t IER;	/* Interrupt Enable Register */
+		uint8_t ORA;	/* Buffer A */
 	};
 
 	VIA_Ty d_{};
@@ -77,10 +79,10 @@ public:
 	uint32_t T2LastTime = 0;
 
 protected:
-	int viaNum_;            // 1 or 2
+	int viaNum_;			// 1 or 2
 	uint16_t abnormalBase_; // 0x0400 (VIA1) or 0x0500 (VIA2)
-	int ictTimer1_;         // kICT_VIA{1,2}_Timer1Check
-	int ictTimer2_;         // kICT_VIA{1,2}_Timer2Check
+	int ictTimer1_;			// kICT_VIA{1,2}_Timer1Check
+	int ictTimer2_;			// kICT_VIA{1,2}_Timer2Check
 
 private:
 	uint8_t getORA(uint8_t selection);

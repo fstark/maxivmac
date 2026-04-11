@@ -29,16 +29,14 @@
 #include "devices/pmu.h"
 
 // Global Machine pointer for backward compatibility during migration
-Machine* g_machine = nullptr;
+Machine *g_machine = nullptr;
 
-Machine::Machine(MachineConfig config)
-	: config_(std::move(config))
-{
-}
+Machine::Machine(MachineConfig config) : config_(std::move(config)) {}
 
 Machine::~Machine()
 {
-	if (g_machine == this) {
+	if (g_machine == this)
+	{
 		g_machine = nullptr;
 	}
 }
@@ -49,9 +47,9 @@ bool Machine::init()
 	g_machine = this;
 
 	// Set runtime screen globals from config (used by platform layer macros).
-	g_screenWidth  = config_.screenWidth;
+	g_screenWidth = config_.screenWidth;
 	g_screenHeight = config_.screenHeight;
-	g_screenDepth  = config_.screenDepth;
+	g_screenDepth = config_.screenDepth;
 	g_colorModeWorks = (config_.screenDepth > 0);
 
 	// Create device instances and set backward-compatible global pointers.
@@ -67,31 +65,40 @@ bool Machine::init()
 	addDevice(std::make_unique<ScreenDevice>());
 
 	// Conditional devices based on config
-	if (config_.emVIA1) {
+	if (config_.emVIA1)
+	{
 		addDevice(std::make_unique<VIA1Device>());
 	}
-	if (config_.emVIA2) {
+	if (config_.emVIA2)
+	{
 		addDevice(std::make_unique<VIA2Device>());
 	}
-	if (config_.emRTC) {
+	if (config_.emRTC)
+	{
 		addDevice(std::make_unique<RTCDevice>());
 	}
-	if (config_.emADB) {
+	if (config_.emADB)
+	{
 		addDevice(std::make_unique<ADBDevice>());
 	}
-	if (config_.emASC) {
+	if (config_.emASC)
+	{
 		addDevice(std::make_unique<ASCDevice>());
 	}
-	if (config_.emVidCard) {
+	if (config_.emVidCard)
+	{
 		addDevice(std::make_unique<VideoDevice>());
 	}
-	if (config_.emClassicKbrd) {
+	if (config_.emClassicKbrd)
+	{
 		addDevice(std::make_unique<KeyboardDevice>());
 	}
-	if (config_.emClassicSnd) {
+	if (config_.emClassicSnd)
+	{
 		addDevice(std::make_unique<SoundDevice>());
 	}
-	if (config_.emPMU) {
+	if (config_.emPMU)
+	{
 		addDevice(std::make_unique<PMUDevice>());
 	}
 
@@ -100,14 +107,16 @@ bool Machine::init()
 
 void Machine::reset()
 {
-	for (auto& dev : devices_) {
+	for (auto &dev : devices_)
+	{
 		dev->reset();
 	}
 }
 
 void Machine::zap()
 {
-	for (auto& dev : devices_) {
+	for (auto &dev : devices_)
+	{
 		dev->zap();
 	}
 }
