@@ -166,3 +166,5 @@ list.  Without tests, every change is a risk, which disincentivizes
 refactoring, which lets the debt compound.
 
 ---
+
+* Unknown model on the command line should be a hard error
