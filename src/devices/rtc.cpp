@@ -171,7 +171,7 @@ bool RTCDevice::init()
 #if EmLocalTalk
 	s_rtc.PARAMRAM[3 + Group1Base] = 0x21;
 #else
-	s_rtc.PARAMRAM[3 + Group1Base] = 0x21;
+	s_rtc.PARAMRAM[3 + Group1Base] = 0x22;
 #endif
 	/*
 		serial ports config bits: 4-7 A, 0-3 B
