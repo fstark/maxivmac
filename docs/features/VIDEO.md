@@ -310,8 +310,9 @@ host-derived ones); if the requested resolution is not in the table,
 boot **falls back to 640×480** — exotic resolutions are not added to
 the table dynamically.
 
-The Mac does not automatically replace the boot resolution.  It stays
-at the `--screen` resolution unless changed by one of:
+The Mac II boots into the `--screen` resolution and remains there
+until a resolution change is triggered.  Three mechanisms can change
+the active resolution:
 
 1. **DM2 disk preference:** On System 7.5.3+, the Monitors CP saves
    the user's preferred resolution into the System file on the disk
