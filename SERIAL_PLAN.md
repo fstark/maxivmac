@@ -1,6 +1,6 @@
 # Serial Implementation Plan
 
-## Status: Not started
+## Status: Phases 1–6 complete
 
 Companion doc: `docs/features/SERIAL.md` — architecture, rationale, backend descriptions.
 
@@ -12,12 +12,12 @@ a pluggable backend at runtime via `--serial-a=MODE` / `--serial-b=MODE`.
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | `SerialBackend` interface + SCC wiring + `LoopbackBackend` | Not started |
-| 2 | `[SER]` + `[SCC]` LOG infrastructure | Not started |
-| 3 | `FileBackend` | Not started |
-| 4 | `PtyBackend` | Not started |
-| 5 | Command-line parsing (`--serial-a=MODE`) | Not started |
-| 6 | RR0 DCD/CTS status bits | Not started |
+| 1 | `SerialBackend` interface + SCC wiring + `LoopbackBackend` | Done (c973ac3) |
+| 2 | `[SER]` + `[SCC]` LOG infrastructure | Done (f3d21ac) |
+| 3 | `FileBackend` | Done (f3d21ac) |
+| 4 | `PtyBackend` | Done (f3d21ac) |
+| 5 | Command-line parsing (`--serial-a=MODE`) | Done (c973ac3) |
+| 6 | RR0 DCD/CTS status bits | Done (c973ac3) |
 | 7 | `DeviceBackend` (stretch — real `/dev/tty` passthrough) | Not started |
 
 Build gate: `cmake --build bld/macos && cmake --build bld/macos-headless`
