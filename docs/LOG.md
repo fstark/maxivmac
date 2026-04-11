@@ -39,7 +39,9 @@ All trace output in the subsystem should use the macro.  Setting
 
 | Tag | Subsystem | File | Flag |
 |:---:|---|---|---|
+| NET | Networking / libslirp | `src/devices/serial_slirp.cpp` | `NET_dolog` |
 | SER | Serial backends | `src/devices/scc.cpp` | `SER_dolog` |
+| SLP | SLIP codec | `src/devices/slip.h` | `SLP_dolog` |
 | VID | Video card / display | `src/devices/video.cpp` | `VID_dolog` |
 
 Note: backend attachment lines (`[SER] ch0: PTY backend -> ...`) are

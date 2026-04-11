@@ -247,3 +247,26 @@ if(MAXIVMAC_SANITIZE)
     target_link_options(maxivmac PRIVATE
         -fsanitize=address,undefined)
 endif()
+
+# ---------------------------------------------------------------------------
+# Networking (optional, requires libslirp)
+# ---------------------------------------------------------------------------
+option(MAXIVMAC_NETWORKING "Enable SLIP networking via libslirp" OFF)
+if(MAXIVMAC_NETWORKING)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SLIRP REQUIRED IMPORTED_TARGET libslirp)
+    target_sources(maxivmac PRIVATE src/devices/serial_slirp.cpp)
+    target_link_libraries(maxivmac PRIVATE PkgConfig::SLIRP)
+    target_compile_definitions(maxivmac PRIVATE "HAVE_SLIRP=1")
+    message(STATUS "Networking: enabled (libslirp ${SLIRP_VERSION})")
+else()
+    target_compile_definitions(maxivmac PRIVATE "HAVE_SLIRP=0")
+    message(STATUS "Networking: disabled")
+endif()
+
+# ---------------------------------------------------------------------------
+# Unit tests
+# ---------------------------------------------------------------------------
+add_executable(test_slip test/test_slip.cpp)
+target_include_directories(test_slip PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_compile_options(test_slip PRIVATE -Wall -Wextra -Werror -UNDEBUG)
