@@ -1,0 +1,23 @@
+#!/bin/sh
+# Pre-commit hook: verify staged C/C++ files are clang-formatted.
+# Install: git config core.hooksPath .githooks
+
+if ! command -v clang-format >/dev/null 2>&1; then
+	echo "warning: clang-format not found, skipping format check"
+	exit 0
+fi
+
+FAILED=0
+for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(cpp|h|hpp)$' | grep '^src/'); do
+	if ! clang-format --dry-run --Werror "$file" >/dev/null 2>&1; then
+		echo "clang-format: $file needs formatting"
+		FAILED=1
+	fi
+done
+
+if [ "$FAILED" -eq 1 ]; then
+	echo ""
+	echo "Run: find src -name '*.cpp' -o -name '*.h' -o -name '*.hpp' | xargs clang-format -i"
+	echo "Then re-stage and commit."
+	exit 1
+fi

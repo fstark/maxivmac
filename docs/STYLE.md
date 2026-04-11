@@ -129,6 +129,32 @@ if (res) {
 
 ---
 
+## Conditions
+
+Write conditions in natural reading order: variable on the left,
+constant on the right.  The legacy codebase is full of Yoda
+conditions (`0x85 == type`, `0 != chan`, `nullptr == ptr`) inherited
+from minivmac.  Do not introduce new ones.  When modifying a line
+that has a Yoda test, flip it.
+
+```cpp
+// Good
+if (type == 0x85) ...
+if (chan != 0) ...
+if (ptr == nullptr) ...
+if (!ptr) ...
+
+// Bad (Yoda) — do not write new code this way
+if (0x85 == type) ...
+if (0 != chan) ...
+if (nullptr == ptr) ...
+```
+
+Modern compilers warn on accidental `=` in conditions (`-Wparentheses`),
+so the original safety justification for Yoda style no longer applies.
+
+---
+
 ## Comments
 
 Brief comments explaining *why*, not *what*.  The code should be clear
@@ -184,8 +210,13 @@ See [NAMING.md](NAMING.md) for the `g_` prefix rule.  Beyond naming:
 
 A `.clang-format` file in the project root encodes the mechanical
 rules (indentation, braces, line length).  Run `clang-format` on
-new or heavily modified files.  Do not reformat entire legacy files
-in a drive-by — that creates unreadable diffs.
+all new and modified files.
+
+Legacy files should be reformatted too — the original minivmac
+source is preserved in `reference/src/` for behavioural comparison,
+so there is no need to keep legacy formatting in `src/`.  When
+reformatting a file, make it a **separate commit** from logic changes
+so that the two are easy to distinguish in the history.
 
 Key choices captured in `.clang-format`:
 
