@@ -211,8 +211,9 @@ void PrintUsage(const char *progname)
 			"  --trace-cpu=PATH Write CPU-only text trace to file\n"
 			"  --snapshot-interval=N  Instructions between snapshots (default: 100000)\n"
 			"  --max-instructions=N   Instruction budget (default: 20000000)\n"
-			"  --serial-a=MODE  Modem port backend: loopback, file:tx=PATH[,rx=PATH], pty\n"
+			"  --serial-a=MODE  Modem port backend: loopback, file:tx=PATH[,rx=PATH], pty, slip\n"
 			"  --serial-b=MODE  Printer port backend (same modes as --serial-a)\n"
+			"  --slip-redir=SPEC  Port forward: tcp:hostport:guestip:guestport\n"
 			"  -h, --help       Show this help\n"
 			"\n"
 			"ROM auto-detection searches: ./<MODEL>.ROM, <romdir>/<MODEL>.ROM, roms/<MODEL>.ROM\n"
@@ -362,6 +363,11 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strncmp(arg, "--serial-b=", 11) == 0)
 		{
 			lc.serialB = arg + 11;
+			continue;
+		}
+		if (strncmp(arg, "--slip-redir=", 13) == 0)
+		{
+			lc.slipRedirs.push_back(arg + 13);
 			continue;
 		}
 

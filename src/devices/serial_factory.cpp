@@ -8,6 +8,9 @@
 #ifndef _WIN32
 #include "devices/serial_pty.h"
 #endif
+#if HAVE_SLIRP
+#include "devices/serial_slirp.h"
+#endif
 #include <cstdio>
 #include <cstring>
 
@@ -62,6 +65,14 @@ std::unique_ptr<SerialBackend> CreateSerialBackend(const std::string &mode, int 
 	if (mode == "pty")
 	{
 		return std::make_unique<PtyBackend>(chan);
+	}
+#endif
+
+#if HAVE_SLIRP
+	if (mode == "slip")
+	{
+		fprintf(stderr, "[SER] ch%d: SLIP/libslirp backend\n", chan);
+		return std::make_unique<SlirpBackend>();
 	}
 #endif
 

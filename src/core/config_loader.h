@@ -43,6 +43,9 @@ struct LaunchConfig
 	// Serial port backends
 	std::string serialA; // --serial-a=MODE (modem port, SCC channel A)
 	std::string serialB; // --serial-b=MODE (printer port, SCC channel B)
+
+	// Networking (SLIP)
+	std::vector<std::string> slipRedirs; // --slip-redir=tcp:hostport:guestip:guestport
 };
 
 // Parse command-line arguments into a LaunchConfig.
