@@ -34,11 +34,12 @@ are at different ROM offsets.  Always 1 bpp.
 * **Location:** dedicated VRAM at `g_vidMem`, mapped by the NuBus
   address decoder at `0xF9900000`
 * **Default:** 640×480, 8 bpp (256-colour CLUT)
-* **VRAM size:** auto-sized to fit the configured depth (minimum 512 KB)
+* **VRAM size:** auto-sized to fit the largest resolution at the
+  deepest depth possible, capped at 6 MB (NuBus address space limit)
 * **Colour:** depths 0–5 (1/2/4/8/16/32 bpp) configurable via `--screen`
 * **NuBus slot ROM:** built at runtime by `VideoDevice::init()` using
-  `SlotROMWriter`, with mode parameter blocks for all depths from
-  0x80 (1 bpp) through `0x80 + maxDepth`
+  `SlotROMWriter`, with mode parameter blocks for depths 0x80 (1 bpp)
+  through 0x85 (32 bpp) for the boot resolution
 * **Boot depth:** capped at 8 bpp (depth 3) when maxDepth ≥ 4, because
   direct colour requires 32-Bit QuickDraw (System 7+).  User can
   switch to Thousands/Millions via Monitors CP after boot.
@@ -192,8 +193,9 @@ The Mac II video card (`VideoDevice`) builds a NuBus declaration ROM
 containing:
 
 * Board resource (vendor "maxivmac", board "maxivmac video card")
-* **Modes 0x80 through 0x80+maxDepth** — all depths from 1 bpp mono
-  up to the configured maximum (e.g. 16 bpp for `--screen=640x480x16`)
+* **Modes 0x80 through 0x85** — depths from 1 bpp mono up to the
+  maximum that fits in VRAM at the boot resolution (e.g. all 6 depths
+  at 640×480, only depths 0–3 at 2560×1440)
 
 The slot ROM is built once at `VideoDevice::init()` using
 `SlotROMWriter` (in `slot_rom.h`) and checksummed.  `VPBlock::forMode()`
@@ -246,9 +248,11 @@ it re-initializes the CLUT with white at index 0 and black at the
 last index.  The mode change propagates via `g_colorMappingChanged`
 → palette rebuild + full-screen redraw.
 
-The slot ROM contains modes 0x80 through `0x80 + maxDepth`, and the
-mode-enumeration traps (csCode 17, 18) allow the Monitors control
-panel to discover and switch between all available depths.
+The slot ROM contains mode entries for the boot resolution's
+maximum depth.  For other resolutions, the available depths are
+advertised dynamically via `GetNextResolution` (csCode 17) and
+`GetVideoParameters` (csCode 18), which compute per-resolution
+max depth from VRAM capacity at runtime.
 
 **System requirements for depth switching:**
 
@@ -288,7 +292,11 @@ research into a proper fix.
 
 **maxDepth per resolution:**  The maximum advertised depth for each
 resolution is computed from VRAM capacity, not from the boot depth.
-With 4 MB VRAM at 640×480, all depths through 32 bpp are available.
+VRAM is capped at 6 MB (the NuBus slot 9 address space limit in
+32-bit mode), so `maxDepthForResolution()` never offers a depth
+that would exceed the mapped address space.  At 640×480, all depths
+through 32 bpp are available (1.2 MB); at 2560×1440, the maximum
+depth is 8 bpp (3.7 MB) because 16 bpp would need 7.3 MB.
 
 #### The `--screen` option and boot flow
 
@@ -333,13 +341,45 @@ the active resolution:
 
 ### 7.3 VRAM mapping
 
+VRAM is mapped into NuBus slot 9 address space in 1 MB banks.
+The number of accessible banks depends on the CPU addressing mode.
+
+**24-bit mode** (boot default, System 6, or 32-bit mode disabled):
+
 ```
-NuBus slot 9:
-  0xF9F00000  Slot declaration ROM  (vidROMSize bytes)
-  0xF9900000  Video RAM             (vidMemSize, mirrored to 1 MB window)
-  0xF9A00000  VRAM bank 2           (if vidMemSize ≥ 2 MB)
-  0xF9B00000  VRAM bank 3           (if vidMemSize ≥ 3 MB)
+Slot 9 (24-bit):      Max 4 MB mapped
+  0x900000  VRAM bank 1           (always)
+  0xA00000  VRAM bank 2           (if vidMemSize ≥ 2 MB)
+  0xB00000  VRAM bank 3           (if vidMemSize ≥ 4 MB)
+  0xC00000  VRAM bank 4           (if vidMemSize ≥ 4 MB)
 ```
+
+**32-bit mode** (System 7 with 32-bit addressing enabled):
+
+```
+NuBus super-slot 9:   Max 6 MB mapped (ROM at 0xF9F00000)
+  0xF9900000  VRAM bank 1         (always)
+  0xF9A00000  VRAM bank 2         (if vidMemSize ≥ 2 MB)
+  0xF9B00000  VRAM bank 3         (if vidMemSize ≥ 3 MB)
+  0xF9C00000  VRAM bank 4         (if vidMemSize ≥ 4 MB)
+  0xF9D00000  VRAM bank 5         (if vidMemSize ≥ 5 MB)
+  0xF9E00000  VRAM bank 6         (if vidMemSize ≥ 6 MB)
+  0xF9F00000  Slot declaration ROM (cannot be used for VRAM)
+```
+
+**VRAM cap:**  The video card caps VRAM at **6 MB**, matching the
+32-bit address space limit.  This is safe because depths ≥ 16 bpp
+(which are the only modes that could need >4 MB) require 32-Bit
+QuickDraw, which itself requires 32-bit addressing mode — so the
+6 MB space is always available when it matters.  In 24-bit mode
+only indexed depths (≤ 8 bpp) are usable, and even 2560×1440 at
+8 bpp is only 3.7 MB, well within the 4 MB 24-bit limit.
+
+Host-derived resolutions whose 1 bpp framebuffer exceeds 6 MB are
+excluded from the resolution table.  Resolutions that fit at lower
+depths but not at 32 bpp are included with a reduced maximum depth
+— for example, 2560×1440 at 8 bpp needs 3.7 MB and is available,
+but 32 bpp would need 14.7 MB and is not offered.
 
 ### 7.4 VBL interrupt flow
 

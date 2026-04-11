@@ -28,6 +28,9 @@ void Vid_SetHostDesktop(uint16_t w, uint16_t h);
    (classic + host-derived).  Must be called after Vid_SetHostDesktop. */
 void Vid_MaxResolutionSize(uint32_t* outW, uint32_t* outH);
 
+/* Maximum VRAM that the NuBus slot 9 address space can map (6 MB). */
+uint32_t Vid_MaxVRAM();
+
 /* Check/clear the resolution-changed flag (set by SwitchMode). */
 bool Vid_ResolutionChanged();
 void Vid_ClearResolutionChanged();

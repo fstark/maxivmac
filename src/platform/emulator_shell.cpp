@@ -201,6 +201,10 @@ bool EmulatorShell::initMachine()
 		fbSize |= fbSize >> 8;
 		fbSize |= fbSize >> 16;
 		fbSize++;
+		/* Cap to NuBus slot 9 address-space limit */
+		uint32_t vramCap = Vid_MaxVRAM();
+		if (fbSize > vramCap)
+			fbSize = vramCap;
 		if (fbSize > g_machine->config().vidMemSize)
 			g_machine->configMut().vidMemSize = fbSize;
 	}

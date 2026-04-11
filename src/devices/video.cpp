@@ -32,11 +32,25 @@
 
 #define VID_dolog 1
 
+#if VID_dolog
+#define VID_LOG(fmt, ...) std::fprintf(stderr, "[VID] " fmt "\n", ##__VA_ARGS__)
+#else
+#define VID_LOG(fmt, ...) ((void)0)
+#endif
+
 /* Maximum number of modes (depth 0..5) */
 #define kMaxModes 6
 
 /* Maximum number of resolutions */
 #define kMaxResolutions 8
+
+/* NuBus slot 9 VRAM address-space cap: 6 banks × 1 MB.
+   In 32-bit mode the banks span 0xF9900000–0xF9E00000;
+   the ROM at 0xF9F00000 prevents any further mapping.
+   In 24-bit mode only 4 MB is mapped, but depths ≥ 16 bpp
+   require 32-Bit QuickDraw (= 32-bit addressing), so 6 MB
+   is always available when the deeper modes are in use. */
+static const uint32_t kMaxVRAM = 6u * 1024 * 1024;
 
 struct ResolutionEntry {
 	uint32_t displayModeID;
@@ -48,9 +62,8 @@ struct ResolutionEntry {
 static ResolutionEntry s_resolutions[kMaxResolutions];
 static int s_numResolutions = 0;
 
-/* Current depth and configured max depth (set during init) */
+/* Current depth (set during init, updated by SetVidMode/SwitchMode) */
 static int s_currentDepth = 0;
-static int s_maxDepth     = 0;
 static int s_preferredDepth = -1; /* -1 = use configured depth */
 static uint32_t s_currentDisplayModeID = 1;
 static int s_preferredDisplayModeID = -1; /* -1 = use boot res */
@@ -153,7 +166,7 @@ static void patchSlotROMVPBlocks(uint16_t newW, uint16_t newH)
 	do_put_mem_long(g_vidROM + cfg.vidROMSize - 12, 0);
 	ChecksumSlotROM();
 
-	std::fprintf(stderr, "[VID] patchSlotROMVPBlocks → %ux%u (%d modes)\n",
+	VID_LOG("patchSlotROMVPBlocks → %ux%u (%d modes)",
 		newW, newH, s_numVPBlocks);
 }
 
@@ -194,6 +207,12 @@ static const ResolutionEntry* nextResolution(uint32_t prevID)
 	return nullptr;
 }
 
+/* VRAM bytes needed for a given resolution at a given depth. */
+static uint32_t VRAMForResolution(uint16_t w, uint16_t h, int depth)
+{
+	return (uint32_t)w * h * (1 << depth) / 8;
+}
+
 /* Maximum depth mode that fits in VRAM for a given resolution. */
 static int maxDepthForResolution(uint16_t w, uint16_t h, uint32_t vidMemSize)
 {
@@ -231,9 +250,9 @@ static void buildResolutionTable()
 
 	/* Host-derived resolutions: full desktop (ID 100) and half (ID 101).
 	   Only added if they differ from every classic entry (±8 px tolerance)
-	   and their framebuffer at 32 bpp fits in 15 MB (NuBus super-slot
-	   limit before ROM space). */
-	static const uint32_t kMaxVRAM = 15u * 1024 * 1024;
+	   and fit in VRAM at 1 bpp minimum.  Higher depths are gated per-
+	   resolution by maxDepthForResolution() which checks VRAM capacity
+	   (capped at kMaxVRAM by the NuBus slot 9 address space). */
 	struct { uint32_t id; uint16_t w, h; } hostRes[2];
 	int hostCount = 0;
 
@@ -248,9 +267,8 @@ static void buildResolutionTable()
 		uint16_t hw = hostRes[hi].w, hh = hostRes[hi].h;
 		if (hw < 512 || hh < 342) continue; /* too small */
 
-		/* Check VRAM cap at 32 bpp */
-		uint32_t fb32 = (uint32_t)hw * hh * 4;
-		if (fb32 > kMaxVRAM) continue;
+		/* Must fit in VRAM at least at 1 bpp (depth 0) */
+		if (VRAMForResolution(hw, hh, 0) > kMaxVRAM) continue;
 
 		/* Check for near-duplicate of a classic entry */
 		bool dup = false;
@@ -283,15 +301,6 @@ bool VideoDevice::init()
 	const auto& cfg = g_machine->config();
 	uint16_t bootWidth = cfg.screenWidth;
 	uint16_t bootHeight = cfg.screenHeight;
-
-	/* The card's maximum depth is determined by how many bpp the
-	   boot resolution can fit in VRAM, not by the configured boot
-	   depth.  cfg.screenDepth controls only which mode the card
-	   boots into — the user can switch to deeper modes via
-	   Monitors CP after the desktop appears. */
-	int maxDepth = maxDepthForResolution(bootWidth, bootHeight,
-		cfg.vidMemSize);
-	s_maxDepth = maxDepth;
 
 	/* Build resolution table (classic resolutions only for now) */
 	buildResolutionTable();
@@ -339,7 +348,9 @@ bool VideoDevice::init()
 		The user can switch to Thousands / Millions via Monitors once
 		the desktop is up.
 	*/
-	int bootDepth = (maxDepth >= 4) ? 3 : maxDepth;
+	int bootResMaxDepth = maxDepthForResolution(
+		bootRes->width, bootRes->height, cfg.vidMemSize);
+	int bootDepth = (bootResMaxDepth >= 4) ? 3 : bootResMaxDepth;
 	s_currentDepth = bootDepth;
 	g_screenDepth = bootDepth;
 	g_screenWidth = bootRes->width;
@@ -351,7 +362,7 @@ bool VideoDevice::init()
 		s_preferredDisplayModeID = (int)bootRes->displayModeID;
 
 #if VID_dolog
-	dbglog_writelnNum("VideoDevice::init maxDepth", maxDepth);
+	dbglog_writelnNum("VideoDevice::init bootResMaxDepth", bootResMaxDepth);
 	dbglog_writelnNum("  bootRes width", bootRes->width);
 	dbglog_writelnNum("  bootRes height", bootRes->height);
 	dbglog_writelnNum("  bootRes displayModeID", bootRes->displayModeID);
@@ -359,11 +370,11 @@ bool VideoDevice::init()
 	dbglog_writelnNum("  vidROMSize", cfg.vidROMSize);
 	dbglog_writelnNum("  vidMemSize", cfg.vidMemSize);
 #endif
-	std::fprintf(stderr, "[VID] init: boot=%ux%u bootDepth=%d maxDepth=%d vidMem=%u numRes=%d\n",
-		bootRes->width, bootRes->height, bootDepth, maxDepth,
+	VID_LOG("init: boot=%ux%u bootDepth=%d bootResMaxDepth=%d vidMem=%u numRes=%d",
+		bootRes->width, bootRes->height, bootDepth, bootResMaxDepth,
 		cfg.vidMemSize, s_numResolutions);
 	for (int ri = 0; ri < s_numResolutions; ri++)
-		std::fprintf(stderr, "[VID]   res[%d]: id=%u %ux%u\n",
+		VID_LOG("  res[%d]: id=%u %ux%u",
 			ri, s_resolutions[ri].displayModeID,
 			s_resolutions[ri].width, s_resolutions[ri].height);
 
@@ -420,8 +431,6 @@ bool VideoDevice::init()
 	{
 		int bootMaxDepth = maxDepthForResolution(
 			bootRes->width, bootRes->height, cfg.vidMemSize);
-		if (bootMaxDepth > maxDepth)
-			bootMaxDepth = maxDepth;
 
 		w.patchOffset(rVideo, 0x80);
 
@@ -539,7 +548,12 @@ static uint16_t Vid_GetMode()
 static tMacErr Vid_SetMode(uint16_t modeID)
 {
 	int newDepth = modeID - 0x80;
-	if (newDepth < 0 || newDepth > s_maxDepth)
+	if (newDepth < 0 || newDepth > 5)
+		return tMacErr::paramErr;
+
+	/* Verify the current resolution fits in VRAM at this depth */
+	if (VRAMForResolution(s_currentWidth, s_currentHeight, newDepth)
+	    > g_machine->config().vidMemSize)
 		return tMacErr::paramErr;
 	if (newDepth == s_currentDepth)
 		return tMacErr::noErr;
@@ -566,8 +580,11 @@ static tMacErr Vid_SetMode(uint16_t modeID)
 uint16_t VideoDevice::vidReset()
 {
 	int defDepth = (s_preferredDepth >= 0) ? s_preferredDepth : 0;
-	if (defDepth > s_maxDepth)
-		defDepth = s_maxDepth;
+	/* Clamp to what fits at current resolution */
+	int resMax = maxDepthForResolution(s_currentWidth, s_currentHeight,
+		g_machine->config().vidMemSize);
+	if (defDepth > resMax)
+		defDepth = resMax;
 
 	s_currentDepth = defDepth;
 	g_screenDepth = defDepth;
@@ -582,8 +599,8 @@ uint16_t VideoDevice::vidReset()
 		const ResolutionEntry* res =
 			findResolution((uint32_t)s_preferredDisplayModeID);
 		if (res) {
-			uint32_t needBytes = (uint32_t)res->width * res->height
-				* (1 << defDepth) / 8;
+			uint32_t needBytes = VRAMForResolution(
+				res->width, res->height, defDepth);
 			if (needBytes <= g_machine->config().vidMemSize) {
 				s_currentWidth = res->width;
 				s_currentHeight = res->height;
@@ -777,7 +794,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 				uint16_t csCode =
 					get_vm_word(CntrlParams + CntrlParam_csCode);
 
-				std::fprintf(stderr, "[VID] Control csCode=%u\n", csCode);
+				VID_LOG("Control csCode=%u", csCode);
 					switch (csCode) {
 					case 0: /* VidReset */
 #if VID_dolog
@@ -785,7 +802,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							"Video_Access kCmndVideoControl, VidReset");
 						dbglog_writelnNum("  returning mode", Vid_GetMode());
 #endif
-						std::fprintf(stderr, "[VID] VidReset → mode=0x%02X\n", Vid_GetMode());
+						VID_LOG("VidReset → mode=0x%02X", Vid_GetMode());
 						put_vm_word(csParam + VDPageInfo_csMode,
 							Vid_GetMode());
 						put_vm_word(csParam + VDPageInfo_csPage, 0);
@@ -816,7 +833,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						} else {
 							result = Vid_SetMode(get_vm_word(
 								csParam + VDPageInfo_csMode));
-							std::fprintf(stderr, "[VID] SetVidMode → mode=0x%02X\n",
+							VID_LOG("SetVidMode → mode=0x%02X",
 								get_vm_word(csParam + VDPageInfo_csMode));
 							put_vm_long(csParam + VDPageInfo_csBaseAddr,
 								VidBaseAddr);
@@ -946,7 +963,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							uint16_t mode = get_vm_word(
 								csParam + VDSwitchInfo_csMode);
 							int depth = mode - 0x80;
-							if (depth >= 0 && depth <= s_maxDepth)
+							if (depth >= 0 && depth <= 5)
 								s_preferredDepth = depth;
 							result = tMacErr::noErr;
 						}
@@ -969,7 +986,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							dbglog_writelnNum("  displayModeID", modeID);
 							dbglog_writelnNum("  page", page);
 #endif
-							std::fprintf(stderr, "[VID] SwitchMode mode=0x%02X modeID=%u page=%u\n",
+							VID_LOG("SwitchMode mode=0x%02X modeID=%u page=%u",
 								mode, modeID, page);
 							/* Write current base addr in case we fail */
 							put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
@@ -987,15 +1004,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							}
 
 							int newDepth = mode - 0x80;
-							if (newDepth < 0 || newDepth > s_maxDepth) {
+							if (newDepth < 0 || newDepth > 5) {
 								result = tMacErr::paramErr;
 								break;
 							}
 
 							/* Validate VRAM fits */
-							uint32_t needBytes = (uint32_t)res->width
-								* res->height * (1 << newDepth) / 8;
-							if (needBytes > g_machine->config().vidMemSize) {
+							if (VRAMForResolution(res->width, res->height,
+							    newDepth) > g_machine->config().vidMemSize) {
 								result = tMacErr::paramErr;
 								break;
 							}
@@ -1048,7 +1064,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 
 							put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
 								VidBaseAddr);
-							std::fprintf(stderr, "[VID] SwitchMode OK → %ux%u depth=%d resChanged=%d\n",
+							VID_LOG("SwitchMode OK → %ux%u depth=%d resChanged=%d",
 								res->width, res->height, newDepth, resChanged);
 							result = tMacErr::noErr;
 						}
@@ -1065,7 +1081,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							uint32_t modeID = get_vm_long(
 								csParam + VDSwitchInfo_csData);
 							int depth = mode - 0x80;
-							if (depth >= 0 && depth <= s_maxDepth)
+							if (depth >= 0 && depth <= 5)
 								s_preferredDepth = depth;
 							if (findResolution(modeID))
 								s_preferredDisplayModeID = (int)modeID;
@@ -1089,7 +1105,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					CntrlParams + CntrlParam_csCode);
 
 				result = tMacErr::statusErr;
-				std::fprintf(stderr, "[VID] Status csCode=%u\n", csCode);
+				VID_LOG("Status csCode=%u", csCode);
 				switch (csCode) {
 					case 2: /* GetMode */
 #if VID_dolog
@@ -1170,7 +1186,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 						{
 							int defDepth = (s_preferredDepth >= 0)
-								? s_preferredDepth : s_maxDepth;
+								? s_preferredDepth : s_currentDepth;
 							put_vm_word(csParam + VDSwitchInfo_csMode,
 								0x80 + defDepth);
 							result = tMacErr::noErr;
@@ -1189,7 +1205,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						put_vm_word(csParam + VDSwitchInfo_csPage, 0);
 						put_vm_long(csParam + VDSwitchInfo_csBaseAddr,
 							VidBaseAddr);
-						std::fprintf(stderr, "[VID] GetCurrentMode → mode=0x%02X displayModeID=%u\n",
+						VID_LOG("GetCurrentMode → mode=0x%02X displayModeID=%u",
 							0x80 + s_currentDepth, s_currentDisplayModeID);
 						result = tMacErr::noErr;
 						break;
@@ -1207,7 +1223,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							0x000E); /* kAllModes | kAllFlags */
 						put_vm_long(csParam + VDConnectInfo_csDisplayComponent, 0);
 						put_vm_long(csParam + VDConnectInfo_csConnectReserved, 0);
-						std::fprintf(stderr, "[VID] GetConnection → displayType=6 flags=0x000E\n");
+						VID_LOG("GetConnection → displayType=6 flags=0x000E");
 						result = tMacErr::noErr;
 						break;
 					case 13: /* GetModeTiming */
@@ -1227,7 +1243,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 							const ResolutionEntry* res =
 								findResolution(timingModeID);
 							if (!res) {
-								std::fprintf(stderr, "[VID] GetModeTiming modeID=%u → paramErr (not found)\n",
+								VID_LOG("GetModeTiming modeID=%u → paramErr (not found)",
 									timingModeID);
 								result = tMacErr::paramErr;
 							} else {
@@ -1243,7 +1259,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									s_preferredDisplayModeID)
 									flags |= 0x0004;
 								put_vm_long(csParam + 16, flags);
-								std::fprintf(stderr, "[VID] GetModeTiming modeID=%u → flags=0x%04X (%ux%u)\n",
+								VID_LOG("GetModeTiming modeID=%u → flags=0x%04X (%ux%u)",
 									timingModeID, flags, res->width, res->height);
 								result = tMacErr::noErr;
 							}
@@ -1267,7 +1283,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 						{
 							int defDepth = (s_preferredDepth >= 0)
-								? s_preferredDepth : s_maxDepth;
+								? s_preferredDepth : s_currentDepth;
 							uint32_t prefMode = (s_preferredDisplayModeID >= 0)
 								? (uint32_t)s_preferredDisplayModeID
 								: s_currentDisplayModeID;
@@ -1292,7 +1308,6 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 								int resMax = maxDepthForResolution(
 									next->width, next->height,
 									g_machine->config().vidMemSize);
-								if (resMax > s_maxDepth) resMax = s_maxDepth;
 								put_vm_long(csParam + VDResInfo_csRIDisplayModeID,
 									next->displayModeID);
 								put_vm_long(csParam + VDResInfo_csHorizontalPixels,
@@ -1303,17 +1318,17 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									0x00420000); /* ~66.67 Hz fixed-point */
 								put_vm_word(csParam + VDResInfo_csMaxDepthMode,
 									0x80 + resMax);
-								std::fprintf(stderr, "[VID] GetNextResolution prev=%u → id=%u %ux%u maxDepth=0x%02X\n",
+								VID_LOG("GetNextResolution prev=%u → id=%u %ux%u maxDepth=0x%02X",
 									prevID, next->displayModeID, next->width, next->height, 0x80 + resMax);
 								result = tMacErr::noErr;
 							} else if (prevID != 0 && findResolution(prevID)) {
 								/* prevID was the last — no more */
 								put_vm_long(csParam + VDResInfo_csRIDisplayModeID,
 									kDisplayModeIDNoMoreResolutions);
-								std::fprintf(stderr, "[VID] GetNextResolution prev=%u → END-OF-LIST\n", prevID);
+								VID_LOG("GetNextResolution prev=%u → END-OF-LIST", prevID);
 								result = tMacErr::noErr;
 							} else {
-								std::fprintf(stderr, "[VID] GetNextResolution prev=%u → paramErr\n", prevID);
+								VID_LOG("GetNextResolution prev=%u → paramErr", prevID);
 								result = tMacErr::paramErr;
 							}
 						}
@@ -1334,21 +1349,25 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #if VID_dolog
 							dbglog_writelnNum("  displayModeID", displayModeID);
 							dbglog_writelnNum("  depthMode", depthMode);
-							dbglog_writelnNum("  s_maxDepth", s_maxDepth);
 #endif
 							int depth = depthMode - 0x80;
 							const ResolutionEntry* res =
 								findResolution(displayModeID);
-							if (!res || depth < 0 || depth > s_maxDepth)
+							int resMaxDepth = res
+								? maxDepthForResolution(res->width,
+									res->height,
+									g_machine->config().vidMemSize)
+								: -1;
+							if (!res || depth < 0 || depth > resMaxDepth)
 							{
-								std::fprintf(stderr, "[VID] GetVideoParameters modeID=%u depth=0x%02X → paramErr (res=%p depth=%d max=%d)\n",
-									displayModeID, depthMode, (void*)res, depth, s_maxDepth);
+								VID_LOG("GetVideoParameters modeID=%u depth=0x%02X → paramErr (res=%p depth=%d max=%d)",
+									displayModeID, depthMode, (void*)res, depth, resMaxDepth);
 								result = tMacErr::paramErr;
 							} else {
 								writeVPBlockToGuest(depth,
 									res->width, res->height, vpPtr);
 								put_vm_long(csParam + VDVidParams_csPageCount, 1);
-								std::fprintf(stderr, "[VID] GetVideoParameters modeID=%u depth=0x%02X → %ux%u OK\n",
+								VID_LOG("GetVideoParameters modeID=%u depth=0x%02X → %ux%u OK",
 									displayModeID, depthMode, res->width, res->height);
 								result = tMacErr::noErr;
 							}
@@ -1405,10 +1424,10 @@ void Vid_MaxResolutionSize(uint32_t* outW, uint32_t* outH)
 	/* Classic maximums */
 	uint32_t maxW = 1152, maxH = 870;
 
-	/* Include host-derived if set */
+	/* Include host-derived if set — resolution is valid as long as it
+	   fits in VRAM at 1 bpp; deeper modes are gated per-resolution. */
 	if (s_hostDesktopW > 0 && s_hostDesktopH > 0) {
-		static const uint32_t kMaxVRAM = 15u * 1024 * 1024;
-		if ((uint32_t)s_hostDesktopW * s_hostDesktopH * 4 <= kMaxVRAM) {
+		if (VRAMForResolution(s_hostDesktopW, s_hostDesktopH, 0) <= kMaxVRAM) {
 			if (s_hostDesktopW > maxW) maxW = s_hostDesktopW;
 			if (s_hostDesktopH > maxH) maxH = s_hostDesktopH;
 		}
@@ -1416,4 +1435,9 @@ void Vid_MaxResolutionSize(uint32_t* outW, uint32_t* outH)
 
 	*outW = maxW;
 	*outH = maxH;
+}
+
+uint32_t Vid_MaxVRAM()
+{
+	return kMaxVRAM;
 }
