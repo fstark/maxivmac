@@ -29,8 +29,8 @@ run_ref() {
 
 run_debug() {
     # No disk for Mac II testing
-    "$DIR/bld/macos-headless/maxivmac" \
-        --model MacII --rom="$DIR/extras/roms/MacII.ROM" \
+    "$DIR/bld/macos/maxivmac" \
+        --headless --model MacII --rom="$DIR/extras/roms/MacII.ROM" \
         --log-start="$LOG_START" --log-count="$LOG_COUNT" \
         2>"$1"
 }

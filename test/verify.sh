@@ -6,12 +6,12 @@
 # Usage:  ./test/verify.sh
 # Exit:   0 if all models pass, 1 on first failure.
 #
-# Override the emulator binary:  EMU=./bld/macos-headless/maxivmac ./test/verify.sh
+# Override the emulator binary:  EMU=./bld/macos/maxivmac ./test/verify.sh
 
 set -e
 
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
-EMU="${EMU:-$DIR/bld/macos-headless/maxivmac}"
+EMU="${EMU:-$DIR/bld/macos/maxivmac}"
 ROMS="$DIR/roms"
 DISK_SRC="$DIR/extras/disks/608.hfs"
 TESTDIR="$DIR/test"

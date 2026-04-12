@@ -8,29 +8,12 @@
     "configurePresets": [
         {
             "name": "macos",
-            "displayName": "macOS (ImGui)",
-            "description": "Dear ImGui backend on macOS",
+            "displayName": "macOS",
+            "description": "Release build on macOS",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/bld/${presetName}",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "MAXIVMAC_BACKEND": "imgui"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Darwin"
-            }
-        },
-        {
-            "name": "macos-headless",
-            "displayName": "macOS (Headless)",
-            "description": "Headless backend on macOS — no SDL, no window",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/bld/${presetName}",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "MAXIVMAC_BACKEND": "headless"
+                "CMAKE_BUILD_TYPE": "Release"
             },
             "condition": {
                 "type": "equals",
@@ -40,13 +23,12 @@
         },
         {
             "name": "macos-coverage",
-            "displayName": "macOS (Headless + Coverage)",
-            "description": "Headless backend with code-coverage instrumentation",
+            "displayName": "macOS (Coverage)",
+            "description": "Debug build with code-coverage instrumentation",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/bld/${presetName}",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "MAXIVMAC_BACKEND": "headless",
                 "MAXIVMAC_COVERAGE": "ON"
             },
             "condition": {
@@ -57,13 +39,12 @@
         },
         {
             "name": "macos-asan",
-            "displayName": "macOS (Headless + ASan/UBSan)",
-            "description": "Headless backend with AddressSanitizer and UndefinedBehaviorSanitizer",
+            "displayName": "macOS (ASan/UBSan)",
+            "description": "Debug build with AddressSanitizer and UndefinedBehaviorSanitizer",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/bld/${presetName}",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "MAXIVMAC_BACKEND": "headless",
                 "MAXIVMAC_SANITIZE": "ON"
             },
             "condition": {
@@ -77,10 +58,6 @@
         {
             "name": "macos",
             "configurePreset": "macos"
-        },
-        {
-            "name": "macos-headless",
-            "configurePreset": "macos-headless"
         },
         {
             "name": "macos-coverage",

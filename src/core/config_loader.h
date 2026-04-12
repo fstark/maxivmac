@@ -27,6 +27,7 @@ struct LaunchConfig
 	uint32_t logStart = 0;	 // first instruction to log (0 = no logging)
 	uint32_t logCount = 0;	 // how many instructions to log (0 = no logging)
 	bool fullscreen = false;
+	bool headless = false;
 	bool silent = false;
 	bool help = false;
 	std::string title;	// --title: window title (platform-specific)

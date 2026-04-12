@@ -203,6 +203,7 @@ void PrintUsage(const char *progname)
 			"  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)\n"
 			"  --scale=N        Window scale factor (default: 2)\n"
 			"  --fullscreen     Start in fullscreen mode\n"
+			"  --headless       Run without GUI (for testing/automation)\n"
 			"  --silent         Disable audio output\n"
 			"  --title=TEXT     Window title\n"
 			"  --record=PATH    Record golden file for non-regression testing\n"
@@ -244,6 +245,11 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strcmp(arg, "--fullscreen") == 0)
 		{
 			lc.fullscreen = true;
+			continue;
+		}
+		if (strcmp(arg, "--headless") == 0)
+		{
+			lc.headless = true;
 			continue;
 		}
 		if (strcmp(arg, "--silent") == 0)
@@ -318,11 +324,13 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strncmp(arg, "--record=", 9) == 0)
 		{
 			lc.recordPath = arg + 9;
+			lc.headless = true;
 			continue;
 		}
 		if (strncmp(arg, "--verify=", 9) == 0)
 		{
 			lc.verifyPath = arg + 9;
+			lc.headless = true;
 			continue;
 		}
 		if (strncmp(arg, "--trace=", 8) == 0)

@@ -8,6 +8,7 @@
 #include "platform/headless_backend.h"
 #include "platform/emulator_shell.h"
 
+#include <SDL3/SDL.h>
 #include <cstdlib>
 #include <cstring>
 #include <climits>
@@ -17,6 +18,8 @@
 bool HeadlessBackend::init(EmulatorShell *shell)
 {
 	shell_ = shell;
+	/* Init SDL base so Sound_Init/clipboard calls don't crash. */
+	SDL_Init(0);
 	return true;
 }
 

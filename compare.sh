@@ -28,8 +28,8 @@ echo "  $(wc -l < "$REF_OUT") lines"
 
 echo "=== Debug build: --log-start=$LOG_START --log-count=$LOG_COUNT ==="
 # No disk for Mac II testing
-"$DIR/bld/macos-headless/maxivmac" \
-    --model MacII \
+"$DIR/bld/macos/maxivmac" \
+    --headless --model MacII \
     --log-start="$LOG_START" --log-count="$LOG_COUNT" \
     2>"$DBG_OUT"
 echo "  $(wc -l < "$DBG_OUT") lines"
