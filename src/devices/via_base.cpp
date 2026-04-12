@@ -254,8 +254,8 @@ void VIABase::doTimer1Check()
 {
 	if (T1Running)
 	{
-		iCountt NewTime = g_ict.getCurrent();
-		iCountt deltaTime = (NewTime - T1LastTime);
+		InstructionCount NewTime = g_ict.getCurrent();
+		InstructionCount deltaTime = (NewTime - T1LastTime);
 		if (deltaTime != 0)
 		{
 			uint32_t Temp = d_.T1C_F;
@@ -366,9 +366,9 @@ void VIABase::doTimer2Check()
 {
 	if (T2Running || T2C_ShortTime)
 	{
-		iCountt NewTime = g_ict.getCurrent();
+		InstructionCount NewTime = g_ict.getCurrent();
 		uint32_t Temp = d_.T2C_F;
-		iCountt deltaTime = (NewTime - T2LastTime);
+		InstructionCount deltaTime = (NewTime - T2LastTime);
 		uint32_t deltaTemp = (deltaTime / CYCLES_PER_VIA_TIME) << (16 - kLn2CycleScale);
 		uint32_t NewTemp = Temp - deltaTemp;
 		if (T2_Active == 1)

@@ -47,10 +47,10 @@ extern void put_vm_long(uint32_t addr, uint32_t l);
 /* --- Address Translation Table (ATT) --- */
 
 // Install a new ATT list head and invalidate the translation cache.
-extern void SetHeadATTel(ATTep p);
+extern void SetHeadATTel(ATTEntryPtr p);
 
 // Search ATT for the entry matching addr, with LRU reordering.
-extern ATTep FindATTel(uint32_t addr);
+extern ATTEntryPtr FindATTel(uint32_t addr);
 
 /* --- Debug register accessors (read-only snapshots) --- */
 

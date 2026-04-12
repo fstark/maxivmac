@@ -44,11 +44,11 @@ static uint8_t *Disasm_pcp;
 static uint32_t Disasm_pc_blockmask;
 static uint8_t Disasm_pcp_dummy[2] = {0, 0};
 
-extern ATTep FindATTel(uint32_t addr);
+extern ATTEntryPtr FindATTel(uint32_t addr);
 
 static void Disasm_Find_pcp()
 {
-	ATTep p;
+	ATTEntryPtr p;
 
 	p = FindATTel(Disasm_pc);
 	if (0 == (p->Access & kATTA_readreadymask))

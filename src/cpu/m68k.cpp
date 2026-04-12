@@ -119,7 +119,7 @@ static struct regstruct
 	MATCr MATCwrB;
 	MATCr MATCrdW;
 	MATCr MATCwrW;
-	ATTep HeadATTel;
+	ATTEntryPtr HeadATTel;
 
 	int32_t MoreCyclesToGo;
 	int32_t ResidualCycles;
@@ -8241,10 +8241,10 @@ static void local_customreset()
 	Em_Enter();
 }
 
-static ATTep LocalFindATTel(uint32_t addr)
+static ATTEntryPtr LocalFindATTel(uint32_t addr)
 {
-	ATTep prev;
-	ATTep p;
+	ATTEntryPtr prev;
+	ATTEntryPtr p;
 
 	p = V_regs.HeadATTel;
 	if ((addr & p->cmpmask) != p->cmpvalu)
@@ -8256,7 +8256,7 @@ static ATTep LocalFindATTel(uint32_t addr)
 		} while ((addr & p->cmpmask) != p->cmpvalu);
 
 		{
-			ATTep next = p->Next;
+			ATTEntryPtr next = p->Next;
 
 			if (nullptr == next)
 			{
@@ -8275,7 +8275,7 @@ static ATTep LocalFindATTel(uint32_t addr)
 	return p;
 }
 
-static void SetUpMATC(MATCp CurMATC, ATTep p)
+static void SetUpMATC(MATCp CurMATC, ATTEntryPtr p)
 {
 	CurMATC->cmpmask = p->cmpmask;
 	CurMATC->usemask = p->usemask;
@@ -8285,7 +8285,7 @@ static void SetUpMATC(MATCp CurMATC, ATTep p)
 
 static uint32_t get_byte_ext(uint32_t addr)
 {
-	ATTep p;
+	ATTEntryPtr p;
 	uint8_t *m;
 	uint32_t AccFlags;
 	uint32_t Data;
@@ -8326,7 +8326,7 @@ Label_Retry:
 
 static void put_byte_ext(uint32_t addr, uint32_t b)
 {
-	ATTep p;
+	ATTEntryPtr p;
 	uint8_t *m;
 	uint32_t AccFlags;
 
@@ -8373,7 +8373,7 @@ static uint32_t get_word_ext(uint32_t addr)
 	}
 	else
 	{
-		ATTep p;
+		ATTEntryPtr p;
 		uint8_t *m;
 		uint32_t AccFlags;
 
@@ -8421,7 +8421,7 @@ static void put_word_ext(uint32_t addr, uint32_t w)
 	}
 	else
 	{
-		ATTep p;
+		ATTEntryPtr p;
 		uint8_t *m;
 		uint32_t AccFlags;
 
@@ -8475,7 +8475,7 @@ static void put_long_misaligned_ext(uint32_t addr, uint32_t l)
 
 static void Recalc_PC_Block()
 {
-	ATTep p;
+	ATTEntryPtr p;
 	uint32_t curpc = m68k_getpc();
 
 Label_Retry:
@@ -8611,9 +8611,9 @@ void SetCyclesRemaining(int32_t n)
 	Em_Exit();
 }
 
-ATTep FindATTel(uint32_t addr)
+ATTEntryPtr FindATTel(uint32_t addr)
 {
-	ATTep v;
+	ATTEntryPtr v;
 
 	Em_Enter();
 	v = LocalFindATTel(addr);
@@ -8676,7 +8676,7 @@ void put_vm_long(uint32_t addr, uint32_t l)
 	Em_Exit();
 }
 
-void SetHeadATTel(ATTep p)
+void SetHeadATTel(ATTEntryPtr p)
 {
 	Em_Enter();
 

@@ -774,7 +774,7 @@ static uint16_t s_lastATTel;
 
 
 // Append an entry to the address translation table.
-static void AddToATTList(ATTep p)
+static void AddToATTList(ATTEntryPtr p)
 {
 	uint16_t NewLast = s_lastATTel + 1;
 	if (NewLast >= kATTListMax)
@@ -809,8 +809,8 @@ static void FinishATTList()
 
 	{
 		uint16_t i = s_lastATTel;
-		ATTep p = &s_attListA[s_lastATTel];
-		ATTep h = nullptr;
+		ATTEntryPtr p = &s_attListA[s_lastATTel];
+		ATTEntryPtr h = nullptr;
 
 		while (0 != i)
 		{
@@ -1237,7 +1237,7 @@ static void SetUp_address_II()
 #ifndef ln2mtb
 #define AddToATTListWithMTB AddToATTList
 #else
-static void AddToATTListWithMTB(ATTep p)
+static void AddToATTListWithMTB(ATTEntryPtr p)
 {
 	/*
 		Test of memory mapping system.
@@ -1445,7 +1445,7 @@ static void SetUpMemBanks()
 	read/write to the correct device handler based on
 	the MMDV tag in the ATT entry.
 */
-uint32_t MMDV_Access(ATTep p, uint32_t data, bool writeMem, bool byteSize, uint32_t addr)
+uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize, uint32_t addr)
 {
 	uint32_t origData = data;
 	switch (p->MMDV)
@@ -1731,7 +1731,7 @@ uint32_t MMDV_Access(ATTep p, uint32_t data, bool writeMem, bool byteSize, uint3
 	return data;
 }
 
-bool MemAccessNtfy(ATTep pT)
+bool MemAccessNtfy(ATTEntryPtr pT)
 {
 	bool v = false;
 
@@ -1768,9 +1768,9 @@ void Addr32_ChangeNtfy()
 	}
 }
 
-static ATTep get_address_realblock1(bool WriteMem, uint32_t addr)
+static ATTEntryPtr get_address_realblock1(bool WriteMem, uint32_t addr)
 {
-	ATTep p;
+	ATTEntryPtr p;
 
 Label_Retry:
 	p = g_cpu.findATTel(addr);
@@ -1797,7 +1797,7 @@ uint8_t *get_real_address0(uint32_t L, bool WritableMem, uint32_t addr, uint32_t
 {
 	uint32_t bankleft;
 	uint8_t *p;
-	ATTep q;
+	ATTEntryPtr q;
 
 	q = get_address_realblock1(WritableMem, addr);
 	if (nullptr == q)

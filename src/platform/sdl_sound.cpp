@@ -168,7 +168,7 @@ static void Sound_SecondNotify0()
 	}
 }
 
-typedef uint16_t SoundTemp;
+typedef uint16_t SoundSample;
 
 #define K_CENTER_TEMP_SOUND 0x8000
 
@@ -178,12 +178,13 @@ typedef uint16_t SoundTemp;
 
 #define CONVERT_TEMP_SOUND_SAMPLE_TO_NATIVE(v) ((v) - kCenterSound)
 
-static void SoundRampTo(SoundTemp *last_val, SoundTemp dst_val, SoundSamplePtr *stream, int *len)
+static void SoundRampTo(SoundSample *last_val, SoundSample dst_val, SoundSamplePtr *stream,
+						int *len)
 {
-	SoundTemp diff;
+	SoundSample diff;
 	SoundSamplePtr p = *stream;
 	int n = *len;
-	SoundTemp v1 = *last_val;
+	SoundSample v1 = *last_val;
 
 	while ((v1 != dst_val) && (0 != n))
 	{
@@ -228,7 +229,7 @@ struct SoundState
 	volatile uint16_t(*fFillOffset);
 	volatile uint16_t(*fMinFilledSoundBuffs);
 
-	volatile SoundTemp lastv;
+	volatile SoundSample lastv;
 
 	bool wantplaying;
 	bool HaveStartedPlaying;
@@ -242,8 +243,8 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 	SoundState *datp = (SoundState *)udata;
 	SoundSamplePtr CurSoundBuffer = datp->fTheSoundBuffer;
 	uint16_t CurPlayOffset = *datp->fPlayOffset;
-	SoundTemp v0 = datp->lastv;
-	SoundTemp v1 = v0;
+	SoundSample v0 = datp->lastv;
+	SoundSample v1 = v0;
 	SoundSamplePtr dst = (SoundSamplePtr)stream;
 
 	len >>= 1; /* convert byte length to sample count (16-bit samples) */
@@ -281,7 +282,7 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 			else
 			{
 				SoundSamplePtr p = datp->fTheSoundBuffer + (CurPlayOffset & kAllBuffMask);
-				SoundTemp v2 = CONVERT_TEMP_SOUND_SAMPLE_FROM_NATIVE(*p);
+				SoundSample v2 = CONVERT_TEMP_SOUND_SAMPLE_FROM_NATIVE(*p);
 
 #if dbglog_SoundStuff
 				dbglog_writeln("have enough samples to start");

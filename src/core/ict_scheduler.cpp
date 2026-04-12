@@ -30,7 +30,7 @@ void ICTScheduler::registerTask(int taskId, TaskHandler handler)
 	handlers_[taskId] = std::move(handler);
 }
 
-iCountt ICTScheduler::getCurrent() const
+InstructionCount ICTScheduler::getCurrent() const
 {
 	return nextCount - getCyclesRemaining_();
 }
