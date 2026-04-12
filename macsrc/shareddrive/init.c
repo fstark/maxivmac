@@ -707,34 +707,54 @@ short DispatchHFS(char *pb, short selector)
 	Generate a small 68k code stub in the system heap for one
 	flat-file OS trap. The stub:
 
-	  MOVEM.L D0-D2/A0-A2, -(SP)  ; save regs (24 bytes)
+	  MOVEM.L D0-D2/A0-A1, -(SP)  ; save regs (20 bytes)
 	  MOVE.W  #trapNum, -(SP)      ; push trapNum arg
 	  MOVE.L  A0, -(SP)            ; push pb arg
 	  JSR     dispatchAddr          ; call DispatchFlat
 	  ADDQ.L  #6, SP               ; pop args
 	  TST.W   D0                   ; handled?
 	  BNE.S   @pass                ; no — pass through
-	  MOVEM.L (SP)+, D0-D2/A0-A2  ; restore regs
+	  MOVEM.L (SP)+, D0-D2/A0-A1  ; restore regs
 	  MOVE.W  16(A0), D0           ; D0 = ioResult
 	  RTS                          ; return to caller
 	@pass:
-	  MOVEM.L (SP)+, D0-D2/A0-A2  ; restore regs
+	  MOVEM.L (SP)+, D0-D2/A0-A1  ; restore regs
 	  MOVE.L  #oldAddr, -(SP)     ; push old trap address
 	  RTS                          ; jump to original
 
-	Total: ~40 bytes.
+	Byte layout:
+	  0: MOVEM.L D0-D2/A0-A1,-(SP) 48E7 E0C0       4
+	  4: MOVE.W  #imm,-(SP)         3F3C xxxx       4
+	  8: MOVE.L  A0,-(SP)           2F08            2
+	 10: JSR     abs.L              4EB9 xxxx xxxx  6
+	 16: ADDQ.L  #6,SP              5C8F            2
+	 18: TST.W   D0                 4A40            2
+	 20: BNE.S   +10                660A            2
+	 22: MOVEM.L (SP)+,D0-D2/A0-A1 4CDF 0307       4
+	 26: MOVE.W  16(A0),D0         3028 0010       4
+	 30: RTS                        4E75            2
+	 32: MOVEM.L (SP)+,D0-D2/A0-A1 4CDF 0307       4
+	 36: MOVE.L  #imm,-(SP)         2F3C xxxx xxxx  6
+	 42: RTS                        4E75            2
+	 Total: 44 bytes
+
+	Register mask encoding (68000 PRM):
+	  Predecrement: bit15=D0..bit8=D7, bit7=A0..bit0=A7
+	    D0-D2 = $E000, A0-A1 = $00C0 → $E0C0
+	  Postincrement: bit0=D0..bit7=D7, bit8=A0..bit15=A7
+	    D0-D2 = $0007, A0-A1 = $0300 → $0307
 */
 static Ptr MakeFlatStub(short trapNum, long dispatchAddr, long oldAddr)
 {
 	Ptr p;
 	short *w;
 
-	p = NewPtrSys(42);
+	p = NewPtrSys(44);
 	if (p == NULL) return NULL;
 	w = (short *)p;
 
-	/* MOVEM.L D0-D2/A0-A2, -(SP) */
-	*w++ = 0x48E7; *w++ = (short)0xE038;   /* D0-D2/A0-A2 */
+	/* MOVEM.L D0-D2/A0-A1, -(SP) */
+	*w++ = 0x48E7; *w++ = (short)0xE0C0;
 
 	/* MOVE.W #trapNum, -(SP) */
 	*w++ = 0x3F3C; *w++ = trapNum;
@@ -752,11 +772,11 @@ static Ptr MakeFlatStub(short trapNum, long dispatchAddr, long oldAddr)
 	/* TST.W D0 */
 	*w++ = 0x4A40;
 
-	/* BNE.S @pass (skip 6 bytes: MOVEM.L + MOVE.W + RTS) */
-	*w++ = 0x6606;
+	/* BNE.S @pass — displacement +10 = $0A (skip 4+4+2 bytes) */
+	*w++ = 0x660A;
 
-	/* MOVEM.L (SP)+, D0-D2/A0-A2 */
-	*w++ = 0x4CDF; *w++ = 0x1C07;
+	/* MOVEM.L (SP)+, D0-D2/A0-A1 */
+	*w++ = 0x4CDF; *w++ = 0x0307;
 
 	/* MOVE.W 16(A0), D0 — ioResult */
 	*w++ = 0x3028; *w++ = 0x0010;
@@ -764,8 +784,8 @@ static Ptr MakeFlatStub(short trapNum, long dispatchAddr, long oldAddr)
 	/* RTS */
 	*w++ = 0x4E75;
 
-	/* @pass: MOVEM.L (SP)+, D0-D2/A0-A2 */
-	*w++ = 0x4CDF; *w++ = 0x1C07;
+	/* @pass: MOVEM.L (SP)+, D0-D2/A0-A1 */
+	*w++ = 0x4CDF; *w++ = 0x0307;
 
 	/* MOVE.L #oldAddr, -(SP) */
 	*w++ = 0x2F3C;
@@ -778,27 +798,30 @@ static Ptr MakeFlatStub(short trapNum, long dispatchAddr, long oldAddr)
 }
 
 /*
-	Generate an _HFSDispatch stub. Similar to flat but extracts
-	the selector from D0 (the trap dispatcher passes it in D0
-	as the low word on 68020, or we pick it from D1 on 68000).
+	Generate an _HFSDispatch stub. Same structure as flat stub
+	but reads D0.W as the HFS selector instead of a constant trapNum.
 
-	For _HFSDispatch, the selector is in the low byte of the
-	trap word, which is in D1. But the Toolbox trap dispatcher
-	works differently — for Toolbox traps, the selector is
-	already extracted. We'll pass D0 as selector.
+	_HFSDispatch ($A260) is an OS trap (bit 11 = 0). The glue code
+	sets D0.W = selector, A0 = parameter block, then traps.
 
-	Actually: _HFSDispatch ($A260) is a Toolbox trap (bit 11 set).
-	The selector is passed in the register specified by the trap
-	— for $A260, it's the word at 6(SP) on return from the macro
-	expansion... This is complex. For now, let's just use D0
-	which typically holds the selector for _HFSDispatch.
-	
-	REVISED: on System 6, _HFSDispatch is called with:
-	  - A0 pointing to the parameter block
-	  - The selector is on the stack (pushed by the glue code)
-	    OR in D0.w — it depends on the File Manager glue.
-	  Let's check D0 first. The HFS dispatch glue code
-	  typically does: MOVE.W selector,D0 / _HFSDispatch.
+	Byte layout: same 44 bytes as MakeFlatStub except byte 4 uses
+	MOVE.W D0,-(SP) instead of MOVE.W #imm,-(SP), saving 2 bytes
+	(total 42 bytes).
+
+	  0: MOVEM.L D0-D2/A0-A1,-(SP) 48E7 E0C0       4
+	  4: MOVE.W  D0,-(SP)           3F00            2
+	  6: MOVE.L  A0,-(SP)           2F08            2
+	  8: JSR     abs.L              4EB9 xxxx xxxx  6
+	 14: ADDQ.L  #6,SP              5C8F            2
+	 16: TST.W   D0                 4A40            2
+	 18: BNE.S   +10                660A            2
+	 20: MOVEM.L (SP)+,D0-D2/A0-A1 4CDF 0307       4
+	 24: MOVE.W  16(A0),D0         3028 0010       4
+	 28: RTS                        4E75            2
+	 30: MOVEM.L (SP)+,D0-D2/A0-A1 4CDF 0307       4
+	 34: MOVE.L  #imm,-(SP)         2F3C xxxx xxxx  6
+	 40: RTS                        4E75            2
+	 Total: 42 bytes
 */
 static Ptr MakeHFSStub(long dispatchAddr, long oldAddr)
 {
@@ -809,13 +832,13 @@ static Ptr MakeHFSStub(long dispatchAddr, long oldAddr)
 	if (p == NULL) return NULL;
 	w = (short *)p;
 
-	/* MOVEM.L D0-D2/A0-A2, -(SP) */
-	*w++ = 0x48E7; *w++ = (short)0xE038;
+	/* MOVEM.L D0-D2/A0-A1, -(SP) */
+	*w++ = 0x48E7; *w++ = (short)0xE0C0;
 
-	/* Push selector (D0.W) as second arg */
-	*w++ = 0x3F00;  /* MOVE.W D0, -(SP) */
+	/* MOVE.W D0, -(SP) — push selector */
+	*w++ = 0x3F00;
 
-	/* MOVE.L A0, -(SP) — pb */
+	/* MOVE.L A0, -(SP) — push pb */
 	*w++ = 0x2F08;
 
 	/* JSR dispatchAddr */
@@ -828,11 +851,11 @@ static Ptr MakeHFSStub(long dispatchAddr, long oldAddr)
 	/* TST.W D0 */
 	*w++ = 0x4A40;
 
-	/* BNE.S @pass (skip 6 bytes) */
-	*w++ = 0x6606;
+	/* BNE.S @pass — displacement +10 = $0A */
+	*w++ = 0x660A;
 
-	/* MOVEM.L (SP)+, D0-D2/A0-A2 */
-	*w++ = 0x4CDF; *w++ = 0x1C07;
+	/* MOVEM.L (SP)+, D0-D2/A0-A1 */
+	*w++ = 0x4CDF; *w++ = 0x0307;
 
 	/* MOVE.W 16(A0), D0 — ioResult */
 	*w++ = 0x3028; *w++ = 0x0010;
@@ -840,8 +863,8 @@ static Ptr MakeHFSStub(long dispatchAddr, long oldAddr)
 	/* RTS */
 	*w++ = 0x4E75;
 
-	/* @pass: MOVEM.L (SP)+, D0-D2/A0-A2 */
-	*w++ = 0x4CDF; *w++ = 0x1C07;
+	/* @pass: MOVEM.L (SP)+, D0-D2/A0-A1 */
+	*w++ = 0x4CDF; *w++ = 0x0307;
 
 	/* MOVE.L #oldAddr, -(SP) */
 	*w++ = 0x2F3C;
