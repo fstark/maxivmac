@@ -100,7 +100,7 @@ void dbglog_WriteMemArrow(bool writeMem)
 
 void dbglog_AddrAccess(char *s, uint32_t data, bool writeMem, uint32_t addr)
 {
-	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd)
+	if (g_logEnd == 0 || g_instructionCount < g_logStart || g_instructionCount >= g_logEnd)
 	{
 		return;
 	}
@@ -116,7 +116,7 @@ void dbglog_AddrAccess(char *s, uint32_t data, bool writeMem, uint32_t addr)
 
 void dbglog_Access(char *s, uint32_t data, bool writeMem)
 {
-	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd)
+	if (g_logEnd == 0 || g_instructionCount < g_logStart || g_instructionCount >= g_logEnd)
 	{
 		return;
 	}
@@ -129,7 +129,7 @@ void dbglog_Access(char *s, uint32_t data, bool writeMem)
 
 void dbglog_WriteNote(char *s)
 {
-	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd)
+	if (g_logEnd == 0 || g_instructionCount < g_logStart || g_instructionCount >= g_logEnd)
 	{
 		return;
 	}
@@ -140,7 +140,7 @@ void dbglog_WriteNote(char *s)
 
 void dbglog_WriteSetBool(char *s, bool v)
 {
-	if (g_LogEnd == 0 || g_InstructionCount < g_LogStart || g_InstructionCount >= g_LogEnd)
+	if (g_logEnd == 0 || g_instructionCount < g_logStart || g_instructionCount >= g_logEnd)
 	{
 		return;
 	}
@@ -1707,16 +1707,16 @@ uint32_t MMDV_Access(ATTep p, uint32_t data, bool writeMem, bool byteSize, uint3
 			break;
 	}
 
-	if (g_LogEnd > 0 && g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd)
+	if (g_logEnd > 0 && g_instructionCount >= g_logStart && g_instructionCount < g_logEnd)
 	{
 		if (writeMem)
 		{
-			fprintf(stderr, "%u IOW %s %08X %02X\n", (unsigned)g_InstructionCount,
+			fprintf(stderr, "%u IOW %s %08X %02X\n", (unsigned)g_instructionCount,
 					mmdv_name(p->MMDV), addr, origData & 0xFF);
 		}
 		else
 		{
-			fprintf(stderr, "%u IOR %s %08X %02X\n", (unsigned)g_InstructionCount,
+			fprintf(stderr, "%u IOR %s %08X %02X\n", (unsigned)g_instructionCount,
 					mmdv_name(p->MMDV), addr, data & 0xFF);
 		}
 	}
@@ -1724,7 +1724,7 @@ uint32_t MMDV_Access(ATTep p, uint32_t data, bool writeMem, bool byteSize, uint3
 	/* StateRecorder I/O hook */
 	if (g_recorder.active())
 	{
-		g_recorder.io(g_InstructionCount, addr, writeMem ? origData : data, writeMem, byteSize,
+		g_recorder.io(g_instructionCount, addr, writeMem ? origData : data, writeMem, byteSize,
 					  mmdv_name(p->MMDV));
 	}
 

@@ -159,7 +159,7 @@ extern bool g_wantMacReset;
 
 extern uint8_t g_speedValue;
 
-extern bool g_SkipThrottle;
+extern bool g_skipThrottle;
 
 extern bool g_wantNotAutoSlow;
 

@@ -591,7 +591,7 @@ void EmulatorShell::processSavedTasks()
 
 bool EmulatorShell::tickIsDue()
 {
-	if (g_SkipThrottle)
+	if (g_skipThrottle)
 	{
 		return true;
 	}
@@ -601,7 +601,7 @@ bool EmulatorShell::tickIsDue()
 
 void EmulatorShell::runOneTick()
 {
-	if (!g_SkipThrottle)
+	if (!g_skipThrottle)
 	{
 		if (CheckDateTime())
 		{

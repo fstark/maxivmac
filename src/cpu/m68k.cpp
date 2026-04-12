@@ -170,10 +170,10 @@ static struct regstruct
    Set once in MINEM68K_Init(). */
 static const MachineConfig *s_cpuConfig = nullptr;
 
-/* Global instruction counter, and logging window [g_LogStart, g_LogEnd). */
-uint32_t g_InstructionCount = 0;
-uint32_t g_LogStart = 0;
-uint32_t g_LogEnd = 0;
+/* Global instruction counter, and logging window [g_logStart, g_logEnd). */
+uint32_t g_instructionCount = 0;
+uint32_t g_logStart = 0;
+uint32_t g_logEnd = 0;
 
 #define ui5r_MSBisSet(x) (((int32_t)(x)) < 0)
 
@@ -726,19 +726,19 @@ static void m68k_go_MaxCycles()
 	{
 		V_regs.CurDecOpY = y;
 
-		/* Log instructions in [g_LogStart, g_LogEnd) to stderr */
+		/* Log instructions in [g_logStart, g_logEnd) to stderr */
 		{
 			uint32_t pc = m68k_getpc() - 2;
-			if (g_LogEnd > 0)
+			if (g_logEnd > 0)
 			{
-				if (g_InstructionCount >= g_LogStart && g_InstructionCount < g_LogEnd)
+				if (g_instructionCount >= g_logStart && g_instructionCount < g_logEnd)
 				{
 					uint16_t opcode = do_get_mem_word(V_pc_p - 2);
 					std::fprintf(
 						stderr,
 						"%u %08X: %04X c=%d D=%08X %08X %08X %08X %08X %08X %08X %08X A=%08X %08X "
 						"%08X %08X %08X %08X %08X %08X\n",
-						(unsigned)g_InstructionCount, (unsigned int)pc, (unsigned int)opcode,
+						(unsigned)g_instructionCount, (unsigned int)pc, (unsigned int)opcode,
 						(int)V_MaxCyclesToGo, (unsigned)m68k_dreg(0), (unsigned)m68k_dreg(1),
 						(unsigned)m68k_dreg(2), (unsigned)m68k_dreg(3), (unsigned)m68k_dreg(4),
 						(unsigned)m68k_dreg(5), (unsigned)m68k_dreg(6), (unsigned)m68k_dreg(7),
@@ -747,7 +747,7 @@ static void m68k_go_MaxCycles()
 						(unsigned)m68k_areg(6), (unsigned)m68k_areg(7));
 					std::fflush(stderr);
 				}
-				if (g_InstructionCount == g_LogEnd)
+				if (g_instructionCount == g_logEnd)
 				{
 					std::exit(0);
 				}
@@ -761,10 +761,10 @@ static void m68k_go_MaxCycles()
 									 m68k_dreg(4), m68k_dreg(5), m68k_dreg(6), m68k_dreg(7)};
 				uint32_t aregs[8] = {m68k_areg(0), m68k_areg(1), m68k_areg(2), m68k_areg(3),
 									 m68k_areg(4), m68k_areg(5), m68k_areg(6), m68k_areg(7)};
-				g_recorder.cpu(g_InstructionCount, pc, sr, dregs, aregs);
+				g_recorder.cpu(g_instructionCount, pc, sr, dregs, aregs);
 			}
 
-			g_InstructionCount++;
+			g_instructionCount++;
 		}
 
 		{

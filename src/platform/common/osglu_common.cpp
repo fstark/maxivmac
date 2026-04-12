@@ -45,7 +45,7 @@ bool g_wantMacReset = false;
 
 uint8_t g_speedValue = 4;
 
-bool g_SkipThrottle = false;
+bool g_skipThrottle = false;
 
 bool g_wantNotAutoSlow = false;
 

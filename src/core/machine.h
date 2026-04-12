@@ -99,12 +99,12 @@ extern bool AddrSpac_Init();
 
 
 /* Global instruction counter – defined in m68k.cpp */
-extern uint32_t g_InstructionCount;
+extern uint32_t g_instructionCount;
 
-/* Logging range [g_LogStart, g_LogEnd).  Set from --log-start / --log-count.
-   Default 0,0 = no logging.  exit(0) when g_InstructionCount reaches g_LogEnd. */
-extern uint32_t g_LogStart;
-extern uint32_t g_LogEnd;
+/* Logging range [g_logStart, g_logEnd).  Set from --log-start / --log-count.
+   Default 0,0 = no logging.  exit(0) when g_instructionCount reaches g_logEnd. */
+extern uint32_t g_logStart;
+extern uint32_t g_logEnd;
 
 extern void dbglog_StartLine();
 

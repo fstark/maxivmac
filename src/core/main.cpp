@@ -497,8 +497,8 @@ void ProgramEarlyInit(int argc, char *argv[])
 	/* Set up instruction-logging window from CLI args */
 	if (s_launchConfig.logCount > 0)
 	{
-		g_LogStart = s_launchConfig.logStart;
-		g_LogEnd = s_launchConfig.logStart + s_launchConfig.logCount;
+		g_logStart = s_launchConfig.logStart;
+		g_logEnd = s_launchConfig.logStart + s_launchConfig.logCount;
 	}
 
 	/* No model specified — defer machine creation to SetLaunchConfig().
@@ -519,7 +519,7 @@ void ProgramEarlyInit(int argc, char *argv[])
 		s_launchConfig.model = static_cast<MacModel>(goldenHdr.modelId);
 		s_launchConfig.modelExplicit = true;
 		g_speedValue = goldenHdr.speedValue;
-		g_SkipThrottle = true;
+		g_skipThrottle = true;
 	}
 
 	/* Set up StateRecorder from CLI args */
