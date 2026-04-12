@@ -319,7 +319,7 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 	/* Resolve WD refnum → dirID when caller doesn't set ioDirID */
 	dirID = ResolveDir(vRefNum, dirID, regBase);
 
-	dbg_log2(regBase, "SD: GCI dir=%ld idx=%ld", dirID, (long)index);
+	dbg_log2(regBase, "SD _GetCatInfo dir=%ld idx=%ld", dirID, (long)index);
 
 	if (index > 0) {
 		reg_set(regBase,0,dirID); reg_set(regBase,1,(unsigned long)index);
@@ -333,12 +333,12 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		if (reg_result(regBase) != 0) return -43;
 	} else {
 		if (nameAddr == 0) return -50;
-		dbg_log1(regBase, "SD: GCI byName=%s", nameAddr);
+		dbg_log1(regBase, "SD _GetCatInfo byName=%s", nameAddr);
 		reg_set(regBase,0,dirID); reg_set(regBase,1,nameAddr);
 		reg_set(regBase,2,(unsigned long)s_nameBuf);
 		reg_command(regBase, 0x0203);
 		if (reg_result(regBase) != 0) {
-			dbg_log(regBase, "SD: GCI byName -> fnfErr");
+			dbg_log(regBase, "SD _GetCatInfo byName -> fnfErr");
 			return -43;
 		}
 	}
@@ -575,7 +575,7 @@ static OSErr DoGetVolInfo(char *pb, Globals *g)
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	Ptr v = g->vcb;
 
-	dbg_log(g->regBase, "SD: DoGetVolInfo");
+	dbg_log(g->regBase, "SD _GetVolInfo filling pb");
 
 	if (nameAddr != 0) {
 		unsigned char *p = (unsigned char *)nameAddr;
@@ -620,7 +620,7 @@ static OSErr DoGetVolParms(char *pb, char *regBase)
 	long reqCount = *(long *)(pb + pb_ioReqCount);
 	long actual;
 
-	dbg_log1(regBase, "SD: GetVolParms buf=%lx", bufAddr);
+	dbg_log1(regBase, "SD _GetVolParms buf=%lx", bufAddr);
 
 	if (bufAddr == 0) return -50;
 
@@ -665,7 +665,7 @@ static OSErr DoOpenWD(char *pb, char *regBase)
 	long procID = *(long *)(pb + pb_ioWDProcID);
 	unsigned long wdRef;
 
-	dbg_log2(regBase, "SD: OpenWD dir=%ld proc=%lx", dirID, procID);
+	dbg_log2(regBase, "SD _OpenWD dir=%ld proc=%lx", dirID, procID);
 
 	reg_set(regBase, 0, (unsigned long)kOurVRefNum);
 	reg_set(regBase, 1, (unsigned long)dirID);
@@ -689,7 +689,7 @@ static OSErr DoCloseWD(char *pb, char *regBase)
 
 	/* Decode WD refnum */
 	wdRef = (unsigned long)(-(long)vRefNum - 32000);
-	dbg_log1(regBase, "SD: CloseWD ref=%ld", (long)wdRef);
+	dbg_log1(regBase, "SD _CloseWD ref=%ld", (long)wdRef);
 
 	reg_set(regBase, 0, wdRef);
 	reg_command(regBase, 0x020C);
@@ -703,7 +703,7 @@ static OSErr DoGetWDInfo(char *pb, char *regBase)
 	unsigned long wdRef;
 	unsigned long dirID;
 
-	dbg_log2(regBase, "SD: GetWDInfo vref=%ld idx=%ld",
+	dbg_log2(regBase, "SD _GetWDInfo vref=%ld idx=%ld",
 		(long)vRefNum, (long)wdIndex);
 
 	/* Only handle direct lookup (ioWDIndex == 0) for now */
@@ -758,31 +758,25 @@ short DispatchFlat(char *pb, short trapNum)
 	vRefNum  = *(short *)(pb + pb_ioVRefNum);
 	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 
-	/* Log every entry: trap, vRefNum, name */
-	dbg_log2(g->regBase, "SD:F %02lx vr=%ld", (long)trapNum,
-		(long)vRefNum);
-	if (nameAddr)
-		dbg_log1(g->regBase, "SD:F  nm=%S", nameAddr);
-
 	/* Traps keyed on ioRefNum (open file) */
 	switch (trapNum) {
 		case 0x01: /* _Close */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log1(g->regBase, "SD: Close ref=%ld",
+			dbg_log1(g->regBase, "SD _Close ref=%ld",
 				(long)refNum);
 			err = DoClose(pb, g->regBase);
-			dbg_log1(g->regBase, "SD: Close -> %ld", (long)err);
+			dbg_log1(g->regBase, "SD _Close -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case 0x02: /* _Read */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log2(g->regBase, "SD: Read ref=%ld cnt=%ld",
+			dbg_log2(g->regBase, "SD _Read ref=%ld cnt=%ld",
 				(long)refNum, *(long *)(pb + pb_ioReqCount));
 			err = DoRead(pb, g->regBase);
-			dbg_log2(g->regBase, "SD: Read -> %ld act=%ld",
+			dbg_log2(g->regBase, "SD _Read -> %ld act=%ld",
 				(long)err, *(long *)(pb + pb_ioActCount));
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
@@ -790,7 +784,7 @@ short DispatchFlat(char *pb, short trapNum)
 		case 0x03: /* _Write */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log1(g->regBase, "SD: Write ref=%ld -> wPrErr",
+			dbg_log1(g->regBase, "SD _Write ref=%ld -> wPrErr",
 				(long)refNum);
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
@@ -799,7 +793,7 @@ short DispatchFlat(char *pb, short trapNum)
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
 			err = DoGetEOF(pb);
-			dbg_log2(g->regBase, "SD: GetEOF ref=%ld -> %ld",
+			dbg_log2(g->regBase, "SD _GetEOF ref=%ld -> %ld",
 				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
@@ -807,8 +801,8 @@ short DispatchFlat(char *pb, short trapNum)
 		case 0x12: /* _SetEOF */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log1(g->regBase, "SD: SetEOF ref=%ld -> wPrErr",
-				(long)refNum);
+			dbg_log1(g->regBase,
+				"SD _SetEOF ref=%ld -> wPrErr", (long)refNum);
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
@@ -816,7 +810,7 @@ short DispatchFlat(char *pb, short trapNum)
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
 			err = DoGetFPos(pb);
-			dbg_log2(g->regBase, "SD: GetFPos ref=%ld -> %ld",
+			dbg_log2(g->regBase, "SD _GetFPos ref=%ld -> %ld",
 				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
@@ -825,7 +819,7 @@ short DispatchFlat(char *pb, short trapNum)
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
 			err = DoSetFPos(pb);
-			dbg_log2(g->regBase, "SD: SetFPos ref=%ld -> %ld",
+			dbg_log2(g->regBase, "SD _SetFPos ref=%ld -> %ld",
 				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
@@ -839,9 +833,10 @@ short DispatchFlat(char *pb, short trapNum)
 	switch (trapNum) {
 		case 0x00: /* _Open */
 		{
-			dbg_log1(g->regBase, "SD: Open nm=%S", nameAddr);
+			dbg_log2(g->regBase, "SD _Open vr=%ld nm=%S",
+				(long)vRefNum, nameAddr);
 			err = DoOpen(pb, g->regBase, g->vcb);
-			dbg_log1(g->regBase, "SD: Open -> %ld", (long)err);
+			dbg_log1(g->regBase, "SD _Open -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 		}
@@ -850,78 +845,89 @@ short DispatchFlat(char *pb, short trapNum)
 		{
 			short vidx = *(short *)(pb + pb_ioVolIndex);
 			dbg_log2(g->regBase,
-				"SD: GetVolInfo vidx=%ld nm=%S",
-				(long)vidx, nameAddr);
+				"SD _GetVolInfo vr=%ld vidx=%ld",
+				(long)vRefNum, (long)vidx);
 			err = DoGetVolInfo(pb, g);
-			dbg_log1(g->regBase, "SD: GetVolInfo -> %ld",
+			dbg_log1(g->regBase, "SD _GetVolInfo -> %ld",
 				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 		}
 
 		case 0x08: /* _Create */
-			dbg_log1(g->regBase, "SD: Create nm=%S -> wPrErr",
-				nameAddr);
+			dbg_log2(g->regBase,
+				"SD _Create vr=%ld nm=%S -> wPrErr",
+				(long)vRefNum, nameAddr);
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case 0x09: /* _Delete */
-			dbg_log1(g->regBase, "SD: Delete nm=%S -> wPrErr",
-				nameAddr);
+			dbg_log2(g->regBase,
+				"SD _Delete vr=%ld nm=%S -> wPrErr",
+				(long)vRefNum, nameAddr);
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case 0x0A: /* _OpenRF */
-			dbg_log1(g->regBase, "SD: OpenRF nm=%S -> fnfErr",
-				nameAddr);
+			dbg_log2(g->regBase,
+				"SD _OpenRF vr=%ld nm=%S -> fnfErr",
+				(long)vRefNum, nameAddr);
 			*(short *)(pb + pb_ioResult) = -43;
 			RestoreA4(); return 0;
 
 		case 0x0B: /* _Rename */
-			dbg_log1(g->regBase, "SD: Rename nm=%S -> wPrErr",
-				nameAddr);
+			dbg_log2(g->regBase,
+				"SD _Rename vr=%ld nm=%S -> wPrErr",
+				(long)vRefNum, nameAddr);
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case 0x0C: /* _GetFileInfo */
 		{
 			short fidx = *(short *)(pb + pb_ioFDirIndex);
-			dbg_log2(g->regBase, "SD: GFI nm=%S idx=%ld",
-				nameAddr, (long)fidx);
+			dbg_log2(g->regBase,
+				"SD _GetFileInfo vr=%ld nm=%S",
+				(long)vRefNum, nameAddr);
 			err = DoGetFileInfo(pb, g->regBase);
-			dbg_log1(g->regBase, "SD: GFI -> %ld", (long)err);
+			dbg_log1(g->regBase, "SD _GetFileInfo -> %ld",
+				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 		}
 
 		case 0x0D: /* _SetFileInfo */
-			dbg_log1(g->regBase,
-				"SD: SetFileInfo nm=%S -> wPrErr", nameAddr);
+			dbg_log2(g->regBase,
+				"SD _SetFileInfo vr=%ld nm=%S -> wPrErr",
+				(long)vRefNum, nameAddr);
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case 0x0E: /* _UnmountVol */
-			dbg_log(g->regBase, "SD: UnmountVol -> 0");
+			dbg_log1(g->regBase,
+				"SD _UnmountVol vr=%ld -> 0", (long)vRefNum);
 			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
 
 		case 0x10: /* _Allocate */
-			dbg_log(g->regBase, "SD: Allocate -> wPrErr");
+			dbg_log(g->regBase, "SD _Allocate -> wPrErr");
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case 0x13: /* _FlushVol */
-			dbg_log(g->regBase, "SD: FlushVol -> 0");
+			dbg_log1(g->regBase,
+				"SD _FlushVol vr=%ld -> 0", (long)vRefNum);
 			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
 
 		case 0x17: /* _Eject */
-			dbg_log(g->regBase, "SD: Eject -> 0");
+			dbg_log1(g->regBase,
+				"SD _Eject vr=%ld -> 0", (long)vRefNum);
 			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
 	}
 
-	dbg_log1(g->regBase, "SD: UNHANDLED flat %02lx", (long)trapNum);
+	dbg_log1(g->regBase,
+		"SD UNHANDLED flat trap %02lx", (long)trapNum);
 	RestoreA4(); return 1;
 }
 
@@ -944,12 +950,6 @@ short DispatchHFS(char *pb, short selector)
 	vRefNum  = *(short *)(pb + pb_ioVRefNum);
 	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 
-	/* Log every HFS dispatch entry */
-	dbg_log2(g->regBase, "SD:H %04lx vr=%ld",
-		(long)selector, (long)vRefNum);
-	if (nameAddr)
-		dbg_log1(g->regBase, "SD:H  nm=%S", nameAddr);
-
 	if (!IsOurVolume(vRefNum)) {
 		RestoreA4(); return 1;
 	}
@@ -960,73 +960,83 @@ short DispatchHFS(char *pb, short selector)
 			short idx = *(short *)(pb + pb_ioFDirIndex);
 			long dirID = *(long *)(pb + pb_ioDirID);
 			dbg_log2(g->regBase,
-				"SD: GCI dir=%ld idx=%ld", dirID, (long)idx);
+				"SD _GetCatInfo vr=%ld dir=%ld",
+				(long)vRefNum, dirID);
 			if (nameAddr)
-				dbg_log1(g->regBase, "SD: GCI nm=%S", nameAddr);
+				dbg_log1(g->regBase,
+					"SD _GetCatInfo nm=%S", nameAddr);
+			else
+				dbg_log1(g->regBase,
+					"SD _GetCatInfo idx=%ld", (long)idx);
 			err = DoGetCatInfo(pb, g->regBase);
-			dbg_log1(g->regBase, "SD: GCI -> %ld", (long)err);
+			dbg_log1(g->regBase,
+				"SD _GetCatInfo -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 		}
 
 		case kSetCatInfo:
-			dbg_log(g->regBase, "SD: SetCatInfo -> wPrErr");
+			dbg_log(g->regBase, "SD _SetCatInfo -> wPrErr");
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case kCatMove:
-			dbg_log(g->regBase, "SD: CatMove -> wPrErr");
+			dbg_log(g->regBase, "SD _CatMove -> wPrErr");
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case kDirCreate:
-			dbg_log(g->regBase, "SD: DirCreate -> wPrErr");
+			dbg_log(g->regBase, "SD _DirCreate -> wPrErr");
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case kSetVInfo:
-			dbg_log(g->regBase, "SD: SetVInfo -> wPrErr");
+			dbg_log(g->regBase, "SD _SetVInfo -> wPrErr");
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case kOpenWD:
 			err = DoOpenWD(pb, g->regBase);
-			dbg_log1(g->regBase, "SD: OpenWD -> %ld", (long)err);
+			dbg_log1(g->regBase,
+				"SD _OpenWD -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case kCloseWD:
 			err = DoCloseWD(pb, g->regBase);
-			dbg_log1(g->regBase, "SD: CloseWD -> %ld", (long)err);
+			dbg_log1(g->regBase,
+				"SD _CloseWD -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case kGetWDInfo:
 			err = DoGetWDInfo(pb, g->regBase);
-			dbg_log1(g->regBase, "SD: GetWDInfo -> %ld",
-				(long)err);
+			dbg_log1(g->regBase,
+				"SD _GetWDInfo -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case kGetVolParms:
 		{
 			long rc = *(long *)(pb + pb_ioReqCount);
-			dbg_log1(g->regBase, "SD: GetVolParms reqCnt=%ld",
-				rc);
+			dbg_log1(g->regBase,
+				"SD _GetVolParms reqCnt=%ld", rc);
 			err = DoGetVolParms(pb, g->regBase);
-			dbg_log1(g->regBase, "SD: GetVolParms -> %ld",
-				(long)err);
+			dbg_log1(g->regBase,
+				"SD _GetVolParms -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 		}
 
 		case kGetFCBInfo:
-			dbg_log(g->regBase, "SD: GetFCBInfo -> paramErr");
+			dbg_log(g->regBase,
+				"SD _GetFCBInfo -> paramErr");
 			*(short *)(pb + pb_ioResult) = -50;
 			RestoreA4(); return 0;
 
 		default:
-			dbg_log1(g->regBase, "SD: HFS UNHANDLED sel=%04lx",
+			dbg_log1(g->regBase,
+				"SD HFS UNHANDLED sel=%04lx",
 				(long)selector);
 			*(short *)(pb + pb_ioResult) = -50;
 			RestoreA4(); return 0;
