@@ -2,8 +2,7 @@
 	machine_config.h
 
 	Runtime machine configuration.
-	Replaces compile-time #defines from CNFUDPIC.h with a struct
-	that can be populated per-model at runtime.
+	Populated per-model at runtime.
 
 	Part of Phase 4: Device Interface & Machine Object.
 */

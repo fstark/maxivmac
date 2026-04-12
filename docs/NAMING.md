@@ -25,7 +25,6 @@ These conventions apply to all code under `src/` **except**:
 | Source files | `snake_case.cpp` | `via_base.cpp`, `sdl_sound.cpp` |
 | Header files | `snake_case.h` | `machine_config.h`, `wire_ids.h` |
 | C++ headers | `snake_case.hpp` | `state_recorder.hpp` |
-| Config headers | `UPPER_CASE.h` | `CNFUDPIC.h` (legacy only — do not add new ones) |
 
 Source and header filenames are all-lowercase with underscores.
 A `.cpp`/`.h` pair share the same stem (`sony.cpp` / `sony.h`).
@@ -442,7 +441,6 @@ These patterns exist in the codebase but should not be used for new code:
 | `Bit32u` / `Bit64s` | Bochs FPU types | Third-party code (cpu/ only) |
 | PascalCase file-scope statics | `UseFullScreen`, `CurSpeedStopped` | minivmac convention |
 | PascalCase macros | `Use68020`, `PowOf2` | minivmac convention |
-| `CNFUDPIC.h` filename | Configuration header | Legacy — frozen |
 
 When touching legacy code, rename incrementally toward the rules above
 when the change is low-risk and doesn't affect the reference test suite.

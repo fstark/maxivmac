@@ -2,8 +2,6 @@
 	machine_config.cpp
 
 	Model-to-feature mapping factory.
-	Encodes the configuration that currently lives in CNFUDPIC.h
-	and the setup_t tool.
 
 	Part of Phase 4: Device Interface & Machine Object.
 */
