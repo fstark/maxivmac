@@ -98,14 +98,21 @@ std::string guestFormatLog(uint32_t fmtAddr, uint32_t args[7])
 			continue;
 		}
 
-		/* consume optional 'l' prefix */
-		bool hasL = false;
-		if (fmt[i] == 'l' && i + 1 < fmt.size())
+		/* consume optional flags/width/precision (e.g. "02", "-8") */
+		char fmtspec[16];
+		int fpos = 0;
+		fmtspec[fpos++] = '%';
+		while (i < fmt.size() &&
+			   (fmt[i] == '-' || fmt[i] == '+' || fmt[i] == ' ' || fmt[i] == '0' || fmt[i] == '#' ||
+				(fmt[i] >= '1' && fmt[i] <= '9') || fmt[i] == '.'))
 		{
-			hasL = true;
+			if (fpos < 12) fmtspec[fpos++] = fmt[i];
 			i++;
 		}
-		(void)hasL;
+		if (i >= fmt.size()) break;
+
+		/* consume optional 'l' prefix */
+		if (fmt[i] == 'l' && i + 1 < fmt.size()) i++;
 
 		if (argIdx > 5)
 		{
@@ -118,17 +125,27 @@ std::string guestFormatLog(uint32_t fmtAddr, uint32_t args[7])
 		switch (fmt[i])
 		{
 			case 'x':
+				fmtspec[fpos++] = 'x';
+				fmtspec[fpos] = '\0';
+				snprintf(numbuf, sizeof(numbuf), fmtspec, val);
+				out += numbuf;
+				break;
 			case 'X':
-				snprintf(numbuf, sizeof(numbuf), "%08X", val);
+				fmtspec[fpos++] = 'X';
+				fmtspec[fpos] = '\0';
+				snprintf(numbuf, sizeof(numbuf), fmtspec, val);
 				out += numbuf;
 				break;
 			case 'd':
-				snprintf(numbuf, sizeof(numbuf), "%ld",
-						 static_cast<long>(static_cast<int32_t>(val)));
+				fmtspec[fpos++] = 'd';
+				fmtspec[fpos] = '\0';
+				snprintf(numbuf, sizeof(numbuf), fmtspec, static_cast<int32_t>(val));
 				out += numbuf;
 				break;
 			case 'u':
-				snprintf(numbuf, sizeof(numbuf), "%lu", static_cast<unsigned long>(val));
+				fmtspec[fpos++] = 'u';
+				fmtspec[fpos] = '\0';
+				snprintf(numbuf, sizeof(numbuf), fmtspec, val);
 				out += numbuf;
 				break;
 			case 's':
