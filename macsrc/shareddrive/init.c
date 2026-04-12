@@ -124,6 +124,12 @@
 /* HFS-specific PBGetCatInfo: ioDirID is at same offset as ioFlNum */
 #define pb_ioDirID      48
 
+/* WDParam variant (for _OpenWD, _CloseWD, _GetWDInfo) */
+#define pb_ioWDIndex    26   /* INTEGER */
+#define pb_ioWDProcID   28   /* LONGINT */
+#define pb_ioWDVRefNum  32   /* INTEGER */
+#define pb_ioWDDirID    48   /* LONGINT */
+
 /* HFS selectors */
 #define kGetCatInfo       0x0009
 #define kSetCatInfo       0x000A
@@ -260,20 +266,51 @@ static Boolean IsOurFCB(short refNum)
 
 static Boolean IsOurVolume(short vRefNum)
 {
-	return (vRefNum == kOurVRefNum);
+	if (vRefNum == kOurVRefNum) return true;
+	/* WD refnums we issue are encoded as -(wdRef+32000).
+	   The host assigns wdRef starting from 1, so valid
+	   encoded values are -32001, -32002, ...
+	   Real File Manager WDCBs use small negative numbers (>= -32767)
+	   that won't overlap with our range below -32000. */
+	if (vRefNum < kOurVRefNum && vRefNum > -32100) return true;
+	return false;
 }
 
 /* ================================================================ */
 /*                    File Manager handlers                         */
 /* ================================================================ */
 
+/* Resolve a vRefNum that might be a WD refnum to a dirID.
+   If it's our real vRefNum, return kRootDirID.
+   If it's one of our WD refnums, query the host for the dirID. */
+static long ResolveDir(short vRefNum, long dirID, char *regBase)
+{
+	if (dirID != 0) return dirID;  /* explicit dirID overrides */
+	if (vRefNum == kOurVRefNum) return kRootDirID;
+	/* Must be a WD refnum */
+	{
+		unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
+		reg_set(regBase, 0, wdRef);
+		reg_command(regBase, 0x020A);
+		if (reg_result(regBase) == 0)
+			return (long)reg_get(regBase, 1);
+	}
+	return kRootDirID;
+}
+
 static OSErr DoGetCatInfo(char *pb, char *regBase)
 {
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
 	long dirID = *(long *)(pb + pb_ioDirID);
 	short index = *(short *)(pb + pb_ioFDirIndex);
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	unsigned long cnid, flags, sizeOrCount, parentID;
 	unsigned long type, creator, crDate, modDate;
+
+	/* Resolve WD refnum → dirID when caller doesn't set ioDirID */
+	dirID = ResolveDir(vRefNum, dirID, regBase);
+
+	dbg_log2(regBase, "SD: GCI dir=%ld idx=%ld", dirID, (long)index);
 
 	if (index > 0) {
 		reg_set(regBase,0,dirID); reg_set(regBase,1,(unsigned long)index);
@@ -523,6 +560,7 @@ static OSErr DoSetFPos(char *pb)
 static OSErr DoGetVolInfo(char *pb, Globals *g)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	dbg_log(g->regBase, "SD: DoGetVolInfo");
 	if (nameAddr != 0) {
 		unsigned char *p = (unsigned char *)nameAddr;
 		p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
@@ -537,6 +575,80 @@ static OSErr DoGetVolInfo(char *pb, Globals *g)
 	*(short *)(pb + pb_ioVFrBlk) = 0;
 	*(long *)(pb + pb_ioVCrDate) = 0;
 	*(long *)(pb + pb_ioVLsMod) = 0;
+	return 0;
+}
+
+static OSErr DoOpenWD(char *pb, char *regBase)
+{
+	long dirID = *(long *)(pb + pb_ioWDDirID);
+	long procID = *(long *)(pb + pb_ioWDProcID);
+	unsigned long wdRef;
+
+	dbg_log2(regBase, "SD: OpenWD dir=%ld proc=%lx", dirID, procID);
+
+	reg_set(regBase, 0, (unsigned long)kOurVRefNum);
+	reg_set(regBase, 1, (unsigned long)dirID);
+	reg_command(regBase, 0x020B);
+	if (reg_result(regBase) != 0) return -43;
+	wdRef = reg_get(regBase, 0);
+
+	/* Return WD refnum in ioVRefNum.  We encode it as a negative
+	   number in the range used by WDCBs (the File Manager uses
+	   negative values starting from -32767). We use -(wdRef+32000)
+	   so there's no collision with our vRefNum (-32000).  Since the
+	   host allocates small sequential integers, this is safe. */
+	*(short *)(pb + pb_ioVRefNum) = (short)(-(long)wdRef - 32000);
+	return 0;
+}
+
+static OSErr DoCloseWD(char *pb, char *regBase)
+{
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	unsigned long wdRef;
+
+	/* Decode WD refnum */
+	wdRef = (unsigned long)(-(long)vRefNum - 32000);
+	dbg_log1(regBase, "SD: CloseWD ref=%ld", (long)wdRef);
+
+	reg_set(regBase, 0, wdRef);
+	reg_command(regBase, 0x020C);
+	return 0;
+}
+
+static OSErr DoGetWDInfo(char *pb, char *regBase)
+{
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	short wdIndex = *(short *)(pb + pb_ioWDIndex);
+	unsigned long wdRef;
+	unsigned long dirID;
+
+	dbg_log2(regBase, "SD: GetWDInfo vref=%ld idx=%ld",
+		(long)vRefNum, (long)wdIndex);
+
+	/* Only handle direct lookup (ioWDIndex == 0) for now */
+	if (wdIndex != 0) return -35;
+
+	/* Decode WD refnum */
+	wdRef = (unsigned long)(-(long)vRefNum - 32000);
+
+	reg_set(regBase, 0, wdRef);
+	reg_command(regBase, 0x020A);
+	if (reg_result(regBase) != 0) return -35;
+
+	dirID = reg_get(regBase, 1);
+
+	*(short *)(pb + pb_ioWDVRefNum) = kOurVRefNum;
+	*(long *)(pb + pb_ioWDDirID) = dirID;
+	*(long *)(pb + pb_ioWDProcID) = 0;
+	/* Return volume name if requested */
+	{
+		unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+		if (nameAddr != 0) {
+			unsigned char *p = (unsigned char *)nameAddr;
+			p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
+			p[4]='r'; p[5]='e'; p[6]='d';
+		}
+	}
 	return 0;
 }
 
@@ -615,6 +727,8 @@ short DispatchFlat(char *pb, short trapNum)
 		RestoreA4(); return 1;
 	}
 
+	dbg_log1(g->regBase, "SD: flat %02lx", (long)trapNum);
+
 	switch (trapNum) {
 		case 0x00: /* _Open */
 			err = DoOpen(pb, g->regBase, g->vcb);
@@ -671,6 +785,8 @@ short DispatchHFS(char *pb, short selector)
 		RestoreA4(); return 1;
 	}
 
+	dbg_log1(g->regBase, "SD: HFS sel=%04lx", (long)selector);
+
 	switch (selector) {
 		case kGetCatInfo:
 			err = DoGetCatInfo(pb, g->regBase);
@@ -685,9 +801,18 @@ short DispatchHFS(char *pb, short selector)
 			RestoreA4(); return 0;
 
 		case kOpenWD:
+			err = DoOpenWD(pb, g->regBase);
+			*(short *)(pb + pb_ioResult) = err;
+			RestoreA4(); return 0;
+
 		case kCloseWD:
+			err = DoCloseWD(pb, g->regBase);
+			*(short *)(pb + pb_ioResult) = err;
+			RestoreA4(); return 0;
+
 		case kGetWDInfo:
-			*(short *)(pb + pb_ioResult) = -50;
+			err = DoGetWDInfo(pb, g->regBase);
+			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case kCreateFileIDRef:
@@ -899,7 +1024,7 @@ static void InstallFlatPatch(unsigned short trapWord, char *regBase)
 			(long)trapWord);
 		return;
 	}
-	NSetTrapAddress((UniversalProcPtr)stub, trapWord, OSTrap);
+	NSetTrapAddress((long)stub, trapWord, OSTrap);
 }
 
 static void InstallHFSPatch(char *regBase)
@@ -915,7 +1040,7 @@ static void InstallHFSPatch(char *regBase)
 		dbg_log(regBase, "SharedDrive: HFS stub alloc failed");
 		return;
 	}
-	NSetTrapAddress((UniversalProcPtr)stub, 0xA260, OSTrap);
+	NSetTrapAddress((long)stub, 0xA260, OSTrap);
 	dbg_log1(regBase, "SharedDrive: HFS patch at %lx", (long)stub);
 }
 
@@ -964,7 +1089,13 @@ void main(void)
 	g->volTotalBytes = reg_get(regBase, 1);
 
 	/* Save A4 for code resource data access from stubs */
-	asm { move.l a4, g->savedA4 }
+	{
+		long *a4dst = &g->savedA4;
+		asm {
+			move.l a4dst, a0
+			move.l a4, (a0)
+		}
+	}
 
 	*(Globals **)kGlobalsPtr = g;
 
@@ -995,7 +1126,7 @@ void main(void)
 		*(short *)(v + 8)   = 0x4244;        /* vcbSigWord = HFS */
 		*(long  *)(v + 10)  = now;           /* vcbCrDate */
 		*(long  *)(v + 14)  = now;           /* vcbLsMod */
-		*(short *)(v + 18)  = (short)0x8080; /* vcbAtrb: locked */
+		*(short *)(v + 18)  = (short)0x8000; /* vcbAtrb: software locked */
 		*(short *)(v + 20)  = (short)g->volFileCount; /* vcbNmFls */
 		*(short *)(v + 26)  = 1024;          /* vcbNmAlBlks */
 		*(long  *)(v + 28)  = 512;           /* vcbAlBlkSiz */
@@ -1010,7 +1141,7 @@ void main(void)
 
 		*(short *)(v + 72)  = kOurDriveNum;  /* vcbDrvNum */
 		*(short *)(v + 74)  = kOurDrvrRefNum;/* vcbDRefNum */
-		*(short *)(v + 76)  = 0;             /* vcbFSID */
+		*(short *)(v + 76)  = 0x5344;        /* vcbFSID = 'SD' (ext FS) */
 		*(short *)(v + 78)  = kOurVRefNum;   /* vcbVRefNum */
 	}
 	Enqueue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
@@ -1042,8 +1173,11 @@ void main(void)
 
 	dbg_log(regBase, "SharedDrive: traps patched");
 
-	/* Post disk-inserted event */
-	PostEvent(7, (long)kOurDriveNum);
+	/*
+	 * Don't PostEvent — it would trigger _MountVol for drive 8,
+	 * which fails (no real disk / no DQE).  The VCB is already in
+	 * the queue so the Finder will discover it at startup.
+	 */
 	dbg_log(regBase, "SharedDrive INIT: done!");
 
 bail:
