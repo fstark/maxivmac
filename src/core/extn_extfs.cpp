@@ -508,7 +508,12 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t handle = s_nextHandle++;
 			s_openFiles[handle] = {fp, cnid};
 			regParam[0] = handle;
-			fprintf(stderr, "[ExtFS]   → handle=%u\n", handle);
+			/* Return file size in p1 */
+			fseek(fp, 0, SEEK_END);
+			uint32_t fileSize = static_cast<uint32_t>(ftell(fp));
+			fseek(fp, 0, SEEK_SET);
+			regParam[1] = fileSize;
+			fprintf(stderr, "[ExtFS]   → handle=%u size=%u\n", handle, fileSize);
 			regResult = 0;
 		}
 		break;

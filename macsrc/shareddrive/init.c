@@ -11,7 +11,7 @@
 	  $201 ExtFSGetVol    -> p0 = file count, p1 = total bytes
 	  $202 ExtFSGetCatInfo p0=dirID, p1=index, p2=nameBuf
 	  $203 ExtFSGetCatInfoByName p0=parentDirID, p1=namePtr, p2=nameBuf
-	  $204 ExtFSOpen      p0=CNID, p1=fork -> p0=handle
+	  $204 ExtFSOpen      p0=CNID, p1=fork -> p0=handle, p1=fileSize
 	  $205 ExtFSRead      p0=handle, p1=offset, p2=count, p3=bufAddr
 	  $206 ExtFSClose     p0=handle
 	  $207 ExtFSGetFileInfo p0=CNID -> p0=type, p1=creator, p2=crDate, p3=modDate
@@ -300,6 +300,7 @@ static long ResolveDir(short vRefNum, long dirID, char *regBase)
 {
 	if (dirID != 0) return dirID;  /* explicit dirID overrides */
 	if (vRefNum == kOurVRefNum) return kRootDirID;
+	if (vRefNum == 0) return kRootDirID; /* default volume */
 	/* Must be a WD refnum */
 	{
 		unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
@@ -458,8 +459,7 @@ static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb)
 	if (reg_result(regBase) != 0)
 		return -43; /* fnfErr — file itself doesn't exist */
 	handle = reg_get(regBase, 0);
-
-	size = 0; /* Will grow as resource manager writes */
+	size = (long)reg_get(regBase, 1); /* file size returned by host */
 
 	/* Allocate FCB — flag as resource fork (FCBFlags bit 1) */
 	refNum = AllocFCB(vcb, cnid, size, 0x02);
