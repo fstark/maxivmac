@@ -827,6 +827,18 @@ short DispatchFlat(char *pb, short trapNum)
 
 	/* Traps keyed on ioVRefNum */
 	if (!IsOurVolume(vRefNum)) {
+		/* Log pass-through for _Open/_OpenRF to diagnose Desktop issue */
+		if (trapNum == 0x00 || trapNum == 0x0A) {
+			dbg_log2(g->regBase,
+				"SD pass-thru %02lx vr=%ld",
+				(long)trapNum, (long)vRefNum);
+			if (nameAddr)
+				dbg_log1(g->regBase,
+					"SD pass-thru nm=%S", nameAddr);
+			dbg_log2(g->regBase,
+				"SD DefVCBPtr=%lx ourVCB=%lx",
+				(long)*(Ptr *)kDefVCBPtr, (long)g->vcb);
+		}
 		RestoreA4(); return 1;
 	}
 
