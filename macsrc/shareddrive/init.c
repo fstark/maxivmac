@@ -622,7 +622,7 @@ static OSErr DoGetVolParms(char *pb, char *regBase)
 
 		vMAttrib bits:
 		  16 bExtFSVol, 17 bNoSysDir, 19 bNoBootBlks,
-		  27 bNoLclSync, 28 bNoVNEdit
+		  20 bNoDeskItems, 27 bNoLclSync, 28 bNoVNEdit
 	*/
 
 	actual = 14;
@@ -639,9 +639,9 @@ static OSErr DoGetVolParms(char *pb, char *regBase)
 	if (actual >= 2)
 		*(short *)(bufAddr + 0) = 1;
 
-	/* vMAttrib = bExtFSVol | bNoSysDir | bNoBootBlks | bNoLclSync | bNoVNEdit */
+	/* vMAttrib = bExtFSVol | bNoSysDir | bNoBootBlks | bNoDeskItems | bNoLclSync | bNoVNEdit */
 	if (actual >= 6)
-		*(long *)(bufAddr + 2) = (long)0x180B0000UL;
+		*(long *)(bufAddr + 2) = (long)0x181B0000UL;
 
 	*(long *)(pb + pb_ioActCount) = actual;
 	return 0;
