@@ -24,6 +24,7 @@ static_assert(sizeof(kLMCategoryLabels) / sizeof(kLMCategoryLabels[0]) ==
 
 /* --- Global table (sorted by address) --- */
 
+//	####TODO: move to a dynamic file loaded at startup
 const LMGlobal kLowMemGlobals[] = {
 	{"ScrVRes", 0x0102, 2, LMType::LM_WORD, LMCategory::LM_CAT_HARDWARE,
 	 "Pixels per inch vertically"},
