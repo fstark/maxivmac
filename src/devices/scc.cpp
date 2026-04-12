@@ -175,12 +175,12 @@ static void LT_TransmitPacket1()
 	}
 }
 
-static uint8_t s_ctsBuffer[4];
+static uint8_t MyCTSBuffer[4];
 
 static void GetCTSpacket()
 {
 	/* Get a single buffer worth of packets at a time */
-	uint8_t *device_buffer = s_ctsBuffer;
+	uint8_t *device_buffer = MyCTSBuffer;
 
 #if SCC_dolog
 	dbglog_WriteNote("SCC receiving CTS packet");
@@ -198,7 +198,7 @@ static void GetCTSpacket()
 }
 
 /* LLAP/SDLC address */
-static uint8_t s_nodeAddress = 0;
+static uint8_t my_node_address = 0;
 
 static bool s_ltAddrSrchMd = false;
 
@@ -231,7 +231,7 @@ static void GetNextPacketForMe()
 		dbglog_writelnNum("type", type);
 #endif
 
-		if ((dst != s_nodeAddress) && (dst != 0xFF) && s_ltAddrSrchMd)
+		if ((dst != my_node_address) && (dst != 0xFF) && s_ltAddrSrchMd)
 		{
 #if SCC_dolog
 			dbglog_WriteNote("SCC ignore packet not for me");
@@ -246,7 +246,7 @@ static void GetNextPacketForMe()
 			dbglog_WriteNote("CertainlyNotMyPacket");
 #endif
 		}
-		else if (src != s_nodeAddress)
+		else if (src != my_node_address)
 		{
 			/* we definitely did not send it, so ok */
 		}
@@ -346,7 +346,7 @@ static void LT_NodeAddressSet(uint8_t v)
 #endif
 	if (0 != v)
 	{
-		s_nodeAddress = v;
+		my_node_address = v;
 	}
 }
 
@@ -364,7 +364,7 @@ static void LT_NodeAddressSet(uint8_t v)
 #define SCC_B_Tx_Empty 2 /* Tx Buffer Empty */
 #define SCC_B_Ext 1		 /* External/Status Change */
 
-struct ChannelState
+struct Channel_Ty
 {
 	bool TxEnable;
 	bool RxEnable;
@@ -473,9 +473,9 @@ struct ChannelState
 #endif
 };
 
-struct SCCState
+struct SCC_Ty
 {
-	ChannelState a[2]; /* 0 = channel A, 1 = channel B */
+	Channel_Ty a[2]; /* 0 = channel A, 1 = channel B */
 	int SCC_Interrupt_Type;
 	int PointerBits;
 	uint8_t InterruptVector;
@@ -485,11 +485,11 @@ struct SCCState
 #endif
 };
 
-static SCCState s_scc;
+static SCC_Ty s_scc;
 
 
 #if EmLocalTalk
-static int s_rxDataOffset = 0;
+static int rx_data_offset = 0;
 /* when data pending, this is used */
 #endif
 
@@ -814,13 +814,13 @@ static void SCC_RxBuffAdvance()
 	}
 	else
 	{
-		if (s_rxDataOffset < g_ltRxBuffSz)
+		if (rx_data_offset < g_ltRxBuffSz)
 		{
-			value = g_ltRxBuffer[s_rxDataOffset];
+			value = g_ltRxBuffer[rx_data_offset];
 		}
 		else
 		{
-			uint32_t i = s_rxDataOffset - g_ltRxBuffSz;
+			uint32_t i = rx_data_offset - g_ltRxBuffSz;
 
 			/* if i==0 in first byte of CRC, have not got EOF yet */
 			if (i == 1)
@@ -830,7 +830,7 @@ static void SCC_RxBuffAdvance()
 
 			value = 0;
 		}
-		++s_rxDataOffset;
+		++rx_data_offset;
 	}
 
 	s_scc.a[1].RxBuff = value;
@@ -857,7 +857,7 @@ void SCCDevice::localTalkTick()
 
 		if (nullptr != g_ltRxBuffer)
 		{
-			s_rxDataOffset = 0;
+			rx_data_offset = 0;
 			s_scc.a[1].EndOfFrame = false;
 			s_scc.a[1].RxChrAvail = true;
 			s_scc.a[1].SyncHunt = false;

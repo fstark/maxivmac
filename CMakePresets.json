@@ -71,15 +71,6 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Darwin"
             }
-        },
-        {
-            "name": "macos-net",
-            "displayName": "macOS (ImGui + Networking)",
-            "description": "ImGui backend with SLIP networking via libslirp",
-            "inherits": "macos",
-            "cacheVariables": {
-                "MAXIVMAC_NETWORKING": "ON"
-            }
         }
     ],
     "buildPresets": [
@@ -98,10 +89,6 @@
         {
             "name": "macos-asan",
             "configurePreset": "macos-asan"
-        },
-        {
-            "name": "macos-net",
-            "configurePreset": "macos-net"
         }
     ]
 }

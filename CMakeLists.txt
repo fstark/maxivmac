@@ -249,19 +249,20 @@ if(MAXIVMAC_SANITIZE)
 endif()
 
 # ---------------------------------------------------------------------------
-# Networking (optional, requires libslirp)
+# Networking (auto-detected: uses libslirp when available)
 # ---------------------------------------------------------------------------
-option(MAXIVMAC_NETWORKING "Enable SLIP networking via libslirp" OFF)
-if(MAXIVMAC_NETWORKING)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(SLIRP REQUIRED IMPORTED_TARGET slirp)
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(SLIRP IMPORTED_TARGET slirp)
+endif()
+if(SLIRP_FOUND)
     target_sources(maxivmac PRIVATE src/devices/serial_slirp.cpp)
     target_link_libraries(maxivmac PRIVATE PkgConfig::SLIRP)
     target_compile_definitions(maxivmac PRIVATE "HAVE_SLIRP=1")
     message(STATUS "Networking: enabled (libslirp ${SLIRP_VERSION})")
 else()
     target_compile_definitions(maxivmac PRIVATE "HAVE_SLIRP=0")
-    message(STATUS "Networking: disabled")
+    message(STATUS "Networking: disabled (libslirp not found)")
 endif()
 
 # ---------------------------------------------------------------------------
