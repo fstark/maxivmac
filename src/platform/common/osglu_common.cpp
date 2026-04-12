@@ -534,7 +534,7 @@ void dbglog_writelnNum(char *s, int32_t v)
 
 /* --- event queue --- */
 
-EvtQEl g_evtQA[MyEvtQSz];
+EvtQEl g_evtQA[EVT_Q_SZ];
 uint16_t g_evtQIn = 0;
 uint16_t g_evtQOut = 0;
 
@@ -543,7 +543,7 @@ EvtQEl *EvtQOutP()
 	EvtQEl *p = nullptr;
 	if (g_evtQIn != g_evtQOut)
 	{
-		p = &g_evtQA[g_evtQOut & MyEvtQIMask];
+		p = &g_evtQA[g_evtQOut & EVT_Q_IMASK];
 	}
 	return p;
 }
@@ -560,7 +560,7 @@ EvtQEl *EvtQElPreviousIn()
 	EvtQEl *p = nullptr;
 	if (g_evtQIn - g_evtQOut != 0)
 	{
-		p = &g_evtQA[(g_evtQIn - 1) & MyEvtQIMask];
+		p = &g_evtQA[(g_evtQIn - 1) & EVT_Q_IMASK];
 	}
 
 	return p;
@@ -569,13 +569,13 @@ EvtQEl *EvtQElPreviousIn()
 EvtQEl *EvtQElAlloc()
 {
 	EvtQEl *p = nullptr;
-	if (g_evtQIn - g_evtQOut >= MyEvtQSz)
+	if (g_evtQIn - g_evtQOut >= EVT_Q_SZ)
 	{
 		g_evtQNeedRecover = true;
 	}
 	else
 	{
-		p = &g_evtQA[g_evtQIn & MyEvtQIMask];
+		p = &g_evtQA[g_evtQIn & EVT_Q_IMASK];
 
 		++g_evtQIn;
 	}
@@ -619,7 +619,7 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 
 bool g_mouseButtonState = false;
 
-void MyMouseButtonSet(bool down)
+void MouseButtonSet(bool down)
 {
 	if (g_mouseButtonState != down)
 	{
@@ -636,7 +636,7 @@ void MyMouseButtonSet(bool down)
 	}
 }
 
-void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
+void MousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
 	if ((dh != 0) || (dv != 0))
 	{
@@ -661,7 +661,7 @@ void MyMousePositionSetDelta(uint16_t dh, uint16_t dv)
 	}
 }
 
-void MyMousePositionSet(uint16_t h, uint16_t v)
+void MousePositionSet(uint16_t h, uint16_t v)
 {
 	if ((h != g_curMouseH) || (v != g_curMouseV))
 	{
@@ -741,7 +741,7 @@ void DisconnectKeyCodes(uint32_t keepMask)
 
 void EvtQTryRecoverFromFull()
 {
-	MyMouseButtonSet(false);
+	MouseButtonSet(false);
 	DisconnectKeyCodes(0);
 }
 

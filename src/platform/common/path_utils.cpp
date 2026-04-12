@@ -10,7 +10,7 @@ tMacErr ChildPath(char *x, char *y, char **r)
 	int nx = strlen(x);
 	int ny = strlen(y);
 	{
-		if ((nx > 0) && (MyPathSep == x[nx - 1]))
+		if ((nx > 0) && (PATH_SEP == x[nx - 1]))
 		{
 			--nx;
 		}
@@ -22,7 +22,7 @@ tMacErr ChildPath(char *x, char *y, char **r)
 				char *p2 = p;
 				(void)memcpy(p2, x, nx);
 				p2 += nx;
-				*p2++ = MyPathSep;
+				*p2++ = PATH_SEP;
 				(void)memcpy(p2, y, ny);
 				p2 += ny;
 				*p2 = 0;

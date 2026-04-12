@@ -17,7 +17,7 @@ void ReconnectKeyCodes3() {}
 void DisconnectKeyCodes3()
 {
 	DisconnectKeyCodes2();
-	MyMouseButtonSet(false);
+	MouseButtonSet(false);
 }
 
 void DisableKeyRepeat() {}

@@ -400,7 +400,7 @@ void EmulatorShell::dispatchEvent(const PlatformEvent &evt)
 		case PlatformEvent::Type::MouseMove:
 			if (evt.isRelative)
 			{
-				MyMousePositionSetDelta(evt.dx, evt.dy);
+				MousePositionSetDelta(evt.dx, evt.dy);
 				wantCursorHidden_ = true;
 			}
 			else
@@ -411,11 +411,11 @@ void EmulatorShell::dispatchEvent(const PlatformEvent &evt)
 			break;
 		case PlatformEvent::Type::MouseButtonDown:
 			if (!evt.isRelative) mousePositionNotify(evt.x, evt.y);
-			MyMouseButtonSet(true);
+			MouseButtonSet(true);
 			break;
 		case PlatformEvent::Type::MouseButtonUp:
 			if (!evt.isRelative) mousePositionNotify(evt.x, evt.y);
-			MyMouseButtonSet(false);
+			MouseButtonSet(false);
 			break;
 		case PlatformEvent::Type::KeyDown:
 			Keyboard_updateKeyMap2(evt.macKeyCode, true);
@@ -718,7 +718,7 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 		ShouldHaveCursorHidden = true;
 	}
 
-	MyMousePositionSet(NewMousePosh, NewMousePosv);
+	MousePositionSet(NewMousePosh, NewMousePosv);
 
 	wantCursorHidden_ = ShouldHaveCursorHidden;
 }

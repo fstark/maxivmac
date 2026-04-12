@@ -111,7 +111,7 @@ static tMacErr vSonyTransferVM(bool isWrite, uint32_t buffera, DriveIndex driveN
 	return result;
 }
 
-static void MyMoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
+static void MoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
 {
 	uint8_t *src;
 	uint8_t *dst;
@@ -125,7 +125,7 @@ static void MyMoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
 		dst = get_real_address0(byteCount, true, dstPtr, &contigDst);
 		if ((0 == contigSrc) || (0 == contigDst))
 		{
-			ReportAbnormalID(AbnormalID::kSONY_MyMoveBytesVM_fails, "MyMoveBytesVM fails");
+			ReportAbnormalID(AbnormalID::kSONY_MyMoveBytesVM_fails, "MoveBytesVM fails");
 			break;
 		}
 		contig = (contigSrc < contigDst) ? contigSrc : contigDst;
@@ -1066,7 +1066,7 @@ static tMacErr Sony_PrimeTags(DriveIndex driveNo, uint32_t sonyStart, uint32_t s
 			result = vSonyTransferVM(isWrite, s_tagBuffer, driveNo, tagOffset, count, nullptr);
 			if (tMacErr::noErr == result)
 			{
-				MyMoveBytesVM(s_tagBuffer + count - 12, 0x02FC, 12);
+				MoveBytesVM(s_tagBuffer + count - 12, 0x02FC, 12);
 			}
 		}
 		else
@@ -1418,7 +1418,7 @@ static tMacErr Sony_Status(uint32_t p)
 			{
 				s_delayUntilNextInsert = 4;
 			}
-			MyMoveBytesVM(src, ParamBlk + kcsParam, 22);
+			MoveBytesVM(src, ParamBlk + kcsParam, 22);
 			result = tMacErr::noErr;
 		}
 	}

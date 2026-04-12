@@ -5,9 +5,9 @@
 #include "platform/platform.h"
 
 #ifdef _WIN32
-#define MyPathSep '\\'
+#define PATH_SEP '\\'
 #else
-#define MyPathSep '/'
+#define PATH_SEP '/'
 #endif
 
 tMacErr ChildPath(char *x, char *y, char **r);

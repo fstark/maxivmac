@@ -27,10 +27,10 @@ uint32_t g_trueEmulatedTime = 0;
 	should not be counted.)
 */
 
-#define MyInvTimeDivPow 16
-#define MyInvTimeDiv (1 << MyInvTimeDivPow)
-#define MyInvTimeDivMask (MyInvTimeDiv - 1)
-#define MyInvTimeStep 1089590 /* 1000 / 60.14742 * MyInvTimeDiv */
+#define INV_TIME_DIV_POW 16
+#define INV_TIME_DIV (1 << INV_TIME_DIV_POW)
+#define INV_TIME_DIV_MASK (INV_TIME_DIV - 1)
+#define INV_TIME_STEP 1089590 /* 1000 / 60.14742 * INV_TIME_DIV */
 
 static uint32_t s_lastTime;
 
@@ -39,9 +39,9 @@ static uint32_t s_nextFracTime;
 
 void IncrNextTime()
 {
-	s_nextFracTime += MyInvTimeStep;
-	s_nextIntTime += (s_nextFracTime >> MyInvTimeDivPow);
-	s_nextFracTime &= MyInvTimeDivMask;
+	s_nextFracTime += INV_TIME_STEP;
+	s_nextIntTime += (s_nextFracTime >> INV_TIME_DIV_POW);
+	s_nextFracTime &= INV_TIME_DIV_MASK;
 }
 
 static void InitNextTime()

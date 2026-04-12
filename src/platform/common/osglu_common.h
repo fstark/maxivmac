@@ -45,11 +45,11 @@ extern uint32_t g_theKeys[4];
 extern bool g_mouseButtonState;
 
 /* event queue */
-#define MyEvtQLg2Sz 4
-#define MyEvtQSz (1 << MyEvtQLg2Sz)
-#define MyEvtQIMask (MyEvtQSz - 1)
+#define EVT_Q_LG2_SZ 4
+#define EVT_Q_SZ (1 << EVT_Q_LG2_SZ)
+#define EVT_Q_IMASK (EVT_Q_SZ - 1)
 
-extern EvtQEl g_evtQA[MyEvtQSz];
+extern EvtQEl g_evtQA[EVT_Q_SZ];
 extern uint16_t g_evtQIn;
 extern uint16_t g_evtQOut;
 extern bool g_evtQNeedRecover;
@@ -76,9 +76,9 @@ void PbufNewNotify(PbufIndex pbufNo, uint32_t count);
 void PbufDisposeNotify(PbufIndex pbufNo);
 
 void Keyboard_UpdateKeyMap(uint8_t key, bool down);
-void MyMouseButtonSet(bool down);
-void MyMousePositionSetDelta(uint16_t dh, uint16_t dv);
-void MyMousePositionSet(uint16_t h, uint16_t v);
+void MouseButtonSet(bool down);
+void MousePositionSetDelta(uint16_t dh, uint16_t dv);
+void MousePositionSet(uint16_t h, uint16_t v);
 
 void InitKeyCodes();
 void DisconnectKeyCodes(uint32_t keepMask);
