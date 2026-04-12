@@ -827,6 +827,21 @@ short DispatchFlat(char *pb, short trapNum)
 
 	/* Traps keyed on ioVRefNum */
 	if (!IsOurVolume(vRefNum)) {
+		/* _SetVol: check if it targets our volume by name */
+		if (trapNum == 0x15 && nameAddr != 0) {
+			/* Compare with our volume name "Shared" */
+			unsigned char *p = (unsigned char *)nameAddr;
+			if (p[0] == 6 && p[1] == 'S' && p[2] == 'h'
+				&& p[3] == 'a' && p[4] == 'r'
+				&& p[5] == 'e' && p[6] == 'd')
+			{
+				dbg_log(g->regBase,
+					"SD _SetVol by name -> setting DefVCBPtr");
+				*(Ptr *)kDefVCBPtr = g->vcb;
+				*(short *)(pb + pb_ioResult) = 0;
+				RestoreA4(); return 0;
+			}
+		}
 		/* Log pass-through for _Open/_OpenRF to diagnose Desktop issue */
 		if (trapNum == 0x00 || trapNum == 0x0A) {
 			dbg_log2(g->regBase,
@@ -852,6 +867,30 @@ short DispatchFlat(char *pb, short trapNum)
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 		}
+
+		case 0x14: /* _GetVol */
+		{
+			/* If default volume is ours, return our info */
+			unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+			dbg_log1(g->regBase,
+				"SD _GetVol vr=%ld", (long)vRefNum);
+			if (nmAddr != 0) {
+				unsigned char *p = (unsigned char *)nmAddr;
+				p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
+				p[4]='r'; p[5]='e'; p[6]='d';
+			}
+			*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
+			*(short *)(pb + pb_ioResult) = 0;
+			RestoreA4(); return 0;
+		}
+
+		case 0x15: /* _SetVol */
+			dbg_log1(g->regBase,
+				"SD _SetVol vr=%ld -> setting DefVCBPtr",
+				(long)vRefNum);
+			*(Ptr *)kDefVCBPtr = g->vcb;
+			*(short *)(pb + pb_ioResult) = 0;
+			RestoreA4(); return 0;
 
 		case 0x07: /* _GetVolInfo */
 		{
@@ -1397,6 +1436,8 @@ void main(void)
 	InstallFlatPatch(0xA011, regBase);  /* _GetEOF */
 	InstallFlatPatch(0xA012, regBase);  /* _SetEOF */
 	InstallFlatPatch(0xA013, regBase);  /* _FlushVol */
+	InstallFlatPatch(0xA014, regBase);  /* _GetVol */
+	InstallFlatPatch(0xA015, regBase);  /* _SetVol */
 	InstallFlatPatch(0xA017, regBase);  /* _Eject */
 	InstallFlatPatch(0xA018, regBase);  /* _GetFPos */
 	InstallFlatPatch(0xA044, regBase);  /* _SetFPos */
