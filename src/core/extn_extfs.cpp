@@ -359,6 +359,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			regParam[0] = totalFiles;
 			regParam[1] = totalBytes;
 			regResult = 0;
+			fprintf(stderr, "[ExtFS] GetVol → %u files, %u bytes\n", totalFiles, totalBytes);
 		}
 		break;
 
@@ -368,6 +369,8 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t dirID = regParam[0];
 			int32_t index = static_cast<int32_t>(regParam[1]);
 			uint32_t nameBuf = regParam[2];
+
+			fprintf(stderr, "[ExtFS] GetCatInfo dir=%u idx=%d\n", dirID, index);
 
 			if (index == 0)
 			{
@@ -379,6 +382,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 					regParam[2] = static_cast<uint32_t>(countChildren(kRootDirID));
 					regParam[3] = 0; /* parent = 0 for root */
 					if (nameBuf) writePascalString(nameBuf, "Shared");
+					fprintf(stderr, "[ExtFS]   → root dir, %u children\n", regParam[2]);
 					regResult = 0;
 				}
 				else
@@ -391,10 +395,13 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 						regParam[2] = static_cast<uint32_t>(countChildren(e->cnid));
 						regParam[3] = e->parentDirID;
 						if (nameBuf) writePascalString(nameBuf, e->macName);
+						fprintf(stderr, "[ExtFS]   → dir \"%s\" cnid=%u, %u children\n",
+								e->macName.c_str(), e->cnid, regParam[2]);
 						regResult = 0;
 					}
 					else
 					{
+						fprintf(stderr, "[ExtFS]   → fnfErr (dir %u not found)\n", dirID);
 						regResult = 43; /* fnfErr */
 					}
 				}
@@ -411,10 +418,13 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 												 : e->dataForkSize;
 					regParam[3] = e->parentDirID;
 					if (nameBuf) writePascalString(nameBuf, e->macName);
+					fprintf(stderr, "[ExtFS]   → \"%s\" cnid=%u %s size=%u\n", e->macName.c_str(),
+							e->cnid, e->isDirectory ? "dir" : "file", regParam[2]);
 					regResult = 0;
 				}
 				else
 				{
+					fprintf(stderr, "[ExtFS]   → fnfErr (no child #%d in dir %u)\n", index, dirID);
 					regResult = 43; /* fnfErr */
 				}
 			}
@@ -433,6 +443,8 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t nameBuf = regParam[2];
 
 			std::string name = readPascalString(nameAddr);
+			fprintf(stderr, "[ExtFS] GetCatInfoByName dir=%u name=\"%s\"\n", parentDir,
+					name.c_str());
 			const CatalogEntry *e = findByNameInDir(parentDir, name);
 			if (e)
 			{
@@ -442,10 +454,14 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 											 : e->dataForkSize;
 				regParam[3] = e->parentDirID;
 				if (nameBuf) writePascalString(nameBuf, e->macName);
+				fprintf(stderr, "[ExtFS]   → cnid=%u %s size=%u\n", e->cnid,
+						e->isDirectory ? "dir" : "file",
+						e->isDirectory ? (uint32_t)countChildren(e->cnid) : e->dataForkSize);
 				regResult = 0;
 			}
 			else
 			{
+				fprintf(stderr, "[ExtFS]   → fnfErr\n");
 				regResult = 43; /* fnfErr */
 			}
 		}
@@ -455,11 +471,14 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			/* p0 = CNID, p1 = fork (0=data, 1=resource) */
 			uint32_t cnid = regParam[0];
-			/* uint32_t fork = regParam[1]; — resource forks not yet supported */
+			uint32_t fork = regParam[1];
 
 			const CatalogEntry *e = findByCNID(cnid);
+			fprintf(stderr, "[ExtFS] Open cnid=%u fork=%u name=\"%s\"\n", cnid, fork,
+					e ? e->macName.c_str() : "<unknown>");
 			if (!e || e->isDirectory)
 			{
+				fprintf(stderr, "[ExtFS]   → fnfErr\n");
 				regResult = 43; /* fnfErr */
 				break;
 			}
@@ -467,6 +486,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			FILE *fp = fopen(e->hostPath.c_str(), "rb");
 			if (!fp)
 			{
+				fprintf(stderr, "[ExtFS]   → fopen failed\n");
 				regResult = 43; /* fnfErr */
 				break;
 			}
@@ -474,6 +494,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t handle = s_nextHandle++;
 			s_openFiles[handle] = {fp, cnid};
 			regParam[0] = handle;
+			fprintf(stderr, "[ExtFS]   → handle=%u\n", handle);
 			regResult = 0;
 		}
 		break;
@@ -485,6 +506,9 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t offset = regParam[1];
 			uint32_t count = regParam[2];
 			uint32_t guestBuf = regParam[3];
+
+			fprintf(stderr, "[ExtFS] Read h=%u off=%u cnt=%u buf=$%08X\n", handle, offset, count,
+					guestBuf);
 
 			auto it = s_openFiles.find(handle);
 			if (it == s_openFiles.end())
@@ -509,6 +533,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 				if (got < chunk) break; /* EOF */
 			}
 			regParam[0] = totalRead;
+			fprintf(stderr, "[ExtFS]   → read %u bytes\n", totalRead);
 			regResult = 0;
 		}
 		break;
@@ -517,6 +542,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			/* p0 = handle */
 			uint32_t handle = regParam[0];
+			fprintf(stderr, "[ExtFS] Close h=%u\n", handle);
 			auto it = s_openFiles.find(handle);
 			if (it != s_openFiles.end())
 			{
@@ -534,6 +560,19 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			const CatalogEntry *e = findByCNID(cnid);
 			if (e)
 			{
+				char t[5], c[5];
+				t[0] = (e->type >> 24) & 0xFF;
+				t[1] = (e->type >> 16) & 0xFF;
+				t[2] = (e->type >> 8) & 0xFF;
+				t[3] = e->type & 0xFF;
+				t[4] = 0;
+				c[0] = (e->creator >> 24) & 0xFF;
+				c[1] = (e->creator >> 16) & 0xFF;
+				c[2] = (e->creator >> 8) & 0xFF;
+				c[3] = e->creator & 0xFF;
+				c[4] = 0;
+				fprintf(stderr, "[ExtFS] GetFileInfo cnid=%u name=\"%s\" type='%s' creator='%s'\n",
+						cnid, e->macName.c_str(), t, c);
 				regParam[0] = e->type;
 				regParam[1] = e->creator;
 				regParam[2] = e->crDate;
@@ -542,6 +581,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			}
 			else
 			{
+				fprintf(stderr, "[ExtFS] GetFileInfo cnid=%u → fnfErr\n", cnid);
 				regResult = 43; /* fnfErr */
 			}
 		}
@@ -552,6 +592,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			/* p0 = dirID → p0 = child count */
 			uint32_t dirID = regParam[0];
 			regParam[0] = static_cast<uint32_t>(countChildren(dirID));
+			fprintf(stderr, "[ExtFS] ReadDir dir=%u → %u children\n", dirID, regParam[0]);
 			regResult = 0;
 		}
 		break;
@@ -564,6 +605,8 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			std::string name = readPascalString(nameAddr);
 			const CatalogEntry *e = findByNameInDir(parentDir, name);
 			regParam[0] = e ? e->cnid : 0;
+			fprintf(stderr, "[ExtFS] ObjByName dir=%u name=\"%s\" → cnid=%u\n", parentDir,
+					name.c_str(), regParam[0]);
 			regResult = 0;
 		}
 		break;
@@ -572,15 +615,18 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			/* p0 = wdRefNum → p0 = vRefNum, p1 = dirID */
 			uint32_t wdRef = regParam[0];
+			fprintf(stderr, "[ExtFS] GetWDInfo wd=%u\n", wdRef);
 			auto it = s_wdTable.find(wdRef);
 			if (it != s_wdTable.end())
 			{
 				regParam[0] = 0; /* vRefNum filled by INIT */
 				regParam[1] = it->second.dirID;
+				fprintf(stderr, "[ExtFS]   → dirID=%u\n", it->second.dirID);
 				regResult = 0;
 			}
 			else
 			{
+				fprintf(stderr, "[ExtFS]   → not found\n");
 				regResult = 43; /* fnfErr */
 			}
 		}
@@ -593,6 +639,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t wdRef = s_nextWD++;
 			s_wdTable[wdRef] = {dirID};
 			regParam[0] = wdRef;
+			fprintf(stderr, "[ExtFS] OpenWD dir=%u → wd=%u\n", dirID, wdRef);
 			regResult = 0;
 		}
 		break;
@@ -601,6 +648,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			/* p0 = wdRefNum */
 			uint32_t wdRef = regParam[0];
+			fprintf(stderr, "[ExtFS] CloseWD wd=%u\n", wdRef);
 			s_wdTable.erase(wdRef);
 			regResult = 0;
 		}

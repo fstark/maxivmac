@@ -325,10 +325,14 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		if (reg_result(regBase) != 0) return -43;
 	} else {
 		if (nameAddr == 0) return -50;
+		dbg_log1(regBase, "SD: GCI byName=%s", nameAddr);
 		reg_set(regBase,0,dirID); reg_set(regBase,1,nameAddr);
 		reg_set(regBase,2,(unsigned long)s_nameBuf);
 		reg_command(regBase, 0x0203);
-		if (reg_result(regBase) != 0) return -43;
+		if (reg_result(regBase) != 0) {
+			dbg_log(regBase, "SD: GCI byName -> fnfErr");
+			return -43;
+		}
 	}
 
 	cnid        = reg_get(regBase, 0);
@@ -800,9 +804,14 @@ short DispatchFlat(char *pb, short trapNum)
 
 	switch (trapNum) {
 		case 0x00: /* _Open */
+		{
+			unsigned long na = *(unsigned long *)(pb + pb_ioNamePtr);
+			if (na) dbg_log1(g->regBase, "SD: Open name=%s", na);
 			err = DoOpen(pb, g->regBase, g->vcb);
+			dbg_log1(g->regBase, "SD: Open -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
+		}
 
 		case 0x07: /* _GetVolInfo */
 			err = DoGetVolInfo(pb, g);
@@ -818,13 +827,23 @@ short DispatchFlat(char *pb, short trapNum)
 			RestoreA4(); return 0;
 
 		case 0x0A: /* _OpenRF */
+		{
+			unsigned long na = *(unsigned long *)(pb + pb_ioNamePtr);
+			if (na) dbg_log1(g->regBase, "SD: OpenRF name=%s -> fnfErr", na);
+			else    dbg_log(g->regBase, "SD: OpenRF (no name) -> fnfErr");
 			*(short *)(pb + pb_ioResult) = -43;
 			RestoreA4(); return 0;
+		}
 
 		case 0x0C: /* _GetFileInfo */
+		{
+			unsigned long na = *(unsigned long *)(pb + pb_ioNamePtr);
+			if (na) dbg_log1(g->regBase, "SD: GetFileInfo name=%s", na);
 			err = DoGetFileInfo(pb, g->regBase);
+			dbg_log1(g->regBase, "SD: GetFileInfo -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
+		}
 
 		case 0x0E: /* _UnmountVol */
 		case 0x13: /* _FlushVol */
