@@ -223,7 +223,7 @@ static char s_nameBuf[64];
 /* ---- FCB management ---- */
 
 static short AllocFCB(Ptr vcb, unsigned long cnid,
-	unsigned long eof, unsigned char forkType)
+	unsigned long eof, unsigned char flags)
 {
 	Ptr fcbBuf = *(Ptr *)kFCBSPtr;
 	short fcbLen, i;
@@ -234,8 +234,8 @@ static short AllocFCB(Ptr vcb, unsigned long cnid,
 		fcb = fcbBuf + i;
 		if (*(long *)(fcb + kFCBFlNum) == 0) {
 			*(long *)(fcb + kFCBFlNum) = cnid;
-			*(char *)(fcb + kFCBFlags) = 0;
-			*(char *)(fcb + kFCBTypByt) = forkType;
+			*(char *)(fcb + kFCBFlags) = flags;
+			*(char *)(fcb + kFCBTypByt) = 0;
 			*(long *)(fcb + kFCBEOF) = eof;
 			*(long *)(fcb + kFCBPLen) = eof;
 			*(long *)(fcb + kFCBCrPs) = 0;
@@ -461,8 +461,8 @@ static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb)
 	handle = reg_get(regBase, 0);
 	size = (long)reg_get(regBase, 1); /* file size returned by host */
 
-	/* Allocate FCB — flag as resource fork (FCBFlags bit 1) */
-	refNum = AllocFCB(vcb, cnid, size, 0x02);
+	/* Allocate FCB — resource fork (bit 1) + write (bit 0) */
+	refNum = AllocFCB(vcb, cnid, size, 0x03);
 	if (refNum == 0) {
 		reg_set(regBase, 0, handle);
 		reg_command(regBase, 0x0206); /* Close */
@@ -585,8 +585,8 @@ static OSErr DoOpen(char *pb, char *regBase, Ptr vcb)
 	if (reg_result(regBase) != 0) return -43;
 	handle = reg_get(regBase, 0);
 
-	/* Allocate FCB */
-	refNum = AllocFCB(vcb, cnid, size, 0);
+	/* Allocate FCB — data fork + write */
+	refNum = AllocFCB(vcb, cnid, size, 0x01);
 	if (refNum == 0) {
 		reg_set(regBase,0,handle);
 		reg_command(regBase, 0x0206);
