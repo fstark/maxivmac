@@ -368,7 +368,7 @@ static void SDLCALL sdl3_audio_callback(void *udata, SDL_AudioStream *stream, in
 	}
 }
 
-static SoundR cur_audio;
+static SoundR s_curAudio;
 
 static bool s_haveSoundOut = false;
 
@@ -378,13 +378,13 @@ void Sound_Stop()
 	dbglog_writeln("enter Sound_Stop");
 #endif
 
-	if (cur_audio.wantplaying && s_haveSoundOut)
+	if (s_curAudio.wantplaying && s_haveSoundOut)
 	{
 		uint16_t retry_limit = 50; /* half of a second */
 
-		cur_audio.wantplaying = false;
+		s_curAudio.wantplaying = false;
 
-		while (K_CENTER_TEMP_SOUND != cur_audio.lastv && --retry_limit != 0)
+		while (K_CENTER_TEMP_SOUND != s_curAudio.lastv && --retry_limit != 0)
 		{
 			/*
 				give time back, particularly important
@@ -399,7 +399,7 @@ void Sound_Stop()
 		}
 
 #if dbglog_SoundStuff
-		if (K_CENTER_TEMP_SOUND == cur_audio.lastv)
+		if (K_CENTER_TEMP_SOUND == s_curAudio.lastv)
 		{
 			dbglog_writeln("reached kCenterTempSound");
 		}
@@ -419,12 +419,12 @@ void Sound_Stop()
 
 void Sound_Start()
 {
-	if ((!cur_audio.wantplaying) && s_haveSoundOut)
+	if ((!s_curAudio.wantplaying) && s_haveSoundOut)
 	{
 		Sound_Start0();
-		cur_audio.lastv = K_CENTER_TEMP_SOUND;
-		cur_audio.HaveStartedPlaying = false;
-		cur_audio.wantplaying = true;
+		s_curAudio.lastv = K_CENTER_TEMP_SOUND;
+		s_curAudio.HaveStartedPlaying = false;
+		s_curAudio.wantplaying = true;
 
 		SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
 	}
@@ -450,19 +450,19 @@ bool Sound_Init()
 
 	Sound_Init0();
 
-	cur_audio.fTheSoundBuffer = s_soundBuffer;
-	cur_audio.fPlayOffset = &ThePlayOffset;
-	cur_audio.fFillOffset = &TheFillOffset;
-	cur_audio.fMinFilledSoundBuffs = &MinFilledSoundBuffs;
-	cur_audio.wantplaying = false;
+	s_curAudio.fTheSoundBuffer = s_soundBuffer;
+	s_curAudio.fPlayOffset = &ThePlayOffset;
+	s_curAudio.fFillOffset = &TheFillOffset;
+	s_curAudio.fMinFilledSoundBuffs = &MinFilledSoundBuffs;
+	s_curAudio.wantplaying = false;
 
 	desired.freq = SOUND_SAMPLERATE;
 	desired.format = SDL_AUDIO_S16;
 
 	desired.channels = 1;
-	stream =
-		SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &desired,
-								  (SDL_AudioStreamCallback)sdl3_audio_callback, (void *)&cur_audio);
+	stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &desired,
+									   (SDL_AudioStreamCallback)sdl3_audio_callback,
+									   (void *)&s_curAudio);
 
 	/* Open the audio device */
 	if (stream == nullptr)

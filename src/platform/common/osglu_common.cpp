@@ -372,23 +372,23 @@ bool dbglog_ReserveAlloc()
 #else
 
 #define dbglog_bufsz POW_OF_2(dbglog_buflnsz)
-static uint32_t dbglog_bufpos = 0;
+static uint32_t s_dbglogBufpos = 0;
 
-static char *dbglog_bufp = nullptr;
+static char *s_dbglogBufp = nullptr;
 
 bool dbglog_ReserveAlloc()
 {
-	return AllocBlock((uint8_t **)&dbglog_bufp, dbglog_bufsz, false);
+	return AllocBlock((uint8_t **)&s_dbglogBufp, dbglog_bufsz, false);
 }
 
 #define dbglog_open dbglog_open0
 
 static void dbglog_close()
 {
-	uint32_t n = MOD_POW2(dbglog_bufpos, dbglog_buflnsz);
+	uint32_t n = MOD_POW2(s_dbglogBufpos, dbglog_buflnsz);
 	if (n != 0)
 	{
-		dbglog_write0(dbglog_bufp, n);
+		dbglog_write0(s_dbglogBufp, n);
 	}
 
 	dbglog_close0();
@@ -399,28 +399,28 @@ static void dbglog_write(char *p, uint32_t L)
 	uint32_t r;
 	uint32_t bufposmod;
 	uint32_t curbufdiv;
-	uint32_t newbufpos = dbglog_bufpos + L;
+	uint32_t newbufpos = s_dbglogBufpos + L;
 	uint32_t newbufdiv = FLOOR_DIV_POW2(newbufpos, dbglog_buflnsz);
 
 	for (;;)
 	{
-		curbufdiv = FLOOR_DIV_POW2(dbglog_bufpos, dbglog_buflnsz);
-		bufposmod = MOD_POW2(dbglog_bufpos, dbglog_buflnsz);
+		curbufdiv = FLOOR_DIV_POW2(s_dbglogBufpos, dbglog_buflnsz);
+		bufposmod = MOD_POW2(s_dbglogBufpos, dbglog_buflnsz);
 		if (newbufdiv == curbufdiv)
 		{
 			break;
 		}
 		r = dbglog_bufsz - bufposmod;
 		MoveBytes(reinterpret_cast<uint8_t *>(p),
-				  reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod), r);
-		dbglog_write0(dbglog_bufp, dbglog_bufsz);
+				  reinterpret_cast<uint8_t *>(s_dbglogBufp + bufposmod), r);
+		dbglog_write0(s_dbglogBufp, dbglog_bufsz);
 		L -= r;
 		p += r;
-		dbglog_bufpos += r;
+		s_dbglogBufpos += r;
 	}
-	MoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(dbglog_bufp + bufposmod),
+	MoveBytes(reinterpret_cast<uint8_t *>(p), reinterpret_cast<uint8_t *>(s_dbglogBufp + bufposmod),
 			  L);
-	dbglog_bufpos = newbufpos;
+	s_dbglogBufpos = newbufpos;
 }
 
 #endif /* dbglog_buflnsz defined */

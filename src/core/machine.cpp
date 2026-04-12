@@ -769,7 +769,7 @@ enum
 
 /* Max ATT entries — generous fixed size, checked at runtime */
 static constexpr int kATTListMax = 64;
-static ATTer ATTListA[kATTListMax];
+static ATTer s_attListA[kATTListMax];
 static uint16_t s_lastATTel;
 
 
@@ -783,7 +783,7 @@ static void AddToATTList(ATTep p)
 	}
 	else
 	{
-		ATTListA[s_lastATTel] = *p;
+		s_attListA[s_lastATTel] = *p;
 		s_lastATTel = NewLast;
 	}
 }
@@ -809,7 +809,7 @@ static void FinishATTList()
 
 	{
 		uint16_t i = s_lastATTel;
-		ATTep p = &ATTListA[s_lastATTel];
+		ATTep p = &s_attListA[s_lastATTel];
 		ATTep h = nullptr;
 
 		while (0 != i)
