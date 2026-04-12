@@ -617,8 +617,8 @@ static constexpr int kCmndVideoClearInt = 4;
 static constexpr int kCmndVideoStatus = 5;
 static constexpr int kCmndVideoControl = 6;
 
-#define CntrlParam_csCode 0x1A	/* control/status code [word] */
-#define CntrlParam_csParam 0x1C /* operation-defined parameters */
+#define CNTRL_PARAM_CS_CODE 0x1A  /* control/status code [word] */
+#define CNTRL_PARAM_CS_PARAM 0x1C /* operation-defined parameters */
 
 #define VDPageInfo_csMode 0
 #define VDPageInfo_csData 2
@@ -659,7 +659,7 @@ static constexpr int kCmndVideoControl = 6;
 #define VDConnectInfo_csDisplayComponent 8
 #define VDConnectInfo_csConnectReserved 12
 
-#define VidBaseAddr 0xF9900000
+#define VID_BASE_ADDR 0xF9900000
 
 static bool s_useGrayTones = false;
 
@@ -803,8 +803,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 		case kCmndVideoControl:
 		{
 			uint32_t CntrlParams = get_vm_long(p + 8);
-			uint32_t csParam = get_vm_long(CntrlParams + CntrlParam_csParam);
-			uint16_t csCode = get_vm_word(CntrlParams + CntrlParam_csCode);
+			uint32_t csParam = get_vm_long(CntrlParams + CNTRL_PARAM_CS_PARAM);
+			uint16_t csCode = get_vm_word(CntrlParams + CNTRL_PARAM_CS_CODE);
 
 			VID_LOG("Control csCode=%u", csCode);
 			switch (csCode)
@@ -817,7 +817,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					VID_LOG("VidReset → mode=0x%02X", Vid_GetMode());
 					put_vm_word(csParam + VDPageInfo_csMode, Vid_GetMode());
 					put_vm_word(csParam + VDPageInfo_csPage, 0);
-					put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+					put_vm_long(csParam + VDPageInfo_csBaseAddr, VID_BASE_ADDR);
 					result = tMacErr::noErr;
 					break;
 				case 1: /* KillIO */
@@ -842,7 +842,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						result = Vid_SetMode(get_vm_word(csParam + VDPageInfo_csMode));
 						VID_LOG("SetVidMode → mode=0x%02X",
 								get_vm_word(csParam + VDPageInfo_csMode));
-						put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+						put_vm_long(csParam + VDPageInfo_csBaseAddr, VID_BASE_ADDR);
 					}
 					break;
 				case 3: /* SetEntries */
@@ -987,7 +987,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 						VID_LOG("SwitchMode mode=0x%02X modeID=%u page=%u", mode, modeID, page);
 						/* Write current base addr in case we fail */
-						put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VidBaseAddr);
+						put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VID_BASE_ADDR);
 
 						if (page != 0)
 						{
@@ -1064,7 +1064,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 
 						FillScreenWithGrayPattern();
 
-						put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VidBaseAddr);
+						put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VID_BASE_ADDR);
 						VID_LOG("SwitchMode OK → %ux%u depth=%d resChanged=%d", res->width,
 								res->height, newDepth, resChanged);
 						result = tMacErr::noErr;
@@ -1095,8 +1095,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 		case kCmndVideoStatus:
 		{
 			uint32_t CntrlParams = get_vm_long(p + 8);
-			uint32_t csParam = get_vm_long(CntrlParams + CntrlParam_csParam);
-			uint16_t csCode = get_vm_word(CntrlParams + CntrlParam_csCode);
+			uint32_t csParam = get_vm_long(CntrlParams + CNTRL_PARAM_CS_PARAM);
+			uint16_t csCode = get_vm_word(CntrlParams + CNTRL_PARAM_CS_CODE);
 
 			result = tMacErr::statusErr;
 			VID_LOG("Status csCode=%u", csCode);
@@ -1108,7 +1108,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 					put_vm_word(csParam + VDPageInfo_csMode, Vid_GetMode());
 					put_vm_word(csParam + VDPageInfo_csPage, 0);
-					put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+					put_vm_long(csParam + VDPageInfo_csBaseAddr, VID_BASE_ADDR);
 					result = tMacErr::noErr;
 					break;
 				case 3: /* GetEntries */
@@ -1144,7 +1144,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						}
 						else
 						{
-							put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+							put_vm_long(csParam + VDPageInfo_csBaseAddr, VID_BASE_ADDR);
 							result = tMacErr::noErr;
 						}
 					}
@@ -1183,7 +1183,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					put_vm_word(csParam + VDSwitchInfo_csMode, 0x80 + s_currentDepth);
 					put_vm_long(csParam + VDSwitchInfo_csData, s_currentDisplayModeID);
 					put_vm_word(csParam + VDSwitchInfo_csPage, 0);
-					put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VidBaseAddr);
+					put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VID_BASE_ADDR);
 					VID_LOG("GetCurrentMode → mode=0x%02X displayModeID=%u", 0x80 + s_currentDepth,
 							s_currentDisplayModeID);
 					result = tMacErr::noErr;
@@ -1243,7 +1243,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetModeBaseAddress");
 #endif
-					put_vm_long(csParam + VDPageInfo_csBaseAddr, VidBaseAddr);
+					put_vm_long(csParam + VDPageInfo_csBaseAddr, VID_BASE_ADDR);
 					result = tMacErr::noErr;
 					break;
 				case 16: /* GetPreferredConfiguration */

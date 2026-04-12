@@ -12,7 +12,7 @@
 #define kSoundBuffers (1 << kLn2SoundBuffers)
 #define kSoundBuffMask (kSoundBuffers - 1)
 
-#define DesiredMinFilledSoundBuffs 3
+#define DESIRED_MIN_FILLED_SOUND_BUFFS 3
 /*
 	if too big then sound lags behind emulation.
 	if too small then sound will have pauses.
@@ -145,14 +145,14 @@ static void Sound_SecondNotify0()
 {
 	if (MinFilledSoundBuffs <= kSoundBuffers)
 	{
-		if (MinFilledSoundBuffs > DesiredMinFilledSoundBuffs)
+		if (MinFilledSoundBuffs > DESIRED_MIN_FILLED_SOUND_BUFFS)
 		{
 #if dbglog_SoundStuff
 			dbglog_writeln("MinFilledSoundBuffs too high");
 #endif
 			IncrNextTime();
 		}
-		else if (MinFilledSoundBuffs < DesiredMinFilledSoundBuffs)
+		else if (MinFilledSoundBuffs < DESIRED_MIN_FILLED_SOUND_BUFFS)
 		{
 #if dbglog_SoundStuff
 			dbglog_writeln("MinFilledSoundBuffs too low");

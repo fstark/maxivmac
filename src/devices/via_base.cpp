@@ -637,8 +637,8 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			if (WriteMem)
 			{
 				d_.PCR = Data;
-#define SetContains(s, i) (((s) & (1 << (i))) != 0)
-				if (!SetContains(acfg.cb2ModesAllowed, (d_.PCR >> 5) & 0x07))
+#define SET_CONTAINS(s, i) (((s) & (1 << (i))) != 0)
+				if (!SET_CONTAINS(acfg.cb2ModesAllowed, (d_.PCR >> 5) & 0x07))
 				{
 					REPORT_ABNORMAL_ID(abnormalBase_ | 0x0A, "Set d_.PCR CB2 Control mode?");
 				}
@@ -646,7 +646,7 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				{
 					REPORT_ABNORMAL_ID(abnormalBase_ | 0x0B, "Set d_.PCR CB1 INTERRUPT CONTROL?");
 				}
-				if (!SetContains(acfg.ca2ModesAllowed, (d_.PCR >> 1) & 0x07))
+				if (!SET_CONTAINS(acfg.ca2ModesAllowed, (d_.PCR >> 1) & 0x07))
 				{
 					REPORT_ABNORMAL_ID(abnormalBase_ | 0x0C, "Set d_.PCR CA2 INTERRUPT CONTROL?");
 				}

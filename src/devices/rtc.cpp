@@ -25,8 +25,8 @@
 /* All supported models (Plus through IIx) have XPRAM */
 #define PARAMRAMSize 256
 
-#define Group1Base 0x10
-#define Group2Base 0x08
+#define GROUP1_BASE 0x10
+#define GROUP2_BASE 0x08
 
 struct RTCState
 {
@@ -54,34 +54,34 @@ static RTCState s_rtc;
 static uint32_t s_lastRealDate;
 
 
-#ifndef TrackSpeed /* in 0..4 */
-#define TrackSpeed 0
+#ifndef TRACK_SPEED /* in 0..4 */
+#define TRACK_SPEED 0
 #endif
 
-#ifndef AlarmOn /* in 0..1 */
-#define AlarmOn 0
+#ifndef ALARM_ON /* in 0..1 */
+#define ALARM_ON 0
 #endif
 
-#ifndef DiskCacheSz /* in 1,2,3,4,6,8,12 */
-/* actual cache size is DiskCacheSz * 32k */
+#ifndef DISK_CACHE_SZ /* in 1,2,3,4,6,8,12 */
+/* actual cache size is DISK_CACHE_SZ * 32k */
 /* 4 for compact Macs, 1 for Mac II (matches reference) */
-#define DiskCacheSz (g_machine->config().isIIFamily() ? 1 : 4)
+#define DISK_CACHE_SZ (g_machine->config().isIIFamily() ? 1 : 4)
 #endif
 
-#ifndef StartUpDisk /* in 0..1 */
-#define StartUpDisk 0
+#ifndef STARTUP_DISK /* in 0..1 */
+#define STARTUP_DISK 0
 #endif
 
-#ifndef DiskCacheOn /* in 0..1 */
-#define DiskCacheOn 0
+#ifndef DISK_CACHE_ON /* in 0..1 */
+#define DISK_CACHE_ON 0
 #endif
 
-#ifndef MouseScalingOn /* in 0..1 */
-#define MouseScalingOn 0
+#ifndef MOUSE_SCALING_ON /* in 0..1 */
+#define MOUSE_SCALING_ON 0
 #endif
 
 /* PRAM defaults — only used in this file */
-#define SpeakerVol 0x07
+#define SPEAKER_VOL 0x07
 #define MenuBlink 0x03
 #define AutoKeyThresh 0x06
 #define AutoKeyRate 0x03
@@ -103,11 +103,11 @@ static uint32_t s_lastRealDate;
 #define prb_fontLo 2
 #define prb_kbdPrintHi (AutoKeyRate + (AutoKeyThresh << 4))
 #define prb_kbdPrintLo 0
-#define prb_volClickHi (SpeakerVol + (TrackSpeed << 3) + (AlarmOn << 7))
+#define prb_volClickHi (SPEAKER_VOL + (TRACK_SPEED << 3) + (ALARM_ON << 7))
 #define prb_volClickLo (CaretBlinkTime + (DoubleClickTime << 4))
-#define prb_miscHi DiskCacheSz
+#define prb_miscHi DISK_CACHE_SZ
 #define prb_miscLo                                                                                 \
-	((MenuBlink << 2) + (StartUpDisk << 4) + (DiskCacheOn << 5) + (MouseScalingOn << 6))
+	((MenuBlink << 2) + (STARTUP_DISK << 4) + (DISK_CACHE_ON << 5) + (MOUSE_SCALING_ON << 6))
 
 extern void DumpRTC();
 
@@ -155,23 +155,23 @@ bool RTCDevice::init()
 		s_rtc.PARAMRAM[Counter] = 0;
 	}
 
-	s_rtc.PARAMRAM[0 + Group1Base] = 168; /* valid */
+	s_rtc.PARAMRAM[0 + GROUP1_BASE] = 168; /* valid */
 
 #if EmLocalTalk
-	s_rtc.PARAMRAM[2 + Group1Base] = g_ltNodeHint;
+	s_rtc.PARAMRAM[2 + GROUP1_BASE] = g_ltNodeHint;
 	/* set to constant instead for testing collisions */
 #else
 	if (g_machine->config().isIIFamily())
 	{
-		s_rtc.PARAMRAM[2 + Group1Base] = 1;
+		s_rtc.PARAMRAM[2 + GROUP1_BASE] = 1;
 		/* node id hint for printer port (AppleTalk) */
 	}
 #endif
 
 #if EmLocalTalk
-	s_rtc.PARAMRAM[3 + Group1Base] = 0x21;
+	s_rtc.PARAMRAM[3 + GROUP1_BASE] = 0x21;
 #else
-	s_rtc.PARAMRAM[3 + Group1Base] = 0x22;
+	s_rtc.PARAMRAM[3 + GROUP1_BASE] = 0x22;
 #endif
 	/*
 		serial ports config bits: 4-7 A, 0-3 B
@@ -181,15 +181,15 @@ bool RTCDevice::init()
 			useExtClk 3 externally clocked
 	*/
 
-	s_rtc.PARAMRAM[4 + Group1Base] = 204; /* portA, high */
-	s_rtc.PARAMRAM[5 + Group1Base] = 10;  /* portA, low */
-	s_rtc.PARAMRAM[6 + Group1Base] = 204; /* portB, high */
-	s_rtc.PARAMRAM[7 + Group1Base] = 10;  /* portB, low */
-	s_rtc.PARAMRAM[13 + Group1Base] = prb_fontLo;
-	s_rtc.PARAMRAM[14 + Group1Base] = prb_kbdPrintHi;
+	s_rtc.PARAMRAM[4 + GROUP1_BASE] = 204; /* portA, high */
+	s_rtc.PARAMRAM[5 + GROUP1_BASE] = 10;  /* portA, low */
+	s_rtc.PARAMRAM[6 + GROUP1_BASE] = 204; /* portB, high */
+	s_rtc.PARAMRAM[7 + GROUP1_BASE] = 10;  /* portB, low */
+	s_rtc.PARAMRAM[13 + GROUP1_BASE] = prb_fontLo;
+	s_rtc.PARAMRAM[14 + GROUP1_BASE] = prb_kbdPrintHi;
 	if (g_machine->config().isIIFamily() || EmLocalTalk)
 	{
-		s_rtc.PARAMRAM[15 + Group1Base] = 1;
+		s_rtc.PARAMRAM[15 + GROUP1_BASE] = 1;
 		/*
 			printer, if any, connected to modem port
 			because printer port used for appletalk.
@@ -197,11 +197,11 @@ bool RTCDevice::init()
 	}
 
 #if prb_volClickHi != 0
-	s_rtc.PARAMRAM[0 + Group2Base] = prb_volClickHi;
+	s_rtc.PARAMRAM[0 + GROUP2_BASE] = prb_volClickHi;
 #endif
-	s_rtc.PARAMRAM[1 + Group2Base] = prb_volClickLo;
-	s_rtc.PARAMRAM[2 + Group2Base] = prb_miscHi;
-	s_rtc.PARAMRAM[3 + Group2Base] = prb_miscLo | ((0 != VMAC_SCREEN_DEPTH) ? 0x80 : 0x00);
+	s_rtc.PARAMRAM[1 + GROUP2_BASE] = prb_volClickLo;
+	s_rtc.PARAMRAM[2 + GROUP2_BASE] = prb_miscHi;
+	s_rtc.PARAMRAM[3 + GROUP2_BASE] = prb_miscLo | ((0 != VMAC_SCREEN_DEPTH) ? 0x80 : 0x00);
 
 	/* XPRAM: extended parameter ram signature */
 	if (g_machine->config().isIIFamily())
@@ -369,7 +369,7 @@ static uint8_t RTC_Access_Reg(uint8_t Data, bool WriteReg, uint8_t TheCmd)
 	}
 	else if (t < 12)
 	{
-		Data = RTC_Access_PRAM_Reg(Data, WriteReg, (t & 0x03) + Group2Base);
+		Data = RTC_Access_PRAM_Reg(Data, WriteReg, (t & 0x03) + GROUP2_BASE);
 	}
 	else if (t < 16)
 	{
@@ -395,7 +395,7 @@ static uint8_t RTC_Access_Reg(uint8_t Data, bool WriteReg, uint8_t TheCmd)
 	}
 	else
 	{
-		Data = RTC_Access_PRAM_Reg(Data, WriteReg, (t & 0x0F) + Group1Base);
+		Data = RTC_Access_PRAM_Reg(Data, WriteReg, (t & 0x0F) + GROUP1_BASE);
 	}
 	return Data;
 }
