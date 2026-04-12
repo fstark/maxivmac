@@ -51,6 +51,7 @@
 #define kCheckVal       0x841339E2UL
 #define kVCBQHdr        0x0356
 #define kFCBSPtr        0x034E
+#define kDefVCBPtr      0x0352
 
 /* FCB offsets (from Inside Macintosh IV-179) */
 #define kFCBLen         94
@@ -274,6 +275,13 @@ static Boolean IsOurVolume(short vRefNum)
 	   Real File Manager WDCBs use small negative numbers (>= -32767)
 	   that won't overlap with our range below -32000. */
 	if (vRefNum < kOurVRefNum && vRefNum > -32100) return true;
+	/* vRefNum 0 means "default volume". Check if the default VCB
+	   is ours by reading the DefVCBPtr low-memory global. */
+	if (vRefNum == 0) {
+		Globals *g = *(Globals **)kGlobalsPtr;
+		if (g != NULL && *(Ptr *)kDefVCBPtr == g->vcb)
+			return true;
+	}
 	return false;
 }
 
