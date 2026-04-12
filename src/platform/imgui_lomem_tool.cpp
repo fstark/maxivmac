@@ -59,7 +59,7 @@ void LowMemTool::draw()
 						  categoryFilter_ == 0 ? "All" : kLMCategoryLabels[categoryFilter_ - 1]))
 	{
 		if (ImGui::Selectable("All", categoryFilter_ == 0)) categoryFilter_ = 0;
-		for (int i = 0; i < LM_CAT_COUNT; i++)
+		for (int i = 0; i < static_cast<int>(LMCategory::LM_CAT_COUNT); i++)
 		{
 			if (ImGui::Selectable(kLMCategoryLabels[i], categoryFilter_ == i + 1))
 				categoryFilter_ = i + 1;

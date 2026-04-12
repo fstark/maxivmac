@@ -9,7 +9,7 @@
 
 #include <cstdint>
 
-enum LMType
+enum class LMType
 {
 	LM_BYTE,	/*  1 byte  */
 	LM_WORD,	/*  2 bytes */
@@ -23,7 +23,7 @@ enum LMType
 	LM_OSType,	/*  4 bytes four-char code */
 };
 
-enum LMCategory
+enum class LMCategory
 {
 	LM_CAT_SYSTEM,
 	LM_CAT_HARDWARE,
@@ -58,7 +58,7 @@ struct LMGlobal
 extern const LMGlobal kLowMemGlobals[];
 extern const int kLowMemCount;
 
-/* Human-readable category labels (LM_CAT_COUNT entries). */
+/* Human-readable category labels (LMCategory::LM_CAT_COUNT entries). */
 extern const char *const kLMCategoryLabels[];
 
 /* Take a 4 KB snapshot of low memory ($000–$FFF) from g_ram. */
