@@ -682,34 +682,34 @@ void EmulatorShell::convertFramebuffer()
 
 /* --- Mouse --- */
 
-void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
+void EmulatorShell::mousePositionNotify(int newMousePosH, int newMousePosV)
 {
 	bool ShouldHaveCursorHidden = true;
 
 	if (useFullScreen_)
 	{
-		NewMousePosh += g_viewHStart - hOffset_;
-		NewMousePosv += g_viewVStart - vOffset_;
+		newMousePosH += g_viewHStart - hOffset_;
+		newMousePosV += g_viewVStart - vOffset_;
 	}
 
-	if (NewMousePosh < 0)
+	if (newMousePosH < 0)
 	{
-		NewMousePosh = 0;
+		newMousePosH = 0;
 		ShouldHaveCursorHidden = false;
 	}
-	else if (NewMousePosh >= VMAC_SCREEN_WIDTH)
+	else if (newMousePosH >= VMAC_SCREEN_WIDTH)
 	{
-		NewMousePosh = VMAC_SCREEN_WIDTH - 1;
+		newMousePosH = VMAC_SCREEN_WIDTH - 1;
 		ShouldHaveCursorHidden = false;
 	}
-	if (NewMousePosv < 0)
+	if (newMousePosV < 0)
 	{
-		NewMousePosv = 0;
+		newMousePosV = 0;
 		ShouldHaveCursorHidden = false;
 	}
-	else if (NewMousePosv >= VMAC_SCREEN_HEIGHT)
+	else if (newMousePosV >= VMAC_SCREEN_HEIGHT)
 	{
-		NewMousePosv = VMAC_SCREEN_HEIGHT - 1;
+		newMousePosV = VMAC_SCREEN_HEIGHT - 1;
 		ShouldHaveCursorHidden = false;
 	}
 
@@ -718,7 +718,7 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 		ShouldHaveCursorHidden = true;
 	}
 
-	MousePositionSet(NewMousePosh, NewMousePosv);
+	MousePositionSet(newMousePosH, newMousePosV);
 
 	wantCursorHidden_ = ShouldHaveCursorHidden;
 }
@@ -777,21 +777,21 @@ void EmulatorShell::enterSpeedStopped()
 
 bool EmulatorShell::createMainWindow()
 {
-	int NewWindowX;
-	int NewWindowY;
-	int NewWindowHeight = VMAC_SCREEN_HEIGHT;
-	int NewWindowWidth = VMAC_SCREEN_WIDTH;
+	int newWindowX;
+	int newWindowY;
+	int newWindowHeight = VMAC_SCREEN_HEIGHT;
+	int newWindowWidth = VMAC_SCREEN_WIDTH;
 
 	if (useMagnify_)
 	{
-		NewWindowHeight *= windowScale_;
-		NewWindowWidth *= windowScale_;
+		newWindowHeight *= windowScale_;
+		newWindowWidth *= windowScale_;
 	}
 
 	if (useFullScreen_)
 	{
-		NewWindowX = 0x1FFF0000; /* SDL_WINDOWPOS_UNDEFINED */
-		NewWindowY = 0x1FFF0000;
+		newWindowX = 0x1FFF0000; /* SDL_WINDOWPOS_UNDEFINED */
+		newWindowY = 0x1FFF0000;
 	}
 	else
 	{
@@ -799,24 +799,24 @@ bool EmulatorShell::createMainWindow()
 
 		if (!havePositionWins_[WinIndx])
 		{
-			NewWindowX = 0x2FFF0000; /* SDL_WINDOWPOS_CENTERED */
-			NewWindowY = 0x2FFF0000;
+			newWindowX = 0x2FFF0000; /* SDL_WINDOWPOS_CENTERED */
+			newWindowY = 0x2FFF0000;
 		}
 		else
 		{
-			NewWindowX = winPositionsX_[WinIndx];
-			NewWindowY = winPositionsY_[WinIndx];
+			newWindowX = winPositionsX_[WinIndx];
+			newWindowY = winPositionsY_[WinIndx];
 		}
 
 		curWinIndx_ = WinIndx;
 	}
 
-	if (!backend_->createWindow(windowTitle(), NewWindowWidth, NewWindowHeight, useFullScreen_))
+	if (!backend_->createWindow(windowTitle(), newWindowWidth, newWindowHeight, useFullScreen_))
 	{
 		return false;
 	}
 
-	backend_->setWindowPosition(NewWindowX, NewWindowY);
+	backend_->setWindowPosition(newWindowX, newWindowY);
 
 	if (useFullScreen_)
 	{
@@ -849,17 +849,17 @@ bool EmulatorShell::createMainWindow()
 			g_viewVSize &= ~1;
 		}
 
-		if (wr > NewWindowWidth)
+		if (wr > newWindowWidth)
 		{
-			hOffset_ = (wr - NewWindowWidth) / 2;
+			hOffset_ = (wr - newWindowWidth) / 2;
 		}
 		else
 		{
 			hOffset_ = 0;
 		}
-		if (hr > NewWindowHeight)
+		if (hr > newWindowHeight)
 		{
-			vOffset_ = (hr - NewWindowHeight) / 2;
+			vOffset_ = (hr - newWindowHeight) / 2;
 		}
 		else
 		{

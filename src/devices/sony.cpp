@@ -750,14 +750,14 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 		case kCmndDiskNew:
 		{
 			uint32_t count = get_vm_long(p + EXTN_DAT_PARAMS + 0);
-			PbufIndex Pbuf_No = get_vm_word(p + EXTN_DAT_PARAMS + 4);
+			PbufIndex pbufNo = get_vm_word(p + EXTN_DAT_PARAMS + 4);
 			/* reserved word at offset 6, should be zero */
 
 			result = tMacErr::noErr;
 
-			if (Pbuf_No != NOT_A_PBUF)
+			if (pbufNo != NOT_A_PBUF)
 			{
-				result = CheckPbuf(Pbuf_No);
+				result = CheckPbuf(pbufNo);
 				if (tMacErr::noErr == result)
 				{
 					g_sonyNewDiskWanted = true;
@@ -766,7 +766,7 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 					{
 						PbufDispose(g_sonyNewDiskName);
 					}
-					g_sonyNewDiskName = Pbuf_No;
+					g_sonyNewDiskName = pbufNo;
 				}
 			}
 			else
@@ -793,9 +793,9 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			result = CheckReadableDrive(driveNo);
 			if (tMacErr::noErr == result)
 			{
-				PbufIndex Pbuf_No;
-				result = vSonyGetName(driveNo, &Pbuf_No);
-				put_vm_word(p + EXTN_DAT_PARAMS + 4, Pbuf_No);
+				PbufIndex pbufNo;
+				result = vSonyGetName(driveNo, &pbufNo);
+				put_vm_word(p + EXTN_DAT_PARAMS + 4, pbufNo);
 			}
 		}
 		break;

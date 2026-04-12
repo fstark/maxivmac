@@ -404,20 +404,20 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 			break;
 		case kCmndHTCEExport:
 		{
-			PbufIndex Pbuf_No = get_vm_word(p + EXTN_DAT_PARAMS + 0);
+			PbufIndex pbufNo = get_vm_word(p + EXTN_DAT_PARAMS + 0);
 
-			result = CheckPbuf(Pbuf_No);
+			result = CheckPbuf(pbufNo);
 			if (tMacErr::noErr == result)
 			{
-				result = HTCEexport(Pbuf_No);
+				result = HTCEexport(pbufNo);
 			}
 		}
 		break;
 		case kCmndHTCEImport:
 		{
-			PbufIndex Pbuf_No;
-			result = HTCEimport(&Pbuf_No);
-			put_vm_word(p + EXTN_DAT_PARAMS + 0, Pbuf_No);
+			PbufIndex pbufNo;
+			result = HTCEimport(&pbufNo);
+			put_vm_word(p + EXTN_DAT_PARAMS + 0, pbufNo);
 		}
 		break;
 	}
@@ -1770,13 +1770,13 @@ void Addr32_ChangeNtfy()
 	}
 }
 
-static ATTEntryPtr get_address_realblock1(bool WriteMem, uint32_t addr)
+static ATTEntryPtr get_address_realblock1(bool writeMem, uint32_t addr)
 {
 	ATTEntryPtr p;
 
 Label_Retry:
 	p = g_cpu.findATTel(addr);
-	if (0 != (p->Access & (WriteMem ? kATTA_writereadymask : kATTA_readreadymask)))
+	if (0 != (p->Access & (writeMem ? kATTA_writereadymask : kATTA_readreadymask)))
 	{
 		/* ok */
 	}
