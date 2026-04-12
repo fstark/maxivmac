@@ -459,12 +459,12 @@ static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb)
 		return -43; /* fnfErr — file itself doesn't exist */
 	handle = reg_get(regBase, 0);
 
-	/* Get resource fork size: seek to end */
-	/* The host returned a handle; we need the size.
-	   For resource forks we get size from the .rsrc file. */
-	/* Use GetCatInfoByName to get size — but that returns data fork size.
-	   For resource forks, we read how much data is there by checking
-	size = 0; /* Will grow as resource manager
+	size = 0; /* Will grow as resource manager writes */
+
+	/* Allocate FCB — flag as resource fork (FCBFlags bit 1) */
+	refNum = AllocFCB(vcb, cnid, size, 0x02);
+	if (refNum == 0) {
+		reg_set(regBase, 0, handle);
 		reg_command(regBase, 0x0206); /* Close */
 		return -42; /* tmfoErr */
 	}
@@ -754,7 +754,7 @@ static OSErr DoGetVolInfo(char *pb, Globals *g)
 	*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
 	*(long  *)(pb + 30) = *(long *)(v + 10);     /* ioVCrDate from vcbCrDate */
 	*(long  *)(pb + 34) = *(long *)(v + 14);     /* ioVLsMod from vcbLsMod */
-	*(short *)(pb + 38) = (short)0x8000;         /* ioVAtrb: sw locked */
+	*(short *)(pb + 38) = 0;                     /* ioVAtrb: writable */
 	*(short *)(pb + 40) = (short)g->volFileCount;/* ioVNmFls */
 	*(short *)(pb + 42) = 0;                     /* ioVBitMap */
 	*(short *)(pb + 44) = 0;                     /* ioVAllocPtr */
@@ -1586,7 +1586,7 @@ void main(void)
 		*(short *)(v + 8)   = 0x4244;        /* vcbSigWord = HFS */
 		*(long  *)(v + 10)  = now;           /* vcbCrDate */
 		*(long  *)(v + 14)  = now;           /* vcbLsMod */
-		*(short *)(v + 18)  = (short)0x8000; /* vcbAtrb: software locked */
+		*(short *)(v + 18)  = 0;             /* vcbAtrb: writable */
 		*(short *)(v + 20)  = (short)g->volFileCount; /* vcbNmFls */
 		*(short *)(v + 26)  = 1024;          /* vcbNmAlBlks */
 		*(long  *)(v + 28)  = 512;           /* vcbAlBlkSiz */
