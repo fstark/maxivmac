@@ -1,5 +1,6 @@
 #include "core/extn_extfs.h"
 #include "core/extn_clip.h"
+#include "cpu/trap_counter.h"
 #include "platform/platform.h"
 
 #include <cstdint>
@@ -31,6 +32,8 @@ static constexpr uint16_t kExtFSGetWDInfo = 0x20A;
 static constexpr uint16_t kExtFSOpenWD = 0x20B;
 static constexpr uint16_t kExtFSCloseWD = 0x20C;
 static constexpr uint16_t kExtFSDbgLog = 0x20D;
+static constexpr uint16_t kExtFSBeginTrace = 0x20E;
+static constexpr uint16_t kExtFSEndTrace = 0x20F;
 
 /* ── Catalog ──────────────────────────────────────── */
 
@@ -607,6 +610,20 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			std::string line = guestFormatLog(regParam[0], regParam);
 			guestConsoleAppend(line);
+			regResult = 0;
+		}
+		break;
+
+		case kExtFSBeginTrace:
+		{
+			BeginTraceTraps();
+			regResult = 0;
+		}
+		break;
+
+		case kExtFSEndTrace:
+		{
+			EndTraceTraps();
 			regResult = 0;
 		}
 		break;

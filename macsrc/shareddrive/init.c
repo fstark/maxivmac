@@ -1247,6 +1247,10 @@ void main(void)
 
 	dbg_log(regBase, "SharedDrive: traps patched");
 
+	/* Enable host-side trap tracing so we can see what the
+	   system does with our volume after the INIT finishes. */
+	reg_command(regBase, 0x020E); /* BeginTraceTraps */
+
 	/*
 	 * Don't PostEvent — it would trigger _MountVol for drive 8,
 	 * which fails (no real disk / no DQE).  The VCB is already in

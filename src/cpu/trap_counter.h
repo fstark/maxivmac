@@ -46,6 +46,17 @@ const char *trap_dict_name(uint16_t trapWord);
    Stops after maxResults matches. */
 void trap_dict_search(const char *prefix, std::vector<TrapInfo> &results, int maxResults = 20);
 
+/* ── Console tracing ──────────────────────────────── */
+
+/* Nestable trap console tracing.  While active, every A-line
+   trap is logged to stderr as [TRAP] $Axxx TrapName.
+   Calls are reference-counted so nested Begin/End pairs work. */
+void BeginTraceTraps();
+void EndTraceTraps();
+
+/* Called from DoCodeA — logs if tracing is active. */
+void trap_trace_log(uint16_t trapWord);
+
 /* ── Watchlist ────────────────────────────────────── */
 
 struct WatchEntry

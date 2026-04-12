@@ -4516,7 +4516,9 @@ static void Exception(int nr)
 static void DoCodeA()
 {
 	BackupPC();
-	trap_counter_record(do_get_mem_word(V_pc_p));
+	uint16_t tw = do_get_mem_word(V_pc_p);
+	trap_counter_record(tw);
+	trap_trace_log(tw);
 	Exception(0xA);
 }
 
