@@ -175,12 +175,12 @@ static void LT_TransmitPacket1()
 	}
 }
 
-static uint8_t MyCTSBuffer[4];
+static uint8_t s_ctsBuffer[4];
 
 static void GetCTSpacket()
 {
 	/* Get a single buffer worth of packets at a time */
-	uint8_t *device_buffer = MyCTSBuffer;
+	uint8_t *device_buffer = s_ctsBuffer;
 
 #if SCC_dolog
 	dbglog_WriteNote("SCC receiving CTS packet");
@@ -198,7 +198,7 @@ static void GetCTSpacket()
 }
 
 /* LLAP/SDLC address */
-static uint8_t my_node_address = 0;
+static uint8_t s_nodeAddress = 0;
 
 static bool s_ltAddrSrchMd = false;
 
@@ -231,7 +231,7 @@ static void GetNextPacketForMe()
 		dbglog_writelnNum("type", type);
 #endif
 
-		if ((dst != my_node_address) && (dst != 0xFF) && s_ltAddrSrchMd)
+		if ((dst != s_nodeAddress) && (dst != 0xFF) && s_ltAddrSrchMd)
 		{
 #if SCC_dolog
 			dbglog_WriteNote("SCC ignore packet not for me");
@@ -246,7 +246,7 @@ static void GetNextPacketForMe()
 			dbglog_WriteNote("CertainlyNotMyPacket");
 #endif
 		}
-		else if (src != my_node_address)
+		else if (src != s_nodeAddress)
 		{
 			/* we definitely did not send it, so ok */
 		}
@@ -346,7 +346,7 @@ static void LT_NodeAddressSet(uint8_t v)
 #endif
 	if (0 != v)
 	{
-		my_node_address = v;
+		s_nodeAddress = v;
 	}
 }
 
@@ -489,7 +489,7 @@ static SCC_Ty s_scc;
 
 
 #if EmLocalTalk
-static int rx_data_offset = 0;
+static int s_rxDataOffset = 0;
 /* when data pending, this is used */
 #endif
 
@@ -814,13 +814,13 @@ static void SCC_RxBuffAdvance()
 	}
 	else
 	{
-		if (rx_data_offset < g_ltRxBuffSz)
+		if (s_rxDataOffset < g_ltRxBuffSz)
 		{
-			value = g_ltRxBuffer[rx_data_offset];
+			value = g_ltRxBuffer[s_rxDataOffset];
 		}
 		else
 		{
-			uint32_t i = rx_data_offset - g_ltRxBuffSz;
+			uint32_t i = s_rxDataOffset - g_ltRxBuffSz;
 
 			/* if i==0 in first byte of CRC, have not got EOF yet */
 			if (i == 1)
@@ -830,7 +830,7 @@ static void SCC_RxBuffAdvance()
 
 			value = 0;
 		}
-		++rx_data_offset;
+		++s_rxDataOffset;
 	}
 
 	s_scc.a[1].RxBuff = value;
@@ -857,7 +857,7 @@ void SCCDevice::localTalkTick()
 
 		if (nullptr != g_ltRxBuffer)
 		{
-			rx_data_offset = 0;
+			s_rxDataOffset = 0;
 			s_scc.a[1].EndOfFrame = false;
 			s_scc.a[1].RxChrAvail = true;
 			s_scc.a[1].SyncHunt = false;

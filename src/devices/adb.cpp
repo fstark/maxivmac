@@ -24,7 +24,7 @@
 #include "devices/adb_shared.h"
 #include "core/abnormal_ids.h"
 
-static bool ADB_ListenDatBuf;
+static bool s_adbListenDatBuf;
 static uint8_t ADB_IndexDatBuf;
 
 void ADBDevice::doNewState()
@@ -38,23 +38,23 @@ void ADBDevice::doNewState()
 		switch (state)
 		{
 			case 0: /* Start a new command */
-				if (ADB_ListenDatBuf)
+				if (s_adbListenDatBuf)
 				{
-					ADB_ListenDatBuf = false;
-					ADB_SzDatBuf = ADB_IndexDatBuf;
+					s_adbListenDatBuf = false;
+					s_adbSzDatBuf = ADB_IndexDatBuf;
 					ADB_EndListen();
 				}
 				s_adbTalkDatBuf = false;
 				ADB_IndexDatBuf = 0;
-				ADB_CurCmd = machine_->findDevice<VIA1Device>()->shiftOutData();
+				s_adbCurCmd = machine_->findDevice<VIA1Device>()->shiftOutData();
 				/* which sets interrupt, acknowleding command */
 #ifdef _VIA_Debug
-				fprintf(stderr, "in: %d\n", ADB_CurCmd);
+				fprintf(stderr, "in: %d\n", s_adbCurCmd);
 #endif
-				switch ((ADB_CurCmd >> 2) & 3)
+				switch ((s_adbCurCmd >> 2) & 3)
 				{
 					case 0: /* reserved */
-						switch (ADB_CurCmd & 3)
+						switch (s_adbCurCmd & 3)
 						{
 							case 0: /* Send Reset */
 								ADB_DoReset();
@@ -74,7 +74,7 @@ void ADBDevice::doNewState()
 										 "Reserved ADB command");
 						break;
 					case 2: /* listen */
-						ADB_ListenDatBuf = true;
+						s_adbListenDatBuf = true;
 #ifdef _VIA_Debug
 						fprintf(stderr, "*** listening\n");
 #endif
@@ -86,7 +86,7 @@ void ADBDevice::doNewState()
 				break;
 			case 1: /* Transfer date byte (even) */
 			case 2: /* Transfer date byte (odd) */
-				if (!ADB_ListenDatBuf)
+				if (!s_adbListenDatBuf)
 				{
 					/*
 						will get here even if no pending talk data,
@@ -94,7 +94,7 @@ void ADBDevice::doNewState()
 						other than the one polled by the last talk
 						command. this probably indicates a bug.
 					*/
-					if ((!s_adbTalkDatBuf) || (ADB_IndexDatBuf >= ADB_SzDatBuf))
+					if ((!s_adbTalkDatBuf) || (ADB_IndexDatBuf >= s_adbSzDatBuf))
 					{
 						machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
 						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
@@ -106,7 +106,7 @@ void ADBDevice::doNewState()
 						fprintf(stderr, "*** talk one\n");
 #endif
 						machine_->findDevice<VIA1Device>()->shiftInData(
-							ADB_DatBuf[ADB_IndexDatBuf]);
+							s_adbDatBuf[ADB_IndexDatBuf]);
 						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 						ADB_IndexDatBuf += 1;
 					}
@@ -125,14 +125,14 @@ void ADBDevice::doNewState()
 #ifdef _VIA_Debug
 						fprintf(stderr, "*** listen one\n");
 #endif
-						ADB_DatBuf[ADB_IndexDatBuf] =
+						s_adbDatBuf[ADB_IndexDatBuf] =
 							machine_->findDevice<VIA1Device>()->shiftOutData();
 						ADB_IndexDatBuf += 1;
 					}
 				}
 				break;
 			case 3: /* idle */
-				if (ADB_ListenDatBuf)
+				if (s_adbListenDatBuf)
 				{
 					ReportAbnormalID(AbnormalID::kADB_ADB_idle_follows_listen,
 									 "ADB idle follows listen");
@@ -150,7 +150,7 @@ void ADBDevice::doNewState()
 				}
 				else if (CheckForADBanyEvt())
 				{
-					if (((ADB_CurCmd >> 2) & 3) == 3)
+					if (((s_adbCurCmd >> 2) & 3) == 3)
 					{
 						ADB_DoTalk();
 					}
@@ -201,7 +201,7 @@ void ADBDevice::update()
 		}
 		else if (CheckForADBanyEvt())
 		{
-			if (((ADB_CurCmd >> 2) & 3) == 3)
+			if (((s_adbCurCmd >> 2) & 3) == 3)
 			{
 				ADB_DoTalk();
 			}

@@ -3,7 +3,7 @@
 
 	Emulates the IWM found in the Mac Plus.
 
-	This code is adapted from "IWM.c" in vMac by Philip Cummins.
+	This code is adapted from "s_iwm.c" in vMac by Philip Cummins.
 */
 
 /*
@@ -65,11 +65,11 @@ struct IWM_Ty
 	uint8_t Lines;	 /* Used to Access Disk Drive Registers */
 };
 
-static IWM_Ty IWM;
+static IWM_Ty s_iwm;
 
 void IWMDevice::reset()
 {
-	IWM.DataIn = IWM.Handshake = IWM.Status = IWM.Mode = IWM.DataOut = IWM.Lines = 0;
+	s_iwm.DataIn = s_iwm.Handshake = s_iwm.Status = s_iwm.Mode = s_iwm.DataOut = s_iwm.Lines = 0;
 }
 
 typedef enum
@@ -78,16 +78,16 @@ typedef enum
 	Off
 } Mode_Ty;
 
-// Set or clear a control line bit in IWM.Lines.
+// Set or clear a control line bit in s_iwm.Lines.
 static void IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
 {
 	if (the_mode == Off)
 	{
-		IWM.Lines &= (0xFF - line);
+		s_iwm.Lines &= (0xFF - line);
 	}
 	else
 	{
-		IWM.Lines |= line;
+		s_iwm.Lines |= line;
 	}
 }
 
@@ -95,7 +95,7 @@ static void IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
    data, status, or handshake. */
 static uint8_t IWM_Read_Reg()
 {
-	switch ((IWM.Lines & (kq6 + kq7)) >> 6)
+	switch ((s_iwm.Lines & (kq6 + kq7)) >> 6)
 	{
 		case 0:
 			if (!g_machine->config().isSEOrLater())
@@ -105,20 +105,20 @@ static uint8_t IWM_Read_Reg()
 #if IWM_dolog
 			dbglog_WriteNote("IWM Data Read");
 #endif
-			return IWM.DataIn;
+			return s_iwm.DataIn;
 			break;
 		case 1:
 #if IWM_dolog
 			dbglog_WriteNote("IWM Status Read");
 #endif
-			return IWM.Status;
+			return s_iwm.Status;
 			break;
 		case 2:
 			ReportAbnormalID(AbnormalID::kVIA2_IWM_Handshake_Read, "IWM Handshake Read");
 #if IWM_dolog
 			dbglog_WriteNote("IWM Handshake Read");
 #endif
-			return IWM.Handshake;
+			return s_iwm.Handshake;
 			break;
 		case 3:
 		default:
@@ -134,13 +134,13 @@ static uint8_t IWM_Read_Reg()
 // Write the mode register (only when motor is off).
 static void IWM_Write_Reg(uint8_t in)
 {
-	if (((IWM.Lines & kmtr) >> 4) == 0)
+	if (((s_iwm.Lines & kmtr) >> 4) == 0)
 	{
 #if IWM_dolog
 		dbglog_WriteNote("IWM Mode Register Write");
 #endif
-		IWM.Mode = in;
-		IWM.Status = ((IWM.Status & 0xE0) + (IWM.Mode & 0x1F));
+		s_iwm.Mode = in;
+		s_iwm.Status = ((s_iwm.Status & 0xE0) + (s_iwm.Mode & 0x1F));
 	}
 }
 
@@ -179,11 +179,11 @@ uint32_t IWMDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			IWM_Set_Lines(kph3, On);
 			break;
 		case kmtrOff:
-			IWM.Status &= 0xDF;
+			s_iwm.Status &= 0xDF;
 			IWM_Set_Lines(kmtr, Off);
 			break;
 		case kmtrOn:
-			IWM.Status |= 0x20;
+			s_iwm.Status |= 0x20;
 			IWM_Set_Lines(kmtr, On);
 			break;
 		case kintDrive:

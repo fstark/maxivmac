@@ -136,12 +136,12 @@ static void MoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
 	}
 }
 
-static uint32_t ImageDataOffset[NumDrives];
+static uint32_t s_imageDataOffset[NumDrives];
 /* size of any header in disk image file */
-static uint32_t ImageDataSize[NumDrives];
+static uint32_t s_imageDataSize[NumDrives];
 /* size of disk image file contents */
 
-static uint32_t ImageTagOffset[NumDrives];
+static uint32_t s_imageTagOffset[NumDrives];
 /* offset to disk image file tags */
 
 static constexpr int kDC42offset_diskName = 0;
@@ -211,7 +211,7 @@ static void Drive_UpdateChecksums(DriveIndex driveNo)
 {
 	if (!vSonyIsLocked(driveNo))
 	{
-		uint32_t dataOffset = ImageDataOffset[driveNo];
+		uint32_t dataOffset = s_imageDataOffset[driveNo];
 		if (kDC42offset_userData == dataOffset)
 		{
 			/* a disk copy 4.2 image */
@@ -219,7 +219,7 @@ static void Drive_UpdateChecksums(DriveIndex driveNo)
 			uint32_t dataChecksum;
 			uint8_t buffer[SizeCheckSumsToUpdate];
 			uint32_t sonyCount = SizeCheckSumsToUpdate;
-			uint32_t dataSize = ImageDataSize[driveNo];
+			uint32_t dataSize = s_imageDataSize[driveNo];
 
 			/* Checksum image data */
 			result = DC42BlockChecksum(driveNo, dataOffset, dataSize, &dataChecksum);
@@ -232,7 +232,7 @@ static void Drive_UpdateChecksums(DriveIndex driveNo)
 			do_put_mem_long(buffer, dataChecksum);
 			{
 				uint32_t tagChecksum;
-				uint32_t tagOffset = ImageTagOffset[driveNo];
+				uint32_t tagOffset = s_imageTagOffset[driveNo];
 				uint32_t TagSize = (0 == tagOffset) ? 0 : ((dataSize >> 9) * 12);
 				if (TagSize < 12)
 				{
@@ -424,9 +424,9 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *driveNo)
 			{
 				s_sonyMountedMask |= ((uint32_t)1 << i);
 
-				ImageDataOffset[i] = dataOffset;
-				ImageDataSize[i] = dataSize;
-				ImageTagOffset[i] = tagOffset;
+				s_imageDataOffset[i] = dataOffset;
+				s_imageDataSize[i] = dataSize;
+				s_imageTagOffset[i] = tagOffset;
 
 				*driveNo = i;
 			}
@@ -508,7 +508,7 @@ static tMacErr Drive_Transfer(bool isWrite, uint32_t buffera, DriveIndex driveNo
 		}
 		else
 		{
-			uint32_t dataSize = ImageDataSize[driveNo];
+			uint32_t dataSize = s_imageDataSize[driveNo];
 			if (sonyStart > dataSize)
 			{
 				result = tMacErr::eofErr;
@@ -526,7 +526,7 @@ static tMacErr Drive_Transfer(bool isWrite, uint32_t buffera, DriveIndex driveNo
 					hit_eof = true;
 				}
 				result = vSonyTransferVM(isWrite, buffera, driveNo,
-										 ImageDataOffset[driveNo] + sonyStart, L, sonyActCount);
+										 s_imageDataOffset[driveNo] + sonyStart, L, sonyActCount);
 				if ((tMacErr::noErr == result) && hit_eof)
 				{
 					result = tMacErr::eofErr;
@@ -700,7 +700,7 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			result = CheckReadableDrive(driveNo);
 			if (tMacErr::noErr == result)
 			{
-				put_vm_long(p + kParamDiskCount, ImageDataSize[driveNo]);
+				put_vm_long(p + kParamDiskCount, s_imageDataSize[driveNo]);
 				result = tMacErr::noErr;
 			}
 		}
@@ -966,7 +966,7 @@ static tMacErr Sony_Mount(uint32_t p)
 	}
 	else if (get_vm_byte(dvl + kDiskInPlace) == 0x00)
 	{
-		uint32_t L = ImageDataSize[i] >> 9; /* block count */
+		uint32_t L = s_imageDataSize[i] >> 9; /* block count */
 
 #if Sony_dolog
 		dbglog_StartLine();
@@ -1051,7 +1051,7 @@ static tMacErr Sony_PrimeTags(DriveIndex driveNo, uint32_t sonyStart, uint32_t s
 							  bool isWrite)
 {
 	tMacErr result = tMacErr::noErr;
-	uint32_t tagOffset = ImageTagOffset[driveNo];
+	uint32_t tagOffset = s_imageTagOffset[driveNo];
 
 	if ((0 != tagOffset) && (sonyCount > 0))
 	{

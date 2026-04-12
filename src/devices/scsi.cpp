@@ -33,7 +33,7 @@
 
 static constexpr int kSCSI_Size = 0x00010;
 
-static uint8_t SCSI[kSCSI_Size];
+static uint8_t s_scsi[kSCSI_Size];
 
 void SCSIDevice::reset()
 {
@@ -41,7 +41,7 @@ void SCSIDevice::reset()
 
 	for (i = 0; i < kSCSI_Size; i++)
 	{
-		SCSI[i] = 0;
+		s_scsi[i] = 0;
 	}
 }
 
@@ -49,22 +49,22 @@ void SCSIDevice::reset()
    the Mac g_ram SCSI flag so the driver knows reset occurred. */
 static void SCSI_BusReset()
 {
-	SCSI[scsiRd + sCDR] = 0;
-	SCSI[scsiWr + sODR] = 0;
-	SCSI[scsiRd + sICR] = 0x80;
-	SCSI[scsiWr + sICR] &= 0x80;
-	SCSI[scsiRd + sMR] &= 0x40;
-	SCSI[scsiWr + sMR] &= 0x40;
-	SCSI[scsiRd + sTCR] = 0;
-	SCSI[scsiWr + sTCR] = 0;
-	SCSI[scsiRd + sCSR] = 0x80;
-	SCSI[scsiWr + sSER] = 0;
-	SCSI[scsiRd + sBSR] = 0x10;
-	SCSI[scsiWr + sDMAtx] = 0;
-	SCSI[scsiRd + sIDR] = 0;
-	SCSI[scsiWr + sTDMArx] = 0;
-	SCSI[scsiRd + sRESET] = 0;
-	SCSI[scsiWr + sIDMArx] = 0;
+	s_scsi[scsiRd + sCDR] = 0;
+	s_scsi[scsiWr + sODR] = 0;
+	s_scsi[scsiRd + sICR] = 0x80;
+	s_scsi[scsiWr + sICR] &= 0x80;
+	s_scsi[scsiRd + sMR] &= 0x40;
+	s_scsi[scsiWr + sMR] &= 0x40;
+	s_scsi[scsiRd + sTCR] = 0;
+	s_scsi[scsiWr + sTCR] = 0;
+	s_scsi[scsiRd + sCSR] = 0x80;
+	s_scsi[scsiWr + sSER] = 0;
+	s_scsi[scsiRd + sBSR] = 0x10;
+	s_scsi[scsiWr + sDMAtx] = 0;
+	s_scsi[scsiRd + sIDR] = 0;
+	s_scsi[scsiWr + sTDMArx] = 0;
+	s_scsi[scsiRd + sRESET] = 0;
+	s_scsi[scsiWr + sIDMArx] = 0;
 
 	/* The missing piece of the puzzle.. :) */
 	put_ram_word(0xb22, get_ram_word(0xb22) | 0x8000);
@@ -78,23 +78,23 @@ static void SCSI_Check()
 		The arbitration select/reselect scenario
 		[stub.. doesn't really work...]
 	*/
-	if ((SCSI[scsiWr + sODR] >> 7) == 1)
+	if ((s_scsi[scsiWr + sODR] >> 7) == 1)
 	{
 		/* Check if the Mac tries to be an initiator */
-		if ((SCSI[scsiWr + sMR] & 1) == 1)
+		if ((s_scsi[scsiWr + sMR] & 1) == 1)
 		{
 			/* the Mac set arbitration in progress */
 			/*
 				stub! tell the mac that there
 				is arbitration in progress...
 			*/
-			SCSI[scsiRd + sICR] |= 0x40;
+			s_scsi[scsiRd + sICR] |= 0x40;
 			/* ... that we didn't lose arbitration ... */
-			SCSI[scsiRd + sICR] &= ~0x20;
+			s_scsi[scsiRd + sICR] &= ~0x20;
 			/*
 				... and that there isn't a higher priority ID present...
 			*/
-			SCSI[scsiRd + sCDR] = 0x00;
+			s_scsi[scsiRd + sCDR] = 0x00;
 
 			/*
 				... the arbitration and selection/reselection is
@@ -105,26 +105,26 @@ static void SCSI_Check()
 	}
 
 	/* check the chip registers, AS SET BY THE CPU */
-	if ((SCSI[scsiWr + sICR] >> 7) == 1)
+	if ((s_scsi[scsiWr + sICR] >> 7) == 1)
 	{
 		/* Check Assert RST */
 		SCSI_BusReset();
 	}
 	else
 	{
-		SCSI[scsiRd + sICR] &= ~0x80;
-		SCSI[scsiRd + sCSR] &= ~0x80;
+		s_scsi[scsiRd + sICR] &= ~0x80;
+		s_scsi[scsiRd + sCSR] &= ~0x80;
 	}
 
-	if ((SCSI[scsiWr + sICR] >> 2) == 1)
+	if ((s_scsi[scsiWr + sICR] >> 2) == 1)
 	{
 		/* Check Assert SEL */
-		SCSI[scsiRd + sCSR] |= 0x02;
-		SCSI[scsiRd + sBSR] = 0x10;
+		s_scsi[scsiRd + sCSR] |= 0x02;
+		s_scsi[scsiRd + sBSR] = 0x10;
 	}
 	else
 	{
-		SCSI[scsiRd + sCSR] &= ~0x02;
+		s_scsi[scsiRd + sCSR] &= ~0x02;
 	}
 }
 
@@ -135,12 +135,12 @@ uint32_t SCSIDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 		addr *= 2;
 		if (WriteMem)
 		{
-			SCSI[addr + 1] = Data;
+			s_scsi[addr + 1] = Data;
 			SCSI_Check();
 		}
 		else
 		{
-			Data = SCSI[addr];
+			Data = s_scsi[addr];
 		}
 	}
 	return Data;

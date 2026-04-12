@@ -12,10 +12,10 @@
 
 #define ADB_MaxSzDatBuf 8
 
-static uint8_t ADB_SzDatBuf;
+static uint8_t s_adbSzDatBuf;
 static bool s_adbTalkDatBuf = false;
-static uint8_t ADB_DatBuf[ADB_MaxSzDatBuf];
-static uint8_t ADB_CurCmd = 0;
+static uint8_t s_adbDatBuf[ADB_MaxSzDatBuf];
+static uint8_t s_adbCurCmd = 0;
 static uint8_t s_notSoRandAddr = 1;
 
 static uint8_t s_mouseADBAddress;
@@ -25,7 +25,7 @@ static uint16_t s_mouseADBDeltaV = 0;
 
 static void ADB_DoMouseTalk()
 {
-	switch (ADB_CurCmd & 3)
+	switch (s_adbCurCmd & 3)
 	{
 		case 0:
 		{
@@ -89,19 +89,19 @@ static void ADB_DoMouseTalk()
 			}
 			if ((0 != partH) || (0 != partV) || MouseButtonChange)
 			{
-				ADB_SzDatBuf = 2;
+				s_adbSzDatBuf = 2;
 				s_adbTalkDatBuf = true;
-				ADB_DatBuf[0] = (s_savedCurMouseButton ? 0x00 : 0x80) | (partV & 127);
-				ADB_DatBuf[1] = /* 0x00 */ 0x80 | (partH & 127);
+				s_adbDatBuf[0] = (s_savedCurMouseButton ? 0x00 : 0x80) | (partV & 127);
+				s_adbDatBuf[1] = /* 0x00 */ 0x80 | (partH & 127);
 			}
 		}
 			ADBMouseDisabled = 0;
 			break;
 		case 3:
-			ADB_SzDatBuf = 2;
+			s_adbSzDatBuf = 2;
 			s_adbTalkDatBuf = true;
-			ADB_DatBuf[0] = 0x60 | (s_notSoRandAddr & 0x0f);
-			ADB_DatBuf[1] = 0x01;
+			s_adbDatBuf[0] = 0x60 | (s_notSoRandAddr & 0x0f);
+			s_adbDatBuf[1] = 0x01;
 			s_notSoRandAddr += 1;
 			break;
 		default:
@@ -113,13 +113,13 @@ static void ADB_DoMouseTalk()
 
 static void ADB_DoMouseListen()
 {
-	switch (ADB_CurCmd & 3)
+	switch (s_adbCurCmd & 3)
 	{
 		case 3:
-			if (ADB_DatBuf[1] == 0xFE)
+			if (s_adbDatBuf[1] == 0xFE)
 			{
 				/* change address */
-				s_mouseADBAddress = (ADB_DatBuf[0] & 0x0F);
+				s_mouseADBAddress = (s_adbDatBuf[0] & 0x0F);
 			}
 			else
 			{
@@ -180,7 +180,7 @@ static bool CheckForADBkeyEvt(uint8_t *NextADBkeyevt)
 
 static void ADB_DoKeyboardTalk()
 {
-	switch (ADB_CurCmd & 3)
+	switch (s_adbCurCmd & 3)
 	{
 		case 0:
 		{
@@ -188,25 +188,25 @@ static void ADB_DoKeyboardTalk()
 
 			if (CheckForADBkeyEvt(&NextADBkeyevt))
 			{
-				ADB_SzDatBuf = 2;
+				s_adbSzDatBuf = 2;
 				s_adbTalkDatBuf = true;
-				ADB_DatBuf[0] = NextADBkeyevt;
+				s_adbDatBuf[0] = NextADBkeyevt;
 				if (!CheckForADBkeyEvt(&NextADBkeyevt))
 				{
-					ADB_DatBuf[1] = 0xFF;
+					s_adbDatBuf[1] = 0xFF;
 				}
 				else
 				{
-					ADB_DatBuf[1] = NextADBkeyevt;
+					s_adbDatBuf[1] = NextADBkeyevt;
 				}
 			}
 		}
 		break;
 		case 3:
-			ADB_SzDatBuf = 2;
+			s_adbSzDatBuf = 2;
 			s_adbTalkDatBuf = true;
-			ADB_DatBuf[0] = 0x60 | (s_notSoRandAddr & 0x0f);
-			ADB_DatBuf[1] = 0x01;
+			s_adbDatBuf[0] = 0x60 | (s_notSoRandAddr & 0x0f);
+			s_adbDatBuf[1] = 0x01;
 			s_notSoRandAddr += 1;
 			break;
 		default:
@@ -218,13 +218,13 @@ static void ADB_DoKeyboardTalk()
 
 static void ADB_DoKeyboardListen()
 {
-	switch (ADB_CurCmd & 3)
+	switch (s_adbCurCmd & 3)
 	{
 		case 3:
-			if (ADB_DatBuf[1] == 0xFE)
+			if (s_adbDatBuf[1] == 0xFE)
 			{
 				/* change address */
-				s_keyboardADBAddress = (ADB_DatBuf[0] & 0x0F);
+				s_keyboardADBAddress = (s_adbDatBuf[0] & 0x0F);
 			}
 			else
 			{
@@ -261,7 +261,7 @@ static bool CheckForADBanyEvt()
 
 static void ADB_DoTalk()
 {
-	uint8_t Address = ADB_CurCmd >> 4;
+	uint8_t Address = s_adbCurCmd >> 4;
 	if (Address == s_mouseADBAddress)
 	{
 		ADB_DoMouseTalk();
@@ -274,7 +274,7 @@ static void ADB_DoTalk()
 
 static void ADB_EndListen()
 {
-	uint8_t Address = ADB_CurCmd >> 4;
+	uint8_t Address = s_adbCurCmd >> 4;
 	if (Address == s_mouseADBAddress)
 	{
 		ADB_DoMouseListen();
@@ -293,14 +293,14 @@ static void ADB_DoReset()
 
 static void ADB_Flush()
 {
-	uint8_t Address = ADB_CurCmd >> 4;
+	uint8_t Address = s_adbCurCmd >> 4;
 
 	if ((Address == s_keyboardADBAddress) || (Address == s_mouseADBAddress))
 	{
-		ADB_SzDatBuf = 2;
+		s_adbSzDatBuf = 2;
 		s_adbTalkDatBuf = true;
-		ADB_DatBuf[0] = 0x00;
-		ADB_DatBuf[1] = 0x00;
+		s_adbDatBuf[0] = 0x00;
+		s_adbDatBuf[1] = 0x00;
 	}
 	else
 	{

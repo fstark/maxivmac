@@ -18,15 +18,15 @@
 	ReportAbnormalID unused 0x0F0E, 0x0F1E - 0x0FFF
 */
 
-static uint8_t SoundReg801 = 0;
-static uint8_t SoundReg802 = 0;
-static uint8_t SoundReg803 = 0;
-static uint8_t SoundReg804 = 0;
-static uint8_t SoundReg805 = 0;
-static uint8_t SoundReg_Volume = 0; /* 0x806 */
+static uint8_t s_soundReg801 = 0;
+static uint8_t s_soundReg802 = 0;
+static uint8_t s_soundReg803 = 0;
+static uint8_t s_soundReg804 = 0;
+static uint8_t s_soundReg805 = 0;
+static uint8_t s_soundRegVolume = 0; /* 0x806 */
 /* static uint8_t SoundReg807 = 0; */
 
-static uint8_t ASC_SampBuff[0x800];
+static uint8_t s_ascSampBuff[0x800];
 
 struct ASC_ChanR
 {
@@ -34,52 +34,52 @@ struct ASC_ChanR
 	uint8_t phase[4];
 };
 
-static ASC_ChanR ASC_ChanA[4];
+static ASC_ChanR s_ascChanA[4];
 
-static uint16_t ASC_FIFO_Out = 0;
-static uint16_t ASC_FIFO_InA = 0;
-static uint16_t ASC_FIFO_InB = 0;
+static uint16_t s_ascFifoOut = 0;
+static uint16_t s_ascFifoInA = 0;
+static uint16_t s_ascFifoInB = 0;
 static bool s_ascPlaying = false;
 
 #define ASC_dolog 0
 
 static void ASC_RecalcStatus()
 {
-	if ((1 == SoundReg801) && s_ascPlaying)
+	if ((1 == s_soundReg801) && s_ascPlaying)
 	{
-		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200)
+		if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 0x200)
 		{
-			SoundReg804 &= ~0x01;
+			s_soundReg804 &= ~0x01;
 		}
 		else
 		{
-			SoundReg804 |= 0x01;
+			s_soundReg804 |= 0x01;
 		}
-		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x400)
+		if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 0x400)
 		{
-			SoundReg804 |= 0x02;
+			s_soundReg804 |= 0x02;
 		}
 		else
 		{
-			SoundReg804 &= ~0x02;
+			s_soundReg804 &= ~0x02;
 		}
-		if (0 != (SoundReg802 & 2))
+		if (0 != (s_soundReg802 & 2))
 		{
-			if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x200)
+			if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) >= 0x200)
 			{
-				SoundReg804 &= ~0x04;
+				s_soundReg804 &= ~0x04;
 			}
 			else
 			{
-				SoundReg804 |= 0x04;
+				s_soundReg804 |= 0x04;
 			}
-			if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x400)
+			if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) >= 0x400)
 			{
-				SoundReg804 |= 0x08;
+				s_soundReg804 |= 0x08;
 			}
 			else
 			{
-				SoundReg804 &= ~0x08;
+				s_soundReg804 &= ~0x08;
 			}
 		}
 	}
@@ -87,9 +87,9 @@ static void ASC_RecalcStatus()
 
 static void ASC_ClearFIFO()
 {
-	ASC_FIFO_Out = 0;
-	ASC_FIFO_InA = 0;
-	ASC_FIFO_InB = 0;
+	s_ascFifoOut = 0;
+	s_ascFifoInA = 0;
+	s_ascFifoInB = 0;
 	s_ascPlaying = false;
 	ASC_RecalcStatus();
 }
@@ -105,95 +105,95 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 	{
 		if (WriteMem)
 		{
-			if (1 == SoundReg801)
+			if (1 == s_soundReg801)
 			{
 				if (0 == (addr & 0x400))
 				{
-					if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x400)
+					if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 0x400)
 					{
-						SoundReg804 |= 0x02;
+						s_soundReg804 |= 0x02;
 					}
 					else
 					{
 
-						ASC_SampBuff[ASC_FIFO_InA & 0x3FF] = Data;
+						s_ascSampBuff[s_ascFifoInA & 0x3FF] = Data;
 
-						++ASC_FIFO_InA;
-						if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200)
+						++s_ascFifoInA;
+						if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 0x200)
 						{
-							if (0 != (SoundReg804 & 0x01))
+							if (0 != (s_soundReg804 & 0x01))
 							{
 								/* happens normally */
-								SoundReg804 &= ~0x01;
+								s_soundReg804 &= ~0x01;
 							}
 						}
 						else
 						{
 						}
-						if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x400)
+						if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 0x400)
 						{
-							SoundReg804 |= 0x02;
+							s_soundReg804 |= 0x02;
 #if ASC_dolog
 							dbglog_WriteNote("ASC : setting full flag A");
 #endif
 						}
 						else
 						{
-							if (0 != (SoundReg804 & 0x02))
+							if (0 != (s_soundReg804 & 0x02))
 							{
 								ReportAbnormalID(AbnormalID::kASC_full_flag_A_not_already_clear,
 												 "ASC_Access : "
 												 "full flag A not already clear");
-								SoundReg804 &= ~0x02;
+								s_soundReg804 &= ~0x02;
 							}
 						}
 					}
 				}
 				else
 				{
-					if (0 == (SoundReg802 & 2))
+					if (0 == (s_soundReg802 & 2))
 					{
 						ReportAbnormalID(AbnormalID::kASC_Channel_B_for_Mono,
 										 "ASC - Channel B for Mono");
 					}
-					if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x400)
+					if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) >= 0x400)
 					{
 						ReportAbnormalID(AbnormalID::kASC_Channel_B_Overflow,
 										 "ASC - Channel B Overflow");
-						SoundReg804 |= 0x08;
+						s_soundReg804 |= 0x08;
 					}
 					else
 					{
 
-						ASC_SampBuff[0x400 + (ASC_FIFO_InB & 0x3FF)] = Data;
+						s_ascSampBuff[0x400 + (s_ascFifoInB & 0x3FF)] = Data;
 
-						++ASC_FIFO_InB;
-						if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x200)
+						++s_ascFifoInB;
+						if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) >= 0x200)
 						{
-							if (0 != (SoundReg804 & 0x04))
+							if (0 != (s_soundReg804 & 0x04))
 							{
 								/* happens normally */
-								SoundReg804 &= ~0x04;
+								s_soundReg804 &= ~0x04;
 							}
 						}
 						else
 						{
 						}
-						if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x400)
+						if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) >= 0x400)
 						{
-							SoundReg804 |= 0x08;
+							s_soundReg804 |= 0x08;
 #if ASC_dolog
 							dbglog_WriteNote("ASC : setting full flag B");
 #endif
 						}
 						else
 						{
-							if (0 != (SoundReg804 & 0x08))
+							if (0 != (s_soundReg804 & 0x08))
 							{
 								ReportAbnormalID(AbnormalID::kASC_full_flag_B_not_already_clear,
 												 "ASC_Access : "
 												 "full flag B not already clear");
-								SoundReg804 &= ~0x08;
+								s_soundReg804 &= ~0x08;
 							}
 						}
 					}
@@ -206,12 +206,12 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			}
 			else
 			{
-				ASC_SampBuff[addr] = Data;
+				s_ascSampBuff[addr] = Data;
 			}
 		}
 		else
 		{
-			Data = ASC_SampBuff[addr];
+			Data = s_ascSampBuff[addr];
 		}
 
 #if ASC_dolog && 1
@@ -242,7 +242,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				{
 					if (1 == Data)
 					{
-						if (1 != SoundReg801)
+						if (1 != s_soundReg801)
 						{
 							ASC_ClearFIFO();
 						}
@@ -255,11 +255,11 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 											 "ASC - unexpected ENABLE");
 						}
 					}
-					SoundReg801 = Data;
+					s_soundReg801 = Data;
 				}
 				else
 				{
-					Data = SoundReg801;
+					Data = s_soundReg801;
 					/* happens in LodeRunner */
 				}
 #if ASC_dolog && 1
@@ -270,9 +270,9 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				if (WriteMem)
 				{
 #if 1
-					if (0 != SoundReg801)
+					if (0 != s_soundReg801)
 					{
-						if (SoundReg802 == Data)
+						if (s_soundReg802 == Data)
 						{
 							/*
 								this happens normally,
@@ -281,7 +281,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 						}
 						else
 						{
-							if (1 == SoundReg801)
+							if (1 == s_soundReg801)
 							{
 								/*
 									happens in dark castle, if play other sound first,
@@ -297,11 +297,11 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 						ReportAbnormalID(AbnormalID::kASC_unexpected_CONTROL_value,
 										 "ASC - unexpected CONTROL value");
 					}
-					SoundReg802 = Data;
+					s_soundReg802 = Data;
 				}
 				else
 				{
-					Data = SoundReg802;
+					Data = s_soundReg802;
 					ReportAbnormalID(AbnormalID::kASC_reading_CONTROL_value,
 									 "ASC - reading CONTROL value");
 				}
@@ -319,12 +319,12 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					}
 					if (0 != (Data & 0x80))
 					{
-						if (0 != (SoundReg803 & 0x80))
+						if (0 != (s_soundReg803 & 0x80))
 						{
 							ReportAbnormalID(AbnormalID::kASC_set_clear_FIFO_again,
 											 "ASC - set clear FIFO again");
 						}
-						else if (1 != SoundReg801)
+						else if (1 != s_soundReg801)
 						{
 						}
 						else
@@ -337,11 +337,11 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 							*/
 						}
 					}
-					SoundReg803 = Data;
+					s_soundReg803 = Data;
 				}
 				else
 				{
-					Data = SoundReg803;
+					Data = s_soundReg803;
 				}
 #if ASC_dolog && 1
 				dbglog_AddrAccess("ASC_Access Control (FIFO MODE)", Data, WriteMem, addr);
@@ -350,8 +350,8 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			case 0x804:
 				if (WriteMem)
 				{
-					SoundReg804 = Data;
-					if (0 != SoundReg804)
+					s_soundReg804 = Data;
+					if (0 != s_soundReg804)
 					{
 						if (auto *via2 = machine_->findDevice<VIA2Device>()) via2->iCB1_PulseNtfy();
 						/*
@@ -366,10 +366,10 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				}
 				else
 				{
-					Data = SoundReg804;
-					/* SoundReg804 = 0; */
-					SoundReg804 &= ~0x01;
-					SoundReg804 &= ~0x04;
+					Data = s_soundReg804;
+					/* s_soundReg804 = 0; */
+					s_soundReg804 &= ~0x01;
+					s_soundReg804 &= ~0x04;
 					/*
 						In lunar phantom, observe checking
 						full flag before first write, but
@@ -386,12 +386,12 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			case 0x805:
 				if (WriteMem)
 				{
-					SoundReg805 = Data;
+					s_soundReg805 = Data;
 					/* cleared in LodeRunner */
 				}
 				else
 				{
-					Data = SoundReg805;
+					Data = s_soundReg805;
 					ReportAbnormalID(AbnormalID::kASC_reading_WAVE_CONTROL_register,
 									 "ASC - reading WAVE CONTROL register");
 				}
@@ -402,7 +402,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			case 0x806: /* VOLUME */
 				if (WriteMem)
 				{
-					SoundReg_Volume = Data >> 5;
+					s_soundRegVolume = Data >> 5;
 					if (0 != (Data & 0x1F))
 					{
 						ReportAbnormalID(AbnormalID::kASC_unexpected_volume_value,
@@ -411,7 +411,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				}
 				else
 				{
-					Data = SoundReg_Volume << 5;
+					Data = s_soundRegVolume << 5;
 					ReportAbnormalID(AbnormalID::kASC_reading_volume_register,
 									 "ASC - reading volume register");
 				}
@@ -495,11 +495,11 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 
 			if (WriteMem)
 			{
-				ASC_ChanA[chan].freq[b] = Data;
+				s_ascChanA[chan].freq[b] = Data;
 			}
 			else
 			{
-				Data = ASC_ChanA[chan].freq[b];
+				Data = s_ascChanA[chan].freq[b];
 			}
 #if ASC_dolog && 1
 			dbglog_AddrAccess("ASC_Access Control (frequency)", Data, WriteMem, addr);
@@ -517,11 +517,11 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 
 			if (WriteMem)
 			{
-				ASC_ChanA[chan].phase[b] = Data;
+				s_ascChanA[chan].phase[b] = Data;
 			}
 			else
 			{
-				Data = ASC_ChanA[chan].phase[b];
+				Data = s_ascChanA[chan].phase[b];
 			}
 #if ASC_dolog && 1
 			dbglog_AddrAccess("ASC_Access Control (phase)", Data, WriteMem, addr);
@@ -571,7 +571,7 @@ void ASCDevice::subTick(int SubTick)
 	SoundSamplePtr p;
 	uint16_t i;
 	uint16_t n = SubTick_n[SubTick];
-	uint8_t SoundVolume = SoundReg_Volume;
+	uint8_t SoundVolume = s_soundRegVolume;
 
 	while (n > 0)
 	{
@@ -581,21 +581,21 @@ void ASCDevice::subTick(int SubTick)
 			break;
 		}
 
-		if (1 == SoundReg801)
+		if (1 == s_soundReg801)
 		{
 			uint8_t *addr;
 
-			if (0 != (SoundReg802 & 2))
+			if (0 != (s_soundReg802 & 2))
 			{
 
 				if (!s_ascPlaying)
 				{
-					if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200)
+					if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 0x200)
 					{
-						if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x200)
+						if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) >= 0x200)
 						{
-							SoundReg804 &= ~0x01;
-							SoundReg804 &= ~0x04;
+							s_soundReg804 &= ~0x01;
+							s_soundReg804 &= ~0x04;
 							s_ascPlaying = true;
 #if ASC_dolog
 							dbglog_WriteNote("ASC : start stereo playing");
@@ -603,13 +603,13 @@ void ASCDevice::subTick(int SubTick)
 						}
 						else
 						{
-							if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) == 0)
-								if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 370)
+							if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) == 0)
+								if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 370)
 								{
 #if ASC_dolog
 									dbglog_WriteNote("ASC : switch to mono");
 #endif
-									SoundReg802 &= ~2;
+									s_soundReg802 &= ~2;
 									/*
 										cludge to get Tetris to work,
 										may not actually work on real machine.
@@ -621,11 +621,11 @@ void ASCDevice::subTick(int SubTick)
 
 				for (i = 0; i < actL; i++)
 				{
-					if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) == 0)
+					if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) == 0)
 					{
 						s_ascPlaying = false;
 					}
-					if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) == 0)
+					if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) == 0)
 					{
 						s_ascPlaying = false;
 					}
@@ -636,13 +636,13 @@ void ASCDevice::subTick(int SubTick)
 					else
 					{
 
-						addr = ASC_SampBuff + (ASC_FIFO_Out & 0x3FF);
+						addr = s_ascSampBuff + (s_ascFifoOut & 0x3FF);
 
 #if ASC_dolog && 1
 						dbglog_StartLine();
 						dbglog_writeCStr("out sound ");
 						dbglog_writeCStr("[");
-						dbglog_writeHex(ASC_FIFO_Out);
+						dbglog_writeHex(s_ascFifoOut);
 						dbglog_writeCStr("]");
 						dbglog_writeCStr(" = ");
 						dbglog_writeHex(*addr);
@@ -653,7 +653,7 @@ void ASCDevice::subTick(int SubTick)
 
 						*p++ = ((addr[0] + addr[0x400]) << 8) >> 1;
 
-						ASC_FIFO_Out += 1;
+						s_ascFifoOut += 1;
 					}
 				}
 			}
@@ -664,9 +664,9 @@ void ASCDevice::subTick(int SubTick)
 
 				if (!s_ascPlaying)
 				{
-					if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200)
+					if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 0x200)
 					{
-						SoundReg804 &= ~0x01;
+						s_soundReg804 &= ~0x01;
 						s_ascPlaying = true;
 #if ASC_dolog
 						dbglog_WriteNote("ASC : start mono playing");
@@ -676,7 +676,7 @@ void ASCDevice::subTick(int SubTick)
 
 				for (i = 0; i < actL; i++)
 				{
-					if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) == 0)
+					if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) == 0)
 					{
 						s_ascPlaying = false;
 					}
@@ -687,18 +687,18 @@ void ASCDevice::subTick(int SubTick)
 					else
 					{
 
-						addr = ASC_SampBuff + (ASC_FIFO_Out & 0x3FF);
+						addr = s_ascSampBuff + (s_ascFifoOut & 0x3FF);
 
 #if ASC_dolog && 1
 						dbglog_StartLine();
 						dbglog_writeCStr("out sound ");
 						dbglog_writeCStr("[");
-						dbglog_writeHex(ASC_FIFO_Out);
+						dbglog_writeHex(s_ascFifoOut);
 						dbglog_writeCStr("]");
 						dbglog_writeCStr(" = ");
 						dbglog_writeHex(*addr);
 						dbglog_writeCStr(", in buff: ");
-						dbglog_writeHex((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out));
+						dbglog_writeHex((uint16_t)(s_ascFifoInA - s_ascFifoOut));
 						dbglog_writeReturn();
 #endif
 
@@ -707,26 +707,26 @@ void ASCDevice::subTick(int SubTick)
 						/* Move the address on */
 						/* *addr = 0x80; */
 						/* addr += 2; */
-						ASC_FIFO_Out += 1;
+						s_ascFifoOut += 1;
 					}
 				}
 			}
 		}
-		else if (2 == SoundReg801)
+		else if (2 == s_soundReg801)
 		{
 			uint16_t v;
 			uint16_t i0;
 			uint16_t i1;
 			uint16_t i2;
 			uint16_t i3;
-			uint32_t freq0 = do_get_mem_long(ASC_ChanA[0].freq);
-			uint32_t freq1 = do_get_mem_long(ASC_ChanA[1].freq);
-			uint32_t freq2 = do_get_mem_long(ASC_ChanA[2].freq);
-			uint32_t freq3 = do_get_mem_long(ASC_ChanA[3].freq);
-			uint32_t phase0 = do_get_mem_long(ASC_ChanA[0].phase);
-			uint32_t phase1 = do_get_mem_long(ASC_ChanA[1].phase);
-			uint32_t phase2 = do_get_mem_long(ASC_ChanA[2].phase);
-			uint32_t phase3 = do_get_mem_long(ASC_ChanA[3].phase);
+			uint32_t freq0 = do_get_mem_long(s_ascChanA[0].freq);
+			uint32_t freq1 = do_get_mem_long(s_ascChanA[1].freq);
+			uint32_t freq2 = do_get_mem_long(s_ascChanA[2].freq);
+			uint32_t freq3 = do_get_mem_long(s_ascChanA[3].freq);
+			uint32_t phase0 = do_get_mem_long(s_ascChanA[0].phase);
+			uint32_t phase1 = do_get_mem_long(s_ascChanA[1].phase);
+			uint32_t phase2 = do_get_mem_long(s_ascChanA[2].phase);
+			uint32_t phase3 = do_get_mem_long(s_ascChanA[3].phase);
 #if ASC_dolog && 1
 			dbglog_writeCStr("freq0=");
 			dbglog_writeNum(freq0);
@@ -759,8 +759,8 @@ void ASCDevice::subTick(int SubTick)
 				i3 = ((phase3 + 0x8000) >> 16) & 0x1FF;
 #endif
 
-				v = ASC_SampBuff[i0] + ASC_SampBuff[0x0200 + i1] + ASC_SampBuff[0x0400 + i2] +
-					ASC_SampBuff[0x0600 + i3];
+				v = s_ascSampBuff[i0] + s_ascSampBuff[0x0200 + i1] + s_ascSampBuff[0x0400 + i2] +
+					s_ascSampBuff[0x0600 + i3];
 
 #if ASC_dolog && 1
 				dbglog_StartLine();
@@ -780,10 +780,10 @@ void ASCDevice::subTick(int SubTick)
 				*p++ = (v >> 2);
 			}
 
-			do_put_mem_long(ASC_ChanA[0].phase, phase0);
-			do_put_mem_long(ASC_ChanA[1].phase, phase1);
-			do_put_mem_long(ASC_ChanA[2].phase, phase2);
-			do_put_mem_long(ASC_ChanA[3].phase, phase3);
+			do_put_mem_long(s_ascChanA[0].phase, phase0);
+			do_put_mem_long(s_ascChanA[1].phase, phase1);
+			do_put_mem_long(s_ascChanA[2].phase, phase2);
+			do_put_mem_long(s_ascChanA[3].phase, phase3);
 		}
 		else
 		{
@@ -816,20 +816,20 @@ void ASCDevice::subTick(int SubTick)
 	}
 
 #if 1
-	if ((1 == SoundReg801) && s_ascPlaying)
+	if ((1 == s_soundReg801) && s_ascPlaying)
 	{
-		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200)
+		if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 0x200)
 		{
-			if (0 != (SoundReg804 & 0x01))
+			if (0 != (s_soundReg804 & 0x01))
 			{
 				ReportAbnormalID(AbnormalID::kASC_half_flag_A_not_already_clear,
 								 "half flag A not already clear");
-				SoundReg804 &= ~0x01;
+				s_soundReg804 &= ~0x01;
 			}
 		}
 		else
 		{
-			if (0 != (SoundReg804 & 0x01))
+			if (0 != (s_soundReg804 & 0x01))
 			{
 				/* happens in lode runner */
 			}
@@ -839,40 +839,40 @@ void ASCDevice::subTick(int SubTick)
 				dbglog_WriteNote("setting half flag A");
 #endif
 				if (auto *via2 = machine_->findDevice<VIA2Device>()) via2->iCB1_PulseNtfy();
-				SoundReg804 |= 0x01;
+				s_soundReg804 |= 0x01;
 			}
 		}
-		if (((uint16_t)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x400)
+		if (((uint16_t)(s_ascFifoInA - s_ascFifoOut)) >= 0x400)
 		{
-			if (0 == (SoundReg804 & 0x02))
+			if (0 == (s_soundReg804 & 0x02))
 			{
 				ReportAbnormalID(AbnormalID::kASC_full_flag_A_not_already_set,
 								 "full flag A not already set");
-				SoundReg804 |= 0x02;
+				s_soundReg804 |= 0x02;
 			}
 		}
 		else
 		{
-			if (0 != (SoundReg804 & 0x02))
+			if (0 != (s_soundReg804 & 0x02))
 			{
 				/* ReportAbnormal("full flag A not already clear"); */
-				SoundReg804 &= ~0x02;
+				s_soundReg804 &= ~0x02;
 			}
 		}
-		if (0 != (SoundReg802 & 2))
+		if (0 != (s_soundReg802 & 2))
 		{
-			if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x200)
+			if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) >= 0x200)
 			{
-				if (0 != (SoundReg804 & 0x04))
+				if (0 != (s_soundReg804 & 0x04))
 				{
 					ReportAbnormalID(AbnormalID::kASC_half_flag_B_not_already_clear,
 									 "half flag B not already clear");
-					SoundReg804 &= ~0x04;
+					s_soundReg804 &= ~0x04;
 				}
 			}
 			else
 			{
-				if (0 != (SoundReg804 & 0x04))
+				if (0 != (s_soundReg804 & 0x04))
 				{
 					/* happens in Lunar Phantom */
 				}
@@ -882,26 +882,26 @@ void ASCDevice::subTick(int SubTick)
 					dbglog_WriteNote("setting half flag B");
 #endif
 					if (auto *via2 = machine_->findDevice<VIA2Device>()) via2->iCB1_PulseNtfy();
-					SoundReg804 |= 0x04;
+					s_soundReg804 |= 0x04;
 				}
 			}
-			if (((uint16_t)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x400)
+			if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) >= 0x400)
 			{
-				if (0 == (SoundReg804 & 0x08))
+				if (0 == (s_soundReg804 & 0x08))
 				{
 					ReportAbnormalID(AbnormalID::kASC_full_flag_B_not_already_set,
 									 "full flag B not already set");
-					SoundReg804 |= 0x08;
+					s_soundReg804 |= 0x08;
 				}
 			}
 			else
 			{
-				if (0 != (SoundReg804 & 0x08))
+				if (0 != (s_soundReg804 & 0x08))
 				{
 					/*
 						ReportAbnormal("full flag B not already clear");
 					*/
-					SoundReg804 &= ~0x08;
+					s_soundReg804 &= ~0x08;
 				}
 			}
 		}
