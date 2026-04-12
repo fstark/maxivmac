@@ -52,15 +52,16 @@
 #define kVCBQHdr        0x0356
 #define kFCBSPtr        0x034E
 
-/* FCB offsets */
+/* FCB offsets (from Inside Macintosh IV-179) */
 #define kFCBLen         94
-#define kFCBFlNum       0
-#define kFCBFlags       4
-#define kFCBTypByt      5
-#define kFCBEOF         6
-#define kFCBPLen        10
-#define kFCBCrPs        14
-#define kFCBVPtr        18
+#define kFCBFlNum       0    /* LONGINT — file number (0=free) */
+#define kFCBFlags       4    /* byte — flags */
+#define kFCBTypByt      5    /* byte — version number */
+/* fcbSBlk at 6, 2 bytes — first alloc block (not used for HFS) */
+#define kFCBEOF         8    /* LONGINT — logical EOF */
+#define kFCBPLen        12   /* LONGINT — physical EOF */
+#define kFCBCrPs        16   /* LONGINT — mark (current position) */
+#define kFCBVPtr        20   /* LONGINT — pointer to VCB */
 
 /*
 	ParamBlockRec / CInfoPBRec field offsets from A0.
@@ -907,14 +908,14 @@ static void InstallHFSPatch(char *regBase)
 	long dispAddr;
 	Ptr stub;
 
-	oldAddr = (long)NGetTrapAddress(0xA260, ToolTrap);
+	oldAddr = (long)NGetTrapAddress(0xA260, OSTrap);
 	dispAddr = (long)DispatchHFS;
 	stub = MakeHFSStub(dispAddr, oldAddr);
 	if (stub == NULL) {
 		dbg_log(regBase, "SharedDrive: HFS stub alloc failed");
 		return;
 	}
-	NSetTrapAddress((UniversalProcPtr)stub, 0xA260, ToolTrap);
+	NSetTrapAddress((UniversalProcPtr)stub, 0xA260, OSTrap);
 	dbg_log1(regBase, "SharedDrive: HFS patch at %lx", (long)stub);
 }
 
