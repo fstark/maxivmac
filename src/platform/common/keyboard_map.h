@@ -26,5 +26,5 @@ extern bool g_controlKeyPressed;
 tMacErr ROM_IsValid();
 
 /* Aliases for backward compatibility */
-#define Keyboard_UpdateKeyMap1 Keyboard_UpdateKeyMap
-#define DisconnectKeyCodes1 DisconnectKeyCodes
+#define KEYBOARD_UPDATE_KEY_MAP_1 Keyboard_UpdateKeyMap
+#define DISCONNECT_KEY_CODES_1 DisconnectKeyCodes

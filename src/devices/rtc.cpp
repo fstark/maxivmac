@@ -201,7 +201,7 @@ bool RTCDevice::init()
 #endif
 	s_rtc.PARAMRAM[1 + Group2Base] = prb_volClickLo;
 	s_rtc.PARAMRAM[2 + Group2Base] = prb_miscHi;
-	s_rtc.PARAMRAM[3 + Group2Base] = prb_miscLo | ((0 != vMacScreenDepth) ? 0x80 : 0x00);
+	s_rtc.PARAMRAM[3 + Group2Base] = prb_miscLo | ((0 != VMAC_SCREEN_DEPTH) ? 0x80 : 0x00);
 
 	/* XPRAM: extended parameter ram signature */
 	if (g_machine->config().isIIFamily())
@@ -232,7 +232,7 @@ bool RTCDevice::init()
 		s_rtc.PARAMRAM[0x46] = /* 0x42 */ 0x76; /* 'v' */
 		s_rtc.PARAMRAM[0x47] = /* 0x32 */ 0x4D; /* 'M' */
 		/* boot mode = 0x80 + boot depth (cap at 8 bpp for direct modes) */
-		uint8_t bootDepth = (vMacScreenDepth >= 4) ? 3 : (uint8_t)vMacScreenDepth;
+		uint8_t bootDepth = (VMAC_SCREEN_DEPTH >= 4) ? 3 : (uint8_t)VMAC_SCREEN_DEPTH;
 		s_rtc.PARAMRAM[0x48] = 0x80 + bootDepth;
 	}
 

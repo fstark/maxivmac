@@ -694,8 +694,8 @@ static void FillScreenWithGrayPattern()
 				pat = 0xAAAAAAAA;
 				break;
 		}
-		int byteWidth = (int)((uint32_t)vMacScreenWidth * (1 << depth) / 8);
-		for (i = vMacScreenHeight; --i >= 0;)
+		int byteWidth = (int)((uint32_t)VMAC_SCREEN_WIDTH * (1 << depth) / 8);
+		for (i = VMAC_SCREEN_HEIGHT; --i >= 0;)
 		{
 			for (j = byteWidth >> 2; --j >= 0;)
 			{
@@ -716,9 +716,9 @@ static void FillScreenWithGrayPattern()
 	{
 		uint32_t pat = 0xAAAAAAAA;
 
-		for (i = vMacScreenHeight; --i >= 0;)
+		for (i = VMAC_SCREEN_HEIGHT; --i >= 0;)
 		{
-			for (j = vMacScreenMonoByteWidth >> 2; --j >= 0;)
+			for (j = VMAC_SCREEN_MONO_BYTE_WIDTH >> 2; --j >= 0;)
 			{
 				*p1++ = pat;
 			}

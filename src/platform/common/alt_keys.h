@@ -27,7 +27,7 @@ static void CheckAltKeyUseMode()
 	}
 }
 
-static void Keyboard_UpdateKeyMap1(uint8_t key, bool down)
+static void KEYBOARD_UPDATE_KEY_MAP_1(uint8_t key, bool down)
 {
 	if (MKC_Command == key)
 	{
@@ -171,7 +171,7 @@ static void Keyboard_UpdateKeyMap1(uint8_t key, bool down)
 	}
 }
 
-static void DisconnectKeyCodes1(uint32_t KeepMask)
+static void DISCONNECT_KEY_CODES_1(uint32_t KeepMask)
 {
 	DisconnectKeyCodes(KeepMask);
 

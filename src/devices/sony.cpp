@@ -492,7 +492,7 @@ static tMacErr Drive_Transfer(bool isWrite, uint32_t buffera, DriveIndex driveNo
 {
 	tMacErr result;
 
-	QuietEnds();
+	QUIET_ENDS();
 
 	if (nullptr != sonyActCount)
 	{

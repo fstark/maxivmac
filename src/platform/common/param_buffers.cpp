@@ -71,7 +71,7 @@ void UnInitPbufs()
 
 	for (i = 0; i < NumPbufs; ++i)
 	{
-		if (PbufIsAllocated(i))
+		if (PBUF_IS_ALLOCATED(i))
 		{
 			PbufDispose(i);
 		}

@@ -120,18 +120,18 @@ DisplayState &GetDisplayState();
 #define g_screenHeight (GetDisplayState().screenHeight)
 #define g_screenDepth (GetDisplayState().screenDepth)
 
-#define vMacScreenWidth ((long)g_screenWidth)
-#define vMacScreenHeight ((long)g_screenHeight)
-#define vMacScreenDepth ((int)g_screenDepth)
+#define VMAC_SCREEN_WIDTH ((long)g_screenWidth)
+#define VMAC_SCREEN_HEIGHT ((long)g_screenHeight)
+#define VMAC_SCREEN_DEPTH ((int)g_screenDepth)
 
-#define vMacScreenNumPixels ((long)vMacScreenHeight * (long)vMacScreenWidth)
-#define vMacScreenNumBits (vMacScreenNumPixels << vMacScreenDepth)
-#define vMacScreenNumBytes (vMacScreenNumBits / 8)
-#define vMacScreenBitWidth ((long)vMacScreenWidth << vMacScreenDepth)
-#define vMacScreenByteWidth (vMacScreenBitWidth / 8)
+#define VMAC_SCREEN_NUM_PIXELS ((long)VMAC_SCREEN_HEIGHT * (long)VMAC_SCREEN_WIDTH)
+#define VMAC_SCREEN_NUM_BITS (VMAC_SCREEN_NUM_PIXELS << VMAC_SCREEN_DEPTH)
+#define VMAC_SCREEN_NUM_BYTES (VMAC_SCREEN_NUM_BITS / 8)
+#define VMAC_SCREEN_BIT_WIDTH ((long)VMAC_SCREEN_WIDTH << VMAC_SCREEN_DEPTH)
+#define VMAC_SCREEN_BYTE_WIDTH (VMAC_SCREEN_BIT_WIDTH / 8)
 
-#define vMacScreenMonoNumBytes (vMacScreenNumPixels / 8)
-#define vMacScreenMonoByteWidth ((long)vMacScreenWidth / 8)
+#define VMAC_SCREEN_MONO_NUM_BYTES (VMAC_SCREEN_NUM_PIXELS / 8)
+#define VMAC_SCREEN_MONO_BYTE_WIDTH ((long)VMAC_SCREEN_WIDTH / 8)
 
 #define g_useColorMode (GetDisplayState().useColorMode)
 #define g_colorModeWorks (GetDisplayState().colorModeWorks)
@@ -170,7 +170,7 @@ extern uint16_t g_curMouseH;
 extern uint32_t g_quietTime;
 extern uint32_t g_quietSubTicks;
 
-#define QuietEnds()                                                                                \
+#define QUIET_ENDS()                                                                               \
 	{                                                                                              \
 		g_quietTime = 0;                                                                           \
 		g_quietSubTicks = 0;                                                                       \

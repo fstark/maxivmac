@@ -286,8 +286,8 @@ bool EmulatorShell::initMachine()
 	{
 		uint32_t maxW, maxH;
 		Vid_MaxResolutionSize(&maxW, &maxH);
-		uint32_t allocW = (vMacScreenWidth > (long)maxW) ? (uint32_t)vMacScreenWidth : maxW;
-		uint32_t allocH = (vMacScreenHeight > (long)maxH) ? (uint32_t)vMacScreenHeight : maxH;
+		uint32_t allocW = (VMAC_SCREEN_WIDTH > (long)maxW) ? (uint32_t)VMAC_SCREEN_WIDTH : maxW;
+		uint32_t allocH = (VMAC_SCREEN_HEIGHT > (long)maxH) ? (uint32_t)VMAC_SCREEN_HEIGHT : maxH;
 		argbBuffer_ = static_cast<uint8_t *>(calloc(allocW * allocH * 4, 1));
 	}
 	if (!argbBuffer_) return false;
@@ -657,14 +657,14 @@ void EmulatorShell::drawChangesAndClear()
 {
 	if (display_.screenChanged)
 	{
-		int depth = (display_.useColorMode && vMacScreenDepth > 0) ? vMacScreenDepth : 0;
+		int depth = (display_.useColorMode && VMAC_SCREEN_DEPTH > 0) ? VMAC_SCREEN_DEPTH : 0;
 
 		if (depth < 4) BuildPalette();
 
 		const uint32_t *pal = (depth < 4) ? display_.clut32 : nullptr;
 
 		ConvertScreen(g_screenCompareBuff, reinterpret_cast<uint32_t *>(argbBuffer_), pal, depth,
-					  vMacScreenWidth, vMacScreenHeight);
+					  VMAC_SCREEN_WIDTH, VMAC_SCREEN_HEIGHT);
 
 		display_.screenChanged = false;
 		framebufferDirty_ = true;
@@ -673,11 +673,11 @@ void EmulatorShell::drawChangesAndClear()
 
 void EmulatorShell::convertFramebuffer()
 {
-	int depth = (display_.useColorMode && vMacScreenDepth > 0) ? vMacScreenDepth : 0;
+	int depth = (display_.useColorMode && VMAC_SCREEN_DEPTH > 0) ? VMAC_SCREEN_DEPTH : 0;
 	const uint32_t *pal = (depth < 4) ? display_.clut32 : nullptr;
 
 	ConvertScreen(g_screenCompareBuff, reinterpret_cast<uint32_t *>(argbBuffer_), pal, depth,
-				  vMacScreenWidth, vMacScreenHeight);
+				  VMAC_SCREEN_WIDTH, VMAC_SCREEN_HEIGHT);
 }
 
 /* --- Mouse --- */
@@ -697,9 +697,9 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 		NewMousePosh = 0;
 		ShouldHaveCursorHidden = false;
 	}
-	else if (NewMousePosh >= vMacScreenWidth)
+	else if (NewMousePosh >= VMAC_SCREEN_WIDTH)
 	{
-		NewMousePosh = vMacScreenWidth - 1;
+		NewMousePosh = VMAC_SCREEN_WIDTH - 1;
 		ShouldHaveCursorHidden = false;
 	}
 	if (NewMousePosv < 0)
@@ -707,9 +707,9 @@ void EmulatorShell::mousePositionNotify(int NewMousePosh, int NewMousePosv)
 		NewMousePosv = 0;
 		ShouldHaveCursorHidden = false;
 	}
-	else if (NewMousePosv >= vMacScreenHeight)
+	else if (NewMousePosv >= VMAC_SCREEN_HEIGHT)
 	{
-		NewMousePosv = vMacScreenHeight - 1;
+		NewMousePosv = VMAC_SCREEN_HEIGHT - 1;
 		ShouldHaveCursorHidden = false;
 	}
 
@@ -779,8 +779,8 @@ bool EmulatorShell::createMainWindow()
 {
 	int NewWindowX;
 	int NewWindowY;
-	int NewWindowHeight = vMacScreenHeight;
-	int NewWindowWidth = vMacScreenWidth;
+	int NewWindowHeight = VMAC_SCREEN_HEIGHT;
+	int NewWindowWidth = VMAC_SCREEN_WIDTH;
 
 	if (useMagnify_)
 	{
@@ -830,19 +830,19 @@ bool EmulatorShell::createMainWindow()
 			g_viewHSize /= windowScale_;
 			g_viewVSize /= windowScale_;
 		}
-		if (g_viewHSize >= vMacScreenWidth)
+		if (g_viewHSize >= VMAC_SCREEN_WIDTH)
 		{
 			g_viewHStart = 0;
-			g_viewHSize = vMacScreenWidth;
+			g_viewHSize = VMAC_SCREEN_WIDTH;
 		}
 		else
 		{
 			g_viewHSize &= ~1;
 		}
-		if (g_viewVSize >= vMacScreenHeight)
+		if (g_viewVSize >= VMAC_SCREEN_HEIGHT)
 		{
 			g_viewVStart = 0;
-			g_viewVSize = vMacScreenHeight;
+			g_viewVSize = VMAC_SCREEN_HEIGHT;
 		}
 		else
 		{
@@ -957,8 +957,8 @@ void EmulatorShell::toggleWantFullScreen()
 			PlatformDisplayBounds r;
 			if (backend_->getDisplayBounds(&r))
 			{
-				if ((r.w >= vMacScreenWidth * windowScale_) &&
-					(r.h >= vMacScreenHeight * windowScale_))
+				if ((r.w >= VMAC_SCREEN_WIDTH * windowScale_) &&
+					(r.h >= VMAC_SCREEN_HEIGHT * windowScale_))
 				{
 					g_wantMagnify = true;
 				}

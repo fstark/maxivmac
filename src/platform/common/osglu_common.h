@@ -39,7 +39,7 @@ extern bool g_haveMouseMotion;
 
 extern uint32_t g_pbufAllocatedMask;
 extern uint32_t g_pbufSize[NumPbufs];
-#define PbufIsAllocated(i) ((g_pbufAllocatedMask & ((uint32_t)1 << (i))) != 0)
+#define PBUF_IS_ALLOCATED(i) ((g_pbufAllocatedMask & ((uint32_t)1 << (i))) != 0)
 
 extern uint32_t g_theKeys[4];
 extern bool g_mouseButtonState;

@@ -89,7 +89,7 @@ bool FirstFreePbuf(PbufIndex *r)
 
 	for (i = 0; i < NumPbufs; ++i)
 	{
-		if (!PbufIsAllocated(i))
+		if (!PBUF_IS_ALLOCATED(i))
 		{
 			*r = i;
 			return true;
@@ -117,7 +117,7 @@ tMacErr CheckPbuf(PbufIndex pbufNo)
 	{
 		result = tMacErr::nsDrvErr;
 	}
-	else if (!PbufIsAllocated(pbufNo))
+	else if (!PBUF_IS_ALLOCATED(pbufNo))
 	{
 		result = tMacErr::offLinErr;
 	}
@@ -180,7 +180,7 @@ void DiskInsertNotify(DriveIndex driveNo, bool locked)
 		g_sonyWritableMask |= ((uint32_t)1 << driveNo);
 	}
 
-	QuietEnds();
+	QUIET_ENDS();
 }
 
 void DiskEjectedNotify(DriveIndex driveNo)
@@ -202,18 +202,18 @@ static bool ScreenFindChanges(uint8_t *screencurrentbuff)
 	{
 		g_colorMappingChanged = false;
 		g_colorTransValid = false;
-		bufSize = (uint32_t)vMacScreenHeight * vMacScreenByteWidth;
+		bufSize = (uint32_t)VMAC_SCREEN_HEIGHT * VMAC_SCREEN_BYTE_WIDTH;
 		MoveBytes(screencurrentbuff, g_screenCompareBuff, bufSize);
 		return true;
 	}
 
-	if (vMacScreenDepth != 0 && g_useColorMode)
+	if (VMAC_SCREEN_DEPTH != 0 && g_useColorMode)
 	{
-		bufSize = (uint32_t)vMacScreenHeight * vMacScreenByteWidth;
+		bufSize = (uint32_t)VMAC_SCREEN_HEIGHT * VMAC_SCREEN_BYTE_WIDTH;
 	}
 	else
 	{
-		bufSize = (uint32_t)vMacScreenHeight * vMacScreenMonoByteWidth;
+		bufSize = (uint32_t)VMAC_SCREEN_HEIGHT * VMAC_SCREEN_MONO_BYTE_WIDTH;
 	}
 
 	if (0 != memcmp(screencurrentbuff, g_screenCompareBuff, bufSize))
@@ -239,7 +239,7 @@ void Screen_OutputFrame(uint8_t *screencurrentbuff)
 	if (ScreenFindChanges(screencurrentbuff))
 	{
 		g_screenChanged = true;
-		QuietEnds();
+		QUIET_ENDS();
 	}
 }
 
@@ -257,7 +257,7 @@ void AutoScrollScreen()
 	int16_t Shift;
 	int16_t Limit;
 
-	if (vMacScreenWidth != g_viewHSize)
+	if (VMAC_SCREEN_WIDTH != g_viewHSize)
 	{
 		Shift = 0;
 		Limit = g_viewHStart + (g_viewHSize / 16);
@@ -277,7 +277,7 @@ void AutoScrollScreen()
 			if (g_curMouseH > Limit)
 			{
 				Shift = (g_curMouseH - Limit + 1) & (~1);
-				Limit = vMacScreenWidth - g_viewHSize - g_viewHStart;
+				Limit = VMAC_SCREEN_WIDTH - g_viewHSize - g_viewHStart;
 				if (Shift >= Limit)
 				{
 					Shift = Limit;
@@ -293,7 +293,7 @@ void AutoScrollScreen()
 		}
 	}
 
-	if (vMacScreenHeight != g_viewVSize)
+	if (VMAC_SCREEN_HEIGHT != g_viewVSize)
 	{
 		Shift = 0;
 		Limit = g_viewVStart + (g_viewVSize / 16);
@@ -313,7 +313,7 @@ void AutoScrollScreen()
 			if (g_curMouseV > Limit)
 			{
 				Shift = (g_curMouseV - Limit + 1) & (~1);
-				Limit = vMacScreenHeight - g_viewVSize - g_viewVStart;
+				Limit = VMAC_SCREEN_HEIGHT - g_viewVSize - g_viewVStart;
 				if (Shift >= Limit)
 				{
 					Shift = Limit;
@@ -613,7 +613,7 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 			}
 		}
 
-		QuietEnds();
+		QUIET_ENDS();
 	}
 }
 
@@ -632,7 +632,7 @@ void MouseButtonSet(bool down)
 			g_mouseButtonState = down;
 		}
 
-		QuietEnds();
+		QUIET_ENDS();
 	}
 }
 
@@ -657,7 +657,7 @@ void MousePositionSetDelta(uint16_t dh, uint16_t dv)
 			}
 		}
 
-		QuietEnds();
+		QUIET_ENDS();
 	}
 }
 
@@ -677,7 +677,7 @@ void MousePositionSet(uint16_t h, uint16_t v)
 			p->u.pos.v = v;
 		}
 
-		QuietEnds();
+		QUIET_ENDS();
 	}
 }
 
