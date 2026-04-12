@@ -68,6 +68,18 @@ static std::string readGuestString(uint32_t addr, size_t maxLen = 256)
 	return s;
 }
 
+/* Read a Pascal string from guest RAM (first byte = length). */
+static std::string readGuestPascalString(uint32_t addr)
+{
+	if (addr == 0) return "<null>";
+	uint8_t len = get_vm_byte(addr);
+	std::string s;
+	s.reserve(len);
+	for (uint8_t i = 0; i < len; i++)
+		s.push_back(static_cast<char>(get_vm_byte(addr + 1 + i)));
+	return s;
+}
+
 /*
 	Format a guest printf-style string with up to 6 long args.
 	Supported: %lx (hex), %ld (decimal), %lu (unsigned decimal),
@@ -150,6 +162,9 @@ std::string guestFormatLog(uint32_t fmtAddr, uint32_t args[7])
 				break;
 			case 's':
 				out += readGuestString(val);
+				break;
+			case 'S':
+				out += readGuestPascalString(val);
 				break;
 			default:
 				out.push_back('%');

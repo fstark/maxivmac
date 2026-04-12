@@ -740,30 +740,50 @@ short DispatchFlat(char *pb, short trapNum)
 	Globals *g;
 	OSErr err;
 	short refNum;
+	short vRefNum;
+	unsigned long nameAddr;
 
 	SetUpA4();
 	g = *(Globals **)kGlobalsPtr;
 	if (g == NULL) { RestoreA4(); return 1; }
+
+	vRefNum  = *(short *)(pb + pb_ioVRefNum);
+	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+
+	/* Log every entry: trap, vRefNum, name */
+	dbg_log2(g->regBase, "SD:F %02lx vr=%ld", (long)trapNum,
+		(long)vRefNum);
+	if (nameAddr)
+		dbg_log1(g->regBase, "SD:F  nm=%S", nameAddr);
 
 	/* Traps keyed on ioRefNum (open file) */
 	switch (trapNum) {
 		case 0x01: /* _Close */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
+			dbg_log1(g->regBase, "SD: Close ref=%ld",
+				(long)refNum);
 			err = DoClose(pb, g->regBase);
+			dbg_log1(g->regBase, "SD: Close -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case 0x02: /* _Read */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
+			dbg_log2(g->regBase, "SD: Read ref=%ld cnt=%ld",
+				(long)refNum, *(long *)(pb + pb_ioReqCount));
 			err = DoRead(pb, g->regBase);
+			dbg_log2(g->regBase, "SD: Read -> %ld act=%ld",
+				(long)err, *(long *)(pb + pb_ioActCount));
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case 0x03: /* _Write */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
+			dbg_log1(g->regBase, "SD: Write ref=%ld -> wPrErr",
+				(long)refNum);
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
@@ -771,12 +791,16 @@ short DispatchFlat(char *pb, short trapNum)
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
 			err = DoGetEOF(pb);
+			dbg_log2(g->regBase, "SD: GetEOF ref=%ld -> %ld",
+				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case 0x12: /* _SetEOF */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
+			dbg_log1(g->regBase, "SD: SetEOF ref=%ld -> wPrErr",
+				(long)refNum);
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
@@ -784,6 +808,8 @@ short DispatchFlat(char *pb, short trapNum)
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
 			err = DoGetFPos(pb);
+			dbg_log2(g->regBase, "SD: GetFPos ref=%ld -> %ld",
+				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
@@ -791,22 +817,21 @@ short DispatchFlat(char *pb, short trapNum)
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
 			err = DoSetFPos(pb);
+			dbg_log2(g->regBase, "SD: SetFPos ref=%ld -> %ld",
+				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 	}
 
 	/* Traps keyed on ioVRefNum */
-	if (!IsOurVolume(*(short *)(pb + pb_ioVRefNum))) {
+	if (!IsOurVolume(vRefNum)) {
 		RestoreA4(); return 1;
 	}
-
-	dbg_log1(g->regBase, "SD: flat %02lx", (long)trapNum);
 
 	switch (trapNum) {
 		case 0x00: /* _Open */
 		{
-			unsigned long na = *(unsigned long *)(pb + pb_ioNamePtr);
-			if (na) dbg_log1(g->regBase, "SD: Open name=%s", na);
+			dbg_log1(g->regBase, "SD: Open nm=%S", nameAddr);
 			err = DoOpen(pb, g->regBase, g->vcb);
 			dbg_log1(g->regBase, "SD: Open -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
@@ -814,44 +839,81 @@ short DispatchFlat(char *pb, short trapNum)
 		}
 
 		case 0x07: /* _GetVolInfo */
+		{
+			short vidx = *(short *)(pb + pb_ioVolIndex);
+			dbg_log2(g->regBase,
+				"SD: GetVolInfo vidx=%ld nm=%S",
+				(long)vidx, nameAddr);
 			err = DoGetVolInfo(pb, g);
+			dbg_log1(g->regBase, "SD: GetVolInfo -> %ld",
+				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
+		}
 
 		case 0x08: /* _Create */
+			dbg_log1(g->regBase, "SD: Create nm=%S -> wPrErr",
+				nameAddr);
+			*(short *)(pb + pb_ioResult) = -46;
+			RestoreA4(); return 0;
+
 		case 0x09: /* _Delete */
-		case 0x0B: /* _Rename */
-		case 0x0D: /* _SetFileInfo */
-		case 0x10: /* _Allocate */
+			dbg_log1(g->regBase, "SD: Delete nm=%S -> wPrErr",
+				nameAddr);
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case 0x0A: /* _OpenRF */
-		{
-			unsigned long na = *(unsigned long *)(pb + pb_ioNamePtr);
-			if (na) dbg_log1(g->regBase, "SD: OpenRF name=%s -> fnfErr", na);
-			else    dbg_log(g->regBase, "SD: OpenRF (no name) -> fnfErr");
+			dbg_log1(g->regBase, "SD: OpenRF nm=%S -> fnfErr",
+				nameAddr);
 			*(short *)(pb + pb_ioResult) = -43;
 			RestoreA4(); return 0;
-		}
+
+		case 0x0B: /* _Rename */
+			dbg_log1(g->regBase, "SD: Rename nm=%S -> wPrErr",
+				nameAddr);
+			*(short *)(pb + pb_ioResult) = -46;
+			RestoreA4(); return 0;
 
 		case 0x0C: /* _GetFileInfo */
 		{
-			unsigned long na = *(unsigned long *)(pb + pb_ioNamePtr);
-			if (na) dbg_log1(g->regBase, "SD: GetFileInfo name=%s", na);
+			short fidx = *(short *)(pb + pb_ioFDirIndex);
+			dbg_log2(g->regBase, "SD: GFI nm=%S idx=%ld",
+				nameAddr, (long)fidx);
 			err = DoGetFileInfo(pb, g->regBase);
-			dbg_log1(g->regBase, "SD: GetFileInfo -> %ld", (long)err);
+			dbg_log1(g->regBase, "SD: GFI -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 		}
 
+		case 0x0D: /* _SetFileInfo */
+			dbg_log1(g->regBase,
+				"SD: SetFileInfo nm=%S -> wPrErr", nameAddr);
+			*(short *)(pb + pb_ioResult) = -46;
+			RestoreA4(); return 0;
+
 		case 0x0E: /* _UnmountVol */
+			dbg_log(g->regBase, "SD: UnmountVol -> 0");
+			*(short *)(pb + pb_ioResult) = 0;
+			RestoreA4(); return 0;
+
+		case 0x10: /* _Allocate */
+			dbg_log(g->regBase, "SD: Allocate -> wPrErr");
+			*(short *)(pb + pb_ioResult) = -46;
+			RestoreA4(); return 0;
+
 		case 0x13: /* _FlushVol */
+			dbg_log(g->regBase, "SD: FlushVol -> 0");
+			*(short *)(pb + pb_ioResult) = 0;
+			RestoreA4(); return 0;
+
 		case 0x17: /* _Eject */
+			dbg_log(g->regBase, "SD: Eject -> 0");
 			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
 	}
 
+	dbg_log1(g->regBase, "SD: UNHANDLED flat %02lx", (long)trapNum);
 	RestoreA4(); return 1;
 }
 
@@ -864,54 +926,99 @@ short DispatchHFS(char *pb, short selector)
 {
 	Globals *g;
 	OSErr err;
+	short vRefNum;
+	unsigned long nameAddr;
 
 	SetUpA4();
 	g = *(Globals **)kGlobalsPtr;
 	if (g == NULL) { RestoreA4(); return 1; }
 
-	if (!IsOurVolume(*(short *)(pb + pb_ioVRefNum))) {
+	vRefNum  = *(short *)(pb + pb_ioVRefNum);
+	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+
+	/* Log every HFS dispatch entry */
+	dbg_log2(g->regBase, "SD:H %04lx vr=%ld",
+		(long)selector, (long)vRefNum);
+	if (nameAddr)
+		dbg_log1(g->regBase, "SD:H  nm=%S", nameAddr);
+
+	if (!IsOurVolume(vRefNum)) {
 		RestoreA4(); return 1;
 	}
 
-	dbg_log1(g->regBase, "SD: HFS sel=%04lx", (long)selector);
-
 	switch (selector) {
 		case kGetCatInfo:
+		{
+			short idx = *(short *)(pb + pb_ioFDirIndex);
+			long dirID = *(long *)(pb + pb_ioDirID);
+			dbg_log2(g->regBase,
+				"SD: GCI dir=%ld idx=%ld", dirID, (long)idx);
+			if (nameAddr)
+				dbg_log1(g->regBase, "SD: GCI nm=%S", nameAddr);
 			err = DoGetCatInfo(pb, g->regBase);
+			dbg_log1(g->regBase, "SD: GCI -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
+		}
 
 		case kSetCatInfo:
+			dbg_log(g->regBase, "SD: SetCatInfo -> wPrErr");
+			*(short *)(pb + pb_ioResult) = -46;
+			RestoreA4(); return 0;
+
 		case kCatMove:
+			dbg_log(g->regBase, "SD: CatMove -> wPrErr");
+			*(short *)(pb + pb_ioResult) = -46;
+			RestoreA4(); return 0;
+
 		case kDirCreate:
+			dbg_log(g->regBase, "SD: DirCreate -> wPrErr");
+			*(short *)(pb + pb_ioResult) = -46;
+			RestoreA4(); return 0;
+
 		case kSetVInfo:
+			dbg_log(g->regBase, "SD: SetVInfo -> wPrErr");
 			*(short *)(pb + pb_ioResult) = -46;
 			RestoreA4(); return 0;
 
 		case kOpenWD:
 			err = DoOpenWD(pb, g->regBase);
+			dbg_log1(g->regBase, "SD: OpenWD -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case kCloseWD:
 			err = DoCloseWD(pb, g->regBase);
+			dbg_log1(g->regBase, "SD: CloseWD -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case kGetWDInfo:
 			err = DoGetWDInfo(pb, g->regBase);
+			dbg_log1(g->regBase, "SD: GetWDInfo -> %ld",
+				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case kGetVolParms:
+		{
+			long rc = *(long *)(pb + pb_ioReqCount);
+			dbg_log1(g->regBase, "SD: GetVolParms reqCnt=%ld",
+				rc);
 			err = DoGetVolParms(pb, g->regBase);
+			dbg_log1(g->regBase, "SD: GetVolParms -> %ld",
+				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			RestoreA4(); return 0;
+		}
+
+		case kGetFCBInfo:
+			dbg_log(g->regBase, "SD: GetFCBInfo -> paramErr");
+			*(short *)(pb + pb_ioResult) = -50;
 			RestoreA4(); return 0;
 
 		default:
-			/* NEVER fall through for our volume — the real HFS
-			   handler would try to access nonexistent disk structs */
-			dbg_log1(g->regBase, "SD: HFS unhandled sel=%04lx",
+			dbg_log1(g->regBase, "SD: HFS UNHANDLED sel=%04lx",
 				(long)selector);
 			*(short *)(pb + pb_ioResult) = -50;
 			RestoreA4(); return 0;
