@@ -2004,7 +2004,7 @@ void PowerOff_ChangeNtfy()
 
 /* user event queue utilities */
 
-uint16_t MasterEvtQLock = 0;
+uint16_t g_masterEvtQLock = 0;
 /*
 	Takes a few ticks to process button event because
 	of debounce code of Mac. So have this mechanism
@@ -2015,7 +2015,7 @@ bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
 {
 	EvtQEl *p;
 
-	if ((0 == MasterEvtQLock) && (nullptr != (p = EvtQOutP())))
+	if ((0 == g_masterEvtQLock) && (nullptr != (p = EvtQOutP())))
 	{
 		if (EvtQElKind::Key == p->kind)
 		{

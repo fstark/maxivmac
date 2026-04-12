@@ -10,8 +10,8 @@
 
 /* Disk image I/O functions. */
 
-extern FILE *Drives[];
-extern char *DriveNames[];
+extern FILE *g_drives[];
+extern char *g_driveNames[];
 
 void InitDrives();
 void UnInitDrives();

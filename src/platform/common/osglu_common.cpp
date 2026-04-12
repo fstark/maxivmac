@@ -81,7 +81,7 @@ uint32_t g_onTrueTime = 0;
 /* --- Pbuf support --- */
 
 uint32_t g_pbufAllocatedMask;
-uint32_t PbufSize[NumPbufs];
+uint32_t g_pbufSize[NumPbufs];
 
 bool FirstFreePbuf(PbufIndex *r)
 {
@@ -100,7 +100,7 @@ bool FirstFreePbuf(PbufIndex *r)
 
 void PbufNewNotify(PbufIndex pbufNo, uint32_t count)
 {
-	PbufSize[pbufNo] = count;
+	g_pbufSize[pbufNo] = count;
 	g_pbufAllocatedMask |= ((uint32_t)1 << pbufNo);
 }
 
@@ -135,7 +135,7 @@ tMacErr PbufGetSize(PbufIndex pbufNo, uint32_t *count)
 
 	if (tMacErr::noErr == result)
 	{
-		*count = PbufSize[pbufNo];
+		*count = g_pbufSize[pbufNo];
 	}
 
 	return result;
@@ -534,33 +534,33 @@ void dbglog_writelnNum(char *s, int32_t v)
 
 /* --- event queue --- */
 
-EvtQEl EvtQA[MyEvtQSz];
-uint16_t EvtQIn = 0;
-uint16_t EvtQOut = 0;
+EvtQEl g_evtQA[MyEvtQSz];
+uint16_t g_evtQIn = 0;
+uint16_t g_evtQOut = 0;
 
 EvtQEl *EvtQOutP()
 {
 	EvtQEl *p = nullptr;
-	if (EvtQIn != EvtQOut)
+	if (g_evtQIn != g_evtQOut)
 	{
-		p = &EvtQA[EvtQOut & MyEvtQIMask];
+		p = &g_evtQA[g_evtQOut & MyEvtQIMask];
 	}
 	return p;
 }
 
 void EvtQOutDone()
 {
-	++EvtQOut;
+	++g_evtQOut;
 }
 
-bool EvtQNeedRecover = false;
+bool g_evtQNeedRecover = false;
 
 EvtQEl *EvtQElPreviousIn()
 {
 	EvtQEl *p = nullptr;
-	if (EvtQIn - EvtQOut != 0)
+	if (g_evtQIn - g_evtQOut != 0)
 	{
-		p = &EvtQA[(EvtQIn - 1) & MyEvtQIMask];
+		p = &g_evtQA[(g_evtQIn - 1) & MyEvtQIMask];
 	}
 
 	return p;
@@ -569,15 +569,15 @@ EvtQEl *EvtQElPreviousIn()
 EvtQEl *EvtQElAlloc()
 {
 	EvtQEl *p = nullptr;
-	if (EvtQIn - EvtQOut >= MyEvtQSz)
+	if (g_evtQIn - g_evtQOut >= MyEvtQSz)
 	{
-		EvtQNeedRecover = true;
+		g_evtQNeedRecover = true;
 	}
 	else
 	{
-		p = &EvtQA[EvtQIn & MyEvtQIMask];
+		p = &g_evtQA[g_evtQIn & MyEvtQIMask];
 
-		++EvtQIn;
+		++g_evtQIn;
 	}
 
 	return p;
@@ -585,13 +585,13 @@ EvtQEl *EvtQElAlloc()
 
 /* --- keyboard and mouse --- */
 
-uint32_t theKeys[4];
+uint32_t g_theKeys[4];
 
 void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 {
 	uint8_t k = key & 127;
 	uint8_t bit = 1 << (k & 7);
-	uint8_t *kp = reinterpret_cast<uint8_t *>(theKeys);
+	uint8_t *kp = reinterpret_cast<uint8_t *>(g_theKeys);
 	uint8_t *kpi = &kp[k / 8];
 	bool CurDown = ((*kpi & bit) != 0);
 	if (CurDown != down)
@@ -683,10 +683,10 @@ void MyMousePositionSet(uint16_t h, uint16_t v)
 
 void InitKeyCodes()
 {
-	theKeys[0] = 0;
-	theKeys[1] = 0;
-	theKeys[2] = 0;
-	theKeys[3] = 0;
+	g_theKeys[0] = 0;
+	g_theKeys[1] = 0;
+	g_theKeys[2] = 0;
+	g_theKeys[3] = 0;
 }
 
 void DisconnectKeyCodes(uint32_t keepMask)
@@ -698,7 +698,7 @@ void DisconnectKeyCodes(uint32_t keepMask)
 
 	for (j = 0; j < 16; ++j)
 	{
-		uint8_t k1 = (reinterpret_cast<uint8_t *>(theKeys))[j];
+		uint8_t k1 = (reinterpret_cast<uint8_t *>(g_theKeys))[j];
 		if (0 != k1)
 		{
 			uint8_t bit = 1;
@@ -768,12 +768,12 @@ void WarnMsgAbnormalID(uint16_t id)
 
 #if EmLocalTalk
 
-uint32_t e_p[2] = {0, 0};
+uint32_t g_entropyPool[2] = {0, 0};
 
 static void EntropyPoolStir()
 {
-	uint32_t t0a = e_p[0];
-	uint32_t t1a = e_p[1];
+	uint32_t t0a = g_entropyPool[0];
+	uint32_t t1a = g_entropyPool[1];
 
 	uint32_t t0b = t0a * 0xAE3CC725 + 0xD860D735;
 	uint32_t t1b = t1a * 0x9FE72885 + 0x641AD0A9;
@@ -781,14 +781,14 @@ static void EntropyPoolStir()
 	uint32_t t0c = (t0b << 8) + (t1b >> 24);
 	uint32_t t1c = (t1b << 8) + (t0b >> 24);
 
-	e_p[0] = t0c;
-	e_p[1] = t1c;
+	g_entropyPool[0] = t0c;
+	g_entropyPool[1] = t1c;
 }
 
 static void EntropyPoolAddByte(uint8_t v)
 {
-	e_p[0] += v;
-	e_p[1] += v;
+	g_entropyPool[0] += v;
+	g_entropyPool[1] += v;
 
 	EntropyPoolStir();
 }
@@ -803,9 +803,9 @@ void EntropyPoolAddPtr(uint8_t *p, uint32_t n)
 	}
 
 	dbglog_writeCStr("ep: ");
-	dbglog_writeHex(e_p[0]);
+	dbglog_writeHex(g_entropyPool[0]);
 	dbglog_writeCStr(" ");
-	dbglog_writeHex(e_p[1]);
+	dbglog_writeHex(g_entropyPool[1]);
 	dbglog_writeReturn();
 }
 
@@ -814,7 +814,7 @@ uint32_t g_ltMyStamp = 0;
 
 void LT_PickStampNodeHint()
 {
-	g_ltMyStamp = e_p[0];
+	g_ltMyStamp = g_entropyPool[0];
 
 	dbglog_writelnNum("LT_MyStamp ", g_ltMyStamp);
 
@@ -825,7 +825,7 @@ void LT_PickStampNodeHint()
 		{
 			/* user node should be in 1-127 */
 
-			g_ltNodeHint = e_p[1] & 0x7F;
+			g_ltNodeHint = g_entropyPool[1] & 0x7F;
 
 			dbglog_writelnNum("LT_NodeHint ", g_ltNodeHint);
 

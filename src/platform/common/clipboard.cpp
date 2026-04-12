@@ -19,8 +19,8 @@ tMacErr HTCEexport(PbufIndex i)
 #ifdef HAVE_SDL
 	tMacErr err;
 	char *p;
-	uint8_t *s = static_cast<uint8_t *>(PbufDat[i]);
-	uint32_t L = PbufSize[i];
+	uint8_t *s = static_cast<uint8_t *>(g_pbufDat[i]);
+	uint32_t L = g_pbufSize[i];
 	uint32_t sz = MacRoman2UniCodeSize(s, L);
 
 	if (nullptr == (p = static_cast<char *>(malloc(sz + 1))))
@@ -74,7 +74,7 @@ tMacErr HTCEimport(PbufIndex *r)
 	{
 		err = tMacErr::noErr;
 
-		UniCodeStr2MacRoman(s, static_cast<char *>(PbufDat[t]));
+		UniCodeStr2MacRoman(s, static_cast<char *>(g_pbufDat[t]));
 		*r = t;
 		t = NOT_A_PBUF;
 	}

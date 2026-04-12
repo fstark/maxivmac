@@ -460,9 +460,9 @@ void EmulatorShell::dispatchEvent(const PlatformEvent &evt)
 
 void EmulatorShell::processSavedTasks()
 {
-	if (EvtQNeedRecover)
+	if (g_evtQNeedRecover)
 	{
-		EvtQNeedRecover = false;
+		g_evtQNeedRecover = false;
 		EvtQTryRecoverFromFull();
 	}
 
@@ -536,8 +536,8 @@ void EmulatorShell::processSavedTasks()
 	{
 		if (g_sonyNewDiskName != NOT_A_PBUF)
 		{
-			uint8_t *p = static_cast<uint8_t *>(PbufDat[g_sonyNewDiskName]);
-			uint32_t L = PbufSize[g_sonyNewDiskName];
+			uint8_t *p = static_cast<uint8_t *>(g_pbufDat[g_sonyNewDiskName]);
+			uint32_t L = g_pbufSize[g_sonyNewDiskName];
 			char drivename[256];
 			uint32_t j = 0;
 			for (uint32_t i = 0; i < L && j < sizeof(drivename) - 1; ++i)

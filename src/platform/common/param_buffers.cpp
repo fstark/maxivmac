@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 
-void *PbufDat[NumPbufs];
+void *g_pbufDat[NumPbufs];
 
 /* Allocate a Pbuf descriptor for an existing memory pointer. */
 tMacErr PbufNewFromPtr(void *p, uint32_t count, PbufIndex *r)
@@ -26,7 +26,7 @@ tMacErr PbufNewFromPtr(void *p, uint32_t count, PbufIndex *r)
 	else
 	{
 		*r = i;
-		PbufDat[i] = p;
+		g_pbufDat[i] = p;
 		PbufNewNotify(i, count);
 		err = tMacErr::noErr;
 	}
@@ -36,8 +36,8 @@ tMacErr PbufNewFromPtr(void *p, uint32_t count, PbufIndex *r)
 
 void PbufKillToPtr(void **p, uint32_t *count, PbufIndex r)
 {
-	*p = PbufDat[r];
-	*count = PbufSize[r];
+	*p = g_pbufDat[r];
+	*count = g_pbufSize[r];
 
 	PbufDisposeNotify(r);
 }
@@ -80,13 +80,13 @@ void UnInitPbufs()
 
 uint8_t *PbufLock(PbufIndex i)
 {
-	return static_cast<uint8_t *>(PbufDat[i]);
+	return static_cast<uint8_t *>(g_pbufDat[i]);
 }
 
 /* Copy data between a Pbuf and host memory at the given offset. */
 void PbufTransfer(uint8_t *buffer, PbufIndex i, uint32_t offset, uint32_t count, bool isWrite)
 {
-	void *p = static_cast<uint8_t *>(PbufDat[i]) + offset;
+	void *p = static_cast<uint8_t *>(g_pbufDat[i]) + offset;
 	if (isWrite)
 	{
 		(void)memcpy(p, buffer, count);

@@ -2,22 +2,22 @@
 
 #include <cstdio>
 
-FILE *Drives[NumDrives];	 /* open disk image files */
-char *DriveNames[NumDrives]; /* paths of open disk images */
+FILE *g_drives[NumDrives];	   /* open disk image files */
+char *g_driveNames[NumDrives]; /* paths of open disk images */
 
 
 void InitDrives()
 {
 	/*
-		This isn't really needed, Drives[i] and DriveNames[i]
+		This isn't really needed, g_drives[i] and g_driveNames[i]
 		need not have valid values when not vSonyIsInserted[i].
 	*/
 	DriveIndex i;
 
 	for (i = 0; i < NumDrives; ++i)
 	{
-		Drives[i] = nullptr;
-		DriveNames[i] = nullptr;
+		g_drives[i] = nullptr;
+		g_driveNames[i] = nullptr;
 	}
 }
 
@@ -31,7 +31,7 @@ tMacErr vSonyTransfer(bool isWrite, uint8_t *buffer, DriveIndex driveNo, uint32_
 		will do) on failure.
 	*/
 	tMacErr err = tMacErr::miscErr;
-	FILE *refnum = Drives[driveNo];
+	FILE *refnum = g_drives[driveNo];
 	uint32_t newSonyCount = 0;
 
 	if (fseek(refnum, sonyStart, SEEK_SET) >= 0)
@@ -70,7 +70,7 @@ tMacErr vSonyGetSize(DriveIndex driveNo, uint32_t *sonyCount)
 		will do) on failure.
 	*/
 	tMacErr err = tMacErr::miscErr;
-	FILE *refnum = Drives[driveNo];
+	FILE *refnum = g_drives[driveNo];
 	long v;
 
 	if (fseek(refnum, 0, SEEK_END) >= 0)
@@ -96,20 +96,20 @@ static tMacErr vSonyEject0(DriveIndex driveNo, bool deleteit)
 		Macintosh style error code, but -1
 		will do) on failure.
 	*/
-	FILE *refnum = Drives[driveNo];
+	FILE *refnum = g_drives[driveNo];
 
 	DiskEjectedNotify(driveNo);
 
-	if (deleteit && DriveNames[driveNo] != nullptr)
+	if (deleteit && g_driveNames[driveNo] != nullptr)
 	{
-		(void)remove(DriveNames[driveNo]);
+		(void)remove(g_driveNames[driveNo]);
 	}
 
 	fclose(refnum);
-	Drives[driveNo] = nullptr; /* not really needed */
+	g_drives[driveNo] = nullptr; /* not really needed */
 
-	free(DriveNames[driveNo]);
-	DriveNames[driveNo] = nullptr;
+	free(g_driveNames[driveNo]);
+	g_driveNames[driveNo] = nullptr;
 
 	return tMacErr::noErr;
 }
@@ -126,7 +126,7 @@ tMacErr vSonyEjectDelete(DriveIndex driveNo)
 
 tMacErr vSonyGetName(DriveIndex driveNo, PbufIndex *r)
 {
-	char *path = DriveNames[driveNo];
+	char *path = g_driveNames[driveNo];
 	if (nullptr == path)
 	{
 		return tMacErr::miscErr;
@@ -157,7 +157,7 @@ tMacErr vSonyGetName(DriveIndex driveNo, PbufIndex *r)
 		return err;
 	}
 
-	UniCodeStr2MacRoman(name, static_cast<char *>(PbufDat[t]));
+	UniCodeStr2MacRoman(name, static_cast<char *>(g_pbufDat[t]));
 	*r = t;
 	return tMacErr::noErr;
 }
@@ -195,8 +195,8 @@ bool Sony_Insert0(FILE *refnum, bool locked, char *drivepath)
 		/* printf("Sony_Insert0 %d\n", (int)driveNo); */
 
 		{
-			Drives[driveNo] = refnum;
-			DriveNames[driveNo] = (drivepath != nullptr) ? strdup(drivepath) : nullptr;
+			g_drives[driveNo] = refnum;
+			g_driveNames[driveNo] = (drivepath != nullptr) ? strdup(drivepath) : nullptr;
 			DiskInsertNotify(driveNo, locked);
 
 			IsOk = true;

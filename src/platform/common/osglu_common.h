@@ -38,10 +38,10 @@ extern int16_t g_savedMouseV;
 extern bool g_haveMouseMotion;
 
 extern uint32_t g_pbufAllocatedMask;
-extern uint32_t PbufSize[NumPbufs];
+extern uint32_t g_pbufSize[NumPbufs];
 #define PbufIsAllocated(i) ((g_pbufAllocatedMask & ((uint32_t)1 << (i))) != 0)
 
-extern uint32_t theKeys[4];
+extern uint32_t g_theKeys[4];
 extern bool g_mouseButtonState;
 
 /* event queue */
@@ -49,13 +49,13 @@ extern bool g_mouseButtonState;
 #define MyEvtQSz (1 << MyEvtQLg2Sz)
 #define MyEvtQIMask (MyEvtQSz - 1)
 
-extern EvtQEl EvtQA[MyEvtQSz];
-extern uint16_t EvtQIn;
-extern uint16_t EvtQOut;
-extern bool EvtQNeedRecover;
+extern EvtQEl g_evtQA[MyEvtQSz];
+extern uint16_t g_evtQIn;
+extern uint16_t g_evtQOut;
+extern bool g_evtQNeedRecover;
 
 #if EmLocalTalk
-extern uint32_t e_p[2];
+extern uint32_t g_entropyPool[2];
 extern uint32_t g_ltMyStamp;
 #endif
 

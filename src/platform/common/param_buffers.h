@@ -7,7 +7,7 @@
 #include "platform/common/osglu_ui.h"
 
 
-extern void *PbufDat[NumPbufs];
+extern void *g_pbufDat[NumPbufs];
 
 tMacErr PbufNewFromPtr(void *p, uint32_t count, PbufIndex *r);
 void PbufKillToPtr(void **p, uint32_t *count, PbufIndex r);

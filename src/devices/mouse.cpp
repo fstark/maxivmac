@@ -43,9 +43,9 @@ bool Mouse_Enabled()
    for Classic keyboard models via VIA1 wire. */
 void MouseDevice::update()
 {
-	if (0 != MasterEvtQLock)
+	if (0 != g_masterEvtQLock)
 	{
-		--MasterEvtQLock;
+		--g_masterEvtQLock;
 	}
 
 	/*
@@ -62,7 +62,7 @@ void MouseDevice::update()
 	{
 		EvtQEl *p;
 
-		if ((0 == MasterEvtQLock) && (nullptr != (p = EvtQOutP())))
+		if ((0 == g_masterEvtQLock) && (nullptr != (p = EvtQOutP())))
 		{
 			if (g_machine->config().emClassicKbrd && EvtQElKind::MouseDelta == p->kind)
 			{
@@ -105,13 +105,13 @@ void MouseDevice::update()
 	{
 		EvtQEl *p;
 
-		if ((0 == MasterEvtQLock) && (nullptr != (p = EvtQOutP())))
+		if ((0 == g_masterEvtQLock) && (nullptr != (p = EvtQOutP())))
 		{
 			if (EvtQElKind::MouseButton == p->kind)
 			{
 				g_wires.set(Wire_VIA1_iB3, p->u.press.down ? 0 : 1);
 				EvtQOutDone();
-				MasterEvtQLock = 4;
+				g_masterEvtQLock = 4;
 			}
 		}
 	}

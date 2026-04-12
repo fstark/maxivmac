@@ -155,7 +155,7 @@ using iCountt = uint32_t;
 #define kNumSubTicks 16
 
 
-extern uint16_t MasterEvtQLock;
+extern uint16_t g_masterEvtQLock;
 extern bool FindKeyEvent(int *VirtualKey, bool *KeyDown);
 
 
