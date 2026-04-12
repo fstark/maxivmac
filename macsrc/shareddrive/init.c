@@ -62,31 +62,66 @@
 #define kFCBCrPs        14
 #define kFCBVPtr        18
 
-/* CInfoPBRec / HParamBlockRec field offsets from A0 */
+/*
+	ParamBlockRec / CInfoPBRec field offsets from A0.
+	Computed from Inside Macintosh IV-155..IV-177.
+	FInfo = 16 bytes (fdType 4 + fdCreator 4 + fdFlags 2 + fdLocation 4 + fdFldr 2)
+*/
+
+/* Shared header (all variants) */
 #define pb_ioResult     16
 #define pb_ioNamePtr    18
 #define pb_ioVRefNum    22
-#define pb_ioRefNum     24
-#define pb_ioFDirIndex  28
-#define pb_ioFlAttrib   30
-#define pb_ioFlFndrInfo 32
-#define pb_ioFlNum      36
-#define pb_ioFlLgLen    40
-#define pb_ioFlPyLen    44
-#define pb_ioFlRLgLen   50
-#define pb_ioFlRPyLen   54
-#define pb_ioFlCrDat    58
-#define pb_ioFlMdDat    62
-#define pb_ioBuffer     32
-#define pb_ioReqCount   36
-#define pb_ioActCount   40
-#define pb_ioPosMode    44
-#define pb_ioPosOffset  46
+#define pb_ioRefNum     24   /* also ioFRefNum */
+
+/* ioParam variant (for _Open, _Read, _Write, _Close, _GetEOF, _SetFPos...) */
+#define pb_ioMisc       28   /* Ptr — _GetEOF result goes here */
+#define pb_ioBuffer     32   /* Ptr */
+#define pb_ioReqCount   36   /* LONGINT */
+#define pb_ioActCount   40   /* LONGINT */
+#define pb_ioPosMode    44   /* INTEGER */
+#define pb_ioPosOffset  46   /* LONGINT */
+
+/* fileParam variant (for _GetFileInfo, _SetFileInfo, _Create, _Delete) */
+#define pb_ioFDirIndex  28   /* INTEGER */
+#define pb_ioFlAttrib   30   /* SignedByte */
+#define pb_ioFlFndrInfo 32   /* FInfo, 16 bytes */
+#define pb_ioFlNum      48   /* LONGINT — file number */
+#define pb_ioFlStBlk    52   /* INTEGER */
+#define pb_ioFlLgLen    54   /* LONGINT — data fork logical EOF */
+#define pb_ioFlPyLen    58   /* LONGINT — data fork physical EOF */
+#define pb_ioFlRStBlk   62   /* INTEGER */
+#define pb_ioFlRLgLen   64   /* LONGINT — rsrc fork logical EOF */
+#define pb_ioFlRPyLen   68   /* LONGINT — rsrc fork physical EOF */
+#define pb_ioFlCrDat    72   /* LONGINT — creation date */
+#define pb_ioFlMdDat    76   /* LONGINT — modification date */
+
+/* CInfoPBRec hFileInfo variant (for PBGetCatInfo, files) */
+/* Same as fileParam up through ioFlMdDat, then: */
+#define pb_ioFlParID    100  /* LONGINT — parent dir ID */
+
+/* CInfoPBRec dirInfo variant (for PBGetCatInfo, directories) */
+/* Shares header + ioFDirIndex/ioFlAttrib with hFileInfo */
+#define pb_ioDrUsrWds   32   /* DInfo, 16 bytes */
+#define pb_ioDrDirID    48   /* LONGINT — directory ID */
+#define pb_ioDrNmFls    52   /* INTEGER — number of files in dir */
+#define pb_ioDrCrDat    72   /* LONGINT */
+#define pb_ioDrMdDat    76   /* LONGINT */
+#define pb_ioDrParID    100  /* LONGINT */
+
+/* volumeParam variant (for _GetVolInfo / PBHGetVInfo) */
+#define pb_ioVolIndex   28   /* INTEGER */
+#define pb_ioVCrDate    30   /* LONGINT */
+#define pb_ioVLsMod     34   /* LONGINT (HFS) */
+#define pb_ioVAtrb      38   /* INTEGER */
+#define pb_ioVNmFls     40   /* INTEGER */
+#define pb_ioVNmAlBlks  46   /* INTEGER */
+#define pb_ioVAlBlkSiz  48   /* LONGINT */
+#define pb_ioVClpSiz    52   /* LONGINT */
+#define pb_ioVFrBlk     62   /* INTEGER */
+
+/* HFS-specific PBGetCatInfo: ioDirID is at same offset as ioFlNum */
 #define pb_ioDirID      48
-#define pb_ioDrNmFls    40
-#define pb_ioDrParID    100
-#define pb_ioDrCrDat    58
-#define pb_ioDrMdDat    62
 
 /* HFS selectors */
 #define kGetCatInfo       0x0009
@@ -282,8 +317,8 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 	if (flags & 0x10) {
 		/* Directory */
 		*(unsigned char *)(pb + pb_ioFlAttrib) = 0x10;
-		*(long *)(pb + pb_ioDrNmFls) = sizeOrCount;
-		*(long *)(pb + pb_ioDirID) = cnid;
+		*(short *)(pb + pb_ioDrNmFls) = (short)sizeOrCount;
+		*(long *)(pb + pb_ioDrDirID) = cnid;
 		*(long *)(pb + pb_ioDrParID) = parentID;
 		*(long *)(pb + pb_ioDrCrDat) = crDate;
 		*(long *)(pb + pb_ioDrMdDat) = modDate;
@@ -299,7 +334,7 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		*(long *)(pb + pb_ioFlRPyLen) = 0;
 		*(long *)(pb + pb_ioFlCrDat) = crDate;
 		*(long *)(pb + pb_ioFlMdDat) = modDate;
-		*(long *)(pb + pb_ioDirID) = parentID;
+		*(long *)(pb + pb_ioFlParID) = parentID;
 	}
 	return 0;
 }
@@ -447,8 +482,8 @@ static OSErr DoGetEOF(char *pb)
 {
 	Ptr fcb = GetFCB(*(short *)(pb + pb_ioRefNum));
 	if (fcb == NULL) return -43;
-	/* ioMisc at offset 28 holds the EOF for _GetEOF result */
-	*(long *)(pb + 28) = *(long *)(fcb + kFCBEOF);
+	/* _GetEOF returns result in ioMisc (offset 28) */
+	*(long *)(pb + pb_ioMisc) = *(long *)(fcb + kFCBEOF);
 	return 0;
 }
 
@@ -493,13 +528,14 @@ static OSErr DoGetVolInfo(char *pb, Globals *g)
 		p[4]='r'; p[5]='e'; p[6]='d';
 	}
 	*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
-	*(short *)(pb + 30) = (short)0x8000; /* ioVAtrb: locked */
-	*(short *)(pb + pb_ioDrNmFls) = (short)g->volFileCount;
-	*(short *)(pb + 42) = 1024;          /* ioVNmAlBlks */
-	*(long *)(pb + 44)  = 512;           /* ioVAlBlkSiz */
-	*(short *)(pb + 50) = 0;             /* ioVFreeBks */
-	*(long *)(pb + pb_ioFlCrDat) = 0;
-	*(long *)(pb + pb_ioFlMdDat) = 0;
+	*(short *)(pb + pb_ioVAtrb) = (short)0x8000; /* locked */
+	*(short *)(pb + pb_ioVNmFls) = (short)g->volFileCount;
+	*(short *)(pb + pb_ioVNmAlBlks) = 1024;
+	*(long *)(pb + pb_ioVAlBlkSiz) = 512;
+	*(long *)(pb + pb_ioVClpSiz) = 512;
+	*(short *)(pb + pb_ioVFrBlk) = 0;
+	*(long *)(pb + pb_ioVCrDate) = 0;
+	*(long *)(pb + pb_ioVLsMod) = 0;
 	return 0;
 }
 
@@ -930,21 +966,28 @@ void main(void)
 		unsigned long now;
 		GetDateTime(&now);
 
-		v[7] = 6; /* vcbVN length byte */
-		v[8]='S'; v[9]='h'; v[10]='a';
-		v[11]='r'; v[12]='e'; v[13]='d';
+		/* VCB field offsets from Inside Macintosh IV-155 */
+		*(short *)(v + 4)   = 1;             /* qType = fsQType */
+		*(short *)(v + 8)   = 0x4244;        /* vcbSigWord = HFS */
+		*(long  *)(v + 10)  = now;           /* vcbCrDate */
+		*(long  *)(v + 14)  = now;           /* vcbLsMod */
+		*(short *)(v + 18)  = (short)0x8080; /* vcbAtrb: locked */
+		*(short *)(v + 20)  = (short)g->volFileCount; /* vcbNmFls */
+		*(short *)(v + 26)  = 1024;          /* vcbNmAlBlks */
+		*(long  *)(v + 28)  = 512;           /* vcbAlBlkSiz */
+		*(long  *)(v + 32)  = 512;           /* vcbClpSiz */
+		*(long  *)(v + 38)  = 16;            /* vcbNxtCNID */
+		*(short *)(v + 42)  = 0;             /* vcbFreeBks */
 
-		*(short *)(v + 70)  = kOurVRefNum;   /* vcbVRefNum */
+		/* vcbVN at offset 44: Pascal string, 1 len + 27 chars */
+		v[44] = 6;
+		v[45]='S'; v[46]='h'; v[47]='a';
+		v[48]='r'; v[49]='e'; v[50]='d';
+
 		*(short *)(v + 72)  = kOurDriveNum;  /* vcbDrvNum */
 		*(short *)(v + 74)  = kOurDrvrRefNum;/* vcbDRefNum */
-		*(short *)(v + 76)  = (short)0x8080; /* vcbAtrb: locked */
-		*(short *)(v + 78)  = (short)g->volFileCount;
-		*(long  *)(v + 82)  = now;           /* vcbCrDate */
-		*(long  *)(v + 86)  = now;           /* vcbLsMod */
-		*(short *)(v + 94)  = 1024;          /* vcbNmAlBlks */
-		*(long  *)(v + 96)  = 512;           /* vcbAlBlkSiz */
-		*(long  *)(v + 98)  = 512;           /* vcbClpSiz */
-		*(short *)(v + 100) = 0;             /* vcbFreeBks */
+		*(short *)(v + 76)  = 0;             /* vcbFSID */
+		*(short *)(v + 78)  = kOurVRefNum;   /* vcbVRefNum */
 	}
 	Enqueue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
 	dbg_log1(regBase, "SharedDrive: VCB at %lx", (long)g->vcb);
