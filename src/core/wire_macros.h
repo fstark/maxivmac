@@ -12,10 +12,10 @@
 #include "core/wire_ids.h"
 #include "core/wire_bus.h"
 
-#define SoundDisable (g_wires.data()[Wire_SoundDisable])
-#define SoundVolb0 (g_wires.data()[Wire_SoundVolb0])
-#define SoundVolb1 (g_wires.data()[Wire_SoundVolb1])
-#define SoundVolb2 (g_wires.data()[Wire_SoundVolb2])
+#define SOUND_DISABLE (g_wires.data()[Wire_SoundDisable])
+#define SOUND_VOL_B0 (g_wires.data()[Wire_SoundVolb0])
+#define SOUND_VOL_B1 (g_wires.data()[Wire_SoundVolb1])
+#define SOUND_VOL_B2 (g_wires.data()[Wire_SoundVolb2])
 
 #define VIA1_iA0 (g_wires.data()[Wire_VIA1_iA0])
 #define VIA1_iA1 (g_wires.data()[Wire_VIA1_iA1])
@@ -38,7 +38,7 @@
 #define VIA1_iCB2 (g_wires.data()[Wire_VIA1_iCB2])
 
 /* Named signal aliases */
-#define MemOverlay (g_wires.data()[Wire_MemOverlay])
+#define MEM_OVERLAY (g_wires.data()[Wire_MemOverlay])
 #define IWMvSel (g_wires.data()[Wire_VIA1_iA5])
 #define SCCwaitrq (g_wires.data()[Wire_VIA1_iA7])
 #define RTCdataLine (g_wires.data()[Wire_VIA1_iB0])
@@ -48,7 +48,7 @@
 #define ADB_st0 (g_wires.data()[Wire_VIA1_iB4])
 #define ADB_st1 (g_wires.data()[Wire_VIA1_iB5])
 #define ADB_Data (g_wires.data()[Wire_VIA1_iCB2])
-#define Addr32 (g_wires.data()[Wire_VIA2_iB3])
+#define ADDR32 (g_wires.data()[Wire_VIA2_iB3])
 
 /* VIA2 aliases */
 #define VIA2_iA0 (g_wires.data()[Wire_VIA2_iA0])
@@ -63,8 +63,8 @@
 #define VIA1_InterruptRequest (g_wires.data()[Wire_VIA1_InterruptRequest])
 #define SCCInterruptRequest (g_wires.data()[Wire_SCCInterruptRequest])
 #define ADBMouseDisabled (g_wires.data()[Wire_ADBMouseDisabled])
-#define Vid_VBLinterrupt (g_wires.data()[Wire_VBLinterrupt])
-#define Vid_VBLintunenbl (g_wires.data()[Wire_VBLintunenbl])
+#define VID_VBL_INTERRUPT (g_wires.data()[Wire_VBLinterrupt])
+#define VID_VBL_INT_UNENBL (g_wires.data()[Wire_VBLintunenbl])
 
 /* ChangeNtfy aliases — map wire names to callback function names */
 #define VIA1_iA4_ChangeNtfy MemOverlay_ChangeNtfy

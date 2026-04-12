@@ -77,7 +77,7 @@ static VIAConfig MakeVIA1Config_Plus()
 	v.portAWires = {Wire_SoundVolb0, Wire_SoundVolb1, Wire_SoundVolb2, Wire_VIA1_iA3,
 					Wire_VIA1_iA4,	 Wire_VIA1_iA5,	  Wire_VIA1_iA6,   Wire_VIA1_iA7};
 	/* On Plus, VIA1 port B bit 3 is mouse button, bits 4-5 are mouse quadrature,
-	   bit 7 is SoundDisable.  Route these to functional wire IDs. */
+	   bit 7 is SOUND_DISABLE.  Route these to functional wire IDs. */
 	v.portBWires = {Wire_VIA1_iB0, Wire_VIA1_iB1, Wire_VIA1_iB2, Wire_VIA1_iB3,
 					Wire_VIA1_iB4, Wire_VIA1_iB5, Wire_VIA1_iB6, Wire_SoundDisable};
 	v.cb2Wire = Wire_VIA1_iCB2;
@@ -102,7 +102,7 @@ static VIAConfig MakeVIA1Config_SE()
 	/* SE/Classic: port A bits 0-2 are sound volume (same as Plus) */
 	v.portAWires = {Wire_SoundVolb0, Wire_SoundVolb1, Wire_SoundVolb2, Wire_VIA1_iA3,
 					Wire_VIA1_iA4,	 Wire_VIA1_iA5,	  Wire_VIA1_iA6,   Wire_VIA1_iA7};
-	/* SE/Classic: port B bit 7 is SoundDisable (same as Plus).
+	/* SE/Classic: port B bit 7 is SOUND_DISABLE (same as Plus).
 	   Bits 3-5 are ADB (ADB_Int, ADB_st0, ADB_st1), not mouse quadrature. */
 	v.portBWires = {Wire_VIA1_iB0, Wire_VIA1_iB1, Wire_VIA1_iB2, Wire_VIA1_iB3,
 					Wire_VIA1_iB4, Wire_VIA1_iB5, Wire_VIA1_iB6, Wire_SoundDisable};

@@ -923,7 +923,7 @@ static void SetUp_io()
 {
 	ATTer r{};
 
-	if (Addr32)
+	if (ADDR32)
 	{
 		r.cmpmask = io32::kMask;
 		r.cmpvalu = io32::kBase | io32::kVIA1;
@@ -939,7 +939,7 @@ static void SetUp_io()
 	r.device = g_machine->findDevice<VIA1Device>();
 	AddToATTList(&r);
 
-	if (Addr32)
+	if (ADDR32)
 	{
 		r.cmpmask = io32::kMask;
 		r.cmpvalu = io32::kBase | io32::kVIA2;
@@ -955,7 +955,7 @@ static void SetUp_io()
 	r.device = g_machine->findDevice<VIA2Device>();
 	AddToATTList(&r);
 
-	if (Addr32)
+	if (ADDR32)
 	{
 		r.cmpmask = io32::kMask;
 		r.cmpvalu = io32::kBase | io32::kSCC;
@@ -971,7 +971,7 @@ static void SetUp_io()
 	r.device = g_machine->findDevice<SCCDevice>();
 	AddToATTList(&r);
 
-	if (Addr32)
+	if (ADDR32)
 	{
 		r.cmpmask = io32::kMask;
 		r.cmpvalu = io32::kBase | io32::kExtn;
@@ -987,7 +987,7 @@ static void SetUp_io()
 	r.device = &g_extnDevice;
 	AddToATTList(&r);
 
-	if (Addr32)
+	if (ADDR32)
 	{
 		r.cmpmask = io32::kMask;
 		r.cmpvalu = io32::kBase | io32::kSCSI;
@@ -1003,7 +1003,7 @@ static void SetUp_io()
 	r.device = g_machine->findDevice<SCSIDevice>();
 	AddToATTList(&r);
 
-	if (Addr32)
+	if (ADDR32)
 	{
 		r.cmpmask = io32::kMask;
 		r.cmpvalu = io32::kBase | io32::kASC;
@@ -1019,7 +1019,7 @@ static void SetUp_io()
 	r.device = g_machine->findDevice<ASCDevice>();
 	AddToATTList(&r);
 
-	if (Addr32)
+	if (ADDR32)
 	{
 		r.cmpmask = io32::kMask;
 		r.cmpvalu = io32::kBase | io32::kIWM;
@@ -1043,7 +1043,7 @@ static void SetUp_address24()
 	ATTer r{};
 
 
-	if (MemOverlay)
+	if (MEM_OVERLAY)
 	{
 		r.cmpmask = GetOverlayROMCmpZeroMask() | (0x00FFFFFF & ~((1 << GetRAMLn2Spc()) - 1));
 		r.cmpvalu = kRAM_Base;
@@ -1104,7 +1104,7 @@ static void SetUp_address32()
 	const auto &cfg = g_machine->config();
 	ATTer r{};
 
-	if (MemOverlay)
+	if (MEM_OVERLAY)
 	{
 		r.cmpmask = ~((1 << 30) - 1);
 		r.cmpvalu = 0;
@@ -1216,7 +1216,7 @@ static void SetUp_address32()
 /* Mac II/IIx: address space dispatcher */
 static void SetUp_address_II()
 {
-	if (Addr32)
+	if (ADDR32)
 	{
 		SetUp_address32();
 	}
@@ -1303,7 +1303,7 @@ static void SetUp_address_compact()
 	const auto &cfg = g_machine->config();
 	ATTer r{};
 
-	if (MemOverlay)
+	if (MEM_OVERLAY)
 	{
 		r.cmpmask = GetOverlayROMCmpZeroMask() | (0x00FFFFFF & ~((1 << GetRAMLn2Spc()) - 1));
 		r.cmpvalu = kRAM_Base;
@@ -1319,7 +1319,7 @@ static void SetUp_address_compact()
 
 	r.cmpmask = kROM_cmpmask;
 	r.cmpvalu = cfg.romBase;
-	if (cfg.isSEOrLater() && MemOverlay)
+	if (cfg.isSEOrLater() && MEM_OVERLAY)
 	{
 		r.usebase = nullptr;
 		r.Access = kATTA_ntfymask;
@@ -1334,7 +1334,7 @@ static void SetUp_address_compact()
 		AddToATTListWithMTB(&r);
 	}
 
-	if (MemOverlay)
+	if (MEM_OVERLAY)
 	{
 		r.cmpmask = 0x00E00000;
 		r.cmpvalu = kRAM_Overlay_Base;

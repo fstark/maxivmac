@@ -528,7 +528,7 @@ bool VideoDevice::init()
 
 void VideoDevice::update()
 {
-	if (!Vid_VBLintunenbl)
+	if (!VID_VBL_INT_UNENBL)
 	{
 		g_wires.set(Wire_VBLinterrupt, 0);
 		if (auto *via2 = machine_->findDevice<VIA2Device>()) via2->iCA1_PulseNtfy();
@@ -783,7 +783,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #if VID_dolog
 			dbglog_WriteNote("Video_Access kCmndVideoGetIntEnbl");
 #endif
-			put_vm_word(p + 8, Vid_VBLintunenbl ? 0 : 1);
+			put_vm_word(p + 8, VID_VBL_INT_UNENBL ? 0 : 1);
 			result = tMacErr::noErr;
 			break;
 		case kCmndVideoSetIntEnbl:

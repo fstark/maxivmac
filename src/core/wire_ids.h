@@ -23,7 +23,7 @@ enum WireID
 	Wire_VIA1_iA1, // PB100: PMU bus bit 1
 	Wire_VIA1_iA2, // PB100: PMU bus bit 2
 	Wire_VIA1_iA3, // SCCvSync
-	Wire_VIA1_iA4, // MemOverlay
+	Wire_VIA1_iA4, // MEM_OVERLAY
 	Wire_VIA1_iA5, // IWMvSel
 	Wire_VIA1_iA6, // PB100: PMU bus bit 6
 	Wire_VIA1_iA7, // SCCwaitrq
@@ -49,12 +49,12 @@ enum WireID
 	Wire_VIA2_iA3,
 	Wire_VIA2_iA4,
 	Wire_VIA2_iA5,
-	Wire_VIA2_iA6, // Addr32 related
-	Wire_VIA2_iA7, // Addr32 related
+	Wire_VIA2_iA6, // ADDR32 related
+	Wire_VIA2_iA7, // ADDR32 related
 	Wire_VIA2_iB0,
 	Wire_VIA2_iB1,
 	Wire_VIA2_iB2, // PowerOff
-	Wire_VIA2_iB3, // Addr32
+	Wire_VIA2_iB3, // ADDR32
 	Wire_VIA2_iB4,
 	Wire_VIA2_iB5,
 	Wire_VIA2_iB6,
