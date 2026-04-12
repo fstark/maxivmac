@@ -47,6 +47,7 @@ set(MINIVMAC_SOURCES
     src/core/machine_obj.cpp
     src/core/machine.cpp
     src/core/extn_clip.cpp
+    src/core/extn_extfs.cpp
     src/core/state_recorder.cpp
 
     # CPU

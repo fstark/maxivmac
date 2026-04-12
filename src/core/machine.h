@@ -181,6 +181,7 @@ enum
 	kExtnVideo, /* must stay at index 3 to match reference VidROM */
 	kExtnParamBuffers,
 	kExtnHostTextClipExchange,
+	kExtnExtFS,
 
 	kNumExtns
 };

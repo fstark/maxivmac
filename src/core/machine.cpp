@@ -429,6 +429,7 @@ static constexpr uint32_t kFindExtnExtension = 0x64E1F58A;
 static constexpr uint32_t kDiskDriverExtension = 0x4C9219E6;
 static constexpr uint32_t kHostParamBuffersExtension = 0x314C87BF;
 static constexpr uint32_t kHostClipExchangeExtension = 0x27B130CA;
+static constexpr uint32_t kExtFSExtension = 0x5A2F8C01;
 
 static constexpr int kCmndFindExtnFind = 1;
 static constexpr int kCmndFindExtnId2Code = 2;
@@ -475,6 +476,11 @@ static void ExtnFind_Access(uint32_t p)
 				put_vm_word(p + kParamFindExtnTheId, kExtnFindExtn);
 				result = tMacErr::noErr;
 			}
+			else if (extn == kExtFSExtension)
+			{
+				put_vm_word(p + kParamFindExtnTheId, kExtnExtFS);
+				result = tMacErr::noErr;
+			}
 			else
 			{
 				/* not found */
@@ -503,6 +509,11 @@ static void ExtnFind_Access(uint32_t p)
 			else if (extn == kExtnFindExtn)
 			{
 				put_vm_long(p + kParamFindExtnTheExtn, kFindExtnExtension);
+				result = tMacErr::noErr;
+			}
+			else if (extn == kExtnExtFS)
+			{
+				put_vm_long(p + kParamFindExtnTheExtn, kExtFSExtension);
 				result = tMacErr::noErr;
 			}
 			else
@@ -544,12 +555,17 @@ static uint32_t s_regParam[7]; /* p0–p6 */
 
 /* Forward declaration — implemented in extn_clip.cpp */
 #include "core/extn_clip.h"
+#include "core/extn_extfs.h"
 
 static void regDispatch(uint16_t cmd)
 {
 	if (cmd >= 0x100 && cmd <= 0x1FF)
 	{
 		ExtnClipDispatch(cmd, s_regParam, s_regResult);
+	}
+	else if (cmd >= 0x200 && cmd <= 0x2FF)
+	{
+		ExtnExtFSDispatch(cmd, s_regParam, s_regResult);
 	}
 	else
 	{
