@@ -34,6 +34,10 @@ static constexpr uint16_t kExtFSCloseWD = 0x20C;
 static constexpr uint16_t kExtFSDbgLog = 0x20D;
 static constexpr uint16_t kExtFSBeginTrace = 0x20E;
 static constexpr uint16_t kExtFSEndTrace = 0x20F;
+static constexpr uint16_t kExtFSCreateFile = 0x210;
+static constexpr uint16_t kExtFSWrite = 0x211;
+static constexpr uint16_t kExtFSDeleteFile = 0x212;
+static constexpr uint16_t kExtFSSetFileInfo = 0x213;
 
 /* ── Catalog ──────────────────────────────────────── */
 
@@ -483,7 +487,17 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 				break;
 			}
 
-			FILE *fp = fopen(e->hostPath.c_str(), "rb");
+			std::string path = e->hostPath;
+			if (fork == 1) path += ".rsrc";
+
+			FILE *fp = fopen(path.c_str(), "r+b");
+			if (!fp) fp = fopen(path.c_str(), "rb");
+			if (!fp && fork == 1)
+			{
+				/* Resource fork doesn't exist — create it */
+				fp = fopen(path.c_str(), "w+b");
+				if (fp) fprintf(stderr, "[ExtFS]   → created new rsrc fork\n");
+			}
 			if (!fp)
 			{
 				fprintf(stderr, "[ExtFS]   → fopen failed\n");
@@ -673,6 +687,199 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			EndTraceTraps();
 			regResult = 0;
+		}
+		break;
+
+		case kExtFSCreateFile:
+		{
+			/* p0 = parentDirID, p1 = name ptr in guest RAM → p0 = CNID */
+			uint32_t parentDir = regParam[0];
+			uint32_t nameAddr = regParam[1];
+			std::string macName = readPascalString(nameAddr);
+
+			fprintf(stderr, "[ExtFS] CreateFile dir=%u name=\"%s\"\n", parentDir, macName.c_str());
+
+			/* Check if it already exists */
+			const CatalogEntry *existing = findByNameInDir(parentDir, macName);
+			if (existing)
+			{
+				fprintf(stderr, "[ExtFS]   → dupFNErr (already exists cnid=%u)\n", existing->cnid);
+				regResult = 48; /* dupFNErr */
+				break;
+			}
+
+			/* Find host path of parent directory */
+			std::string hostDir;
+			if (parentDir == kRootDirID)
+				hostDir = s_sharedDir;
+			else
+			{
+				const CatalogEntry *parent = findByCNID(parentDir);
+				if (!parent || !parent->isDirectory)
+				{
+					fprintf(stderr, "[ExtFS]   → dirNFErr\n");
+					regResult = 120; /* dirNFErr */
+					break;
+				}
+				hostDir = parent->hostPath;
+			}
+
+			/* Create the file on disk */
+			std::string hostPath = hostDir + "/" + macName;
+			FILE *fp = fopen(hostPath.c_str(), "wb");
+			if (!fp)
+			{
+				fprintf(stderr, "[ExtFS]   → ioErr (fopen failed)\n");
+				regResult = 36; /* ioErr */
+				break;
+			}
+			fclose(fp);
+
+			/* Add to catalog */
+			CatalogEntry ce{};
+			ce.cnid = s_nextCNID++;
+			ce.parentDirID = parentDir;
+			ce.hostPath = hostPath;
+			ce.macName = macName;
+			ce.isDirectory = false;
+			ce.dataForkSize = 0;
+			ce.type = 0;
+			ce.creator = 0;
+			uint32_t now =
+				static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+										  std::chrono::system_clock::now().time_since_epoch())
+										  .count() +
+									  kMacEpochOffset);
+			ce.crDate = now;
+			ce.modDate = now;
+			s_catalog.push_back(ce);
+
+			regParam[0] = ce.cnid;
+			fprintf(stderr, "[ExtFS]   → cnid=%u path=\"%s\"\n", ce.cnid, hostPath.c_str());
+			regResult = 0;
+		}
+		break;
+
+		case kExtFSWrite:
+		{
+			/* p0 = handle, p1 = offset, p2 = count, p3 = guest buf addr */
+			uint32_t handle = regParam[0];
+			uint32_t offset = regParam[1];
+			uint32_t count = regParam[2];
+			uint32_t guestBuf = regParam[3];
+
+			fprintf(stderr, "[ExtFS] Write h=%u off=%u cnt=%u buf=$%08X\n", handle, offset, count,
+					guestBuf);
+
+			auto it = s_openFiles.find(handle);
+			if (it == s_openFiles.end())
+			{
+				fprintf(stderr, "[ExtFS]   → rfNumErr\n");
+				regResult = 51; /* rfNumErr */
+				break;
+			}
+
+			FILE *fp = it->second.fp;
+			fseek(fp, static_cast<long>(offset), SEEK_SET);
+
+			uint32_t totalWritten = 0;
+			uint8_t buf[4096];
+			while (totalWritten < count)
+			{
+				uint32_t chunk = std::min(count - totalWritten, uint32_t(sizeof(buf)));
+				for (uint32_t i = 0; i < chunk; i++)
+					buf[i] = get_vm_byte(guestBuf + totalWritten + i);
+				size_t wrote = fwrite(buf, 1, chunk, fp);
+				totalWritten += static_cast<uint32_t>(wrote);
+				if (wrote < chunk) break;
+			}
+			fflush(fp);
+			regParam[0] = totalWritten;
+			fprintf(stderr, "[ExtFS]   → wrote %u bytes\n", totalWritten);
+			regResult = 0;
+		}
+		break;
+
+		case kExtFSDeleteFile:
+		{
+			/* p0 = parentDirID, p1 = name ptr in guest RAM */
+			uint32_t parentDir = regParam[0];
+			uint32_t nameAddr = regParam[1];
+			std::string macName = readPascalString(nameAddr);
+
+			fprintf(stderr, "[ExtFS] Delete dir=%u name=\"%s\"\n", parentDir, macName.c_str());
+
+			const CatalogEntry *e = findByNameInDir(parentDir, macName);
+			if (!e)
+			{
+				fprintf(stderr, "[ExtFS]   → fnfErr\n");
+				regResult = 43; /* fnfErr */
+				break;
+			}
+			if (e->isDirectory)
+			{
+				fprintf(stderr, "[ExtFS]   → fBsyErr (is directory)\n");
+				regResult = 47; /* fBsyErr */
+				break;
+			}
+
+			/* Delete from disk */
+			std::error_code ec;
+			fs::remove(e->hostPath, ec);
+			/* Also delete .rsrc if it exists */
+			fs::remove(e->hostPath + ".rsrc", ec);
+
+			/* Remove from catalog */
+			uint32_t cnid = e->cnid;
+			for (auto it = s_catalog.begin(); it != s_catalog.end(); ++it)
+			{
+				if (it->cnid == cnid)
+				{
+					s_catalog.erase(it);
+					break;
+				}
+			}
+
+			fprintf(stderr, "[ExtFS]   → deleted cnid=%u\n", cnid);
+			regResult = 0;
+		}
+		break;
+
+		case kExtFSSetFileInfo:
+		{
+			/* p0 = CNID, p1 = type, p2 = creator */
+			uint32_t cnid = regParam[0];
+			uint32_t type = regParam[1];
+			uint32_t creator = regParam[2];
+
+			char t[5], c[5];
+			t[0] = (type >> 24) & 0xFF;
+			t[1] = (type >> 16) & 0xFF;
+			t[2] = (type >> 8) & 0xFF;
+			t[3] = type & 0xFF;
+			t[4] = 0;
+			c[0] = (creator >> 24) & 0xFF;
+			c[1] = (creator >> 16) & 0xFF;
+			c[2] = (creator >> 8) & 0xFF;
+			c[3] = creator & 0xFF;
+			c[4] = 0;
+			fprintf(stderr, "[ExtFS] SetFileInfo cnid=%u type='%s' creator='%s'\n", cnid, t, c);
+
+			/* Find and update catalog entry */
+			for (auto &entry : s_catalog)
+			{
+				if (entry.cnid == cnid)
+				{
+					entry.type = type;
+					entry.creator = creator;
+					regResult = 0;
+					fprintf(stderr, "[ExtFS]   → updated\n");
+					goto setfileinfo_done;
+				}
+			}
+			fprintf(stderr, "[ExtFS]   → fnfErr\n");
+			regResult = 43; /* fnfErr */
+		setfileinfo_done:;
 		}
 		break;
 

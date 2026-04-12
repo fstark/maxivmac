@@ -21,6 +21,10 @@
 	  $20B ExtFSOpenWD    p0=vRefNum, p1=dirID -> p0=wdRefNum
 	  $20C ExtFSCloseWD   p0=wdRefNum
 	  $20D ExtFSDbgLog    p0=fmt string addr, p1-p6=args
+	  $210 ExtFSCreateFile p0=parentDirID, p1=namePtr -> p0=CNID
+	  $211 ExtFSWrite     p0=handle, p1=offset, p2=count, p3=bufAddr
+	  $212 ExtFSDeleteFile p0=parentDirID, p1=namePtr
+	  $213 ExtFSSetFileInfo p0=CNID, p1=type, p2=creator
 
 	Trap patching approach:
 	  Each patched trap gets a small dynamically-generated 68k code
@@ -387,6 +391,170 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		*(long *)(pb + pb_ioFlMdDat) = modDate;
 		*(long *)(pb + pb_ioFlParID) = parentID;
 	}
+	return 0;
+}
+
+/* ---- File creation / deletion / writing ---- */
+
+static OSErr DoCreate(char *pb, char *regBase)
+{
+	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	long dirID;
+
+	if (nameAddr == 0) return -50;
+
+	dirID = ResolveDir(vRefNum, 0, regBase);
+
+	reg_set(regBase, 0, (unsigned long)dirID);
+	reg_set(regBase, 1, nameAddr);
+	reg_command(regBase, 0x0210); /* ExtFSCreateFile */
+	if (reg_result(regBase) != 0)
+		return -(short)reg_result(regBase);
+	return 0;
+}
+
+static OSErr DoDelete(char *pb, char *regBase)
+{
+	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	long dirID;
+
+	if (nameAddr == 0) return -50;
+
+	dirID = ResolveDir(vRefNum, 0, regBase);
+
+	reg_set(regBase, 0, (unsigned long)dirID);
+	reg_set(regBase, 1, nameAddr);
+	reg_command(regBase, 0x0212); /* ExtFSDeleteFile */
+	if (reg_result(regBase) != 0)
+		return -(short)reg_result(regBase);
+	return 0;
+}
+
+static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb)
+{
+	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	unsigned long cnid, handle;
+	long size, dirID;
+	short refNum;
+
+	if (nameAddr == 0) return -50;
+
+	dirID = ResolveDir(vRefNum, 0, regBase);
+
+	/* Look up file by name */
+	reg_set(regBase, 0, (unsigned long)dirID);
+	reg_set(regBase, 1, nameAddr);
+	reg_command(regBase, 0x0209); /* ObjByName */
+	cnid = reg_get(regBase, 0);
+	if (cnid == 0) return -43; /* fnfErr */
+
+	/* Open resource fork on host (creates .rsrc if needed) */
+	reg_set(regBase, 0, cnid);
+	reg_set(regBase, 1, 1); /* fork = 1 = resource */
+	reg_command(regBase, 0x0204); /* Open */
+	if (reg_result(regBase) != 0)
+		return -43; /* fnfErr — file itself doesn't exist */
+	handle = reg_get(regBase, 0);
+
+	/* Get resource fork size: seek to end */
+	/* The host returned a handle; we need the size.
+	   For resource forks we get size from the .rsrc file. */
+	/* Use GetCatInfoByName to get size — but that returns data fork size.
+	   For resource forks, we read how much data is there by checking
+	size = 0; /* Will grow as resource manager
+		reg_command(regBase, 0x0206); /* Close */
+		return -42; /* tmfoErr */
+	}
+
+	/* Store host handle */
+	{
+		Ptr fcb = GetFCB(refNum);
+		*(long *)(fcb + kFCBPLen) = handle;
+	}
+
+	*(short *)(pb + pb_ioRefNum) = refNum;
+	return 0;
+}
+
+static OSErr DoWrite(char *pb, char *regBase)
+{
+	short refNum = *(short *)(pb + pb_ioRefNum);
+	unsigned long buffer = *(unsigned long *)(pb + pb_ioBuffer);
+	long reqCount = *(long *)(pb + pb_ioReqCount);
+	short posMode = *(short *)(pb + pb_ioPosMode);
+	long posOffset = *(long *)(pb + pb_ioPosOffset);
+	Ptr fcb;
+	long mark, eof, handle;
+	unsigned long actual;
+
+	fcb = GetFCB(refNum);
+	if (fcb == NULL) return -43;
+
+	mark = *(long *)(fcb + kFCBCrPs);
+	eof  = *(long *)(fcb + kFCBEOF);
+	handle = *(long *)(fcb + kFCBPLen);
+
+	switch (posMode & 0x03) {
+		case 1: mark = posOffset; break;
+		case 2: mark = eof + posOffset; break;
+		case 3: mark += posOffset; break;
+	}
+	if (mark < 0) mark = 0;
+
+	if (reqCount <= 0) {
+		*(long *)(pb + pb_ioActCount) = 0;
+		*(long *)(pb + pb_ioPosOffset) = mark;
+		return 0;
+	}
+
+	/* Write to host */
+	reg_set(regBase, 0, handle);
+	reg_set(regBase, 1, (unsigned long)mark);
+	reg_set(regBase, 2, (unsigned long)reqCount);
+	reg_set(regBase, 3, buffer);
+	reg_command(regBase, 0x0211); /* ExtFSWrite */
+	actual = reg_get(regBase, 0);
+
+	mark += actual;
+	if (mark > eof) {
+		eof = mark;
+		*(long *)(fcb + kFCBEOF) = eof;
+	}
+	*(long *)(fcb + kFCBCrPs) = mark;
+	*(long *)(pb + pb_ioActCount) = actual;
+	*(long *)(pb + pb_ioPosOffset) = mark;
+	return (actual < (unsigned long)reqCount) ? -36 : 0;
+}
+
+static OSErr DoSetFileInfo(char *pb, char *regBase)
+{
+	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	unsigned long cnid, type, creator;
+	long dirID;
+
+	if (nameAddr == 0) return -50;
+
+	dirID = ResolveDir(vRefNum, 0, regBase);
+
+	reg_set(regBase, 0, (unsigned long)dirID);
+	reg_set(regBase, 1, nameAddr);
+	reg_command(regBase, 0x0209); /* ObjByName */
+	cnid = reg_get(regBase, 0);
+	if (cnid == 0) return -43;
+
+	type    = *(unsigned long *)(pb + pb_ioFlFndrInfo);
+	creator = *(unsigned long *)(pb + pb_ioFlFndrInfo + 4);
+
+	reg_set(regBase, 0, cnid);
+	reg_set(regBase, 1, type);
+	reg_set(regBase, 2, creator);
+	reg_command(regBase, 0x0213); /* ExtFSSetFileInfo */
+	if (reg_result(regBase) != 0)
+		return -(short)reg_result(regBase);
 	return 0;
 }
 
@@ -784,9 +952,12 @@ short DispatchFlat(char *pb, short trapNum)
 		case 0x03: /* _Write */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log1(g->regBase, "SD _Write ref=%ld -> wPrErr",
-				(long)refNum);
-			*(short *)(pb + pb_ioResult) = -46;
+			dbg_log2(g->regBase, "SD _Write ref=%ld cnt=%ld",
+				(long)refNum, *(long *)(pb + pb_ioReqCount));
+			err = DoWrite(pb, g->regBase);
+			dbg_log2(g->regBase, "SD _Write -> %ld act=%ld",
+				(long)err, *(long *)(pb + pb_ioActCount));
+			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case 0x11: /* _GetEOF */
@@ -801,9 +972,16 @@ short DispatchFlat(char *pb, short trapNum)
 		case 0x12: /* _SetEOF */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log1(g->regBase,
-				"SD _SetEOF ref=%ld -> wPrErr", (long)refNum);
-			*(short *)(pb + pb_ioResult) = -46;
+			{
+				long newEOF = *(long *)(pb + pb_ioMisc);
+				Ptr fcb = GetFCB(refNum);
+				dbg_log2(g->regBase,
+					"SD _SetEOF ref=%ld eof=%ld",
+					(long)refNum, newEOF);
+				if (fcb != NULL)
+					*(long *)(fcb + kFCBEOF) = newEOF;
+			}
+			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
 
 		case 0x18: /* _GetFPos */
@@ -907,23 +1085,32 @@ short DispatchFlat(char *pb, short trapNum)
 
 		case 0x08: /* _Create */
 			dbg_log2(g->regBase,
-				"SD _Create vr=%ld nm=%S -> wPrErr",
+				"SD _Create vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			*(short *)(pb + pb_ioResult) = -46;
+			err = DoCreate(pb, g->regBase);
+			dbg_log1(g->regBase, "SD _Create -> %ld",
+				(long)err);
+			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case 0x09: /* _Delete */
 			dbg_log2(g->regBase,
-				"SD _Delete vr=%ld nm=%S -> wPrErr",
+				"SD _Delete vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			*(short *)(pb + pb_ioResult) = -46;
+			err = DoDelete(pb, g->regBase);
+			dbg_log1(g->regBase, "SD _Delete -> %ld",
+				(long)err);
+			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case 0x0A: /* _OpenRF */
 			dbg_log2(g->regBase,
-				"SD _OpenRF vr=%ld nm=%S -> fnfErr",
+				"SD _OpenRF vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			*(short *)(pb + pb_ioResult) = -43;
+			err = DoOpenRF(pb, g->regBase, g->vcb);
+			dbg_log1(g->regBase, "SD _OpenRF -> %ld",
+				(long)err);
+			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case 0x0B: /* _Rename */
@@ -948,9 +1135,12 @@ short DispatchFlat(char *pb, short trapNum)
 
 		case 0x0D: /* _SetFileInfo */
 			dbg_log2(g->regBase,
-				"SD _SetFileInfo vr=%ld nm=%S -> wPrErr",
+				"SD _SetFileInfo vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			*(short *)(pb + pb_ioResult) = -46;
+			err = DoSetFileInfo(pb, g->regBase);
+			dbg_log1(g->regBase, "SD _SetFileInfo -> %ld",
+				(long)err);
+			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
 		case 0x0E: /* _UnmountVol */
@@ -960,8 +1150,9 @@ short DispatchFlat(char *pb, short trapNum)
 			RestoreA4(); return 0;
 
 		case 0x10: /* _Allocate */
-			dbg_log(g->regBase, "SD _Allocate -> wPrErr");
-			*(short *)(pb + pb_ioResult) = -46;
+			dbg_log(g->regBase, "SD _Allocate -> 0");
+			/* Just return noErr — we don't pre-allocate disk space */
+			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
 
 		case 0x13: /* _FlushVol */
