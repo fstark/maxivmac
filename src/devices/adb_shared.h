@@ -7,7 +7,7 @@
 
 
 /*
-	ReportAbnormalID unused 0x0D08 - 0x0DFF
+	REPORT_ABNORMAL_ID unused 0x0D08 - 0x0DFF
 */
 
 #define ADB_MaxSzDatBuf 8
@@ -105,8 +105,8 @@ static void ADB_DoMouseTalk()
 			s_notSoRandAddr += 1;
 			break;
 		default:
-			ReportAbnormalID(AbnormalID::kPMU_Talk_to_unknown_mouse_register,
-							 "Talk to unknown mouse register");
+			REPORT_ABNORMAL_ID(AbnormalID::kPMU_Talk_to_unknown_mouse_register,
+							   "Talk to unknown mouse register");
 			break;
 	}
 }
@@ -123,13 +123,13 @@ static void ADB_DoMouseListen()
 			}
 			else
 			{
-				ReportAbnormalID(AbnormalID::kPMU_unknown_listen_op_to_mouse_register_3,
-								 "unknown listen op to mouse register 3");
+				REPORT_ABNORMAL_ID(AbnormalID::kPMU_unknown_listen_op_to_mouse_register_3,
+								   "unknown listen op to mouse register 3");
 			}
 			break;
 		default:
-			ReportAbnormalID(AbnormalID::kPMU_listen_to_unknown_mouse_register,
-							 "listen to unknown mouse register");
+			REPORT_ABNORMAL_ID(AbnormalID::kPMU_listen_to_unknown_mouse_register,
+							   "listen to unknown mouse register");
 			break;
 	}
 }
@@ -210,8 +210,8 @@ static void ADB_DoKeyboardTalk()
 			s_notSoRandAddr += 1;
 			break;
 		default:
-			ReportAbnormalID(AbnormalID::kPMU_Talk_to_unknown_keyboard_register,
-							 "Talk to unknown keyboard register");
+			REPORT_ABNORMAL_ID(AbnormalID::kPMU_Talk_to_unknown_keyboard_register,
+							   "Talk to unknown keyboard register");
 			break;
 	}
 }
@@ -228,13 +228,13 @@ static void ADB_DoKeyboardListen()
 			}
 			else
 			{
-				ReportAbnormalID(AbnormalID::kPMU_unknown_listen_op_to_keyboard_register_3,
-								 "unknown listen op to keyboard register 3");
+				REPORT_ABNORMAL_ID(AbnormalID::kPMU_unknown_listen_op_to_keyboard_register_3,
+								   "unknown listen op to keyboard register 3");
 			}
 			break;
 		default:
-			ReportAbnormalID(AbnormalID::kPMU_listen_to_unknown_keyboard_register,
-							 "listen to unknown keyboard register");
+			REPORT_ABNORMAL_ID(AbnormalID::kPMU_listen_to_unknown_keyboard_register,
+							   "listen to unknown keyboard register");
 			break;
 	}
 }
@@ -304,6 +304,6 @@ static void ADB_Flush()
 	}
 	else
 	{
-		ReportAbnormalID(AbnormalID::kPMU_Unhandled_ADB_Flush, "Unhandled ADB Flush");
+		REPORT_ABNORMAL_ID(AbnormalID::kPMU_Unhandled_ADB_Flush, "Unhandled ADB Flush");
 	}
 }

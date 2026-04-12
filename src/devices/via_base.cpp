@@ -125,7 +125,7 @@ void VIABase::setDDR_A(uint8_t data)
 	}
 	if ((data & ~cfg.oraCanOut) != 0)
 	{
-		ReportAbnormalID(abnormalBase_ | 0x01, "Set d_.DDR_A unexpected direction");
+		REPORT_ABNORMAL_ID(abnormalBase_ | 0x01, "Set d_.DDR_A unexpected direction");
 	}
 }
 
@@ -146,7 +146,7 @@ void VIABase::setDDR_B(uint8_t data)
 	}
 	if ((data & ~cfg.orbCanOut) != 0)
 	{
-		ReportAbnormalID(abnormalBase_ | 0x02, "Set d_.DDR_B unexpected direction");
+		REPORT_ABNORMAL_ID(abnormalBase_ | 0x02, "Set d_.DDR_B unexpected direction");
 	}
 }
 
@@ -227,7 +227,7 @@ uint8_t VIABase::shiftOutData()
 	const auto &cfg = viaConfig();
 	if (((d_.ACR & 0x1C) >> 2) != 7)
 	{
-		ReportAbnormalID(abnormalBase_ | 0x04, "VIA Not ready to shift out");
+		REPORT_ABNORMAL_ID(abnormalBase_ | 0x04, "VIA Not ready to shift out");
 		return 0;
 	}
 	else
@@ -565,7 +565,7 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				case 6: /* shift out under o2 clock */
 					if ((!WriteMem) || (d_.SR != 0))
 					{
-						ReportAbnormalID(abnormalBase_ | 0x05, "VIA shift mode 6, non zero");
+						REPORT_ABNORMAL_ID(abnormalBase_ | 0x05, "VIA shift mode 6, non zero");
 					}
 					else
 					{
@@ -599,12 +599,12 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				d_.ACR = Data;
 				if ((d_.ACR & 0x20) != 0)
 				{
-					ReportAbnormalID(abnormalBase_ | 0x06, "Set d_.ACR T2 Timer pulse counting");
+					REPORT_ABNORMAL_ID(abnormalBase_ | 0x06, "Set d_.ACR T2 Timer pulse counting");
 				}
 				switch ((d_.ACR & 0xC0) >> 6)
 				{
 					case 2:
-						ReportAbnormalID(abnormalBase_ | 0x07, "Set d_.ACR T1 Timer mode 2");
+						REPORT_ABNORMAL_ID(abnormalBase_ | 0x07, "Set d_.ACR T1 Timer mode 2");
 						break;
 				}
 				checkT1IntReady();
@@ -617,14 +617,15 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					case 2:
 					case 4:
 					case 5:
-						ReportAbnormalID(abnormalBase_ | 0x08, "Set d_.ACR shift mode 1,2,4,5");
+						REPORT_ABNORMAL_ID(abnormalBase_ | 0x08, "Set d_.ACR shift mode 1,2,4,5");
 						break;
 					default:
 						break;
 				}
 				if ((d_.ACR & 0x03) != 0)
 				{
-					ReportAbnormalID(abnormalBase_ | 0x09, "Set d_.ACR T2 Timer latching enabled");
+					REPORT_ABNORMAL_ID(abnormalBase_ | 0x09,
+									   "Set d_.ACR T2 Timer latching enabled");
 				}
 			}
 			else
@@ -639,19 +640,19 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 #define SetContains(s, i) (((s) & (1 << (i))) != 0)
 				if (!SetContains(acfg.cb2ModesAllowed, (d_.PCR >> 5) & 0x07))
 				{
-					ReportAbnormalID(abnormalBase_ | 0x0A, "Set d_.PCR CB2 Control mode?");
+					REPORT_ABNORMAL_ID(abnormalBase_ | 0x0A, "Set d_.PCR CB2 Control mode?");
 				}
 				if ((d_.PCR & 0x10) != 0)
 				{
-					ReportAbnormalID(abnormalBase_ | 0x0B, "Set d_.PCR CB1 INTERRUPT CONTROL?");
+					REPORT_ABNORMAL_ID(abnormalBase_ | 0x0B, "Set d_.PCR CB1 INTERRUPT CONTROL?");
 				}
 				if (!SetContains(acfg.ca2ModesAllowed, (d_.PCR >> 1) & 0x07))
 				{
-					ReportAbnormalID(abnormalBase_ | 0x0C, "Set d_.PCR CA2 INTERRUPT CONTROL?");
+					REPORT_ABNORMAL_ID(abnormalBase_ | 0x0C, "Set d_.PCR CA2 INTERRUPT CONTROL?");
 				}
 				if ((d_.PCR & 0x01) != 0)
 				{
-					ReportAbnormalID(abnormalBase_ | 0x0D, "Set d_.PCR CA1 INTERRUPT CONTROL?");
+					REPORT_ABNORMAL_ID(abnormalBase_ | 0x0D, "Set d_.PCR CA1 INTERRUPT CONTROL?");
 				}
 			}
 			else
@@ -685,7 +686,7 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					{
 						if ((Data & acfg.ierNever0) != 0)
 						{
-							ReportAbnormalID(abnormalBase_ | 0x0E, "IER Never0 clr");
+							REPORT_ABNORMAL_ID(abnormalBase_ | 0x0E, "IER Never0 clr");
 						}
 					}
 				}
@@ -696,7 +697,7 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					{
 						if ((d_.IER & acfg.ierNever1) != 0)
 						{
-							ReportAbnormalID(abnormalBase_ | 0x0F, "IER Never1 set");
+							REPORT_ABNORMAL_ID(abnormalBase_ | 0x0F, "IER Never1 set");
 						}
 					}
 				}

@@ -116,9 +116,9 @@ extern void dbglog_AddrAccess(char *s, uint32_t data, bool writeMem, uint32_t ad
 extern void dbglog_Access(char *s, uint32_t data, bool writeMem);
 
 #if !WantAbnormalReports
-#define ReportAbnormalID(id, s)
+#define REPORT_ABNORMAL_ID(id, s)
 #else
-#define ReportAbnormalID DoReportAbnormalID
+#define REPORT_ABNORMAL_ID DoReportAbnormalID
 extern void DoReportAbnormalID(uint16_t id, char *s);
 #endif /* WantAbnormalReports */
 
@@ -149,8 +149,8 @@ using InstructionCount = uint32_t;
 #define kLn2CycleScale 6
 #define kCycleScale (1 << kLn2CycleScale)
 
-#define RdAvgXtraCyc /* 0 */ (kCycleScale + kCycleScale / 4)
-#define WrAvgXtraCyc /* 0 */ (kCycleScale + kCycleScale / 4)
+#define RD_AVG_XTRA_CYC /* 0 */ (kCycleScale + kCycleScale / 4)
+#define WR_AVG_XTRA_CYC /* 0 */ (kCycleScale + kCycleScale / 4)
 
 #define kNumSubTicks 16
 
@@ -163,14 +163,14 @@ extern bool FindKeyEvent(int *VirtualKey, bool *KeyDown);
 
 /* --- Extension IDs (guest-to-host trap interface) --- */
 
-#define ExtnDat_checkval 0
-#define ExtnDat_extension 2
-#define ExtnDat_commnd 4
-#define ExtnDat_result 6
-#define ExtnDat_params 8
+#define EXTN_DAT_CHECKVAL 0
+#define EXTN_DAT_EXTENSION 2
+#define EXTN_DAT_COMMND 4
+#define EXTN_DAT_RESULT 6
+#define EXTN_DAT_PARAMS 8
 
 #define kCmndVersion 0
-#define ExtnDat_version 8
+#define EXTN_DAT_VERSION 8
 
 enum
 {

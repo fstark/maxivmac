@@ -106,47 +106,47 @@ static uint16_t OpEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 			v = 0;
 			break;
 		case 2:
-			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * RdAvgXtraCyc)
-								  : (4 * kCycleScale + RdAvgXtraCyc));
+			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC)
+								  : (4 * kCycleScale + RD_AVG_XTRA_CYC));
 			break;
 		case 3:
-			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * RdAvgXtraCyc)
-								  : (4 * kCycleScale + RdAvgXtraCyc));
+			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC)
+								  : (4 * kCycleScale + RD_AVG_XTRA_CYC));
 			break;
 		case 4:
-			v = ((4 == p->opsize) ? (10 * kCycleScale + 2 * RdAvgXtraCyc)
-								  : (6 * kCycleScale + RdAvgXtraCyc));
+			v = ((4 == p->opsize) ? (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC)
+								  : (6 * kCycleScale + RD_AVG_XTRA_CYC));
 			break;
 		case 5:
-			v = ((4 == p->opsize) ? (12 * kCycleScale + 3 * RdAvgXtraCyc)
-								  : (8 * kCycleScale + 2 * RdAvgXtraCyc));
+			v = ((4 == p->opsize) ? (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+								  : (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC));
 			break;
 		case 6:
-			v = ((4 == p->opsize) ? (14 * kCycleScale + 3 * RdAvgXtraCyc)
-								  : (10 * kCycleScale + 2 * RdAvgXtraCyc));
+			v = ((4 == p->opsize) ? (14 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+								  : (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC));
 			break;
 		case 7:
 			switch (r)
 			{
 				case 0:
-					v = ((4 == p->opsize) ? (12 * kCycleScale + 3 * RdAvgXtraCyc)
-										  : (8 * kCycleScale + 2 * RdAvgXtraCyc));
+					v = ((4 == p->opsize) ? (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+										  : (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC));
 					break;
 				case 1:
-					v = ((4 == p->opsize) ? (16 * kCycleScale + 4 * RdAvgXtraCyc)
-										  : (12 * kCycleScale + 3 * RdAvgXtraCyc));
+					v = ((4 == p->opsize) ? (16 * kCycleScale + 4 * RD_AVG_XTRA_CYC)
+										  : (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC));
 					break;
 				case 2:
-					v = ((4 == p->opsize) ? (12 * kCycleScale + 3 * RdAvgXtraCyc)
-										  : (8 * kCycleScale + 2 * RdAvgXtraCyc));
+					v = ((4 == p->opsize) ? (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+										  : (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC));
 					break;
 				case 3:
-					v = ((4 == p->opsize) ? (14 * kCycleScale + 3 * RdAvgXtraCyc)
-										  : (10 * kCycleScale + 2 * RdAvgXtraCyc));
+					v = ((4 == p->opsize) ? (14 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+										  : (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC));
 					break;
 				case 4:
-					v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * RdAvgXtraCyc)
-										  : (4 * kCycleScale + RdAvgXtraCyc));
+					v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC)
+										  : (4 * kCycleScale + RD_AVG_XTRA_CYC));
 					break;
 				default:
 					v = 0;
@@ -172,35 +172,37 @@ static uint16_t OpEADestCalcCyc(WorkR *p, uint8_t m, uint8_t r)
 			v = 0;
 			break;
 		case 2:
-			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * WrAvgXtraCyc)
-								  : (4 * kCycleScale + WrAvgXtraCyc));
+			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * WR_AVG_XTRA_CYC)
+								  : (4 * kCycleScale + WR_AVG_XTRA_CYC));
 			break;
 		case 3:
-			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * WrAvgXtraCyc)
-								  : (4 * kCycleScale + WrAvgXtraCyc));
+			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * WR_AVG_XTRA_CYC)
+								  : (4 * kCycleScale + WR_AVG_XTRA_CYC));
 			break;
 		case 4:
-			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * WrAvgXtraCyc)
-								  : (4 * kCycleScale + WrAvgXtraCyc));
+			v = ((4 == p->opsize) ? (8 * kCycleScale + 2 * WR_AVG_XTRA_CYC)
+								  : (4 * kCycleScale + WR_AVG_XTRA_CYC));
 			break;
 		case 5:
-			v = ((4 == p->opsize) ? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-								  : (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc));
+			v = ((4 == p->opsize) ? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+								  : (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC));
 			break;
 		case 6:
-			v = ((4 == p->opsize) ? (14 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-								  : (10 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc));
+			v = ((4 == p->opsize) ? (14 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+								  : (10 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC));
 			break;
 		case 7:
 			switch (r)
 			{
 				case 0:
-					v = ((4 == p->opsize) ? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-										  : (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc));
+					v = ((4 == p->opsize)
+							 ? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+							 : (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC));
 					break;
 				case 1:
-					v = ((4 == p->opsize) ? (16 * kCycleScale + 2 * RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-										  : (12 * kCycleScale + 2 * RdAvgXtraCyc + WrAvgXtraCyc));
+					v = ((4 == p->opsize)
+							 ? (16 * kCycleScale + 2 * RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+							 : (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC));
 					break;
 				default:
 					v = 0;
@@ -465,25 +467,25 @@ static uint8_t LeaPeaEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 			v = 0;
 			break;
 		case 5:
-			v = (4 * kCycleScale + RdAvgXtraCyc);
+			v = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 			break;
 		case 6:
-			v = (8 * kCycleScale + RdAvgXtraCyc);
+			v = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 			break;
 		case 7:
 			switch (r)
 			{
 				case 0:
-					v = (4 * kCycleScale + RdAvgXtraCyc);
+					v = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 					break;
 				case 1:
-					v = (8 * kCycleScale + 2 * RdAvgXtraCyc);
+					v = (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 					break;
 				case 2:
-					v = (4 * kCycleScale + RdAvgXtraCyc);
+					v = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 					break;
 				case 3:
-					v = (8 * kCycleScale + RdAvgXtraCyc);
+					v = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 					break;
 				default:
 					v = 0;
@@ -579,17 +581,17 @@ static inline void DeCode0(WorkR *p)
 			switch (b76(p))
 			{
 				case 0:
-					p->Cycles = (16 * kCycleScale + 4 * RdAvgXtraCyc);
+					p->Cycles = (16 * kCycleScale + 4 * RD_AVG_XTRA_CYC);
 					break;
 				case 1:
-					p->Cycles = (24 * kCycleScale + 6 * RdAvgXtraCyc);
+					p->Cycles = (24 * kCycleScale + 6 * RD_AVG_XTRA_CYC);
 					break;
 				case 2:
-					p->Cycles = (16 * kCycleScale + 2 * RdAvgXtraCyc + 2 * WrAvgXtraCyc);
+					p->Cycles = (16 * kCycleScale + 2 * RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC);
 					break;
 				case 3:
 				default: /* keep compiler happy */
-					p->Cycles = (24 * kCycleScale + 2 * RdAvgXtraCyc + 4 * WrAvgXtraCyc);
+					p->Cycles = (24 * kCycleScale + 2 * RD_AVG_XTRA_CYC + 4 * WR_AVG_XTRA_CYC);
 					break;
 			}
 			if (CheckValidAddrMode(p, 1, reg(p), kAddrValidAny, true))
@@ -607,16 +609,16 @@ static inline void DeCode0(WorkR *p)
 				switch (b76(p))
 				{
 					case 0: /* BTst */
-						p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 						break;
 					case 1: /* BChg */
-						p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 						break;
 					case 2: /* BClr */
-						p->Cycles = (10 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (10 * kCycleScale + RD_AVG_XTRA_CYC);
 						break;
 					case 3: /* BSet */
-						p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 						break;
 				}
 				p->MainClass = kIKindBTstL + b76(p);
@@ -632,7 +634,7 @@ static inline void DeCode0(WorkR *p)
 				{ /* BTst */
 					if (CheckDataAddrMode(p))
 					{
-						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					}
 				}
@@ -640,7 +642,7 @@ static inline void DeCode0(WorkR *p)
 				{
 					if (CheckDataAltAddrMode(p))
 					{
-						p->Cycles = (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+						p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					}
 				}
@@ -658,16 +660,16 @@ static inline void DeCode0(WorkR *p)
 				switch (b76(p))
 				{
 					case 0: /* BTst */
-						p->Cycles = (10 * kCycleScale + 2 * RdAvgXtraCyc);
+						p->Cycles = (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 						break;
 					case 1: /* BChg */
-						p->Cycles = (12 * kCycleScale + 2 * RdAvgXtraCyc);
+						p->Cycles = (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 						break;
 					case 2: /* BClr */
-						p->Cycles = (14 * kCycleScale + 2 * RdAvgXtraCyc);
+						p->Cycles = (14 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 						break;
 					case 3: /* BSet */
-						p->Cycles = (12 * kCycleScale + 2 * RdAvgXtraCyc);
+						p->Cycles = (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 						break;
 				}
 				SetDcoArgFields(p, true, kAMdImmedB, 0);
@@ -683,7 +685,7 @@ static inline void DeCode0(WorkR *p)
 				{ /* BTst */
 					if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidDataNoCn, false))
 					{
-						p->Cycles = (8 * kCycleScale + 2 * RdAvgXtraCyc);
+						p->Cycles = (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					}
 				}
@@ -691,7 +693,7 @@ static inline void DeCode0(WorkR *p)
 				{
 					if (CheckDataAltAddrMode(p))
 					{
-						p->Cycles = (12 * kCycleScale + 2 * RdAvgXtraCyc + WrAvgXtraCyc);
+						p->Cycles = (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					}
 				}
@@ -770,13 +772,13 @@ static inline void DeCode0(WorkR *p)
 				{
 					if (0 == mode(p))
 					{
-						p->Cycles = (4 == p->opsize) ? (14 * kCycleScale + 3 * RdAvgXtraCyc)
-													 : (8 * kCycleScale + 2 * RdAvgXtraCyc);
+						p->Cycles = (4 == p->opsize) ? (14 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+													 : (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 					}
 					else
 					{
-						p->Cycles = (4 == p->opsize) ? (12 * kCycleScale + 3 * RdAvgXtraCyc)
-													 : (8 * kCycleScale + 2 * RdAvgXtraCyc);
+						p->Cycles = (4 == p->opsize) ? (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+													 : (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 					}
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindCmpB + OpSizeOffset(p);
@@ -806,15 +808,15 @@ static inline void DeCode0(WorkR *p)
 					switch (rg9(p))
 					{
 						case 0:
-							p->Cycles = (20 * kCycleScale + 3 * RdAvgXtraCyc);
+							p->Cycles = (20 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 							p->MainClass = (0 != b76(p)) ? kIKindOrISR : kIKindOrICCR;
 							break;
 						case 1:
-							p->Cycles = (20 * kCycleScale + 3 * RdAvgXtraCyc);
+							p->Cycles = (20 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 							p->MainClass = (0 != b76(p)) ? kIKindAndISR : kIKindAndICCR;
 							break;
 						case 5:
-							p->Cycles = (20 * kCycleScale + 3 * RdAvgXtraCyc);
+							p->Cycles = (20 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 							p->MainClass = (0 != b76(p)) ? kIKindEorISR : kIKindEorICCR;
 							break;
 						default:
@@ -834,17 +836,17 @@ static inline void DeCode0(WorkR *p)
 							{
 								if (0 != mode(p))
 								{
-									p->Cycles =
-										(4 == p->opsize)
-											? (20 * kCycleScale + 3 * RdAvgXtraCyc +
-											   2 * WrAvgXtraCyc)
-											: (12 * kCycleScale + 2 * RdAvgXtraCyc + WrAvgXtraCyc);
+									p->Cycles = (4 == p->opsize)
+													? (20 * kCycleScale + 3 * RD_AVG_XTRA_CYC +
+													   2 * WR_AVG_XTRA_CYC)
+													: (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+													   WR_AVG_XTRA_CYC);
 								}
 								else
 								{
 									p->Cycles = (4 == p->opsize)
-													? (16 * kCycleScale + 3 * RdAvgXtraCyc)
-													: (8 * kCycleScale + 2 * RdAvgXtraCyc);
+													? (16 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+													: (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 								}
 								p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 								p->MainClass = kIKindOrI;
@@ -857,17 +859,17 @@ static inline void DeCode0(WorkR *p)
 							{
 								if (0 != mode(p))
 								{
-									p->Cycles =
-										(4 == p->opsize)
-											? (20 * kCycleScale + 3 * RdAvgXtraCyc +
-											   2 * WrAvgXtraCyc)
-											: (12 * kCycleScale + 2 * RdAvgXtraCyc + WrAvgXtraCyc);
+									p->Cycles = (4 == p->opsize)
+													? (20 * kCycleScale + 3 * RD_AVG_XTRA_CYC +
+													   2 * WR_AVG_XTRA_CYC)
+													: (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+													   WR_AVG_XTRA_CYC);
 								}
 								else
 								{
 									p->Cycles = (4 == p->opsize)
-													? (14 * kCycleScale + 3 * RdAvgXtraCyc)
-													: (8 * kCycleScale + 2 * RdAvgXtraCyc);
+													? (14 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+													: (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 								}
 								p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 								p->MainClass = kIKindAndI;
@@ -880,17 +882,17 @@ static inline void DeCode0(WorkR *p)
 							{
 								if (0 != mode(p))
 								{
-									p->Cycles =
-										(4 == p->opsize)
-											? (20 * kCycleScale + 3 * RdAvgXtraCyc +
-											   2 * WrAvgXtraCyc)
-											: (12 * kCycleScale + 2 * RdAvgXtraCyc + WrAvgXtraCyc);
+									p->Cycles = (4 == p->opsize)
+													? (20 * kCycleScale + 3 * RD_AVG_XTRA_CYC +
+													   2 * WR_AVG_XTRA_CYC)
+													: (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+													   WR_AVG_XTRA_CYC);
 								}
 								else
 								{
 									p->Cycles = (4 == p->opsize)
-													? (16 * kCycleScale + 3 * RdAvgXtraCyc)
-													: (8 * kCycleScale + 2 * RdAvgXtraCyc);
+													? (16 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+													: (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 								}
 								p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 								p->MainClass = kIKindSubB + OpSizeOffset(p);
@@ -903,17 +905,17 @@ static inline void DeCode0(WorkR *p)
 							{
 								if (0 != mode(p))
 								{
-									p->Cycles =
-										(4 == p->opsize)
-											? (20 * kCycleScale + 3 * RdAvgXtraCyc +
-											   2 * WrAvgXtraCyc)
-											: (12 * kCycleScale + 2 * RdAvgXtraCyc + WrAvgXtraCyc);
+									p->Cycles = (4 == p->opsize)
+													? (20 * kCycleScale + 3 * RD_AVG_XTRA_CYC +
+													   2 * WR_AVG_XTRA_CYC)
+													: (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+													   WR_AVG_XTRA_CYC);
 								}
 								else
 								{
 									p->Cycles = (4 == p->opsize)
-													? (16 * kCycleScale + 3 * RdAvgXtraCyc)
-													: (8 * kCycleScale + 2 * RdAvgXtraCyc);
+													? (16 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+													: (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 								}
 								p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 								p->MainClass = kIKindAddB + OpSizeOffset(p);
@@ -926,17 +928,17 @@ static inline void DeCode0(WorkR *p)
 							{
 								if (0 != mode(p))
 								{
-									p->Cycles =
-										(4 == p->opsize)
-											? (20 * kCycleScale + 3 * RdAvgXtraCyc +
-											   2 * WrAvgXtraCyc)
-											: (12 * kCycleScale + 2 * RdAvgXtraCyc + WrAvgXtraCyc);
+									p->Cycles = (4 == p->opsize)
+													? (20 * kCycleScale + 3 * RD_AVG_XTRA_CYC +
+													   2 * WR_AVG_XTRA_CYC)
+													: (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+													   WR_AVG_XTRA_CYC);
 								}
 								else
 								{
 									p->Cycles = (4 == p->opsize)
-													? (16 * kCycleScale + 3 * RdAvgXtraCyc)
-													: (8 * kCycleScale + 2 * RdAvgXtraCyc);
+													? (16 * kCycleScale + 3 * RD_AVG_XTRA_CYC)
+													: (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 								}
 								p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 								p->MainClass = kIKindEorI;
@@ -969,7 +971,7 @@ static inline void DeCode1(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAny, true))
 			if (CheckValidAddrMode(p, md6(p), rg9(p), kAddrValidDataAlt, false))
 			{
-				p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+				p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				p->Cycles += OpEADestCalcCyc(p, md6(p), rg9(p));
 				p->MainClass = kIKindMoveB;
@@ -985,7 +987,7 @@ static inline void DeCode2(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAny, true))
 			if (CheckValidAddrMode(p, 1, rg9(p), kAddrValidAny, false))
 			{
-				p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+				p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				p->MainClass = kIKindMoveAL;
 				p->DecOp.y.v[1].ArgDat = rg9(p);
@@ -996,7 +998,7 @@ static inline void DeCode2(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAny, true))
 			if (CheckValidAddrMode(p, md6(p), rg9(p), kAddrValidDataAlt, false))
 			{
-				p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+				p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				p->Cycles += OpEADestCalcCyc(p, md6(p), rg9(p));
 				p->MainClass = kIKindMoveL;
@@ -1012,7 +1014,7 @@ static inline void DeCode3(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAny, true))
 			if (CheckValidAddrMode(p, 1, rg9(p), kAddrValidAny, false))
 			{
-				p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+				p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				p->MainClass = kIKindMoveAW;
 				p->DecOp.y.v[1].ArgDat = rg9(p);
@@ -1023,7 +1025,7 @@ static inline void DeCode3(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAny, true))
 			if (CheckValidAddrMode(p, md6(p), rg9(p), kAddrValidDataAlt, false))
 			{
-				p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+				p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				p->Cycles += OpEADestCalcCyc(p, md6(p), rg9(p));
 				p->MainClass = kIKindMoveW;
@@ -1044,22 +1046,22 @@ static uint16_t MoveMEACalcCyc(WorkR *p, uint8_t m, uint8_t r)
 		case 2:
 		case 3:
 		case 4:
-			v = (8 * kCycleScale + 2 * RdAvgXtraCyc);
+			v = (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 			break;
 		case 5:
-			v = (12 * kCycleScale + 3 * RdAvgXtraCyc);
+			v = (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 			break;
 		case 6:
-			v = (14 * kCycleScale + 3 * RdAvgXtraCyc);
+			v = (14 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 			break;
 		case 7:
 			switch (r)
 			{
 				case 0:
-					v = (12 * kCycleScale + 3 * RdAvgXtraCyc);
+					v = (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 					break;
 				case 1:
-					v = (16 * kCycleScale + 4 * RdAvgXtraCyc);
+					v = (16 * kCycleScale + 4 * RD_AVG_XTRA_CYC);
 					break;
 				default:
 					v = 0;
@@ -1100,7 +1102,7 @@ static inline void DeCode4(WorkR *p)
 				if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidData, false))
 					if (CheckValidAddrMode(p, 0, rg9(p), kAddrValidAny, true))
 					{
-						p->Cycles = (10 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (10 * kCycleScale + RD_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindChkW;
 					}
@@ -1118,7 +1120,7 @@ static inline void DeCode4(WorkR *p)
 					/* Lea 0100aaa111mmmrrr */
 					if (CheckControlAddrMode(p))
 					{
-						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 						p->Cycles += LeaPeaEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindLea;
 						p->DecOp.y.v[0].ArgDat = rg9(p);
@@ -1140,14 +1142,15 @@ static inline void DeCode4(WorkR *p)
 					{
 						if (0 != mode(p))
 						{
-							p->Cycles = (4 == p->opsize)
-											? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-											: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+							p->Cycles =
+								(4 == p->opsize)
+									? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+									: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RdAvgXtraCyc)
-														 : (4 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RD_AVG_XTRA_CYC)
+														 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindNegXB + OpSizeOffset(p);
@@ -1160,7 +1163,7 @@ static inline void DeCode4(WorkR *p)
 					p->opsize = 2;
 					if (CheckDataAltAddrMode(p))
 					{
-						p->Cycles = (12 * kCycleScale + 2 * RdAvgXtraCyc);
+						p->Cycles = (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindMoveSREa;
 					}
@@ -1175,14 +1178,15 @@ static inline void DeCode4(WorkR *p)
 					{
 						if (0 != mode(p))
 						{
-							p->Cycles = (4 == p->opsize)
-											? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-											: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+							p->Cycles =
+								(4 == p->opsize)
+									? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+									: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RdAvgXtraCyc)
-														 : (4 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RD_AVG_XTRA_CYC)
+														 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindClr;
@@ -1208,14 +1212,15 @@ static inline void DeCode4(WorkR *p)
 					{
 						if (0 != mode(p))
 						{
-							p->Cycles = (4 == p->opsize)
-											? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-											: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+							p->Cycles =
+								(4 == p->opsize)
+									? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+									: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RdAvgXtraCyc)
-														 : (4 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RD_AVG_XTRA_CYC)
+														 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindNegB + OpSizeOffset(p);
@@ -1227,7 +1232,7 @@ static inline void DeCode4(WorkR *p)
 					p->opsize = 2;
 					if (CheckDataAddrMode(p))
 					{
-						p->Cycles = (12 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (12 * kCycleScale + RD_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindMoveEaCCR;
 					}
@@ -1242,14 +1247,15 @@ static inline void DeCode4(WorkR *p)
 					{
 						if (0 != mode(p))
 						{
-							p->Cycles = (4 == p->opsize)
-											? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-											: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+							p->Cycles =
+								(4 == p->opsize)
+									? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+									: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RdAvgXtraCyc)
-														 : (4 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RD_AVG_XTRA_CYC)
+														 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindNot;
@@ -1263,11 +1269,11 @@ static inline void DeCode4(WorkR *p)
 					{
 						if (0 != mode(p))
 						{
-							p->Cycles = (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+							p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindMoveEaSR;
@@ -1292,11 +1298,12 @@ static inline void DeCode4(WorkR *p)
 							{
 								if (0 != mode(p))
 								{
-									p->Cycles = (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+									p->Cycles =
+										(8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 								}
 								else
 								{
-									p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+									p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 								}
 								p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 								p->MainClass = kIKindNbcd;
@@ -1307,7 +1314,7 @@ static inline void DeCode4(WorkR *p)
 						if (mode(p) == 0)
 						{
 							/* Swap 0100100001000rrr */
-							p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 							p->MainClass = kIKindSwap;
 							SetDcoArgFields(p, false, kAMdRegL, reg(p));
 						}
@@ -1320,7 +1327,8 @@ static inline void DeCode4(WorkR *p)
 							/* PEA 0100100001mmmrrr */
 							if (CheckControlAddrMode(p))
 							{
-								p->Cycles = (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc);
+								p->Cycles =
+									(12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC);
 								p->Cycles += LeaPeaEACalcCyc(p, mode(p), reg(p));
 								p->MainClass = kIKindPEA;
 							}
@@ -1330,7 +1338,7 @@ static inline void DeCode4(WorkR *p)
 						if (mode(p) == 0)
 						{
 							/* EXT.W */
-							p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 							SetDcoArgFields(p, false, kAMdRegW, reg(p));
 							p->MainClass = kIKindEXTW;
 						}
@@ -1341,7 +1349,8 @@ static inline void DeCode4(WorkR *p)
 							if (mode(p) == 4)
 							{
 								p->Cycles = MoveMEACalcCyc(p, mode(p), reg(p));
-								p->Cycles += MoveAvgN * 4 * kCycleScale + MoveAvgN * WrAvgXtraCyc;
+								p->Cycles +=
+									MoveAvgN * 4 * kCycleScale + MoveAvgN * WR_AVG_XTRA_CYC;
 								SetDcoArgFields(p, false, kAMdAPreDecL, reg(p) + 8);
 								p->MainClass = kIKindMOVEMRmMW;
 							}
@@ -1351,7 +1360,7 @@ static inline void DeCode4(WorkR *p)
 								{
 									p->Cycles = MoveMEACalcCyc(p, mode(p), reg(p));
 									p->Cycles +=
-										MoveAvgN * 4 * kCycleScale + MoveAvgN * WrAvgXtraCyc;
+										MoveAvgN * 4 * kCycleScale + MoveAvgN * WR_AVG_XTRA_CYC;
 									p->MainClass = kIKindMOVEMrmW;
 								}
 							}
@@ -1362,7 +1371,7 @@ static inline void DeCode4(WorkR *p)
 						if (mode(p) == 0)
 						{
 							/* EXT.L */
-							p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 							SetDcoArgFields(p, false, kAMdRegL, reg(p));
 							p->MainClass = kIKindEXTL;
 						}
@@ -1370,7 +1379,8 @@ static inline void DeCode4(WorkR *p)
 						{
 							/* MOVEM reg to mem 01001d001ssmmmrrr */
 							p->Cycles = MoveMEACalcCyc(p, mode(p), reg(p));
-							p->Cycles += MoveAvgN * 8 * kCycleScale + MoveAvgN * 2 * WrAvgXtraCyc;
+							p->Cycles +=
+								MoveAvgN * 8 * kCycleScale + MoveAvgN * 2 * WR_AVG_XTRA_CYC;
 							p->opsize = 4;
 							if (mode(p) == 4)
 							{
@@ -1404,11 +1414,12 @@ static inline void DeCode4(WorkR *p)
 						{
 							if (0 != mode(p))
 							{
-								p->Cycles = (14 * kCycleScale + 2 * RdAvgXtraCyc + WrAvgXtraCyc);
+								p->Cycles =
+									(14 * kCycleScale + 2 * RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 							}
 							else
 							{
-								p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+								p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 							}
 							p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 							p->MainClass = kIKindTas;
@@ -1423,7 +1434,7 @@ static inline void DeCode4(WorkR *p)
 					{
 						if (CheckDataAltAddrMode(p))
 						{
-							p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 							p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 							p->MainClass = kIKindTst;
 						}
@@ -1432,7 +1443,7 @@ static inline void DeCode4(WorkR *p)
 					{
 						if (IsValidAddrMode(p))
 						{
-							p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 							p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 							p->MainClass = kIKindTst;
 						}
@@ -1446,15 +1457,16 @@ static inline void DeCode4(WorkR *p)
 					p->opsize = 2 * b76(p) - 2;
 					if (mode(p) == 3)
 					{
-						p->Cycles = 4 * kCycleScale + RdAvgXtraCyc;
+						p->Cycles = 4 * kCycleScale + RD_AVG_XTRA_CYC;
 						p->Cycles += MoveMEACalcCyc(p, mode(p), reg(p));
 						if (4 == p->opsize)
 						{
-							p->Cycles += MoveAvgN * 8 * kCycleScale + 2 * MoveAvgN * RdAvgXtraCyc;
+							p->Cycles +=
+								MoveAvgN * 8 * kCycleScale + 2 * MoveAvgN * RD_AVG_XTRA_CYC;
 						}
 						else
 						{
-							p->Cycles += MoveAvgN * 4 * kCycleScale + MoveAvgN * RdAvgXtraCyc;
+							p->Cycles += MoveAvgN * 4 * kCycleScale + MoveAvgN * RD_AVG_XTRA_CYC;
 						}
 						SetDcoArgFields(p, false, kAMdAPosIncL, reg(p) + 8);
 						if (b76(p) == 2)
@@ -1470,16 +1482,17 @@ static inline void DeCode4(WorkR *p)
 					{
 						if (CheckControlAddrMode(p))
 						{
-							p->Cycles = 4 * kCycleScale + RdAvgXtraCyc;
+							p->Cycles = 4 * kCycleScale + RD_AVG_XTRA_CYC;
 							p->Cycles += MoveMEACalcCyc(p, mode(p), reg(p));
 							if (4 == p->opsize)
 							{
 								p->Cycles +=
-									MoveAvgN * 8 * kCycleScale + 2 * MoveAvgN * RdAvgXtraCyc;
+									MoveAvgN * 8 * kCycleScale + 2 * MoveAvgN * RD_AVG_XTRA_CYC;
 							}
 							else
 							{
-								p->Cycles += MoveAvgN * 4 * kCycleScale + MoveAvgN * RdAvgXtraCyc;
+								p->Cycles +=
+									MoveAvgN * 4 * kCycleScale + MoveAvgN * RD_AVG_XTRA_CYC;
 							}
 							if (4 == p->opsize)
 							{
@@ -1527,14 +1540,14 @@ static inline void DeCode4(WorkR *p)
 							case 1:
 								/* Trap 010011100100vvvv */
 								p->Cycles =
-									(34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+									(34 * kCycleScale + 4 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 								SetDcoArgFields(p, false, kAMdDat4, (p->opcode & 15) + 32);
 								p->MainClass = kIKindTrap;
 								break;
 							case 2:
 								/* Link */
 								p->Cycles =
-									(16 * kCycleScale + 2 * RdAvgXtraCyc + 2 * WrAvgXtraCyc);
+									(16 * kCycleScale + 2 * RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC);
 								SetDcoArgFields(p, false, kAMdRegL, reg(p) + 8);
 								if (reg(p) == 6)
 								{
@@ -1547,7 +1560,7 @@ static inline void DeCode4(WorkR *p)
 								break;
 							case 3:
 								/* Unlk */
-								p->Cycles = (12 * kCycleScale + 3 * RdAvgXtraCyc);
+								p->Cycles = (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 								SetDcoArgFields(p, false, kAMdRegL, reg(p) + 8);
 								if (reg(p) == 6)
 								{
@@ -1560,13 +1573,13 @@ static inline void DeCode4(WorkR *p)
 								break;
 							case 4:
 								/* MOVE USP 0100111001100aaa */
-								p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+								p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 								SetDcoArgFields(p, false, kAMdRegL, reg(p) + 8);
 								p->MainClass = kIKindMoveRUSP;
 								break;
 							case 5:
 								/* MOVE USP 0100111001101aaa */
-								p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+								p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 								SetDcoArgFields(p, false, kAMdRegL, reg(p) + 8);
 								p->MainClass = kIKindMoveUSPR;
 								break;
@@ -1575,12 +1588,12 @@ static inline void DeCode4(WorkR *p)
 								{
 									case 0:
 										/* Reset 0100111001110000 */
-										p->Cycles = (132 * kCycleScale + RdAvgXtraCyc);
+										p->Cycles = (132 * kCycleScale + RD_AVG_XTRA_CYC);
 										p->MainClass = kIKindReset;
 										break;
 									case 1:
 										/* Nop = 0100111001110001 */
-										p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+										p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 										p->MainClass = kIKindNop;
 										break;
 									case 2:
@@ -1590,7 +1603,7 @@ static inline void DeCode4(WorkR *p)
 										break;
 									case 3:
 										/* Rte 0100111001110011 */
-										p->Cycles = (20 * kCycleScale + 5 * RdAvgXtraCyc);
+										p->Cycles = (20 * kCycleScale + 5 * RD_AVG_XTRA_CYC);
 										p->MainClass = kIKindRte;
 										break;
 									case 4:
@@ -1599,18 +1612,18 @@ static inline void DeCode4(WorkR *p)
 										break;
 									case 5:
 										/* Rts 0100111001110101 */
-										p->Cycles = (16 * kCycleScale + 4 * RdAvgXtraCyc);
+										p->Cycles = (16 * kCycleScale + 4 * RD_AVG_XTRA_CYC);
 										p->MainClass = kIKindRts;
 										break;
 									case 6:
 										/* TrapV 0100111001110110 */
-										p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+										p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 										p->MainClass = kIKindTrapV;
 										break;
 									case 7:
 									default: /* keep compiler happy */
 										/* Rtr 0100111001110111 */
-										p->Cycles = (20 * kCycleScale + 2 * RdAvgXtraCyc);
+										p->Cycles = (20 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 										p->MainClass = kIKindRtr;
 										break;
 								}
@@ -1640,38 +1653,38 @@ static inline void DeCode4(WorkR *p)
 							switch (mode(p))
 							{
 								case 2:
-									p->Cycles =
-										(16 * kCycleScale + 2 * RdAvgXtraCyc + 2 * WrAvgXtraCyc);
+									p->Cycles = (16 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+												 2 * WR_AVG_XTRA_CYC);
 									break;
 								case 5:
-									p->Cycles =
-										(18 * kCycleScale + 2 * RdAvgXtraCyc + 2 * WrAvgXtraCyc);
+									p->Cycles = (18 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+												 2 * WR_AVG_XTRA_CYC);
 									break;
 								case 6:
-									p->Cycles =
-										(22 * kCycleScale + 2 * RdAvgXtraCyc + 2 * WrAvgXtraCyc);
+									p->Cycles = (22 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+												 2 * WR_AVG_XTRA_CYC);
 									break;
 								case 7:
 								default: /* keep compiler happy */
 									switch (reg(p))
 									{
 										case 0:
-											p->Cycles = (18 * kCycleScale + 2 * RdAvgXtraCyc +
-														 2 * WrAvgXtraCyc);
+											p->Cycles = (18 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+														 2 * WR_AVG_XTRA_CYC);
 											break;
 										case 1:
-											p->Cycles = (20 * kCycleScale + 3 * RdAvgXtraCyc +
-														 2 * WrAvgXtraCyc);
+											p->Cycles = (20 * kCycleScale + 3 * RD_AVG_XTRA_CYC +
+														 2 * WR_AVG_XTRA_CYC);
 											break;
 										case 2:
-											p->Cycles = (18 * kCycleScale + 2 * RdAvgXtraCyc +
-														 2 * WrAvgXtraCyc);
+											p->Cycles = (18 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+														 2 * WR_AVG_XTRA_CYC);
 											break;
 										case 3:
 										default:
 											/* keep compiler happy */
-											p->Cycles = (22 * kCycleScale + 2 * RdAvgXtraCyc +
-														 2 * WrAvgXtraCyc);
+											p->Cycles = (22 * kCycleScale + 2 * RD_AVG_XTRA_CYC +
+														 2 * WR_AVG_XTRA_CYC);
 											break;
 									}
 									break;
@@ -1687,31 +1700,31 @@ static inline void DeCode4(WorkR *p)
 							switch (mode(p))
 							{
 								case 2:
-									p->Cycles = (8 * kCycleScale + 2 * RdAvgXtraCyc);
+									p->Cycles = (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 									break;
 								case 5:
-									p->Cycles = (10 * kCycleScale + 2 * RdAvgXtraCyc);
+									p->Cycles = (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 									break;
 								case 6:
-									p->Cycles = (14 * kCycleScale + 2 * RdAvgXtraCyc);
+									p->Cycles = (14 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 									break;
 								case 7:
 								default: /* keep compiler happy */
 									switch (reg(p))
 									{
 										case 0:
-											p->Cycles = (10 * kCycleScale + 2 * RdAvgXtraCyc);
+											p->Cycles = (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 											break;
 										case 1:
-											p->Cycles = (12 * kCycleScale + 3 * RdAvgXtraCyc);
+											p->Cycles = (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 											break;
 										case 2:
-											p->Cycles = (10 * kCycleScale + 2 * RdAvgXtraCyc);
+											p->Cycles = (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 											break;
 										case 3:
 										default:
 											/* keep compiler happy */
-											p->Cycles = (14 * kCycleScale + 3 * RdAvgXtraCyc);
+											p->Cycles = (14 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 											break;
 									}
 									break;
@@ -1760,11 +1773,11 @@ static inline void DeCode5(WorkR *p)
 				{
 					if (0 != mode(p))
 					{
-						p->Cycles = (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+						p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 					}
 					else
 					{
-						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 					}
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindScc;
@@ -1789,14 +1802,14 @@ static inline void DeCode5(WorkR *p)
 				if (b8(p) == 0)
 				{
 					/* AddQA 0101nnn0ss001rrr */
-					p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RdAvgXtraCyc)
-												 : (4 * kCycleScale + RdAvgXtraCyc);
+					p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RD_AVG_XTRA_CYC)
+												 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 					p->MainClass = kIKindAddQA;
 				}
 				else
 				{
 					/* SubQA 0101nnn1ss001rrr */
-					p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+					p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 					p->MainClass = kIKindSubQA;
 				}
 			}
@@ -1810,13 +1823,13 @@ static inline void DeCode5(WorkR *p)
 				if (0 != mode(p))
 				{
 					p->Cycles = (4 == p->opsize)
-									? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-									: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+									? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+									: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 				}
 				else
 				{
-					p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RdAvgXtraCyc)
-												 : (4 * kCycleScale + RdAvgXtraCyc);
+					p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RD_AVG_XTRA_CYC)
+												 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 				}
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				if (b8(p) == 0)
@@ -1841,7 +1854,7 @@ static inline void DeCode6(WorkR *p)
 	if (cond == 1)
 	{
 		/* Bsr 01100001nnnnnnnn */
-		p->Cycles = (18 * kCycleScale + 2 * RdAvgXtraCyc + 2 * WrAvgXtraCyc);
+		p->Cycles = (18 * kCycleScale + 2 * RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC);
 		if (0 == (p->opcode & 255))
 		{
 			p->MainClass = kIKindBsrW;
@@ -1859,7 +1872,7 @@ static inline void DeCode6(WorkR *p)
 	else if (cond == 0)
 	{
 		/* Bra 01100000nnnnnnnn */
-		p->Cycles = (10 * kCycleScale + 2 * RdAvgXtraCyc);
+		p->Cycles = (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 		if (0 == (p->opcode & 255))
 		{
 			p->MainClass = kIKindBraW;
@@ -1901,7 +1914,7 @@ static inline void DeCode7(WorkR *p)
 	if (b8(p) == 0)
 	{
 		p->opsize = 4;
-		p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+		p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 		p->MainClass = kIKindMoveQ;
 		p->DecOp.y.v[0].ArgDat = p->opcode & 255;
 		p->DecOp.y.v[1].ArgDat = rg9(p);
@@ -1923,14 +1936,14 @@ static inline void DeCode8(WorkR *p)
 				if (b8(p) == 0)
 				{
 					/* DivU 1000ddd011mmmrrr */
-					p->Cycles = RdAvgXtraCyc;
+					p->Cycles = RD_AVG_XTRA_CYC;
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindDivU;
 				}
 				else
 				{
 					/* DivS 1000ddd111mmmrrr */
-					p->Cycles = RdAvgXtraCyc;
+					p->Cycles = RD_AVG_XTRA_CYC;
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindDivS;
 				}
@@ -1949,16 +1962,16 @@ static inline void DeCode8(WorkR *p)
 					{
 						if ((mode(p) < 2) || ((7 == mode(p)) && (reg(p) == 4)))
 						{
-							p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 					}
 					else
 					{
-						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 					}
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindOrEaD;
@@ -1974,11 +1987,11 @@ static inline void DeCode8(WorkR *p)
 						/* SBCD 1000xxx10000mxxx */
 						if (0 != mode(p))
 						{
-							p->Cycles = (18 * kCycleScale + 3 * RdAvgXtraCyc + WrAvgXtraCyc);
+							p->Cycles = (18 * kCycleScale + 3 * RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						p->opsize = 1;
 						if (mode(p) == 0)
@@ -2065,8 +2078,8 @@ static inline void DeCode8(WorkR *p)
 					if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAltMem, false))
 					{
 						p->Cycles = (4 == p->opsize)
-										? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-										: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+										? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+										: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindOrDEa;
 					}
@@ -2089,16 +2102,16 @@ static inline void DeCode9(WorkR *p)
 			{
 				if ((mode(p) < 2) || ((7 == mode(p)) && (reg(p) == 4)))
 				{
-					p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+					p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 				}
 				else
 				{
-					p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+					p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 				}
 			}
 			else
 			{
-				p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+				p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 			}
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 			p->MainClass = kIKindSubA;
@@ -2117,16 +2130,16 @@ static inline void DeCode9(WorkR *p)
 					{
 						if ((mode(p) < 2) || ((7 == mode(p)) && (reg(p) == 4)))
 						{
-							p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 					}
 					else
 					{
-						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 					}
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindSubB + OpSizeOffset(p);
@@ -2142,8 +2155,8 @@ static inline void DeCode9(WorkR *p)
 				if (CheckValidAddrMode(p, 0, reg(p), kAddrValidAny, true))
 					if (CheckValidAddrMode(p, 0, rg9(p), kAddrValidAny, false))
 					{
-						p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RdAvgXtraCyc)
-													 : (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RD_AVG_XTRA_CYC)
+													 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 						p->MainClass = kIKindSubXB + OpSizeOffset(p);
 					}
 			}
@@ -2155,9 +2168,10 @@ static inline void DeCode9(WorkR *p)
 				if (CheckValidAddrMode(p, 4, reg(p), kAddrValidAny, true))
 					if (CheckValidAddrMode(p, 4, rg9(p), kAddrValidAny, false))
 					{
-						p->Cycles = (4 == p->opsize)
-										? (30 * kCycleScale + 5 * RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-										: (18 * kCycleScale + 3 * RdAvgXtraCyc + 1 * WrAvgXtraCyc);
+						p->Cycles =
+							(4 == p->opsize)
+								? (30 * kCycleScale + 5 * RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+								: (18 * kCycleScale + 3 * RD_AVG_XTRA_CYC + 1 * WR_AVG_XTRA_CYC);
 						p->MainClass = kIKindSubXB + OpSizeOffset(p);
 					}
 			}
@@ -2169,8 +2183,8 @@ static inline void DeCode9(WorkR *p)
 					if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAltMem, false))
 					{
 						p->Cycles = (4 == p->opsize)
-										? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-										: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+										? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+										: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindSubB + OpSizeOffset(p);
 					}
@@ -2181,7 +2195,7 @@ static inline void DeCode9(WorkR *p)
 
 static inline void DeCodeA(WorkR *p)
 {
-	p->Cycles = (34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+	p->Cycles = (34 * kCycleScale + 4 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 	p->MainClass = kIKindA;
 }
 
@@ -2195,7 +2209,7 @@ static inline void DeCodeB(WorkR *p)
 		/* always long, regardless of opsize */
 		if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAny, true))
 		{
-			p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+			p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 			p->MainClass = kIKindCmpA;
 		}
@@ -2209,8 +2223,8 @@ static inline void DeCodeB(WorkR *p)
 			if (CheckValidAddrMode(p, 3, reg(p), kAddrValidAny, true))
 				if (CheckValidAddrMode(p, 3, rg9(p), kAddrValidAny, false))
 				{
-					p->Cycles = (4 == p->opsize) ? (20 * kCycleScale + 5 * RdAvgXtraCyc)
-												 : (12 * kCycleScale + 3 * RdAvgXtraCyc);
+					p->Cycles = (4 == p->opsize) ? (20 * kCycleScale + 5 * RD_AVG_XTRA_CYC)
+												 : (12 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 					p->MainClass = kIKindCmpB + OpSizeOffset(p);
 				}
 		}
@@ -2224,13 +2238,13 @@ static inline void DeCodeB(WorkR *p)
 					if (0 != mode(p))
 					{
 						p->Cycles = (4 == p->opsize)
-										? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-										: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+										? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+										: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 					}
 					else
 					{
-						p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RdAvgXtraCyc)
-													 : (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RD_AVG_XTRA_CYC)
+													 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 					}
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindEor;
@@ -2244,8 +2258,8 @@ static inline void DeCodeB(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAny, true))
 			if (CheckValidAddrMode(p, 0, rg9(p), kAddrValidAny, false))
 			{
-				p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RdAvgXtraCyc)
-											 : (4 * kCycleScale + RdAvgXtraCyc);
+				p->Cycles = (4 == p->opsize) ? (6 * kCycleScale + RD_AVG_XTRA_CYC)
+											 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				p->MainClass = kIKindCmpB + OpSizeOffset(p);
 			}
@@ -2260,7 +2274,7 @@ static inline void DeCodeC(WorkR *p)
 		if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidData, true))
 			if (CheckValidAddrMode(p, 0, rg9(p), kAddrValidAny, false))
 			{
-				p->Cycles = (38 * kCycleScale + RdAvgXtraCyc);
+				p->Cycles = (38 * kCycleScale + RD_AVG_XTRA_CYC);
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				if (b8(p) == 0)
 				{
@@ -2287,16 +2301,16 @@ static inline void DeCodeC(WorkR *p)
 					{
 						if ((mode(p) < 2) || ((7 == mode(p)) && (reg(p) == 4)))
 						{
-							p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 					}
 					else
 					{
-						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 					}
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindAndEaD;
@@ -2312,11 +2326,11 @@ static inline void DeCodeC(WorkR *p)
 						/* ABCD 1100ddd10000mrrr */
 						if (0 != mode(p))
 						{
-							p->Cycles = (18 * kCycleScale + 3 * RdAvgXtraCyc + WrAvgXtraCyc);
+							p->Cycles = (18 * kCycleScale + 3 * RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						p->opsize = 1;
 						if (mode(p) == 0)
@@ -2338,7 +2352,7 @@ static inline void DeCodeC(WorkR *p)
 						break;
 					case 1:
 						/* Exg 1100ddd10100trrr */
-						p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 						p->opsize = 4;
 						if (mode(p) == 0)
 						{
@@ -2366,7 +2380,7 @@ static inline void DeCodeC(WorkR *p)
 						else
 						{
 							/* Exg 1100ddd110001rrr */
-							p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 							if (CheckValidAddrMode(p, 0, rg9(p), kAddrValidAny, true))
 								if (CheckValidAddrMode(p, 1, reg(p), kAddrValidAny, false))
 								{
@@ -2384,8 +2398,8 @@ static inline void DeCodeC(WorkR *p)
 					if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAltMem, false))
 					{
 						p->Cycles = (4 == p->opsize)
-										? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-										: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+										? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+										: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindAndDEa;
 					}
@@ -2408,16 +2422,16 @@ static inline void DeCodeD(WorkR *p)
 			{
 				if ((mode(p) < 2) || ((7 == mode(p)) && (reg(p) == 4)))
 				{
-					p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+					p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 				}
 				else
 				{
-					p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+					p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 				}
 			}
 			else
 			{
-				p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+				p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 			}
 			p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 			p->MainClass = kIKindAddA;
@@ -2436,16 +2450,16 @@ static inline void DeCodeD(WorkR *p)
 					{
 						if ((mode(p) < 2) || ((7 == mode(p)) && (reg(p) == 4)))
 						{
-							p->Cycles = (8 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (8 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 						else
 						{
-							p->Cycles = (6 * kCycleScale + RdAvgXtraCyc);
+							p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC);
 						}
 					}
 					else
 					{
-						p->Cycles = (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 * kCycleScale + RD_AVG_XTRA_CYC);
 					}
 					p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 					p->MainClass = kIKindAddB + OpSizeOffset(p);
@@ -2461,8 +2475,8 @@ static inline void DeCodeD(WorkR *p)
 				if (CheckValidAddrMode(p, 0, reg(p), kAddrValidAny, true))
 					if (CheckValidAddrMode(p, 0, rg9(p), kAddrValidAny, false))
 					{
-						p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RdAvgXtraCyc)
-													 : (4 * kCycleScale + RdAvgXtraCyc);
+						p->Cycles = (4 == p->opsize) ? (8 * kCycleScale + RD_AVG_XTRA_CYC)
+													 : (4 * kCycleScale + RD_AVG_XTRA_CYC);
 						p->MainClass = kIKindAddXB + OpSizeOffset(p);
 					}
 			}
@@ -2473,9 +2487,10 @@ static inline void DeCodeD(WorkR *p)
 				if (CheckValidAddrMode(p, 4, reg(p), kAddrValidAny, true))
 					if (CheckValidAddrMode(p, 4, rg9(p), kAddrValidAny, false))
 					{
-						p->Cycles = (4 == p->opsize)
-										? (30 * kCycleScale + 5 * RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-										: (18 * kCycleScale + 3 * RdAvgXtraCyc + 1 * WrAvgXtraCyc);
+						p->Cycles =
+							(4 == p->opsize)
+								? (30 * kCycleScale + 5 * RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+								: (18 * kCycleScale + 3 * RD_AVG_XTRA_CYC + 1 * WR_AVG_XTRA_CYC);
 						p->MainClass = kIKindAddXB + OpSizeOffset(p);
 					}
 			}
@@ -2487,8 +2502,8 @@ static inline void DeCodeD(WorkR *p)
 					if (CheckValidAddrMode(p, mode(p), reg(p), kAddrValidAltMem, false))
 					{
 						p->Cycles = (4 == p->opsize)
-										? (12 * kCycleScale + RdAvgXtraCyc + 2 * WrAvgXtraCyc)
-										: (8 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+										? (12 * kCycleScale + RD_AVG_XTRA_CYC + 2 * WR_AVG_XTRA_CYC)
+										: (8 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 						p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 						p->MainClass = kIKindAddB + OpSizeOffset(p);
 					}
@@ -2552,7 +2567,7 @@ static inline void DeCodeE(WorkR *p)
 			/* 11100ttd11mmmddd */
 			if (CheckAltMemAddrMode(p))
 			{
-				p->Cycles = (6 * kCycleScale + RdAvgXtraCyc + WrAvgXtraCyc);
+				p->Cycles = (6 * kCycleScale + RD_AVG_XTRA_CYC + WR_AVG_XTRA_CYC);
 				p->Cycles += OpEACalcCyc(p, mode(p), reg(p));
 				p->MainClass = rolops(p, rg9(p));
 				SetDcoArgFields(p, true, kAMdDat4, 1);
@@ -2567,8 +2582,8 @@ static inline void DeCodeE(WorkR *p)
 			/* 1110cccdss0ttddd */
 			if (CheckValidAddrMode(p, 0, reg(p), kAddrValidAny, false))
 			{
-				p->Cycles = ((4 == p->opsize) ? (8 * kCycleScale + RdAvgXtraCyc)
-											  : (6 * kCycleScale + RdAvgXtraCyc));
+				p->Cycles = ((4 == p->opsize) ? (8 * kCycleScale + RD_AVG_XTRA_CYC)
+											  : (6 * kCycleScale + RD_AVG_XTRA_CYC));
 				p->MainClass = rolops(p, mode(p) & 3);
 				SetDcoArgFields(p, true, kAMdDat4, octdat(rg9(p)));
 			}
@@ -2579,8 +2594,8 @@ static inline void DeCodeE(WorkR *p)
 			if (CheckValidAddrMode(p, 0, rg9(p), kAddrValidAny, true))
 				if (CheckValidAddrMode(p, 0, reg(p), kAddrValidAny, false))
 				{
-					p->Cycles = ((4 == p->opsize) ? (8 * kCycleScale + RdAvgXtraCyc)
-												  : (6 * kCycleScale + RdAvgXtraCyc));
+					p->Cycles = ((4 == p->opsize) ? (8 * kCycleScale + RD_AVG_XTRA_CYC)
+												  : (6 * kCycleScale + RD_AVG_XTRA_CYC));
 					p->MainClass = rolops(p, mode(p) & 3);
 				}
 		}
@@ -2589,7 +2604,7 @@ static inline void DeCodeE(WorkR *p)
 
 static inline void DeCodeF(WorkR *p)
 {
-	p->Cycles = (34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+	p->Cycles = (34 * kCycleScale + 4 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 	p->DecOp.y.v[0].AMd = (p->opcode >> 8) & 0xFF;
 	p->DecOp.y.v[0].ArgDat = (p->opcode) & 0xFF;
 	switch (rg9(p))
@@ -2699,7 +2714,7 @@ static void DeCodeOneOp(WorkR *p)
 
 	if (kIKindIllegal == p->MainClass)
 	{
-		p->Cycles = (34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		p->Cycles = (34 * kCycleScale + 4 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 		p->DecOp.y.v[0].AMd = 0;
 		p->DecOp.y.v[0].ArgDat = 0;
 		p->DecOp.y.v[1].AMd = 0;
@@ -2807,7 +2822,7 @@ void M68KITAB_setup(DecOpR *p, const MachineConfig *config)
 	if (config)
 	{
 		const uint16_t illegalCycles =
-			(uint16_t)(34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+			(uint16_t)(34 * kCycleScale + 4 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 		/* Must match DeCodeF's cycle cost so that a runtime-disabled
 		   FPU/MMU instruction costs the same as when the feature was
 		   compile-time disabled (i.e. the opcode fell through to

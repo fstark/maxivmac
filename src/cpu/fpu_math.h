@@ -67,7 +67,7 @@
 
 
 /*
-	ReportAbnormalID unused 0x0204 - 0x02FF
+	REPORT_ABNORMAL_ID unused 0x0204 - 0x02FF
 */
 
 
@@ -5710,15 +5710,15 @@ static void myfp_SetFPCR(uint32_t v)
 			floatx80_rounding_precision = 64;
 			break;
 		case 3:
-			ReportAbnormalID(AbnormalID::kCPU_Bad_rounding_precision_in_myfp_SetFPCR,
-							 "Bad rounding precision in myfp_SetFPCR");
+			REPORT_ABNORMAL_ID(AbnormalID::kCPU_Bad_rounding_precision_in_myfp_SetFPCR,
+							   "Bad rounding precision in myfp_SetFPCR");
 			floatx80_rounding_precision = 80;
 			break;
 	}
 	if (0 != (v & 0xF))
 	{
-		ReportAbnormalID(AbnormalID::kCPU_Reserved_bits_not_zero_in_myfp_SetFPCR,
-						 "Reserved bits not zero in myfp_SetFPCR");
+		REPORT_ABNORMAL_ID(AbnormalID::kCPU_Reserved_bits_not_zero_in_myfp_SetFPCR,
+						   "Reserved bits not zero in myfp_SetFPCR");
 	}
 }
 
@@ -5756,8 +5756,8 @@ static uint32_t myfp_GetFPCR()
 	}
 	else
 	{
-		ReportAbnormalID(AbnormalID::kCPU_Bad_rounding_precision_in_myfp_GetFPCR,
-						 "Bad rounding precision in myfp_GetFPCR");
+		REPORT_ABNORMAL_ID(AbnormalID::kCPU_Bad_rounding_precision_in_myfp_GetFPCR,
+						   "Bad rounding precision in myfp_GetFPCR");
 	}
 
 	return v;

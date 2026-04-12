@@ -383,14 +383,14 @@ static uint8_t RTC_Access_Reg(uint8_t Data, bool WriteReg, uint8_t TheCmd)
 					s_rtc.WrProtect = (Data & 0x80) != 0;
 					break; /* Write_Protect Register */
 				default:
-					ReportAbnormalID(AbnormalID::kRTC_Write_RTC_Reg_unknown,
-									 "Write RTC Reg unknown");
+					REPORT_ABNORMAL_ID(AbnormalID::kRTC_Write_RTC_Reg_unknown,
+									   "Write RTC Reg unknown");
 					break;
 			}
 		}
 		else
 		{
-			ReportAbnormalID(AbnormalID::kRTC_Read_RTC_Reg_unknown, "Read RTC Reg unknown");
+			REPORT_ABNORMAL_ID(AbnormalID::kRTC_Read_RTC_Reg_unknown, "Read RTC Reg unknown");
 		}
 	}
 	else
@@ -475,7 +475,7 @@ void RTCDevice::unEnabledChangeNtfy()
 #ifdef _RTC_Debug
 			printf("aborting, %2x\n", s_rtc.Counter);
 #endif
-			ReportAbnormalID(AbnormalID::kRTC_RTC_aborting, "RTC aborting");
+			REPORT_ABNORMAL_ID(AbnormalID::kRTC_RTC_aborting, "RTC aborting");
 		}
 		s_rtc.Mode = 0;
 		s_rtc.DataOut = 0;
@@ -536,8 +536,8 @@ void RTCDevice::dataLineChangeNtfy()
 		}
 		else
 		{
-			ReportAbnormalID(AbnormalID::kRTC_write_RTC_Data_unexpected_direction,
-							 "write RTC Data unexpected direction");
+			REPORT_ABNORMAL_ID(AbnormalID::kRTC_write_RTC_Data_unexpected_direction,
+							   "write RTC Data unexpected direction");
 		}
 	}
 }

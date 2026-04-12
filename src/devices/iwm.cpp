@@ -24,7 +24,7 @@
 #define IWM_dolog 0
 
 /*
-	ReportAbnormalID unused 0x0603 - 0x06FF
+	REPORT_ABNORMAL_ID unused 0x0603 - 0x06FF
 */
 
 #define kph0L 0x00	   /* CA0 off (0) */
@@ -100,7 +100,7 @@ static uint8_t IWM_Read_Reg()
 		case 0:
 			if (!g_machine->config().isSEOrLater())
 			{
-				ReportAbnormalID(AbnormalID::kVIA2_IWM_Data_Read, "IWM Data Read");
+				REPORT_ABNORMAL_ID(AbnormalID::kVIA2_IWM_Data_Read, "IWM Data Read");
 			}
 #if IWM_dolog
 			dbglog_WriteNote("IWM Data Read");
@@ -114,7 +114,7 @@ static uint8_t IWM_Read_Reg()
 			return s_iwm.Status;
 			break;
 		case 2:
-			ReportAbnormalID(AbnormalID::kVIA2_IWM_Handshake_Read, "IWM Handshake Read");
+			REPORT_ABNORMAL_ID(AbnormalID::kVIA2_IWM_Handshake_Read, "IWM Handshake Read");
 #if IWM_dolog
 			dbglog_WriteNote("IWM Handshake Read");
 #endif

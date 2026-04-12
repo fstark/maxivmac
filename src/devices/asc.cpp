@@ -15,7 +15,7 @@
 /* Global singleton */
 
 /*
-	ReportAbnormalID unused 0x0F0E, 0x0F1E - 0x0FFF
+	REPORT_ABNORMAL_ID unused 0x0F0E, 0x0F1E - 0x0FFF
 */
 
 static uint8_t s_soundReg801 = 0;
@@ -141,9 +141,9 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 						{
 							if (0 != (s_soundReg804 & 0x02))
 							{
-								ReportAbnormalID(AbnormalID::kASC_full_flag_A_not_already_clear,
-												 "ASC_Access : "
-												 "full flag A not already clear");
+								REPORT_ABNORMAL_ID(AbnormalID::kASC_full_flag_A_not_already_clear,
+												   "ASC_Access : "
+												   "full flag A not already clear");
 								s_soundReg804 &= ~0x02;
 							}
 						}
@@ -153,13 +153,13 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				{
 					if (0 == (s_soundReg802 & 2))
 					{
-						ReportAbnormalID(AbnormalID::kASC_Channel_B_for_Mono,
-										 "ASC - Channel B for Mono");
+						REPORT_ABNORMAL_ID(AbnormalID::kASC_Channel_B_for_Mono,
+										   "ASC - Channel B for Mono");
 					}
 					if (((uint16_t)(s_ascFifoInB - s_ascFifoOut)) >= 0x400)
 					{
-						ReportAbnormalID(AbnormalID::kASC_Channel_B_Overflow,
-										 "ASC - Channel B Overflow");
+						REPORT_ABNORMAL_ID(AbnormalID::kASC_Channel_B_Overflow,
+										   "ASC - Channel B Overflow");
 						s_soundReg804 |= 0x08;
 					}
 					else
@@ -190,9 +190,9 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 						{
 							if (0 != (s_soundReg804 & 0x08))
 							{
-								ReportAbnormalID(AbnormalID::kASC_full_flag_B_not_already_clear,
-												 "ASC_Access : "
-												 "full flag B not already clear");
+								REPORT_ABNORMAL_ID(AbnormalID::kASC_full_flag_B_not_already_clear,
+												   "ASC_Access : "
+												   "full flag B not already clear");
 								s_soundReg804 &= ~0x08;
 							}
 						}
@@ -227,7 +227,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			case 0x800: /* VERSION */
 				if (WriteMem)
 				{
-					ReportAbnormalID(AbnormalID::kASC_writing_VERSION, "ASC - writing VERSION");
+					REPORT_ABNORMAL_ID(AbnormalID::kASC_writing_VERSION, "ASC - writing VERSION");
 				}
 				else
 				{
@@ -251,8 +251,8 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					{
 						if (Data > 2)
 						{
-							ReportAbnormalID(AbnormalID::kASC_unexpected_ENABLE,
-											 "ASC - unexpected ENABLE");
+							REPORT_ABNORMAL_ID(AbnormalID::kASC_unexpected_ENABLE,
+											   "ASC - unexpected ENABLE");
 						}
 					}
 					s_soundReg801 = Data;
@@ -294,16 +294,16 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 #endif
 					if (0 != (Data & ~2))
 					{
-						ReportAbnormalID(AbnormalID::kASC_unexpected_CONTROL_value,
-										 "ASC - unexpected CONTROL value");
+						REPORT_ABNORMAL_ID(AbnormalID::kASC_unexpected_CONTROL_value,
+										   "ASC - unexpected CONTROL value");
 					}
 					s_soundReg802 = Data;
 				}
 				else
 				{
 					Data = s_soundReg802;
-					ReportAbnormalID(AbnormalID::kASC_reading_CONTROL_value,
-									 "ASC - reading CONTROL value");
+					REPORT_ABNORMAL_ID(AbnormalID::kASC_reading_CONTROL_value,
+									   "ASC - reading CONTROL value");
 				}
 #if ASC_dolog && 1
 				dbglog_AddrAccess("ASC_Access Control (CONTROL)", Data, WriteMem, addr);
@@ -314,15 +314,15 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				{
 					if (0 != (Data & ~0x80))
 					{
-						ReportAbnormalID(AbnormalID::kASC_unexpected_FIFO_MODE,
-										 "ASC - unexpected FIFO MODE");
+						REPORT_ABNORMAL_ID(AbnormalID::kASC_unexpected_FIFO_MODE,
+										   "ASC - unexpected FIFO MODE");
 					}
 					if (0 != (Data & 0x80))
 					{
 						if (0 != (s_soundReg803 & 0x80))
 						{
-							ReportAbnormalID(AbnormalID::kASC_set_clear_FIFO_again,
-											 "ASC - set clear FIFO again");
+							REPORT_ABNORMAL_ID(AbnormalID::kASC_set_clear_FIFO_again,
+											   "ASC - set clear FIFO again");
 						}
 						else if (1 != s_soundReg801)
 						{
@@ -392,8 +392,8 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				else
 				{
 					Data = s_soundReg805;
-					ReportAbnormalID(AbnormalID::kASC_reading_WAVE_CONTROL_register,
-									 "ASC - reading WAVE CONTROL register");
+					REPORT_ABNORMAL_ID(AbnormalID::kASC_reading_WAVE_CONTROL_register,
+									   "ASC - reading WAVE CONTROL register");
 				}
 #if ASC_dolog && 1
 				dbglog_AddrAccess("ASC_Access Control (WAVE CONTROL)", Data, WriteMem, addr);
@@ -405,15 +405,15 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					s_soundRegVolume = Data >> 5;
 					if (0 != (Data & 0x1F))
 					{
-						ReportAbnormalID(AbnormalID::kASC_unexpected_volume_value,
-										 "ASC - unexpected volume value");
+						REPORT_ABNORMAL_ID(AbnormalID::kASC_unexpected_volume_value,
+										   "ASC - unexpected volume value");
 					}
 				}
 				else
 				{
 					Data = s_soundRegVolume << 5;
-					ReportAbnormalID(AbnormalID::kASC_reading_volume_register,
-									 "ASC - reading volume register");
+					REPORT_ABNORMAL_ID(AbnormalID::kASC_reading_volume_register,
+									   "ASC - reading volume register");
 				}
 #if ASC_dolog && 1
 				dbglog_AddrAccess("ASC_Access Control (VOLUME)", Data, WriteMem, addr);
@@ -425,15 +425,15 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					/* SoundReg807 = Data; */
 					if (0 != Data)
 					{
-						ReportAbnormalID(AbnormalID::kASC_nonstandard_CLOCK_RATE,
-										 "ASC - nonstandard CLOCK RATE");
+						REPORT_ABNORMAL_ID(AbnormalID::kASC_nonstandard_CLOCK_RATE,
+										   "ASC - nonstandard CLOCK RATE");
 					}
 				}
 				else
 				{
 					/* Data = SoundReg807; */
-					ReportAbnormalID(AbnormalID::kASC_reading_CLOCK_RATE,
-									 "ASC - reading CLOCK RATE");
+					REPORT_ABNORMAL_ID(AbnormalID::kASC_reading_CLOCK_RATE,
+									   "ASC - reading CLOCK RATE");
 				}
 #if ASC_dolog && 1
 				dbglog_AddrAccess("ASC_Access Control (CLOCK RATE)", Data, WriteMem, addr);
@@ -442,7 +442,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			case 0x808: /* CONTROL */
 				if (WriteMem)
 				{
-					ReportAbnormalID(AbnormalID::kASC_write_to_808, "ASC - write to 808");
+					REPORT_ABNORMAL_ID(AbnormalID::kASC_write_to_808, "ASC - write to 808");
 				}
 				else
 				{
@@ -456,7 +456,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			case 0x80A: /* ? */
 				if (WriteMem)
 				{
-					ReportAbnormalID(AbnormalID::kASC_write_to_80A, "ASC - write to 80A");
+					REPORT_ABNORMAL_ID(AbnormalID::kASC_write_to_80A, "ASC - write to 80A");
 				}
 				else
 				{
@@ -478,7 +478,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 				{
 					Data = 0;
 				}
-				ReportAbnormalID(AbnormalID::kASC_unknown_ASC_reg, "ASC - unknown ASC reg");
+				REPORT_ABNORMAL_ID(AbnormalID::kASC_unknown_ASC_reg, "ASC - unknown ASC reg");
 #if ASC_dolog && 1
 				dbglog_AddrAccess("ASC_Access Control (?)", Data, WriteMem, addr);
 #endif
@@ -540,7 +540,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 		dbglog_AddrAccess("ASC_Access Control ? *** unknown reg", Data, WriteMem, addr);
 #endif
 
-		ReportAbnormalID(AbnormalID::kASC_unknown_ASC_reg_2, "unknown ASC reg");
+		REPORT_ABNORMAL_ID(AbnormalID::kASC_unknown_ASC_reg_2, "unknown ASC reg");
 	}
 
 	return Data;
@@ -822,8 +822,8 @@ void ASCDevice::subTick(int SubTick)
 		{
 			if (0 != (s_soundReg804 & 0x01))
 			{
-				ReportAbnormalID(AbnormalID::kASC_half_flag_A_not_already_clear,
-								 "half flag A not already clear");
+				REPORT_ABNORMAL_ID(AbnormalID::kASC_half_flag_A_not_already_clear,
+								   "half flag A not already clear");
 				s_soundReg804 &= ~0x01;
 			}
 		}
@@ -846,8 +846,8 @@ void ASCDevice::subTick(int SubTick)
 		{
 			if (0 == (s_soundReg804 & 0x02))
 			{
-				ReportAbnormalID(AbnormalID::kASC_full_flag_A_not_already_set,
-								 "full flag A not already set");
+				REPORT_ABNORMAL_ID(AbnormalID::kASC_full_flag_A_not_already_set,
+								   "full flag A not already set");
 				s_soundReg804 |= 0x02;
 			}
 		}
@@ -865,8 +865,8 @@ void ASCDevice::subTick(int SubTick)
 			{
 				if (0 != (s_soundReg804 & 0x04))
 				{
-					ReportAbnormalID(AbnormalID::kASC_half_flag_B_not_already_clear,
-									 "half flag B not already clear");
+					REPORT_ABNORMAL_ID(AbnormalID::kASC_half_flag_B_not_already_clear,
+									   "half flag B not already clear");
 					s_soundReg804 &= ~0x04;
 				}
 			}
@@ -889,8 +889,8 @@ void ASCDevice::subTick(int SubTick)
 			{
 				if (0 == (s_soundReg804 & 0x08))
 				{
-					ReportAbnormalID(AbnormalID::kASC_full_flag_B_not_already_set,
-									 "full flag B not already set");
+					REPORT_ABNORMAL_ID(AbnormalID::kASC_full_flag_B_not_already_set,
+									   "full flag B not already set");
 					s_soundReg804 |= 0x08;
 				}
 			}

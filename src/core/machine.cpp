@@ -32,11 +32,11 @@
 
 #include <cstdio>
 /*
-	ReportAbnormalID unused 0x111D - 0x11FF
+	REPORT_ABNORMAL_ID unused 0x111D - 0x11FF
 */
 
 /*
-	ReportAbnormalID ranges unused 0x12xx - 0xFFxx
+	REPORT_ABNORMAL_ID ranges unused 0x12xx - 0xFFxx
 */
 
 extern uint8_t get_vm_byte(uint32_t addr);
@@ -162,8 +162,8 @@ void dbglog_WriteSetBool(char *s, bool v)
 static bool s_gotOneAbnormal = false;
 #endif
 
-#ifndef ReportAbnormalInterrupt
-#define ReportAbnormalInterrupt 0
+#ifndef REPORT_ABNORMAL_INTERRUPT
+#define REPORT_ABNORMAL_INTERRUPT 0
 #endif
 
 #if WantAbnormalReports
@@ -177,7 +177,7 @@ void DoReportAbnormalID(uint16_t id, char *s)
 	if (!s_gotOneAbnormal)
 	{
 		WarnMsgAbnormalID(id);
-#if ReportAbnormalInterrupt
+#if REPORT_ABNORMAL_INTERRUPT
 		SetInterruptButton(true);
 #endif
 		s_gotOneAbnormal = true;
@@ -311,28 +311,28 @@ static void ExtnParamBuffers_Access(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
 
-	switch (get_vm_word(p + ExtnDat_commnd))
+	switch (get_vm_word(p + EXTN_DAT_COMMND))
 	{
 		case kCmndVersion:
-			put_vm_word(p + ExtnDat_version, 1);
+			put_vm_word(p + EXTN_DAT_VERSION, 1);
 			result = tMacErr::noErr;
 			break;
 		case kCmndPbufFeatures:
-			put_vm_long(p + ExtnDat_params + 0, 0);
+			put_vm_long(p + EXTN_DAT_PARAMS + 0, 0);
 			result = tMacErr::noErr;
 			break;
 		case kCmndPbufNew:
 		{
 			PbufIndex pbufNo;
-			uint32_t count = get_vm_long(p + ExtnDat_params + 4);
+			uint32_t count = get_vm_long(p + EXTN_DAT_PARAMS + 4);
 			/* reserved word at offset 2, should be zero */
 			result = PbufNew(count, &pbufNo);
-			put_vm_word(p + ExtnDat_params + 0, pbufNo);
+			put_vm_word(p + EXTN_DAT_PARAMS + 0, pbufNo);
 		}
 		break;
 		case kCmndPbufDispose:
 		{
-			PbufIndex pbufNo = get_vm_word(p + ExtnDat_params + 0);
+			PbufIndex pbufNo = get_vm_word(p + EXTN_DAT_PARAMS + 0);
 			/* reserved word at offset 2, should be zero */
 			result = CheckPbuf(pbufNo);
 			if (tMacErr::noErr == result)
@@ -344,25 +344,25 @@ static void ExtnParamBuffers_Access(uint32_t p)
 		case kCmndPbufGetSize:
 		{
 			uint32_t count;
-			PbufIndex pbufNo = get_vm_word(p + ExtnDat_params + 0);
+			PbufIndex pbufNo = get_vm_word(p + EXTN_DAT_PARAMS + 0);
 			/* reserved word at offset 2, should be zero */
 
 			result = PbufGetSize(pbufNo, &count);
 			if (tMacErr::noErr == result)
 			{
-				put_vm_long(p + ExtnDat_params + 4, count);
+				put_vm_long(p + EXTN_DAT_PARAMS + 4, count);
 			}
 		}
 		break;
 		case kCmndPbufTransfer:
 		{
 			uint32_t pbufCount;
-			PbufIndex pbufNo = get_vm_word(p + ExtnDat_params + 0);
+			PbufIndex pbufNo = get_vm_word(p + EXTN_DAT_PARAMS + 0);
 			/* reserved word at offset 2, should be zero */
-			uint32_t offset = get_vm_long(p + ExtnDat_params + 4);
-			uint32_t count = get_vm_long(p + ExtnDat_params + 8);
-			uint32_t buffera = get_vm_long(p + ExtnDat_params + 12);
-			bool isWrite = (get_vm_word(p + ExtnDat_params + 16) != 0);
+			uint32_t offset = get_vm_long(p + EXTN_DAT_PARAMS + 4);
+			uint32_t count = get_vm_long(p + EXTN_DAT_PARAMS + 8);
+			uint32_t buffera = get_vm_long(p + EXTN_DAT_PARAMS + 12);
+			bool isWrite = (get_vm_word(p + EXTN_DAT_PARAMS + 16) != 0);
 			result = PbufGetSize(pbufNo, &pbufCount);
 			if (tMacErr::noErr == result)
 			{
@@ -381,7 +381,7 @@ static void ExtnParamBuffers_Access(uint32_t p)
 		break;
 	}
 
-	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
+	put_vm_word(p + EXTN_DAT_RESULT, static_cast<uint16_t>(result));
 }
 
 static constexpr int kCmndHTCEFeatures = 1;
@@ -392,19 +392,19 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
 
-	switch (get_vm_word(p + ExtnDat_commnd))
+	switch (get_vm_word(p + EXTN_DAT_COMMND))
 	{
 		case kCmndVersion:
-			put_vm_word(p + ExtnDat_version, 1);
+			put_vm_word(p + EXTN_DAT_VERSION, 1);
 			result = tMacErr::noErr;
 			break;
 		case kCmndHTCEFeatures:
-			put_vm_long(p + ExtnDat_params + 0, 0);
+			put_vm_long(p + EXTN_DAT_PARAMS + 0, 0);
 			result = tMacErr::noErr;
 			break;
 		case kCmndHTCEExport:
 		{
-			PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 0);
+			PbufIndex Pbuf_No = get_vm_word(p + EXTN_DAT_PARAMS + 0);
 
 			result = CheckPbuf(Pbuf_No);
 			if (tMacErr::noErr == result)
@@ -417,12 +417,12 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 		{
 			PbufIndex Pbuf_No;
 			result = HTCEimport(&Pbuf_No);
-			put_vm_word(p + ExtnDat_params + 0, Pbuf_No);
+			put_vm_word(p + EXTN_DAT_PARAMS + 0, Pbuf_No);
 		}
 		break;
 	}
 
-	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
+	put_vm_word(p + EXTN_DAT_RESULT, static_cast<uint16_t>(result));
 }
 
 static constexpr uint32_t kFindExtnExtension = 0x64E1F58A;
@@ -445,10 +445,10 @@ static void ExtnFind_Access(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
 
-	switch (get_vm_word(p + ExtnDat_commnd))
+	switch (get_vm_word(p + EXTN_DAT_COMMND))
 	{
 		case kCmndVersion:
-			put_vm_word(p + ExtnDat_version, 1);
+			put_vm_word(p + EXTN_DAT_VERSION, 1);
 			result = tMacErr::noErr;
 			break;
 		case kCmndFindExtnFind:
@@ -528,7 +528,7 @@ static void ExtnFind_Access(uint32_t p)
 			break;
 	}
 
-	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
+	put_vm_word(p + EXTN_DAT_RESULT, static_cast<uint16_t>(result));
 }
 
 static constexpr int kDSK_Params_Hi = 0;
@@ -628,11 +628,11 @@ static uint32_t extnAccess(uint32_t Data, bool writeMem, uint32_t addr)
 			uint32_t p = s_paramAddrHi << 16 | Data;
 
 			s_paramAddrHi = (uint16_t)-1;
-			if (kcom_callcheck == get_vm_word(p + ExtnDat_checkval))
+			if (kcom_callcheck == get_vm_word(p + EXTN_DAT_CHECKVAL))
 			{
-				put_vm_word(p + ExtnDat_checkval, 0);
+				put_vm_word(p + EXTN_DAT_CHECKVAL, 0);
 
-				switch (get_vm_word(p + ExtnDat_extension))
+				switch (get_vm_word(p + EXTN_DAT_EXTENSION))
 				{
 					case kExtnFindExtn:
 						ExtnFind_Access(p);
@@ -653,7 +653,8 @@ static uint32_t extnAccess(uint32_t Data, bool writeMem, uint32_t addr)
 						if (auto *d = g_machine->findDevice<SonyDevice>()) d->extnSonyAccess(p);
 						break;
 					default:
-						put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(tMacErr::controlErr));
+						put_vm_word(p + EXTN_DAT_RESULT,
+									static_cast<uint16_t>(tMacErr::controlErr));
 						break;
 				}
 			}
@@ -779,7 +780,7 @@ static void AddToATTList(ATTEntryPtr p)
 	uint16_t NewLast = s_lastATTel + 1;
 	if (NewLast >= kATTListMax)
 	{
-		ReportAbnormalID(AbnormalID::kMACH_ATT_list_not_big_enough, "ATT list not big enough");
+		REPORT_ABNORMAL_ID(AbnormalID::kMACH_ATT_list_not_big_enough, "ATT list not big enough");
 	}
 	else
 	{
@@ -1235,9 +1236,9 @@ static void SetUp_address_II()
 */
 
 #ifndef ln2mtb
-#define AddToATTListWithMTB AddToATTList
+#define ADD_TO_ATT_LIST_WITH_MTB AddToATTList
 #else
-static void AddToATTListWithMTB(ATTEntryPtr p)
+static void ADD_TO_ATT_LIST_WITH_MTB(ATTEntryPtr p)
 {
 	/*
 		Test of memory mapping system.
@@ -1271,7 +1272,7 @@ static void SetUp_RAM24_compact()
 		r.usemask = cfg.ramSize() - 1;
 		r.usebase = g_ram;
 		r.Access = kATTA_readwritereadymask;
-		AddToATTListWithMTB(&r);
+		ADD_TO_ATT_LIST_WITH_MTB(&r);
 	}
 	else
 	{
@@ -1285,7 +1286,7 @@ static void SetUp_RAM24_compact()
 			r.usemask = cfg.ramBSize - 1;
 			r.usebase = cfg.ramASize + g_ram;
 			r.Access = kATTA_readwritereadymask;
-			AddToATTListWithMTB(&r);
+			ADD_TO_ATT_LIST_WITH_MTB(&r);
 		}
 
 		r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~((1 << GetRAMLn2Spc()) - 1));
@@ -1293,7 +1294,7 @@ static void SetUp_RAM24_compact()
 		r.usemask = cfg.ramASize - 1;
 		r.usebase = g_ram;
 		r.Access = kATTA_readwritereadymask;
-		AddToATTListWithMTB(&r);
+		ADD_TO_ATT_LIST_WITH_MTB(&r);
 	}
 }
 
@@ -1310,7 +1311,7 @@ static void SetUp_address_compact()
 		r.usemask = cfg.romSize - 1;
 		r.usebase = g_rom;
 		r.Access = kATTA_readreadymask;
-		AddToATTListWithMTB(&r);
+		ADD_TO_ATT_LIST_WITH_MTB(&r);
 	}
 	else
 	{
@@ -1331,7 +1332,7 @@ static void SetUp_address_compact()
 		r.usemask = cfg.romSize - 1;
 		r.usebase = g_rom;
 		r.Access = kATTA_readreadymask;
-		AddToATTListWithMTB(&r);
+		ADD_TO_ATT_LIST_WITH_MTB(&r);
 	}
 
 	if (MEM_OVERLAY)
@@ -1352,7 +1353,7 @@ static void SetUp_address_compact()
 			r.usebase = cfg.ramASize + g_ram;
 			r.Access = kATTA_readwritereadymask;
 		}
-		AddToATTListWithMTB(&r);
+		ADD_TO_ATT_LIST_WITH_MTB(&r);
 	}
 
 	if (g_machine->config().includeVidMem)
@@ -1459,12 +1460,12 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 				}
 				else
 				{
-					ReportAbnormalID(AbnormalID::kMACH_VIA1_word, "access VIA1 word");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_VIA1_word, "access VIA1 word");
 				}
 			}
 			else if ((addr & 1) != 0)
 			{
-				ReportAbnormalID(AbnormalID::kMACH_VIA1_odd, "access VIA1 odd");
+				REPORT_ABNORMAL_ID(AbnormalID::kMACH_VIA1_odd, "access VIA1 odd");
 			}
 			else
 			{
@@ -1481,8 +1482,8 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 					}
 					if (nonStandard)
 					{
-						ReportAbnormalID(AbnormalID::kMACH_VIA1_nonstandard_address,
-										 "access VIA1 nonstandard address");
+						REPORT_ABNORMAL_ID(AbnormalID::kMACH_VIA1_nonstandard_address,
+										   "access VIA1 nonstandard address");
 					}
 				}
 				data = p->device->access(data, writeMem, (addr >> 9) & kVIA1_Mask);
@@ -1500,7 +1501,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 				}
 				else
 				{
-					ReportAbnormalID(AbnormalID::kMACH_VIA2_word, "access VIA2 word");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_VIA2_word, "access VIA2 word");
 				}
 			}
 			else if ((addr & 1) != 0)
@@ -1515,15 +1516,15 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 				}
 				else
 				{
-					ReportAbnormalID(AbnormalID::kMACH_VIA2_odd, "access VIA2 odd");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_VIA2_odd, "access VIA2 odd");
 				}
 			}
 			else
 			{
 				if ((addr & 0x000001FE) != 0x00000000)
 				{
-					ReportAbnormalID(AbnormalID::kMACH_VIA2_nonstandard_address,
-									 "access VIA2 nonstandard address");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_VIA2_nonstandard_address,
+									   "access VIA2 nonstandard address");
 				}
 				data = p->device->access(data, writeMem, (addr >> 9) & kVIA2_Mask);
 			}
@@ -1535,14 +1536,15 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 				/* SE/Classic only: check for unassigned SCC address */
 				if ((addr & 0x00100000) == 0)
 				{
-					ReportAbnormalID(AbnormalID::kMACH_SCC_unassigned_address,
-									 "access SCC unassigned address");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCC_unassigned_address,
+									   "access SCC unassigned address");
 					break;
 				}
 			}
 			if (!byteSize)
 			{
-				ReportAbnormalID(AbnormalID::kMACH_Attemped_Phase_Adjust, "Attemped Phase Adjust");
+				REPORT_ABNORMAL_ID(AbnormalID::kMACH_Attemped_Phase_Adjust,
+								   "Attemped Phase Adjust");
 			}
 			else if (!g_machine->config().isIIFamily() && writeMem != ((addr & 1) != 0))
 			{
@@ -1551,7 +1553,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 					auto m = g_machine->config().model;
 					if (m >= MacModel::Mac512Ke && m != MacModel::PB100)
 					{
-						ReportAbnormalID(AbnormalID::kMACH_SCC_even_odd, "access SCC even/odd");
+						REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCC_even_odd, "access SCC even/odd");
 					}
 				}
 				else
@@ -1562,8 +1564,8 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 			else if (g_machine->config().model != MacModel::PB100 &&
 					 !g_machine->config().isIIFamily() && writeMem != (addr >= kSCCWr_Block_Base))
 			{
-				ReportAbnormalID(AbnormalID::kMACH_SCC_wr_rd_base_wrong,
-								 "access SCC wr/rd base wrong");
+				REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCC_wr_rd_base_wrong,
+								   "access SCC wr/rd base wrong");
 			}
 			else
 			{
@@ -1580,8 +1582,8 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 					}
 					if (nonStandard)
 					{
-						ReportAbnormalID(AbnormalID::kMACH_SCC_nonstandard_address,
-										 "access SCC nonstandard address");
+						REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCC_nonstandard_address,
+										   "access SCC nonstandard address");
 					}
 				}
 				data = p->device->access(data, writeMem, (addr >> 1) & kSCC_Mask);
@@ -1590,18 +1592,18 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 		case kMMDV_Extn:
 			if (byteSize)
 			{
-				ReportAbnormalID(AbnormalID::kMACH_Sony_byte, "access Sony byte");
+				REPORT_ABNORMAL_ID(AbnormalID::kMACH_Sony_byte, "access Sony byte");
 			}
 			else if ((addr & 1) != 0)
 			{
-				ReportAbnormalID(AbnormalID::kMACH_Sony_odd, "access Sony odd");
+				REPORT_ABNORMAL_ID(AbnormalID::kMACH_Sony_odd, "access Sony odd");
 			}
 			else
 			{
 				uint32_t wordOff = (addr >> 1) & 0x1F;
 				if (!writeMem && wordOff < 16)
 				{
-					ReportAbnormalID(AbnormalID::kMACH_Sony_read, "access Sony read");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_Sony_read, "access Sony read");
 				}
 				else
 				{
@@ -1628,7 +1630,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 				}
 				else
 				{
-					ReportAbnormalID(AbnormalID::kMACH_ASC_word, "access ASC word");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_ASC_word, "access ASC word");
 				}
 			}
 			else
@@ -1639,11 +1641,11 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 		case kMMDV_SCSI:
 			if (!byteSize)
 			{
-				ReportAbnormalID(AbnormalID::kMACH_SCSI_word, "access SCSI word");
+				REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCSI_word, "access SCSI word");
 			}
 			else if (!g_machine->config().isIIFamily() && writeMem != ((addr & 1) != 0))
 			{
-				ReportAbnormalID(AbnormalID::kMACH_SCSI_even_odd, "access SCSI even/odd");
+				REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCSI_even_odd, "access SCSI even/odd");
 			}
 			else
 			{
@@ -1651,8 +1653,8 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 				{
 					if ((addr & 0x1F8F) != 0x00000000)
 					{
-						ReportAbnormalID(AbnormalID::kMACH_SCSI_nonstandard_address,
-										 "access SCSI nonstandard address");
+						REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCSI_nonstandard_address,
+										   "access SCSI nonstandard address");
 					}
 				}
 				data = p->device->access(data, writeMem, (addr >> 4) & 0x07);
@@ -1664,8 +1666,8 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 			{
 				if ((addr & 0x00100000) == 0)
 				{
-					ReportAbnormalID(AbnormalID::kMACH_IWM_unassigned_address,
-									 "access IWM unassigned address");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_IWM_unassigned_address,
+									   "access IWM unassigned address");
 					break;
 				}
 			}
@@ -1676,7 +1678,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 			{
 				if ((addr & 1) != 0)
 				{
-					ReportAbnormalID(AbnormalID::kMACH_IWM_odd, "access IWM odd");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_IWM_odd, "access IWM odd");
 				}
 				else
 				{
@@ -1687,7 +1689,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 			{
 				if ((addr & 1) == 0)
 				{
-					ReportAbnormalID(AbnormalID::kMACH_IWM_even, "access IWM even");
+					REPORT_ABNORMAL_ID(AbnormalID::kMACH_IWM_even, "access IWM even");
 				}
 				else
 				{
@@ -1696,8 +1698,8 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 					{
 						if ((addr & 0x001FE1FF) != 0x001FE1FF)
 						{
-							ReportAbnormalID(AbnormalID::kMACH_IWM_nonstandard_address,
-											 "access IWM nonstandard address");
+							REPORT_ABNORMAL_ID(AbnormalID::kMACH_IWM_nonstandard_address,
+											   "access IWM nonstandard address");
 						}
 					}
 					data = p->device->access(data, writeMem, (addr >> 9) & kIWM_Mask);

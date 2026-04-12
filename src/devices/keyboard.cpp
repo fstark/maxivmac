@@ -23,7 +23,7 @@
 #endif
 
 /*
-	ReportAbnormalID unused 0x0B03 - 0x0BFF
+	REPORT_ABNORMAL_ID unused 0x0B03 - 0x0BFF
 */
 
 VIA1Device *KeyboardDevice::via1() const
@@ -104,8 +104,8 @@ void KeyboardDevice::receiveCommand()
 {
 	if (kybdState_ != kKybdStateRecievingCommand)
 	{
-		ReportAbnormalID(AbnormalID::kKYBD_KybdState_kKybdStateRecievingCommand,
-						 "KybdState != kKybdStateRecievingCommand");
+		REPORT_ABNORMAL_ID(AbnormalID::kKYBD_KybdState_kKybdStateRecievingCommand,
+						   "KybdState != kKybdStateRecievingCommand");
 	}
 	else
 	{
@@ -151,8 +151,8 @@ void KeyboardDevice::receiveEndCommand()
 {
 	if (kybdState_ != kKybdStateRecievingEndCommand)
 	{
-		ReportAbnormalID(AbnormalID::kKYBD_KybdState_kKybdStateRecievingEndCommand,
-						 "KybdState != kKybdStateRecievingEndCommand");
+		REPORT_ABNORMAL_ID(AbnormalID::kKYBD_KybdState_kKybdStateRecievingEndCommand,
+						   "KybdState != kKybdStateRecievingEndCommand");
 	}
 	else
 	{

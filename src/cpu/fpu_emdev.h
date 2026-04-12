@@ -6,7 +6,7 @@
 */
 
 /*
-	ReportAbnormalID unused 0x0306 - 0x03FF
+	REPORT_ABNORMAL_ID unused 0x0306 - 0x03FF
 */
 
 
@@ -206,8 +206,8 @@ static int CheckFPCondition(uint16_t predicate)
 
 static void DoCodeFPU_dflt()
 {
-	ReportAbnormalID(AbnormalID::kFPU_unimplemented_Floating_Point_Instruction,
-					 "unimplemented Floating Point Instruction");
+	REPORT_ABNORMAL_ID(AbnormalID::kFPU_unimplemented_Floating_Point_Instruction,
+					   "unimplemented Floating Point Instruction");
 	{
 		uint16_t opcode =
 			((uint16_t)(V_regs.CurDecOpY.v[0].AMd) << 8) | V_regs.CurDecOpY.v[0].ArgDat;
@@ -377,12 +377,12 @@ static void DoCodeFPU_Trapcc()
 	}
 	else
 	{
-		ReportAbnormalID(AbnormalID::kFPU_Invalid_FTRAPcc, "Invalid FTRAPcc (?");
+		REPORT_ABNORMAL_ID(AbnormalID::kFPU_Invalid_FTRAPcc, "Invalid FTRAPcc (?");
 	}
 
 	if (condition_true)
 	{
-		ReportAbnormalID(AbnormalID::kFPU_FTRAPcc_trapping, "FTRAPcc trapping");
+		REPORT_ABNORMAL_ID(AbnormalID::kFPU_FTRAPcc_trapping, "FTRAPcc trapping");
 		Exception(7);
 	}
 }
@@ -1061,8 +1061,8 @@ static void DoCodeFPU_GenOpEA(uint16_t word2)
 			}
 			else
 			{
-				ReportAbnormalID(AbnormalID::kFPU_Packed_Decimal_in_GetFPSource,
-								 "Packed Decimal in GetFPSource");
+				REPORT_ABNORMAL_ID(AbnormalID::kFPU_Packed_Decimal_in_GetFPSource,
+								   "Packed Decimal in GetFPSource");
 				/* correct? just set to a constant for now */
 				/* *r = 9123456789.0; */
 				DoCodeFPU_GenOp(word2, &source);
@@ -1163,8 +1163,8 @@ static void DoCodeFPU_Move_FP_EA(uint16_t word2)
 			}
 			else
 			{
-				ReportAbnormalID(AbnormalID::kFPU_Packed_Decimal_in_FMOVE,
-								 "Packed Decimal in FMOVE");
+				REPORT_ABNORMAL_ID(AbnormalID::kFPU_Packed_Decimal_in_FMOVE,
+								   "Packed Decimal in FMOVE");
 				/* ? */
 			}
 			break;

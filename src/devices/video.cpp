@@ -27,7 +27,7 @@
 #include <cstdio>
 
 /*
-	ReportAbnormalID unused 0x0A08 - 0x0AFF
+	REPORT_ABNORMAL_ID unused 0x0A08 - 0x0AFF
 */
 
 #define VID_dolog 1
@@ -491,7 +491,7 @@ bool VideoDevice::init()
 #endif
 	if (usedSoFar > cfg.vidROMSize)
 	{
-		ReportAbnormalID(AbnormalID::kVIDEO_vidROMSize_too_small, "vidROMSize too small");
+		REPORT_ABNORMAL_ID(AbnormalID::kVIDEO_vidROMSize_too_small, "vidROMSize too small");
 		return false;
 	}
 
@@ -770,13 +770,13 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
 
-	switch (get_vm_word(p + ExtnDat_commnd))
+	switch (get_vm_word(p + EXTN_DAT_COMMND))
 	{
 		case kCmndVersion:
 #if VID_dolog
 			dbglog_WriteNote("Video_Access kCmndVersion");
 #endif
-			put_vm_word(p + ExtnDat_version, 1);
+			put_vm_word(p + EXTN_DAT_VERSION, 1);
 			result = tMacErr::noErr;
 			break;
 		case kCmndVideoGetIntEnbl:
@@ -834,8 +834,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 #endif
 					if (0 != get_vm_word(csParam + VDPageInfo_csPage))
 					{
-						ReportAbnormalID(AbnormalID::kVIDEO_SetVidMode_not_page_0,
-										 "SetVidMode not page 0");
+						REPORT_ABNORMAL_ID(AbnormalID::kVIDEO_SetVidMode_not_page_0,
+										   "SetVidMode not page 0");
 					}
 					else
 					{
@@ -1085,8 +1085,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				default:
-					ReportAbnormalID(AbnormalID::kVIDEO_kCmndVideoControl_unknown_csCode,
-									 "kCmndVideoControl, unknown csCode");
+					REPORT_ABNORMAL_ID(AbnormalID::kVIDEO_kCmndVideoControl_unknown_csCode,
+									   "kCmndVideoControl, unknown csCode");
 					dbglog_writelnNum("csCode", csCode);
 					break;
 			}
@@ -1117,8 +1117,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 									 "GetEntries");
 #endif
 					{
-						ReportAbnormalID(AbnormalID::kVIDEO_GetEntries_not_implemented,
-										 "GetEntries not implemented");
+						REPORT_ABNORMAL_ID(AbnormalID::kVIDEO_GetEntries_not_implemented,
+										   "GetEntries not implemented");
 					}
 					break;
 				case 4: /* GetPages */
@@ -1336,21 +1336,21 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				default:
-					ReportAbnormalID(AbnormalID::kVIDEO_Video_Access_kCmndVideoStatus,
-									 "Video_Access kCmndVideoStatus, "
-									 "unknown csCode");
+					REPORT_ABNORMAL_ID(AbnormalID::kVIDEO_Video_Access_kCmndVideoStatus,
+									   "Video_Access kCmndVideoStatus, "
+									   "unknown csCode");
 					dbglog_writelnNum("csCode", csCode);
 					break;
 			}
 		}
 		break;
 		default:
-			ReportAbnormalID(AbnormalID::kVIDEO_Video_Access_unknown_commnd,
-							 "Video_Access, unknown commnd");
+			REPORT_ABNORMAL_ID(AbnormalID::kVIDEO_Video_Access_unknown_commnd,
+							   "Video_Access, unknown commnd");
 			break;
 	}
 
-	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
+	put_vm_word(p + EXTN_DAT_RESULT, static_cast<uint16_t>(result));
 }
 
 /* --- Resolution-change flag accessors (used by host/emulator_shell) --- */

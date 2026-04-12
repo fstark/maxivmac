@@ -18,7 +18,7 @@
 #endif
 
 /*
-	ReportAbnormalID unused 0x0C06 - 0x0CFF
+	REPORT_ABNORMAL_ID unused 0x0C06 - 0x0CFF
 */
 
 #include "devices/adb_shared.h"
@@ -64,14 +64,14 @@ void ADBDevice::doNewState()
 								break;
 							case 2: /* reserved */
 							case 3: /* reserved */
-								ReportAbnormalID(AbnormalID::kADB_Reserved_ADB_command,
-												 "Reserved ADB command");
+								REPORT_ABNORMAL_ID(AbnormalID::kADB_Reserved_ADB_command,
+												   "Reserved ADB command");
 								break;
 						}
 						break;
 					case 1: /* reserved */
-						ReportAbnormalID(AbnormalID::kADB_Reserved_ADB_command_2,
-										 "Reserved ADB command");
+						REPORT_ABNORMAL_ID(AbnormalID::kADB_Reserved_ADB_command_2,
+										   "Reserved ADB command");
 						break;
 					case 2: /* listen */
 						s_adbListenDatBuf = true;
@@ -115,8 +115,8 @@ void ADBDevice::doNewState()
 				{
 					if (ADB_IndexDatBuf >= ADB_MaxSzDatBuf)
 					{
-						ReportAbnormalID(AbnormalID::kADB_ADB_listen_too_much,
-										 "ADB listen too much");
+						REPORT_ABNORMAL_ID(AbnormalID::kADB_ADB_listen_too_much,
+										   "ADB listen too much");
 						/* ADB_MaxSzDatBuf isn't big enough */
 						(void)machine_->findDevice<VIA1Device>()->shiftOutData();
 					}
@@ -134,16 +134,16 @@ void ADBDevice::doNewState()
 			case 3: /* idle */
 				if (s_adbListenDatBuf)
 				{
-					ReportAbnormalID(AbnormalID::kADB_ADB_idle_follows_listen,
-									 "ADB idle follows listen");
+					REPORT_ABNORMAL_ID(AbnormalID::kADB_ADB_idle_follows_listen,
+									   "ADB idle follows listen");
 					/* apparently doesn't happen */
 				}
 				if (s_adbTalkDatBuf)
 				{
 					if (ADB_IndexDatBuf != 0)
 					{
-						ReportAbnormalID(AbnormalID::kADB_idle_when_not_done_talking,
-										 "idle when not done talking");
+						REPORT_ABNORMAL_ID(AbnormalID::kADB_idle_when_not_done_talking,
+										   "idle when not done talking");
 					}
 					machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
 					/* ADB_Int = 0; */

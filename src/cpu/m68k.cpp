@@ -30,7 +30,7 @@
 #include "cpu/trap_counter.h"
 
 /*
-	ReportAbnormalID unused 0x0123 - 0x01FF
+	REPORT_ABNORMAL_ID unused 0x0123 - 0x01FF
 */
 
 
@@ -926,8 +926,8 @@ static uint32_t get_disp_ea(uint32_t base)
 			{
 				case 0:
 					/* reserved */
-					ReportAbnormalID(AbnormalID::kCPU_Extension_Word_dp_reserved,
-									 "Extension Word: dp reserved");
+					REPORT_ABNORMAL_ID(AbnormalID::kCPU_Extension_Word_dp_reserved,
+									   "Extension Word: dp reserved");
 					break;
 				case 1:
 					/* no displacement */
@@ -955,8 +955,8 @@ static uint32_t get_disp_ea(uint32_t base)
 				base += regd;
 				if ((dp & 0x04) != 0)
 				{
-					ReportAbnormalID(AbnormalID::kCPU_Extension_Word_reserved_dp_form,
-									 "Extension Word: reserved dp form");
+					REPORT_ABNORMAL_ID(AbnormalID::kCPU_Extension_Word_reserved_dp_form,
+									   "Extension Word: reserved dp form");
 				}
 				/* ReportAbnormal("Extension Word: noindex"); */
 				/* used by Sys 7.5.5 boot */
@@ -3967,13 +3967,13 @@ static void DoCodeBraW()
 
 static void DoCodeBccB_t()
 {
-	V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RdAvgXtraCyc);
+	V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 	DoCodeBraB();
 }
 
 static void DoCodeBccB_f()
 {
-	V_MaxCyclesToGo -= (8 * kCycleScale + RdAvgXtraCyc);
+	V_MaxCyclesToGo -= (8 * kCycleScale + RD_AVG_XTRA_CYC);
 	/* do nothing */
 }
 
@@ -3995,13 +3995,13 @@ static void SkipiWord()
 
 static void DoCodeBccW_t()
 {
-	V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RdAvgXtraCyc);
+	V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 	DoCodeBraW();
 }
 
 static void DoCodeBccW_f()
 {
-	V_MaxCyclesToGo -= (12 * kCycleScale + 2 * RdAvgXtraCyc);
+	V_MaxCyclesToGo -= (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 	SkipiWord();
 }
 
@@ -4025,19 +4025,19 @@ static void DoCodeDBF()
 
 	if (static_cast<int32_t>(dstvalue) == -1)
 	{
-		V_MaxCyclesToGo -= (14 * kCycleScale + 3 * RdAvgXtraCyc);
+		V_MaxCyclesToGo -= (14 * kCycleScale + 3 * RD_AVG_XTRA_CYC);
 		SkipiWord();
 	}
 	else
 	{
-		V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RdAvgXtraCyc);
+		V_MaxCyclesToGo -= (10 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 		DoCodeBraW();
 	}
 }
 
 static void DoCodeDBcc_t()
 {
-	V_MaxCyclesToGo -= (12 * kCycleScale + 2 * RdAvgXtraCyc);
+	V_MaxCyclesToGo -= (12 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 	SkipiWord();
 }
 
@@ -4415,8 +4415,8 @@ static void m68k_setSR(uint16_t newsr)
 		V_regs.t0 = (newsr >> 14) & 1;
 		if (V_regs.t0 != 0)
 		{
-			ReportAbnormalID(AbnormalID::kCPU_t0_flag_set_in_m68k_setSR,
-							 "t0 flag set in m68k_setSR");
+			REPORT_ABNORMAL_ID(AbnormalID::kCPU_t0_flag_set_in_m68k_setSR,
+							   "t0 flag set in m68k_setSR");
 		}
 	}
 	V_regs.s = (newsr >> 13) & 1;
@@ -4425,7 +4425,8 @@ static void m68k_setSR(uint16_t newsr)
 		V_regs.m = (newsr >> 12) & 1;
 		if (V_regs.m != 0)
 		{
-			ReportAbnormalID(AbnormalID::kCPU_m_flag_set_in_m68k_setSR, "m flag set in m68k_setSR");
+			REPORT_ABNORMAL_ID(AbnormalID::kCPU_m_flag_set_in_m68k_setSR,
+							   "m flag set in m68k_setSR");
 		}
 	}
 	V_regs.intmask = (newsr >> 8) & 7;
@@ -4551,7 +4552,7 @@ static void DoCodeMOVEMRmML()
 	{
 		if ((regmask & (1 << (15 - z))) != 0)
 		{
-			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * WrAvgXtraCyc);
+			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * WR_AVG_XTRA_CYC);
 			p -= 4;
 			put_long(p, V_regs.regs[z]);
 		}
@@ -4575,7 +4576,7 @@ static void DoCodeMOVEMApRL()
 	{
 		if ((regmask & (1 << z)) != 0)
 		{
-			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * RdAvgXtraCyc);
+			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 			V_regs.regs[z] = get_long(p);
 			p += 4;
 		}
@@ -6102,7 +6103,7 @@ static void DoCodeDivU()
 
 	if (srcvalue == 0)
 	{
-		V_MaxCyclesToGo -= (38 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		V_MaxCyclesToGo -= (38 * kCycleScale + 3 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 		Exception(5);
 #if m68k_logExceptions
 		dbglog_WriteNote("*** zero devide exception");
@@ -6146,7 +6147,7 @@ static void DoCodeDivS()
 
 	if (srcvalue == 0)
 	{
-		V_MaxCyclesToGo -= (38 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		V_MaxCyclesToGo -= (38 * kCycleScale + 3 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 		Exception(5);
 #if m68k_logExceptions
 		dbglog_WriteNote("*** zero devide exception");
@@ -6209,7 +6210,7 @@ static void DoCodeMoveEaCR()
 static void DoPrivilegeViolation()
 {
 	V_MaxCyclesToGo += GetDcoCycles(V_regs.CurDecOp);
-	V_MaxCyclesToGo -= (34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+	V_MaxCyclesToGo -= (34 * kCycleScale + 4 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 	BackupPC();
 	Exception(8);
 #if m68k_logExceptions
@@ -6319,7 +6320,7 @@ static void DoCodeMOVEMApRW()
 	{
 		if ((regmask & (1 << z)) != 0)
 		{
-			V_MaxCyclesToGo -= (4 * kCycleScale + RdAvgXtraCyc);
+			V_MaxCyclesToGo -= (4 * kCycleScale + RD_AVG_XTRA_CYC);
 			V_regs.regs[z] = get_word(p);
 			p += 2;
 		}
@@ -6353,7 +6354,7 @@ static void DoCodeMOVEMRmMW()
 	{
 		if ((regmask & (1 << (15 - z))) != 0)
 		{
-			V_MaxCyclesToGo -= (4 * kCycleScale + WrAvgXtraCyc);
+			V_MaxCyclesToGo -= (4 * kCycleScale + WR_AVG_XTRA_CYC);
 			p -= 2;
 			put_word(p, V_regs.regs[z]);
 		}
@@ -6375,7 +6376,7 @@ static void DoCodeMOVEMrmW()
 	{
 		if ((regmask & (1 << z)) != 0)
 		{
-			V_MaxCyclesToGo -= (4 * kCycleScale + WrAvgXtraCyc);
+			V_MaxCyclesToGo -= (4 * kCycleScale + WR_AVG_XTRA_CYC);
 			put_word(p, V_regs.regs[z]);
 			p += 2;
 		}
@@ -6393,7 +6394,7 @@ static void DoCodeMOVEMrmL()
 	{
 		if ((regmask & (1 << z)) != 0)
 		{
-			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * WrAvgXtraCyc);
+			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * WR_AVG_XTRA_CYC);
 			put_long(p, V_regs.regs[z]);
 			p += 4;
 		}
@@ -6411,7 +6412,7 @@ static void DoCodeMOVEMmrW()
 	{
 		if ((regmask & (1 << z)) != 0)
 		{
-			V_MaxCyclesToGo -= (4 * kCycleScale + RdAvgXtraCyc);
+			V_MaxCyclesToGo -= (4 * kCycleScale + RD_AVG_XTRA_CYC);
 			V_regs.regs[z] = get_word(p);
 			p += 2;
 		}
@@ -6429,7 +6430,7 @@ static void DoCodeMOVEMmrL()
 	{
 		if ((regmask & (1 << z)) != 0)
 		{
-			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * RdAvgXtraCyc);
+			V_MaxCyclesToGo -= (8 * kCycleScale + 2 * RD_AVG_XTRA_CYC);
 			V_regs.regs[z] = get_long(p);
 			p += 4;
 		}
@@ -6579,34 +6580,34 @@ static void DoCodeRte()
 					/* ReportAbnormal("rte stack frame format 0"); */
 					break;
 				case 1:
-					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_1,
-									 "rte stack frame format 1");
+					REPORT_ABNORMAL_ID(AbnormalID::kCPU_rte_stack_frame_format_1,
+									   "rte stack frame format 1");
 					NewPC = m68k_getpc() - 2;
 					/* rerun instruction */
 					break;
 				case 2:
-					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_2,
-									 "rte stack frame format 2");
+					REPORT_ABNORMAL_ID(AbnormalID::kCPU_rte_stack_frame_format_2,
+									   "rte stack frame format 2");
 					stackp += 4;
 					break;
 				case 9:
-					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_9,
-									 "rte stack frame format 9");
+					REPORT_ABNORMAL_ID(AbnormalID::kCPU_rte_stack_frame_format_9,
+									   "rte stack frame format 9");
 					stackp += 12;
 					break;
 				case 10:
-					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_10,
-									 "rte stack frame format 10");
+					REPORT_ABNORMAL_ID(AbnormalID::kCPU_rte_stack_frame_format_10,
+									   "rte stack frame format 10");
 					stackp += 24;
 					break;
 				case 11:
-					ReportAbnormalID(AbnormalID::kCPU_rte_stack_frame_format_11,
-									 "rte stack frame format 11");
+					REPORT_ABNORMAL_ID(AbnormalID::kCPU_rte_stack_frame_format_11,
+									   "rte stack frame format 11");
 					stackp += 84;
 					break;
 				default:
-					ReportAbnormalID(AbnormalID::kCPU_unknown_rte_stack_frame_format,
-									 "unknown rte stack frame format");
+					REPORT_ABNORMAL_ID(AbnormalID::kCPU_unknown_rte_stack_frame_format,
+									   "unknown rte stack frame format");
 					Exception(14);
 					return;
 					break;
@@ -6714,7 +6715,7 @@ static void DoCodeChk()
 	{
 		NeedDefaultLazyAllFlags();
 
-		V_MaxCyclesToGo -= (30 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		V_MaxCyclesToGo -= (30 * kCycleScale + 3 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 		NFLG = 1;
 		Exception(6);
 	}
@@ -6722,7 +6723,7 @@ static void DoCodeChk()
 	{
 		NeedDefaultLazyAllFlags();
 
-		V_MaxCyclesToGo -= (30 * kCycleScale + 3 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		V_MaxCyclesToGo -= (30 * kCycleScale + 3 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 		NFLG = 0;
 		Exception(6);
 	}
@@ -6742,7 +6743,7 @@ static void DoCodeTrapV()
 	if (VFLG != 0)
 	{
 		V_MaxCyclesToGo += GetDcoCycles(V_regs.CurDecOp);
-		V_MaxCyclesToGo -= (34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		V_MaxCyclesToGo -= (34 * kCycleScale + 4 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 		Exception(7);
 	}
 }
@@ -6886,7 +6887,7 @@ static void DoCodeReset()
 static void DoCodeCallMorRtm()
 {
 	/* CALLM or RTM 0000011011mmmrrr */
-	ReportAbnormalID(AbnormalID::kCPU_CALLM_or_RTM_instruction, "CALLM or RTM instruction");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_CALLM_or_RTM_instruction, "CALLM or RTM instruction");
 }
 
 static void DoCodeMoveCCREa()
@@ -7034,7 +7035,7 @@ static void DoCAS()
 	int ru = (src >> 6) & 7;
 	int rc = src & 7;
 
-	ReportAbnormalID(AbnormalID::kCPU_CAS_instruction, "CAS instruction");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_CAS_instruction, "CAS instruction");
 	switch (V_regs.CurDecOpY.v[0].ArgDat)
 	{
 		case 1:
@@ -7110,7 +7111,7 @@ static void DoCAS2()
 	int32_t dst1;
 	int32_t dst2;
 
-	ReportAbnormalID(AbnormalID::kCPU_DoCAS2_instruction, "DoCAS2 instruction");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_DoCAS2_instruction, "DoCAS2 instruction");
 	if (V_regs.CurDecOpY.v[0].ArgDat == 2)
 	{
 		dst1 = get_word(rn1);
@@ -7190,7 +7191,7 @@ static void DoCAS2()
 static void DoMOVES()
 {
 	/* MoveS 00001110ssmmmrrr */
-	ReportAbnormalID(AbnormalID::kCPU_MoveS_instruction, "MoveS instruction");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_MoveS_instruction, "MoveS instruction");
 	if (0 == V_regs.s)
 	{
 		DoPrivilegeViolation();
@@ -7543,7 +7544,7 @@ static void DoMoveToControl()
 				break;
 			case 0x0800:
 				V_regs.usp = v;
-				ReportAbnormalID(AbnormalID::kCPU_DoMoveToControl_usp, "DoMoveToControl: usp");
+				REPORT_ABNORMAL_ID(AbnormalID::kCPU_DoMoveToControl_usp, "DoMoveToControl: usp");
 				break;
 			case 0x0801:
 				V_regs.vbr = v;
@@ -7570,12 +7571,12 @@ static void DoMoveToControl()
 				{
 					m68k_areg(7) = V_regs.isp;
 				}
-				ReportAbnormalID(AbnormalID::kCPU_DoMoveToControl_isp, "DoMoveToControl: isp");
+				REPORT_ABNORMAL_ID(AbnormalID::kCPU_DoMoveToControl_isp, "DoMoveToControl: isp");
 				break;
 			default:
 				op_illg();
-				ReportAbnormalID(AbnormalID::kCPU_DoMoveToControl_unknown_reg,
-								 "DoMoveToControl: unknown reg");
+				REPORT_ABNORMAL_ID(AbnormalID::kCPU_DoMoveToControl_unknown_reg,
+								   "DoMoveToControl: unknown reg");
 				break;
 		}
 	}
@@ -7612,7 +7613,8 @@ static void DoMoveFromControl()
 				break;
 			case 0x0800:
 				v = V_regs.usp;
-				ReportAbnormalID(AbnormalID::kCPU_DoMoveFromControl_usp, "DoMoveFromControl: usp");
+				REPORT_ABNORMAL_ID(AbnormalID::kCPU_DoMoveFromControl_usp,
+								   "DoMoveFromControl: usp");
 				break;
 			case 0x0801:
 				v = V_regs.vbr;
@@ -7631,12 +7633,13 @@ static void DoMoveFromControl()
 				break;
 			case 0x0804:
 				v = (V_regs.m == 0) ? m68k_areg(7) : V_regs.isp;
-				ReportAbnormalID(AbnormalID::kCPU_DoMoveFromControl_isp, "DoMoveFromControl: isp");
+				REPORT_ABNORMAL_ID(AbnormalID::kCPU_DoMoveFromControl_isp,
+								   "DoMoveFromControl: isp");
 				break;
 			default:
 				v = 0;
-				ReportAbnormalID(AbnormalID::kCPU_DoMoveFromControl_unknown_reg,
-								 "DoMoveFromControl: unknown reg");
+				REPORT_ABNORMAL_ID(AbnormalID::kCPU_DoMoveFromControl_unknown_reg,
+								   "DoMoveFromControl: unknown reg");
 				op_illg();
 				break;
 		}
@@ -7647,7 +7650,7 @@ static void DoMoveFromControl()
 static void DoCodeBkpt()
 {
 	/* BKPT 0100100001001rrr */
-	ReportAbnormalID(AbnormalID::kCPU_BKPT_instruction, "BKPT instruction");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_BKPT_instruction, "BKPT instruction");
 	op_illg();
 }
 
@@ -7670,7 +7673,7 @@ static void DoCodeLinkL()
 	uint32_t *dstp = &V_regs.regs[dstreg];
 	uint32_t stackp = m68k_areg(7);
 
-	ReportAbnormalID(AbnormalID::kCPU_Link_L, "Link.L");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_Link_L, "Link.L");
 
 	stackp -= 4;
 	m68k_areg(7) = stackp; /* only matters if dstreg == 7 + 8 */
@@ -7681,7 +7684,7 @@ static void DoCodeLinkL()
 
 static void DoCodeTRAPcc_t()
 {
-	ReportAbnormalID(AbnormalID::kCPU_TRAPcc_trapping, "TRAPcc trapping");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_TRAPcc_trapping, "TRAPcc trapping");
 	Exception(7);
 	/* pc pushed onto stack wrong */
 }
@@ -7695,11 +7698,11 @@ static void DoCodeTRAPcc()
 	switch (V_regs.CurDecOpY.v[1].ArgDat)
 	{
 		case 2:
-			ReportAbnormalID(AbnormalID::kCPU_TRAPcc_word_data, "TRAPcc word data");
+			REPORT_ABNORMAL_ID(AbnormalID::kCPU_TRAPcc_word_data, "TRAPcc word data");
 			SkipiWord();
 			break;
 		case 3:
-			ReportAbnormalID(AbnormalID::kCPU_TRAPcc_long_data, "TRAPcc long data");
+			REPORT_ABNORMAL_ID(AbnormalID::kCPU_TRAPcc_long_data, "TRAPcc long data");
 			SkipiLong();
 			break;
 		case 4:
@@ -7707,7 +7710,7 @@ static void DoCodeTRAPcc()
 			/* no optional data */
 			break;
 		default:
-			ReportAbnormalID(AbnormalID::kCPU_TRAPcc_illegal_format, "TRAPcc illegal format");
+			REPORT_ABNORMAL_ID(AbnormalID::kCPU_TRAPcc_illegal_format, "TRAPcc illegal format");
 			op_illg();
 			break;
 	}
@@ -7719,7 +7722,7 @@ static void DoCodePack()
 	uint32_t offs = nextiSWord();
 	uint32_t val = DecodeGetSrcValue();
 
-	ReportAbnormalID(AbnormalID::kCPU_PACK, "PACK");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_PACK, "PACK");
 
 	val += offs;
 	val = ((val >> 4) & 0xf0) | (val & 0xf);
@@ -7732,7 +7735,7 @@ static void DoCodeUnpk()
 	uint32_t offs = nextiSWord();
 	uint32_t val = DecodeGetSrcValue();
 
-	ReportAbnormalID(AbnormalID::kCPU_UNPK, "UNPK");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_UNPK, "UNPK");
 
 	val = (((val & 0xF0) << 4) | (val & 0x0F)) + offs;
 
@@ -8217,7 +8220,7 @@ static void DoCodeMMU()
 		BackupPC();
 	}
 	/* fprintf(stderr, "opcode %x\n", (int)opcode); */
-	ReportAbnormalID(AbnormalID::kCPU_MMU_op, "MMU op");
+	REPORT_ABNORMAL_ID(AbnormalID::kCPU_MMU_op, "MMU op");
 	DoCodeFdefault();
 }
 
@@ -8540,7 +8543,7 @@ static void DoCheckExternalInterruptPending()
 	uint8_t level = *V_regs.fIPL;
 	if ((level > V_regs.intmask) || (level == 7))
 	{
-		V_MaxCyclesToGo -= (44 * kCycleScale + 5 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+		V_MaxCyclesToGo -= (44 * kCycleScale + 5 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 		Exception(24 + level);
 		V_regs.intmask = level;
 	}
@@ -8561,7 +8564,7 @@ void m68k_go_nCycles(uint32_t n)
 
 		if (V_regs.TracePending)
 		{
-			V_MaxCyclesToGo -= (34 * kCycleScale + 4 * RdAvgXtraCyc + 3 * WrAvgXtraCyc);
+			V_MaxCyclesToGo -= (34 * kCycleScale + 4 * RD_AVG_XTRA_CYC + 3 * WR_AVG_XTRA_CYC);
 			Exception(9);
 		}
 		if (V_regs.ExternalInterruptPending)

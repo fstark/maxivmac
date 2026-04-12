@@ -35,7 +35,7 @@
 #include <memory>
 
 /*
-	ReportAbnormalID unused 0x1002 - 0x10FF
+	REPORT_ABNORMAL_ID unused 0x1002 - 0x10FF
 */
 
 ICTScheduler g_ict;
@@ -99,8 +99,8 @@ static void SubTickNotify(int SubTick)
 	}
 }
 
-#define CyclesScaledPerTick (130240UL * g_machine->config().clockMult * kCycleScale)
-#define CyclesScaledPerSubTick (CyclesScaledPerTick / kNumSubTicks)
+#define CYCLES_SCALED_PER_TICK (130240UL * g_machine->config().clockMult * kCycleScale)
+#define CYCLES_SCALED_PER_SUB_TICK (CYCLES_SCALED_PER_TICK / kNumSubTicks)
 
 static uint16_t s_subTickCounter;
 
@@ -113,18 +113,18 @@ static void SubTickTaskDo()
 	{
 		/*
 			final SubTick handled by SubTickTaskEnd,
-			since CyclesScaledPerSubTick * kNumSubTicks
-			might not equal CyclesScaledPerTick.
+			since CYCLES_SCALED_PER_SUB_TICK * kNumSubTicks
+			might not equal CYCLES_SCALED_PER_TICK.
 		*/
 
-		g_ict.add(kICT_SubTick, CyclesScaledPerSubTick);
+		g_ict.add(kICT_SubTick, CYCLES_SCALED_PER_SUB_TICK);
 	}
 }
 
 static void SubTickTaskStart()
 {
 	s_subTickCounter = 0;
-	g_ict.add(kICT_SubTick, CyclesScaledPerSubTick);
+	g_ict.add(kICT_SubTick, CYCLES_SCALED_PER_SUB_TICK);
 }
 
 static void SubTickTaskEnd()
@@ -371,7 +371,7 @@ static void DoEmulateOneTick()
 
 	SixtiethSecondNotify();
 
-	m68k_go_nCycles_1(CyclesScaledPerTick);
+	m68k_go_nCycles_1(CYCLES_SCALED_PER_TICK);
 
 	SixtiethEndNotify();
 
@@ -416,7 +416,7 @@ void DoEmulateExtraTime()
 					g_quietSubTicks = NewQuietSubTicks;
 				}
 			}
-			m68k_go_nCycles_1(CyclesScaledPerSubTick);
+			m68k_go_nCycles_1(CYCLES_SCALED_PER_SUB_TICK);
 			--s_extraSubTicksToDo;
 		} while (MoreSubTicksToDo());
 		ExtraTimeEndNotify();

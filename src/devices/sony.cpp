@@ -22,7 +22,7 @@
 
 
 /*
-	ReportAbnormalID unused 0x090B - 0x09FF
+	REPORT_ABNORMAL_ID unused 0x090B - 0x09FF
 */
 
 
@@ -125,7 +125,7 @@ static void MoveBytesVM(uint32_t srcPtr, uint32_t dstPtr, int32_t byteCount)
 		dst = get_real_address0(byteCount, true, dstPtr, &contigDst);
 		if ((0 == contigSrc) || (0 == contigDst))
 		{
-			ReportAbnormalID(AbnormalID::kSONY_MyMoveBytesVM_fails, "MoveBytesVM fails");
+			REPORT_ABNORMAL_ID(AbnormalID::kSONY_MyMoveBytesVM_fails, "MoveBytesVM fails");
 			break;
 		}
 		contig = (contigSrc < contigDst) ? contigSrc : contigDst;
@@ -225,8 +225,8 @@ static void Drive_UpdateChecksums(DriveIndex driveNo)
 			result = DC42BlockChecksum(driveNo, dataOffset, dataSize, &dataChecksum);
 			if (tMacErr::noErr != result)
 			{
-				ReportAbnormalID(AbnormalID::kSONY_Failed_to_find_dataChecksum,
-								 "Failed to find dataChecksum");
+				REPORT_ABNORMAL_ID(AbnormalID::kSONY_Failed_to_find_dataChecksum,
+								   "Failed to find dataChecksum");
 				dataChecksum = 0;
 			}
 			do_put_mem_long(buffer, dataChecksum);
@@ -248,8 +248,8 @@ static void Drive_UpdateChecksums(DriveIndex driveNo)
 					result = DC42BlockChecksum(driveNo, tagOffset + 12, TagSize - 12, &tagChecksum);
 					if (tMacErr::noErr != result)
 					{
-						ReportAbnormalID(AbnormalID::kSONY_Failed_to_find_tagChecksum,
-										 "Failed to find tagChecksum");
+						REPORT_ABNORMAL_ID(AbnormalID::kSONY_Failed_to_find_tagChecksum,
+										   "Failed to find tagChecksum");
 						tagChecksum = 0;
 					}
 				}
@@ -651,10 +651,10 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 {
 	tMacErr result = tMacErr::controlErr;
 
-	switch (get_vm_word(p + ExtnDat_commnd))
+	switch (get_vm_word(p + EXTN_DAT_COMMND))
 	{
 		case kCmndVersion:
-			put_vm_word(p + ExtnDat_version, 2);
+			put_vm_word(p + EXTN_DAT_VERSION, 2);
 			result = tMacErr::noErr;
 			break;
 		case kCmndDiskNDrives: /* count drives */
@@ -724,7 +724,7 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 				 ((uint32_t)1 << kFeatureCmndDisk_New) | ((uint32_t)1 << kFeatureCmndDisk_NewName) |
 				 ((uint32_t)1 << kFeatureCmndDisk_GetName));
 
-			put_vm_long(p + ExtnDat_params + 0, v);
+			put_vm_long(p + EXTN_DAT_PARAMS + 0, v);
 			result = tMacErr::noErr;
 		}
 		break;
@@ -749,8 +749,8 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 			break;
 		case kCmndDiskNew:
 		{
-			uint32_t count = get_vm_long(p + ExtnDat_params + 0);
-			PbufIndex Pbuf_No = get_vm_word(p + ExtnDat_params + 4);
+			uint32_t count = get_vm_long(p + EXTN_DAT_PARAMS + 0);
+			PbufIndex Pbuf_No = get_vm_word(p + EXTN_DAT_PARAMS + 4);
 			/* reserved word at offset 6, should be zero */
 
 			result = tMacErr::noErr;
@@ -788,20 +788,20 @@ void SonyDevice::extnDiskAccess(uint32_t p)
 		break;
 		case kCmndDiskGetName:
 		{
-			DriveIndex driveNo = get_vm_word(p + ExtnDat_params + 0);
+			DriveIndex driveNo = get_vm_word(p + EXTN_DAT_PARAMS + 0);
 			/* reserved word at offset 2, should be zero */
 			result = CheckReadableDrive(driveNo);
 			if (tMacErr::noErr == result)
 			{
 				PbufIndex Pbuf_No;
 				result = vSonyGetName(driveNo, &Pbuf_No);
-				put_vm_word(p + ExtnDat_params + 4, Pbuf_No);
+				put_vm_word(p + EXTN_DAT_PARAMS + 4, Pbuf_No);
 			}
 		}
 		break;
 	}
 
-	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
+	put_vm_word(p + EXTN_DAT_RESULT, static_cast<uint16_t>(result));
 }
 
 
@@ -951,7 +951,7 @@ static uint32_t DriveVarsLocation(DriveIndex driveNo)
 
 static tMacErr Sony_Mount(uint32_t p)
 {
-	uint32_t data = get_vm_long(p + ExtnDat_params + 0);
+	uint32_t data = get_vm_long(p + EXTN_DAT_PARAMS + 0);
 	tMacErr result = tMacErr::miscErr;
 	DriveIndex i = data & 0x0000FFFF;
 	uint32_t dvl = DriveVarsLocation(i);
@@ -1032,7 +1032,7 @@ static tMacErr Sony_Mount(uint32_t p)
 		put_vm_byte(dvl + kWriteProt, data >> 16);
 		put_vm_byte(dvl + kDiskInPlace, 0x01); /* Drive Disk Inserted */
 
-		put_vm_long(p + ExtnDat_params + 4, i + 1);
+		put_vm_long(p + EXTN_DAT_PARAMS + 4, i + 1);
 		/* PostEvent Disk Inserted eventMsg */
 		result = tMacErr::noErr;
 	}
@@ -1107,8 +1107,8 @@ static tMacErr Sony_Prime(uint32_t p)
 	uint32_t sonyCount;
 	uint32_t sonyStart;
 	uint32_t sonyActCount = 0;
-	uint32_t ParamBlk = get_vm_long(p + ExtnDat_params + 0);
-	uint32_t DeviceCtl = get_vm_long(p + ExtnDat_params + 4);
+	uint32_t ParamBlk = get_vm_long(p + EXTN_DAT_PARAMS + 0);
+	uint32_t DeviceCtl = get_vm_long(p + EXTN_DAT_PARAMS + 4);
 	DriveIndex driveNo = get_vm_word(ParamBlk + kioVRefNum) - 1;
 	uint16_t IOTrap = get_vm_word(ParamBlk + kioTrap);
 	uint32_t dvl = DriveVarsLocation(driveNo);
@@ -1208,8 +1208,8 @@ done:
 static tMacErr Sony_Control(uint32_t p)
 {
 	tMacErr result;
-	uint32_t ParamBlk = get_vm_long(p + ExtnDat_params + 0);
-	/* uint32_t DeviceCtl = get_vm_long(p + ExtnDat_params + 4); */
+	uint32_t ParamBlk = get_vm_long(p + EXTN_DAT_PARAMS + 0);
+	/* uint32_t DeviceCtl = get_vm_long(p + EXTN_DAT_PARAMS + 4); */
 	uint16_t OpCode = get_vm_word(ParamBlk + kcsCode);
 
 	if (kKillIO == OpCode)
@@ -1393,8 +1393,8 @@ static tMacErr Sony_Control(uint32_t p)
 static tMacErr Sony_Status(uint32_t p)
 {
 	tMacErr result;
-	uint32_t ParamBlk = get_vm_long(p + ExtnDat_params + 0);
-	/* uint32_t DeviceCtl = get_vm_long(p + ExtnDat_params + 4); */
+	uint32_t ParamBlk = get_vm_long(p + EXTN_DAT_PARAMS + 0);
+	/* uint32_t DeviceCtl = get_vm_long(p + EXTN_DAT_PARAMS + 4); */
 	uint16_t OpCode = get_vm_word(ParamBlk + kcsCode);
 
 #if Sony_dolog
@@ -1459,7 +1459,7 @@ static tMacErr Sony_OpenA(uint32_t p)
 			L = MinSonVarsSize;
 		}
 
-		put_vm_long(p + ExtnDat_params + 0, L);
+		put_vm_long(p + EXTN_DAT_PARAMS + 0, L);
 
 		return tMacErr::noErr;
 	}
@@ -1474,12 +1474,12 @@ static tMacErr Sony_OpenB(uint32_t p)
 	dbglog_WriteNote("Sony : OpenB");
 #endif
 
-	uint32_t SonyVars = get_vm_long(p + ExtnDat_params + 4);
-	/* uint32_t ParamBlk = get_vm_long(p + ExtnDat_params + 24); (unused) */
+	uint32_t SonyVars = get_vm_long(p + EXTN_DAT_PARAMS + 4);
+	/* uint32_t ParamBlk = get_vm_long(p + EXTN_DAT_PARAMS + 24); (unused) */
 	uint32_t DeviceCtl = 0;
 	if (g_machine->config().model > MacModel::Mac128K)
 	{
-		DeviceCtl = get_vm_long(p + ExtnDat_params + 28);
+		DeviceCtl = get_vm_long(p + EXTN_DAT_PARAMS + 28);
 	}
 
 	put_vm_long(SonyVars + 16 /* checkval */, kcom_checkval);
@@ -1528,18 +1528,18 @@ static tMacErr Sony_OpenB(uint32_t p)
 		put_vm_long(0x308 + 6, 0);
 	}
 
-	put_vm_long(p + ExtnDat_params + 8, SonyVars + FirstDriveVarsOffset + kQLink);
-	put_vm_word(p + ExtnDat_params + 12, EachDriveVarsSize);
-	put_vm_word(p + ExtnDat_params + 14, NumDrives);
-	put_vm_word(p + ExtnDat_params + 16, 1);
-	put_vm_word(p + ExtnDat_params + 18, 0xFFFB);
+	put_vm_long(p + EXTN_DAT_PARAMS + 8, SonyVars + FirstDriveVarsOffset + kQLink);
+	put_vm_word(p + EXTN_DAT_PARAMS + 12, EachDriveVarsSize);
+	put_vm_word(p + EXTN_DAT_PARAMS + 14, NumDrives);
+	put_vm_word(p + EXTN_DAT_PARAMS + 16, 1);
+	put_vm_word(p + EXTN_DAT_PARAMS + 18, 0xFFFB);
 	if (g_machine->config().model <= MacModel::Mac128K)
 	{
-		put_vm_long(p + ExtnDat_params + 20, 0);
+		put_vm_long(p + EXTN_DAT_PARAMS + 20, 0);
 	}
 	else
 	{
-		put_vm_long(p + ExtnDat_params + 20, SonyVars + 28 /* NullTask */);
+		put_vm_long(p + EXTN_DAT_PARAMS + 20, SonyVars + 28 /* NullTask */);
 	}
 
 	s_tagBuffer = 0;
@@ -1553,7 +1553,7 @@ static tMacErr Sony_OpenC(uint32_t p)
 	dbglog_WriteNote("Sony : OpenC");
 #endif
 
-	s_mountCallBack = get_vm_long(p + ExtnDat_params + 0);
+	s_mountCallBack = get_vm_long(p + EXTN_DAT_PARAMS + 0);
 	if (g_machine->config().isIIFamily())
 	{
 		s_mountCallBack |= 0x40000000;
@@ -1579,10 +1579,10 @@ void SonyDevice::extnSonyAccess(uint32_t p)
 {
 	tMacErr result;
 
-	switch (get_vm_word(p + ExtnDat_commnd))
+	switch (get_vm_word(p + EXTN_DAT_COMMND))
 	{
 		case kCmndVersion:
-			put_vm_word(p + ExtnDat_version, 0);
+			put_vm_word(p + EXTN_DAT_VERSION, 0);
 			result = tMacErr::noErr;
 			break;
 		case kCmndSonyPrime:
@@ -1614,5 +1614,5 @@ void SonyDevice::extnSonyAccess(uint32_t p)
 			break;
 	}
 
-	put_vm_word(p + ExtnDat_result, static_cast<uint16_t>(result));
+	put_vm_word(p + EXTN_DAT_RESULT, static_cast<uint16_t>(result));
 }
