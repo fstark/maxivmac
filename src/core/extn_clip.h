@@ -13,4 +13,8 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult);
 
 /* Access the guest debug console log buffer (for UI display). */
 const std::deque<std::string> &extnDbgConsoleLines();
+
+/* Guest debug helpers — shared with other extensions. */
+void guestConsoleAppend(const std::string &line);
+std::string guestFormatLog(uint32_t fmtAddr, uint32_t args[7]);
 void ExtnDbgConsoleClear();

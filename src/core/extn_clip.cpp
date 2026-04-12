@@ -44,7 +44,7 @@ void ExtnDbgConsoleClear()
 	s_consoleLines.clear();
 }
 
-static void consoleAppend(const std::string &line)
+void guestConsoleAppend(const std::string &line)
 {
 	fprintf(stderr, "[GUEST] %s\n", line.c_str());
 	s_consoleLines.push_back(line);
@@ -73,7 +73,7 @@ static std::string readGuestString(uint32_t addr, size_t maxLen = 256)
 	Supported: %lx (hex), %ld (decimal), %lu (unsigned decimal),
 			   %s (guest string pointer), %% (literal %).
 */
-static std::string formatGuestLog(uint32_t fmtAddr, uint32_t args[7])
+std::string guestFormatLog(uint32_t fmtAddr, uint32_t args[7])
 {
 	std::string fmt = readGuestString(fmtAddr);
 	std::string out;
@@ -241,8 +241,8 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		case kClipDbgLog:
 		{
-			std::string line = formatGuestLog(regParam[0], regParam);
-			consoleAppend(line);
+			std::string line = guestFormatLog(regParam[0], regParam);
+			guestConsoleAppend(line);
 			regResult = 0;
 		}
 		break;

@@ -1,4 +1,5 @@
 #include "core/extn_extfs.h"
+#include "core/extn_clip.h"
 #include "platform/platform.h"
 
 #include <cstdint>
@@ -604,18 +605,8 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		case kExtFSDbgLog:
 		{
-			/* Same as ClipDbgLog — reuse format */
-			uint32_t fmtAddr = regParam[0];
-			std::string fmt;
-			for (int i = 0; i < 256; i++)
-			{
-				uint8_t c = get_vm_byte(fmtAddr + i);
-				if (c == 0) break;
-				fmt.push_back(static_cast<char>(c));
-			}
-			dbglog_writeCStr((char *)"ExtFS guest: ");
-			dbglog_writeCStr((char *)fmt.c_str());
-			dbglog_writeCStr((char *)"\n");
+			std::string line = guestFormatLog(regParam[0], regParam);
+			guestConsoleAppend(line);
 			regResult = 0;
 		}
 		break;
