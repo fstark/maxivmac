@@ -3,6 +3,38 @@
 Each phase ends with a concrete verification step.  Do not advance to
 the next phase until the current one passes.  Commit after each phase.
 
+## Implementation Status
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| 1 | **DONE** | Extension registered, round-trip works (commit 55b0a15) |
+| 2 | **DONE** | VCB, DQE, trap patches, disk-insert event all in init.c |
+| 3 | **DONE** | Handlers for Open/Read/Close/GetEOF/SetFPos/GetFPos in init.c |
+| 4 | **DONE** | Host dir scanner, type/creator mapping, chunked reads in extn_extfs.cpp |
+| 5 | **DONE** | Recursive scan, WD stubs return paramErr (minimal WD support) |
+| 6 | **DONE** | Write/Create/Delete/Rename/SetFileInfo patches return vLckdErr |
+| 7 | Not started | Eject/re-mount support |
+| 8 | Not started | Edge cases, polish |
+
+### Files created/modified
+
+- `src/core/extn_extfs.h` — declares ExtnExtFSDispatch()
+- `src/core/extn_extfs.cpp` — host-side: all commands $0200-$020D
+- `src/core/machine.h` — added kExtnExtFS enum
+- `src/core/machine.cpp` — FindExtn registration, $02xx routing
+- `CMakeLists.txt` — added extn_extfs.cpp
+- `macsrc/shareddrive/init.c` — guest INIT (THINK C code resource)
+- `shared/` — test directory with sample files
+
+### Known limitations (v1)
+
+- File open is root-only (no ioDirID resolution in DoOpen)
+- WD open/close/getinfo return paramErr (not fully implemented)
+- No catalog refresh while mounted
+- No eject/re-mount
+- Text encoding: raw bytes only (no conversion)
+- Name disambiguation (collisions from truncation) not implemented
+
 ---
 
 ## Phase 1 — Extension registration and round-trip
