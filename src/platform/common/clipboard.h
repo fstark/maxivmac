@@ -11,4 +11,4 @@
 
 bool hostClipHasText();
 std::string hostClipGetTextMacRoman();
-void hostClipSetText(const uint8_t *macRoman, uint32_t len);
+void HostClipSetText(const uint8_t *macRoman, uint32_t len);

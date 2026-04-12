@@ -131,7 +131,7 @@ std::string hostClipGetTextMacRoman()
 #endif
 }
 
-void hostClipSetText(const uint8_t *macRoman, uint32_t len)
+void HostClipSetText(const uint8_t *macRoman, uint32_t len)
 {
 #ifdef HAVE_SDL
 	/* Mac uses CR (0x0D), host uses LF (0x0A) */

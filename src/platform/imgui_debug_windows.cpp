@@ -596,7 +596,7 @@ void ConsoleTool::draw()
 	ImGui::SameLine();
 	if (ImGui::Button("Clear"))
 	{
-		extnDbgConsoleClear();
+		ExtnDbgConsoleClear();
 	}
 	ImGui::Separator();
 

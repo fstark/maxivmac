@@ -43,7 +43,7 @@ ICTScheduler g_ict;
 // Reset memory, scheduler, and all devices to power-on state.
 static void EmulatedHardwareZap()
 {
-	memoryReset();
+	MemoryReset();
 	g_ict.zap();
 	if (auto *d = g_machine->findDevice<IWMDevice>()) d->reset();
 	if (auto *d = g_machine->findDevice<SCCDevice>()) d->reset();
@@ -51,7 +51,7 @@ static void EmulatedHardwareZap()
 	if (auto *d = g_machine->findDevice<VIA1Device>()) d->zap();
 	if (auto *d = g_machine->findDevice<VIA2Device>()) d->zap();
 	if (auto *d = g_machine->findDevice<SonyDevice>()) d->reset();
-	extnReset();
+	ExtnReset();
 	g_cpu.reset();
 }
 

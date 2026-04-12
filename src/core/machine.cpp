@@ -50,7 +50,7 @@ extern void put_vm_long(uint32_t addr, uint32_t l);
 uint32_t g_diskIconAddr;
 
 // Reset all emulated devices to their power-on state.
-void customreset()
+void CustomReset()
 {
 	if (auto *d = g_machine->findDevice<IWMDevice>()) d->reset();
 	if (auto *d = g_machine->findDevice<SCCDevice>()) d->reset();
@@ -58,7 +58,7 @@ void customreset()
 	if (auto *d = g_machine->findDevice<VIA1Device>()) d->reset();
 	if (auto *d = g_machine->findDevice<VIA2Device>()) d->reset();
 	if (auto *d = g_machine->findDevice<SonyDevice>()) d->reset();
-	extnReset();
+	ExtnReset();
 	if (g_machine->config().isCompactMac())
 	{
 		g_wantMacReset = true;
@@ -549,7 +549,7 @@ static void regDispatch(uint16_t cmd)
 {
 	if (cmd >= 0x100 && cmd <= 0x1FF)
 	{
-		extnClipDispatch(cmd, s_regParam, s_regResult);
+		ExtnClipDispatch(cmd, s_regParam, s_regResult);
 	}
 	else
 	{
@@ -684,7 +684,7 @@ public:
 };
 static ExtnDevice g_extnDevice;
 
-void extnReset()
+void ExtnReset()
 {
 	s_paramAddrHi = (uint16_t)-1;
 }
@@ -1986,7 +1986,7 @@ bool AddrSpac_Init()
 	return true;
 }
 
-void memoryReset()
+void MemoryReset()
 {
 	g_wires.set(Wire_MemOverlay, 1);
 	SetUpMemBanks();

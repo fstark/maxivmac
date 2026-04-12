@@ -8237,7 +8237,7 @@ static void DoCodeMMU()
 static void local_customreset()
 {
 	Em_Exit();
-	customreset();
+	CustomReset();
 	Em_Enter();
 }
 

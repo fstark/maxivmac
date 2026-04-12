@@ -39,7 +39,7 @@ const std::deque<std::string> &extnDbgConsoleLines()
 	return s_consoleLines;
 }
 
-void extnDbgConsoleClear()
+void ExtnDbgConsoleClear()
 {
 	s_consoleLines.clear();
 }
@@ -148,7 +148,7 @@ static void refreshCache()
 	s_clipCache = hostClipGetTextMacRoman();
 }
 
-void extnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
+void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 {
 	switch (cmd)
 	{
@@ -210,7 +210,7 @@ void extnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			{
 				buf[i] = get_vm_byte(guestAddr + i);
 			}
-			hostClipSetText(buf.data(), count);
+			HostClipSetText(buf.data(), count);
 
 			/*
 				Update cache to match what we just exported.

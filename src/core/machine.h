@@ -189,11 +189,11 @@ enum
 
 extern uint32_t g_diskIconAddr;
 
-extern void memoryReset();
+extern void MemoryReset();
 
-extern void extnReset();
+extern void ExtnReset();
 
-extern void customreset();
+extern void CustomReset();
 
 /*
 	Address Translation Table entry.

@@ -70,7 +70,7 @@ void LowMemTool::draw()
 	ImGui::SameLine();
 	if (ImGui::Button("Mark"))
 	{
-		lomem_snapshot_take(snapshot_);
+		Lomem_SnapshotTake(snapshot_);
 		snapshotValid_ = true;
 	}
 	ImGui::SameLine();

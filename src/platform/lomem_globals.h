@@ -62,7 +62,7 @@ extern const int kLowMemCount;
 extern const char *const kLMCategoryLabels[];
 
 /* Take a 4 KB snapshot of low memory ($000–$FFF) from g_ram. */
-void lomem_snapshot_take(uint8_t *snapshot);
+void Lomem_SnapshotTake(uint8_t *snapshot);
 
 /* Returns true if live RAM at [addr, addr+size) differs from snapshot. */
 bool lomem_snapshot_changed(const uint8_t *snapshot, uint32_t addr, uint16_t size);

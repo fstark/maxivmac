@@ -223,7 +223,7 @@ const int kLowMemCount = sizeof(kLowMemGlobals) / sizeof(kLowMemGlobals[0]);
 
 static const uint32_t kSnapshotSize = 4096;
 
-void lomem_snapshot_take(uint8_t *snapshot)
+void Lomem_SnapshotTake(uint8_t *snapshot)
 {
 	if (!g_ram) return;
 	memcpy(snapshot, g_ram, kSnapshotSize);
