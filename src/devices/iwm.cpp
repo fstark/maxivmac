@@ -53,7 +53,7 @@
 #define kq6 0x40
 #define kq7 0x80
 
-struct IWM_Ty
+struct IWMState
 {
 	uint8_t DataIn;	   /* Read Data Register */
 	uint8_t Handshake; /* Read Handshake Register */
@@ -65,7 +65,7 @@ struct IWM_Ty
 	uint8_t Lines;	 /* Used to Access Disk Drive Registers */
 };
 
-static IWM_Ty s_iwm;
+static IWMState s_iwm;
 
 void IWMDevice::reset()
 {
@@ -76,10 +76,10 @@ typedef enum
 {
 	On,
 	Off
-} Mode_Ty;
+} IWMMode;
 
 // Set or clear a control line bit in s_iwm.Lines.
-static void IWM_Set_Lines(uint8_t line, Mode_Ty the_mode)
+static void IWM_Set_Lines(uint8_t line, IWMMode the_mode)
 {
 	if (the_mode == Off)
 	{

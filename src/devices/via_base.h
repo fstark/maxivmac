@@ -49,7 +49,7 @@ public:
 	uint16_t getT1InvertTime();
 
 	// Internal state - public for backward compatibility during migration
-	struct VIA_Ty
+	struct VIAState
 	{
 		uint32_t T1C_F; /* Timer 1 Counter Fixed Point */
 		uint32_t T2C_F; /* Timer 2 Counter Fixed Point */
@@ -67,7 +67,7 @@ public:
 		uint8_t ORA;	/* Buffer A */
 	};
 
-	VIA_Ty d_{};
+	VIAState d_{};
 
 	uint8_t T1_Active = 0;
 	uint8_t T2_Active = 0;

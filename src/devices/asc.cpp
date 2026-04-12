@@ -28,13 +28,13 @@ static uint8_t s_soundRegVolume = 0; /* 0x806 */
 
 static uint8_t s_ascSampBuff[0x800];
 
-struct ASC_ChanR
+struct ASCChannel
 {
 	uint8_t freq[4];
 	uint8_t phase[4];
 };
 
-static ASC_ChanR s_ascChanA[4];
+static ASCChannel s_ascChanA[4];
 
 static uint16_t s_ascFifoOut = 0;
 static uint16_t s_ascFifoInA = 0;

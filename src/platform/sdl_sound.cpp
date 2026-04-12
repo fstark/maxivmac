@@ -221,7 +221,7 @@ static void SoundRampTo(SoundTemp *last_val, SoundTemp dst_val, SoundSamplePtr *
 	*last_val = v1;
 }
 
-struct SoundR
+struct SoundState
 {
 	SoundSamplePtr fTheSoundBuffer;
 	volatile uint16_t(*fPlayOffset);
@@ -239,7 +239,7 @@ static void my_audio_callback(void *udata, Uint8 *stream, int len)
 	uint16_t ToPlayLen;
 	uint16_t FilledSoundBuffs;
 	int i;
-	SoundR *datp = (SoundR *)udata;
+	SoundState *datp = (SoundState *)udata;
 	SoundSamplePtr CurSoundBuffer = datp->fTheSoundBuffer;
 	uint16_t CurPlayOffset = *datp->fPlayOffset;
 	SoundTemp v0 = datp->lastv;
@@ -368,7 +368,7 @@ static void SDLCALL sdl3_audio_callback(void *udata, SDL_AudioStream *stream, in
 	}
 }
 
-static SoundR s_curAudio;
+static SoundState s_curAudio;
 
 static bool s_haveSoundOut = false;
 

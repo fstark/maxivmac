@@ -28,7 +28,7 @@
 #define Group1Base 0x10
 #define Group2Base 0x08
 
-struct RTC_Ty
+struct RTCState
 {
 	/* RTC VIA Flags */
 	uint8_t WrProtect;
@@ -47,7 +47,7 @@ struct RTC_Ty
 	uint8_t PARAMRAM[PARAMRAMSize];
 };
 
-static RTC_Ty s_rtc;
+static RTCState s_rtc;
 
 /* RTC Functions */
 

@@ -364,7 +364,7 @@ static void LT_NodeAddressSet(uint8_t v)
 #define SCC_B_Tx_Empty 2 /* Tx Buffer Empty */
 #define SCC_B_Ext 1		 /* External/Status Change */
 
-struct Channel_Ty
+struct ChannelState
 {
 	bool TxEnable;
 	bool RxEnable;
@@ -473,9 +473,9 @@ struct Channel_Ty
 #endif
 };
 
-struct SCC_Ty
+struct SCCState
 {
-	Channel_Ty a[2]; /* 0 = channel A, 1 = channel B */
+	ChannelState a[2]; /* 0 = channel A, 1 = channel B */
 	int SCC_Interrupt_Type;
 	int PointerBits;
 	uint8_t InterruptVector;
@@ -485,7 +485,7 @@ struct SCC_Ty
 #endif
 };
 
-static SCC_Ty s_scc;
+static SCCState s_scc;
 
 
 #if EmLocalTalk
