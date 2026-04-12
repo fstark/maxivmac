@@ -143,6 +143,7 @@
 #define kDeleteFileIDRef  0x0011
 #define kResolveFileIDRef 0x0012
 #define kGetFCBInfo       0x0008
+#define kGetVolParms      0x0030
 
 /* ---- Globals ---- */
 
@@ -560,21 +561,89 @@ static OSErr DoSetFPos(char *pb)
 static OSErr DoGetVolInfo(char *pb, Globals *g)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	Ptr v = g->vcb;
+
 	dbg_log(g->regBase, "SD: DoGetVolInfo");
+
 	if (nameAddr != 0) {
 		unsigned char *p = (unsigned char *)nameAddr;
 		p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
 		p[4]='r'; p[5]='e'; p[6]='d';
 	}
+
 	*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
-	*(short *)(pb + pb_ioVAtrb) = (short)0x8000; /* locked */
-	*(short *)(pb + pb_ioVNmFls) = (short)g->volFileCount;
-	*(short *)(pb + pb_ioVNmAlBlks) = 1024;
-	*(long *)(pb + pb_ioVAlBlkSiz) = 512;
-	*(long *)(pb + pb_ioVClpSiz) = 512;
-	*(short *)(pb + pb_ioVFrBlk) = 0;
-	*(long *)(pb + pb_ioVCrDate) = 0;
-	*(long *)(pb + pb_ioVLsMod) = 0;
+	*(long  *)(pb + 30) = *(long *)(v + 10);     /* ioVCrDate from vcbCrDate */
+	*(long  *)(pb + 34) = *(long *)(v + 14);     /* ioVLsMod from vcbLsMod */
+	*(short *)(pb + 38) = (short)0x8000;         /* ioVAtrb: sw locked */
+	*(short *)(pb + 40) = (short)g->volFileCount;/* ioVNmFls */
+	*(short *)(pb + 42) = 0;                     /* ioVBitMap */
+	*(short *)(pb + 44) = 0;                     /* ioVAllocPtr */
+	*(short *)(pb + 46) = 1024;                  /* ioVNmAlBlks */
+	*(long  *)(pb + 48) = 512;                   /* ioVAlBlkSiz */
+	*(long  *)(pb + 52) = 512;                   /* ioVClpSiz */
+	*(short *)(pb + 56) = 0;                     /* ioAlBlSt */
+	*(long  *)(pb + 58) = 16;                    /* ioVNxtCNID */
+	*(short *)(pb + 62) = 0;                     /* ioVFrBlk */
+	*(short *)(pb + 64) = 0x4244;                /* ioVSigWord = HFS */
+	*(short *)(pb + 66) = kOurDriveNum;          /* ioVDrvInfo */
+	*(short *)(pb + 68) = kOurDrvrRefNum;        /* ioVDRefNum */
+	*(short *)(pb + 70) = 0x5344;                /* ioVFSID = 'SD' */
+	*(long  *)(pb + 72) = 0;                     /* ioVBkUp */
+	*(short *)(pb + 76) = 0;                     /* ioVSeqNum */
+	*(long  *)(pb + 78) = 0;                     /* ioVWrCnt */
+	*(long  *)(pb + 82) = g->volFileCount;       /* ioVFilCnt */
+	*(long  *)(pb + 86) = 1;                     /* ioVDirCnt */
+	/* ioVFndrInfo at 90, 32 bytes — leave as caller had them */
+	return 0;
+}
+
+/*
+	DoGetVolParms: return volume capabilities.
+	The caller provides a buffer (ioBuffer, ioReqCount).
+	We fill a GetVolParmsInfoBuffer version 1 (14 bytes).
+*/
+static OSErr DoGetVolParms(char *pb, char *regBase)
+{
+	unsigned long bufAddr = *(unsigned long *)(pb + pb_ioBuffer);
+	long reqCount = *(long *)(pb + pb_ioReqCount);
+	long actual;
+
+	dbg_log1(regBase, "SD: GetVolParms buf=%lx", bufAddr);
+
+	if (bufAddr == 0) return -50;
+
+	/*
+		GetVolParmsInfoBuffer v1 layout:
+		  0: vMVersion   INTEGER (2)
+		  2: vMAttrib    LONGINT (4)
+		  6: vMLocalHand Handle  (4)
+		 10: vMServerAdr LONGINT (4)
+		 Total: 14 bytes
+
+		vMAttrib bits:
+		  16 bExtFSVol, 17 bNoSysDir, 19 bNoBootBlks,
+		  27 bNoLclSync, 28 bNoVNEdit
+	*/
+
+	actual = 14;
+	if (reqCount < actual) actual = reqCount;
+
+	/* Zero the buffer first */
+	{
+		long j;
+		for (j = 0; j < actual; j++)
+			*(char *)(bufAddr + j) = 0;
+	}
+
+	/* vMVersion = 1 */
+	if (actual >= 2)
+		*(short *)(bufAddr + 0) = 1;
+
+	/* vMAttrib = bExtFSVol | bNoSysDir | bNoBootBlks | bNoLclSync | bNoVNEdit */
+	if (actual >= 6)
+		*(long *)(bufAddr + 2) = (long)0x180B0000UL;
+
+	*(long *)(pb + pb_ioActCount) = actual;
 	return 0;
 }
 
@@ -815,14 +884,19 @@ short DispatchHFS(char *pb, short selector)
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 
-		case kCreateFileIDRef:
-		case kDeleteFileIDRef:
-		case kResolveFileIDRef:
+		case kGetVolParms:
+			err = DoGetVolParms(pb, g->regBase);
+			*(short *)(pb + pb_ioResult) = err;
+			RestoreA4(); return 0;
+
+		default:
+			/* NEVER fall through for our volume — the real HFS
+			   handler would try to access nonexistent disk structs */
+			dbg_log1(g->regBase, "SD: HFS unhandled sel=%04lx",
+				(long)selector);
 			*(short *)(pb + pb_ioResult) = -50;
 			RestoreA4(); return 0;
 	}
-
-	RestoreA4(); return 1;
 }
 
 /* ================================================================ */
