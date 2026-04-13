@@ -237,6 +237,9 @@ endif()
 # ---------------------------------------------------------------------------
 # Unit tests
 # ---------------------------------------------------------------------------
-add_executable(test_slip test/test_slip.cpp)
-target_include_directories(test_slip PRIVATE "${CMAKE_SOURCE_DIR}/src")
-target_compile_options(test_slip PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_executable(tests
+    test/test_main.cpp
+    test/test_slip.cpp
+)
+target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
+target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)

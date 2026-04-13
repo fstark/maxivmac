@@ -2,9 +2,8 @@
 	test_slip — Unit tests for the RFC 1055 SLIP codec.
 */
 
+#include <doctest/doctest.h>
 #include "devices/slip.h"
-#include <cassert>
-#include <cstdio>
 
 /* Helper: feed all bytes from a framed buffer into a decoder.
    Returns the number of complete packets signalled. */
@@ -16,30 +15,30 @@ static int feedAll(slip::Decoder &dec, const std::vector<uint8_t> &framed)
 	return n;
 }
 
-static void test_roundtrip()
+TEST_CASE("SLIP roundtrip")
 {
 	uint8_t pkt[] = {0x45, 0x00, 0x00, 0x1C, 0xC0, 0xDB, 0x01, 0x02};
 	std::vector<uint8_t> framed;
 	slip::encode(pkt, sizeof(pkt), framed);
 
 	slip::Decoder dec;
-	assert(feedAll(dec, framed) == 1);
+	CHECK(feedAll(dec, framed) == 1);
 	auto result = dec.packet();
-	assert(result.size() == sizeof(pkt));
+	REQUIRE(result.size() == sizeof(pkt));
 	for (size_t i = 0; i < sizeof(pkt); ++i)
-		assert(result[i] == pkt[i]);
+		CHECK(result[i] == pkt[i]);
 }
 
-static void test_empty_frames()
+TEST_CASE("SLIP empty frames")
 {
 	slip::Decoder dec;
 	/* Multiple ENDs in a row -> no packet */
-	assert(!dec.feed(slip::END));
-	assert(!dec.feed(slip::END));
-	assert(!dec.feed(slip::END));
+	CHECK_FALSE(dec.feed(slip::END));
+	CHECK_FALSE(dec.feed(slip::END));
+	CHECK_FALSE(dec.feed(slip::END));
 }
 
-static void test_all_special_bytes()
+TEST_CASE("SLIP all special bytes")
 {
 	/* Packet entirely made of END and ESC bytes */
 	uint8_t pkt[] = {slip::END, slip::ESC, slip::END, slip::ESC};
@@ -47,14 +46,14 @@ static void test_all_special_bytes()
 	slip::encode(pkt, sizeof(pkt), framed);
 
 	slip::Decoder dec;
-	assert(feedAll(dec, framed) == 1);
+	CHECK(feedAll(dec, framed) == 1);
 	auto result = dec.packet();
-	assert(result.size() == sizeof(pkt));
+	REQUIRE(result.size() == sizeof(pkt));
 	for (size_t i = 0; i < sizeof(pkt); ++i)
-		assert(result[i] == pkt[i]);
+		CHECK(result[i] == pkt[i]);
 }
 
-static void test_multiple_packets()
+TEST_CASE("SLIP multiple packets")
 {
 	/* Two packets back-to-back in one stream */
 	uint8_t pkt1[] = {0x01, 0x02, 0x03};
@@ -72,43 +71,32 @@ static void test_multiple_packets()
 			auto result = dec.packet();
 			if (count == 0)
 			{
-				assert(result.size() == sizeof(pkt1));
+				REQUIRE(result.size() == sizeof(pkt1));
 				for (size_t i = 0; i < sizeof(pkt1); ++i)
-					assert(result[i] == pkt1[i]);
+					CHECK(result[i] == pkt1[i]);
 			}
 			else
 			{
-				assert(result.size() == sizeof(pkt2));
+				REQUIRE(result.size() == sizeof(pkt2));
 				for (size_t i = 0; i < sizeof(pkt2); ++i)
-					assert(result[i] == pkt2[i]);
+					CHECK(result[i] == pkt2[i]);
 			}
 			count++;
 		}
 	}
-	assert(count == 2);
+	CHECK(count == 2);
 }
 
-static void test_zero_length_packet()
+TEST_CASE("SLIP zero length packet")
 {
 	/* Encoding zero bytes should produce END END with no payload. */
 	std::vector<uint8_t> framed;
 	slip::encode(nullptr, 0, framed);
-	assert(framed.size() == 2);
-	assert(framed[0] == slip::END);
-	assert(framed[1] == slip::END);
+	REQUIRE(framed.size() == 2);
+	CHECK(framed[0] == slip::END);
+	CHECK(framed[1] == slip::END);
 
 	/* Decoding that should yield no packet (empty). */
 	slip::Decoder dec;
-	assert(feedAll(dec, framed) == 0);
-}
-
-int main()
-{
-	test_roundtrip();
-	test_empty_frames();
-	test_all_special_bytes();
-	test_multiple_packets();
-	test_zero_length_packet();
-	std::printf("SLIP: all tests passed\n");
-	return 0;
+	CHECK(feedAll(dec, framed) == 0);
 }
