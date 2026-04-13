@@ -67,9 +67,9 @@
 #define kFCBPLen        12   /* LONGINT — physical EOF */
 #define kFCBCrPs        16   /* LONGINT — mark (current position) */
 #define kFCBVPtr        20   /* LONGINT — pointer to VCB */
-/* HFS-specific fields (from Inside Macintosh IV, File Control Blocks) */
-#define kFCBDirID       52   /* LONGINT — parent directory ID */
-#define kFCBCName       56   /* 32 bytes — file name (Pascal string) */
+/* HFS-specific fields (from Inside Macintosh IV, Figure 28) */
+#define kFCBDirID       58   /* LONGINT — parent directory ID */
+#define kFCBCName       62   /* 32 bytes — file name (Pascal string) */
 
 /*
 	ParamBlockRec / CInfoPBRec field offsets from A0.
