@@ -67,6 +67,9 @@
 #define kFCBPLen        12   /* LONGINT — physical EOF */
 #define kFCBCrPs        16   /* LONGINT — mark (current position) */
 #define kFCBVPtr        20   /* LONGINT — pointer to VCB */
+/* HFS-specific fields (from Inside Macintosh IV, File Control Blocks) */
+#define kFCBDirID       52   /* LONGINT — parent directory ID */
+#define kFCBCName       56   /* 32 bytes — file name (Pascal string) */
 
 /*
 	ParamBlockRec / CInfoPBRec field offsets from A0.
@@ -380,7 +383,7 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		*(long *)(pb + pb_ioDrMdDat) = modDate;
 	} else {
 		/* File */
-		*(unsigned char *)(pb + pb_ioFlAttrib) = 0x01;
+		*(unsigned char *)(pb + pb_ioFlAttrib) = 0x00;
 		*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
 		*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
 		*(long *)(pb + pb_ioFlNum) = cnid;
@@ -469,10 +472,18 @@ static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb)
 		return -42; /* tmfoErr */
 	}
 
-	/* Store host handle */
+	/* Store host handle and fill HFS FCB fields */
 	{
 		Ptr fcb = GetFCB(refNum);
+		unsigned char *src = (unsigned char *)nameAddr;
+		unsigned char len = src[0];
+		short j;
 		*(long *)(fcb + kFCBPLen) = handle;
+		*(long *)(fcb + kFCBDirID) = dirID;
+		if (len > 31) len = 31;
+		*(unsigned char *)(fcb + kFCBCName) = len;
+		for (j = 0; j < len; j++)
+			*((char *)fcb + kFCBCName + 1 + j) = src[1 + j];
 	}
 
 	*(short *)(pb + pb_ioRefNum) = refNum;
@@ -593,10 +604,18 @@ static OSErr DoOpen(char *pb, char *regBase, Ptr vcb)
 		return -42;
 	}
 
-	/* Store host handle in FCB's PLen field */
+	/* Store host handle and fill HFS FCB fields */
 	{
 		Ptr fcb = GetFCB(refNum);
+		unsigned char *src = (unsigned char *)nameAddr;
+		unsigned char len = src[0];
+		short j;
 		*(long *)(fcb + kFCBPLen) = handle;
+		*(long *)(fcb + kFCBDirID) = kRootDirID;
+		if (len > 31) len = 31;
+		*(unsigned char *)(fcb + kFCBCName) = len;
+		for (j = 0; j < len; j++)
+			*((char *)fcb + kFCBCName + 1 + j) = src[1 + j];
 	}
 
 	*(short *)(pb + pb_ioRefNum) = refNum;
@@ -684,7 +703,7 @@ static OSErr DoGetFileInfo(char *pb, char *regBase)
 	crDate  = reg_get(regBase, 2);
 	modDate = reg_get(regBase, 3);
 
-	*(unsigned char *)(pb + pb_ioFlAttrib) = 0x01;
+	*(unsigned char *)(pb + pb_ioFlAttrib) = 0x00;
 	*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
 	*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
 	*(long *)(pb + pb_ioFlNum) = cnid;
