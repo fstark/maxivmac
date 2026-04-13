@@ -26,3 +26,6 @@ coverage.html
 *.profraw
 *.profdata
 753.hfs
+macdocs/ref/mac-rom
+shared/
+dbglog.txt

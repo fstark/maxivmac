@@ -164,6 +164,122 @@ The Desktop file's resource fork is stored as `shared/Desktop.rsrc` on the host.
 - Guest compiler: THINK C 5, System 6.0.8
 - The INIT must be rebuilt in THINK C and installed in the emulated System Folder
 
+## Automated Instruction Tracing
+
+When guest-level logs aren't enough, the emulator has CPU-level tracing
+that can dump every instruction executed within a window. This is the
+most powerful tool for diagnosing problems where guest code does something
+unexpected and you need to see the exact 68k instruction sequence.
+
+### The workflow
+
+1. **Trigger the crash with the fatal handler.** The guest INIT's
+   `dbg_fatal()` macro (RPC `$0214`) calls `std::exit(EXIT_FAILURE)` on
+   the host after printing the global instruction count:
+
+   ```
+   [GUEST FATAL] (insn #13345183) GetCatInfo: bad name len=132 at 3e8252
+   ```
+
+2. **Re-run with `--log-start` / `--log-count`** to capture a window of
+   instructions around the crash. Pick a start point a few thousand
+   instructions before the crash:
+
+   ```bash
+   rm -f shared/Desktop* && \
+   ./bld/macos/maxivmac --model=MacPlus --silent \
+     --log-start=13300000 --log-count=50000 \
+     608.hfs 2>&1 | tee start.txt
+   ```
+
+   The emulator exits automatically when `g_instructionCount` reaches
+   `g_logStart + g_logCount`, or when the fatal handler fires (whichever
+   comes first).
+
+3. **Read the trace output.** Each line is one instruction:
+
+   ```
+   13330110 003E154C: 2F08 c=1530 D=00000009 ... A=003E837E ...
+   ```
+
+   Format: `insn# PC: opcode c=cyclesLeft D=d0..d7 A=a0..a7`
+
+   Use a 68k opcode reference or the built-in disassembler to decode
+   opcode words. The PC and register values let you follow data flow
+   through the code.
+
+4. **Use `DumpRecentDisasm()` for the final 16 instructions.** The fatal
+   handler automatically calls this, printing the last 16 PCs with
+   full disassembly to stderr:
+
+   ```
+   Recent PCs:
+     003C4020  MOVEA.L (A5,d16), A0
+     003C4024  MOVE.L  A0, -(A7)
+     ...
+     003E17CA  DC.W    $A260           ; _HFSDispatch
+   ```
+
+### Infrastructure details
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `g_instructionCount` | `src/cpu/m68k.cpp:174` | Global counter, incremented every instruction |
+| `g_logStart`, `g_logEnd` | `src/core/machine.h:105` | Trace window bounds; set by CLI flags |
+| Trace output | `src/cpu/m68k.cpp:729-753` | Prints to stderr when `insn# ∈ [logStart, logEnd)` |
+| `DisasmOneOrSave()` | `src/cpu/disasm.cpp:2825` | Saves PC to 16-entry ring buffer |
+| `DumpRecentDisasm()` | `src/cpu/disasm.cpp:2839` | Dumps ring buffer with disassembly to stderr |
+| `kExtFSFatal` handler | `src/core/extn_extfs.cpp:702` | Prints insn#, calls `DumpRecentDisasm()`, `exit(1)` |
+| `--log-start=N` | `src/core/config_loader.cpp:314` | CLI: first instruction to log |
+| `--log-count=N` | `src/core/config_loader.cpp:319` | CLI: number of instructions to log |
+
+### Example: tracing the GetCatInfo garbage-name crash
+
+The "bad name len=132" crash was diagnosed with this technique:
+
+1. Fatal handler reported `insn #13345183`. We re-ran with
+   `--log-start=13300000 --log-count=50000` to capture ~45K instructions
+   before the crash.
+
+2. Grepping the trace for the `_HFSDispatch` trap (`A260`) found the
+   callsite at `$3E17CA` (instruction 13330134).
+
+3. Walking backwards through the trace revealed the Finder code at
+   `$3E17AE–$3E17CA` that builds the GetCatInfo param block:
+   - `LEA xx(A6), A0` → param block at `$3E837E`
+   - `LEA xx(A6), A1` → name buffer at `$3E8252` (stack-local)
+   - `MOVE.L A1, xx(A0)` → stores name buffer as `ioNamePtr`
+   - `MOVEQ #9, D0` → selector 9 = kGetCatInfo
+   - `A260` → trap to `_HFSDispatch`
+
+4. The name buffer at `$3E8252` was never populated — it contained
+   stack garbage (first byte `$84` = length 132). The Finder expected
+   the Resource Manager to fill it via `PBGetFCBInfo`, but our volume
+   never received that call because `_HFSDispatch` checks `IsOurVolume(vRefNum)`
+   at entry and `PBGetFCBInfo` uses a different vRefNum.
+
+### Tips
+
+- **Start wide, narrow down.** Begin with a 50K-instruction window.
+  Once you find the interesting region, re-run with a tighter window
+  for cleaner output.
+
+- **Grep for trap words.** A-line traps (`$A0xx`–`$AFxx`) are easy
+  to spot. `grep 'A260'` finds all `_HFSDispatch` calls.
+
+- **Follow register values.** The A0 register is the param block
+  pointer for File Manager traps. A6 is the stack frame. Reading
+  the register dump at each instruction lets you trace data flow
+  without needing a real debugger.
+
+- **Cross-reference with ROM sources.** SuperMario disassembly at
+  `macdocs/ref/mac-rom/` can identify what ROM routine a PC falls
+  in. Finder code lives in high memory (loaded from disk), while
+  ROM routines are at fixed addresses.
+
+- **The `--silent` flag** suppresses the GUI window, useful for
+  headless scripted runs.
+
 ## File Map
 
 - `macsrc/shareddrive/init.c` — Guest INIT source (THINK C)
