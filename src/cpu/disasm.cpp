@@ -2836,6 +2836,25 @@ void DisasmOneOrSave(uint32_t pc)
 	}
 }
 
+void DumpRecentDisasm()
+{
+	uint32_t n = SavedPCsIn - SavedPCsOut;
+	if (n > NumSavedPCs) n = NumSavedPCs;
+	if (n == 0) return;
+
+	uint32_t j = SavedPCsIn - n;
+	std::fprintf(stderr, "--- last %u instructions ---\n", (unsigned)n);
+	for (uint32_t i = 0; i < n; i++)
+	{
+		uint32_t pc = SavedPCs[(j + i) & SavedPCsMask];
+		uint32_t pc_copy = pc;
+		std::string text = Disassemble(pc_copy);
+		std::fprintf(stderr, "  %08X  %s\n", (unsigned)pc, text.c_str());
+	}
+	std::fprintf(stderr, "---\n");
+	std::fflush(stderr);
+}
+
 void m68k_WantDisasmContext()
 {
 	DisasmSavedPCs_legacy();

@@ -25,6 +25,7 @@
 	  $211 ExtFSWrite     p0=handle, p1=offset, p2=count, p3=bufAddr
 	  $212 ExtFSDeleteFile p0=parentDirID, p1=namePtr
 	  $213 ExtFSSetFileInfo p0=CNID, p1=type, p2=creator
+	  $214 ExtFSFatal     p0=fmt string addr, p1-p6=args  (shuts down emulator)
 
 	Trap patching approach:
 	  Each patched trap gets a small dynamically-generated 68k code
@@ -67,7 +68,12 @@
 #define kFCBPLen        12   /* LONGINT — physical EOF */
 #define kFCBCrPs        16   /* LONGINT — mark (current position) */
 #define kFCBVPtr        20   /* LONGINT — pointer to VCB */
-/* HFS-specific fields (from Inside Macintosh IV, Figure 28) */
+/* HFS-specific fields (from FSEqu.a in SuperMario sources) */
+#define kFCBClmpSize    30   /* LONGINT — clump size */
+#define kFCBBTCBPtr     34   /* LONGINT — B*-Tree control block ptr */
+#define kFCBExtRec      38   /* 12 bytes — first 3 file extents */
+#define kFCBFType       50   /* LONGINT — file's 4 Finder type bytes */
+#define kFCBCatPos      54   /* LONGINT — catalog hint for Close */
 #define kFCBDirID       58   /* LONGINT — parent directory ID */
 #define kFCBCName       62   /* 32 bytes — file name (Pascal string) */
 
@@ -131,6 +137,18 @@
 
 /* HFS-specific PBGetCatInfo: ioDirID is at same offset as ioFlNum */
 #define pb_ioDirID      48
+
+/* FCBPBRec variant (for PBGetFCBInfo) — TN087 corrected offsets */
+#define pb_ioFCBIndx    28   /* INTEGER (TN087: not LONGINT) */
+#define pb_ioFCBFlNm    32   /* LONGINT — file number */
+#define pb_ioFCBFlags   36   /* INTEGER — FCB flags */
+#define pb_ioFCBStBlk   38   /* INTEGER — first alloc block */
+#define pb_ioFCBEOF     40   /* LONGINT — logical EOF */
+#define pb_ioFCBPLen    44   /* LONGINT — physical EOF */
+#define pb_ioFCBCrPs    48   /* LONGINT — mark */
+#define pb_ioFCBVRefNum 52   /* INTEGER — volume refnum */
+#define pb_ioFCBClpSiz  54   /* LONGINT — clump size */
+#define pb_ioFCBParID   58   /* LONGINT — parent dir ID */
 
 /* WDParam variant (for _OpenWD, _CloseWD, _GetWDInfo) */
 #define pb_ioWDIndex    26   /* INTEGER */
@@ -218,6 +236,63 @@ static void dbg_log6(char *base, char *fmt,
 #define dbg_log(b,s)            dbg_log6(b,s,0,0,0,0,0,0)
 #define dbg_log1(b,s,a)         dbg_log6(b,s,(long)(a),0,0,0,0,0)
 #define dbg_log2(b,s,a,c)       dbg_log6(b,s,(long)(a),(long)(c),0,0,0,0)
+
+/* ---- Fatal shutdown ---- */
+
+static void dbg_fatal6(char *base, char *fmt,
+	unsigned long a,unsigned long b,unsigned long c,
+	unsigned long d,unsigned long e,unsigned long f)
+{
+	reg_set(base,0,(unsigned long)fmt);
+	reg_set(base,1,a); reg_set(base,2,b);
+	reg_set(base,3,c); reg_set(base,4,d);
+	reg_set(base,5,e); reg_set(base,6,f);
+	reg_command(base, 0x0214);
+}
+#define dbg_fatal(b,s)          dbg_fatal6(b,s,0,0,0,0,0,0)
+#define dbg_fatal1(b,s,a)       dbg_fatal6(b,s,(long)(a),0,0,0,0,0)
+#define dbg_fatal2(b,s,a,c)     dbg_fatal6(b,s,(long)(a),(long)(c),0,0,0,0)
+
+/* ---- Hex dump ---- */
+
+static char s_hexChars[] = "0123456789ABCDEF";
+static char s_hexLine[80];
+
+static void dbg_hexdump(char *regBase, char *label,
+	unsigned char *addr, short len)
+{
+	short i, col;
+	char *p;
+
+	dbg_log2(regBase, "DUMP %s at %lx:",
+		(unsigned long)label, (unsigned long)addr);
+
+	for (i = 0; i < len; i += 16) {
+		p = s_hexLine;
+		*p++ = s_hexChars[(i >> 12) & 0xF];
+		*p++ = s_hexChars[(i >> 8) & 0xF];
+		*p++ = s_hexChars[(i >> 4) & 0xF];
+		*p++ = s_hexChars[i & 0xF];
+		*p++ = ':';
+		*p++ = ' ';
+		for (col = 0; col < 16 && (i + col) < len; col++) {
+			unsigned char b = addr[i + col];
+			*p++ = s_hexChars[b >> 4];
+			*p++ = s_hexChars[b & 0xF];
+			*p++ = ' ';
+		}
+		for (; col < 16; col++) {
+			*p++ = ' '; *p++ = ' '; *p++ = ' ';
+		}
+		*p++ = ' ';
+		for (col = 0; col < 16 && (i + col) < len; col++) {
+			unsigned char b = addr[i + col];
+			*p++ = (b >= 0x20 && b < 0x7F) ? b : '.';
+		}
+		*p = 0;
+		dbg_log1(regBase, " %s", (unsigned long)s_hexLine);
+	}
+}
 
 /* ---- Name buffer ---- */
 
@@ -340,8 +415,18 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		reg_command(regBase, 0x0202);
 		if (reg_result(regBase) != 0) return -43;
 	} else {
+		unsigned char nameLen;
 		if (nameAddr == 0) return -50;
-		dbg_log1(regBase, "SD _GetCatInfo byName=%s", nameAddr);
+		nameLen = *(unsigned char *)nameAddr;
+		dbg_log2(regBase, "SD _GetCatInfo byName len=%ld addr=%lx",
+			(long)nameLen, nameAddr);
+		if (nameLen == 0 || nameLen > 63) {
+			dbg_fatal2(regBase,
+				"GetCatInfo: bad name len=%ld at %lx",
+				(long)nameLen, nameAddr);
+			return -43;
+		}
+		dbg_log1(regBase, "SD _GetCatInfo byName=%S", nameAddr);
 		reg_set(regBase,0,dirID); reg_set(regBase,1,nameAddr);
 		reg_set(regBase,2,(unsigned long)s_nameBuf);
 		reg_command(regBase, 0x0203);
@@ -484,6 +569,8 @@ static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb)
 		*(unsigned char *)(fcb + kFCBCName) = len;
 		for (j = 0; j < len; j++)
 			*((char *)fcb + kFCBCName + 1 + j) = src[1 + j];
+		dbg_hexdump(regBase, "OpenRF FCB",
+			(unsigned char *)fcb, kFCBLen);
 	}
 
 	*(short *)(pb + pb_ioRefNum) = refNum;
@@ -838,9 +925,20 @@ static OSErr DoGetVolParms(char *pb, char *regBase)
 	if (actual >= 2)
 		*(short *)(bufAddr + 0) = 1;
 
-	/* vMAttrib = bExtFSVol | bNoSysDir | bNoBootBlks | bNoDeskItems | bNoLclSync | bNoVNEdit */
+	/* vMAttrib bits (Inside Macintosh VI-22-20):
+	     bit 0 = bLimitFCBs
+	     bit 11 = bHasPersonalAccessPrivileges
+	     bit 12 = bHasUserGroupList
+	     bit 13 = bHasCatSearch
+	     bit 14 = bHasFileIDs
+	     bit 15 = bHasBTreeMgr
+	     bit 16 = bHasBlankAccessPrivileges
+	   We set NO bits except bit 0 (bLimitFCBs).
+	   Specifically we do NOT set bNoDeskItems, since the
+	   Finder may need to manage a Desktop file on this volume.
+	*/
 	if (actual >= 6)
-		*(long *)(bufAddr + 2) = (long)0x181B0000UL;
+		*(long *)(bufAddr + 2) = (long)0x00010000UL;
 
 	*(long *)(pb + pb_ioActCount) = actual;
 	return 0;
@@ -1229,6 +1327,23 @@ short DispatchHFS(char *pb, short selector)
 			else
 				dbg_log1(g->regBase,
 					"SD _GetCatInfo idx=%ld", (long)idx);
+			dbg_hexdump(g->regBase, "GCI pb",
+				(unsigned char *)pb, 108);
+			if (idx == -1 && nameAddr) {
+				/* Dump what RM put at ioNamePtr */
+				dbg_hexdump(g->regBase, "GCI namePtr",
+					(unsigned char *)nameAddr, 48);
+				/* Dump the FCB for refNum 660 to check
+				   if our fcbCName survived */
+				{
+					Ptr fcbBuf = *(Ptr *)kFCBSPtr;
+					if (fcbBuf)
+						dbg_hexdump(g->regBase,
+							"FCB@660",
+							(unsigned char *)(fcbBuf + 660),
+							kFCBLen);
+				}
+			}
 			err = DoGetCatInfo(pb, g->regBase);
 			dbg_log1(g->regBase,
 				"SD _GetCatInfo -> %ld", (long)err);
@@ -1290,10 +1405,63 @@ short DispatchHFS(char *pb, short selector)
 		}
 
 		case kGetFCBInfo:
-			dbg_log(g->regBase,
-				"SD _GetFCBInfo -> paramErr");
-			*(short *)(pb + pb_ioResult) = -50;
+		{
+			short refNum = *(short *)(pb + pb_ioRefNum);
+			short fcbIdx = *(short *)(pb + pb_ioFCBIndx);
+			unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+			Ptr fcb;
+
+			dbg_log2(g->regBase,
+				"SD _GetFCBInfo ref=%ld idx=%ld",
+				(long)refNum, (long)fcbIdx);
+
+			/* Only handle direct lookup by refNum (index=0) */
+			if (fcbIdx != 0) {
+				dbg_log(g->regBase,
+					"SD _GetFCBInfo idx!=0 -> paramErr");
+				*(short *)(pb + pb_ioResult) = -50;
+				RestoreA4(); return 0;
+			}
+
+			fcb = GetFCB(refNum);
+			if (fcb == NULL || *(long *)(fcb + kFCBFlNum) == 0) {
+				dbg_log(g->regBase,
+					"SD _GetFCBInfo -> rfNumErr");
+				*(short *)(pb + pb_ioResult) = -51;
+				RestoreA4(); return 0;
+			}
+
+			/* Copy filename from FCB to caller's ioNamePtr */
+			if (nmAddr != 0) {
+				unsigned char *src = (unsigned char *)(fcb + kFCBCName);
+				unsigned char len = src[0];
+				short j;
+				if (len > 31) len = 31;
+				*(unsigned char *)nmAddr = len;
+				for (j = 0; j < len; j++)
+					((char *)nmAddr)[1+j] = src[1+j];
+				dbg_log1(g->regBase,
+					"SD _GetFCBInfo name=%S", nmAddr);
+			}
+
+			/* Fill FCBPBRec output fields */
+			*(short *)(pb + pb_ioRefNum) = refNum;
+			*(long  *)(pb + pb_ioFCBFlNm) = *(long *)(fcb + kFCBFlNum);
+			*(short *)(pb + pb_ioFCBFlags) = (short)(*(unsigned char *)(fcb + kFCBFlags));
+			*(short *)(pb + pb_ioFCBStBlk) = 0;
+			*(long  *)(pb + pb_ioFCBEOF) = *(long *)(fcb + kFCBEOF);
+			*(long  *)(pb + pb_ioFCBPLen) = *(long *)(fcb + kFCBPLen);
+			*(long  *)(pb + pb_ioFCBCrPs) = *(long *)(fcb + kFCBCrPs);
+			*(short *)(pb + pb_ioFCBVRefNum) = kOurVRefNum;
+			*(long  *)(pb + pb_ioFCBClpSiz) = 0;
+			*(long  *)(pb + pb_ioFCBParID) = *(long *)(fcb + kFCBDirID);
+
+			dbg_log2(g->regBase,
+				"SD _GetFCBInfo -> 0 parID=%ld",
+				*(long *)(fcb + kFCBDirID));
+			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
+		}
 
 		default:
 			dbg_log1(g->regBase,

@@ -1,9 +1,12 @@
 #include "core/extn_extfs.h"
 #include "core/extn_clip.h"
 #include "cpu/trap_counter.h"
+#include "cpu/disasm.h"
+#include "core/machine.h"
 #include "platform/platform.h"
 
 #include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -34,6 +37,7 @@ static constexpr uint16_t kExtFSCloseWD = 0x20C;
 static constexpr uint16_t kExtFSDbgLog = 0x20D;
 static constexpr uint16_t kExtFSBeginTrace = 0x20E;
 static constexpr uint16_t kExtFSEndTrace = 0x20F;
+static constexpr uint16_t kExtFSFatal = 0x0214;
 static constexpr uint16_t kExtFSCreateFile = 0x210;
 static constexpr uint16_t kExtFSWrite = 0x211;
 static constexpr uint16_t kExtFSDeleteFile = 0x212;
@@ -692,6 +696,18 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			EndTraceTraps();
 			regResult = 0;
+		}
+		break;
+
+		case kExtFSFatal:
+		{
+			std::string msg = guestFormatLog(regParam[0], regParam);
+			guestConsoleAppend("FATAL: " + msg);
+			fprintf(stderr, "\n[GUEST FATAL] (insn #%u) %s\n", (unsigned)g_instructionCount,
+					msg.c_str());
+			DumpRecentDisasm();
+			fflush(stderr);
+			std::exit(EXIT_FAILURE);
 		}
 		break;
 
