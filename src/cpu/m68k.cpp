@@ -8346,6 +8346,11 @@ Label_Retry:
 		Data = 0; /* fail */
 	}
 
+	if (g_debuggerActive)
+	{
+		Debugger::instance()->memoryHook(addr, 1, 'R', Data, Data);
+	}
+
 	return static_cast<uint32_t>(static_cast<int8_t>(Data));
 }
 
@@ -8383,6 +8388,11 @@ Label_Retry:
 	else
 	{
 		/* fail */
+	}
+
+	if (g_debuggerActive)
+	{
+		Debugger::instance()->memoryHook(addr, 1, 'W', 0, b);
 	}
 }
 
@@ -8434,6 +8444,11 @@ static uint32_t get_word_ext(uint32_t addr)
 		}
 	}
 
+	if (g_debuggerActive)
+	{
+		Debugger::instance()->memoryHook(addr, 2, 'R', Data, Data);
+	}
+
 	return static_cast<uint32_t>(static_cast<int16_t>(Data));
 }
 
@@ -8479,6 +8494,11 @@ static void put_word_ext(uint32_t addr, uint32_t w)
 		else
 		{
 			/* fail */
+		}
+
+		if (g_debuggerActive)
+		{
+			Debugger::instance()->memoryHook(addr, 2, 'W', 0, w);
 		}
 	}
 }
