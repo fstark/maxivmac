@@ -48,6 +48,9 @@ struct LaunchConfig
 
 	// Networking (SLIP)
 	std::vector<std::string> slipRedirs; // --slip-redir=tcp:hostport:guestip:guestport
+
+	// Debugger
+	bool debugger = false;
 };
 
 // Parse command-line arguments into a LaunchConfig.

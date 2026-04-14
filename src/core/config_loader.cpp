@@ -206,6 +206,7 @@ void PrintUsage(const char *progname)
 			"  --headless       Run without GUI (for testing/automation)\n"
 			"  --silent         Disable audio output\n"
 			"  --trace-traps    Enable hierarchical A-line trap tracing to stderr\n"
+			"  --debugger       Start with debugger prompt (paused at first instruction)\n"
 			"  --title=TEXT     Window title\n"
 			"  --record=PATH    Record golden file for non-regression testing\n"
 			"  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)\n"
@@ -261,6 +262,11 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strcmp(arg, "--trace-traps") == 0)
 		{
 			lc.traceTraps = true;
+			continue;
+		}
+		if (strcmp(arg, "--debugger") == 0)
+		{
+			lc.debugger = true;
 			continue;
 		}
 

@@ -32,6 +32,7 @@
 #include "core/md5.h"
 #include "cpu/cpu.h"
 #include "cpu/trap_tracer.h"
+#include "debugger/debugger.h"
 
 #include <memory>
 
@@ -507,6 +508,13 @@ void ProgramEarlyInit(int argc, char *argv[])
 	{
 		g_logStart = s_launchConfig.logStart;
 		g_logEnd = s_launchConfig.logStart + s_launchConfig.logCount;
+	}
+
+	/* Initialize debugger if requested */
+	if (s_launchConfig.debugger)
+	{
+		Debugger::create();
+		g_debuggerActive = true;
 	}
 
 	/* No model specified — defer machine creation to SetLaunchConfig().
