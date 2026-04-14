@@ -19,10 +19,10 @@ Spec: [DEBUGGER.md](DEBUGGER.md)
 | 12 | CLI wiring and startup integration | DONE |
 | 13 | Next, finish, until, and SIGINT handling | DONE |
 | 14 | End-to-end smoke test | DONE |
-| 15 | I/O abstraction (DbgIO interface) | |
-| 16 | SocketIO and debug server mode | |
-| 17 | Client mode (maxivmac debug) | |
-| 18 | Debug server integration test | |
+| 15 | I/O abstraction (DbgIO interface) | DONE |
+| 16 | SocketIO and debug server mode | DONE |
+| 17 | Client mode (maxivmac debug) | DONE |
+| 18 | Debug server integration test | DONE |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
 Test gate:  `./bld/macos/tests`
