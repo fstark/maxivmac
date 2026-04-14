@@ -21,7 +21,7 @@ Spec: [DEBUGGER.md](DEBUGGER.md)
 | 14 | End-to-end smoke test | |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
-Test gate:  `cd bld/macos && ./tests`
+Test gate:  `./bld/macos/tests`
 
 ---
 
@@ -189,7 +189,7 @@ add_executable(tests
 - [ ] `src/debugger/symbols.h` and `src/debugger/symbols.cpp` exist
 - [ ] `src/debugger/expr.h` and `src/debugger/expr.cpp` exist
 - [ ] `test/test_debugger.cpp` exists with symbol and expr tests
-- [ ] Unit tests pass: `cd bld/macos && ./tests --test-case="symbol*,expr*"`
+- [ ] Unit tests pass: `./bld/macos/tests --test-case="symbol*,expr*"`
 - [ ] Full build clean
 - [ ] Commit: `"debugger: phase 1 — symbol tables and expression evaluator"`
 

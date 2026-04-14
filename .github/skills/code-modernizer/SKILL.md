@@ -121,7 +121,7 @@ Tag each with its category letter.
 
 1. Apply changes grouped by category (A first, then B, then C).
 2. Build: `cmake --preset macos && cmake --build --preset macos`
-3. Test: `cd bld/macos && ./tests`
+3. Test: `./bld/macos/tests`
 4. If build/test fails, diagnose and fix (up to 3 attempts).
 5. Commit: `git add -A && git commit -m "modernize: <file> — <summary>"`
 
@@ -143,7 +143,7 @@ Reference: [STYLE.md](../STYLE.md), [NAMING.md](../NAMING.md)
 | ... | ... | |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
-Test gate:  `cd bld/macos && ./tests`
+Test gate:  `./bld/macos/tests`
 
 ---
 
