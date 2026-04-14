@@ -1,5 +1,6 @@
 #include "core/extn_extfs.h"
 #include "core/extn_clip.h"
+#include "debugger/debugger.h"
 #include "cpu/trap_counter.h"
 #include "cpu/disasm.h"
 #include "core/machine.h"
@@ -707,6 +708,12 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 					msg.c_str());
 			DumpRecentDisasm();
 			fflush(stderr);
+			if (g_debuggerActive)
+			{
+				Debugger::instance()->stop("GUEST FATAL: " + msg);
+				regResult = 0;
+				break;
+			}
 			std::exit(EXIT_FAILURE);
 		}
 		break;

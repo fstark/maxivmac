@@ -293,17 +293,6 @@ bool RTCDevice::init()
 	do_put_mem_long(&s_rtc.PARAMRAM[0xEC], g_curMacDelta);
 
 	DumpRTC();
-	/* Dump PRAM to stderr for comparison */
-	{
-		int i;
-		fprintf(stderr, "PRAM_DUMP ");
-		for (i = 0; i < PARAMRAMSize; i++)
-		{
-			fprintf(stderr, "%02X", s_rtc.PARAMRAM[i]);
-		}
-		fprintf(stderr, " SEC=%02X%02X%02X%02X\n", s_rtc.Seconds_1[3], s_rtc.Seconds_1[2],
-				s_rtc.Seconds_1[1], s_rtc.Seconds_1[0]);
-	}
 
 	return true;
 }

@@ -30,7 +30,7 @@
 	REPORT_ABNORMAL_ID unused 0x0A08 - 0x0AFF
 */
 
-#define VID_dolog 1
+#define VID_dolog 0
 
 #if VID_dolog
 #define VID_LOG(fmt, ...) std::fprintf(stderr, "[VID] " fmt "\n", ##__VA_ARGS__)

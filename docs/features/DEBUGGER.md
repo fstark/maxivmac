@@ -73,6 +73,7 @@ dispatcher returns to the caller).
 |---------|-------------|
 | `break <location>` | Set breakpoint |
 | `break <location> if <cond>` | Conditional breakpoint |
+| `break #<N>` | Break at instruction number N |
 | `delete <id>` | Delete breakpoint/watchpoint by ID |
 | `delete` | Delete all |
 | `disable <id>` | Disable without deleting |
@@ -87,6 +88,10 @@ A `<location>` is one of:
 - **Low-memory global**: `CurApName`, `ApplZone` — shorthand for the
   global's address (useful with watchpoints)
 
+- **Instruction number**: `#12345` — break when the global instruction
+  counter reaches that value (one-shot). Use `info insn` to see the
+  current count.
+
 Examples:
 ```
 (dbg) break $00401A
@@ -95,6 +100,8 @@ Breakpoint 1 at $00401A
 Breakpoint 2 on trap GetResource ($A9A0)
 (dbg) break $4000 if d0 == 0
 Breakpoint 3 at $4000 (conditional: d0 == 0)
+(dbg) break #50000
+Breakpoint 4 at instruction #50000
 ```
 
 ### Watchpoints (memory breakpoints)

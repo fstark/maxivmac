@@ -173,7 +173,7 @@ void DiskRevokeWritable(DriveIndex driveNo)
 
 void DiskInsertNotify(DriveIndex driveNo, bool locked)
 {
-	fprintf(stderr, "DISK_INSERT drive=%d locked=%d\n", (int)driveNo, (int)locked);
+	/* DISK_INSERT logged only at trace level — too noisy for boot */
 	g_sonyInsertedMask |= ((uint32_t)1 << driveNo);
 	if (!locked)
 	{
