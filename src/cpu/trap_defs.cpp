@@ -1,0 +1,378 @@
+/*
+	trap_defs.cpp — Parser for the external trap definition file (assets/traps.def)
+*/
+
+#include "cpu/trap_defs.h"
+
+#include <algorithm>
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <string>
+
+/* ── helpers ──────────────────────────────────────────── */
+
+static std::string StrToLower(std::string_view sv)
+{
+	std::string s(sv);
+	for (auto &c : s)
+		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	return s;
+}
+
+static bool BlankOrComment(const std::string &line)
+{
+	for (char c : line)
+	{
+		if (c == '#') return true;
+		if (!std::isspace(static_cast<unsigned char>(c))) return false;
+	}
+	return true;
+}
+
+static bool ParseParamType(const std::string &s, ParamType &out)
+{
+	auto low = StrToLower(s);
+	if (low == "byte")
+	{
+		out = ParamType::Byte;
+		return true;
+	}
+	if (low == "word")
+	{
+		out = ParamType::Word;
+		return true;
+	}
+	if (low == "long")
+	{
+		out = ParamType::Long;
+		return true;
+	}
+	if (low == "ptr")
+	{
+		out = ParamType::Ptr;
+		return true;
+	}
+	if (low == "handle")
+	{
+		out = ParamType::Handle;
+		return true;
+	}
+	if (low == "ostype")
+	{
+		out = ParamType::OSType;
+		return true;
+	}
+	if (low == "str255")
+	{
+		out = ParamType::Str255;
+		return true;
+	}
+	if (low == "oserr")
+	{
+		out = ParamType::OSErr;
+		return true;
+	}
+	if (low == "boolean")
+	{
+		out = ParamType::Boolean;
+		return true;
+	}
+	if (low == "rect")
+	{
+		out = ParamType::Rect;
+		return true;
+	}
+	if (low == "point")
+	{
+		out = ParamType::Point;
+		return true;
+	}
+	return false;
+}
+
+static bool ParseRegLoc(const std::string &s, ParamLoc &out)
+{
+	auto low = StrToLower(s);
+	if (low == "d0")
+	{
+		out = ParamLoc::D0;
+		return true;
+	}
+	if (low == "d1")
+	{
+		out = ParamLoc::D1;
+		return true;
+	}
+	if (low == "d2")
+	{
+		out = ParamLoc::D2;
+		return true;
+	}
+	if (low == "d3")
+	{
+		out = ParamLoc::D3;
+		return true;
+	}
+	if (low == "d4")
+	{
+		out = ParamLoc::D4;
+		return true;
+	}
+	if (low == "d5")
+	{
+		out = ParamLoc::D5;
+		return true;
+	}
+	if (low == "d6")
+	{
+		out = ParamLoc::D6;
+		return true;
+	}
+	if (low == "d7")
+	{
+		out = ParamLoc::D7;
+		return true;
+	}
+	if (low == "a0")
+	{
+		out = ParamLoc::A0;
+		return true;
+	}
+	if (low == "a1")
+	{
+		out = ParamLoc::A1;
+		return true;
+	}
+	if (low == "a2")
+	{
+		out = ParamLoc::A2;
+		return true;
+	}
+	if (low == "a3")
+	{
+		out = ParamLoc::A3;
+		return true;
+	}
+	if (low == "a4")
+	{
+		out = ParamLoc::A4;
+		return true;
+	}
+	if (low == "a5")
+	{
+		out = ParamLoc::A5;
+		return true;
+	}
+	if (low == "a6")
+	{
+		out = ParamLoc::A6;
+		return true;
+	}
+	if (low == "a7")
+	{
+		out = ParamLoc::A7;
+		return true;
+	}
+	return false;
+}
+
+/* Parse a single param token: "name:type" or "name:type.reg" */
+static bool ParseParam(const std::string &token, ParamDef &out)
+{
+	auto colon = token.find(':');
+	if (colon == std::string::npos || colon == 0) return false;
+
+	out.name = token.substr(0, colon);
+	std::string rest = token.substr(colon + 1);
+
+	auto dot = rest.find('.');
+	std::string typeStr, regStr;
+	if (dot != std::string::npos)
+	{
+		typeStr = rest.substr(0, dot);
+		regStr = rest.substr(dot + 1);
+	}
+	else
+	{
+		typeStr = rest;
+	}
+
+	if (!ParseParamType(typeStr, out.type)) return false;
+
+	if (!regStr.empty())
+	{
+		if (!ParseRegLoc(regStr, out.loc)) return false;
+	}
+	else
+	{
+		out.loc = ParamLoc::Stack;
+	}
+	return true;
+}
+
+/* ── TrapDefs implementation ─────────────────────────── */
+
+uint16_t TrapDefs::maskTrapWord(uint16_t tw)
+{
+	if (tw & 0x0800)
+		return 0xA800 | (tw & 0x03FF); /* Toolbox: keep bits 0-9 + bit 11 */
+	else
+		return 0xA000 | (tw & 0x01FF); /* OS: keep bits 0-8 */
+}
+
+bool TrapDefs::parseHeaderLine(const std::string &line, TrapDef &out)
+{
+	std::istringstream iss(line);
+	std::string hexWord, name, conv;
+	if (!(iss >> hexWord >> name >> conv))
+	{
+		fprintf(stderr, "trap_defs: bad header '%s'\n", line.c_str());
+		return false;
+	}
+
+	char *end = nullptr;
+	unsigned long tw = std::strtoul(hexWord.c_str(), &end, 16);
+	if (end == hexWord.c_str() || tw > 0xFFFF)
+	{
+		fprintf(stderr, "trap_defs: bad trap word '%s'\n", hexWord.c_str());
+		return false;
+	}
+
+	out.trapWord = static_cast<uint16_t>(tw);
+	out.name = name;
+
+	auto cl = StrToLower(conv);
+	if (cl == "os")
+		out.convention = TrapConvention::OS;
+	else if (cl == "toolbox")
+		out.convention = TrapConvention::Toolbox;
+	else
+	{
+		fprintf(stderr, "trap_defs: bad convention '%s'\n", conv.c_str());
+		return false;
+	}
+
+	std::string extra;
+	if (iss >> extra)
+	{
+		if (StrToLower(extra) == "noreturn") out.noreturn = true;
+	}
+	return true;
+}
+
+void TrapDefs::parseParamLine(const std::string &line, TrapDef &out)
+{
+	std::istringstream iss(line);
+	std::string direction;
+	iss >> direction;
+	auto dir = StrToLower(direction);
+	bool isIn = (dir == "in");
+	bool isOut = (dir == "out");
+	if (!isIn && !isOut)
+	{
+		fprintf(stderr, "trap_defs: bad param direction '%s'\n", direction.c_str());
+		return;
+	}
+	std::string tok;
+	while (iss >> tok)
+	{
+		ParamDef pd;
+		if (ParseParam(tok, pd))
+		{
+			if (isIn)
+				out.paramsIn.push_back(std::move(pd));
+			else
+				out.paramsOut.push_back(std::move(pd));
+		}
+		else
+		{
+			fprintf(stderr, "trap_defs: bad param '%s'\n", tok.c_str());
+		}
+	}
+}
+
+int TrapDefs::load(const std::filesystem::path &path)
+{
+	std::ifstream f(path);
+	if (!f.is_open()) return 0;
+
+	int count = 0;
+	std::string line;
+	TrapDef current{};
+	bool inEntry = false;
+
+	auto flushEntry = [&]()
+	{
+		if (inEntry)
+		{
+			defs_[maskTrapWord(current.trapWord)] = std::move(current);
+			current = TrapDef{};
+			inEntry = false;
+			++count;
+		}
+	};
+
+	while (std::getline(f, line))
+	{
+		if (BlankOrComment(line))
+		{
+			flushEntry();
+			continue;
+		}
+
+		bool isParam = std::isspace(static_cast<unsigned char>(line[0]));
+
+		if (isParam && inEntry)
+		{
+			parseParamLine(line, current);
+		}
+		else
+		{
+			flushEntry();
+			inEntry = parseHeaderLine(line, current);
+		}
+	}
+
+	flushEntry();
+	return count;
+}
+
+int TrapDefs::loadErrors(const std::filesystem::path &path)
+{
+	std::ifstream f(path);
+	if (!f.is_open()) return 0;
+
+	int count = 0;
+	std::string line;
+	while (std::getline(f, line))
+	{
+		if (BlankOrComment(line)) continue;
+
+		std::istringstream iss(line);
+		int code;
+		std::string name;
+		if (!(iss >> code >> name)) continue;
+
+		errors_[static_cast<int16_t>(code)] = name;
+		++count;
+	}
+	return count;
+}
+
+const TrapDef *TrapDefs::find(uint16_t trapWord) const
+{
+	uint16_t key = maskTrapWord(trapWord);
+	auto it = defs_.find(key);
+	if (it != defs_.end()) return &it->second;
+	return nullptr;
+}
+
+const char *TrapDefs::errorName(int16_t code) const
+{
+	auto it = errors_.find(code);
+	if (it != errors_.end()) return it->second.c_str();
+	return nullptr;
+}

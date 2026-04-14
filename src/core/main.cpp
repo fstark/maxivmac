@@ -31,6 +31,7 @@
 #include "core/state_recorder.hpp"
 #include "core/md5.h"
 #include "cpu/cpu.h"
+#include "cpu/trap_tracer.h"
 
 #include <memory>
 
@@ -223,6 +224,13 @@ void EmulationFreeAlloc()
 */
 bool InitEmulation()
 {
+	/* Load external trap definitions for the hierarchical tracer */
+	{
+		int n = g_trapDefs.load("assets/traps.def");
+		int e = g_trapDefs.loadErrors("assets/errors.def");
+		if (n > 0) std::fprintf(stderr, "trap_defs: loaded %d traps, %d errors\n", n, e);
+	}
+
 	/* Wire ICT scheduler to CPU cycle counters */
 	g_ict.setCycleAccessors([]() { return g_cpu.getCyclesRemaining(); },
 							[](int32_t n) { g_cpu.setCyclesRemaining(n); });
@@ -608,5 +616,9 @@ void ProgramCleanup()
 
 bool ProgramMain()
 {
-	return InitEmulation();
+	if (!InitEmulation()) return false;
+
+	if (s_launchConfig.traceTraps) g_tracer.enable(true);
+
+	return true;
 }

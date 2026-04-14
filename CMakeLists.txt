@@ -54,6 +54,8 @@ set(MINIVMAC_SOURCES
     src/cpu/m68k_tables.cpp
     src/cpu/m68k.cpp
     src/cpu/trap_counter.cpp
+    src/cpu/trap_defs.cpp
+    src/cpu/trap_tracer.cpp
     src/cpu/cpu.cpp
     src/cpu/disasm.cpp
 
@@ -240,6 +242,8 @@ endif()
 add_executable(tests
     test/test_main.cpp
     test/test_slip.cpp
+    test/test_tracing.cpp
+    src/cpu/trap_defs.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)

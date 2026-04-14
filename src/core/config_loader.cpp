@@ -205,6 +205,7 @@ void PrintUsage(const char *progname)
 			"  --fullscreen     Start in fullscreen mode\n"
 			"  --headless       Run without GUI (for testing/automation)\n"
 			"  --silent         Disable audio output\n"
+			"  --trace-traps    Enable hierarchical A-line trap tracing to stderr\n"
 			"  --title=TEXT     Window title\n"
 			"  --record=PATH    Record golden file for non-regression testing\n"
 			"  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)\n"
@@ -255,6 +256,11 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strcmp(arg, "--silent") == 0)
 		{
 			lc.silent = true;
+			continue;
+		}
+		if (strcmp(arg, "--trace-traps") == 0)
+		{
+			lc.traceTraps = true;
 			continue;
 		}
 

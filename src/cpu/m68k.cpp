@@ -28,6 +28,7 @@
 
 #include "cpu/m68k.h"
 #include "cpu/trap_counter.h"
+#include "cpu/trap_tracer.h"
 
 /*
 	REPORT_ABNORMAL_ID unused 0x0123 - 0x01FF
@@ -765,6 +766,11 @@ static void m68k_go_MaxCycles()
 			}
 
 			g_instructionCount++;
+
+			if (g_tracer.active())
+			{
+				g_tracer.checkReturn(m68k_getpc() - 2);
+			}
 		}
 
 		{
@@ -4518,7 +4524,7 @@ static void DoCodeA()
 	BackupPC();
 	uint16_t tw = do_get_mem_word(V_pc_p);
 	trap_counter_record(tw);
-	trap_trace_log(tw);
+	g_tracer.enter(tw);
 	Exception(0xA);
 }
 

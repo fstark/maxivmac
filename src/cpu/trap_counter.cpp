@@ -10,6 +10,7 @@
 */
 
 #include "cpu/trap_counter.h"
+#include "cpu/trap_tracer.h"
 #include <algorithm>
 #include <atomic>
 #include <cctype>
@@ -57,13 +58,18 @@ static std::atomic<int> s_traceDepth{0};
 
 void BeginTraceTraps()
 {
-	s_traceDepth.fetch_add(1, std::memory_order_relaxed);
+	int prev = s_traceDepth.fetch_add(1, std::memory_order_relaxed);
+	if (prev == 0) g_tracer.enable(true);
 }
 
 void EndTraceTraps()
 {
 	int prev = s_traceDepth.fetch_sub(1, std::memory_order_relaxed);
-	if (prev <= 0) s_traceDepth.store(0, std::memory_order_relaxed);
+	if (prev <= 1)
+	{
+		s_traceDepth.store(0, std::memory_order_relaxed);
+		g_tracer.enable(false);
+	}
 }
 
 void trap_trace_log(uint16_t trapWord)

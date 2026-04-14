@@ -1,0 +1,20 @@
+# OSErr definitions for maxivmac trap tracer.
+# Format: <decimal_code> <symbolic_name>
+
+0 noErr
+-33 dirFulErr
+-34 dskFulErr
+-35 nsvErr
+-36 ioErr
+-37 bdNamErr
+-39 eofErr
+-43 fnfErr
+-48 dupFNErr
+-54 permErr
+-108 memFullErr
+-109 nilHandleErr
+-120 dirNFErr
+-192 resNotFound
+-193 resFNotFound
+-194 addResFailed
+-196 rmvResFailed

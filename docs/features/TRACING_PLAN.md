@@ -4,9 +4,9 @@ Design: `docs/features/TRACING_DESIGN.md`
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Infrastructure: trap definition file and parser (TrapDefs) | Not started |
-| 2 | Basic entry tracing with parameter decode | Not started |
-| 3 | Exit detection, output params, noreturn, context switches | Not started |
+| 1 | Infrastructure: trap definition file and parser (TrapDefs) | Done |
+| 2 | Basic entry tracing with parameter decode | Done |
+| 3 | Exit detection, output params, noreturn, context switches | Done |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
 Test gate:  `./bld/macos/tests && cd test && ./verify.sh`

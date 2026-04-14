@@ -1,0 +1,237 @@
+# Trap definitions for maxivmac hierarchical tracer.
+# Format:
+#   <trap_word> <name> <convention> [noreturn]
+#   in  <name>:<type>[.reg] ...
+#   out <name>:<type>[.reg] ...
+#
+# Convention: toolbox | os
+# Types: byte word long Ptr Handle OSType Str255 OSErr Boolean Rect Point
+# Register suffix (.D0-.D7, .A0-.A7) for OS traps; omit for toolbox (stack).
+
+# ── Memory Manager ────────────────────────────────────
+
+A122 NewHandle os
+  in  size:long.D0
+  out h:Handle.A0  err:OSErr.D0
+
+A11E NewPtr os
+  in  size:long.D0
+  out p:Ptr.A0  err:OSErr.D0
+
+A023 DisposHandle os
+  in  h:Handle.A0
+  out err:OSErr.D0
+
+A01F DisposPtr os
+  in  p:Ptr.A0
+  out err:OSErr.D0
+
+A024 SetHandleSize os
+  in  h:Handle.A0  size:long.D0
+  out err:OSErr.D0
+
+A025 GetHandleSize os
+  in  h:Handle.A0
+  out size:long.D0
+
+A029 HLock os
+  in  h:Handle.A0
+  out err:OSErr.D0
+
+A02A HUnlock os
+  in  h:Handle.A0
+  out err:OSErr.D0
+
+# NewPtrClear ($A31E) = NewPtr ($A11E) + CLEAR bit (bit 9).
+# OS trap flag bits (CLEAR=9, SYS=10) are masked off during lookup,
+# so $A31E automatically maps to the NewPtr definition above.
+
+A02E BlockMove os
+  in  src:Ptr.A0  dst:Ptr.A1  count:long.D0
+  out err:OSErr.D0
+
+# ── Resource Manager ─────────────────────────────────
+
+A9A0 GetResource toolbox
+  in  resType:OSType  resID:word
+  out rsrc:Handle
+
+A81F Get1Resource toolbox
+  in  resType:OSType  resID:word
+  out rsrc:Handle
+
+A9A1 GetNamedResource toolbox
+  in  resType:OSType  name:Str255
+  out rsrc:Handle
+
+A9AB AddResource toolbox
+  in  rsrc:Handle  resType:OSType  resID:word  name:Str255
+
+A9A2 LoadResource toolbox
+  in  rsrc:Handle
+
+A9A3 ReleaseResource toolbox
+  in  rsrc:Handle
+
+A9A4 HomeResFile toolbox
+  in  rsrc:Handle
+  out refNum:word
+
+A9A5 SizeRsrc toolbox
+  in  rsrc:Handle
+  out size:long
+
+A994 CurResFile toolbox
+  out refNum:word
+
+A997 OpenResFile toolbox
+  in  fileName:Str255
+  out refNum:word
+
+A998 UseResFile toolbox
+  in  refNum:word
+
+A999 UpdateResFile toolbox
+  in  refNum:word
+
+A99A CloseResFile toolbox
+  in  refNum:word
+
+A99B SetResLoad toolbox
+  in  load:Boolean
+
+A99C CountResources toolbox
+  in  resType:OSType
+  out count:word
+
+A99D GetIndResource toolbox
+  in  resType:OSType  index:word
+  out rsrc:Handle
+
+A9A8 GetResInfo toolbox
+  in  rsrc:Handle
+
+A9A6 GetResAttrs toolbox
+  in  rsrc:Handle
+  out attrs:word
+
+A992 DetachResource toolbox
+  in  rsrc:Handle
+
+A9F6 GetResFileAttrs toolbox
+  in  refNum:word
+  out attrs:word
+
+A9F7 SetResFileAttrs toolbox
+  in  refNum:word  attrs:word
+
+A94D AddResMenu toolbox
+  in  theMenu:Handle  resType:OSType
+
+A040 ResrvMem os
+  in  size:long.D0
+
+A9B1 CreateResFile toolbox
+  in  fileName:Str255
+
+A9C4 OpenRFPerm toolbox
+  in  fileName:Str255  vRefNum:word  permission:byte
+  out refNum:word
+
+A146 GetTrapAddress os
+  in  trapNum:word.D0
+  out addr:Ptr.A0
+
+# ── File Manager ──────────────────────────────────────
+
+A000 Open os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A001 Close os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A002 Read os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A003 Write os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A007 GetVolInfo os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A008 Create os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A009 Delete os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A00A OpenRF os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A00C GetFileInfo os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A00D SetFileInfo os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A011 GetEOF os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A013 FlushVol os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A014 GetVol os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A260 HFSDispatch os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+# ── Event Manager ─────────────────────────────────────
+
+A970 GetNextEvent toolbox
+  in  eventMask:word
+  out gotEvent:Boolean
+
+A971 EventAvail toolbox
+  in  eventMask:word
+  out gotEvent:Boolean
+
+# ── Window Manager ────────────────────────────────────
+
+A913 NewWindow toolbox
+  in  wStorage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  procID:word  behind:Ptr  goAwayFlag:Boolean  refCon:long
+  out theWindow:Ptr
+
+A92C FindWindow toolbox
+  in  thePoint:Point
+  out partCode:word
+
+# ── Misc ──────────────────────────────────────────────
+
+A884 DrawString toolbox
+  in  s:Str255
+
+A9F0 LoadSeg toolbox noreturn
+  in  segNum:word
+
+A9F4 ExitToShell toolbox noreturn
+
+A9F2 Launch os noreturn
+  in  launchPtr:Ptr.A0
+
+A9C9 SysError toolbox noreturn
+  in  errorCode:word

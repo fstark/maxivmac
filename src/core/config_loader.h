@@ -29,6 +29,7 @@ struct LaunchConfig
 	bool fullscreen = false;
 	bool headless = false;
 	bool silent = false;
+	bool traceTraps = false;
 	bool help = false;
 	std::string title;	// --title: window title (platform-specific)
 	std::string romDir; // --romdir: directory to search for ROM files
