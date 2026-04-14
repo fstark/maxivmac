@@ -133,6 +133,11 @@ Avoid scattering unrelated functionality into a file just because it
 was convenient.  If a device grows a second major responsibility, give
 it a second file (e.g. `video_slot_rom.cpp` for ROM-building helpers).
 
+### Include guards
+
+Use `#pragma once` in all headers.  Do not use `#ifndef`/`#define`
+include guards in new code.
+
 ---
 
 ## Nesting Depth

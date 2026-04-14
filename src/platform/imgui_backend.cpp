@@ -925,19 +925,19 @@ void ImGuiBackend::setMouseGrab(bool grab)
 
 bool ImGuiBackend::audioInit()
 {
-	return GetEmulatorConfig().soundEnabled ? Sound_Init() : true;
+	return GetEmulatorConfig().soundEnabled ? SoundInit() : true;
 }
 void ImGuiBackend::audioStart()
 {
-	if (GetEmulatorConfig().soundEnabled) Sound_Start();
+	if (GetEmulatorConfig().soundEnabled) SoundStart();
 }
 void ImGuiBackend::audioStop()
 {
-	if (GetEmulatorConfig().soundEnabled) Sound_Stop();
+	if (GetEmulatorConfig().soundEnabled) SoundStop();
 }
 void ImGuiBackend::audioShutdown()
 {
-	if (GetEmulatorConfig().soundEnabled) Sound_UnInit();
+	if (GetEmulatorConfig().soundEnabled) SoundUnInit();
 }
 
 /* ── Keyboard ────────────────────────────────────────── */

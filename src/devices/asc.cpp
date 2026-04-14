@@ -575,7 +575,7 @@ void ASCDevice::subTick(int SubTick)
 
 	while (n > 0)
 	{
-		p = Sound_BeginWrite(n, &actL);
+		p = SoundBeginWrite(n, &actL);
 		if (actL <= 0)
 		{
 			break;
@@ -811,7 +811,7 @@ void ASCDevice::subTick(int SubTick)
 			}
 		}
 
-		Sound_EndWrite(actL);
+		SoundEndWrite(actL);
 		n -= actL;
 	}
 

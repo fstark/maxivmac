@@ -18,7 +18,7 @@
 bool HeadlessBackend::init(EmulatorShell *shell)
 {
 	shell_ = shell;
-	/* Init SDL base so Sound_Init/clipboard calls don't crash. */
+	/* Init SDL base so SoundInit/clipboard calls don't crash. */
 	SDL_Init(0);
 	return true;
 }

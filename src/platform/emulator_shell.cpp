@@ -603,7 +603,7 @@ void EmulatorShell::runOneTick()
 	{
 		if (CheckDateTime())
 		{
-			Sound_SecondNotify();
+			SoundSecondNotify();
 		}
 	}
 	else
@@ -1036,7 +1036,7 @@ bool EmulatorShell::allocMyMemory()
 		uint32_t maxBytes = allocW * allocH * 4;
 		if (!display_.allocBuffers(maxBytes)) goto fail;
 	}
-	if (!Sound_AllocBuffer()) goto fail;
+	if (!SoundAllocBuffer()) goto fail;
 	if (!EmulationReserveAlloc()) goto fail;
 
 	return true;
@@ -1050,7 +1050,7 @@ void EmulatorShell::unallocMyMemory()
 	free(g_rom);
 	g_rom = nullptr;
 	display_.freeBuffers();
-	Sound_FreeBuffer();
+	SoundFreeBuffer();
 	EmulationFreeAlloc();
 }
 

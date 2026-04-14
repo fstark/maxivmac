@@ -73,7 +73,7 @@ static void Sound_Start0()
 	}
 }
 
-SoundSamplePtr Sound_BeginWrite(uint16_t n, uint16_t *actL)
+SoundSamplePtr SoundBeginWrite(uint16_t n, uint16_t *actL)
 {
 	uint16_t toFillLen = kAllBuffLen - (s_writeOffset - s_playOffset);
 	uint16_t writeBuffContig = kOneBuffLen - (s_writeOffset & kOneBuffMask);
@@ -355,11 +355,11 @@ static SoundState s_curAudio;
 
 static bool s_haveSoundOut = false;
 
-void Sound_Stop()
+void SoundStop()
 {
 	if constexpr (kDbglogSoundStuff)
 	{
-		dbglog_writeln("enter Sound_Stop");
+		dbglog_writeln("enter SoundStop");
 	}
 
 	if (s_curAudio.wantPlaying_ && s_haveSoundOut)
@@ -399,11 +399,11 @@ void Sound_Stop()
 
 	if constexpr (kDbglogSoundStuff)
 	{
-		dbglog_writeln("leave Sound_Stop");
+		dbglog_writeln("leave SoundStop");
 	}
 }
 
-void Sound_Start()
+void SoundStart()
 {
 	if (!s_curAudio.wantPlaying_ && s_haveSoundOut)
 	{
@@ -416,7 +416,7 @@ void Sound_Start()
 	}
 }
 
-void Sound_UnInit()
+void SoundUnInit()
 {
 	if (s_haveSoundOut)
 	{
@@ -424,11 +424,11 @@ void Sound_UnInit()
 	}
 }
 
-bool Sound_Init()
+bool SoundInit()
 {
 	if constexpr (kDbglogOsgInit)
 	{
-		dbglog_writeln("enter Sound_Init");
+		dbglog_writeln("enter SoundInit");
 	}
 
 	Sound_Init0();
@@ -455,7 +455,7 @@ bool Sound_Init()
 	{
 		s_haveSoundOut = true;
 
-		Sound_Start();
+		SoundStart();
 		/*
 			This should be taken care of by LeaveSpeedStopped,
 			but since takes a while to get going properly,
@@ -466,12 +466,12 @@ bool Sound_Init()
 	return true; /* keep going, even if no sound */
 }
 
-void Sound_EndWrite(uint16_t actL)
+void SoundEndWrite(uint16_t actL)
 {
 	Sound_EndWrite0(actL);
 }
 
-void Sound_SecondNotify()
+void SoundSecondNotify()
 {
 	if (s_haveSoundOut)
 	{
@@ -479,12 +479,12 @@ void Sound_SecondNotify()
 	}
 }
 
-bool Sound_AllocBuffer()
+bool SoundAllocBuffer()
 {
 	return AllocBlock(reinterpret_cast<uint8_t **>(&s_soundBuffer), kDbhBufferSize, false);
 }
 
-void Sound_FreeBuffer()
+void SoundFreeBuffer()
 {
 	free(s_soundBuffer);
 	s_soundBuffer = nullptr;

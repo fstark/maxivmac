@@ -182,8 +182,8 @@ using SoundSamplePtr = uint16_t *;
 #define kCenterSound 0x8000
 
 
-extern SoundSamplePtr Sound_BeginWrite(uint16_t n, uint16_t *actL);
-extern void Sound_EndWrite(uint16_t actL);
+extern SoundSamplePtr SoundBeginWrite(uint16_t n, uint16_t *actL);
+extern void SoundEndWrite(uint16_t actL);
 
 /* 370 samples per tick = 22,254.54 per second */
 

@@ -47,6 +47,7 @@ require understanding call sites.
 | `#define` numeric constant | `constexpr` / `enum class` | `grep -n '^#define.*[0-9]'` |
 | Yoda conditions `0 == x` | `x == 0` | `grep -n '0 ==\|nullptr ==\|NULL =='` |
 | C header includes `<string.h>` | `<cstring>` (or remove) | `grep -n '#include <[a-z]*\.h>'` |
+| `#ifndef`/`#define` include guard | `#pragma once` | `grep -rn '#ifndef.*_H'` |
 
 ### Category B — Interface Modernization (medium risk)
 
@@ -67,6 +68,7 @@ require understanding call sites.
 | Bare global `FooBar` | Should be `g_fooBar` | `grep -n '^extern'` in headers. |
 | File-scope static `FooBar` | Should be `s_fooBar` | `grep -n '^static '` in .cpp files. |
 | Legacy `My` prefix | Drop prefix | Only when refactoring that subsystem. |
+| `Module_PascalCase` free function (`Sound_Start`) | Drop underscore → `SoundStart` | Only when modernizing that subsystem. |
 
 ### Category D — Structural (higher risk)
 
