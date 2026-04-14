@@ -3,6 +3,7 @@
 */
 
 #include "debugger/debugger.h"
+#include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 
@@ -34,20 +35,21 @@ static void InfoBreak(Debugger &dbg)
 {
 	auto &bps = dbg.breakpoints();
 	auto &wps = dbg.watchpoints();
+	auto &io = dbg.io();
 
 	if (bps.empty() && wps.empty() && dbg.insnBreakCount() == 0)
 	{
-		std::printf("No breakpoints or watchpoints.\n");
+		io.write("No breakpoints or watchpoints.\n");
 		return;
 	}
 
-	std::printf("Num  Type        Enb  Address     What\n");
+	io.write("Num  Type        Enb  Address     What\n");
 
 	/* Instruction-count breakpoint (if set) */
 	if (dbg.insnBreakCount() != 0)
 	{
-		std::printf("%-4u insn-break  y    -           at instruction #%u\n", dbg.insnBreakId(),
-					dbg.insnBreakCount());
+		dbg.io().write("%-4u insn-break  y    -           at instruction #%u\n", dbg.insnBreakId(),
+					   dbg.insnBreakCount());
 	}
 
 	for (auto &bp : bps)
@@ -57,22 +59,23 @@ static void InfoBreak(Debugger &dbg)
 		{
 			const char *name = trap_dict_name(bp.trapWord);
 			if (name)
-				std::printf("%-4u breakpoint  %s    $%04X       trap %s\n", bp.id, enb, bp.trapWord,
-							name);
+				dbg.io().write("%-4u breakpoint  %s    $%04X       trap %s\n", bp.id, enb,
+							   bp.trapWord, name);
 			else
-				std::printf("%-4u breakpoint  %s    $%04X       trap\n", bp.id, enb, bp.trapWord);
+				dbg.io().write("%-4u breakpoint  %s    $%04X       trap\n", bp.id, enb,
+							   bp.trapWord);
 		}
 		else
 		{
 			auto sym = SymbolsAtAddress(bp.address);
 			if (!sym.empty())
-				std::printf("%-4u breakpoint  %s    $%08X  %.*s\n", bp.id, enb, bp.address,
-							static_cast<int>(sym.size()), sym.data());
+				dbg.io().write("%-4u breakpoint  %s    $%08X  %.*s\n", bp.id, enb, bp.address,
+							   static_cast<int>(sym.size()), sym.data());
 			else
-				std::printf("%-4u breakpoint  %s    $%08X\n", bp.id, enb, bp.address);
+				dbg.io().write("%-4u breakpoint  %s    $%08X\n", bp.id, enb, bp.address);
 		}
-		if (!bp.condition.empty()) std::printf("     condition: %s\n", bp.condition.c_str());
-		if (!bp.commands.empty()) std::printf("     %zu auto-command(s)\n", bp.commands.size());
+		if (!bp.condition.empty()) dbg.io().write("     condition: %s\n", bp.condition.c_str());
+		if (!bp.commands.empty()) dbg.io().write("     %zu auto-command(s)\n", bp.commands.size());
 	}
 
 	for (auto &wp : wps)
@@ -81,33 +84,33 @@ static void InfoBreak(Debugger &dbg)
 		const char *mode = (wp.mode == 'W') ? "write" : (wp.mode == 'R') ? "read" : "access";
 		auto sym = SymbolsAtAddress(wp.address);
 		if (!sym.empty())
-			std::printf("%-4u watchpoint  %s    $%08X  %s len=%u (%.*s)\n", wp.id, enb, wp.address,
-						mode, wp.length, static_cast<int>(sym.size()), sym.data());
+			dbg.io().write("%-4u watchpoint  %s    $%08X  %s len=%u (%.*s)\n", wp.id, enb,
+						   wp.address, mode, wp.length, static_cast<int>(sym.size()), sym.data());
 		else
-			std::printf("%-4u watchpoint  %s    $%08X  %s len=%u\n", wp.id, enb, wp.address, mode,
-						wp.length);
+			dbg.io().write("%-4u watchpoint  %s    $%08X  %s len=%u\n", wp.id, enb, wp.address,
+						   mode, wp.length);
 	}
 }
 
-static void InfoReg()
+static void InfoReg(Debugger &dbg)
 {
 	uint32_t d[8], a[8];
 	m68k_getRegs(d, a);
 	uint32_t pc = m68k_getPC_public();
 	uint16_t sr = m68k_getSR_public();
 
-	std::printf("D0=%08X  D1=%08X  D2=%08X  D3=%08X\n", d[0], d[1], d[2], d[3]);
-	std::printf("D4=%08X  D5=%08X  D6=%08X  D7=%08X\n", d[4], d[5], d[6], d[7]);
-	std::printf("A0=%08X  A1=%08X  A2=%08X  A3=%08X\n", a[0], a[1], a[2], a[3]);
-	std::printf("A4=%08X  A5=%08X  A6=%08X  A7=%08X\n", a[4], a[5], a[6], a[7]);
+	dbg.io().write("D0=%08X  D1=%08X  D2=%08X  D3=%08X\n", d[0], d[1], d[2], d[3]);
+	dbg.io().write("D4=%08X  D5=%08X  D6=%08X  D7=%08X\n", d[4], d[5], d[6], d[7]);
+	dbg.io().write("A0=%08X  A1=%08X  A2=%08X  A3=%08X\n", a[0], a[1], a[2], a[3]);
+	dbg.io().write("A4=%08X  A5=%08X  A6=%08X  A7=%08X\n", a[4], a[5], a[6], a[7]);
 
 	char flags[8];
 	FormatSRFlags(sr, flags);
-	std::printf("PC=%08X  SR=%04X [%s]  USP=%08X  ISP=%08X\n", pc, sr, flags, m68k_getUSP(),
-				m68k_getISP());
+	dbg.io().write("PC=%08X  SR=%04X [%s]  USP=%08X  ISP=%08X\n", pc, sr, flags, m68k_getUSP(),
+				   m68k_getISP());
 }
 
-static void InfoTraps(const std::vector<Token> &args)
+static void InfoTraps(Debugger &dbg, const std::vector<Token> &args)
 {
 	std::string_view prefix;
 	std::string prefixStr;
@@ -120,13 +123,14 @@ static void InfoTraps(const std::vector<Token> &args)
 	std::vector<SymbolEntry> results;
 	SymbolsSearch(prefix, 't', results, 50);
 
-	std::printf("%-20s  TrapWord\n", "Name");
+	dbg.io().write("%-20s  TrapWord\n", "Name");
 	for (auto &e : results)
-		std::printf("%-20.*s  $%04X\n", static_cast<int>(e.name.size()), e.name.data(), e.trapWord);
-	std::printf("(%zu results)\n", results.size());
+		dbg.io().write("%-20.*s  $%04X\n", static_cast<int>(e.name.size()), e.name.data(),
+					   e.trapWord);
+	dbg.io().write("(%zu results)\n", results.size());
 }
 
-static void InfoGlobals(const std::vector<Token> &args)
+static void InfoGlobals(Debugger &dbg, const std::vector<Token> &args)
 {
 	std::string_view prefix;
 	std::string prefixStr;
@@ -139,18 +143,18 @@ static void InfoGlobals(const std::vector<Token> &args)
 	std::vector<SymbolEntry> results;
 	SymbolsSearch(prefix, 'g', results, 50);
 
-	std::printf("%-20s  Address   Size\n", "Name");
+	dbg.io().write("%-20s  Address   Size\n", "Name");
 	for (auto &e : results)
-		std::printf("%-20.*s  $%04X     %u\n", static_cast<int>(e.name.size()), e.name.data(),
-					e.address, e.size);
-	std::printf("(%zu results)\n", results.size());
+		dbg.io().write("%-20.*s  $%04X     %u\n", static_cast<int>(e.name.size()), e.name.data(),
+					   e.address, e.size);
+	dbg.io().write("(%zu results)\n", results.size());
 }
 
-static void InfoSymbol(const std::vector<Token> &args)
+static void InfoSymbol(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.size() < 2 || args[1].kind == Token::Kind::End)
 	{
-		std::printf("Usage: info symbol <addr>\n");
+		dbg.io().write("Usage: info symbol <addr>\n");
 		return;
 	}
 
@@ -159,27 +163,27 @@ static void InfoSymbol(const std::vector<Token> &args)
 		addr = args[1].numValue;
 	else
 	{
-		std::printf("Expected address\n");
+		dbg.io().write("Expected address\n");
 		return;
 	}
 
 	auto name = SymbolsAtAddress(addr);
 	if (!name.empty())
-		std::printf("$%08X = %.*s\n", addr, static_cast<int>(name.size()), name.data());
+		dbg.io().write("$%08X = %.*s\n", addr, static_cast<int>(name.size()), name.data());
 	else
-		std::printf("No symbol at $%08X\n", addr);
+		dbg.io().write("No symbol at $%08X\n", addr);
 }
 
-static void InfoInsn()
+static void InfoInsn(Debugger &dbg)
 {
-	std::printf("Instructions executed: %u\n", g_instructionCount);
+	dbg.io().write("Instructions executed: %u\n", g_instructionCount);
 }
 
 void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].kind == Token::Kind::End)
 	{
-		std::printf("Usage: info <break|reg|traps|globals|symbol|insn>\n");
+		dbg.io().write("Usage: info <break|reg|traps|globals|symbol|insn>\n");
 		return;
 	}
 
@@ -187,34 +191,33 @@ void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 	if (sub == "break" || sub == "b")
 		InfoBreak(dbg);
 	else if (sub == "reg" || sub == "r")
-		InfoReg();
+		InfoReg(dbg);
 	else if (sub == "traps")
-		InfoTraps(args);
+		InfoTraps(dbg, args);
 	else if (sub == "globals")
-		InfoGlobals(args);
+		InfoGlobals(dbg, args);
 	else if (sub == "symbol")
-		InfoSymbol(args);
+		InfoSymbol(dbg, args);
 	else if (sub == "insn")
-		InfoInsn();
+		InfoInsn(dbg);
 	else
-		std::printf("Unknown info sub-command '%s'.\n"
-					"  Available: break, reg, traps, globals, symbol, insn\n",
-					sub.c_str());
+		dbg.io().write("Unknown info sub-command '%s'.\n"
+					   "  Available: break, reg, traps, globals, symbol, insn\n",
+					   sub.c_str());
 }
 
 void CmdBacktrace(Debugger &dbg, const std::vector<Token> &)
 {
-	(void)dbg;
 
 	uint32_t d[8], a[8];
 	m68k_getRegs(d, a);
 	uint32_t sp = a[7];
 	uint32_t pc = m68k_getPC_public();
 
-	std::printf("#0  $%08X", pc);
+	dbg.io().write("#0  $%08X", pc);
 	auto sym = SymbolsAtAddress(pc);
-	if (!sym.empty()) std::printf(" (%.*s)", static_cast<int>(sym.size()), sym.data());
-	std::printf("\n");
+	if (!sym.empty()) dbg.io().write(" (%.*s)", static_cast<int>(sym.size()), sym.data());
+	dbg.io().write("\n");
 
 	/* Heuristic: scan stack for return addresses in ROM/RAM range */
 	int frame = 1;
@@ -243,13 +246,14 @@ void CmdBacktrace(Debugger &dbg, const std::vector<Token> &)
 
 		if (isReturn)
 		{
-			std::printf("#%-2d $%08X", frame, val);
+			dbg.io().write("#%-2d $%08X", frame, val);
 			auto name = SymbolsAtAddress(val);
-			if (!name.empty()) std::printf(" (%.*s)", static_cast<int>(name.size()), name.data());
-			std::printf("  [SP+$%X]\n", offset);
+			if (!name.empty())
+				dbg.io().write(" (%.*s)", static_cast<int>(name.size()), name.data());
+			dbg.io().write("  [SP+$%X]\n", offset);
 			++frame;
 		}
 	}
 
-	if (frame == 1) std::printf("  (no return addresses found on stack)\n");
+	if (frame == 1) dbg.io().write("  (no return addresses found on stack)\n");
 }

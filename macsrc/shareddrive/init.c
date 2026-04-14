@@ -1456,7 +1456,7 @@ short DispatchHFS(char *pb, short selector)
 			*(long  *)(pb + pb_ioFCBClpSiz) = 0;
 			*(long  *)(pb + pb_ioFCBParID) = *(long *)(fcb + kFCBDirID);
 
-			dbg_log2(g->regBase,
+			dbg_log1(g->regBase,
 				"SD _GetFCBInfo -> 0 parID=%ld",
 				*(long *)(fcb + kFCBDirID));
 			*(short *)(pb + pb_ioResult) = 0;
@@ -1824,7 +1824,7 @@ void main(void)
 
 	/* Enable host-side trap tracing so we can see what the
 	   system does with our volume after the INIT finishes. */
-	reg_command(regBase, 0x020E); /* BeginTraceTraps */
+//	reg_command(regBase, 0x020E); /* BeginTraceTraps */
 
 	/*
 	 * Don't PostEvent — it would trigger _MountVol for drive 8,

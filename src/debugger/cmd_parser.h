@@ -39,6 +39,9 @@ struct CmdEntry
 	std::string_view helpFull;
 };
 
+class DbgIO; // forward
+
 // Find the CmdEntry matching the first token (prefix match).
-// Returns nullptr if no match or ambiguous.
-const CmdEntry *DispatchCommand(std::string_view input, const CmdEntry *table, int tableSize);
+// Returns nullptr if no match or ambiguous (error printed via io).
+const CmdEntry *DispatchCommand(std::string_view input, const CmdEntry *table, int tableSize,
+								DbgIO *io = nullptr);

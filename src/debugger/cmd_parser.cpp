@@ -3,6 +3,7 @@
 */
 
 #include "debugger/cmd_parser.h"
+#include "debugger/dbg_io.h"
 
 #include <cctype>
 #include <cstdio>
@@ -181,7 +182,8 @@ std::vector<Token> Tokenize(std::string_view line)
 	return tokens;
 }
 
-const CmdEntry *DispatchCommand(std::string_view input, const CmdEntry *table, int tableSize)
+const CmdEntry *DispatchCommand(std::string_view input, const CmdEntry *table, int tableSize,
+								DbgIO *io)
 {
 	if (input.empty()) return nullptr;
 
@@ -208,15 +210,30 @@ const CmdEntry *DispatchCommand(std::string_view input, const CmdEntry *table, i
 	}
 	if (matches.size() > 1)
 	{
-		std::printf("Ambiguous command '%.*s'. Candidates:", static_cast<int>(input.size()),
-					input.data());
-		for (auto *m : matches)
-			std::printf(" %.*s", static_cast<int>(m->name.size()), m->name.data());
-		std::printf("\n");
+		if (io)
+		{
+			io->write("Ambiguous command '%.*s'. Candidates:", static_cast<int>(input.size()),
+					  input.data());
+			for (auto *m : matches)
+				io->write(" %.*s", static_cast<int>(m->name.size()), m->name.data());
+			io->write("\n");
+		}
+		else
+		{
+			std::printf("Ambiguous command '%.*s'. Candidates:", static_cast<int>(input.size()),
+						input.data());
+			for (auto *m : matches)
+				std::printf(" %.*s", static_cast<int>(m->name.size()), m->name.data());
+			std::printf("\n");
+		}
 		return nullptr;
 	}
 
-	std::printf("Unknown command '%.*s'. Type 'help' for a list.\n", static_cast<int>(input.size()),
-				input.data());
+	if (io)
+		io->write("Unknown command '%.*s'. Type 'help' for a list.\n",
+				  static_cast<int>(input.size()), input.data());
+	else
+		std::printf("Unknown command '%.*s'. Type 'help' for a list.\n",
+					static_cast<int>(input.size()), input.data());
 	return nullptr;
 }

@@ -3,6 +3,7 @@
 */
 
 #include "debugger/debugger.h"
+#include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 #include "debugger/expr.h"
@@ -93,7 +94,6 @@ static FmtSpec ParseFmtSpec(const std::string &spec)
 
 void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 {
-	(void)dbg;
 
 	FmtSpec fmt;
 	int argIdx = 0;
@@ -140,7 +140,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 
 	if (argIdx >= static_cast<int>(args.size()) || args[argIdx].kind == Token::Kind::End)
 	{
-		std::printf("Usage: x[/FMT] <addr>\n");
+		dbg.io().write("Usage: x[/FMT] <addr>\n");
 		return;
 	}
 
@@ -159,7 +159,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 		std::string err;
 		if (!ExprEval(exprStr, ctx, addr, err))
 		{
-			std::printf("Cannot evaluate address: %s\n", err.c_str());
+			dbg.io().write("Cannot evaluate address: %s\n", err.c_str());
 			return;
 		}
 	}
@@ -172,7 +172,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 		{
 			uint32_t thisPC = pc;
 			auto text = Disassemble(pc);
-			std::printf("$%08X: %s\n", thisPC, text.c_str());
+			dbg.io().write("$%08X: %s\n", thisPC, text.c_str());
 		}
 		return;
 	}
@@ -180,17 +180,17 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 	/* String mode */
 	if (fmt.format == 's')
 	{
-		std::printf("$%08X: \"", addr);
+		dbg.io().write("$%08X: \"", addr);
 		for (int i = 0; i < 256; ++i)
 		{
 			uint8_t c = get_vm_byte(addr + i);
 			if (c == 0) break;
 			if (c >= 0x20 && c < 0x7F)
-				std::printf("%c", c);
+				dbg.io().write("%c", c);
 			else
-				std::printf("\\x%02X", c);
+				dbg.io().write("\\x%02X", c);
 		}
-		std::printf("\"\n");
+		dbg.io().write("\"\n");
 		return;
 	}
 
@@ -202,8 +202,8 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 	{
 		if (i % perRow == 0)
 		{
-			if (i > 0) std::printf("\n");
-			std::printf("$%08X:", addr + i * bytesPerUnit);
+			if (i > 0) dbg.io().write("\n");
+			dbg.io().write("$%08X:", addr + i * bytesPerUnit);
 		}
 
 		uint32_t val;
@@ -217,28 +217,27 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 
 		if (fmt.format == 'd')
 		{
-			std::printf(" %u", val);
+			dbg.io().write(" %u", val);
 		}
 		else
 		{
 			if (bytesPerUnit == 1)
-				std::printf(" %02X", val);
+				dbg.io().write(" %02X", val);
 			else if (bytesPerUnit == 2)
-				std::printf(" %04X", val);
+				dbg.io().write(" %04X", val);
 			else
-				std::printf(" %08X", val);
+				dbg.io().write(" %08X", val);
 		}
 	}
-	std::printf("\n");
+	dbg.io().write("\n");
 }
 
 void CmdPrint(Debugger &dbg, const std::vector<Token> &args)
 {
-	(void)dbg;
 
 	if (args.empty() || args[0].kind == Token::Kind::End)
 	{
-		std::printf("Usage: print <expr>\n");
+		dbg.io().write("Usage: print <expr>\n");
 		return;
 	}
 
@@ -256,21 +255,20 @@ void CmdPrint(Debugger &dbg, const std::vector<Token> &args)
 	std::string err;
 	if (ExprEval(exprStr, ctx, val, err))
 	{
-		std::printf("$%08X (%u)\n", val, val);
+		dbg.io().write("$%08X (%u)\n", val, val);
 	}
 	else
 	{
-		std::printf("Error: %s\n", err.c_str());
+		dbg.io().write("Error: %s\n", err.c_str());
 	}
 }
 
 void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 {
-	(void)dbg;
 
 	if (args.size() < 3)
 	{
-		std::printf("Usage: set <target> = <value>\n");
+		dbg.io().write("Usage: set <target> = <value>\n");
 		return;
 	}
 
@@ -286,7 +284,7 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 	}
 	if (eqIdx < 1)
 	{
-		std::printf("Expected '=' in set command\n");
+		dbg.io().write("Expected '=' in set command\n");
 		return;
 	}
 
@@ -303,7 +301,7 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 	std::string err;
 	if (!ExprEval(valStr, ctx, val, err))
 	{
-		std::printf("Cannot evaluate value: %s\n", err.c_str());
+		dbg.io().write("Cannot evaluate value: %s\n", err.c_str());
 		return;
 	}
 
@@ -334,7 +332,7 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 		uint32_t addr;
 		if (!ExprEval(addrStr, ctx, addr, err))
 		{
-			std::printf("Cannot evaluate address: %s\n", err.c_str());
+			dbg.io().write("Cannot evaluate address: %s\n", err.c_str());
 			return;
 		}
 
@@ -345,7 +343,7 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 		else
 			put_vm_long(addr, val);
 
-		std::printf("$%08X <- $%0*X\n", addr, sizeBytes * 2, val);
+		dbg.io().write("$%08X <- $%0*X\n", addr, sizeBytes * 2, val);
 		return;
 	}
 
@@ -358,20 +356,19 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 		// The plan says to use m68k_dreg(n) = val etc. but those are
 		// macros inside m68k.cpp. We'd need a setter API.
 		// For now, print that register writes are not yet supported.
-		std::printf("Register write '%s' = $%08X — not yet supported\n", name.c_str(), val);
+		dbg.io().write("Register write '%s' = $%08X — not yet supported\n", name.c_str(), val);
 		return;
 	}
 
-	std::printf("Cannot parse target\n");
+	dbg.io().write("Cannot parse target\n");
 }
 
 void CmdFind(Debugger &dbg, const std::vector<Token> &args)
 {
-	(void)dbg;
 
 	if (args.size() < 3)
 	{
-		std::printf("Usage: find <start> <end> <pattern>\n");
+		dbg.io().write("Usage: find <start> <end> <pattern>\n");
 		return;
 	}
 
@@ -380,14 +377,14 @@ void CmdFind(Debugger &dbg, const std::vector<Token> &args)
 		start = args[0].numValue;
 	else
 	{
-		std::printf("Expected start address\n");
+		dbg.io().write("Expected start address\n");
 		return;
 	}
 	if (args[1].kind == Token::Kind::Number)
 		end = args[1].numValue;
 	else
 	{
-		std::printf("Expected end address\n");
+		dbg.io().write("Expected end address\n");
 		return;
 	}
 
@@ -439,13 +436,13 @@ void CmdFind(Debugger &dbg, const std::vector<Token> &args)
 			continue;
 		}
 
-		std::printf("Cannot parse pattern element '%s'\n", text.c_str());
+		dbg.io().write("Cannot parse pattern element '%s'\n", text.c_str());
 		return;
 	}
 
 	if (pattern.empty())
 	{
-		std::printf("No pattern specified\n");
+		dbg.io().write("No pattern specified\n");
 		return;
 	}
 
@@ -467,16 +464,16 @@ void CmdFind(Debugger &dbg, const std::vector<Token> &args)
 		}
 		if (match)
 		{
-			std::printf("$%08X:", addr);
+			dbg.io().write("$%08X:", addr);
 			for (uint32_t j = 0; j < patLen && j < 16; ++j)
-				std::printf(" %02X", get_vm_byte(addr + j));
-			std::printf("\n");
+				dbg.io().write(" %02X", get_vm_byte(addr + j));
+			dbg.io().write("\n");
 			++found;
 		}
 	}
 
 	if (found == 0)
-		std::printf("Pattern not found\n");
+		dbg.io().write("Pattern not found\n");
 	else
-		std::printf("%d match%s\n", found, found == 1 ? "" : "es");
+		dbg.io().write("%d match%s\n", found, found == 1 ? "" : "es");
 }

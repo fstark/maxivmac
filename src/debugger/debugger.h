@@ -10,11 +10,17 @@
 #include <string_view>
 #include <vector>
 
+class DbgIO;
+
 class Debugger
 {
 public:
 	static Debugger *instance();
 	static void create();
+	static void create(DbgIO *io); // takes ownership
+
+	// I/O accessor (used by cmd_*.cpp to write output)
+	DbgIO &io();
 
 	// CPU hooks
 	bool instructionHook(uint32_t pc);

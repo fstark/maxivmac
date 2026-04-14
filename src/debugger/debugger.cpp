@@ -3,6 +3,7 @@
 */
 
 #include "debugger/debugger.h"
+#include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 #include "debugger/expr.h"
@@ -152,6 +153,9 @@ struct Debugger::Impl
 
 	/* Last command (for empty-line repeat) */
 	std::string lastLine;
+
+	/* I/O transport */
+	std::unique_ptr<DbgIO> io;
 };
 
 /* ── Singleton ──────────────────────────────────────── */
@@ -171,16 +175,34 @@ Debugger *Debugger::instance()
 
 void Debugger::create()
 {
+	create(nullptr);
+}
+
+void Debugger::create(DbgIO *io)
+{
 	if (s_instance) return;
 	s_instance = new Debugger();
+
+	if (io)
+		s_instance->impl_->io.reset(io);
+	else
+		s_instance->impl_->io = CreateStdioIO();
 
 	SymbolsInit();
 
 	std::signal(SIGINT, SignalHandler);
 
-	std::printf("maxivmac debugger — type 'help' for commands\n");
-	std::printf("Loaded %d trap symbols, %d low-memory globals\n", SymbolsTrapCount(),
-				SymbolsGlobalCount());
+	auto &out = *s_instance->impl_->io;
+	out.write("maxivmac debugger — type 'help' for commands\n");
+	out.write("Loaded %d trap symbols, %d low-memory globals\n", SymbolsTrapCount(),
+			  SymbolsGlobalCount());
+}
+
+/* ── I/O accessor ───────────────────────────────────── */
+
+DbgIO &Debugger::io()
+{
+	return *impl_->io;
 }
 
 /* ── State queries ──────────────────────────────────── */
@@ -202,7 +224,8 @@ void Debugger::stop(std::string_view reason)
 	impl_->nexting = false;
 	impl_->nextRemaining = 0;
 	impl_->untilAddr = 0;
-	if (!reason.empty()) std::printf("[%.*s]\n", static_cast<int>(reason.size()), reason.data());
+	if (!reason.empty())
+		impl_->io->write("[%.*s]\n", static_cast<int>(reason.size()), reason.data());
 }
 
 void Debugger::setRunning()
@@ -429,7 +452,7 @@ void Debugger::executeCommands(const std::vector<std::string> &cmds)
 		auto tokens = Tokenize(line);
 		if (tokens.empty() || tokens[0].kind == Token::Kind::End) continue;
 
-		auto *entry = DispatchCommand(tokens[0].text, s_commands, kNumCommands);
+		auto *entry = DispatchCommand(tokens[0].text, s_commands, kNumCommands, impl_->io.get());
 		if (entry)
 		{
 			std::vector<Token> args(tokens.begin() + 1, tokens.end());
@@ -459,6 +482,7 @@ static ExprContext BuildExprContext()
 void Debugger::commandLoop()
 {
 	char buf[1024];
+	auto &out = *impl_->io;
 
 	while (impl_->state == DbgState::Stopped)
 	{
@@ -468,16 +492,16 @@ void Debugger::commandLoop()
 			uint16_t opcode = get_vm_word(pc);
 			uint32_t disasmPC = pc;
 			auto disasm = Disassemble(disasmPC);
-			std::printf("$%08X: %04X  %s\n", pc, opcode, disasm.c_str());
+			out.write("$%08X: %04X  %s\n", pc, opcode, disasm.c_str());
 		}
 
-		std::printf("(dbg) ");
-		std::fflush(stdout);
+		out.write("(dbg) ");
+		out.flush();
 
-		if (!std::fgets(buf, sizeof(buf), stdin))
+		if (!out.readLine(buf, sizeof(buf)))
 		{
-			/* EOF — quit */
-			std::printf("\n");
+			if (out.isSocket()) return; /* client disconnected */
+			out.write("\n");
 			std::exit(0);
 		}
 
@@ -501,7 +525,7 @@ void Debugger::commandLoop()
 		auto tokens = Tokenize(line);
 		if (tokens.empty() || tokens[0].kind == Token::Kind::End) continue;
 
-		auto *entry = DispatchCommand(tokens[0].text, s_commands, kNumCommands);
+		auto *entry = DispatchCommand(tokens[0].text, s_commands, kNumCommands, impl_->io.get());
 		if (entry)
 		{
 			std::vector<Token> args(tokens.begin() + 1, tokens.end());
@@ -544,7 +568,7 @@ bool Debugger::instructionHook(uint32_t pc)
 			uint16_t opcode = get_vm_word(pc);
 			uint32_t disasmPC = pc;
 			auto disasm = Disassemble(disasmPC);
-			std::printf("$%08X: %04X  %s\n", pc, opcode, disasm.c_str());
+			impl_->io->write("$%08X: %04X  %s\n", pc, opcode, disasm.c_str());
 		}
 	}
 
@@ -589,7 +613,7 @@ bool Debugger::instructionHook(uint32_t pc)
 				uint16_t opcode = get_vm_word(pc);
 				uint32_t disasmPC = pc;
 				auto disasm = Disassemble(disasmPC);
-				std::printf("$%08X: %04X  %s\n", pc, opcode, disasm.c_str());
+				impl_->io->write("$%08X: %04X  %s\n", pc, opcode, disasm.c_str());
 				impl_->nextRemaining--;
 				/* Check if this instruction is also a call */
 				bool isCall = false;
@@ -620,7 +644,7 @@ bool Debugger::instructionHook(uint32_t pc)
 		uint32_t id = impl_->insnBreakId;
 		uint32_t target = impl_->insnBreakCount;
 		impl_->insnBreakCount = 0; /* one-shot */
-		std::printf("Breakpoint %u at instruction #%u\n", id, target);
+		impl_->io->write("Breakpoint %u at instruction #%u\n", id, target);
 		stop("");
 		commandLoop();
 		return true;
@@ -641,7 +665,7 @@ bool Debugger::instructionHook(uint32_t pc)
 			}
 		}
 
-		std::printf("Breakpoint %u at $%08X\n", bp->id, pc);
+		impl_->io->write("Breakpoint %u at $%08X\n", bp->id, pc);
 
 		/* Auto-execute commands */
 		if (!bp->commands.empty())
@@ -661,10 +685,10 @@ bool Debugger::instructionHook(uint32_t pc)
 		uint16_t opcode = get_vm_word(pc);
 		uint32_t d[8], a[8];
 		m68k_getRegs(d, a);
-		std::printf("%u %08X: %04X D=%08X %08X %08X %08X %08X %08X %08X %08X "
-					"A=%08X %08X %08X %08X %08X %08X %08X %08X\n",
-					g_instructionCount, pc, opcode, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7],
-					a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
+		impl_->io->write("%u %08X: %04X D=%08X %08X %08X %08X %08X %08X %08X %08X "
+						 "A=%08X %08X %08X %08X %08X %08X %08X %08X\n",
+						 g_instructionCount, pc, opcode, d[0], d[1], d[2], d[3], d[4], d[5], d[6],
+						 d[7], a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
 	}
 
 	return false;
@@ -689,9 +713,9 @@ bool Debugger::trapHook(uint16_t trapWord)
 
 		const char *name = trap_dict_name(trapWord);
 		if (name)
-			std::printf("Breakpoint %u on trap $%04X (%s)\n", bp->id, trapWord, name);
+			impl_->io->write("Breakpoint %u on trap $%04X (%s)\n", bp->id, trapWord, name);
 		else
-			std::printf("Breakpoint %u on trap $%04X\n", bp->id, trapWord);
+			impl_->io->write("Breakpoint %u on trap $%04X\n", bp->id, trapWord);
 
 		if (!bp->commands.empty())
 		{
@@ -708,9 +732,9 @@ bool Debugger::trapHook(uint16_t trapWord)
 	{
 		const char *name = trap_dict_name(trapWord);
 		if (name)
-			std::printf("[TRAP] $%04X %s\n", trapWord, name);
+			impl_->io->write("[TRAP] $%04X %s\n", trapWord, name);
 		else
-			std::printf("[TRAP] $%04X\n", trapWord);
+			impl_->io->write("[TRAP] $%04X\n", trapWord);
 	}
 
 	return false;
@@ -766,8 +790,8 @@ bool Debugger::memoryHook(uint32_t addr, uint32_t size, char direction, uint32_t
 		}
 
 		const char *dirStr = (direction == 'W') ? "write" : "read";
-		std::printf("Watchpoint %u hit: %s at $%08X (old=$%08X new=$%08X)\n", wp.id, dirStr, addr,
-					oldVal, newVal);
+		impl_->io->write("Watchpoint %u hit: %s at $%08X (old=$%08X new=$%08X)\n", wp.id, dirStr,
+						 addr, oldVal, newVal);
 		stop("");
 		return true;
 	}

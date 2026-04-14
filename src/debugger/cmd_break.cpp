@@ -3,6 +3,7 @@
 */
 
 #include "debugger/debugger.h"
+#include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 
@@ -12,7 +13,7 @@
 #include <cstring>
 
 /* Parse a watchpoint value condition: "if val <op> <value>" */
-static bool ParseValCond(const std::vector<Token> &args, int startIdx, bool &hasValCond,
+static bool ParseValCond(DbgIO &io, const std::vector<Token> &args, int startIdx, bool &hasValCond,
 						 uint8_t &valCondOp, uint32_t &valCondValue)
 {
 	hasValCond = false;
@@ -49,7 +50,7 @@ static bool ParseValCond(const std::vector<Token> &args, int startIdx, bool &has
 						valCondOp = 6;
 					else
 					{
-						std::printf("Unknown watchpoint operator '%s'\n", op.c_str());
+						io.write("Unknown watchpoint operator '%s'\n", op.c_str());
 						return false;
 					}
 					++i;
@@ -59,11 +60,11 @@ static bool ParseValCond(const std::vector<Token> &args, int startIdx, bool &has
 						hasValCond = true;
 						return true;
 					}
-					std::printf("Expected value after operator\n");
+					io.write("Expected value after operator\n");
 					return false;
 				}
 			}
-			std::printf("Expected 'val <op> <value>' after 'if'\n");
+			io.write("Expected 'val <op> <value>' after 'if'\n");
 			return false;
 		}
 		++i;
@@ -75,8 +76,8 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].kind == Token::Kind::End)
 	{
-		std::printf("Usage: break <location> [if <cond>]\n");
-		std::printf("       break #<insn>   Break at instruction number\n");
+		dbg.io().write("Usage: break <location> [if <cond>]\n");
+		dbg.io().write("       break #<insn>   Break at instruction number\n");
 		return;
 	}
 
@@ -86,7 +87,7 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 	{
 		uint32_t n = args[1].numValue;
 		uint32_t id = dbg.setInsnBreak(n);
-		std::printf("Breakpoint %u at instruction #%u\n", id, n);
+		dbg.io().write("Breakpoint %u at instruction #%u\n", id, n);
 		return;
 	}
 
@@ -101,13 +102,13 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 	{
 		if (!SymbolsResolve(args[0].text, addr, trapWord))
 		{
-			std::printf("Cannot resolve '%s'\n", args[0].text.c_str());
+			dbg.io().write("Cannot resolve '%s'\n", args[0].text.c_str());
 			return;
 		}
 	}
 	else
 	{
-		std::printf("Expected address or symbol name\n");
+		dbg.io().write("Expected address or symbol name\n");
 		return;
 	}
 
@@ -134,29 +135,29 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 	{
 		const char *name = trap_dict_name(trapWord);
 		if (name)
-			std::printf("Breakpoint %u on trap $%04X (%s)\n", id, trapWord, name);
+			dbg.io().write("Breakpoint %u on trap $%04X (%s)\n", id, trapWord, name);
 		else
-			std::printf("Breakpoint %u on trap $%04X\n", id, trapWord);
+			dbg.io().write("Breakpoint %u on trap $%04X\n", id, trapWord);
 	}
 	else
 	{
 		auto sym = SymbolsAtAddress(addr);
 		if (!sym.empty())
-			std::printf("Breakpoint %u at $%08X (%.*s)\n", id, addr, static_cast<int>(sym.size()),
-						sym.data());
+			dbg.io().write("Breakpoint %u at $%08X (%.*s)\n", id, addr,
+						   static_cast<int>(sym.size()), sym.data());
 		else
-			std::printf("Breakpoint %u at $%08X\n", id, addr);
+			dbg.io().write("Breakpoint %u at $%08X\n", id, addr);
 	}
 
-	if (!condition.empty()) std::printf("  condition: %s\n", condition.c_str());
+	if (!condition.empty()) dbg.io().write("  condition: %s\n", condition.c_str());
 }
 
 static void DoWatch(Debugger &dbg, const std::vector<Token> &args, char mode)
 {
 	if (args.empty() || args[0].kind == Token::Kind::End)
 	{
-		std::printf("Usage: %cwatch <addr> [len] [if val <op> <value>]\n",
-					mode == 'R' ? 'r' : (mode == 'A' ? 'a' : ' '));
+		dbg.io().write("Usage: %cwatch <addr> [len] [if val <op> <value>]\n",
+					   mode == 'R' ? 'r' : (mode == 'A' ? 'a' : ' '));
 		return;
 	}
 
@@ -173,7 +174,7 @@ static void DoWatch(Debugger &dbg, const std::vector<Token> &args, char mode)
 		uint16_t tw;
 		if (!SymbolsResolve(args[0].text, addr, tw))
 		{
-			std::printf("Cannot resolve '%s'\n", args[0].text.c_str());
+			dbg.io().write("Cannot resolve '%s'\n", args[0].text.c_str());
 			return;
 		}
 		/* Auto-detect size from global */
@@ -191,17 +192,17 @@ static void DoWatch(Debugger &dbg, const std::vector<Token> &args, char mode)
 	bool hasValCond;
 	uint8_t valCondOp;
 	uint32_t valCondValue;
-	if (!ParseValCond(args, nextArg, hasValCond, valCondOp, valCondValue)) return;
+	if (!ParseValCond(dbg.io(), args, nextArg, hasValCond, valCondOp, valCondValue)) return;
 
 	uint32_t id = dbg.addWatchpoint(addr, len, mode, hasValCond, valCondOp, valCondValue);
 
 	const char *modeStr = (mode == 'W') ? "write" : (mode == 'R') ? "read" : "access";
 	auto sym = SymbolsAtAddress(addr);
 	if (!sym.empty())
-		std::printf("Watchpoint %u: %s $%08X-%08X (%.*s)\n", id, modeStr, addr, addr + len,
-					static_cast<int>(sym.size()), sym.data());
+		dbg.io().write("Watchpoint %u: %s $%08X-%08X (%.*s)\n", id, modeStr, addr, addr + len,
+					   static_cast<int>(sym.size()), sym.data());
 	else
-		std::printf("Watchpoint %u: %s $%08X-%08X\n", id, modeStr, addr, addr + len);
+		dbg.io().write("Watchpoint %u: %s $%08X-%08X\n", id, modeStr, addr, addr + len);
 }
 
 void CmdWatch(Debugger &dbg, const std::vector<Token> &args)
@@ -235,16 +236,16 @@ void CmdDelete(Debugger &dbg, const std::vector<Token> &args)
 			dbg.deleteById(dbg.watchpoints().front().id);
 			++count;
 		}
-		std::printf("Deleted %d breakpoints/watchpoints\n", count);
+		dbg.io().write("Deleted %d breakpoints/watchpoints\n", count);
 		return;
 	}
 
 	if (args[0].kind == Token::Kind::Number)
 	{
 		if (dbg.deleteById(args[0].numValue))
-			std::printf("Deleted %u\n", args[0].numValue);
+			dbg.io().write("Deleted %u\n", args[0].numValue);
 		else
-			std::printf("No breakpoint/watchpoint with id %u\n", args[0].numValue);
+			dbg.io().write("No breakpoint/watchpoint with id %u\n", args[0].numValue);
 	}
 }
 
@@ -252,33 +253,33 @@ void CmdDisable(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].kind != Token::Kind::Number)
 	{
-		std::printf("Usage: disable <id>\n");
+		dbg.io().write("Usage: disable <id>\n");
 		return;
 	}
 	if (dbg.enableById(args[0].numValue, false))
-		std::printf("Disabled %u\n", args[0].numValue);
+		dbg.io().write("Disabled %u\n", args[0].numValue);
 	else
-		std::printf("No breakpoint/watchpoint with id %u\n", args[0].numValue);
+		dbg.io().write("No breakpoint/watchpoint with id %u\n", args[0].numValue);
 }
 
 void CmdEnable(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].kind != Token::Kind::Number)
 	{
-		std::printf("Usage: enable <id>\n");
+		dbg.io().write("Usage: enable <id>\n");
 		return;
 	}
 	if (dbg.enableById(args[0].numValue, true))
-		std::printf("Enabled %u\n", args[0].numValue);
+		dbg.io().write("Enabled %u\n", args[0].numValue);
 	else
-		std::printf("No breakpoint/watchpoint with id %u\n", args[0].numValue);
+		dbg.io().write("No breakpoint/watchpoint with id %u\n", args[0].numValue);
 }
 
 void CmdCommands(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].kind != Token::Kind::Number)
 	{
-		std::printf("Usage: commands <id>\n");
+		dbg.io().write("Usage: commands <id>\n");
 		return;
 	}
 
@@ -291,11 +292,11 @@ void CmdCommands(Debugger &dbg, const std::vector<Token> &args)
 		if (bp.id == id)
 		{
 			bp.commands.clear();
-			std::printf("Enter commands for breakpoint %u, one per line.\n", id);
-			std::printf("Type 'end' to finish.\n");
+			dbg.io().write("Enter commands for breakpoint %u, one per line.\n", id);
+			dbg.io().write("Type 'end' to finish.\n");
 
 			char buf[1024];
-			while (std::fgets(buf, sizeof(buf), stdin))
+			while (dbg.io().readLine(buf, sizeof(buf)))
 			{
 				size_t len = std::strlen(buf);
 				if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0';
@@ -307,5 +308,5 @@ void CmdCommands(Debugger &dbg, const std::vector<Token> &args)
 		}
 	}
 
-	if (!found) std::printf("No breakpoint with id %u\n", id);
+	if (!found) dbg.io().write("No breakpoint with id %u\n", id);
 }

@@ -3,6 +3,7 @@
 */
 
 #include "debugger/debugger.h"
+#include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 
@@ -13,13 +14,13 @@
 
 void CmdRun(Debugger &dbg, const std::vector<Token> &)
 {
-	std::printf("[running]\n");
+	dbg.io().write("[running]\n");
 	dbg.setRunning();
 }
 
 void CmdContinue(Debugger &dbg, const std::vector<Token> &)
 {
-	std::printf("[continuing]\n");
+	dbg.io().write("[continuing]\n");
 	dbg.setRunning();
 }
 
@@ -68,7 +69,7 @@ void CmdFinish(Debugger &dbg, const std::vector<Token> &)
 {
 	uint32_t d[8], a[8];
 	m68k_getRegs(d, a);
-	std::printf("[finishing, SP=$%08X]\n", a[7]);
+	dbg.io().write("[finishing, SP=$%08X]\n", a[7]);
 	dbg.setFinishing(a[7]);
 }
 
@@ -76,7 +77,7 @@ void CmdUntil(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].kind == Token::Kind::End)
 	{
-		std::printf("Usage: until <addr>\n");
+		dbg.io().write("Usage: until <addr>\n");
 		return;
 	}
 
@@ -91,11 +92,11 @@ void CmdUntil(Debugger &dbg, const std::vector<Token> &args)
 		uint16_t tw;
 		if (!SymbolsResolve(args[0].text, addr, tw))
 		{
-			std::printf("Cannot resolve '%s'\n", args[0].text.c_str());
+			dbg.io().write("Cannot resolve '%s'\n", args[0].text.c_str());
 			return;
 		}
 	}
 
-	std::printf("[running until $%08X]\n", addr);
+	dbg.io().write("[running until $%08X]\n", addr);
 	dbg.setUntil(addr);
 }

@@ -3,6 +3,7 @@
 */
 
 #include "debugger/debugger.h"
+#include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 
 #include <cstdio>
@@ -18,66 +19,67 @@ void CmdHelp(Debugger &dbg, const std::vector<Token> &args)
 		auto *entry = DispatchCommand(args[0].text, table, n);
 		if (entry)
 		{
-			std::printf("%.*s", static_cast<int>(entry->helpFull.size()), entry->helpFull.data());
+			dbg.io().write("%.*s", static_cast<int>(entry->helpFull.size()),
+						   entry->helpFull.data());
 			return;
 		}
 		return;
 	}
 
 	/* General help */
-	std::printf("maxivmac debugger commands:\n\n");
+	dbg.io().write("maxivmac debugger commands:\n\n");
 
-	std::printf("Execution:\n");
-	std::printf("  run (r)        Start/resume execution\n");
-	std::printf("  continue (c)   Continue execution\n");
-	std::printf("  step [N] (s)   Step N instructions (into calls)\n");
-	std::printf("  stepi [N] (si) Step N machine instructions\n");
-	std::printf("  next [N] (n)   Step N instructions (over calls)\n");
-	std::printf("  finish (fin)   Run until current function returns\n");
-	std::printf("  until <addr>   Run until PC reaches address\n");
-	std::printf("\n");
+	dbg.io().write("Execution:\n");
+	dbg.io().write("  run (r)        Start/resume execution\n");
+	dbg.io().write("  continue (c)   Continue execution\n");
+	dbg.io().write("  step [N] (s)   Step N instructions (into calls)\n");
+	dbg.io().write("  stepi [N] (si) Step N machine instructions\n");
+	dbg.io().write("  next [N] (n)   Step N instructions (over calls)\n");
+	dbg.io().write("  finish (fin)   Run until current function returns\n");
+	dbg.io().write("  until <addr>   Run until PC reaches address\n");
+	dbg.io().write("\n");
 
-	std::printf("Breakpoints:\n");
-	std::printf("  break <loc> [if <cond>] (b)  Set breakpoint\n");
-	std::printf("  break #<insn>                Break at instruction number\n");
-	std::printf("  watch <addr> [len]           Write watchpoint\n");
-	std::printf("  rwatch <addr> [len]          Read watchpoint\n");
-	std::printf("  awatch <addr> [len]          Access watchpoint\n");
-	std::printf("  delete [id] (d)              Delete breakpoint/watchpoint\n");
-	std::printf("  disable <id>                 Disable bp/wp\n");
-	std::printf("  enable <id>                  Enable bp/wp\n");
-	std::printf("  commands <id>                Set auto-execute commands\n");
-	std::printf("\n");
+	dbg.io().write("Breakpoints:\n");
+	dbg.io().write("  break <loc> [if <cond>] (b)  Set breakpoint\n");
+	dbg.io().write("  break #<insn>                Break at instruction number\n");
+	dbg.io().write("  watch <addr> [len]           Write watchpoint\n");
+	dbg.io().write("  rwatch <addr> [len]          Read watchpoint\n");
+	dbg.io().write("  awatch <addr> [len]          Access watchpoint\n");
+	dbg.io().write("  delete [id] (d)              Delete breakpoint/watchpoint\n");
+	dbg.io().write("  disable <id>                 Disable bp/wp\n");
+	dbg.io().write("  enable <id>                  Enable bp/wp\n");
+	dbg.io().write("  commands <id>                Set auto-execute commands\n");
+	dbg.io().write("\n");
 
-	std::printf("Memory:\n");
-	std::printf("  x[/FMT] <addr>  Examine memory (FMT: [count][bwl][xdsi])\n");
-	std::printf("  print <expr> (p) Evaluate expression\n");
-	std::printf("  set <tgt> = <val> Set register or memory\n");
-	std::printf("  find <s> <e> <pat> Search memory\n");
-	std::printf("\n");
+	dbg.io().write("Memory:\n");
+	dbg.io().write("  x[/FMT] <addr>  Examine memory (FMT: [count][bwl][xdsi])\n");
+	dbg.io().write("  print <expr> (p) Evaluate expression\n");
+	dbg.io().write("  set <tgt> = <val> Set register or memory\n");
+	dbg.io().write("  find <s> <e> <pat> Search memory\n");
+	dbg.io().write("\n");
 
-	std::printf("Tracing:\n");
-	std::printf("  trace <traps|insn|io> <on|off|names...>\n");
-	std::printf("\n");
+	dbg.io().write("Tracing:\n");
+	dbg.io().write("  trace <traps|insn|io> <on|off|names...>\n");
+	dbg.io().write("\n");
 
-	std::printf("Information:\n");
-	std::printf("  info break      List breakpoints/watchpoints\n");
-	std::printf("  info reg        Show registers\n");
-	std::printf("  info traps [p]  Search trap dictionary\n");
-	std::printf("  info globals [p] Search low-memory globals\n");
-	std::printf("  info symbol <a> Reverse symbol lookup\n");
-	std::printf("  info insn       Instruction count\n");
-	std::printf("  backtrace (bt)  Heuristic stack trace\n");
-	std::printf("\n");
+	dbg.io().write("Information:\n");
+	dbg.io().write("  info break      List breakpoints/watchpoints\n");
+	dbg.io().write("  info reg        Show registers\n");
+	dbg.io().write("  info traps [p]  Search trap dictionary\n");
+	dbg.io().write("  info globals [p] Search low-memory globals\n");
+	dbg.io().write("  info symbol <a> Reverse symbol lookup\n");
+	dbg.io().write("  info insn       Instruction count\n");
+	dbg.io().write("  backtrace (bt)  Heuristic stack trace\n");
+	dbg.io().write("\n");
 
-	std::printf("Misc:\n");
-	std::printf("  help [cmd] (h)  Show help\n");
-	std::printf("  quit (q)        Exit emulator\n");
-	std::printf("\nEmpty line repeats last command.\n");
+	dbg.io().write("Misc:\n");
+	dbg.io().write("  help [cmd] (h)  Show help\n");
+	dbg.io().write("  quit (q)        Exit emulator\n");
+	dbg.io().write("\nEmpty line repeats last command.\n");
 }
 
-void CmdQuit(Debugger &, const std::vector<Token> &)
+void CmdQuit(Debugger &dbg, const std::vector<Token> &)
 {
-	std::printf("Quitting.\n");
+	dbg.io().write("Quitting.\n");
 	std::exit(0);
 }

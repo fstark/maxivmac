@@ -61,6 +61,7 @@ set(MINIVMAC_SOURCES
 
     # Debugger
     src/debugger/debugger.cpp
+    src/debugger/dbg_io.cpp
     src/debugger/cmd_parser.cpp
     src/debugger/cmd_exec.cpp
     src/debugger/cmd_break.cpp
