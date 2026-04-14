@@ -23,6 +23,7 @@
 #include "devices/video.h"
 #include "devices/scc.h"
 #include "devices/serial_factory.h"
+#include "platform/sdl_sound.h"
 #if HAVE_SLIRP
 #include "devices/serial_slirp.h"
 #endif
@@ -78,9 +79,6 @@ static void ApplySlipRedirs(SerialBackend *backend, const std::vector<std::strin
 }
 
 /* Forward declarations for platform functions we call directly. */
-extern void Sound_SecondNotify();
-extern bool Sound_AllocBuffer();
-extern void Sound_FreeBuffer();
 extern void ReconnectKeyCodes3();
 extern void DisconnectKeyCodes3();
 
