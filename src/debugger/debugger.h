@@ -102,3 +102,4 @@ private:
 };
 
 extern bool g_debuggerActive;
+extern bool g_watchpointActive;

@@ -52,6 +52,12 @@ extern void SetHeadATTel(ATTEntryPtr p);
 // Search ATT for the entry matching addr, with LRU reordering.
 extern ATTEntryPtr FindATTel(uint32_t addr);
 
+/* --- MATC (Memory Address Translation Cache) control --- */
+
+// Invalidate all four MATC caches, forcing subsequent accesses through
+// the slow path where memoryHook() can inspect them.
+extern void m68k_InvalidateMATC();
+
 /* --- Debug register accessors (read-only snapshots) --- */
 
 // Copy D0-D7 into d[8] and A0-A7 into a[8].

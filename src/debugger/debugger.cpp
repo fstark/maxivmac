@@ -162,6 +162,7 @@ struct Debugger::Impl
 /* ── Singleton ──────────────────────────────────────── */
 
 bool g_debuggerActive = false;
+bool g_watchpointActive = false;
 static Debugger *s_instance = nullptr;
 
 Debugger::Debugger()
@@ -279,6 +280,19 @@ uint32_t Debugger::insnBreakCount() const
 
 /* ── Breakpoint/watchpoint management ───────────────── */
 
+static void RecalcWatchpointFlag(const std::vector<Debugger::Watchpoint> &watchpoints)
+{
+	bool any = false;
+	for (auto &wp : watchpoints)
+		if (wp.enabled)
+		{
+			any = true;
+			break;
+		}
+	g_watchpointActive = any;
+	if (any) m68k_InvalidateMATC();
+}
+
 uint32_t Debugger::addBreakpoint(uint32_t addr, uint16_t trapWord, const std::string &condition)
 {
 	Breakpoint bp;
@@ -304,6 +318,7 @@ uint32_t Debugger::addWatchpoint(uint32_t addr, uint32_t len, char mode, bool ha
 	wp.valCondOp = valCondOp;
 	wp.valCondValue = valCondValue;
 	impl_->watchpoints.push_back(std::move(wp));
+	RecalcWatchpointFlag(impl_->watchpoints);
 	return impl_->watchpoints.back().id;
 }
 
@@ -328,6 +343,7 @@ bool Debugger::deleteById(uint32_t id)
 		if (it->id == id)
 		{
 			impl_->watchpoints.erase(it);
+			RecalcWatchpointFlag(impl_->watchpoints);
 			return true;
 		}
 	}
@@ -349,6 +365,7 @@ bool Debugger::enableById(uint32_t id, bool enable)
 		if (wp.id == id)
 		{
 			wp.enabled = enable;
+			RecalcWatchpointFlag(impl_->watchpoints);
 			return true;
 		}
 	}

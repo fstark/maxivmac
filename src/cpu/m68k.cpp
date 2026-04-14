@@ -8321,7 +8321,7 @@ Label_Retry:
 
 	if (0 != (AccFlags & kATTA_readreadymask))
 	{
-		SetUpMATC(&V_regs.MATCrdB, p);
+		if (!g_watchpointActive) SetUpMATC(&V_regs.MATCrdB, p);
 		m = p->usebase + (addr & p->usemask);
 
 		Data = *m;
@@ -8366,7 +8366,7 @@ Label_Retry:
 
 	if (0 != (AccFlags & kATTA_writereadymask))
 	{
-		SetUpMATC(&V_regs.MATCwrB, p);
+		if (!g_watchpointActive) SetUpMATC(&V_regs.MATCwrB, p);
 		m = p->usebase + (addr & p->usemask);
 		*m = b;
 	}
@@ -8418,8 +8418,11 @@ static uint32_t get_word_ext(uint32_t addr)
 
 		if (0 != (AccFlags & kATTA_readreadymask))
 		{
-			SetUpMATC(&V_regs.MATCrdW, p);
-			V_regs.MATCrdW.cmpmask |= 0x01;
+			if (!g_watchpointActive)
+			{
+				SetUpMATC(&V_regs.MATCrdW, p);
+				V_regs.MATCrdW.cmpmask |= 0x01;
+			}
 			m = p->usebase + (addr & p->usemask);
 			Data = do_get_mem_word(m);
 		}
@@ -8471,8 +8474,11 @@ static void put_word_ext(uint32_t addr, uint32_t w)
 
 		if (0 != (AccFlags & kATTA_writereadymask))
 		{
-			SetUpMATC(&V_regs.MATCwrW, p);
-			V_regs.MATCwrW.cmpmask |= 0x01;
+			if (!g_watchpointActive)
+			{
+				SetUpMATC(&V_regs.MATCwrW, p);
+				V_regs.MATCwrW.cmpmask |= 0x01;
+			}
 			m = p->usebase + (addr & p->usemask);
 			do_put_mem_word(m, w);
 		}
@@ -8738,6 +8744,22 @@ void SetHeadATTel(ATTEntryPtr p)
 	V_regs.pc_pLo = V_pc_p;
 	V_pc_pHi = V_regs.pc_pLo + 2;
 	V_regs.HeadATTel = p;
+
+	Em_Exit();
+}
+
+void m68k_InvalidateMATC()
+{
+	Em_Enter();
+
+	V_regs.MATCrdB.cmpmask = 0;
+	V_regs.MATCrdB.cmpvalu = 0xFFFFFFFF;
+	V_regs.MATCwrB.cmpmask = 0;
+	V_regs.MATCwrB.cmpvalu = 0xFFFFFFFF;
+	V_regs.MATCrdW.cmpmask = 0;
+	V_regs.MATCrdW.cmpvalu = 0xFFFFFFFF;
+	V_regs.MATCwrW.cmpmask = 0;
+	V_regs.MATCwrW.cmpvalu = 0xFFFFFFFF;
 
 	Em_Exit();
 }
