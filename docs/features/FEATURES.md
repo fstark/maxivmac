@@ -5,7 +5,7 @@ Each will be refined a bit, then changed into a set of documents:
     XXX_PLAN.md   : detailled implementation plan of the feature
 When implemented, they will be marked as [DONE] or [PARTIAL]
 
-There are 4 personas of the maxivmac emualtor:
+There are 5 personas of the maxivmac emualtor:
 
 Alice:
     Alice is an end-user interested in using the emulated mac. She wants the best MacPlus/Se30/MacIIx combo that earth has, so she can use her favorite mac software.
@@ -18,6 +18,9 @@ Candice
 
 Dorothee
     Dorothee develops the emulator. She is interested in clean code, regression suites, and having a elegant way to extend the emulator to serve Alice, Beatrix and Candice
+
+Eloise
+    Eloise is the AI coding agent. She implements features, modernises code, writes tests, and executes plans on behalf of Dorothee. She cares about build gates, commit discipline, and keeping the codebase consistent.
 
 # Disassembly (DISASSEMBLY)
     Beatrix is often looking at how things really work in the emulated Mac. In developer mode, she often wants to look at some memory to understand how things are implemented. She cares about UX elegance, as she will probably use that feature in many projects. Dorothee also needs to look at 68k code, often to understand how to implement some feature, but she isn't the ain persona of that feature.
