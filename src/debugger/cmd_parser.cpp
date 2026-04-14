@@ -104,7 +104,7 @@ std::vector<Token> Tokenize(std::string_view line)
 
 		/* Single-char operators */
 		if (c == '<' || c == '>' || c == '&' || c == '+' || c == '-' || c == '=' || c == '*' ||
-			c == '(' || c == ')' || c == '/')
+			c == '(' || c == ')' || c == '/' || c == '#')
 		{
 			Token t;
 			t.kind = Token::Kind::Operator;

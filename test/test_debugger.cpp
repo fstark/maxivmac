@@ -339,6 +339,18 @@ TEST_CASE("tokenize operators")
 	CHECK(tokens[2].text == ">=");
 }
 
+TEST_CASE("tokenize break #-N syntax")
+{
+	auto toks = Tokenize("# - 50000");
+	REQUIRE(toks.size() >= 3);
+	CHECK(toks[0].kind == Token::Kind::Operator);
+	CHECK(toks[0].text == "#");
+	CHECK(toks[1].kind == Token::Kind::Operator);
+	CHECK(toks[1].text == "-");
+	CHECK(toks[2].kind == Token::Kind::Number);
+	CHECK(toks[2].numValue == 50000);
+}
+
 TEST_CASE("tokenize 0x hex")
 {
 	auto tokens = Tokenize("0xFF");

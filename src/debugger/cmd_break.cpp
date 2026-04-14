@@ -81,11 +81,37 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 		return;
 	}
 
-	/* break #N — instruction-count breakpoint */
-	if (args[0].kind == Token::Kind::Operator && args[0].text == "#" && args.size() >= 2 &&
-		args[1].kind == Token::Kind::Number)
+	/* break #N or break #-N — instruction-count breakpoint */
+	if (args[0].kind == Token::Kind::Operator && args[0].text == "#" && args.size() >= 2)
 	{
-		uint32_t n = args[1].numValue;
+		bool negative = false;
+		size_t numIdx = 1;
+
+		if (args[1].kind == Token::Kind::Operator && args[1].text == "-" && args.size() >= 3 &&
+			args[2].kind == Token::Kind::Number)
+		{
+			negative = true;
+			numIdx = 2;
+		}
+		else if (args[1].kind != Token::Kind::Number)
+		{
+			dbg.io().write("Usage: break #<N> or break #-<N>\n");
+			return;
+		}
+
+		uint32_t n = args[numIdx].numValue;
+		if (negative)
+		{
+			extern uint32_t g_instructionCount;
+			if (n > g_instructionCount)
+			{
+				dbg.io().write("Error: offset %u exceeds current insn count %u\n", n,
+							   g_instructionCount);
+				return;
+			}
+			n = g_instructionCount - n;
+			dbg.io().write("(resolved to instruction #%u)\n", n);
+		}
 		uint32_t id = dbg.setInsnBreak(n);
 		dbg.io().write("Breakpoint %u at instruction #%u\n", id, n);
 		return;
