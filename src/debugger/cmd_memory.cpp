@@ -98,16 +98,44 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 	FmtSpec fmt;
 	int argIdx = 0;
 
-	/* Check for /FMT */
+	/* Check for /FMT — may be split across multiple tokens (e.g. / 4 b) */
 	if (!args.empty() && args[0].kind == Token::Kind::Operator && args[0].text == "/")
 	{
 		++argIdx;
-		if (argIdx < static_cast<int>(args.size()) &&
-			(args[argIdx].kind == Token::Kind::Word || args[argIdx].kind == Token::Kind::Number))
+		/* Reassemble format spec from tokens until we hit something
+		   that looks like an address */
+		std::string fmtStr;
+		while (argIdx < static_cast<int>(args.size()))
 		{
-			fmt = ParseFmtSpec(args[argIdx].text);
-			++argIdx;
+			auto &tok = args[argIdx];
+			if (tok.kind == Token::Kind::End) break;
+			/* Stop at $ (hex addr), ( (paren expr), or a number that starts
+			   with $ or 0x. Also stop at a word that looks like a register. */
+			if (tok.kind == Token::Kind::Number && fmtStr.empty())
+			{
+				fmtStr += tok.text;
+				++argIdx;
+				continue;
+			}
+			if (tok.kind == Token::Kind::Word && fmtStr.size() > 0 && tok.text.size() == 1 &&
+				(tok.text[0] == 'b' || tok.text[0] == 'w' || tok.text[0] == 'l' ||
+				 tok.text[0] == 'x' || tok.text[0] == 'd' || tok.text[0] == 's' ||
+				 tok.text[0] == 'i'))
+			{
+				fmtStr += tok.text;
+				++argIdx;
+				continue;
+			}
+			/* First token after / that's a single format char */
+			if (tok.kind == Token::Kind::Word && fmtStr.empty() && tok.text.size() <= 3)
+			{
+				fmtStr += tok.text;
+				++argIdx;
+				continue;
+			}
+			break;
 		}
+		if (!fmtStr.empty()) fmt = ParseFmtSpec(fmtStr);
 	}
 
 	if (argIdx >= static_cast<int>(args.size()) || args[argIdx].kind == Token::Kind::End)
