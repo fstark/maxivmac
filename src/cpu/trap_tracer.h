@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+class DbgIO;
+
 struct TrapFrame
 {
 	uint16_t trapWord;
@@ -34,6 +36,7 @@ public:
 	void enable(bool on);
 	bool enabled() const { return enabled_; }
 	void setMaxDepth(int depth);
+	void setIO(DbgIO *io);
 
 	void addFilter(uint16_t trapWord);
 	void clearFilter();
@@ -45,6 +48,7 @@ public: /* public for testability */
 	std::string formatOSErr(int16_t err);
 
 private:
+	void emit(const char *fmt, ...);
 	void flushStack(const char *reason);
 	void emitEntry(const TrapFrame &frame, const TrapDef &def);
 	void emitEntry(const TrapFrame &frame);
@@ -63,6 +67,7 @@ private:
 	uint16_t lastAppId_ = 0;
 	bool overflowWarned_ = false;
 	std::vector<uint16_t> filter_;
+	DbgIO *io_ = nullptr;
 };
 
 extern TrapDefs g_trapDefs;

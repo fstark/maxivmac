@@ -11,6 +11,7 @@
 #include "core/machine.h"
 #include "cpu/m68k.h"
 #include "cpu/trap_counter.h"
+#include "cpu/trap_tracer.h"
 #include "cpu/disasm.h"
 
 #include <algorithm>
@@ -434,10 +435,8 @@ bool Debugger::traceIO() const
 void Debugger::setTraceTraps(bool on)
 {
 	impl_->trTraps = on;
-	if (on)
-		BeginTraceTraps();
-	else
-		EndTraceTraps();
+	g_tracer.setIO(on ? impl_->io.get() : nullptr);
+	g_tracer.enable(on);
 }
 
 void Debugger::setTraceInsn(bool on)
@@ -458,11 +457,13 @@ bool Debugger::trapInFilter(uint16_t tw) const
 void Debugger::addTrapFilter(uint16_t tw)
 {
 	impl_->trapFilter.insert(tw);
+	g_tracer.addFilter(tw);
 }
 
 void Debugger::clearTrapFilter()
 {
 	impl_->trapFilter.clear();
+	g_tracer.clearFilter();
 }
 
 /* ── Command table access ───────────────────────────── */
@@ -791,16 +792,6 @@ bool Debugger::trapHook(uint16_t trapWord)
 
 		stop("");
 		return true; /* instructionHook will enter command loop */
-	}
-
-	/* Trap tracing */
-	if (impl_->trTraps && trapInFilter(trapWord))
-	{
-		const char *name = trap_dict_name(trapWord);
-		if (name)
-			impl_->io->write("[TRAP] $%04X %s\n", trapWord, name);
-		else
-			impl_->io->write("[TRAP] $%04X\n", trapWord);
 	}
 
 	return false;
