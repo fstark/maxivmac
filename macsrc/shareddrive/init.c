@@ -396,7 +396,7 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 	long dirID = *(long *)(pb + pb_ioDirID);
 	short index = *(short *)(pb + pb_ioFDirIndex);
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	unsigned long cnid, flags, sizeOrCount, parentID;
+	unsigned long cnid, flags, sizeOrCount, parentID, rsrcSize;
 	unsigned long type, creator, crDate, modDate;
 
 	/* Resolve WD refnum → dirID when caller doesn't set ioDirID */
@@ -410,36 +410,53 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		reg_command(regBase, 0x0202);
 		if (reg_result(regBase) != 0) return -43;
 	} else if (index == 0) {
+		/* By-name lookup: ioNamePtr is input */
+		if (nameAddr != 0) {
+			unsigned char nameLen = *(unsigned char *)nameAddr;
+			if (nameLen > 0 && nameLen <= 63) {
+				dbg_log1(regBase, "SD _GetCatInfo byName=%S",
+					nameAddr);
+				reg_set(regBase,0,dirID);
+				reg_set(regBase,1,nameAddr);
+				reg_set(regBase,2,(unsigned long)s_nameBuf);
+				reg_command(regBase, 0x0203);
+				if (reg_result(regBase) != 0) {
+					dbg_log(regBase,
+						"SD _GetCatInfo byName -> fnfErr");
+					return -43;
+				}
+			} else {
+				/* Empty name = get info about dirID itself */
+				reg_set(regBase,0,dirID);
+				reg_set(regBase,1,0);
+				reg_set(regBase,2,(unsigned long)s_nameBuf);
+				reg_command(regBase, 0x0202);
+				if (reg_result(regBase) != 0) return -43;
+			}
+		} else {
+			/* No name pointer = get info about dirID itself */
+			reg_set(regBase,0,dirID);
+			reg_set(regBase,1,0);
+			reg_set(regBase,2,(unsigned long)s_nameBuf);
+			reg_command(regBase, 0x0202);
+			if (reg_result(regBase) != 0) return -43;
+		}
+	} else {
+		/* ioFDirIndex < 0: get info about directory ioDirID
+		   itself. ioNamePtr is OUTPUT only (receives name). */
+		dbg_log1(regBase, "SD _GetCatInfo dirLookup id=%ld",
+			dirID);
 		reg_set(regBase,0,dirID); reg_set(regBase,1,0);
 		reg_set(regBase,2,(unsigned long)s_nameBuf);
 		reg_command(regBase, 0x0202);
 		if (reg_result(regBase) != 0) return -43;
-	} else {
-		unsigned char nameLen;
-		if (nameAddr == 0) return -50;
-		nameLen = *(unsigned char *)nameAddr;
-		dbg_log2(regBase, "SD _GetCatInfo byName len=%ld addr=%lx",
-			(long)nameLen, nameAddr);
-		if (nameLen == 0 || nameLen > 63) {
-			dbg_fatal2(regBase,
-				"GetCatInfo: bad name len=%ld at %lx",
-				(long)nameLen, nameAddr);
-			return -43;
-		}
-		dbg_log1(regBase, "SD _GetCatInfo byName=%S", nameAddr);
-		reg_set(regBase,0,dirID); reg_set(regBase,1,nameAddr);
-		reg_set(regBase,2,(unsigned long)s_nameBuf);
-		reg_command(regBase, 0x0203);
-		if (reg_result(regBase) != 0) {
-			dbg_log(regBase, "SD _GetCatInfo byName -> fnfErr");
-			return -43;
-		}
 	}
 
 	cnid        = reg_get(regBase, 0);
 	flags       = reg_get(regBase, 1);
 	sizeOrCount = reg_get(regBase, 2);
 	parentID    = reg_get(regBase, 3);
+	rsrcSize    = reg_get(regBase, 4);
 
 	/* Get type/creator/dates */
 	reg_set(regBase,0,cnid);
@@ -461,23 +478,47 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 	if (flags & 0x10) {
 		/* Directory */
 		*(unsigned char *)(pb + pb_ioFlAttrib) = 0x10;
+		/* ioDrUsrWds: DInfo (16 bytes) — zero = default window pos */
+		{
+			short j;
+			for (j = 0; j < 16; j++)
+				*(char *)(pb + pb_ioDrUsrWds + j) = 0;
+		}
 		*(short *)(pb + pb_ioDrNmFls) = (short)sizeOrCount;
 		*(long *)(pb + pb_ioDrDirID) = cnid;
 		*(long *)(pb + pb_ioDrParID) = parentID;
 		*(long *)(pb + pb_ioDrCrDat) = crDate;
 		*(long *)(pb + pb_ioDrMdDat) = modDate;
+		*(long *)(pb + 80) = 0;  /* ioDrBkDat */
+		/* ioDrFndrInfo: DXInfo (16 bytes) — zero */
+		{
+			short j;
+			for (j = 0; j < 16; j++)
+				*(char *)(pb + 84 + j) = 0;
+		}
 	} else {
 		/* File */
 		*(unsigned char *)(pb + pb_ioFlAttrib) = 0x00;
 		*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
 		*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
+		/* FInfo remainder: fdFlags, fdLocation, fdFldr — zero */
+		*(short *)(pb + pb_ioFlFndrInfo + 8)  = 0;  /* fdFlags */
+		*(long  *)(pb + pb_ioFlFndrInfo + 10) = 0;  /* fdLocation */
+		*(short *)(pb + pb_ioFlFndrInfo + 14) = 0;  /* fdFldr */
 		*(long *)(pb + pb_ioFlNum) = cnid;
 		*(long *)(pb + pb_ioFlLgLen) = sizeOrCount;
 		*(long *)(pb + pb_ioFlPyLen) = sizeOrCount;
-		*(long *)(pb + pb_ioFlRLgLen) = 0;
-		*(long *)(pb + pb_ioFlRPyLen) = 0;
+		*(long *)(pb + pb_ioFlRLgLen) = rsrcSize;
+		*(long *)(pb + pb_ioFlRPyLen) = rsrcSize;
 		*(long *)(pb + pb_ioFlCrDat) = crDate;
 		*(long *)(pb + pb_ioFlMdDat) = modDate;
+		*(long *)(pb + 80) = 0;  /* ioFlBkDat */
+		/* ioFlXFndrInfo: FXInfo (16 bytes) — zero */
+		{
+			short j;
+			for (j = 0; j < 16; j++)
+				*(char *)(pb + 84 + j) = 0;
+		}
 		*(long *)(pb + pb_ioFlParID) = parentID;
 	}
 	return 0;
@@ -793,6 +834,10 @@ static OSErr DoGetFileInfo(char *pb, char *regBase)
 	*(unsigned char *)(pb + pb_ioFlAttrib) = 0x00;
 	*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
 	*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
+	/* FInfo remainder: fdFlags, fdLocation, fdFldr — zero */
+	*(short *)(pb + pb_ioFlFndrInfo + 8)  = 0;
+	*(long  *)(pb + pb_ioFlFndrInfo + 10) = 0;
+	*(short *)(pb + pb_ioFlFndrInfo + 14) = 0;
 	*(long *)(pb + pb_ioFlNum) = cnid;
 	*(long *)(pb + pb_ioFlLgLen) = size;
 	*(long *)(pb + pb_ioFlPyLen) = size;
@@ -848,6 +893,12 @@ static OSErr DoGetVolInfo(char *pb, Globals *g)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	Ptr v = g->vcb;
+	unsigned long fileCount, totalBytes;
+
+	/* Query host for fresh counts (may have changed since INIT) */
+	reg_command(g->regBase, 0x0201); /* ExtFSGetVol */
+	fileCount  = reg_get(g->regBase, 0);
+	totalBytes = reg_get(g->regBase, 1);
 
 	dbg_log(g->regBase, "SD _GetVolInfo filling pb");
 
@@ -861,15 +912,15 @@ static OSErr DoGetVolInfo(char *pb, Globals *g)
 	*(long  *)(pb + 30) = *(long *)(v + 10);     /* ioVCrDate from vcbCrDate */
 	*(long  *)(pb + 34) = *(long *)(v + 14);     /* ioVLsMod from vcbLsMod */
 	*(short *)(pb + 38) = 0;                     /* ioVAtrb: writable */
-	*(short *)(pb + 40) = (short)g->volFileCount;/* ioVNmFls */
+	*(short *)(pb + 40) = (short)fileCount;      /* ioVNmFls */
 	*(short *)(pb + 42) = 0;                     /* ioVBitMap */
 	*(short *)(pb + 44) = 0;                     /* ioVAllocPtr */
 	*(short *)(pb + 46) = 1024;                  /* ioVNmAlBlks */
 	*(long  *)(pb + 48) = 512;                   /* ioVAlBlkSiz */
 	*(long  *)(pb + 52) = 512;                   /* ioVClpSiz */
 	*(short *)(pb + 56) = 0;                     /* ioAlBlSt */
-	*(long  *)(pb + 58) = 16;                    /* ioVNxtCNID */
-	*(short *)(pb + 62) = 0;                     /* ioVFrBlk */
+	*(long  *)(pb + 58) = fileCount + 16;        /* ioVNxtCNID (approx) */
+	*(short *)(pb + 62) = 512;                   /* ioVFrBlk */
 	*(short *)(pb + 64) = 0x4244;                /* ioVSigWord = HFS */
 	*(short *)(pb + 66) = kOurDriveNum;          /* ioVDrvInfo */
 	*(short *)(pb + 68) = kOurDrvrRefNum;        /* ioVDRefNum */
@@ -877,9 +928,14 @@ static OSErr DoGetVolInfo(char *pb, Globals *g)
 	*(long  *)(pb + 72) = 0;                     /* ioVBkUp */
 	*(short *)(pb + 76) = 0;                     /* ioVSeqNum */
 	*(long  *)(pb + 78) = 0;                     /* ioVWrCnt */
-	*(long  *)(pb + 82) = g->volFileCount;       /* ioVFilCnt */
+	*(long  *)(pb + 82) = fileCount;             /* ioVFilCnt */
 	*(long  *)(pb + 86) = 1;                     /* ioVDirCnt */
-	/* ioVFndrInfo at 90, 32 bytes — leave as caller had them */
+	/* ioVFndrInfo at 90, 32 bytes — zero to avoid garbage */
+	{
+		short j;
+		for (j = 0; j < 32; j++)
+			*(char *)(pb + 90 + j) = 0;
+	}
 	return 0;
 }
 
@@ -925,20 +981,14 @@ static OSErr DoGetVolParms(char *pb, char *regBase)
 	if (actual >= 2)
 		*(short *)(bufAddr + 0) = 1;
 
-	/* vMAttrib bits (Inside Macintosh VI-22-20):
-	     bit 0 = bLimitFCBs
-	     bit 11 = bHasPersonalAccessPrivileges
-	     bit 12 = bHasUserGroupList
-	     bit 13 = bHasCatSearch
-	     bit 14 = bHasFileIDs
-	     bit 15 = bHasBTreeMgr
-	     bit 16 = bHasBlankAccessPrivileges
-	   We set NO bits except bit 0 (bLimitFCBs).
-	   Specifically we do NOT set bNoDeskItems, since the
-	   Finder may need to manage a Desktop file on this volume.
+	/* vMAttrib bits: leave as 0 (no special capabilities).
+	   We do NOT set bHasDesktopMgr since we don't
+	   implement Desktop Manager calls, and we do NOT
+	   set bNoDeskItems since the Finder must manage
+	   a Desktop file on this volume.
 	*/
 	if (actual >= 6)
-		*(long *)(bufAddr + 2) = (long)0x00010000UL;
+		*(long *)(bufAddr + 2) = 0;
 
 	*(long *)(pb + pb_ioActCount) = actual;
 	return 0;
@@ -1367,8 +1417,8 @@ short DispatchHFS(char *pb, short selector)
 			RestoreA4(); return 0;
 
 		case kSetVInfo:
-			dbg_log(g->regBase, "SD _SetVInfo -> wPrErr");
-			*(short *)(pb + pb_ioResult) = -46;
+			dbg_log(g->regBase, "SD _SetVInfo -> noErr");
+			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
 
 		case kOpenWD:

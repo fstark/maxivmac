@@ -1836,3 +1836,1076 @@ trap cleanup EXIT
 - [ ] All smoke tests pass
 - [ ] Full build clean
 - [ ] Commit: `"debugger: phase 18 — debug server integration test"`
+
+---
+---
+
+# Debugger v2 — Bugs & Features Plan
+
+Source: [DEBUGGER_BUGS.md](DEBUGGER_BUGS.md)
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 19 | BUG-1: Fix watchpoints (MATC cache bypass) | |
+| 20 | FEAT-5/8: Expression size modifiers (.b/.w/.l) | |
+| 21 | FEAT-7: Breakpoint `ignore` command | |
+| 22 | FEAT-3: Guest log command | |
+| 23 | FEAT-2: `disas` command | |
+| 24 | FEAT-4: `break #-N` relative instruction breakpoints | |
+| 25 | FEAT-1: Multi-command one-shot mode | |
+| 26 | Unified trap tracing through DbgIO | |
+| 27 | FEAT-6 + docs: Update DEBUGGER.md with all new features | |
+
+Build gate: `cmake --preset macos && cmake --build --preset macos`
+Test gate:  `./bld/macos/tests`
+
+---
+
+## Phase 19 — BUG-1: Fix Watchpoints (MATC Cache Bypass)
+
+The MATC fast path in `get_byte()`/`put_byte()`/`get_word()`/`put_word()`
+(m68k.cpp L807–862) returns directly from cache without calling
+`memoryHook()`.  When any watchpoint is active, we must force accesses
+through the `_ext()` slow path by invalidating all MATC entries.
+
+### 19.1 — Add `m68k_InvalidateMATC()` to `m68k.h` / `m68k.cpp`
+
+Add a new public function that zeroes all four MATC caches, identical
+to the invalidation block already in `SetHeadATTel()` (m68k.cpp L8730–8737):
+
+In `src/cpu/m68k.h`, add after `SetHeadATTel()` declaration:
+
+```cpp
+// Invalidate the MATC byte/word read/write caches, forcing all
+// subsequent accesses through the _ext() slow path.
+extern void m68k_InvalidateMATC();
+```
+
+In `src/cpu/m68k.cpp`, add after `SetHeadATTel()`:
+
+```cpp
+void m68k_InvalidateMATC()
+{
+    V_regs.MATCrdB.cmpmask = 0;
+    V_regs.MATCrdB.cmpvalu = 0xFFFFFFFF;
+    V_regs.MATCwrB.cmpmask = 0;
+    V_regs.MATCwrB.cmpvalu = 0xFFFFFFFF;
+    V_regs.MATCrdW.cmpmask = 0;
+    V_regs.MATCrdW.cmpvalu = 0xFFFFFFFF;
+    V_regs.MATCwrW.cmpmask = 0;
+    V_regs.MATCwrW.cmpvalu = 0xFFFFFFFF;
+}
+```
+
+### 19.2 — Add `g_watchpointActive` global flag
+
+In `src/debugger/debugger.h`, add:
+
+```cpp
+extern bool g_watchpointActive;
+```
+
+In `src/debugger/debugger.cpp`, define it:
+
+```cpp
+bool g_watchpointActive = false;
+```
+
+Update `addWatchpoint()` and `deleteById()` (for watchpoints) to
+maintain this flag: set `true` when any enabled watchpoint exists,
+`false` when none remain.  Also update `enableById()` / `disableById()`
+to recalculate.
+
+Add a private helper:
+
+```cpp
+void Debugger::recalcWatchpointFlag()
+{
+    bool any = false;
+    for (auto &wp : impl_->watchpoints)
+        if (wp.enabled) { any = true; break; }
+    g_watchpointActive = any;
+    if (any) m68k_InvalidateMATC();
+}
+```
+
+Call `recalcWatchpointFlag()` at the end of `addWatchpoint()`,
+`deleteById()`, and `enableById()`.
+
+### 19.3 — Suppress MATC re-population when watchpoints are active
+
+In `src/cpu/m68k.cpp`, modify the four `_ext()` functions.  Each calls
+`SetUpMATC()` when a normal RAM hit occurs.  Guard this with the flag:
+
+In `get_byte_ext()`, change:
+
+```cpp
+SetUpMATC(&V_regs.MATCrdB, p);
+```
+
+to:
+
+```cpp
+if (!g_watchpointActive)
+    SetUpMATC(&V_regs.MATCrdB, p);
+```
+
+Same for `put_byte_ext()` (`MATCwrB`), `get_word_ext()` (`MATCrdW`),
+and `put_word_ext()` (`MATCwrW`).
+
+This ensures that while any watchpoint is active, no MATC entry is
+repopulated, and all accesses are guaranteed to go through the slow
+path where `memoryHook()` is called.
+
+### 19.4 — Tests
+
+Add test cases to `test/test_debugger.cpp`:
+
+```cpp
+TEST_CASE("watchpoint flag tracks active watchpoints")
+{
+    // Create debugger, add watchpoint → flag true
+    // Disable watchpoint → flag false
+    // Re-enable → flag true
+    // Delete → flag false
+}
+```
+
+The actual MATC invalidation cannot be unit-tested without the full
+emulator, but verify the flag logic.  The smoke test (existing
+`debugger_smoke.sh`) should add a watchpoint round-trip:
+
+```bash
+# Set watchpoint, verify it appears in info break
+$MAXIVMAC debug "watch \$0900 2"
+$MAXIVMAC debug "info break" | grep -q "Watchpoint"
+```
+
+### Fence
+
+- [ ] `m68k_InvalidateMATC()` exists in `m68k.h` / `m68k.cpp`
+- [ ] `g_watchpointActive` flag maintained by add/delete/enable/disable
+- [ ] All four `_ext()` functions guard `SetUpMATC()` with the flag
+- [ ] Unit tests pass: `./bld/macos/tests --test-case="watchpoint*"`
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 19 — fix watchpoint MATC bypass (BUG-1)"`
+
+---
+
+## Phase 20 — FEAT-5/8: Expression Size Modifiers (.b/.w/.l)
+
+Add `.b`, `.w`, `.l` size suffixes to the expression evaluator's
+parenthesized dereference.  This serves both FEAT-5 (conditional
+breakpoint deref sizes) and FEAT-8 (print with deref sizes), since
+both use `ExprEval()` / `ExprCheck()` which call `ExprParseValue()`.
+
+### 20.1 — Modify dereference parsing in `expr.cpp`
+
+In `ExprParseValue()` (expr.cpp ~L97–128), after the closing `)`
+is consumed (line ~L126: `++pos`), add size suffix parsing:
+
+```cpp
+++pos; /* consume ')' */
+
+/* Check for size suffix: .b, .w, .l */
+uint32_t addr = /* already computed */;
+if (pos + 1 < static_cast<int>(text.size()) && text[pos] == '.')
+{
+    char sz = std::tolower(static_cast<unsigned char>(text[pos + 1]));
+    if (sz == 'b')
+    {
+        pos += 2;
+        outVal = ctx.readByte ? ctx.readByte(addr) : 0;
+        return true;
+    }
+    else if (sz == 'w')
+    {
+        pos += 2;
+        outVal = ctx.readWord ? ctx.readWord(addr) : 0;
+        return true;
+    }
+    else if (sz == 'l')
+    {
+        pos += 2;
+        /* fall through to readLong below */
+    }
+}
+/* Default: read long */
+if (ctx.readLong)
+    outVal = ctx.readLong(addr);
+else
+    outVal = 0;
+return true;
+```
+
+Replace the current unconditional `readLong` block at the end of the
+dereference section with this logic.
+
+### 20.2 — Tests
+
+Add test cases to `test/test_debugger.cpp`:
+
+```cpp
+TEST_CASE("expr dereference .b")
+{
+    auto ctx = MakeTestContext();
+    // Set up memory at A0: bytes 0xDE, 0xAD, 0xBE, 0xEF
+    uint32_t val;
+    std::string err;
+    CHECK(ExprEval("(a0).b", ctx, val, err));
+    CHECK(val == 0xDE);
+}
+
+TEST_CASE("expr dereference .w")
+{
+    auto ctx = MakeTestContext();
+    uint32_t val;
+    std::string err;
+    CHECK(ExprEval("(a0).w", ctx, val, err));
+    CHECK(val == 0xDEAD);
+}
+
+TEST_CASE("expr dereference .l explicit")
+{
+    auto ctx = MakeTestContext();
+    uint32_t val;
+    std::string err;
+    CHECK(ExprEval("(a0).l", ctx, val, err));
+    CHECK(val == 0xDEADBEEF);
+}
+
+TEST_CASE("expr dereference offset .w")
+{
+    auto ctx = MakeTestContext();
+    uint32_t val;
+    std::string err;
+    CHECK(ExprEval("(a0 + 2).w", ctx, val, err));
+    CHECK(val == 0xBEEF);
+}
+
+TEST_CASE("expr dereference no suffix defaults to long")
+{
+    auto ctx = MakeTestContext();
+    uint32_t val;
+    std::string err;
+    CHECK(ExprEval("(a0)", ctx, val, err));
+    CHECK(val == 0xDEADBEEF);
+}
+
+TEST_CASE("expr condition with .w dereference")
+{
+    auto ctx = MakeTestContext();
+    std::string err;
+    // (a0 + 2).w == $BEEF
+    CHECK(ExprCheck("(a0 + 2).w == $BEEF", ctx, err));
+}
+```
+
+Update the test helper `MakeTestContext()` to provide `readByte` and
+`readWord` callbacks in addition to the existing `readLong`.
+
+### Fence
+
+- [ ] `ExprParseValue()` handles `.b`, `.w`, `.l` suffixes after `)`
+- [ ] `readByte`/`readWord` callbacks used when suffix present
+- [ ] Default (no suffix) remains `.l` — no regression
+- [ ] All expr tests pass: `./bld/macos/tests --test-case="expr*"`
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 20 — expression size modifiers .b/.w/.l (FEAT-5/8)"`
+
+---
+
+## Phase 21 — FEAT-7: Breakpoint `ignore` Command
+
+Simple decrementing counter: `ignore 1 15` sets the count to 15.  Each
+hit decrements it.  When it reaches zero the breakpoint fires normally.
+`info break` shows "ignore next: N" so the user sees how many hits
+remain — more useful than a separate total hit counter.
+
+### 21.1 — Extend `Breakpoint` struct
+
+In `src/debugger/debugger.h`, add one field to `Breakpoint`:
+
+```cpp
+struct Breakpoint
+{
+    uint32_t id;
+    bool enabled;
+    uint32_t address;
+    uint16_t trapWord;
+    std::string condition;
+    std::vector<std::string> commands;
+    uint32_t ignoreCount = 0;   // remaining hits to skip
+};
+```
+
+### 21.2 — Update hit detection in `debugger.cpp`
+
+In `instructionHook()` and `trapHook()`, where a breakpoint match is
+found and condition is met, add before the `stop()` call:
+
+```cpp
+if (bp->ignoreCount > 0)
+{
+    --bp->ignoreCount;
+    return false; /* skip this hit */
+}
+```
+
+### 21.3 — Add `CmdIgnore` command handler
+
+Create the handler in `src/debugger/cmd_break.cpp`:
+
+```cpp
+void CmdIgnore(Debugger &dbg, const std::vector<Token> &args)
+{
+    if (args.size() < 2 || args[0].kind != Token::Kind::Number ||
+        args[1].kind != Token::Kind::Number)
+    {
+        dbg.io().write("Usage: ignore <breakpoint-id> <count>\n");
+        return;
+    }
+    uint32_t id = args[0].numValue;
+    uint32_t count = args[1].numValue;
+
+    for (auto &bp : /* mutable breakpoints ref */)
+    {
+        if (bp.id == id)
+        {
+            bp.ignoreCount = count;
+            dbg.io().write("Will ignore next %u crossings of breakpoint %u.\n",
+                           count, id);
+            return;
+        }
+    }
+    dbg.io().write("No breakpoint %u.\n", id);
+}
+```
+
+Add forward declaration in `debugger.cpp` and register in command table:
+
+```cpp
+{"ignore", "", CmdIgnore, "Skip next N breakpoint hits",
+ "ignore <id> <count>\n  Skip the next <count> hits of breakpoint <id>.\n"},
+```
+
+### 21.4 — Update `info break` to show remaining ignore count
+
+In `CmdInfo` (cmd_info.cpp), when listing breakpoints, append the
+ignore count when non-zero:
+
+```
+Breakpoint 1 on trap HFSDispatch  (ignore next: 3)
+```
+
+### 21.5 — Tests
+
+Add to `test/test_debugger.cpp`:
+
+```cpp
+TEST_CASE("breakpoint ignore count decrements and fires")
+{
+    // Set up a breakpoint with ignoreCount=2
+    // First hit: ignoreCount → 1, skipped
+    // Second hit: ignoreCount → 0, skipped
+    // Third hit: ignoreCount == 0, fires
+}
+
+TEST_CASE("ignore on already-zero count is a no-op")
+{
+    // ignoreCount=0, breakpoint fires immediately
+}
+```
+
+### Fence
+
+- [ ] `Breakpoint` struct has `ignoreCount` field (no hitCount)
+- [ ] Hit detection decrements and skips when `ignoreCount > 0`
+- [ ] `ignore` command registered and functional
+- [ ] `info break` shows remaining ignore count
+- [ ] Tests pass: `./bld/macos/tests --test-case="breakpoint*"`
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 21 — breakpoint ignore command (FEAT-7)"`
+
+---
+
+## Phase 22 — FEAT-3: Guest Console Log Command
+
+### 22.1 — Add `CmdLog` handler
+
+Create in `src/debugger/cmd_info.cpp` (alongside other info commands):
+
+```cpp
+void CmdLog(Debugger &dbg, const std::vector<Token> &args)
+{
+    const auto &lines = extnDbgConsoleLines();
+
+    if (lines.empty())
+    {
+        dbg.io().write("(no guest log lines)\n");
+        return;
+    }
+
+    /* log grep <pattern> */
+    if (args.size() >= 2 && args[0].text == "grep")
+    {
+        std::string_view pattern = args[1].text;
+        int count = 0;
+        for (size_t i = 0; i < lines.size(); ++i)
+        {
+            if (lines[i].find(pattern) != std::string::npos)
+            {
+                dbg.io().write("[%zu] %s\n", i, lines[i].c_str());
+                ++count;
+            }
+        }
+        if (count == 0)
+            dbg.io().write("(no matching lines)\n");
+        return;
+    }
+
+    /* log [N] — show last N lines (default 20) */
+    int count = 20;
+    if (!args.empty() && args[0].kind == Token::Kind::Number)
+        count = static_cast<int>(args[0].numValue);
+
+    auto start = (lines.size() > static_cast<size_t>(count))
+                     ? (lines.size() - count) : 0u;
+    for (size_t i = start; i < lines.size(); ++i)
+        dbg.io().write("[%zu] %s\n", i, lines[i].c_str());
+}
+```
+
+Include `core/extn_clip.h` at the top of `cmd_info.cpp` for access to
+`extnDbgConsoleLines()`.
+
+### 22.2 — Register the command
+
+In `debugger.cpp`, add forward declaration and command table entry:
+
+```cpp
+void CmdLog(Debugger &dbg, const std::vector<Token> &args);
+```
+
+```cpp
+{"log", "", CmdLog, "Show guest console log",
+ "log [N]\n  Show last N guest log lines (default 20).\n"
+ "log grep <pattern>\n  Show guest log lines matching pattern.\n"},
+```
+
+### 22.3 — Tests
+
+Cannot fully unit-test without guest infrastructure, but add a
+smoke-test step to `debugger_smoke.sh`:
+
+```bash
+# Verify log command doesn't crash even with no guest lines
+$MAXIVMAC debug "log" | grep -q "no guest log\|^\["
+echo "  [PASS] log command"
+```
+
+### Fence
+
+- [ ] `CmdLog()` handler exists in `cmd_info.cpp`
+- [ ] Command registered in `s_commands[]`
+- [ ] `log`, `log N`, `log grep pattern` all work
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 22 — guest console log command (FEAT-3)"`
+
+---
+
+## Phase 23 — FEAT-2: `disas` Command
+
+### 23.1 — Add `CmdDisas` handler
+
+Create in `src/debugger/cmd_memory.cpp` (alongside `CmdExamine`):
+
+```cpp
+void CmdDisas(Debugger &dbg, const std::vector<Token> &args)
+{
+    if (args.empty())
+    {
+        dbg.io().write("Usage: disas <start> [<end> | +<len>]\n");
+        return;
+    }
+
+    auto ctx = MakeLiveContext();
+
+    uint32_t start;
+    std::string err;
+    if (!ExprEval(args[0].text, ctx, start, err))
+    {
+        dbg.io().write("Error: %s\n", err.c_str());
+        return;
+    }
+
+    uint32_t end = start + 64; /* default: 64 bytes */
+    if (args.size() >= 2)
+    {
+        if (args[1].text[0] == '+')
+        {
+            /* disas $start +len */
+            uint32_t len;
+            auto lenText = std::string_view(args[1].text).substr(1);
+            if (!ParseNumber(lenText, len))
+            {
+                dbg.io().write("Error: invalid length\n");
+                return;
+            }
+            end = start + len;
+        }
+        else
+        {
+            /* disas $start $end */
+            if (!ExprEval(args[1].text, ctx, end, err))
+            {
+                dbg.io().write("Error: %s\n", err.c_str());
+                return;
+            }
+        }
+    }
+
+    /* Disassemble from start until we reach or pass end */
+    uint32_t pc = start;
+    while (pc < end)
+    {
+        uint32_t thisPC = pc;
+        auto text = Disassemble(pc); /* pc advanced past insn */
+        dbg.io().write("$%08X: %s\n", thisPC, text.c_str());
+    }
+}
+```
+
+### 23.2 — Register the command
+
+In `debugger.cpp`, add forward declaration and table entry:
+
+```cpp
+void CmdDisas(Debugger &dbg, const std::vector<Token> &args);
+```
+
+```cpp
+{"disas", "", CmdDisas, "Disassemble address range",
+ "disas <start> [<end> | +<len>]\n  Disassemble instructions in range.\n"
+ "  Default range: 64 bytes from start.\n"},
+```
+
+### 23.3 — Tests
+
+Add smoke test:
+
+```bash
+# disas should produce output with instruction mnemonics
+$MAXIVMAC debug "disas \$400000 +16" | grep -q "\\$004"
+echo "  [PASS] disas command"
+```
+
+### Fence
+
+- [ ] `CmdDisas()` handler exists in `cmd_memory.cpp`
+- [ ] `disas $start $end` and `disas $start +len` both work
+- [ ] Default (no end) disassembles 64 bytes
+- [ ] Smoke test passes
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 23 — disas command (FEAT-2)"`
+
+---
+
+## Phase 24 — FEAT-4: `break #-N` Relative Instruction Breakpoints
+
+### 24.1 — Modify `CmdBreak` in `cmd_break.cpp`
+
+In the instruction-number breakpoint parsing block (cmd_break.cpp
+~L84–90), extend to handle `#-N`:
+
+```cpp
+/* break #N or break #-N */
+if (args[0].kind == Token::Kind::Operator && args[0].text == "#" &&
+    args.size() >= 2)
+{
+    bool negative = false;
+    size_t numIdx = 1;
+
+    /* Check for minus sign */
+    if (args[1].kind == Token::Kind::Operator && args[1].text == "-" &&
+        args.size() >= 3 && args[2].kind == Token::Kind::Number)
+    {
+        negative = true;
+        numIdx = 2;
+    }
+    else if (args[1].kind != Token::Kind::Number)
+    {
+        dbg.io().write("Usage: break #<N> or break #-<N>\n");
+        return;
+    }
+
+    uint32_t n = args[numIdx].numValue;
+    if (negative)
+    {
+        extern uint32_t g_instructionCount;
+        if (n > g_instructionCount)
+        {
+            dbg.io().write("Error: offset %u exceeds current insn count %u\n",
+                           n, g_instructionCount);
+            return;
+        }
+        n = g_instructionCount - n;
+        dbg.io().write("(resolved to instruction #%u)\n", n);
+    }
+    uint32_t id = dbg.setInsnBreak(n);
+    dbg.io().write("Breakpoint %u at instruction #%u\n", id, n);
+    return;
+}
+```
+
+### 24.2 — Tests
+
+Add to `test/test_debugger.cpp`:
+
+```cpp
+TEST_CASE("break #-N syntax parsing")
+{
+    // Tokenize "# - 50000", verify 3 tokens: Operator("#"),
+    // Operator("-"), Number(50000)
+    auto toks = Tokenize("# - 50000");
+    CHECK(toks[0].kind == Token::Kind::Operator);
+    CHECK(toks[0].text == "#");
+    CHECK(toks[1].kind == Token::Kind::Operator);
+    CHECK(toks[1].text == "-");
+    CHECK(toks[2].kind == Token::Kind::Number);
+    CHECK(toks[2].numValue == 50000);
+}
+```
+
+### Fence
+
+- [ ] `break #-N` correctly computes `g_instructionCount - N`
+- [ ] Error printed when N exceeds current count
+- [ ] Token test passes
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 24 — break #-N relative insn breakpoint (FEAT-4)"`
+
+---
+
+## Phase 25 — FEAT-1: Multi-command One-shot Mode
+
+### 25.1 — Modify `DebugClientMain()` in `dbg_client.cpp`
+
+Replace the single-command one-shot block (lines 116–124) with a
+multi-command loop that splits on `;`:
+
+```cpp
+if (command)
+{
+    /* One-shot mode: consume initial prompt */
+    RecvResponse(fd);
+
+    /* Split command string on ';' and send each separately */
+    std::string cmdStr(command);
+    size_t start = 0;
+    while (start < cmdStr.size())
+    {
+        size_t end = cmdStr.find(';', start);
+        if (end == std::string::npos) end = cmdStr.size();
+
+        /* Trim whitespace */
+        size_t s = start, e = end;
+        while (s < e && cmdStr[s] == ' ') ++s;
+        while (e > s && cmdStr[e - 1] == ' ') --e;
+
+        if (s < e)
+        {
+            std::string msg = cmdStr.substr(s, e - s) + "\n";
+            send(fd, msg.data(), msg.size(), 0);
+            if (!RecvResponse(fd)) break;
+        }
+        start = end + 1;
+    }
+    std::fflush(stdout);
+    close(fd);
+    return 0;
+}
+```
+
+### 25.2 — Add `--script=FILE` support
+
+After the `command` variable handling in `DebugClientMain()`, add
+a `scriptPath` variable:
+
+```cpp
+const char *scriptPath = nullptr;
+
+// In the arg loop:
+if (std::strncmp(argv[i], "--script=", 9) == 0)
+    scriptPath = argv[i] + 9;
+```
+
+After connecting and consuming the prompt, if `scriptPath` is set:
+
+```cpp
+if (scriptPath)
+{
+    FILE *f = std::fopen(scriptPath, "r");
+    if (!f) { std::perror(scriptPath); close(fd); return 1; }
+
+    char line[4096];
+    while (std::fgets(line, sizeof(line), f))
+    {
+        /* Skip blank lines and comments */
+        size_t len = std::strlen(line);
+        if (len == 0) continue;
+        if (line[0] == '#') continue;
+
+        /* Trim trailing newline if not present */
+        if (line[len - 1] != '\n')
+        {
+            line[len] = '\n';
+            line[len + 1] = '\0';
+            ++len;
+        }
+
+        send(fd, line, len, 0);
+        if (!RecvResponse(fd)) break;
+    }
+    std::fclose(f);
+    std::fflush(stdout);
+    close(fd);
+    return 0;
+}
+```
+
+### 25.3 — Update help text
+
+Update the usage message in `DebugClientMain()`:
+
+```cpp
+std::printf("Usage: maxivmac debug [--socket=PATH] [--script=FILE] [\"cmd1; cmd2; ...\"]\n"
+            "  No command: interactive mode\n"
+            "  With command: one-shot mode (semicolons separate commands)\n"
+            "  --script=FILE: read commands from file\n");
+```
+
+### 25.4 — Tests
+
+Add to `test/debugger_smoke.sh`:
+
+```bash
+# Multi-command one-shot
+$MAXIVMAC debug "info reg; info insn" | grep -q "D0="
+$MAXIVMAC debug "info reg; info insn" | grep -q "insn"
+echo "  [PASS] multi-command one-shot"
+
+# Script file
+cat > /tmp/test_debug_script.dbg <<'EOF'
+info reg
+info insn
+quit
+EOF
+$MAXIVMAC debug --script=/tmp/test_debug_script.dbg | grep -q "D0="
+echo "  [PASS] script file mode"
+rm -f /tmp/test_debug_script.dbg
+```
+
+### Fence
+
+- [ ] `;`-separated commands work in one-shot mode
+- [ ] `--script=FILE` reads and executes commands from file
+- [ ] Help text updated
+- [ ] Smoke tests pass
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 25 — multi-command one-shot and --script (FEAT-1)"`
+
+---
+
+## Phase 26 — Unified Trap Tracing Through DbgIO
+
+Instruction tracing writes through `impl_->io->write()` in
+`instructionHook()`.  Trap tracing should work the same way.
+
+Currently `DoCodeA()` calls both `trapHook(tw)` (terse line via DbgIO)
+and `g_tracer.enter(tw)` (rich output via `fprintf(stdout)`).  These
+are two redundant paths.  Fix: give TrapTracer a `DbgIO*` and have
+its `emit*()` methods write through it directly — exactly like
+instruction tracing.  Delete the terse `[TRAP]` block from
+`trapHook()`.
+
+TrapTracer becomes a debugger feature.  The two non-debugger callers
+are trivially adapted:
+
+- **`main.cpp --trace-traps`**: if `--debugger` / `--debugserver` is
+  also specified, it already goes through the debugger.  If neither is
+  specified, create a minimal StdioIO for standalone tracing (or just
+  leave it as-is: stdout).
+- **`extn_extfs.cpp` guest `BeginTraceTraps`/`EndTraceTraps`**: same
+  — if the debugger is active, route through it; if not, stdout.
+
+The simplest implementation: TrapTracer gets a `DbgIO*` field
+(default `nullptr`).  When set, `emit*()` methods use it.  When null,
+they fall back to `fprintf(stdout)` as today.  This keeps both paths
+working with zero ceremony.
+
+### 26.1 — Add `DbgIO*` to TrapTracer
+
+In `src/cpu/trap_tracer.h`:
+
+```cpp
+#include "debugger/dbg_io.h"
+// ...
+class TrapTracer
+{
+public:
+    // ...
+    void setIO(DbgIO *io);
+private:
+    // ...
+    DbgIO *io_ = nullptr;
+};
+```
+
+In `src/cpu/trap_tracer.cpp`, add:
+
+```cpp
+void TrapTracer::setIO(DbgIO *io)
+{
+    io_ = io;
+}
+```
+
+### 26.2 — Replace `fprintf(stdout, ...)` with `io_->write()` / fallback
+
+Add a private helper to TrapTracer:
+
+```cpp
+void TrapTracer::emit(const char *fmt, ...)
+{
+    char buf[512];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+
+    if (io_)
+        io_->write("%s", buf);
+    else
+        fputs(buf, stdout);
+}
+```
+
+Then mechanically replace every `fprintf(stdout, fmt, ...)` call in
+`emitEntry()`, `emitExit()`, `emitAutoPop()`, `flushStack()`,
+`enter()` overflow warning, and context-switch detection with
+`emit(fmt, ...)`.  Same format strings — just a different sink.
+
+### 26.3 — Wire it up in `setTraceTraps()`
+
+In `debugger.cpp`, replace the current `setTraceTraps()`:
+
+```cpp
+void Debugger::setTraceTraps(bool on)
+{
+    impl_->trTraps = on;
+    g_tracer.setIO(on ? impl_->io.get() : nullptr);
+    g_tracer.enable(on);
+}
+```
+
+No more `BeginTraceTraps()` / `EndTraceTraps()` calls from the
+debugger.  Those APIs continue to work for non-debugger callers
+(`extn_extfs.cpp`, `main.cpp`) — they just enable/disable
+`g_tracer` with `io_ == nullptr`, so output goes to stdout.
+
+### 26.4 — Delete terse `[TRAP]` from `trapHook()`
+
+In `Debugger::trapHook()`, delete the entire trace block (L748–756).
+`g_tracer.enter()` (called right after in `DoCodeA()`) now handles
+all trace output through DbgIO.
+
+### 26.5 — Sync trap filter to TrapTracer
+
+Remove the debugger's own `trapFilter` set.  Have `addTrapFilter()`
+and `clearTrapFilter()` delegate to `g_tracer.addFilter()` /
+`g_tracer.clearFilter()` directly (TrapTracer already has a filter).
+Remove `trapInFilter()` — no longer needed.
+
+### 26.6 — Tests
+
+Smoke test over socket:
+
+```bash
+# trace traps should produce rich output with arrows and caller PCs
+$MAXIVMAC debug "trace traps on; step 500; trace traps off" | grep -q '→'
+echo "  [PASS] rich trap trace over socket"
+```
+
+### Fence
+
+- [ ] TrapTracer has `setIO(DbgIO*)` and uses it in all emit methods
+- [ ] `setTraceTraps()` wires `impl_->io` into TrapTracer
+- [ ] Terse `[TRAP]` block removed from `trapHook()`
+- [ ] Debugger trap filter delegates to TrapTracer's filter
+- [ ] Remote client sees full rich trace with arrows, args, nesting
+- [ ] Local `--debugger` mode still works (same DbgIO, stdio backend)
+- [ ] Non-debugger `--trace-traps` and guest `BeginTraceTraps` still
+  work (io_ == nullptr → stdout fallback)
+- [ ] Tests pass
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 26 — unified trap tracing through DbgIO"`
+
+---
+
+## Phase 27 — FEAT-6 + Documentation: Update DEBUGGER.md
+
+Update the spec document `docs/features/DEBUGGER.md` to document all
+new features.  Also update help text in `debugger.cpp` for `finish`
+at trap calls (FEAT-6, already working).
+
+### 27.1 — Document `finish` at trap calls (FEAT-6)
+
+In DEBUGGER.md under the Execution section's `finish` description
+(~L56), update to explicitly state trap support:
+
+```
+| `finish` | `fin` | Run until current function or trap handler returns |
+```
+
+And in the prose below the table:
+
+```
+`finish` works the same way: run until SP ≥ saved SP and the
+instruction is RTS, RTD, or RTE.  This works seamlessly with A-line
+trap calls: when stopped at a trap breakpoint, `finish` will run
+the entire trap handler and stop when it returns to the caller.
+```
+
+### 27.2 — Document `disas` command (FEAT-2)
+
+Add after the Memory Examination section:
+
+```markdown
+### Disassembly
+
+| Command | Description |
+|---------|-------------|
+| `disas <start> [<end>]` | Disassemble address range |
+| `disas <start> +<len>` | Disassemble N bytes from start |
+
+```
+(dbg) disas $7C3A60 $7C3AC0
+$007C3A60: MOVEA.L  (A7)+,A0
+$007C3A64: MOVE.L   D0,-(A7)
+…
+(dbg) disas $7C3A60 +20
+…
+```
+
+If no end address is given, disassembles 64 bytes from start.
+```
+
+### 27.3 — Document `log` command (FEAT-3)
+
+Add to the Miscellaneous section:
+
+```markdown
+| `log [N]` | Show last N guest console log lines (default 20) |
+| `log grep <pattern>` | Show guest log lines matching pattern |
+
+```
+(dbg) log
+[0] ExtFS: mounted shared folder
+[1] ExtFS: GetCatInfo "/" → noErr
+…
+(dbg) log grep Desktop
+[5] ExtFS: GetCatInfo "Desktop" → fnfErr
+```
+```
+
+### 27.4 — Document `break #-N` (FEAT-4)
+
+In the Breakpoints section, add to the location list:
+
+```
+- **Relative instruction number**: `#-50000` — set breakpoint at
+  `current_insn_count - 50000`.  Useful for re-running deterministic
+  boot sequences to stop just before a known crash point.
+```
+
+Add example:
+
+```
+(dbg) break #-50000
+(resolved to instruction #31401989)
+Breakpoint 5 at instruction #31401989
+```
+
+### 27.5 — Document `.b/.w/.l` size modifiers (FEAT-5/8)
+
+In the Conditions section, extend the expression description:
+
+```
+Parenthesized dereferences support size suffixes:
+- `(a0 + 22).b` — read byte at A0+22
+- `(a0 + 22).w` — read word at A0+22
+- `(a0 + 22).l` — read long at A0+22 (default when no suffix)
+
+```
+(dbg) break HFSDispatch if d0 == 9 && (a0 + 22).w == $8300
+(dbg) print (a0 + 22).w
+$00008300 (33536)
+```
+```
+
+### 27.6 — Document `ignore` command (FEAT-7)
+
+In the Breakpoints section table, add:
+
+```
+| `ignore <id> <count>` | Skip next N hits of breakpoint |
+```
+
+Add example:
+
+```
+(dbg) break HFSDispatch if d0 == 9
+Breakpoint 1 on trap HFSDispatch
+(dbg) ignore 1 15
+Will ignore next 15 crossings of breakpoint 1.
+(dbg) c
+Breakpoint 1 hit: HFSDispatch (hit #16)
+```
+
+### 27.7 — Document multi-command mode (FEAT-1)
+
+In the Debug Server Mode → Client Mode section, update:
+
+```
+# Multi-command: semicolons separate commands in one-shot mode
+maxivmac debug "break $4000; run"
+
+# Script file: read commands from file
+maxivmac debug --script=session.dbg
+```
+
+Add to Non-Goals, strike out the script files entry:
+
+```
+- ~~**Script files** — no `source` command to load scripts from files~~
+  **Now supported** via `maxivmac debug --script=FILE`.
+```
+
+### 27.8 — Update `finish` help text in command table
+
+In `debugger.cpp` s_commands[] array, update the `finish` help string:
+
+```cpp
+{"finish", "fin", CmdFinish, "Run until current function/trap returns",
+ "finish\n  Run until the current frame returns (SP >= saved SP and RTS/RTE/RTD).\n"
+ "  Works with A-line trap calls: stops when the trap handler returns to caller.\n"},
+```
+
+### Fence
+
+- [ ] DEBUGGER.md updated with all 7 new features
+- [ ] `finish` help text updated in command table
+- [ ] No broken markdown formatting
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 27 — document new features in DEBUGGER.md"`

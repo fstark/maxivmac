@@ -36,8 +36,8 @@ static constexpr uint16_t kExtFSGetWDInfo = 0x20A;
 static constexpr uint16_t kExtFSOpenWD = 0x20B;
 static constexpr uint16_t kExtFSCloseWD = 0x20C;
 static constexpr uint16_t kExtFSDbgLog = 0x20D;
-static constexpr uint16_t kExtFSBeginTrace = 0x20E;
-static constexpr uint16_t kExtFSEndTrace = 0x20F;
+/* 0x20E (BeginTrace) and 0x20F (EndTrace) removed — tracing is now
+   handled by the debugger.  Command numbers deliberately not reused. */
 static constexpr uint16_t kExtFSFatal = 0x0214;
 static constexpr uint16_t kExtFSCreateFile = 0x210;
 static constexpr uint16_t kExtFSWrite = 0x211;
@@ -87,6 +87,7 @@ static uint32_t s_nextWD = 0x8000; /* WD refs start here */
 
 /* ── Helpers ──────────────────────────────────────── */
 
+static constexpr uint32_t kRootParentID = 1;
 static constexpr uint32_t kRootDirID = 2;
 static constexpr uint32_t kFirstCNID = 16;
 static constexpr uint32_t kMacEpochOffset = 2082844800u; /* 1904→1970 diff */
@@ -201,6 +202,19 @@ static std::string readPascalString(uint32_t addr)
 	for (uint8_t i = 0; i < len; i++)
 		s.push_back(static_cast<char>(get_vm_byte(addr + 1 + i)));
 	return s;
+}
+
+/* Get the resource fork size for a catalog entry by checking the .rsrc file on disk. */
+static uint32_t getResourceForkSize(const CatalogEntry &e)
+{
+	if (e.isDirectory) return 0;
+	std::string rsrcPath = e.hostPath + ".rsrc";
+	FILE *fp = fopen(rsrcPath.c_str(), "rb");
+	if (!fp) return 0;
+	fseek(fp, 0, SEEK_END);
+	uint32_t sz = static_cast<uint32_t>(ftell(fp));
+	fclose(fp);
+	return sz;
 }
 
 /* ── Catalog scanner ──────────────────────────────── */
@@ -384,12 +398,24 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			if (index == 0)
 			{
 				/* Return info about the directory itself */
-				if (dirID == kRootDirID)
+				if (dirID == kRootParentID)
+				{
+					/* dirID 1 is the virtual root parent — return root as its only child */
+					regParam[0] = kRootDirID;
+					regParam[1] = 0x10; /* directory flag */
+					regParam[2] = static_cast<uint32_t>(countChildren(kRootDirID));
+					regParam[3] = kRootParentID;
+					if (nameBuf) writePascalString(nameBuf, "Shared");
+					fprintf(stderr, "[ExtFS]   → root dir (via parent 1), %u children\n",
+							regParam[2]);
+					regResult = 0;
+				}
+				else if (dirID == kRootDirID)
 				{
 					regParam[0] = kRootDirID;
 					regParam[1] = 0x10; /* directory flag */
 					regParam[2] = static_cast<uint32_t>(countChildren(kRootDirID));
-					regParam[3] = 0; /* parent = 0 for root */
+					regParam[3] = kRootParentID; /* parent of root = 1 */
 					if (nameBuf) writePascalString(nameBuf, "Shared");
 					fprintf(stderr, "[ExtFS]   → root dir, %u children\n", regParam[2]);
 					regResult = 0;
@@ -418,6 +444,28 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			else if (index > 0)
 			{
 				/* Indexed enumeration */
+				if (dirID == kRootParentID)
+				{
+					/* dirID 1 contains only the root directory */
+					if (index == 1)
+					{
+						regParam[0] = kRootDirID;
+						regParam[1] = 0x10;
+						regParam[2] = static_cast<uint32_t>(countChildren(kRootDirID));
+						regParam[3] = kRootParentID;
+						if (nameBuf) writePascalString(nameBuf, "Shared");
+						fprintf(stderr, "[ExtFS]   → root dir (child #1 of parent 1)\n");
+						regResult = 0;
+						break;
+					}
+					else
+					{
+						fprintf(stderr, "[ExtFS]   → fnfErr (no child #%d in root parent)\n",
+								index);
+						regResult = 43;
+						break;
+					}
+				}
 				const CatalogEntry *e = getNthChild(dirID, index);
 				if (e)
 				{
@@ -426,6 +474,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 					regParam[2] = e->isDirectory ? static_cast<uint32_t>(countChildren(e->cnid))
 												 : e->dataForkSize;
 					regParam[3] = e->parentDirID;
+					regParam[4] = e->isDirectory ? 0u : getResourceForkSize(*e);
 					if (nameBuf) writePascalString(nameBuf, e->macName);
 					fprintf(stderr, "[ExtFS]   → \"%s\" cnid=%u %s size=%u\n", e->macName.c_str(),
 							e->cnid, e->isDirectory ? "dir" : "file", regParam[2]);
@@ -454,6 +503,40 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			std::string name = readPascalString(nameAddr);
 			fprintf(stderr, "[ExtFS] GetCatInfoByName dir=%u name=\"%s\"\n", parentDir,
 					name.c_str());
+			/* dirID 1 is the virtual root parent — volume name resolves to root */
+			if (parentDir == kRootParentID)
+			{
+				/* Case-insensitive compare against volume name "Shared" */
+				std::string volName = "Shared";
+				bool match = (name.size() == volName.size());
+				if (match)
+				{
+					for (size_t i = 0; i < name.size(); i++)
+					{
+						if (tolower(static_cast<unsigned char>(name[i])) !=
+							tolower(static_cast<unsigned char>(volName[i])))
+						{
+							match = false;
+							break;
+						}
+					}
+				}
+				if (match)
+				{
+					regParam[0] = kRootDirID;
+					regParam[1] = 0x10;
+					regParam[2] = static_cast<uint32_t>(countChildren(kRootDirID));
+					regParam[3] = kRootParentID;
+					if (nameBuf) writePascalString(nameBuf, volName);
+					fprintf(stderr, "[ExtFS]   → root dir (by name in parent 1)\n");
+					regResult = 0;
+					break;
+				}
+				fprintf(stderr, "[ExtFS]   → fnfErr (name '%s' not volume name)\n", name.c_str());
+				regResult = 43;
+				break;
+			}
+
 			const CatalogEntry *e = findByNameInDir(parentDir, name);
 			if (e)
 			{
@@ -462,6 +545,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 				regParam[2] = e->isDirectory ? static_cast<uint32_t>(countChildren(e->cnid))
 											 : e->dataForkSize;
 				regParam[3] = e->parentDirID;
+				regParam[4] = e->isDirectory ? 0u : getResourceForkSize(*e);
 				if (nameBuf) writePascalString(nameBuf, e->macName);
 				fprintf(stderr, "[ExtFS]   → cnid=%u %s size=%u\n", e->cnid,
 						e->isDirectory ? "dir" : "file",
@@ -581,6 +665,21 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			/* p0 = CNID → p0=type, p1=creator, p2=crDate, p3=modDate */
 			uint32_t cnid = regParam[0];
+
+			/* Root dir (cnid=2) and root parent (cnid=1) are virtual — not in catalog */
+			if (cnid == kRootDirID || cnid == kRootParentID)
+			{
+				/* Return zero type/creator (it's a directory) and current time */
+				uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + kMacEpochOffset;
+				regParam[0] = 0;   /* type */
+				regParam[1] = 0;   /* creator */
+				regParam[2] = now; /* crDate */
+				regParam[3] = now; /* modDate */
+				fprintf(stderr, "[ExtFS] GetFileInfo cnid=%u → root dir (virtual)\n", cnid);
+				regResult = 0;
+				break;
+			}
+
 			const CatalogEntry *e = findByCNID(cnid);
 			if (e)
 			{
@@ -686,19 +785,6 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		}
 		break;
 
-		case kExtFSBeginTrace:
-		{
-			BeginTraceTraps();
-			regResult = 0;
-		}
-		break;
-
-		case kExtFSEndTrace:
-		{
-			EndTraceTraps();
-			regResult = 0;
-		}
-		break;
 
 		case kExtFSFatal:
 		{
