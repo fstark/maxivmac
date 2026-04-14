@@ -8,74 +8,87 @@
 
 #include <SDL3/SDL.h>
 
-#define kLn2SoundBuffers 4 /* kSoundBuffers must be a power of two */
-#define kSoundBuffers (1 << kLn2SoundBuffers)
-#define kSoundBuffMask (kSoundBuffers - 1)
+static constexpr int kLn2SoundBuffers = 4; /* kSoundBuffers must be a power of two */
+static constexpr int kSoundBuffers = 1 << kLn2SoundBuffers;
 
-#define DESIRED_MIN_FILLED_SOUND_BUFFS 3
+static constexpr int kDesiredMinFilledSoundBuffs = 3;
 /*
 	if too big then sound lags behind emulation.
 	if too small then sound will have pauses.
 */
 
-#define kLnOneBuffLen 9
-#define kLnAllBuffLen (kLn2SoundBuffers + kLnOneBuffLen)
-#define kOneBuffLen (1UL << kLnOneBuffLen)
-#define kAllBuffLen (1UL << kLnAllBuffLen)
-#define kLnOneBuffSz (kLnOneBuffLen + 1)
-#define kLnAllBuffSz (kLnAllBuffLen + 1)
-#define kOneBuffSz (1UL << kLnOneBuffSz)
-#define kAllBuffSz (1UL << kLnAllBuffSz)
-#define kOneBuffMask (kOneBuffLen - 1)
-#define kAllBuffMask (kAllBuffLen - 1)
-#define dbhBufferSize (kAllBuffSz + kOneBuffSz)
+static constexpr int kLnOneBuffLen = 9;
+static constexpr int kLnAllBuffLen = kLn2SoundBuffers + kLnOneBuffLen;
+static constexpr uint32_t kOneBuffLen = 1u << kLnOneBuffLen;
+static constexpr uint32_t kAllBuffLen = 1u << kLnAllBuffLen;
+static constexpr int kLnOneBuffSz = kLnOneBuffLen + 1;
+static constexpr int kLnAllBuffSz = kLnAllBuffLen + 1;
+static constexpr uint32_t kOneBuffSz = 1u << kLnOneBuffSz;
+static constexpr uint32_t kAllBuffSz = 1u << kLnAllBuffSz;
+static constexpr uint32_t kOneBuffMask = kOneBuffLen - 1;
+static constexpr uint32_t kAllBuffMask = kAllBuffLen - 1;
+static constexpr uint32_t kDbhBufferSize = kAllBuffSz + kOneBuffSz;
 
-#define dbglog_SoundStuff 0
-#define dbglog_SoundBuffStats 0
-#define DBGLOG_OSG_INIT 0
+static constexpr bool kDbglogSoundStuff = false;
+static constexpr bool kDbglogSoundBuffStats = false;
+static constexpr bool kDbglogOsgInit = false;
+
+using SoundSample = uint16_t;
+
+static constexpr SoundSample kCenterTempSound = 0x8000;
+static constexpr SoundSample kAudioStepVal = 0x0040;
+static constexpr int kSoundSampleRate = 22255; /* = round(7833600 * 2 / 704) */
+
+static constexpr SoundSample SampleFromNative(SoundSample v)
+{
+	return v + kCenterSound;
+}
+static constexpr SoundSample SampleToNative(SoundSample v)
+{
+	return v - kCenterSound;
+}
 
 static SoundSamplePtr s_soundBuffer = nullptr;
-volatile static uint16_t ThePlayOffset;
-volatile static uint16_t TheFillOffset;
-volatile static uint16_t MinFilledSoundBuffs;
-#if dbglog_SoundBuffStats
-static uint16_t s_maxFilledSoundBuffs;
-#endif
+static volatile uint16_t s_playOffset;
+static volatile uint16_t s_fillOffset;
+static volatile uint16_t s_minFilledSoundBuffs;
+[[maybe_unused]] static uint16_t s_maxFilledSoundBuffs;
 static uint16_t s_writeOffset;
 
-static SDL_AudioStream *stream = nullptr;
+static SDL_AudioStream *s_stream = nullptr;
 
 static void Sound_Init0()
 {
-	ThePlayOffset = 0;
-	TheFillOffset = 0;
+	s_playOffset = 0;
+	s_fillOffset = 0;
 	s_writeOffset = 0;
 }
 
 static void Sound_Start0()
 {
-	/* Reset variables */
-	MinFilledSoundBuffs = kSoundBuffers + 1;
-#if dbglog_SoundBuffStats
-	s_maxFilledSoundBuffs = 0;
-#endif
+	s_minFilledSoundBuffs = kSoundBuffers + 1;
+	if constexpr (kDbglogSoundBuffStats)
+	{
+		s_maxFilledSoundBuffs = 0;
+	}
 }
 
 SoundSamplePtr Sound_BeginWrite(uint16_t n, uint16_t *actL)
 {
-	uint16_t ToFillLen = kAllBuffLen - (s_writeOffset - ThePlayOffset);
-	uint16_t WriteBuffContig = kOneBuffLen - (s_writeOffset & kOneBuffMask);
+	uint16_t toFillLen = kAllBuffLen - (s_writeOffset - s_playOffset);
+	uint16_t writeBuffContig = kOneBuffLen - (s_writeOffset & kOneBuffMask);
 
-	if (WriteBuffContig < n)
+	if (writeBuffContig < n)
 	{
-		n = WriteBuffContig;
+		n = writeBuffContig;
 	}
-	if (ToFillLen < n)
+	if (toFillLen < n)
 	{
 		/* overwrite previous buffer */
-#if dbglog_SoundStuff
-		dbglog_writeln("sound buffer over flow");
-#endif
+		if constexpr (kDbglogSoundStuff)
+		{
+			dbglog_writeln("sound buffer over flow");
+		}
 		s_writeOffset -= kOneBuffLen;
 	}
 
@@ -85,9 +98,7 @@ SoundSamplePtr Sound_BeginWrite(uint16_t n, uint16_t *actL)
 
 static void ConvertSoundBlockToNative(SoundSamplePtr p)
 {
-	int i;
-
-	for (i = kOneBuffLen; --i >= 0;)
+	for (int i = kOneBuffLen; --i >= 0;)
 	{
 		*p++ -= 0x8000;
 	}
@@ -95,274 +106,245 @@ static void ConvertSoundBlockToNative(SoundSamplePtr p)
 
 static void Sound_WroteABlock()
 {
-	uint16_t PrevWriteOffset = s_writeOffset - kOneBuffLen;
-	SoundSamplePtr p = s_soundBuffer + (PrevWriteOffset & kAllBuffMask);
+	uint16_t prevWriteOffset = s_writeOffset - kOneBuffLen;
+	SoundSamplePtr p = s_soundBuffer + (prevWriteOffset & kAllBuffMask);
 
-#if dbglog_SoundStuff
-	dbglog_writeln("enter Sound_WroteABlock");
-#endif
+	if constexpr (kDbglogSoundStuff)
+	{
+		dbglog_writeln("enter Sound_WroteABlock");
+	}
 
 	ConvertSoundBlockToNative(p);
 
-	TheFillOffset = s_writeOffset;
+	s_fillOffset = s_writeOffset;
 
-#if dbglog_SoundBuffStats
+	if constexpr (kDbglogSoundBuffStats)
 	{
-		uint16_t ToPlayLen = TheFillOffset - ThePlayOffset;
-		uint16_t ToPlayBuffs = ToPlayLen >> kLnOneBuffLen;
+		uint16_t toPlayLen = s_fillOffset - s_playOffset;
+		uint16_t toPlayBuffs = toPlayLen >> kLnOneBuffLen;
 
-		if (ToPlayBuffs > s_maxFilledSoundBuffs)
+		if (toPlayBuffs > s_maxFilledSoundBuffs)
 		{
-			s_maxFilledSoundBuffs = ToPlayBuffs;
+			s_maxFilledSoundBuffs = toPlayBuffs;
 		}
 	}
-#endif
 }
 
 static bool Sound_EndWrite0(uint16_t actL)
 {
-	bool v;
-
 	s_writeOffset += actL;
 
-	if (0 != (s_writeOffset & kOneBuffMask))
+	if ((s_writeOffset & kOneBuffMask) != 0)
 	{
-		v = false;
-	}
-	else
-	{
-		/* just finished a block */
-
-		Sound_WroteABlock();
-
-		v = true;
+		return false;
 	}
 
-	return v;
+	/* just finished a block */
+	Sound_WroteABlock();
+	return true;
 }
 
 static void Sound_SecondNotify0()
 {
-	if (MinFilledSoundBuffs <= kSoundBuffers)
+	if (s_minFilledSoundBuffs > kSoundBuffers)
 	{
-		if (MinFilledSoundBuffs > DESIRED_MIN_FILLED_SOUND_BUFFS)
+		return;
+	}
+
+	if (s_minFilledSoundBuffs > kDesiredMinFilledSoundBuffs)
+	{
+		if constexpr (kDbglogSoundStuff)
 		{
-#if dbglog_SoundStuff
-			dbglog_writeln("MinFilledSoundBuffs too high");
-#endif
-			IncrNextTime();
+			dbglog_writeln("s_minFilledSoundBuffs too high");
 		}
-		else if (MinFilledSoundBuffs < DESIRED_MIN_FILLED_SOUND_BUFFS)
+		IncrNextTime();
+	}
+	else if (s_minFilledSoundBuffs < kDesiredMinFilledSoundBuffs)
+	{
+		if constexpr (kDbglogSoundStuff)
 		{
-#if dbglog_SoundStuff
-			dbglog_writeln("MinFilledSoundBuffs too low");
-#endif
-			++g_trueEmulatedTime;
+			dbglog_writeln("s_minFilledSoundBuffs too low");
 		}
-#if dbglog_SoundBuffStats
-		dbglog_writelnNum("MinFilledSoundBuffs", MinFilledSoundBuffs);
+		++g_trueEmulatedTime;
+	}
+
+	if constexpr (kDbglogSoundBuffStats)
+	{
+		dbglog_writelnNum("s_minFilledSoundBuffs", s_minFilledSoundBuffs);
 		dbglog_writelnNum("s_maxFilledSoundBuffs", s_maxFilledSoundBuffs);
 		s_maxFilledSoundBuffs = 0;
-#endif
-		MinFilledSoundBuffs = kSoundBuffers + 1;
 	}
+
+	s_minFilledSoundBuffs = kSoundBuffers + 1;
 }
 
-typedef uint16_t SoundSample;
-
-#define K_CENTER_TEMP_SOUND 0x8000
-
-#define AUDIO_STEP_VAL 0x0040
-
-#define CONVERT_TEMP_SOUND_SAMPLE_FROM_NATIVE(v) ((v) + kCenterSound)
-
-#define CONVERT_TEMP_SOUND_SAMPLE_TO_NATIVE(v) ((v) - kCenterSound)
-
-static void SoundRampTo(SoundSample *last_val, SoundSample dst_val, SoundSamplePtr *stream,
-						int *len)
+static void SoundRampTo(SoundSample *lastVal, SoundSample dstVal, SoundSamplePtr *stream, int *len)
 {
-	SoundSample diff;
 	SoundSamplePtr p = *stream;
 	int n = *len;
-	SoundSample v1 = *last_val;
+	SoundSample v1 = *lastVal;
 
-	while ((v1 != dst_val) && (0 != n))
+	while (v1 != dstVal && n != 0)
 	{
-		if (v1 > dst_val)
+		if (v1 > dstVal)
 		{
-			diff = v1 - dst_val;
-			if (diff > AUDIO_STEP_VAL)
-			{
-				v1 -= AUDIO_STEP_VAL;
-			}
-			else
-			{
-				v1 = dst_val;
-			}
+			SoundSample diff = v1 - dstVal;
+			v1 = (diff > kAudioStepVal) ? v1 - kAudioStepVal : dstVal;
 		}
 		else
 		{
-			diff = dst_val - v1;
-			if (diff > AUDIO_STEP_VAL)
-			{
-				v1 += AUDIO_STEP_VAL;
-			}
-			else
-			{
-				v1 = dst_val;
-			}
+			SoundSample diff = dstVal - v1;
+			v1 = (diff > kAudioStepVal) ? v1 + kAudioStepVal : dstVal;
 		}
 
 		--n;
-		*p++ = CONVERT_TEMP_SOUND_SAMPLE_TO_NATIVE(v1);
+		*p++ = SampleToNative(v1);
 	}
 
 	*stream = p;
 	*len = n;
-	*last_val = v1;
+	*lastVal = v1;
 }
 
 struct SoundState
 {
-	SoundSamplePtr fTheSoundBuffer;
-	volatile uint16_t(*fPlayOffset);
-	volatile uint16_t(*fFillOffset);
-	volatile uint16_t(*fMinFilledSoundBuffs);
+	SoundSamplePtr soundBuffer_;
+	volatile uint16_t *playOffset_;
+	volatile uint16_t *fillOffset_;
+	volatile uint16_t *minFilledSoundBuffs_;
 
-	volatile SoundSample lastv;
+	volatile SoundSample lastv_;
 
-	bool wantplaying;
-	bool HaveStartedPlaying;
+	bool wantPlaying_;
+	bool haveStartedPlaying_;
 };
 
-static void my_audio_callback(void *udata, Uint8 *stream, int len)
+static void FillAudioCallback(void *udata, uint8_t *rawStream, int len)
 {
-	uint16_t ToPlayLen;
-	uint16_t FilledSoundBuffs;
-	int i;
-	SoundState *datp = (SoundState *)udata;
-	SoundSamplePtr CurSoundBuffer = datp->fTheSoundBuffer;
-	uint16_t CurPlayOffset = *datp->fPlayOffset;
-	SoundSample v0 = datp->lastv;
-	SoundSample v1 = v0;
-	SoundSamplePtr dst = (SoundSamplePtr)stream;
+	auto *datp = static_cast<SoundState *>(udata);
+	SoundSamplePtr curSoundBuffer = datp->soundBuffer_;
+	uint16_t curPlayOffset = *datp->playOffset_;
+	SoundSample v1 = datp->lastv_;
+	auto *dst = reinterpret_cast<SoundSamplePtr>(rawStream);
 
 	len >>= 1; /* convert byte length to sample count (16-bit samples) */
 
-#if dbglog_SoundStuff
-	dbglog_writeln("Enter my_audio_callback");
-	dbglog_writelnNum("len", len);
-#endif
+	if constexpr (kDbglogSoundStuff)
+	{
+		dbglog_writeln("Enter FillAudioCallback");
+		dbglog_writelnNum("len", len);
+	}
 
 	while (len > 0)
 	{
-		ToPlayLen = *datp->fFillOffset - CurPlayOffset;
-		FilledSoundBuffs = ToPlayLen >> kLnOneBuffLen;
+		uint16_t toPlayLen = *datp->fillOffset_ - curPlayOffset;
+		uint16_t filledSoundBuffs = toPlayLen >> kLnOneBuffLen;
 
-		if (!datp->wantplaying)
+		if (!datp->wantPlaying_)
 		{
-#if dbglog_SoundStuff
-			dbglog_writeln("playing end transistion");
-#endif
-
-			SoundRampTo(&v1, K_CENTER_TEMP_SOUND, &dst, &len);
-
-			ToPlayLen = 0;
-		}
-		else if (!datp->HaveStartedPlaying)
-		{
-#if dbglog_SoundStuff
-			dbglog_writeln("playing start block");
-#endif
-
-			if ((ToPlayLen >> kLnOneBuffLen) < 8)
+			if constexpr (kDbglogSoundStuff)
 			{
-				ToPlayLen = 0;
+				dbglog_writeln("playing end transition");
+			}
+
+			SoundRampTo(&v1, kCenterTempSound, &dst, &len);
+			toPlayLen = 0;
+		}
+		else if (!datp->haveStartedPlaying_)
+		{
+			if constexpr (kDbglogSoundStuff)
+			{
+				dbglog_writeln("playing start block");
+			}
+
+			if ((toPlayLen >> kLnOneBuffLen) < 8)
+			{
+				toPlayLen = 0;
 			}
 			else
 			{
-				SoundSamplePtr p = datp->fTheSoundBuffer + (CurPlayOffset & kAllBuffMask);
-				SoundSample v2 = CONVERT_TEMP_SOUND_SAMPLE_FROM_NATIVE(*p);
+				SoundSamplePtr p = datp->soundBuffer_ + (curPlayOffset & kAllBuffMask);
+				SoundSample v2 = SampleFromNative(*p);
 
-#if dbglog_SoundStuff
-				dbglog_writeln("have enough samples to start");
-#endif
+				if constexpr (kDbglogSoundStuff)
+				{
+					dbglog_writeln("have enough samples to start");
+				}
 
 				SoundRampTo(&v1, v2, &dst, &len);
 
 				if (v1 == v2)
 				{
-#if dbglog_SoundStuff
-					dbglog_writeln("finished start transition");
-#endif
-
-					datp->HaveStartedPlaying = true;
+					if constexpr (kDbglogSoundStuff)
+					{
+						dbglog_writeln("finished start transition");
+					}
+					datp->haveStartedPlaying_ = true;
 				}
 			}
 		}
 
-		if (0 == len)
+		if (len == 0)
 		{
 			/* done */
-
-			if (FilledSoundBuffs < *datp->fMinFilledSoundBuffs)
+			if (filledSoundBuffs < *datp->minFilledSoundBuffs_)
 			{
-				*datp->fMinFilledSoundBuffs = FilledSoundBuffs;
+				*datp->minFilledSoundBuffs_ = filledSoundBuffs;
 			}
 		}
-		else if (0 == ToPlayLen)
+		else if (toPlayLen == 0)
 		{
-
-#if dbglog_SoundStuff
-			dbglog_writeln("under run");
-#endif
-
-			for (i = 0; i < len; ++i)
+			if constexpr (kDbglogSoundStuff)
 			{
-				*dst++ = CONVERT_TEMP_SOUND_SAMPLE_TO_NATIVE(v1);
+				dbglog_writeln("under run");
 			}
-			*datp->fMinFilledSoundBuffs = 0;
+
+			for (int i = 0; i < len; ++i)
+			{
+				*dst++ = SampleToNative(v1);
+			}
+			*datp->minFilledSoundBuffs_ = 0;
 			break;
 		}
 		else
 		{
-			uint16_t PlayBuffContig = kAllBuffLen - (CurPlayOffset & kAllBuffMask);
-			SoundSamplePtr p = CurSoundBuffer + (CurPlayOffset & kAllBuffMask);
+			uint16_t playBuffContig = kAllBuffLen - (curPlayOffset & kAllBuffMask);
+			SoundSamplePtr p = curSoundBuffer + (curPlayOffset & kAllBuffMask);
 
-			if (ToPlayLen > PlayBuffContig)
+			if (toPlayLen > playBuffContig)
 			{
-				ToPlayLen = PlayBuffContig;
+				toPlayLen = playBuffContig;
 			}
-			if (ToPlayLen > len)
+			if (toPlayLen > static_cast<uint16_t>(len))
 			{
-				ToPlayLen = len;
+				toPlayLen = static_cast<uint16_t>(len);
 			}
 
-			for (i = 0; i < ToPlayLen; ++i)
+			for (int i = 0; i < toPlayLen; ++i)
 			{
 				*dst++ = *p++;
 			}
-			v1 = CONVERT_TEMP_SOUND_SAMPLE_FROM_NATIVE(p[-1]);
+			v1 = SampleFromNative(p[-1]);
 
-			CurPlayOffset += ToPlayLen;
-			len -= ToPlayLen;
+			curPlayOffset += toPlayLen;
+			len -= toPlayLen;
 
-			*datp->fPlayOffset = CurPlayOffset;
+			*datp->playOffset_ = curPlayOffset;
 		}
 	}
 
-	datp->lastv = v1;
+	datp->lastv_ = v1;
 }
-static void SDLCALL sdl3_audio_callback(void *udata, SDL_AudioStream *stream, int addAmount,
-										int /*amount*/)
+
+static void SDLCALL Sdl3AudioCallback(void *udata, SDL_AudioStream *stream, int addAmount,
+									  int /*amount*/)
 {
-	/* https://github.com/libsdl-org/sdl/blob/main/docs/README-migration.md#sdl_audioh */
 	if (addAmount > 0)
 	{
-		Uint8 *data = SDL_stack_alloc(Uint8, addAmount);
+		auto *data = static_cast<uint8_t *>(SDL_stack_alloc(Uint8, addAmount));
 		if (data)
 		{
-			my_audio_callback(udata, data, addAmount);
+			FillAudioCallback(udata, data, addAmount);
 			SDL_PutAudioStreamData(stream, data, addAmount);
 			SDL_stack_free(data);
 		}
@@ -375,59 +357,62 @@ static bool s_haveSoundOut = false;
 
 void Sound_Stop()
 {
-#if dbglog_SoundStuff
-	dbglog_writeln("enter Sound_Stop");
-#endif
-
-	if (s_curAudio.wantplaying && s_haveSoundOut)
+	if constexpr (kDbglogSoundStuff)
 	{
-		uint16_t retry_limit = 50; /* half of a second */
+		dbglog_writeln("enter Sound_Stop");
+	}
 
-		s_curAudio.wantplaying = false;
+	if (s_curAudio.wantPlaying_ && s_haveSoundOut)
+	{
+		uint16_t retryLimit = 50; /* half of a second */
 
-		while (K_CENTER_TEMP_SOUND != s_curAudio.lastv && --retry_limit != 0)
+		s_curAudio.wantPlaying_ = false;
+
+		while (s_curAudio.lastv_ != kCenterTempSound && --retryLimit != 0)
 		{
 			/*
 				give time back, particularly important
 				if got here on a suspend event.
 			*/
+			if constexpr (kDbglogSoundStuff)
+			{
+				dbglog_writeln("busy, so sleep");
+			}
 
-#if dbglog_SoundStuff
-			dbglog_writeln("busy, so sleep");
-#endif
-
-			(void)SDL_Delay(10);
+			SDL_Delay(10);
 		}
 
-#if dbglog_SoundStuff
-		if (K_CENTER_TEMP_SOUND == s_curAudio.lastv)
+		if constexpr (kDbglogSoundStuff)
 		{
-			dbglog_writeln("reached kCenterTempSound");
+			if (s_curAudio.lastv_ == kCenterTempSound)
+			{
+				dbglog_writeln("reached kCenterTempSound");
+			}
+			else
+			{
+				dbglog_writeln("retry limit reached");
+			}
 		}
-		else
-		{
-			dbglog_writeln("retry limit reached");
-		}
-#endif
 
-		SDL_PauseAudioDevice(SDL_GetAudioStreamDevice(stream));
+		SDL_PauseAudioDevice(SDL_GetAudioStreamDevice(s_stream));
 	}
 
-#if dbglog_SoundStuff
-	dbglog_writeln("leave Sound_Stop");
-#endif
+	if constexpr (kDbglogSoundStuff)
+	{
+		dbglog_writeln("leave Sound_Stop");
+	}
 }
 
 void Sound_Start()
 {
-	if ((!s_curAudio.wantplaying) && s_haveSoundOut)
+	if (!s_curAudio.wantPlaying_ && s_haveSoundOut)
 	{
 		Sound_Start0();
-		s_curAudio.lastv = K_CENTER_TEMP_SOUND;
-		s_curAudio.HaveStartedPlaying = false;
-		s_curAudio.wantplaying = true;
+		s_curAudio.lastv_ = kCenterTempSound;
+		s_curAudio.haveStartedPlaying_ = false;
+		s_curAudio.wantPlaying_ = true;
 
-		SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
+		SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(s_stream));
 	}
 }
 
@@ -435,38 +420,34 @@ void Sound_UnInit()
 {
 	if (s_haveSoundOut)
 	{
-		SDL_DestroyAudioStream(stream);
+		SDL_DestroyAudioStream(s_stream);
 	}
 }
 
-#define SOUND_SAMPLERATE 22255 /* = round(7833600 * 2 / 704) */
-
 bool Sound_Init()
 {
-#if DBGLOG_OSG_INIT
-	dbglog_writeln("enter Sound_Init");
-#endif
-
-	SDL_AudioSpec desired;
+	if constexpr (kDbglogOsgInit)
+	{
+		dbglog_writeln("enter Sound_Init");
+	}
 
 	Sound_Init0();
 
-	s_curAudio.fTheSoundBuffer = s_soundBuffer;
-	s_curAudio.fPlayOffset = &ThePlayOffset;
-	s_curAudio.fFillOffset = &TheFillOffset;
-	s_curAudio.fMinFilledSoundBuffs = &MinFilledSoundBuffs;
-	s_curAudio.wantplaying = false;
+	s_curAudio.soundBuffer_ = s_soundBuffer;
+	s_curAudio.playOffset_ = &s_playOffset;
+	s_curAudio.fillOffset_ = &s_fillOffset;
+	s_curAudio.minFilledSoundBuffs_ = &s_minFilledSoundBuffs;
+	s_curAudio.wantPlaying_ = false;
 
-	desired.freq = SOUND_SAMPLERATE;
+	SDL_AudioSpec desired;
+	desired.freq = kSoundSampleRate;
 	desired.format = SDL_AUDIO_S16;
-
 	desired.channels = 1;
-	stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &desired,
-									   (SDL_AudioStreamCallback)sdl3_audio_callback,
-									   (void *)&s_curAudio);
 
-	/* Open the audio device */
-	if (stream == nullptr)
+	s_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &desired,
+										 Sdl3AudioCallback, static_cast<void *>(&s_curAudio));
+
+	if (s_stream == nullptr)
 	{
 		fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
 	}
@@ -487,9 +468,7 @@ bool Sound_Init()
 
 void Sound_EndWrite(uint16_t actL)
 {
-	if (Sound_EndWrite0(actL))
-	{
-	}
+	Sound_EndWrite0(actL);
 }
 
 void Sound_SecondNotify()
@@ -502,7 +481,7 @@ void Sound_SecondNotify()
 
 bool Sound_AllocBuffer()
 {
-	return AllocBlock((uint8_t **)&s_soundBuffer, dbhBufferSize, false);
+	return AllocBlock(reinterpret_cast<uint8_t **>(&s_soundBuffer), kDbhBufferSize, false);
 }
 
 void Sound_FreeBuffer()

@@ -247,3 +247,4 @@ add_executable(tests
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME tests COMMAND tests WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
