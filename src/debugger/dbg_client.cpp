@@ -115,10 +115,11 @@ int DebugClientMain(int argc, char *argv[])
 
 	if (command)
 	{
-		/* One-shot mode: send command, print response, exit */
+		/* One-shot mode: read initial prompt, send command, read response */
+		RecvResponse(fd); /* consume initial prompt + EOT */
 		std::string msg = std::string(command) + "\n";
 		send(fd, msg.data(), msg.size(), 0);
-		RecvResponse(fd);
+		RecvResponse(fd); /* read command response */
 		std::fflush(stdout);
 		close(fd);
 		return 0;
