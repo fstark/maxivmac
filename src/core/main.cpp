@@ -35,6 +35,7 @@
 #include "debugger/debugger.h"
 #include "debugger/dbg_io.h"
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <unistd.h>
@@ -497,6 +498,10 @@ EmulatorConfig &GetEmulatorConfigMut()
 */
 void ProgramEarlyInit(int argc, char *argv[])
 {
+	/* Intercept "debug" subcommand before normal arg parsing */
+	if (argc >= 2 && std::strcmp(argv[1], "debug") == 0)
+		std::exit(DebugClientMain(argc - 1, argv + 1));
+
 	s_launchConfig = ParseCommandLine(argc, argv);
 	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
 
