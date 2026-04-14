@@ -32,6 +32,11 @@ public:
 	void setNexting(uint32_t savedSP, uint32_t count = 1);
 	void setUntil(uint32_t addr);
 
+	// Instruction-count breakpoint
+	uint32_t setInsnBreak(uint32_t insnNumber);
+	uint32_t insnBreakId() const;
+	uint32_t insnBreakCount() const;
+
 	// Breakpoint/watchpoint management (used by cmd_break.cpp)
 	struct Breakpoint
 	{

@@ -76,6 +76,17 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 	if (args.empty() || args[0].kind == Token::Kind::End)
 	{
 		std::printf("Usage: break <location> [if <cond>]\n");
+		std::printf("       break #<insn>   Break at instruction number\n");
+		return;
+	}
+
+	/* break #N — instruction-count breakpoint */
+	if (args[0].kind == Token::Kind::Operator && args[0].text == "#" && args.size() >= 2 &&
+		args[1].kind == Token::Kind::Number)
+	{
+		uint32_t n = args[1].numValue;
+		uint32_t id = dbg.setInsnBreak(n);
+		std::printf("Breakpoint %u at instruction #%u\n", id, n);
 		return;
 	}
 

@@ -19,6 +19,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+extern uint32_t g_instructionCount;
+
 /* ── Forward declarations for command handlers ──────── */
 
 void CmdRun(Debugger &dbg, const std::vector<Token> &args);
@@ -138,6 +140,10 @@ struct Debugger::Impl
 	std::vector<Debugger::Breakpoint> breakpoints;
 	std::vector<Debugger::Watchpoint> watchpoints;
 
+	/* Instruction-count breakpoint (0 = disabled) */
+	uint32_t insnBreakId = 0;
+	uint32_t insnBreakCount = 0;
+
 	/* Trace flags */
 	bool trTraps = false;
 	bool trInsn = false;
@@ -231,6 +237,22 @@ void Debugger::setUntil(uint32_t addr)
 	impl_->state = DbgState::Running;
 }
 
+uint32_t Debugger::setInsnBreak(uint32_t insnNumber)
+{
+	impl_->insnBreakId = impl_->nextBpId++;
+	impl_->insnBreakCount = insnNumber;
+	return impl_->insnBreakId;
+}
+
+uint32_t Debugger::insnBreakId() const
+{
+	return impl_->insnBreakId;
+}
+uint32_t Debugger::insnBreakCount() const
+{
+	return impl_->insnBreakCount;
+}
+
 /* ── Breakpoint/watchpoint management ───────────────── */
 
 uint32_t Debugger::addBreakpoint(uint32_t addr, uint16_t trapWord, const std::string &condition)
@@ -263,6 +285,12 @@ uint32_t Debugger::addWatchpoint(uint32_t addr, uint32_t len, char mode, bool ha
 
 bool Debugger::deleteById(uint32_t id)
 {
+	if (impl_->insnBreakId == id && impl_->insnBreakCount != 0)
+	{
+		impl_->insnBreakId = 0;
+		impl_->insnBreakCount = 0;
+		return true;
+	}
 	for (auto it = impl_->breakpoints.begin(); it != impl_->breakpoints.end(); ++it)
 	{
 		if (it->id == id)
@@ -584,6 +612,18 @@ bool Debugger::instructionHook(uint32_t pc)
 			commandLoop();
 			return true;
 		}
+	}
+
+	/* Instruction-count breakpoint */
+	if (impl_->insnBreakCount != 0 && g_instructionCount >= impl_->insnBreakCount)
+	{
+		uint32_t id = impl_->insnBreakId;
+		uint32_t target = impl_->insnBreakCount;
+		impl_->insnBreakCount = 0; /* one-shot */
+		std::printf("Breakpoint %u at instruction #%u\n", id, target);
+		stop("");
+		commandLoop();
+		return true;
 	}
 
 	/* Breakpoint check */

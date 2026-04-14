@@ -39,6 +39,7 @@ void CmdHelp(Debugger &dbg, const std::vector<Token> &args)
 
 	std::printf("Breakpoints:\n");
 	std::printf("  break <loc> [if <cond>] (b)  Set breakpoint\n");
+	std::printf("  break #<insn>                Break at instruction number\n");
 	std::printf("  watch <addr> [len]           Write watchpoint\n");
 	std::printf("  rwatch <addr> [len]          Read watchpoint\n");
 	std::printf("  awatch <addr> [len]          Access watchpoint\n");

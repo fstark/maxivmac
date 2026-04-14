@@ -35,13 +35,21 @@ static void InfoBreak(Debugger &dbg)
 	auto &bps = dbg.breakpoints();
 	auto &wps = dbg.watchpoints();
 
-	if (bps.empty() && wps.empty())
+	if (bps.empty() && wps.empty() && dbg.insnBreakCount() == 0)
 	{
 		std::printf("No breakpoints or watchpoints.\n");
 		return;
 	}
 
 	std::printf("Num  Type        Enb  Address     What\n");
+
+	/* Instruction-count breakpoint (if set) */
+	if (dbg.insnBreakCount() != 0)
+	{
+		std::printf("%-4u insn-break  y    -           at instruction #%u\n", dbg.insnBreakId(),
+					dbg.insnBreakCount());
+	}
+
 	for (auto &bp : bps)
 	{
 		const char *enb = bp.enabled ? "y" : "n";
