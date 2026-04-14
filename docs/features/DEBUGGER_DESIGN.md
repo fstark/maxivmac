@@ -15,6 +15,9 @@ sees only a single header with a narrow interface.
 src/debugger/
     debugger.h          # Public interface — the only header included outside
     debugger.cpp        # Debugger object, CPU/trap hooks, command dispatch
+    dbg_io.h            # I/O abstraction: DbgIO base, StdioIO, SocketIO
+    dbg_io.cpp          # StdioIO and SocketIO implementations
+    dbg_client.cpp      # Client-mode entry point (maxivmac debug)
     cmd_parser.cpp      # Line tokenizer and argument parsing
     cmd_parser.h
     cmd_exec.cpp        # Execution commands (run/step/next/finish/until)
@@ -697,6 +700,333 @@ The debugger should have unit tests under `test/debugger/`.  Key areas:
 
 These are all self-contained data structures that can be tested without
 booting the emulator.  Use the existing doctest framework.
+
+---
+
+## 16.  I/O Abstraction (DbgIO)
+
+All debugger I/O (`std::printf` for output, `std::fgets` for input)
+must be routed through a polymorphic interface so the same command
+handlers work with both the interactive stdin/stdout mode and the
+Unix-socket server mode.
+
+### 16.1  `DbgIO` base class
+
+```cpp
+// src/debugger/dbg_io.h
+#pragma once
+#include <cstdarg>
+#include <string_view>
+
+class DbgIO {
+public:
+    virtual ~DbgIO() = default;
+
+    // Read one line of input (blocking).  Returns false on EOF/error.
+    virtual bool readLine(char *buf, size_t len) = 0;
+
+    // Formatted write — printf semantics.
+    virtual void write(const char *fmt, ...) = 0;
+
+    // Mark end of one command response (no-op for stdio; sends EOT
+    // byte for socket mode).
+    virtual void endResponse() = 0;
+
+    // Flush the output stream.
+    virtual void flush() = 0;
+};
+```
+
+### 16.2  `StdioIO` — stdin/stdout transport
+
+Used by `--debugger`.  Wraps `std::fgets(stdin)` and `std::printf`.
+`endResponse()` is a no-op.  `flush()` calls `std::fflush(stdout)`.
+
+```cpp
+class StdioIO final : public DbgIO {
+public:
+    bool readLine(char *buf, size_t len) override;   // fgets(buf, len, stdin)
+    void write(const char *fmt, ...) override;       // vprintf(fmt, ap)
+    void endResponse() override {}                   // no-op
+    void flush() override;                           // fflush(stdout)
+};
+```
+
+### 16.3  `SocketIO` — Unix domain socket transport
+
+Used by `--debugserver`.  Wraps `recv`/`send` on an accepted client
+file descriptor.
+
+```cpp
+class SocketIO final : public DbgIO {
+public:
+    explicit SocketIO(int listenFd);
+    ~SocketIO() override;
+
+    bool readLine(char *buf, size_t len) override;   // recv until '\n'
+    void write(const char *fmt, ...) override;       // send formatted
+    void endResponse() override;                     // send '\x04\n'
+    void flush() override {}                         // send is unbuffered
+
+    // Accept a client connection (blocks).  Must be called before
+    // readLine/write.  Returns false if the listen socket was closed.
+    bool acceptClient();
+
+    // Close the current client connection.
+    void closeClient();
+
+private:
+    int listenFd_ = -1;
+    int clientFd_ = -1;
+    // Internal read buffer for line assembly from recv() chunks.
+    char recvBuf_[4096] {};
+    size_t recvPos_ = 0;
+    size_t recvLen_ = 0;
+};
+```
+
+**Socket setup** (done in `Debugger::create()` when `--debugserver`):
+
+1. `socket(AF_UNIX, SOCK_STREAM, 0)` → `listenFd`.
+2. Construct path: `/tmp/maxivmac-dbg-<PID>.sock` or the user-supplied
+   path.
+3. `unlink(path)` (remove any stale socket), `bind`, `listen(1)`.
+4. Print `"debugserver: listening on <path>\n"` to stderr.
+5. Register an `atexit()` handler to `unlink(path)` on exit.
+
+**Per-command flow:**
+
+1. `acceptClient()` blocks until a client connects.
+2. Command loop: `readLine()` → dispatch → `write(...)` →
+   `endResponse()` → loop.
+3. On client EOF (`readLine` returns false): `closeClient()`,
+   call `acceptClient()` to wait for the next client.
+
+The command loop in `debugger.cpp` does not change structurally — it
+calls `io_->readLine()` instead of `std::fgets(stdin)` and commands
+call `io_->write()` instead of `std::printf()`.
+
+### 16.4  Command handler migration
+
+All `std::printf(...)` calls in `debugger.cpp` and `cmd_*.cpp` are
+replaced with `io.write(...)`, where `io` is obtained via
+`dbg.io()` (a new accessor).  This is a mechanical find-and-replace:
+
+```cpp
+// Before:
+std::printf("Breakpoint %u at $%08X\n", id, addr);
+
+// After:
+dbg.io().write("Breakpoint %u at $%08X\n", id, addr);
+```
+
+`commandLoop()` changes:
+
+```cpp
+// Before:
+std::printf("(dbg) ");
+std::fflush(stdout);
+if (!std::fgets(buf, sizeof(buf), stdin)) { ... }
+
+// After:
+io_->write("(dbg) ");
+io_->flush();
+if (!io_->readLine(buf, sizeof(buf))) { ... }
+```
+
+The `io()` accessor returns a `DbgIO&` reference stored in `Impl`:
+
+```cpp
+// In debugger.h:
+DbgIO &io();
+
+// In Debugger::Impl:
+std::unique_ptr<DbgIO> io_;
+```
+
+---
+
+## 17.  Debug Server Startup
+
+### 17.1  `--debugserver` flag
+
+Parsed in `config_loader.cpp`.  Added to `LaunchConfig`:
+
+```cpp
+std::string debugServerPath;  // empty = not enabled, "auto" = default path
+```
+
+`--debugserver` without `=PATH` sets `debugServerPath = "auto"`.
+`--debugserver=/path/to/sock` sets the explicit path.
+
+`--debugger` and `--debugserver` are mutually exclusive — if both are
+passed, print an error and exit.
+
+### 17.2  Initialization sequence
+
+In `ProgramEarlyInit()`:
+
+```cpp
+if (s_launchConfig.debugger) {
+    Debugger::create(std::make_unique<StdioIO>());
+    g_debuggerActive = true;
+} else if (!s_launchConfig.debugServerPath.empty()) {
+    auto path = s_launchConfig.debugServerPath;
+    if (path == "auto")
+        path = "/tmp/maxivmac-dbg-" + std::to_string(getpid()) + ".sock";
+    auto socketIO = std::make_unique<SocketIO>(createListenSocket(path));
+    std::fprintf(stderr, "debugserver: listening on %s\n", path.c_str());
+    Debugger::create(std::move(socketIO));
+    g_debuggerActive = true;
+}
+```
+
+`Debugger::create()` gains a `std::unique_ptr<DbgIO>` parameter.
+
+---
+
+## 18.  Client Mode (`maxivmac debug`)
+
+### 18.1  Subcommand interception
+
+In `ProgramEarlyInit()`, before `ParseCommandLine()`:
+
+```cpp
+if (argc >= 2 && std::strcmp(argv[1], "debug") == 0) {
+    std::exit(DebugClientMain(argc - 1, argv + 1));
+}
+```
+
+This early exit means zero emulator initialization occurs.  The
+function `DebugClientMain` lives in `src/debugger/dbg_client.cpp`.
+
+### 18.2  `DebugClientMain` implementation
+
+```cpp
+// src/debugger/dbg_client.cpp
+int DebugClientMain(int argc, char *argv[]);
+```
+
+~80 lines.  Algorithm:
+
+1. Parse `--socket=PATH` if present (shift argv).
+2. If no `--socket`: scan `/tmp/maxivmac-dbg-*.sock` using `glob()`.
+   - 0 matches → print error, exit 1.
+   - 1 match → use it.
+   - N matches → print list, exit 1.
+3. `socket(AF_UNIX, SOCK_STREAM, 0)` → `connect()`.
+4. If remaining args contain a command string:
+   - **One-shot mode:** `send(cmd + "\n")`, `recv` until EOT,
+     write to stdout, close, exit.
+5. If no command arg:
+   - **Interactive mode:** loop on `fgets(stdin)` (or readline if
+     available), send each line, recv until EOT, print.  Exit on
+     EOF or `quit`.
+
+### 18.3  Socket auto-discovery
+
+```cpp
+static std::string FindSocket()
+{
+    glob_t g;
+    if (glob("/tmp/maxivmac-dbg-*.sock", 0, nullptr, &g) != 0)
+        return {};
+    if (g.gl_pathc == 1) {
+        std::string result = g.gl_pathv[0];
+        globfree(&g);
+        return result;
+    }
+    // Multiple or zero — print diagnostics
+    if (g.gl_pathc > 1) {
+        std::fprintf(stderr, "Multiple debug servers found:\n");
+        for (size_t i = 0; i < g.gl_pathc; ++i)
+            std::fprintf(stderr, "  %s\n", g.gl_pathv[i]);
+        std::fprintf(stderr, "Use --socket=PATH to select one.\n");
+    }
+    globfree(&g);
+    return {};
+}
+```
+
+### 18.4  EOT framing
+
+The client reads from the socket into a buffer and scans for the EOT
+sentinel (`'\x04'`).  Everything before the EOT is the command
+response — written to stdout verbatim.  The EOT itself is not printed.
+
+```cpp
+static bool RecvResponse(int fd)
+{
+    char buf[4096];
+    for (;;) {
+        ssize_t n = recv(fd, buf, sizeof(buf), 0);
+        if (n <= 0) return false;
+        for (ssize_t i = 0; i < n; ++i) {
+            if (buf[i] == '\x04') return true;
+            putchar(buf[i]);
+        }
+    }
+}
+```
+
+---
+
+## 19.  Build Integration Update
+
+### CMakeLists.txt additions
+
+```cmake
+    # Debugger
+    src/debugger/dbg_io.cpp
+    src/debugger/dbg_client.cpp
+```
+
+Added alongside the existing debugger sources.  `dbg_client.cpp` is
+compiled into the main binary — it's only reached via the `argv[1]`
+early exit so has zero cost in normal emulator mode.
+
+No new external dependencies.  Unix domain sockets are part of POSIX
+(`<sys/socket.h>`, `<sys/un.h>`).
+
+---
+
+## 20.  Testing (Debug Server)
+
+### Unit tests
+
+In `test/test_debugger.cpp`:
+
+- **StdioIO** — cannot easily unit-test (requires stdin/stdout pipes);
+  covered by the existing smoke test.
+- **SocketIO** — create a `socketpair(AF_UNIX, ...)`, wrap the server
+  end in a `SocketIO`, write a command from the client end, verify
+  the response and EOT framing.
+- **EOT framing** — send a multi-line response, verify the client
+  receives everything before EOT and nothing after.
+- **Socket auto-discovery** — create a temp socket file, verify
+  `FindSocket()` returns it; create two, verify it returns empty.
+
+### Integration test
+
+Extend `test/debugger_smoke.sh` with server-mode tests:
+
+```bash
+# Start emulator in server mode
+$MAXIVMAC --debugserver --model MacPlus --headless 608.hfs &
+SERVER_PID=$!
+sleep 1
+
+# Discover socket
+SOCK="/tmp/maxivmac-dbg-${SERVER_PID}.sock"
+
+# One-shot commands
+$MAXIVMAC debug --socket="$SOCK" "info reg" | grep -q "D0="
+$MAXIVMAC debug --socket="$SOCK" "step"
+$MAXIVMAC debug --socket="$SOCK" "info reg" | grep -q "PC="
+$MAXIVMAC debug --socket="$SOCK" "quit"
+
+wait $SERVER_PID
+```
 
 Integration-level tests (command sequences against a running CPU) are
 harder and can come later — the unit tests above cover the riskiest

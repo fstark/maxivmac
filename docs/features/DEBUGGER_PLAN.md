@@ -19,6 +19,10 @@ Spec: [DEBUGGER.md](DEBUGGER.md)
 | 12 | CLI wiring and startup integration | DONE |
 | 13 | Next, finish, until, and SIGINT handling | DONE |
 | 14 | End-to-end smoke test | DONE |
+| 15 | I/O abstraction (DbgIO interface) | |
+| 16 | SocketIO and debug server mode | |
+| 17 | Client mode (maxivmac debug) | |
+| 18 | Debug server integration test | |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
 Test gate:  `./bld/macos/tests`
@@ -1171,3 +1175,664 @@ at the top of the relevant `cmd_*.cpp` file for later fix.
 - [ ] Manual session completes without crashes
 - [ ] Full build clean
 - [ ] Commit: `"debugger: phase 14 — smoke test"`
+
+---
+
+## Phase 15 — I/O Abstraction (DbgIO Interface)
+
+Extract all debugger I/O behind a polymorphic interface so the command
+loop and every command handler are transport-agnostic.  This phase
+does not add socket support — it only introduces the abstraction and
+migrates the existing stdin/stdout code to use it.
+
+See Design §16.
+
+### 15.1 — Create `src/debugger/dbg_io.h`
+
+Define the `DbgIO` abstract base class:
+
+```cpp
+// src/debugger/dbg_io.h
+#pragma once
+#include <cstdarg>
+#include <cstddef>
+
+class DbgIO {
+public:
+    virtual ~DbgIO() = default;
+
+    // Read one line of input (blocking).  Returns false on EOF/error.
+    virtual bool readLine(char *buf, size_t len) = 0;
+
+    // Formatted write — printf semantics.
+    virtual void write(const char *fmt, ...) = 0;
+
+    // Mark end of one command's response.
+    // StdioIO: no-op.  SocketIO: sends EOT byte.
+    virtual void endResponse() = 0;
+
+    // Flush the output stream.
+    virtual void flush() = 0;
+};
+```
+
+### 15.2 — Create `src/debugger/dbg_io.cpp` with `StdioIO`
+
+Implement the stdio transport that wraps the existing behaviour:
+
+```cpp
+// src/debugger/dbg_io.cpp
+#include "debugger/dbg_io.h"
+#include <cstdio>
+
+class StdioIO final : public DbgIO {
+public:
+    bool readLine(char *buf, size_t len) override
+    {
+        return std::fgets(buf, static_cast<int>(len), stdin) != nullptr;
+    }
+
+    void write(const char *fmt, ...) override
+    {
+        std::va_list ap;
+        va_start(ap, fmt);
+        std::vprintf(fmt, ap);
+        va_end(ap);
+    }
+
+    void endResponse() override {}
+
+    void flush() override { std::fflush(stdout); }
+};
+```
+
+Also provide a factory function declared in `dbg_io.h`:
+
+```cpp
+// In dbg_io.h:
+#include <memory>
+std::unique_ptr<DbgIO> CreateStdioIO();
+```
+
+### 15.3 — Add `DbgIO` to the Debugger object
+
+Modify `Debugger::Impl` to hold a `std::unique_ptr<DbgIO> io_`.
+
+Change `Debugger::create()` signature:
+
+```cpp
+// In debugger.h:
+static void create(std::unique_ptr<DbgIO> io = nullptr);
+```
+
+When `io` is nullptr, `create()` defaults to `CreateStdioIO()`.
+This preserves backward compatibility — the existing `--debugger`
+startup code doesn't need to change yet.
+
+Add a public accessor:
+
+```cpp
+// In debugger.h:
+DbgIO &io();
+```
+
+### 15.4 — Migrate `commandLoop()` in `debugger.cpp`
+
+Replace the direct `fgets`/`printf`/`fflush` calls:
+
+```cpp
+// Before:
+std::printf("(dbg) ");
+std::fflush(stdout);
+if (!std::fgets(buf, sizeof(buf), stdin)) { ... }
+
+// After:
+impl_->io_->write("(dbg) ");
+impl_->io_->flush();
+if (!impl_->io_->readLine(buf, sizeof(buf))) { ... }
+```
+
+Also replace any `std::printf(...)` calls within `debugger.cpp`
+(the ~17 calls for stop reasons, startup banner, instruction display,
+etc.) with `impl_->io_->write(...)`.
+
+### 15.5 — Migrate all `cmd_*.cpp` files
+
+All command handlers receive a `Debugger &dbg` reference.  Replace
+every `std::printf(...)` in each `cmd_*.cpp` with `dbg.io().write(...)`:
+
+| File | Approx. replacements |
+|------|---------------------|
+| `cmd_exec.cpp` | 6 |
+| `cmd_break.cpp` | 30 |
+| `cmd_memory.cpp` | 34 |
+| `cmd_trace.cpp` | 13 |
+| `cmd_info.cpp` | 36 |
+| `cmd_help.cpp` | 45 |
+
+This is a mechanical search-and-replace.  No logic changes.
+
+### 15.6 — Update CMakeLists.txt
+
+Add `src/debugger/dbg_io.cpp` to the debugger sources list.
+
+### 15.7 — Tests
+
+Add to `test/test_debugger.cpp`:
+
+- **StdioIO creation** — verify `CreateStdioIO()` returns non-null.
+- **DbgIO interface through a mock** — create a `TestIO` subclass that
+  captures all `write()` output into a `std::string` and feeds
+  `readLine()` from a pre-loaded buffer.  Verify:
+  - `write("hello %d", 42)` → captured output is `"hello 42"`.
+  - `readLine()` returns the pre-loaded line.
+  - `endResponse()` can be called without error.
+
+This `TestIO` mock will also be useful for testing command handlers
+in isolation in a future phase.
+
+### Fence
+
+- [ ] `src/debugger/dbg_io.h` exists with `DbgIO` abstract class
+- [ ] `src/debugger/dbg_io.cpp` exists with `StdioIO` implementation
+- [ ] `Debugger::create()` accepts optional `DbgIO` parameter
+- [ ] `Debugger::io()` accessor exists
+- [ ] All `std::printf` calls in debugger sources replaced with `io().write()`
+- [ ] All `std::fgets` calls replaced with `io_->readLine()`
+- [ ] No behaviour change — `--debugger` works identically to before
+- [ ] Unit tests pass: `./bld/macos/tests --test-case="dbgio*"`
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 15 — I/O abstraction (DbgIO interface)"`
+
+---
+
+## Phase 16 — SocketIO and Debug Server Mode
+
+Implement the Unix domain socket transport (`SocketIO`) and the
+`--debugserver` flag.  After this phase, the emulator can listen for
+debugger connections.  The client comes in Phase 17.
+
+See Design §16.3, §17.
+
+### 16.1 — Implement `SocketIO` in `dbg_io.cpp`
+
+Add the `SocketIO` class below `StdioIO` in `dbg_io.cpp`:
+
+```cpp
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+class SocketIO final : public DbgIO {
+public:
+    explicit SocketIO(int listenFd);
+    ~SocketIO() override;
+
+    bool readLine(char *buf, size_t len) override;
+    void write(const char *fmt, ...) override;
+    void endResponse() override;
+    void flush() override {}
+
+    bool acceptClient();
+    void closeClient();
+
+private:
+    int listenFd_ = -1;
+    int clientFd_ = -1;
+    char recvBuf_[4096] {};
+    size_t recvPos_ = 0;
+    size_t recvLen_ = 0;
+};
+```
+
+Key implementation details:
+
+- `readLine()`: recv bytes into `recvBuf_`, scan for `'\n'`, copy the
+  line into `buf`.  Handles partial reads (TCP-style, though sockets
+  are local).  Returns false on client disconnect.
+- `write()`: `vsnprintf` into a stack buffer, then `send()` the
+  formatted bytes.  For large outputs (>4096), use a heap buffer.
+- `endResponse()`: `send` the 2-byte sequence `"\x04\n"`.
+- `acceptClient()`: `accept()` on `listenFd_`, store in `clientFd_`.
+  Blocks until a client connects.
+- `closeClient()`: `close(clientFd_)`, reset `clientFd_ = -1` and
+  clear `recvBuf_` state.
+- Destructor: close both fds if open.
+
+Add factory function in `dbg_io.h`:
+
+```cpp
+std::unique_ptr<DbgIO> CreateSocketIO(int listenFd);
+```
+
+### 16.2 — Add `CreateListenSocket()` helper
+
+In `dbg_io.cpp`, add a free function:
+
+```cpp
+int CreateListenSocket(const std::string &path);
+```
+
+Declared in `dbg_io.h`.  Implementation:
+
+1. `socket(AF_UNIX, SOCK_STREAM, 0)`.
+2. `unlink(path.c_str())` — remove stale socket (ignore errors).
+3. Fill `struct sockaddr_un`, `bind()`, `listen(1)`.
+4. Return the fd.  On error, print to stderr and return -1.
+
+At-exit cleanup: register `atexit()` callback that `unlink`s the
+socket path.  Store the path in a file-scope `static std::string`.
+
+### 16.3 — Add `--debugserver` flag to config_loader
+
+In `config_loader.h`, add to `LaunchConfig`:
+
+```cpp
+std::string debugServerPath;  // empty = not enabled
+```
+
+In `config_loader.cpp`, parse:
+
+```cpp
+if (strcmp(arg, "--debugserver") == 0)
+{
+    lc.debugServerPath = "auto";
+    continue;
+}
+if (strncmp(arg, "--debugserver=", 14) == 0)
+{
+    lc.debugServerPath = arg + 14;
+    continue;
+}
+```
+
+Add to help text:
+
+```
+  --debugserver[=PATH] Start debug server on Unix socket (default /tmp/maxivmac-dbg-<PID>.sock)
+```
+
+Add mutual exclusion check:
+
+```cpp
+if (lc.debugger && !lc.debugServerPath.empty()) {
+    std::fprintf(stderr, "Error: --debugger and --debugserver are mutually exclusive\n");
+    std::exit(1);
+}
+```
+
+### 16.4 — Wire `--debugserver` into startup
+
+In `main.cpp` `ProgramEarlyInit()`, extend the debugger initialization:
+
+```cpp
+if (s_launchConfig.debugger)
+{
+    Debugger::create();  // uses default StdioIO
+    g_debuggerActive = true;
+}
+else if (!s_launchConfig.debugServerPath.empty())
+{
+    auto path = s_launchConfig.debugServerPath;
+    if (path == "auto")
+        path = "/tmp/maxivmac-dbg-" + std::to_string(getpid()) + ".sock";
+    int listenFd = CreateListenSocket(path);
+    if (listenFd < 0) std::exit(1);
+    std::fprintf(stderr, "debugserver: listening on %s\n", path.c_str());
+    Debugger::create(CreateSocketIO(listenFd));
+    g_debuggerActive = true;
+}
+```
+
+### 16.5 — Adapt command loop for socket mode
+
+The `commandLoop()` already calls `io_->readLine()` after Phase 15.
+Two additions:
+
+1. **First entry**: when using `SocketIO`, call `acceptClient()`
+   before the first `readLine()`.  Add a flag `clientConnected_` to
+   `Impl` and check it at the top of `commandLoop()`.
+
+2. **Client disconnect**: when `readLine()` returns false in socket
+   mode, don't exit — call `closeClient()` and `acceptClient()` to
+   wait for the next client.  In stdio mode, false still means exit.
+
+Add a virtual method to `DbgIO` or a query method:
+
+```cpp
+// In DbgIO:
+virtual bool isSocket() const { return false; }
+
+// In SocketIO:
+bool isSocket() const override { return true; }
+```
+
+### 16.6 — Tests
+
+Add to `test/test_debugger.cpp`:
+
+- **CreateListenSocket** — create a socket in `/tmp`, verify the file
+  exists, close it, verify cleanup (manually call unlink).
+- **SocketIO round-trip** — use `socketpair(AF_UNIX, SOCK_STREAM, 0)`
+  to create a connected pair.  Wrap one end in `SocketIO` (pretending
+  it's the accepted client fd — call an internal setter or use a test
+  constructor).  From the other end:
+  - Send `"step 5\n"` → verify `readLine()` returns `"step 5\n"`.
+  - Call `write("hello %d\n", 42)` → recv from the other end, verify
+    `"hello 42\n"`.
+  - Call `endResponse()` → recv, verify `"\x04\n"`.
+- **EOT framing** — verify multi-line response followed by EOT parses
+  correctly on the recv side.
+
+### Fence
+
+- [ ] `SocketIO` implemented in `dbg_io.cpp`
+- [ ] `CreateListenSocket()` implemented and tested
+- [ ] `--debugserver` parsed in config_loader
+- [ ] Mutual exclusion with `--debugger` enforced
+- [ ] Server startup creates socket and prints path to stderr
+- [ ] Command loop handles client connect/disconnect in socket mode
+- [ ] Unit tests pass: `./bld/macos/tests --test-case="socket*"`
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 16 — SocketIO and debug server mode"`
+
+---
+
+## Phase 17 — Client Mode (`maxivmac debug`)
+
+Implement the `maxivmac debug` subcommand — the thin client that
+connects to a running debug server and sends commands.
+
+See Design §18.
+
+### 17.1 — Create `src/debugger/dbg_client.cpp`
+
+Declare the entry point in `dbg_io.h` (or a new `dbg_client.h` —
+but since it's only called from `main.cpp`, a declaration in `dbg_io.h`
+avoids a new header):
+
+```cpp
+// In dbg_io.h:
+int DebugClientMain(int argc, char *argv[]);
+```
+
+Implement in `dbg_client.cpp` (~80 lines):
+
+```cpp
+#include "debugger/dbg_io.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <glob.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+// --- Socket auto-discovery ---
+
+static std::string FindSocket()
+{
+    glob_t g;
+    if (glob("/tmp/maxivmac-dbg-*.sock", 0, nullptr, &g) != 0)
+    {
+        std::fprintf(stderr, "No debug server found.\n");
+        return {};
+    }
+    if (g.gl_pathc == 1)
+    {
+        std::string result = g.gl_pathv[0];
+        globfree(&g);
+        return result;
+    }
+    std::fprintf(stderr, "Multiple debug servers found:\n");
+    for (size_t i = 0; i < g.gl_pathc; ++i)
+        std::fprintf(stderr, "  %s\n", g.gl_pathv[i]);
+    std::fprintf(stderr, "Use --socket=PATH to select one.\n");
+    globfree(&g);
+    return {};
+}
+
+// --- Connect to socket ---
+
+static int ConnectToSocket(const std::string &path)
+{
+    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) { perror("socket"); return -1; }
+
+    struct sockaddr_un addr {};
+    addr.sun_family = AF_UNIX;
+    std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
+
+    if (connect(fd, reinterpret_cast<struct sockaddr *>(&addr),
+                sizeof(addr)) < 0)
+    {
+        perror("connect");
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
+
+// --- Receive until EOT ---
+
+static bool RecvResponse(int fd)
+{
+    char buf[4096];
+    for (;;)
+    {
+        ssize_t n = recv(fd, buf, sizeof(buf), 0);
+        if (n <= 0) return false;
+        for (ssize_t i = 0; i < n; ++i)
+        {
+            if (buf[i] == '\x04') return true;
+            std::putchar(buf[i]);
+        }
+    }
+}
+
+// --- Entry point ---
+
+int DebugClientMain(int argc, char *argv[])
+{
+    std::string socketPath;
+    const char *command = nullptr;
+
+    // Parse args: [--socket=PATH] [command]
+    for (int i = 1; i < argc; ++i)
+    {
+        if (std::strncmp(argv[i], "--socket=", 9) == 0)
+            socketPath = argv[i] + 9;
+        else
+            command = argv[i];
+    }
+
+    if (socketPath.empty())
+        socketPath = FindSocket();
+    if (socketPath.empty())
+        return 1;
+
+    int fd = ConnectToSocket(socketPath);
+    if (fd < 0) return 1;
+
+    if (command)
+    {
+        // One-shot mode
+        std::string msg = std::string(command) + "\n";
+        send(fd, msg.data(), msg.size(), 0);
+        RecvResponse(fd);
+        close(fd);
+        return 0;
+    }
+
+    // Interactive mode
+    char line[1024];
+    for (;;)
+    {
+        std::printf("(dbg) ");
+        std::fflush(stdout);
+        if (!std::fgets(line, sizeof(line), stdin))
+            break;
+        size_t len = std::strlen(line);
+        if (len == 0) continue;
+        send(fd, line, len, 0);
+        if (!RecvResponse(fd)) break;
+    }
+    close(fd);
+    return 0;
+}
+```
+
+### 17.2 — Intercept `debug` subcommand in `main.cpp`
+
+In `ProgramEarlyInit()`, add as the very first thing:
+
+```cpp
+if (argc >= 2 && std::strcmp(argv[1], "debug") == 0)
+{
+    std::exit(DebugClientMain(argc - 1, argv + 1));
+}
+```
+
+This runs before `ParseCommandLine()` — zero emulator initialization.
+
+Add `#include "debugger/dbg_io.h"` at the top of `main.cpp` (the
+header already declares `DebugClientMain`).
+
+### 17.3 — Update CMakeLists.txt
+
+Add `src/debugger/dbg_client.cpp` to the debugger sources list
+(if not already added in Phase 16).
+
+### 17.4 — Tests
+
+Add to `test/test_debugger.cpp`:
+
+- **FindSocket** — create a temp file `/tmp/maxivmac-dbg-test.sock`,
+  verify `FindSocket()` finds it.  Clean up with `unlink`.
+- **ConnectToSocket** — use a `socketpair`, bind one end to a temp
+  path, verify connect from the other end succeeds.
+
+The full integration test is in Phase 18.
+
+### Fence
+
+- [ ] `src/debugger/dbg_client.cpp` exists with `DebugClientMain`
+- [ ] `argv[1] == "debug"` intercepted in `ProgramEarlyInit()`
+- [ ] `maxivmac debug --help` does not crash or start the emulator
+- [ ] One-shot mode sends command and prints response
+- [ ] Interactive mode loops on readline
+- [ ] Unit tests pass
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 17 — client mode (maxivmac debug)"`
+
+---
+
+## Phase 18 — Debug Server Integration Test
+
+End-to-end test that starts the emulator in `--debugserver` mode,
+sends commands via `maxivmac debug`, and verifies responses.
+
+### 18.1 — Extend `test/debugger_smoke.sh`
+
+Add a new section to the existing smoke test script:
+
+```bash
+# --- Debug Server Tests ---
+
+echo "=== Debug server tests ==="
+
+# Start emulator in server mode (headless, no disk needed for basic test)
+$MAXIVMAC --debugserver --model MacPlus --headless 608.hfs &
+SERVER_PID=$!
+
+# Wait for socket to appear
+SOCK="/tmp/maxivmac-dbg-${SERVER_PID}.sock"
+for i in $(seq 1 30); do
+    [ -S "$SOCK" ] && break
+    sleep 0.1
+done
+
+if [ ! -S "$SOCK" ]; then
+    echo "FAIL: debug server socket did not appear"
+    kill $SERVER_PID 2>/dev/null
+    exit 1
+fi
+
+# Test 1: one-shot info reg
+$MAXIVMAC debug --socket="$SOCK" "info reg" | grep -q "D0="
+echo "  [PASS] info reg"
+
+# Test 2: step and verify PC changes
+PC1=$($MAXIVMAC debug --socket="$SOCK" "print pc" | head -1)
+$MAXIVMAC debug --socket="$SOCK" "step"
+PC2=$($MAXIVMAC debug --socket="$SOCK" "print pc" | head -1)
+if [ "$PC1" != "$PC2" ]; then
+    echo "  [PASS] step advances PC"
+else
+    echo "  [FAIL] PC did not change after step"
+    kill $SERVER_PID 2>/dev/null
+    exit 1
+fi
+
+# Test 3: set and read back a breakpoint
+$MAXIVMAC debug --socket="$SOCK" "break \$400000" | grep -q "Breakpoint"
+echo "  [PASS] break command"
+
+$MAXIVMAC debug --socket="$SOCK" "info break" | grep -q "400000"
+echo "  [PASS] info break"
+
+# Test 4: quit
+$MAXIVMAC debug --socket="$SOCK" "quit"
+wait $SERVER_PID 2>/dev/null
+
+# Verify socket cleaned up
+if [ -S "$SOCK" ]; then
+    echo "  [WARN] socket not cleaned up"
+    rm -f "$SOCK"
+fi
+
+echo "All debug server tests passed."
+```
+
+### 18.2 — Verify auto-discovery
+
+Add a test that verifies `maxivmac debug` (without `--socket`) finds
+the running server:
+
+```bash
+# Start server, then use auto-discovery
+$MAXIVMAC --debugserver --model MacPlus --headless 608.hfs &
+SERVER_PID=$!
+SOCK="/tmp/maxivmac-dbg-${SERVER_PID}.sock"
+for i in $(seq 1 30); do [ -S "$SOCK" ] && break; sleep 0.1; done
+
+# Auto-discover (should find exactly one server)
+$MAXIVMAC debug "info reg" | grep -q "D0="
+echo "  [PASS] auto-discovery"
+
+$MAXIVMAC debug "quit"
+wait $SERVER_PID 2>/dev/null
+```
+
+### 18.3 — Clean up stale sockets
+
+Add a cleanup trap at the top of the smoke test:
+
+```bash
+cleanup() {
+    rm -f /tmp/maxivmac-dbg-*.sock
+    kill $SERVER_PID 2>/dev/null || true
+}
+trap cleanup EXIT
+```
+
+### Fence
+
+- [ ] `test/debugger_smoke.sh` has debug server tests
+- [ ] Server starts, accepts connections, responds to commands
+- [ ] One-shot mode works: send command, get response, exit
+- [ ] Auto-discovery works when exactly one server is running
+- [ ] Socket is cleaned up on quit
+- [ ] All smoke tests pass
+- [ ] Full build clean
+- [ ] Commit: `"debugger: phase 18 — debug server integration test"`

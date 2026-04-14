@@ -428,10 +428,94 @@ they have zero fast-path cost.
 
 ---
 
+## Debug Server Mode
+
+### Motivation
+
+The interactive `--debugger` mode reads from stdin and writes to
+stdout.  This is ideal for a human sitting at a terminal, but awkward
+for automation agents (CI scripts, AI coding assistants, test harnesses)
+that want to send a single command and get a single response.
+
+Debug server mode exposes the same command set over a Unix domain
+socket, separating the emulator process from the debugger client.
+
+### Activation
+
+```
+maxivmac --debugserver[=PATH] [other options…]
+```
+
+When `--debugserver` is passed, the emulator starts paused (same as
+`--debugger`) but instead of reading stdin, it listens on a Unix
+domain socket at `PATH`.  If `PATH` is omitted, the default is
+`/tmp/maxivmac-dbg-<PID>.sock`.  The socket path is printed to stderr
+on startup:
+
+```
+debugserver: listening on /tmp/maxivmac-dbg-42.sock
+```
+
+The `--debugger` and `--debugserver` flags are mutually exclusive.
+
+### Client Mode
+
+When `argv[1]` is `debug`, the binary acts as a thin debugger client
+instead of an emulator.  No emulator initialization occurs — the
+`debug` subcommand is intercepted before any emulator setup.
+
+```
+# One-shot: send command, print response, exit
+maxivmac debug "info reg"
+maxivmac debug "break $00400000"
+maxivmac debug "step 5"
+
+# Interactive: readline loop talking to the server
+maxivmac debug
+
+# Explicit socket path (when multiple servers are running)
+maxivmac debug --socket=/tmp/maxivmac-dbg-42.sock "print $d0"
+```
+
+**Socket auto-discovery:** when `--socket` is not provided, the client
+looks for a single `/tmp/maxivmac-dbg-*.sock` file.  If exactly one
+exists, it connects.  If multiple exist, it lists them and exits with
+an error asking the user to specify `--socket=`.
+
+### Protocol
+
+Text-based, one command per line.  Each response is terminated by an
+ASCII EOT byte (`\x04`) on a line by itself:
+
+```
+Client → Server:  step 5\n
+Server → Client:  $00400E2A: 4E75  RTS\n
+                   $0040087C: 2F00  MOVE.L  D0,-(A7)\n
+                   \x04\n
+```
+
+The server accepts one client connection at a time (serialized).
+A second connection blocks until the first disconnects.  The emulator
+is single-threaded, so concurrent commands are not meaningful.
+
+**One-shot mode:** connect → send → read until EOT → print → close.
+
+**Interactive client mode:** keep the connection open, loop on
+readline, send each line, read until EOT, print.
+
+### Personas
+
+**Colin** — an AI coding assistant that needs to inspect emulated Mac
+state.  Colin launches the emulator with `--debugserver`, then sends
+individual commands and parses the responses programmatically.
+
+---
+
 ## Non-Goals (for now)
 
 - **Source-level debugging** — no C/Pascal source correlation.
-- **Remote protocol** — no GDB RSP or MI interface.
+- **GDB RSP / MI protocol** — the debug server uses a simpler
+  text protocol suited to the single-threaded emulator.
 - **GUI** — command-line only; a future ImGui panel may wrap this.
 - **Multi-threading** — the 68K is single-core; no thread awareness.
 - **Script files** — no `source` command to load scripts from files
