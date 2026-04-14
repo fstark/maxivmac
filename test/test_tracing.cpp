@@ -27,17 +27,15 @@ static std::filesystem::path writeTempFile(const char *name, const char *content
 
 TEST_CASE("TrapDefs load basic")
 {
-	auto path = writeTempFile("test_traps_basic.def",
-		"A122 NewHandle os\n"
-		"  in  size:long.D0\n"
-		"  out h:Handle.A0  err:OSErr.D0\n"
-		"\n"
-		"A9A0 GetResource toolbox\n"
-		"  in  resType:OSType  resID:word\n"
-		"  out rsrc:Handle\n"
-		"\n"
-		"A9F4 ExitToShell toolbox noreturn\n"
-	);
+	auto path = writeTempFile("test_traps_basic.def", "A122 NewHandle os\n"
+													  "  in  size:long.D0\n"
+													  "  out h:Handle.A0  err:OSErr.D0\n"
+													  "\n"
+													  "A9A0 GetResource toolbox\n"
+													  "  in  resType:OSType  resID:word\n"
+													  "  out rsrc:Handle\n"
+													  "\n"
+													  "A9F4 ExitToShell toolbox noreturn\n");
 	TrapDefs defs;
 	int count = defs.load(path);
 	CHECK(count == 3);
@@ -46,11 +44,9 @@ TEST_CASE("TrapDefs load basic")
 
 TEST_CASE("TrapDefs find known OS trap")
 {
-	auto path = writeTempFile("test_traps_os.def",
-		"A122 NewHandle os\n"
-		"  in  size:long.D0\n"
-		"  out h:Handle.A0  err:OSErr.D0\n"
-	);
+	auto path = writeTempFile("test_traps_os.def", "A122 NewHandle os\n"
+												   "  in  size:long.D0\n"
+												   "  out h:Handle.A0  err:OSErr.D0\n");
 	TrapDefs defs;
 	defs.load(path);
 
@@ -78,11 +74,9 @@ TEST_CASE("TrapDefs find known OS trap")
 
 TEST_CASE("TrapDefs find toolbox trap")
 {
-	auto path = writeTempFile("test_traps_tb.def",
-		"A9A0 GetResource toolbox\n"
-		"  in  resType:OSType  resID:word\n"
-		"  out rsrc:Handle\n"
-	);
+	auto path = writeTempFile("test_traps_tb.def", "A9A0 GetResource toolbox\n"
+												   "  in  resType:OSType  resID:word\n"
+												   "  out rsrc:Handle\n");
 	TrapDefs defs;
 	defs.load(path);
 
@@ -108,9 +102,7 @@ TEST_CASE("TrapDefs find toolbox trap")
 
 TEST_CASE("TrapDefs find noreturn")
 {
-	auto path = writeTempFile("test_traps_noret.def",
-		"A9F4 ExitToShell toolbox noreturn\n"
-	);
+	auto path = writeTempFile("test_traps_noret.def", "A9F4 ExitToShell toolbox noreturn\n");
 	TrapDefs defs;
 	defs.load(path);
 
@@ -123,10 +115,8 @@ TEST_CASE("TrapDefs find noreturn")
 
 TEST_CASE("TrapDefs find unknown returns null")
 {
-	auto path = writeTempFile("test_traps_unk.def",
-		"A122 NewHandle os\n"
-		"  in  size:long.D0\n"
-	);
+	auto path = writeTempFile("test_traps_unk.def", "A122 NewHandle os\n"
+													"  in  size:long.D0\n");
 	TrapDefs defs;
 	defs.load(path);
 	CHECK(defs.find(0xA999) == nullptr);
@@ -135,10 +125,8 @@ TEST_CASE("TrapDefs find unknown returns null")
 
 TEST_CASE("TrapDefs trap word masking — flag bits")
 {
-	auto path = writeTempFile("test_traps_mask.def",
-		"A122 NewHandle os\n"
-		"  in  size:long.D0\n"
-	);
+	auto path = writeTempFile("test_traps_mask.def", "A122 NewHandle os\n"
+													 "  in  size:long.D0\n");
 	TrapDefs defs;
 	defs.load(path);
 
@@ -157,13 +145,11 @@ TEST_CASE("TrapDefs trap word masking — flag bits")
 
 TEST_CASE("TrapDefs skip malformed lines")
 {
-	auto path = writeTempFile("test_traps_bad.def",
-		"A122 NewHandle os\n"
-		"  in  size:long.D0\n"
-		"\n"
-		"ZZZZ BadTrap\n"  /* missing convention */
-		"\n"
-	);
+	auto path = writeTempFile("test_traps_bad.def", "A122 NewHandle os\n"
+													"  in  size:long.D0\n"
+													"\n"
+													"ZZZZ BadTrap\n" /* missing convention */
+													"\n");
 	TrapDefs defs;
 	int count = defs.load(path);
 	CHECK(count == 1);
@@ -181,12 +167,10 @@ TEST_CASE("TrapDefs empty file")
 
 TEST_CASE("TrapDefs comments and blanks only")
 {
-	auto path = writeTempFile("test_traps_comments.def",
-		"# This is a comment\n"
-		"\n"
-		"# Another comment\n"
-		"\n"
-	);
+	auto path = writeTempFile("test_traps_comments.def", "# This is a comment\n"
+														 "\n"
+														 "# Another comment\n"
+														 "\n");
 	TrapDefs defs;
 	CHECK(defs.load(path) == 0);
 	std::filesystem::remove(path);
@@ -198,12 +182,10 @@ TEST_CASE("TrapDefs comments and blanks only")
 
 TEST_CASE("errors load and lookup")
 {
-	auto path = writeTempFile("test_errors.def",
-		"# test errors\n"
-		"0 noErr\n"
-		"-43 fnfErr\n"
-		"-108 memFullErr\n"
-	);
+	auto path = writeTempFile("test_errors.def", "# test errors\n"
+												 "0 noErr\n"
+												 "-43 fnfErr\n"
+												 "-108 memFullErr\n");
 	TrapDefs defs;
 	int count = defs.loadErrors(path);
 	CHECK(count == 3);
@@ -215,9 +197,7 @@ TEST_CASE("errors load and lookup")
 
 TEST_CASE("errors unknown code")
 {
-	auto path = writeTempFile("test_errors_unk.def",
-		"0 noErr\n"
-	);
+	auto path = writeTempFile("test_errors_unk.def", "0 noErr\n");
 	TrapDefs defs;
 	defs.loadErrors(path);
 	CHECK(defs.errorName(-9999) == nullptr);
@@ -248,10 +228,10 @@ TEST_CASE("errors unknown code")
 TEST_CASE("TrapDefs multiple param types")
 {
 	auto path = writeTempFile("test_traps_multi.def",
-		"A913 NewWindow toolbox\n"
-		"  in  wStorage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  procID:word  behind:Ptr  goAwayFlag:Boolean  refCon:long\n"
-		"  out theWindow:Ptr\n"
-	);
+							  "A913 NewWindow toolbox\n"
+							  "  in  wStorage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  "
+							  "procID:word  behind:Ptr  goAwayFlag:Boolean  refCon:long\n"
+							  "  out theWindow:Ptr\n");
 	TrapDefs defs;
 	defs.load(path);
 
@@ -281,12 +261,14 @@ TEST_CASE("TrapDefs load actual traps.def")
 
 	/* Spot-check a few entries */
 	const TrapDef *nh = defs.find(0xA122);
-	if (nh) {
+	if (nh)
+	{
 		CHECK(nh->name == "NewHandle");
 		CHECK(nh->convention == TrapConvention::OS);
 	}
 	const TrapDef *gr = defs.find(0xA9A0);
-	if (gr) {
+	if (gr)
+	{
 		CHECK(gr->name == "GetResource");
 		CHECK(gr->convention == TrapConvention::Toolbox);
 	}
@@ -297,7 +279,8 @@ TEST_CASE("TrapDefs load actual errors.def")
 	TrapDefs defs;
 	int count = defs.loadErrors("assets/errors.def");
 	CHECK(count >= 10);
-	if (count > 0) {
+	if (count > 0)
+	{
 		CHECK(defs.errorName(0) != nullptr);
 		CHECK(defs.errorName(-43) != nullptr);
 	}

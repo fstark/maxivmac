@@ -15,7 +15,10 @@ uint8_t g_ram[4096] = {};
 /* lomem_globals.cpp uses MacRoman conversion */
 extern "C++"
 {
-	unsigned int MacRoman2UniCodeSize(unsigned char *, unsigned int) { return 0; }
+	unsigned int MacRoman2UniCodeSize(unsigned char *, unsigned int)
+	{
+		return 0;
+	}
 	void MacRoman2UniCodeData(unsigned char *, unsigned int, char *) {}
 }
 
@@ -56,12 +59,33 @@ void TrapTracer::emitEntry(const TrapFrame &) {}
 void TrapTracer::emitAutoPop(const TrapFrame &, const char *) {}
 void TrapTracer::emitExit(const TrapFrame &, const TrapDef &) {}
 void TrapTracer::emitExit(const TrapFrame &) {}
-uint32_t TrapTracer::readParamRaw(const ParamDef &, uint32_t, int &) { return 0; }
-uint16_t TrapTracer::readAppId() const { return 0; }
-std::string TrapTracer::readAppName() const { return {}; }
-std::string TrapTracer::formatParam(const ParamDef &, uint32_t) { return {}; }
-std::string TrapTracer::formatOSType(uint32_t) { return {}; }
-std::string TrapTracer::formatStr255(uint32_t) { return {}; }
-std::string TrapTracer::formatOSErr(int16_t) { return {}; }
+uint32_t TrapTracer::readParamRaw(const ParamDef &, uint32_t, int &)
+{
+	return 0;
+}
+uint16_t TrapTracer::readAppId() const
+{
+	return 0;
+}
+std::string TrapTracer::readAppName() const
+{
+	return {};
+}
+std::string TrapTracer::formatParam(const ParamDef &, uint32_t)
+{
+	return {};
+}
+std::string TrapTracer::formatOSType(uint32_t)
+{
+	return {};
+}
+std::string TrapTracer::formatStr255(uint32_t)
+{
+	return {};
+}
+std::string TrapTracer::formatOSErr(int16_t)
+{
+	return {};
+}
 
 TrapTracer g_tracer(g_trapDefs);

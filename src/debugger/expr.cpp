@@ -121,6 +121,29 @@ bool ExprParseValue(std::string_view text, int &pos, const ExprContext &ctx, uin
 			return false;
 		}
 		++pos;
+
+		/* Check for size suffix: .b, .w, .l */
+		if (pos + 1 < static_cast<int>(text.size()) && text[pos] == '.')
+		{
+			char sz = std::tolower(static_cast<unsigned char>(text[pos + 1]));
+			if (sz == 'b')
+			{
+				pos += 2;
+				outVal = ctx.readByte ? ctx.readByte(addr) : 0;
+				return true;
+			}
+			else if (sz == 'w')
+			{
+				pos += 2;
+				outVal = ctx.readWord ? ctx.readWord(addr) : 0;
+				return true;
+			}
+			else if (sz == 'l')
+			{
+				pos += 2;
+				/* fall through to readLong below */
+			}
+		}
 		if (ctx.readLong)
 			outVal = ctx.readLong(addr);
 		else

@@ -98,10 +98,8 @@ static uint8_t s_testMem[256] = {};
 static uint32_t TestReadLong(uint32_t addr)
 {
 	if (addr + 3 >= sizeof(s_testMem)) return 0;
-	return (uint32_t(s_testMem[addr]) << 24) |
-		   (uint32_t(s_testMem[addr + 1]) << 16) |
-		   (uint32_t(s_testMem[addr + 2]) << 8) |
-		   uint32_t(s_testMem[addr + 3]);
+	return (uint32_t(s_testMem[addr]) << 24) | (uint32_t(s_testMem[addr + 1]) << 16) |
+		   (uint32_t(s_testMem[addr + 2]) << 8) | uint32_t(s_testMem[addr + 3]);
 }
 static uint16_t TestReadWord(uint32_t addr)
 {
@@ -240,6 +238,58 @@ TEST_CASE("expr compound condition")
 	ctx.aregs[0] = 0x2000;
 	std::string err;
 	CHECK(ExprCheck("d0 == 0 && a0 > $1000", ctx, err));
+}
+
+TEST_CASE("expr dereference .b")
+{
+	auto ctx = MakeTestCtx();
+	uint32_t val;
+	std::string err;
+	CHECK(ExprEval("(a0).b", ctx, val, err));
+	CHECK(val == 0xDE);
+}
+
+TEST_CASE("expr dereference .w")
+{
+	auto ctx = MakeTestCtx();
+	uint32_t val;
+	std::string err;
+	CHECK(ExprEval("(a0).w", ctx, val, err));
+	CHECK(val == 0xDEAD);
+}
+
+TEST_CASE("expr dereference .l explicit")
+{
+	auto ctx = MakeTestCtx();
+	uint32_t val;
+	std::string err;
+	CHECK(ExprEval("(a0).l", ctx, val, err));
+	CHECK(val == 0xDEADBEEF);
+}
+
+TEST_CASE("expr dereference offset .w")
+{
+	auto ctx = MakeTestCtx();
+	uint32_t val;
+	std::string err;
+	CHECK(ExprEval("(a0 + 2).w", ctx, val, err));
+	CHECK(val == 0xBEEF);
+}
+
+TEST_CASE("expr dereference no suffix defaults to long")
+{
+	auto ctx = MakeTestCtx();
+	uint32_t val;
+	std::string err;
+	CHECK(ExprEval("(a0)", ctx, val, err));
+	CHECK(val == 0xDEADBEEF);
+}
+
+TEST_CASE("expr condition with .w dereference")
+{
+	auto ctx = MakeTestCtx();
+	std::string err;
+	CHECK(ExprCheck("(a0 + 2).w == $BEEF", ctx, err));
 }
 
 TEST_CASE("expr error unknown name")
