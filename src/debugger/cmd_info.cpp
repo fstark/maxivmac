@@ -76,6 +76,7 @@ static void InfoBreak(Debugger &dbg)
 		}
 		if (!bp.condition.empty()) dbg.io().write("     condition: %s\n", bp.condition.c_str());
 		if (!bp.commands.empty()) dbg.io().write("     %zu auto-command(s)\n", bp.commands.size());
+		if (bp.ignoreCount > 0) dbg.io().write("     ignore next: %u\n", bp.ignoreCount);
 	}
 
 	for (auto &wp : wps)

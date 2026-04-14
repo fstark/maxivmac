@@ -39,6 +39,7 @@ void CmdWatch(Debugger &dbg, const std::vector<Token> &args);
 void CmdRwatch(Debugger &dbg, const std::vector<Token> &args);
 void CmdAwatch(Debugger &dbg, const std::vector<Token> &args);
 void CmdCommands(Debugger &dbg, const std::vector<Token> &args);
+void CmdIgnore(Debugger &dbg, const std::vector<Token> &args);
 void CmdExamine(Debugger &dbg, const std::vector<Token> &args);
 void CmdPrint(Debugger &dbg, const std::vector<Token> &args);
 void CmdSet(Debugger &dbg, const std::vector<Token> &args);
@@ -83,6 +84,8 @@ static CmdEntry s_commands[] = {
 	{"commands", "", CmdCommands, "Set auto-execute commands on breakpoint",
 	 "commands <id>\n  Enter commands to execute when breakpoint <id> fires.\n"
 	 "  Type 'end' to finish.  Use 'continue' to auto-resume.\n"},
+	{"ignore", "", CmdIgnore, "Skip next N breakpoint hits",
+	 "ignore <id> <count>\n  Skip the next <count> hits of breakpoint <id>.\n"},
 	{"x", "", CmdExamine, "Examine memory",
 	 "x[/FMT] <addr>\n  FMT = [count][size][format]\n"
 	 "  size: b(byte) w(word) l(long)  format: x(hex) d(dec) s(string) i(insn)\n"},
@@ -395,6 +398,11 @@ const std::vector<Debugger::Breakpoint> &Debugger::breakpoints() const
 	return impl_->breakpoints;
 }
 
+std::vector<Debugger::Breakpoint> &Debugger::breakpoints()
+{
+	return impl_->breakpoints;
+}
+
 const std::vector<Debugger::Watchpoint> &Debugger::watchpoints() const
 {
 	return impl_->watchpoints;
@@ -699,6 +707,14 @@ bool Debugger::instructionHook(uint32_t pc)
 			}
 		}
 
+		/* Ignore count — decrement and skip if still positive */
+		auto *mutableBp = const_cast<Breakpoint *>(bp);
+		if (mutableBp->ignoreCount > 0)
+		{
+			--mutableBp->ignoreCount;
+			return false;
+		}
+
 		impl_->io->write("Breakpoint %u at $%08X\n", bp->id, pc);
 
 		/* Auto-execute commands */
@@ -743,6 +759,14 @@ bool Debugger::trapHook(uint16_t trapWord)
 			{
 				return false;
 			}
+		}
+
+		/* Ignore count — decrement and skip if still positive */
+		auto *mutableBp = const_cast<Breakpoint *>(bp);
+		if (mutableBp->ignoreCount > 0)
+		{
+			--mutableBp->ignoreCount;
+			return false;
 		}
 
 		const char *name = trap_dict_name(trapWord);

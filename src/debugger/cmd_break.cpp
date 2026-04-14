@@ -310,3 +310,27 @@ void CmdCommands(Debugger &dbg, const std::vector<Token> &args)
 
 	if (!found) dbg.io().write("No breakpoint with id %u\n", id);
 }
+
+void CmdIgnore(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (args.size() < 2 || args[0].kind != Token::Kind::Number ||
+		args[1].kind != Token::Kind::Number)
+	{
+		dbg.io().write("Usage: ignore <breakpoint-id> <count>\n");
+		return;
+	}
+
+	uint32_t id = args[0].numValue;
+	uint32_t count = args[1].numValue;
+
+	for (auto &bp : dbg.breakpoints())
+	{
+		if (bp.id == id)
+		{
+			bp.ignoreCount = count;
+			dbg.io().write("Will ignore next %u crossings of breakpoint %u.\n", count, id);
+			return;
+		}
+	}
+	dbg.io().write("No breakpoint %u.\n", id);
+}

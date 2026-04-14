@@ -52,6 +52,7 @@ public:
 		uint16_t trapWord;				   // non-zero for trap breakpoints
 		std::string condition;			   // raw condition text
 		std::vector<std::string> commands; // auto-execute on hit
+		uint32_t ignoreCount = 0;		   // remaining hits to skip
 	};
 
 	struct Watchpoint
@@ -74,6 +75,7 @@ public:
 	const Breakpoint *lookupByAddr(uint32_t addr) const;
 	const Breakpoint *lookupByTrap(uint16_t trapWord) const;
 	const std::vector<Breakpoint> &breakpoints() const;
+	std::vector<Breakpoint> &breakpoints();
 	const std::vector<Watchpoint> &watchpoints() const;
 
 	// Trace flags (used by cmd_trace.cpp)
