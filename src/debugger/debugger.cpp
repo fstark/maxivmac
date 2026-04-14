@@ -66,8 +66,9 @@ static CmdEntry s_commands[] = {
 	 "stepi [N]\n  Execute N machine instructions (default 1).\n"},
 	{"next", "n", CmdNext, "Step over calls",
 	 "next [N]\n  Execute N instructions, stepping over JSR/BSR/A-line traps.\n"},
-	{"finish", "fin", CmdFinish, "Run until current function returns",
-	 "finish\n  Run until the current frame returns (SP >= saved SP and RTS/RTE/RTD).\n"},
+	{"finish", "fin", CmdFinish, "Run until current function/trap returns",
+	 "finish\n  Run until the current frame returns (SP >= saved SP and RTS/RTE/RTD).\n"
+	 "  Works with A-line trap calls: stops when the trap handler returns to caller.\n"},
 	{"until", "u", CmdUntil, "Run until address", "until <addr>\n  Run until PC reaches <addr>.\n"},
 	{"break", "b", CmdBreak, "Set breakpoint",
 	 "break <location> [if <cond>]\n  Set a breakpoint at address, trap name, or global name.\n"

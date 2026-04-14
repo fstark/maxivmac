@@ -56,7 +56,7 @@ All commands use the shortest unambiguous prefix (e.g. `b` for `break`,
 | `continue` | `c` | Resume after a stop |
 | `step [N]` | `s` | Execute N instructions (default 1) |
 | `next [N]` | `n` | Step N instructions, stepping *over* BSR/JSR/trap calls |
-| `finish` | `fin` | Run until the current subroutine returns (watches RTS/RTD/RTE) |
+| `finish` | `fin` | Run until current function or trap handler returns |
 | `until <addr>` | `u` | Run until PC reaches addr |
 | `stepi [N]` | `si` | Alias for `step` (GDB compat) |
 
@@ -64,8 +64,9 @@ All commands use the shortest unambiguous prefix (e.g. `b` for `break`,
 the stack returns to that depth at the instruction *after* the call.
 
 `finish` works the same way: run until SP ≥ saved SP and the
-instruction is RTS, RTD, or RTE (or, for trap calls, until the trap
-dispatcher returns to the caller).
+instruction is RTS, RTD, or RTE.  This works seamlessly with A-line
+trap calls: when stopped at a trap breakpoint, `finish` will run
+the entire trap handler and stop when it returns to the caller.
 
 ### Breakpoints
 
@@ -74,6 +75,8 @@ dispatcher returns to the caller).
 | `break <location>` | Set breakpoint |
 | `break <location> if <cond>` | Conditional breakpoint |
 | `break #<N>` | Break at instruction number N |
+| `break #-<N>` | Break at current insn count minus N |
+| `ignore <id> <count>` | Skip next N hits of breakpoint |
 | `delete <id>` | Delete breakpoint/watchpoint by ID |
 | `delete` | Delete all |
 | `disable <id>` | Disable without deleting |
@@ -91,6 +94,9 @@ A `<location>` is one of:
 - **Instruction number**: `#12345` — break when the global instruction
   counter reaches that value (one-shot). Use `info insn` to see the
   current count.
+- **Relative instruction number**: `#-50000` — set breakpoint at
+  `current_insn_count - 50000`.  Useful for re-running deterministic
+  boot sequences to stop just before a known crash point.
 
 Examples:
 ```
@@ -102,6 +108,11 @@ Breakpoint 2 on trap GetResource ($A9A0)
 Breakpoint 3 at $4000 (conditional: d0 == 0)
 (dbg) break #50000
 Breakpoint 4 at instruction #50000
+(dbg) break #-50000
+(resolved to instruction #31401989)
+Breakpoint 5 at instruction #31401989
+(dbg) ignore 2 15
+Will ignore next 15 crossings of breakpoint 2.
 ```
 
 ### Watchpoints (memory breakpoints)
@@ -238,6 +249,24 @@ $408C00: 48 E7 FF CE 2F 00
 The search examines every byte offset in `[start, end)`.  It stops
 after 64 matches by default; `find/N` limits to N matches.
 
+### Disassembly
+
+| Command | Description |
+|---------|-------------|
+| `disas <start> [<end>]` | Disassemble address range |
+| `disas <start> +<len>` | Disassemble N bytes from start |
+
+```
+(dbg) disas $7C3A60 $7C3AC0
+$007C3A60: MOVEA.L  (A7)+,A0
+$007C3A64: MOVE.L   D0,-(A7)
+…
+(dbg) disas $7C3A60 +20
+…
+```
+
+If no end address is given, disassembles 64 bytes from start.
+
 ### Trap Tracing
 
 | Command | Description |
@@ -250,13 +279,15 @@ after 64 matches by default; `find/N` limits to N matches.
 | `trace io on` | Enable I/O read/write logging |
 | `trace io off` | Disable I/O logging |
 
-Trap trace output is the same format as `BeginTraceTraps` but goes to
-the debugger's output stream:
+Trap trace output uses the TrapTracer's rich hierarchical format with
+entry/exit arrows, nesting, parameter decoding, and cycle counts:
 ```
 (dbg) trace traps on
 (dbg) c
-[TRAP] $A9A0 GetResource  pc=$40802E sp=$FFFE00
-[TRAP] $A122 NewHandle     pc=$408C12 sp=$FFFC00
+→ 102844 [2] GetResource(resType:'TEXT', resID:128) [caller:$40802E]
+  → 102860 [2] SetResLoad(load:true) [caller:$408C12]
+  ← 102870 [2] SetResLoad  (+10 cycles)
+← 102944 [2] GetResource → result:$00812400  (+100 cycles)
 ```
 
 Instruction log output matches the `--log-start` format.
@@ -339,6 +370,8 @@ CurApRefNum (2 bytes, low-memory global)
 | Command | Description |
 |---------|-------------|
 | `info insn` | Print current instruction count |
+| `log [N]` | Show last N guest console log lines (default 20) |
+| `log grep <pattern>` | Show guest log lines matching pattern |
 | `backtrace` / `bt` | Show stack frames (heuristic: scan for LINK/RTS patterns) |
 | `help [cmd]` | Show help (see below) |
 | `quit` | Exit emulator |
@@ -395,6 +428,17 @@ Multiple conditions can be joined with `&&`:
 (dbg) break $4000 if d0 == 0 && a0 > $1000
 ```
 
+Parenthesized dereferences support size suffixes:
+- `(a0 + 22).b` — read byte at A0+22
+- `(a0 + 22).w` — read word at A0+22
+- `(a0 + 22).l` — read long at A0+22 (default when no suffix)
+
+```
+(dbg) break HFSDispatch if d0 == 9 && (a0 + 22).w == $8300
+(dbg) print (a0 + 22).w
+$00008300 (33536)
+```
+
 ---
 
 ## Implementation Hooks
@@ -409,7 +453,7 @@ The debugger leverages existing emulator infrastructure:
 | Memory read/write | `get_vm_byte/word/long()`, `put_vm_byte/word/long()` |
 | Watchpoints | `get_byte_ext()` / `put_byte_ext()` — add address check |
 | Trap breakpoints | `DoCodeA()` — check trap word against breakpoint set |
-| Trap tracing | `BeginTraceTraps()` / `EndTraceTraps()` |
+| Trap tracing | `TrapTracer` with `DbgIO*` for unified output |
 | Instruction logging | `g_logStart` / `g_logEnd` mechanism (repurposed as toggle) |
 | I/O logging | Existing `IOR`/`IOW` log in CPU loop |
 | Trap name lookup | `trap_dict_name()`, `trap_dict_search()` |
@@ -477,6 +521,13 @@ maxivmac debug "info reg"
 maxivmac debug "break $00400000"
 maxivmac debug "step 5"
 
+# Multi-command: semicolons separate commands in one-shot mode
+maxivmac debug "break $4000; run"
+maxivmac debug "info reg; info insn"
+
+# Script file: read commands from file
+maxivmac debug --script=session.dbg
+
 # Interactive: readline loop talking to the server
 maxivmac debug
 
@@ -525,8 +576,9 @@ individual commands and parses the responses programmatically.
   text protocol suited to the single-threaded emulator.
 - **GUI** — command-line only; a future ImGui panel may wrap this.
 - **Multi-threading** — the 68K is single-core; no thread awareness.
-- **Script files** — no `source` command to load scripts from files
-  (can be added trivially later; stdin redirection works meanwhile).
+- **Script files** — ~~no `source` command to load scripts from files~~
+  Now supported via `maxivmac debug --script=FILE` and semicolons in
+  one-shot mode.
 
 ---
 
