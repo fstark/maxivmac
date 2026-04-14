@@ -33,8 +33,11 @@
 #include "cpu/cpu.h"
 #include "cpu/trap_tracer.h"
 #include "debugger/debugger.h"
+#include "debugger/dbg_io.h"
 
 #include <memory>
+#include <string>
+#include <unistd.h>
 
 /*
 	REPORT_ABNORMAL_ID unused 0x1002 - 0x10FF
@@ -514,6 +517,16 @@ void ProgramEarlyInit(int argc, char *argv[])
 	if (s_launchConfig.debugger)
 	{
 		Debugger::create();
+		g_debuggerActive = true;
+	}
+	else if (!s_launchConfig.debugServerPath.empty())
+	{
+		auto path = s_launchConfig.debugServerPath;
+		if (path == "auto") path = "/tmp/maxivmac-dbg-" + std::to_string(getpid()) + ".sock";
+		int listenFd = CreateListenSocket(path);
+		if (listenFd < 0) std::exit(1);
+		std::fprintf(stderr, "debugserver: listening on %s\n", path.c_str());
+		Debugger::create(CreateSocketIO(listenFd).release());
 		g_debuggerActive = true;
 	}
 

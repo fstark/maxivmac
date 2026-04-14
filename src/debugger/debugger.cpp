@@ -156,6 +156,7 @@ struct Debugger::Impl
 
 	/* I/O transport */
 	std::unique_ptr<DbgIO> io;
+	bool clientConnected = false;
 };
 
 /* ── Singleton ──────────────────────────────────────── */
@@ -484,6 +485,13 @@ void Debugger::commandLoop()
 	char buf[1024];
 	auto &out = *impl_->io;
 
+	/* For socket mode: ensure a client is connected */
+	if (out.isSocket() && !impl_->clientConnected)
+	{
+		if (!out.acceptClient()) return;
+		impl_->clientConnected = true;
+	}
+
 	while (impl_->state == DbgState::Stopped)
 	{
 		/* Show PC and current instruction */
@@ -496,11 +504,20 @@ void Debugger::commandLoop()
 		}
 
 		out.write("(dbg) ");
+		out.endResponse();
 		out.flush();
 
 		if (!out.readLine(buf, sizeof(buf)))
 		{
-			if (out.isSocket()) return; /* client disconnected */
+			if (out.isSocket())
+			{
+				/* Client disconnected — wait for new client */
+				out.closeClient();
+				impl_->clientConnected = false;
+				if (!out.acceptClient()) return;
+				impl_->clientConnected = true;
+				continue;
+			}
 			out.write("\n");
 			std::exit(0);
 		}

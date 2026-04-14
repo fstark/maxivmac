@@ -207,6 +207,7 @@ void PrintUsage(const char *progname)
 			"  --silent         Disable audio output\n"
 			"  --trace-traps    Enable hierarchical A-line trap tracing to stderr\n"
 			"  --debugger       Start with debugger prompt (paused at first instruction)\n"
+			"  --debugserver[=PATH] Start debug server on Unix socket\n"
 			"  --title=TEXT     Window title\n"
 			"  --record=PATH    Record golden file for non-regression testing\n"
 			"  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)\n"
@@ -267,6 +268,16 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strcmp(arg, "--debugger") == 0)
 		{
 			lc.debugger = true;
+			continue;
+		}
+		if (strcmp(arg, "--debugserver") == 0)
+		{
+			lc.debugServerPath = "auto";
+			continue;
+		}
+		if (strncmp(arg, "--debugserver=", 14) == 0)
+		{
+			lc.debugServerPath = arg + 14;
 			continue;
 		}
 
@@ -475,6 +486,12 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 
 		// Positional arguments are disk image paths
 		lc.diskPaths.push_back(arg);
+	}
+
+	if (lc.debugger && !lc.debugServerPath.empty())
+	{
+		std::fprintf(stderr, "Error: --debugger and --debugserver are mutually exclusive\n");
+		std::exit(1);
 	}
 
 	return lc;

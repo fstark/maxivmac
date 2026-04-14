@@ -51,6 +51,7 @@ struct LaunchConfig
 
 	// Debugger
 	bool debugger = false;
+	std::string debugServerPath; // empty = not enabled, "auto" = default path
 };
 
 // Parse command-line arguments into a LaunchConfig.

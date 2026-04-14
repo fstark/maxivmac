@@ -32,6 +32,13 @@ public:
 
 	/* True for socket-based transports (affects disconnect handling). */
 	virtual bool isSocket() const { return false; }
+
+	/* Accept a client connection (blocking).  No-op for stdio.
+	   Returns false if the listen socket was closed. */
+	virtual bool acceptClient() { return true; }
+
+	/* Close the current client connection.  No-op for stdio. */
+	virtual void closeClient() {}
 };
 
 /* Create a StdioIO that wraps fgets(stdin) / vprintf(stdout). */
