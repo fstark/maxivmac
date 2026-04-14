@@ -7,6 +7,7 @@
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 
+#include "core/extn_clip.h"
 #include "core/machine.h"
 #include "cpu/m68k.h"
 #include "cpu/trap_counter.h"
@@ -257,4 +258,42 @@ void CmdBacktrace(Debugger &dbg, const std::vector<Token> &)
 	}
 
 	if (frame == 1) dbg.io().write("  (no return addresses found on stack)\n");
+}
+
+void CmdLog(Debugger &dbg, const std::vector<Token> &args)
+{
+	const auto &lines = extnDbgConsoleLines();
+
+	if (lines.empty())
+	{
+		dbg.io().write("(no guest log lines)\n");
+		return;
+	}
+
+	/* log grep <pattern> */
+	if (!args.empty() && args[0].kind == Token::Kind::Word && args[0].text == "grep" &&
+		args.size() >= 2 && args[1].kind != Token::Kind::End)
+	{
+		std::string_view pattern = args[1].text;
+		int count = 0;
+		for (size_t i = 0; i < lines.size(); ++i)
+		{
+			if (lines[i].find(pattern) != std::string::npos)
+			{
+				dbg.io().write("[%zu] %s\n", i, lines[i].c_str());
+				++count;
+			}
+		}
+		if (count == 0) dbg.io().write("(no matching lines)\n");
+		return;
+	}
+
+	/* log [N] — show last N lines (default 20) */
+	int count = 20;
+	if (!args.empty() && args[0].kind == Token::Kind::Number)
+		count = static_cast<int>(args[0].numValue);
+
+	size_t start = (lines.size() > static_cast<size_t>(count)) ? (lines.size() - count) : 0;
+	for (size_t i = start; i < lines.size(); ++i)
+		dbg.io().write("[%zu] %s\n", i, lines[i].c_str());
 }

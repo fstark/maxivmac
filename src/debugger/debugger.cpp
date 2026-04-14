@@ -46,6 +46,7 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args);
 void CmdFind(Debugger &dbg, const std::vector<Token> &args);
 void CmdTrace(Debugger &dbg, const std::vector<Token> &args);
 void CmdInfo(Debugger &dbg, const std::vector<Token> &args);
+void CmdLog(Debugger &dbg, const std::vector<Token> &args);
 void CmdBacktrace(Debugger &dbg, const std::vector<Token> &args);
 void CmdHelp(Debugger &dbg, const std::vector<Token> &args);
 void CmdQuit(Debugger &dbg, const std::vector<Token> &args);
@@ -99,6 +100,9 @@ static CmdEntry s_commands[] = {
 	 "trace <traps|insn|io> <on|off|names...>\n  Enable/disable trace output.\n"},
 	{"info", "i", CmdInfo, "Show info about debugger state",
 	 "info <break|reg|traps|globals|symbol|insn>\n  Show various debugger information.\n"},
+	{"log", "", CmdLog, "Show guest console log",
+	 "log [N]\n  Show last N guest log lines (default 20).\n"
+	 "log grep <pattern>\n  Show guest log lines matching pattern.\n"},
 	{"backtrace", "bt", CmdBacktrace, "Heuristic stack backtrace",
 	 "backtrace\n  Scan stack for return addresses (heuristic, best-effort).\n"},
 	{"help", "h", CmdHelp, "Show help",
