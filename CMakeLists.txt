@@ -59,6 +59,18 @@ set(MINIVMAC_SOURCES
     src/cpu/cpu.cpp
     src/cpu/disasm.cpp
 
+    # Debugger
+    src/debugger/debugger.cpp
+    src/debugger/cmd_parser.cpp
+    src/debugger/cmd_exec.cpp
+    src/debugger/cmd_break.cpp
+    src/debugger/cmd_memory.cpp
+    src/debugger/cmd_trace.cpp
+    src/debugger/cmd_info.cpp
+    src/debugger/cmd_help.cpp
+    src/debugger/symbols.cpp
+    src/debugger/expr.cpp
+
     # Devices
     src/devices/device.cpp
     src/devices/via_base.cpp
@@ -243,7 +255,14 @@ add_executable(tests
     test/test_main.cpp
     test/test_slip.cpp
     test/test_tracing.cpp
+    test/test_debugger.cpp
+    test/test_stubs.cpp
     src/cpu/trap_defs.cpp
+    src/cpu/trap_counter.cpp
+    src/platform/lomem_globals.cpp
+    src/debugger/symbols.cpp
+    src/debugger/expr.cpp
+    src/debugger/cmd_parser.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
