@@ -56,7 +56,7 @@ void CmdNext(Debugger &dbg, const std::vector<Token> &args)
 	{
 		uint32_t d[8], a[8];
 		m68k_getRegs(d, a);
-		dbg.setNexting(a[7]); /* saved SP */
+		dbg.setNexting(a[7], n); /* saved SP + remaining count */
 	}
 	else
 	{

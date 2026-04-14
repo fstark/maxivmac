@@ -130,6 +130,7 @@ struct Debugger::Impl
 	uint32_t finishSP = 0;
 	bool nexting = false;
 	uint32_t nextSP = 0;
+	uint32_t nextRemaining = 0; /* steps remaining after a next-over-call */
 	uint32_t untilAddr = 0;
 
 	/* Breakpoints */
@@ -193,6 +194,7 @@ void Debugger::stop(std::string_view reason)
 	impl_->state = DbgState::Stopped;
 	impl_->finishing = false;
 	impl_->nexting = false;
+	impl_->nextRemaining = 0;
 	impl_->untilAddr = 0;
 	if (!reason.empty()) std::printf("[%.*s]\n", static_cast<int>(reason.size()), reason.data());
 }
@@ -215,10 +217,11 @@ void Debugger::setFinishing(uint32_t savedSP)
 	impl_->state = DbgState::Running;
 }
 
-void Debugger::setNexting(uint32_t savedSP)
+void Debugger::setNexting(uint32_t savedSP, uint32_t count)
 {
 	impl_->nexting = true;
 	impl_->nextSP = savedSP;
+	impl_->nextRemaining = count;
 	impl_->state = DbgState::Running;
 }
 
@@ -508,6 +511,13 @@ bool Debugger::instructionHook(uint32_t pc)
 			commandLoop();
 			return true;
 		}
+		/* Show each intermediate instruction */
+		{
+			uint16_t opcode = get_vm_word(pc);
+			uint32_t disasmPC = pc;
+			auto disasm = Disassemble(disasmPC);
+			std::printf("$%08X: %04X  %s\n", pc, opcode, disasm.c_str());
+		}
 	}
 
 	/* Until check */
@@ -545,6 +555,31 @@ bool Debugger::instructionHook(uint32_t pc)
 		if (sp >= impl_->nextSP)
 		{
 			impl_->nexting = false;
+			/* If there are remaining steps from a 'next N', keep stepping */
+			if (impl_->nextRemaining > 1)
+			{
+				uint16_t opcode = get_vm_word(pc);
+				uint32_t disasmPC = pc;
+				auto disasm = Disassemble(disasmPC);
+				std::printf("$%08X: %04X  %s\n", pc, opcode, disasm.c_str());
+				impl_->nextRemaining--;
+				/* Check if this instruction is also a call */
+				bool isCall = false;
+				if ((opcode & 0xFF00) == 0x6100) isCall = true;
+				if ((opcode & 0xFFC0) == 0x4E80) isCall = true;
+				if ((opcode & 0xF000) == 0xA000) isCall = true;
+				if (isCall)
+				{
+					impl_->nexting = true;
+					impl_->nextSP = sp;
+				}
+				else
+				{
+					setStepping(impl_->nextRemaining);
+					impl_->nextRemaining = 0;
+				}
+				return true;
+			}
 			stop("next completed");
 			commandLoop();
 			return true;

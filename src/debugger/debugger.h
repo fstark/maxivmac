@@ -29,7 +29,7 @@ public:
 	void setRunning();
 	void setStepping(uint32_t n);
 	void setFinishing(uint32_t savedSP);
-	void setNexting(uint32_t savedSP);
+	void setNexting(uint32_t savedSP, uint32_t count = 1);
 	void setUntil(uint32_t addr);
 
 	// Breakpoint/watchpoint management (used by cmd_break.cpp)
