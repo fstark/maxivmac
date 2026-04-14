@@ -86,19 +86,26 @@ int DebugClientMain(int argc, char *argv[])
 {
 	std::string socketPath;
 	const char *command = nullptr;
+	const char *scriptPath = nullptr;
 
-	/* Parse args: [--socket=PATH] [command] */
+	/* Parse args: [--socket=PATH] [--script=FILE] [command] */
 	for (int i = 1; i < argc; ++i)
 	{
 		if (std::strncmp(argv[i], "--socket=", 9) == 0)
 		{
 			socketPath = argv[i] + 9;
 		}
+		else if (std::strncmp(argv[i], "--script=", 9) == 0)
+		{
+			scriptPath = argv[i] + 9;
+		}
 		else if (std::strcmp(argv[i], "-h") == 0 || std::strcmp(argv[i], "--help") == 0)
 		{
-			std::printf("Usage: maxivmac debug [--socket=PATH] [\"command\"]\n"
-						"  No command: interactive mode\n"
-						"  With command: one-shot mode\n");
+			std::printf(
+				"Usage: maxivmac debug [--socket=PATH] [--script=FILE] [\"cmd1; cmd2; ...\"]\n"
+				"  No command: interactive mode\n"
+				"  With command: one-shot mode (semicolons separate commands)\n"
+				"  --script=FILE: read commands from file\n");
 			return 0;
 		}
 		else
@@ -113,13 +120,68 @@ int DebugClientMain(int argc, char *argv[])
 	int fd = ConnectToSocket(socketPath);
 	if (fd < 0) return 1;
 
+	if (scriptPath)
+	{
+		/* Script mode: consume initial prompt, then send each line from file */
+		RecvResponse(fd);
+		FILE *f = std::fopen(scriptPath, "r");
+		if (!f)
+		{
+			std::perror(scriptPath);
+			close(fd);
+			return 1;
+		}
+
+		char line[4096];
+		while (std::fgets(line, sizeof(line), f))
+		{
+			size_t len = std::strlen(line);
+			if (len == 0) continue;
+			if (line[0] == '#') continue; /* skip comments */
+
+			if (line[len - 1] != '\n')
+			{
+				line[len] = '\n';
+				line[len + 1] = '\0';
+				++len;
+			}
+
+			send(fd, line, len, 0);
+			if (!RecvResponse(fd)) break;
+		}
+		std::fclose(f);
+		std::fflush(stdout);
+		close(fd);
+		return 0;
+	}
+
 	if (command)
 	{
-		/* One-shot mode: read initial prompt, send command, read response */
-		RecvResponse(fd); /* consume initial prompt + EOT */
-		std::string msg = std::string(command) + "\n";
-		send(fd, msg.data(), msg.size(), 0);
-		RecvResponse(fd); /* read command response */
+		/* One-shot mode: consume initial prompt, split on ';' */
+		RecvResponse(fd);
+
+		std::string cmdStr(command);
+		size_t start = 0;
+		while (start < cmdStr.size())
+		{
+			size_t end = cmdStr.find(';', start);
+			if (end == std::string::npos) end = cmdStr.size();
+
+			/* Trim whitespace */
+			size_t s = start, e = end;
+			while (s < e && cmdStr[s] == ' ')
+				++s;
+			while (e > s && cmdStr[e - 1] == ' ')
+				--e;
+
+			if (s < e)
+			{
+				std::string msg = cmdStr.substr(s, e - s) + "\n";
+				send(fd, msg.data(), msg.size(), 0);
+				if (!RecvResponse(fd)) break;
+			}
+			start = end + 1;
+		}
 		std::fflush(stdout);
 		close(fd);
 		return 0;
