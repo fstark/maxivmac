@@ -44,6 +44,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args);
 void CmdPrint(Debugger &dbg, const std::vector<Token> &args);
 void CmdSet(Debugger &dbg, const std::vector<Token> &args);
 void CmdFind(Debugger &dbg, const std::vector<Token> &args);
+void CmdDisas(Debugger &dbg, const std::vector<Token> &args);
 void CmdTrace(Debugger &dbg, const std::vector<Token> &args);
 void CmdInfo(Debugger &dbg, const std::vector<Token> &args);
 void CmdLog(Debugger &dbg, const std::vector<Token> &args);
@@ -96,6 +97,9 @@ static CmdEntry s_commands[] = {
 	 "set <target> = <value>\n  target: register name, or *<addr>[.w/.l] for memory.\n"},
 	{"find", "", CmdFind, "Search memory",
 	 "find <start> <end> <pattern>\n  Search memory for hex bytes, wildcards, or \"string\".\n"},
+	{"disas", "", CmdDisas, "Disassemble address range",
+	 "disas <start> [<end> | +<len>]\n  Disassemble instructions in range.\n"
+	 "  Default range: 64 bytes from start.\n"},
 	{"trace", "", CmdTrace, "Control tracing",
 	 "trace <traps|insn|io> <on|off|names...>\n  Enable/disable trace output.\n"},
 	{"info", "i", CmdInfo, "Show info about debugger state",

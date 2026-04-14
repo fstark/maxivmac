@@ -477,3 +477,58 @@ void CmdFind(Debugger &dbg, const std::vector<Token> &args)
 	else
 		dbg.io().write("%d match%s\n", found, found == 1 ? "" : "es");
 }
+
+void CmdDisas(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (args.empty() || args[0].kind == Token::Kind::End)
+	{
+		dbg.io().write("Usage: disas <start> [<end> | +<len>]\n");
+		return;
+	}
+
+	auto ctx = MakeLiveContext();
+	std::string err;
+
+	uint32_t start;
+	if (!ExprEval(args[0].text, ctx, start, err))
+	{
+		dbg.io().write("Error: %s\n", err.c_str());
+		return;
+	}
+
+	uint32_t end = start + 64; /* default: 64 bytes */
+	if (args.size() >= 2 && args[1].kind != Token::Kind::End)
+	{
+		if (!args[1].text.empty() && args[1].text[0] == '+')
+		{
+			/* disas $start +len */
+			uint32_t len;
+			auto lenText = std::string_view(args[1].text).substr(1);
+			if (!ParseNumber(lenText, len))
+			{
+				dbg.io().write("Error: invalid length\n");
+				return;
+			}
+			end = start + len;
+		}
+		else
+		{
+			/* disas $start $end */
+			if (!ExprEval(args[1].text, ctx, end, err))
+			{
+				dbg.io().write("Error: %s\n", err.c_str());
+				return;
+			}
+		}
+	}
+
+	/* Disassemble from start until we reach or pass end */
+	uint32_t pc = start;
+	while (pc < end)
+	{
+		uint32_t thisPC = pc;
+		auto text = Disassemble(pc); /* pc advanced past insn */
+		dbg.io().write("$%08X: %s\n", thisPC, text.c_str());
+		if (pc == thisPC) break; /* safety: avoid infinite loop */
+	}
+}
