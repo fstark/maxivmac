@@ -7,6 +7,38 @@ mechanical uniformity.
 
 ---
 
+## Language Standard
+
+**maxivmac is a C++23 project** (CMake: `CMAKE_CXX_STANDARD 23`).
+All new code must use modern C++ idioms.  Do not write C-with-classes.
+
+Key expectations for new code:
+
+- **Strings**: use `std::string_view` for non-owning read-only string
+  parameters and return values.  Use `std::string` when ownership is
+  needed.  Do not use `const char *` in new interfaces except where
+  required by C APIs or null termination is essential.
+- **Ownership**: prefer value types, `std::unique_ptr`, or references
+  over raw `new`/`delete`.  Raw pointers are fine for non-owning
+  observation of objects whose lifetime is managed elsewhere.
+- **Containers**: prefer `std::vector`, `std::array`,
+  `std::unordered_map` over hand-rolled linked lists or arrays.
+- **Enumerations**: use `enum class` with named values, not bare
+  integer constants.
+- **Constants**: use `constexpr` or `const` instead of `#define` for
+  values.
+- **Casts**: use `static_cast<>`, not C-style casts.
+- **Output parameters**: prefer return values (including `std::optional`
+  or structured bindings) over output-pointer parameters when feasible.
+- **Range-for / algorithms**: prefer range-based for loops and
+  `<algorithm>` over manual index loops when the intent is clearer.
+
+Legacy code under `src/cpu/` is exempt (see Scope below).  When
+*interfacing* with legacy APIs that use `const char *` or raw pointers,
+convert at the boundary — keep the modern API clean (unless absolutely needed for performance reasons).
+
+---
+
 ## Scope
 
 These guidelines apply to all code under `src/` **except**:
