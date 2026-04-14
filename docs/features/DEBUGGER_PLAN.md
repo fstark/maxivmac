@@ -5,20 +5,20 @@ Spec: [DEBUGGER.md](DEBUGGER.md)
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Data types, symbol tables, and expression evaluator | |
-| 2 | Command parser and dispatch table | |
-| 3 | Debugger object skeleton and command loop | |
-| 4 | Execution commands (run/step/continue) | |
-| 5 | Breakpoints and watchpoints | |
-| 6 | Memory examination and modification (x, set, find) | |
-| 7 | Trace commands and info commands | |
-| 8 | Help system and breakpoint commands | |
-| 9 | Redirect trace output from stderr to stdout | |
-| 10 | CPU loop integration hooks | |
-| 11 | Memory hook integration (watchpoints) | |
-| 12 | CLI wiring and startup integration | |
-| 13 | Next, finish, until, and SIGINT handling | |
-| 14 | End-to-end smoke test | |
+| 1 | Data types, symbol tables, and expression evaluator | DONE |
+| 2 | Command parser and dispatch table | DONE |
+| 3 | Debugger object skeleton and command loop | DONE |
+| 4 | Execution commands (run/step/continue) | DONE |
+| 5 | Breakpoints and watchpoints | DONE |
+| 6 | Memory examination and modification (x, set, find) | DONE |
+| 7 | Trace commands and info commands | DONE |
+| 8 | Help system and breakpoint commands | DONE |
+| 9 | Redirect trace output from stderr to stdout | DONE |
+| 10 | CPU loop integration hooks | DONE |
+| 11 | Memory hook integration (watchpoints) | DONE |
+| 12 | CLI wiring and startup integration | DONE |
+| 13 | Next, finish, until, and SIGINT handling | DONE |
+| 14 | End-to-end smoke test | DONE |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
 Test gate:  `./bld/macos/tests`
