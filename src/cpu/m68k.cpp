@@ -29,6 +29,7 @@
 #include "cpu/m68k.h"
 #include "cpu/trap_counter.h"
 #include "cpu/trap_tracer.h"
+#include "debugger/debugger.h"
 
 /*
 	REPORT_ABNORMAL_ID unused 0x0123 - 0x01FF
@@ -782,6 +783,12 @@ static void m68k_go_MaxCycles()
 				BreakPointAction();
 			}
 #endif
+
+			/* Debugger per-instruction hook */
+			if (g_debuggerActive)
+			{
+				Debugger::instance()->instructionHook(pc);
+			}
 		}
 
 		d();
@@ -4524,6 +4531,13 @@ static void DoCodeA()
 	BackupPC();
 	uint16_t tw = do_get_mem_word(V_pc_p);
 	trap_counter_record(tw);
+
+	/* Debugger trap hook */
+	if (g_debuggerActive)
+	{
+		Debugger::instance()->trapHook(tw);
+	}
+
 	g_tracer.enter(tw);
 	Exception(0xA);
 }
