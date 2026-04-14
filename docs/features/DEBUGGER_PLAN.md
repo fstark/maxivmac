@@ -1846,15 +1846,15 @@ Source: [DEBUGGER_BUGS.md](DEBUGGER_BUGS.md)
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 19 | BUG-1: Fix watchpoints (MATC cache bypass) | |
-| 20 | FEAT-5/8: Expression size modifiers (.b/.w/.l) | |
-| 21 | FEAT-7: Breakpoint `ignore` command | |
-| 22 | FEAT-3: Guest log command | |
-| 23 | FEAT-2: `disas` command | |
-| 24 | FEAT-4: `break #-N` relative instruction breakpoints | |
-| 25 | FEAT-1: Multi-command one-shot mode | |
-| 26 | Unified trap tracing through DbgIO | |
-| 27 | FEAT-6 + docs: Update DEBUGGER.md with all new features | |
+| 19 | BUG-1: Fix watchpoints (MATC cache bypass) | DONE |
+| 20 | FEAT-5/8: Expression size modifiers (.b/.w/.l) | DONE |
+| 21 | FEAT-7: Breakpoint `ignore` command | DONE |
+| 22 | FEAT-3: Guest log command | DONE |
+| 23 | FEAT-2: `disas` command | DONE |
+| 24 | FEAT-4: `break #-N` relative instruction breakpoints | DONE |
+| 25 | FEAT-1: Multi-command one-shot mode | DONE |
+| 26 | Unified trap tracing through DbgIO | DONE |
+| 27 | FEAT-6 + docs: Update DEBUGGER.md with all new features | DONE |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
 Test gate:  `./bld/macos/tests`
