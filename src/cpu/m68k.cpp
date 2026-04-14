@@ -736,7 +736,7 @@ static void m68k_go_MaxCycles()
 				{
 					uint16_t opcode = do_get_mem_word(V_pc_p - 2);
 					std::fprintf(
-						stderr,
+						stdout,
 						"%u %08X: %04X c=%d D=%08X %08X %08X %08X %08X %08X %08X %08X A=%08X %08X "
 						"%08X %08X %08X %08X %08X %08X\n",
 						(unsigned)g_instructionCount, (unsigned int)pc, (unsigned int)opcode,
@@ -746,7 +746,7 @@ static void m68k_go_MaxCycles()
 						(unsigned)m68k_areg(0), (unsigned)m68k_areg(1), (unsigned)m68k_areg(2),
 						(unsigned)m68k_areg(3), (unsigned)m68k_areg(4), (unsigned)m68k_areg(5),
 						(unsigned)m68k_areg(6), (unsigned)m68k_areg(7));
-					std::fflush(stderr);
+					std::fflush(stdout);
 				}
 				if (g_instructionCount == g_logEnd)
 				{

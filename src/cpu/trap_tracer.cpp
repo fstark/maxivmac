@@ -96,7 +96,7 @@ void TrapTracer::enter(uint16_t trapWord)
 	{
 		flushStack("context switch");
 		std::string appName = readAppName();
-		fprintf(stderr, "── context switch: appId=%u \"%s\" ──\n", (unsigned)appId,
+		fprintf(stdout, "── context switch: appId=%u \"%s\" ──\n", (unsigned)appId,
 				appName.c_str());
 	}
 	lastAppId_ = appId;
@@ -106,7 +106,7 @@ void TrapTracer::enter(uint16_t trapWord)
 	{
 		if (!overflowWarned_)
 		{
-			fprintf(stderr, "[TRACE] nesting overflow at depth %d, suppressing further nesting\n",
+			fprintf(stdout, "[TRACE] nesting overflow at depth %d, suppressing further nesting\n",
 					maxDepth_);
 			overflowWarned_ = true;
 		}
@@ -197,7 +197,7 @@ void TrapTracer::checkReturn(uint32_t pc)
 				snprintf(nameBuf, sizeof(nameBuf), "$%04X", orphan.trapWord);
 				name = nameBuf;
 			}
-			fprintf(stderr, "%*s⊘ %s [missed return]\n", orphan.depth * 2, "", name);
+			fprintf(stdout, "%*s⊘ %s [missed return]\n", orphan.depth * 2, "", name);
 		}
 	}
 
@@ -245,7 +245,7 @@ void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 		params += formatParam(pd, raw);
 	}
 
-	fprintf(stderr, "%*s→ %u [%u] %s(%s) [caller:$%06X]\n", indent, "", (unsigned)frame.entryCycle,
+	fprintf(stdout, "%*s→ %u [%u] %s(%s) [caller:$%06X]\n", indent, "", (unsigned)frame.entryCycle,
 			(unsigned)frame.appId, def.name.c_str(), params.c_str(), (unsigned)frame.callerPC);
 }
 
@@ -253,7 +253,7 @@ void TrapTracer::emitEntry(const TrapFrame &frame)
 {
 	std::string name = unknownTrapName(frame.trapWord);
 
-	fprintf(stderr, "%*s→ %u [%u] %s() [caller:$%06X]\n", frame.depth * 2, "",
+	fprintf(stdout, "%*s→ %u [%u] %s() [caller:$%06X]\n", frame.depth * 2, "",
 			(unsigned)frame.entryCycle, (unsigned)frame.appId, name.c_str(),
 			(unsigned)frame.callerPC);
 }
@@ -267,7 +267,7 @@ void TrapTracer::emitAutoPop(const TrapFrame &frame, const char *name)
 		name = nameBuf.c_str();
 	}
 
-	fprintf(stderr, "%*s= %u [%u] %s [auto-pop $%04X]\n", frame.depth * 2, "",
+	fprintf(stdout, "%*s= %u [%u] %s [auto-pop $%04X]\n", frame.depth * 2, "",
 			(unsigned)frame.entryCycle, (unsigned)frame.appId, name, (unsigned)frame.trapWord);
 }
 
@@ -295,13 +295,13 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 
 	if (!outParams.empty())
 	{
-		fprintf(stderr, "%*s← %u [%u] %s → %s  (+%u cycles)\n", indent, "",
+		fprintf(stdout, "%*s← %u [%u] %s → %s  (+%u cycles)\n", indent, "",
 				(unsigned)g_instructionCount, (unsigned)frame.appId, def.name.c_str(),
 				outParams.c_str(), (unsigned)delta);
 	}
 	else
 	{
-		fprintf(stderr, "%*s← %u [%u] %s  (+%u cycles)\n", indent, "", (unsigned)g_instructionCount,
+		fprintf(stdout, "%*s← %u [%u] %s  (+%u cycles)\n", indent, "", (unsigned)g_instructionCount,
 				(unsigned)frame.appId, def.name.c_str(), (unsigned)delta);
 	}
 }
@@ -311,7 +311,7 @@ void TrapTracer::emitExit(const TrapFrame &frame)
 	std::string name = unknownTrapName(frame.trapWord);
 	uint32_t delta = g_instructionCount - frame.entryCycle;
 
-	fprintf(stderr, "%*s← %u [%u] %s  (+%u cycles)\n", frame.depth * 2, "",
+	fprintf(stdout, "%*s← %u [%u] %s  (+%u cycles)\n", frame.depth * 2, "",
 			(unsigned)g_instructionCount, (unsigned)frame.appId, name.c_str(), (unsigned)delta);
 }
 
@@ -329,7 +329,7 @@ void TrapTracer::flushStack(const char *reason)
 			name = nameBuf;
 		}
 		int indent = frame.depth * 2;
-		fprintf(stderr, "%*s⊘ %s [abandoned — %s]\n", indent, "", name, reason);
+		fprintf(stdout, "%*s⊘ %s [abandoned — %s]\n", indent, "", name, reason);
 	}
 	depth_ = 0;
 	overflowWarned_ = false;

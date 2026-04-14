@@ -77,9 +77,9 @@ void trap_trace_log(uint16_t trapWord)
 	if (s_traceDepth.load(std::memory_order_relaxed) <= 0) return;
 	const char *name = trap_dict_name(trapWord);
 	if (name)
-		fprintf(stderr, "[TRAP] $%04X %s\n", trapWord, name);
+		fprintf(stdout, "[TRAP] $%04X %s\n", trapWord, name);
 	else
-		fprintf(stderr, "[TRAP] $%04X\n", trapWord);
+		fprintf(stdout, "[TRAP] $%04X\n", trapWord);
 }
 
 /* ── Full trap dictionary ─────────────────────────── */
