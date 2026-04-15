@@ -55,6 +55,7 @@
 #define kSonyVarsPtr    0x0134
 #define kCheckVal       0x841339E2UL
 #define kVCBQHdr        0x0356
+#define kDrvQHdr        0x0308
 #define kFCBSPtr        0x034E
 #define kDefVCBPtr      0x0352
 
@@ -176,6 +177,7 @@
 typedef struct {
 	char    *regBase;
 	Ptr      vcb;
+	Ptr      dqe;            /* drive queue element block (4 flag bytes + DrvQEl) */
 	long     volFileCount;
 	long     volTotalBytes;
 	long     savedA4;        /* THINK C code resource A4 */
@@ -369,6 +371,7 @@ static Boolean IsOurFCB(short refNum)
 static Boolean IsOurVolume(short vRefNum)
 {
 	if (vRefNum == kOurVRefNum) return true;
+	if (vRefNum == kOurDriveNum) return true;
 	/* WD refnums we issue are encoded as -(wdRef+32000).
 	   The host assigns wdRef starting from 1, so valid
 	   encoded values are -32001, -32002, ...
@@ -496,6 +499,9 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 	if (flags & 0x10) {
 		/* Directory */
 		*(unsigned char *)(pb + pb_ioFlAttrib) = 0x10;
+		*(unsigned char *)(pb + 31) = 0;  /* ioACUser: full access */
+		dbg_log2(regBase, "SD GCI dir cnid=%ld acUser=%ld",
+			(long)cnid, (long)*(unsigned char *)(pb + 31));
 		/* ioDrUsrWds: DInfo (16 bytes) — zero = default window pos */
 		{
 			short j;
@@ -1111,6 +1117,8 @@ short DispatchFlat(char *pb, short trapNum)
 	g = get_globals();
 	if (g == NULL || g->ejected) { RestoreA4(); return 1; }
 
+	dbg_log1(g->regBase, "SD DispatchFlat trap=%02lx", (long)trapNum);
+
 	vRefNum  = *(short *)(pb + pb_ioVRefNum);
 	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 
@@ -1197,6 +1205,41 @@ short DispatchFlat(char *pb, short trapNum)
 				(long)refNum);
 			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
+	}
+
+	/* _GetVolInfo: The ROM returns extFSErr (-58) for VCBs with
+	   non-zero vcbFSID.  We must intercept ALL GetVolInfo calls
+	   that will resolve to our volume:
+	     - vidx > 0: indexed walk, handle if Nth VCB is ours
+	     - vidx == 0: lookup by vRefNum/drive number/name */
+	if (trapNum == 0x07) {
+		short vidx = *(short *)(pb + pb_ioVolIndex);
+		dbg_log2(g->regBase,
+			"SD _GetVolInfo vidx=%ld vr=%ld",
+			(long)vidx, (long)vRefNum);
+		if (vidx > 0) {
+			Ptr vcb = *(Ptr *)(kVCBQHdr + 2); /* qHead */
+			short i;
+			for (i = 1; i < vidx && vcb != NULL; i++)
+				vcb = *(Ptr *)vcb; /* follow qLink */
+			if (vcb != NULL && vcb == g->vcb) {
+				err = DoGetVolInfo(pb, g);
+				*(short *)(pb + pb_ioResult) = err;
+				RestoreA4(); return 0;
+			}
+			/* Not ours at this index — pass through to ROM */
+			RestoreA4(); return 1;
+		}
+		/* vidx == 0: ROM matches by vRefNum OR drive number.
+		   SFGetFile passes drive number in ioVRefNum. */
+		if (vRefNum == kOurDriveNum || IsOurVolume(vRefNum)) {
+			dbg_log1(g->regBase,
+				"SD _GetVolInfo byDrv vr=%ld -> ours",
+				(long)vRefNum);
+			err = DoGetVolInfo(pb, g);
+			*(short *)(pb + pb_ioResult) = err;
+			RestoreA4(); return 0;
+		}
 	}
 
 	/* Traps keyed on ioVRefNum */
@@ -1310,11 +1353,37 @@ short DispatchFlat(char *pb, short trapNum)
 			RestoreA4(); return 0;
 
 		case 0x0B: /* _Rename */
+		{
+			unsigned long newNameAddr = *(unsigned long *)(pb + pb_ioMisc);
+			long dirID;
+
 			dbg_log2(g->regBase,
-				"SD _Rename vr=%ld nm=%S -> wPrErr",
+				"SD _Rename vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			*(short *)(pb + pb_ioResult) = -46;
+
+			if (nameAddr == 0 || newNameAddr == 0) {
+				*(short *)(pb + pb_ioResult) = -50;
+				RestoreA4(); return 0;
+			}
+
+			dirID = ResolveDir(vRefNum, 0, g->regBase);
+
+			reg_set(g->regBase, 0, (unsigned long)dirID);
+			reg_set(g->regBase, 1, nameAddr);
+			reg_set(g->regBase, 2, newNameAddr);
+			reg_command(g->regBase, 0x0217); /* ExtFSRename */
+
+			if (reg_result(g->regBase) != 0) {
+				err = -(short)reg_result(g->regBase);
+				dbg_log1(g->regBase, "SD _Rename -> %ld", (long)err);
+				*(short *)(pb + pb_ioResult) = err;
+				RestoreA4(); return 0;
+			}
+
+			dbg_log(g->regBase, "SD _Rename -> 0");
+			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
+		}
 
 		case 0x0C: /* _GetFileInfo */
 		{
@@ -1343,6 +1412,10 @@ short DispatchFlat(char *pb, short trapNum)
 		{
 			dbg_log1(g->regBase,
 				"SD _UnmountVol vr=%ld", (long)vRefNum);
+			if (g->dqe != NULL) {
+				Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
+				g->dqe = NULL;
+			}
 			Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
 			g->ejected = 1;
 			*(short *)(pb + pb_ioResult) = 0;
@@ -1365,6 +1438,10 @@ short DispatchFlat(char *pb, short trapNum)
 		{
 			dbg_log1(g->regBase,
 				"SD _Eject vr=%ld", (long)vRefNum);
+			if (g->dqe != NULL) {
+				Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
+				g->dqe = NULL;
+			}
 			Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
 			g->ejected = 1;
 			*(short *)(pb + pb_ioResult) = 0;
@@ -1937,6 +2014,25 @@ void main(void)
 	Enqueue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
 	dbg_log1(regBase, "SharedDrive: VCB at %lx", (long)g->vcb);
 
+	/* Add drive queue element so SFGetFile Drive button finds us.
+	   Layout: 4 flag bytes + DrvQEl (16 bytes) = 20 bytes.
+	   Flag bytes per TN#36: $00080000 = non-ejectable disk in place.
+	   AddDrive fills in dQDrive and dQRefNum from its parameters. */
+	{
+		Ptr dqe = NewPtrSysClear(20);
+		if (dqe != NULL) {
+			*(long *)dqe = 0x00080000L;        /* flags: non-ejectable */
+			*(short *)(dqe + 8)  = 1;          /* qType = 1 (use dQDrvSz2) */
+			*(short *)(dqe + 14) = 0;          /* dQFSID = 0 (native HFS) */
+			*(short *)(dqe + 16) = 1024;       /* dQDrvSz: 1024 blocks */
+			*(short *)(dqe + 18) = 0;          /* dQDrvSz2: high word */
+			AddDrive(kOurDrvrRefNum, kOurDriveNum,
+				(DrvQElPtr)(dqe + 4));
+			g->dqe = dqe;
+			dbg_log(regBase, "SharedDrive: DQE added to drive queue");
+		}
+	}
+
 	/* Install trap patches */
 	InstallHFSPatch(regBase);
 
@@ -1967,9 +2063,10 @@ void main(void)
 	dbg_log(regBase, "SharedDrive: traps patched");
 
 	/*
-	 * Don't PostEvent — it would trigger _MountVol for drive 8,
-	 * which fails (no real disk / no DQE).  The VCB is already in
-	 * the queue so the Finder will discover it at startup.
+	 * Don't PostEvent — it would trigger _MountVol which would
+	 * try to read boot blocks from drive 8 (no real disk).
+	 * The VCB and DQE are already in their queues so the Finder
+	 * and Standard File will discover the volume at startup.
 	 */
 	dbg_log(regBase, "SharedDrive INIT: done!");
 
