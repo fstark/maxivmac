@@ -7,6 +7,8 @@ minivmac are listed as exceptions; new code must follow the rules below.
 
 ---
 
+TODO: add info on NeXTstep-like naming: MacRomanFromUTF8, UTF8FromMacRoman (not UTF8ToMacRoman). Seems more logical x = y => x = XFromY( y ).
+
 ## Scope
 
 These conventions apply to all code under `src/` **except**:
