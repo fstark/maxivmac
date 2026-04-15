@@ -5,6 +5,7 @@
 #include "cpu/disasm.h"
 #include "core/machine.h"
 #include "platform/platform.h"
+#include "storage/host_volume.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -45,147 +46,43 @@ static constexpr uint16_t kExtFSSetFileInfo = 0x213;
 static constexpr uint16_t kExtFSCreateDir = 0x215;
 static constexpr uint16_t kExtFSCatMove = 0x216;
 
-/* ── Catalog ──────────────────────────────────────── */
+/* ── HostVolume instance ──────────────────────────── */
 
-struct CatalogEntry
+static storage::HostVolume s_volume;
+
+static constexpr uint32_t kRootParentID = storage::HostVolume::kRootParentID;
+static constexpr uint32_t kRootDirID = storage::HostVolume::kRootDirID;
+
+/* ── Error translation ────────────────────────────── */
+
+static uint16_t fmErrToReg(storage::FMErr err)
 {
-	uint32_t cnid;
-	uint32_t parentDirID;
-	bool isDirectory;
-	std::string hostPath;
-	std::string macName; /* Mac OS Roman, ≤31 bytes */
-	uint32_t dataForkSize;
-	uint32_t type;
-	uint32_t creator;
-	uint32_t crDate;  /* Mac epoch */
-	uint32_t modDate; /* Mac epoch */
-};
-
-static std::vector<CatalogEntry> s_catalog;
-static bool s_mounted = false;
-static std::string s_sharedDir;
-
-/* ── Open file handles ────────────────────────────── */
-
-struct OpenFile
-{
-	FILE *fp;
-	uint32_t cnid;
-};
-
-static std::unordered_map<uint32_t, OpenFile> s_openFiles;
-static uint32_t s_nextHandle = 1;
-
-/* ── Working directories ──────────────────────────── */
-
-struct WDEntry
-{
-	uint32_t dirID;
-};
-
-static std::unordered_map<uint32_t, WDEntry> s_wdTable;
-static uint32_t s_nextWD = 0x8000; /* WD refs start here */
-
-/* ── Helpers ──────────────────────────────────────── */
-
-static constexpr uint32_t kRootParentID = 1;
-static constexpr uint32_t kRootDirID = 2;
-static constexpr uint32_t kFirstCNID = 16;
-static constexpr uint32_t kMacEpochOffset = 2082844800u; /* 1904→1970 diff */
-
-/* Convert a 4-char string like "TEXT" to a uint32_t. */
-static uint32_t fourCC(const char *s)
-{
-	return (uint32_t(uint8_t(s[0])) << 24) | (uint32_t(uint8_t(s[1])) << 16) |
-		   (uint32_t(uint8_t(s[2])) << 8) | uint32_t(uint8_t(s[3]));
-}
-
-/* Extension → type/creator mapping. */
-struct TypeMap
-{
-	const char *ext;
-	const char *type;
-	const char *creator;
-};
-
-static const TypeMap s_typeMap[] = {
-	{".txt", "TEXT", "ttxt"},  {".text", "TEXT", "ttxt"}, {".c", "TEXT", "KAHL"},
-	{".h", "TEXT", "KAHL"},	   {".p", "TEXT", "KAHL"},	  {".r", "TEXT", "KAHL"},
-	{".cpp", "TEXT", "KAHL"},  {".hpp", "TEXT", "KAHL"},  {".s", "TEXT", "KAHL"},
-	{".asm", "TEXT", "KAHL"},  {".md", "TEXT", "ttxt"},	  {".csv", "TEXT", "ttxt"},
-	{".htm", "TEXT", "MOSS"},  {".html", "TEXT", "MOSS"}, {".jpg", "JPEG", "ogle"},
-	{".jpeg", "JPEG", "ogle"}, {".gif", "GIFf", "ogle"},  {".bmp", "BMPf", "ogle"},
-	{".png", "PNGf", "ogle"},  {".bin", "BINA", "hDmp"},  {nullptr, nullptr, nullptr}};
-
-static void mapTypeCreator(const std::string &name, uint32_t &outType, uint32_t &outCreator)
-{
-	auto dot = name.rfind('.');
-	if (dot != std::string::npos)
+	switch (err)
 	{
-		std::string ext = name.substr(dot);
-		/* lowercase for matching */
-		for (auto &c : ext)
-			c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
-		for (const TypeMap *m = s_typeMap; m->ext; m++)
-		{
-			if (ext == m->ext)
-			{
-				outType = fourCC(m->type);
-				outCreator = fourCC(m->creator);
-				return;
-			}
-		}
+		case storage::FMErr::kNoErr:
+			return 0;
+		case storage::FMErr::kFnfErr:
+			return 43;
+		case storage::FMErr::kDupFNErr:
+			return 48;
+		case storage::FMErr::kParamErr:
+			return 50;
+		case storage::FMErr::kRfNumErr:
+			return 51;
+		case storage::FMErr::kIoErr:
+			return 36;
+		case storage::FMErr::kDirNFErr:
+			return 120;
+		case storage::FMErr::kFBsyErr:
+			return 47;
+		case storage::FMErr::kWPrErr:
+			return 44;
 	}
-	outType = fourCC("????");
-	outCreator = fourCC("????");
+	return 43;
 }
 
-/* UTF-8 → Mac OS Roman for filenames (lossy). */
-static std::string toMacRoman(const std::string &utf8)
-{
-	std::string out;
-	out.reserve(utf8.size());
-	for (size_t i = 0; i < utf8.size();)
-	{
-		uint8_t c = static_cast<uint8_t>(utf8[i]);
-		if (c < 0x80)
-		{
-			/* Replace : with - (: is the Mac path separator) */
-			out.push_back(c == ':' ? '-' : static_cast<char>(c));
-			i++;
-		}
-		else
-		{
-			/* Multi-byte UTF-8: replace with '?' for now */
-			out.push_back('?');
-			/* skip continuation bytes */
-			i++;
-			while (i < utf8.size() && (static_cast<uint8_t>(utf8[i]) & 0xC0) == 0x80)
-				i++;
-		}
-	}
-	return out;
-}
+/* ── Guest RAM helpers ────────────────────────────── */
 
-/* Truncate a Mac filename to 31 chars. */
-static std::string truncateMacName(const std::string &name)
-{
-	if (name.size() <= 31) return name;
-	return name.substr(0, 31);
-}
-
-/* Convert POSIX timestamp to Mac epoch. */
-static uint32_t toMacDate(std::filesystem::file_time_type ft)
-{
-	/* Convert file_time to seconds since Mac epoch (1904-01-01). */
-	auto dur = ft.time_since_epoch();
-	auto secs = std::chrono::duration_cast<std::chrono::seconds>(dur).count();
-	/* file_clock epoch varies by implementation; on macOS/libc++ it's
-	   the POSIX epoch (1970-01-01). */
-	return static_cast<uint32_t>(secs + kMacEpochOffset);
-}
-
-/* Write a Pascal string to guest RAM. */
 static void writePascalString(uint32_t addr, const std::string &s)
 {
 	uint8_t len = static_cast<uint8_t>(std::min(s.size(), size_t(31)));
@@ -194,7 +91,6 @@ static void writePascalString(uint32_t addr, const std::string &s)
 		put_vm_byte(addr + 1 + i, static_cast<uint8_t>(s[i]));
 }
 
-/* Read a Pascal string from guest RAM. */
 static std::string readPascalString(uint32_t addr)
 {
 	uint8_t len = get_vm_byte(addr);
@@ -205,152 +101,6 @@ static std::string readPascalString(uint32_t addr)
 	return s;
 }
 
-/* Get the resource fork size for a catalog entry by checking the .rsrc file on disk. */
-static uint32_t getResourceForkSize(const CatalogEntry &e)
-{
-	if (e.isDirectory) return 0;
-	std::string rsrcPath = e.hostPath + ".rsrc";
-	FILE *fp = fopen(rsrcPath.c_str(), "rb");
-	if (!fp) return 0;
-	fseek(fp, 0, SEEK_END);
-	uint32_t sz = static_cast<uint32_t>(ftell(fp));
-	fclose(fp);
-	return sz;
-}
-
-/* ── Catalog scanner ──────────────────────────────── */
-
-static uint32_t s_nextCNID;
-
-static void scanDirectory(const fs::path &hostDir, uint32_t parentDirID)
-{
-	std::error_code ec;
-	for (auto &entry : fs::directory_iterator(hostDir, ec))
-	{
-		if (ec) break;
-		std::string fname = entry.path().filename().string();
-		if (fname.empty() || fname[0] == '.') continue; /* skip hidden */
-
-		std::string macName = truncateMacName(toMacRoman(fname));
-		if (macName.empty()) continue;
-
-		CatalogEntry ce{};
-		ce.cnid = s_nextCNID++;
-		ce.parentDirID = parentDirID;
-		ce.hostPath = entry.path().string();
-		ce.macName = macName;
-
-		if (entry.is_directory(ec))
-		{
-			ce.isDirectory = true;
-			ce.dataForkSize = 0;
-			ce.type = 0;
-			ce.creator = 0;
-			auto ftime = fs::last_write_time(entry.path(), ec);
-			ce.crDate = ec ? 0 : toMacDate(ftime);
-			ce.modDate = ce.crDate;
-			uint32_t thisDirID = ce.cnid;
-			s_catalog.push_back(std::move(ce));
-			scanDirectory(entry.path(), thisDirID);
-		}
-		else if (entry.is_regular_file(ec))
-		{
-			ce.isDirectory = false;
-			ce.dataForkSize =
-				static_cast<uint32_t>(std::min(entry.file_size(ec), uintmax_t(0xFFFFFFFF)));
-			mapTypeCreator(fname, ce.type, ce.creator);
-			auto ftime = fs::last_write_time(entry.path(), ec);
-			ce.crDate = ec ? 0 : toMacDate(ftime);
-			ce.modDate = ce.crDate;
-			s_catalog.push_back(std::move(ce));
-		}
-	}
-}
-
-static void buildCatalog()
-{
-	s_catalog.clear();
-	s_nextCNID = kFirstCNID;
-	s_openFiles.clear();
-	s_wdTable.clear();
-	s_nextHandle = 1;
-	s_nextWD = 0x8000;
-
-	s_sharedDir = "shared";
-	std::error_code ec;
-	if (!fs::is_directory(s_sharedDir, ec))
-	{
-		dbglog_writeCStr((char *)"ExtFS: shared/ directory not found\n");
-		s_mounted = false;
-		return;
-	}
-
-	scanDirectory(s_sharedDir, kRootDirID);
-	s_mounted = true;
-	dbglog_writeCStr((char *)"ExtFS: catalog built, ");
-	dbglog_writeNum(static_cast<long>(s_catalog.size()));
-	dbglog_writeCStr((char *)" entries\n");
-}
-
-/* ── Catalog lookup helpers ───────────────────────── */
-
-static const CatalogEntry *findByCNID(uint32_t cnid)
-{
-	for (auto &e : s_catalog)
-		if (e.cnid == cnid) return &e;
-	return nullptr;
-}
-
-static const CatalogEntry *findByNameInDir(uint32_t parentDirID, const std::string &macName)
-{
-	for (auto &e : s_catalog)
-	{
-		if (e.parentDirID == parentDirID)
-		{
-			/* Case-insensitive compare (Mac HFS is case-insensitive) */
-			if (e.macName.size() == macName.size())
-			{
-				bool match = true;
-				for (size_t i = 0; i < macName.size(); i++)
-				{
-					if (tolower(static_cast<unsigned char>(e.macName[i])) !=
-						tolower(static_cast<unsigned char>(macName[i])))
-					{
-						match = false;
-						break;
-					}
-				}
-				if (match) return &e;
-			}
-		}
-	}
-	return nullptr;
-}
-
-/* Get the Nth child (1-based) of a directory. */
-static const CatalogEntry *getNthChild(uint32_t parentDirID, int index)
-{
-	int count = 0;
-	for (auto &e : s_catalog)
-	{
-		if (e.parentDirID == parentDirID)
-		{
-			count++;
-			if (count == index) return &e;
-		}
-	}
-	return nullptr;
-}
-
-/* Count children of a directory. */
-static int countChildren(uint32_t parentDirID)
-{
-	int count = 0;
-	for (auto &e : s_catalog)
-		if (e.parentDirID == parentDirID) count++;
-	return count;
-}
-
 /* ── Dispatch ─────────────────────────────────────── */
 
 void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
@@ -359,8 +109,8 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 	{
 		case kExtFSVersion:
 		{
-			if (!s_mounted) buildCatalog();
-			regParam[0] = s_mounted ? 1 : 0;
+			if (!s_volume.isMounted()) s_volume.mount("shared");
+			regParam[0] = s_volume.isMounted() ? 1 : 0;
 			regResult = 0;
 			dbglog_writeCStr((char *)"ExtFS: version query → ");
 			dbglog_writeNum(regParam[0]);
@@ -370,26 +120,17 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		case kExtFSGetVol:
 		{
-			uint32_t totalFiles = 0;
-			uint32_t totalBytes = 0;
-			for (auto &e : s_catalog)
-			{
-				if (!e.isDirectory)
-				{
-					totalFiles++;
-					totalBytes += e.dataForkSize;
-				}
-			}
-			regParam[0] = totalFiles;
-			regParam[1] = totalBytes;
+			uint32_t files, bytes;
+			s_volume.volumeStats(files, bytes);
+			regParam[0] = files;
+			regParam[1] = bytes;
 			regResult = 0;
-			fprintf(stderr, "[ExtFS] GetVol → %u files, %u bytes\n", totalFiles, totalBytes);
+			fprintf(stderr, "[ExtFS] GetVol → %u files, %u bytes\n", files, bytes);
 		}
 		break;
 
 		case kExtFSGetCatInfo:
 		{
-			/* p0 = dirID, p1 = index (1-based), p2 = name buf addr */
 			uint32_t dirID = regParam[0];
 			int32_t index = static_cast<int32_t>(regParam[1]);
 			uint32_t nameBuf = regParam[2];
@@ -398,105 +139,79 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 			if (index == 0)
 			{
-				/* Return info about the directory itself */
-				if (dirID == kRootParentID)
+				if (dirID == kRootParentID || dirID == kRootDirID)
 				{
-					/* dirID 1 is the virtual root parent — return root as its only child */
 					regParam[0] = kRootDirID;
-					regParam[1] = 0x10; /* directory flag */
-					regParam[2] = static_cast<uint32_t>(countChildren(kRootDirID));
+					regParam[1] = 0x10;
+					regParam[2] = static_cast<uint32_t>(s_volume.childCount(kRootDirID));
 					regParam[3] = kRootParentID;
 					if (nameBuf) writePascalString(nameBuf, "Shared");
-					fprintf(stderr, "[ExtFS]   → root dir (via parent 1), %u children\n",
-							regParam[2]);
-					regResult = 0;
-				}
-				else if (dirID == kRootDirID)
-				{
-					regParam[0] = kRootDirID;
-					regParam[1] = 0x10; /* directory flag */
-					regParam[2] = static_cast<uint32_t>(countChildren(kRootDirID));
-					regParam[3] = kRootParentID; /* parent of root = 1 */
-					if (nameBuf) writePascalString(nameBuf, "Shared");
-					fprintf(stderr, "[ExtFS]   → root dir, %u children\n", regParam[2]);
 					regResult = 0;
 				}
 				else
 				{
-					const CatalogEntry *e = findByCNID(dirID);
+					auto *e = s_volume.findByCNID(dirID);
 					if (e && e->isDirectory)
 					{
 						regParam[0] = e->cnid;
-						regParam[1] = 0x10; /* directory flag */
-						regParam[2] = static_cast<uint32_t>(countChildren(e->cnid));
+						regParam[1] = 0x10;
+						regParam[2] = static_cast<uint32_t>(s_volume.childCount(e->cnid));
 						regParam[3] = e->parentDirID;
 						if (nameBuf) writePascalString(nameBuf, e->macName);
-						fprintf(stderr, "[ExtFS]   → dir \"%s\" cnid=%u, %u children\n",
-								e->macName.c_str(), e->cnid, regParam[2]);
 						regResult = 0;
 					}
 					else
 					{
-						fprintf(stderr, "[ExtFS]   → fnfErr (dir %u not found)\n", dirID);
-						regResult = 43; /* fnfErr */
+						regResult = 43;
 					}
 				}
 			}
 			else if (index > 0)
 			{
-				/* Indexed enumeration */
 				if (dirID == kRootParentID)
 				{
-					/* dirID 1 contains only the root directory */
 					if (index == 1)
 					{
 						regParam[0] = kRootDirID;
 						regParam[1] = 0x10;
-						regParam[2] = static_cast<uint32_t>(countChildren(kRootDirID));
+						regParam[2] = static_cast<uint32_t>(s_volume.childCount(kRootDirID));
 						regParam[3] = kRootParentID;
 						if (nameBuf) writePascalString(nameBuf, "Shared");
-						fprintf(stderr, "[ExtFS]   → root dir (child #1 of parent 1)\n");
 						regResult = 0;
-						break;
 					}
 					else
 					{
-						fprintf(stderr, "[ExtFS]   → fnfErr (no child #%d in root parent)\n",
-								index);
 						regResult = 43;
-						break;
 					}
+					break;
 				}
-				const CatalogEntry *e = getNthChild(dirID, index);
+				auto *e = s_volume.nthChild(dirID, index);
 				if (e)
 				{
 					regParam[0] = e->cnid;
 					regParam[1] = e->isDirectory ? 0x10u : 0u;
-					regParam[2] = e->isDirectory ? static_cast<uint32_t>(countChildren(e->cnid))
-												 : e->dataForkSize;
+					regParam[2] = e->isDirectory
+									  ? static_cast<uint32_t>(s_volume.childCount(e->cnid))
+									  : e->dataForkSize;
 					regParam[3] = e->parentDirID;
-					regParam[4] = e->isDirectory ? 0u : getResourceForkSize(*e);
+					regParam[4] = e->isDirectory ? 0u : e->rsrcForkSize;
 					if (nameBuf) writePascalString(nameBuf, e->macName);
-					fprintf(stderr, "[ExtFS]   → \"%s\" cnid=%u %s size=%u\n", e->macName.c_str(),
-							e->cnid, e->isDirectory ? "dir" : "file", regParam[2]);
 					regResult = 0;
 				}
 				else
 				{
-					fprintf(stderr, "[ExtFS]   → fnfErr (no child #%d in dir %u)\n", index, dirID);
-					regResult = 43; /* fnfErr */
+					regResult = 43;
 				}
 			}
 			else
 			{
-				regResult = 50; /* paramErr */
+				regResult = 50;
 			}
 		}
 		break;
 
 		case kExtFSGetCatInfoName:
 		{
-			/* p0 = dirID (parent), p1 = name ptr in guest RAM, p2 = name buf */
 			uint32_t parentDir = regParam[0];
 			uint32_t nameAddr = regParam[1];
 			uint32_t nameBuf = regParam[2];
@@ -504,10 +219,9 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			std::string name = readPascalString(nameAddr);
 			fprintf(stderr, "[ExtFS] GetCatInfoByName dir=%u name=\"%s\"\n", parentDir,
 					name.c_str());
-			/* dirID 1 is the virtual root parent — volume name resolves to root */
+
 			if (parentDir == kRootParentID)
 			{
-				/* Case-insensitive compare against volume name "Shared" */
 				std::string volName = "Shared";
 				bool match = (name.size() == volName.size());
 				if (match)
@@ -526,177 +240,109 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 				{
 					regParam[0] = kRootDirID;
 					regParam[1] = 0x10;
-					regParam[2] = static_cast<uint32_t>(countChildren(kRootDirID));
+					regParam[2] = static_cast<uint32_t>(s_volume.childCount(kRootDirID));
 					regParam[3] = kRootParentID;
 					if (nameBuf) writePascalString(nameBuf, volName);
-					fprintf(stderr, "[ExtFS]   → root dir (by name in parent 1)\n");
 					regResult = 0;
 					break;
 				}
-				fprintf(stderr, "[ExtFS]   → fnfErr (name '%s' not volume name)\n", name.c_str());
 				regResult = 43;
 				break;
 			}
 
-			const CatalogEntry *e = findByNameInDir(parentDir, name);
+			auto *e = s_volume.findByName(parentDir, name);
 			if (e)
 			{
 				regParam[0] = e->cnid;
 				regParam[1] = e->isDirectory ? 0x10u : 0u;
-				regParam[2] = e->isDirectory ? static_cast<uint32_t>(countChildren(e->cnid))
+				regParam[2] = e->isDirectory ? static_cast<uint32_t>(s_volume.childCount(e->cnid))
 											 : e->dataForkSize;
 				regParam[3] = e->parentDirID;
-				regParam[4] = e->isDirectory ? 0u : getResourceForkSize(*e);
+				regParam[4] = e->isDirectory ? 0u : e->rsrcForkSize;
 				if (nameBuf) writePascalString(nameBuf, e->macName);
-				fprintf(stderr, "[ExtFS]   → cnid=%u %s size=%u\n", e->cnid,
-						e->isDirectory ? "dir" : "file",
-						e->isDirectory ? (uint32_t)countChildren(e->cnid) : e->dataForkSize);
 				regResult = 0;
 			}
 			else
 			{
-				fprintf(stderr, "[ExtFS]   → fnfErr\n");
-				regResult = 43; /* fnfErr */
+				regResult = 43;
 			}
 		}
 		break;
 
 		case kExtFSOpen:
 		{
-			/* p0 = CNID, p1 = fork (0=data, 1=resource) */
 			uint32_t cnid = regParam[0];
-			uint32_t fork = regParam[1];
-
-			const CatalogEntry *e = findByCNID(cnid);
-			fprintf(stderr, "[ExtFS] Open cnid=%u fork=%u name=\"%s\"\n", cnid, fork,
-					e ? e->macName.c_str() : "<unknown>");
-			if (!e || e->isDirectory)
+			auto forkType =
+				(regParam[1] == 1) ? storage::ForkType::Resource : storage::ForkType::Data;
+			uint32_t size = 0;
+			storage::FMErr err;
+			uint32_t handle = s_volume.openFork(cnid, forkType, size, err);
+			if (handle == 0)
 			{
-				fprintf(stderr, "[ExtFS]   → fnfErr\n");
-				regResult = 43; /* fnfErr */
+				regResult = fmErrToReg(err);
 				break;
 			}
-
-			std::string path = e->hostPath;
-			if (fork == 1) path += ".rsrc";
-
-			FILE *fp = fopen(path.c_str(), "r+b");
-			if (!fp) fp = fopen(path.c_str(), "rb");
-			if (!fp && fork == 1)
-			{
-				/* Resource fork doesn't exist — create it */
-				fp = fopen(path.c_str(), "w+b");
-				if (fp) fprintf(stderr, "[ExtFS]   → created new rsrc fork\n");
-			}
-			if (!fp)
-			{
-				fprintf(stderr, "[ExtFS]   → fopen failed\n");
-				regResult = 43; /* fnfErr */
-				break;
-			}
-
-			uint32_t handle = s_nextHandle++;
-			s_openFiles[handle] = {fp, cnid};
 			regParam[0] = handle;
-			/* Return file size in p1 */
-			fseek(fp, 0, SEEK_END);
-			uint32_t fileSize = static_cast<uint32_t>(ftell(fp));
-			fseek(fp, 0, SEEK_SET);
-			regParam[1] = fileSize;
-			fprintf(stderr, "[ExtFS]   → handle=%u size=%u\n", handle, fileSize);
+			regParam[1] = size;
+			fprintf(stderr, "[ExtFS] Open cnid=%u → handle=%u size=%u\n", cnid, handle, size);
 			regResult = 0;
 		}
 		break;
 
 		case kExtFSRead:
 		{
-			/* p0 = handle, p1 = offset, p2 = count, p3 = guest buf addr */
 			uint32_t handle = regParam[0];
 			uint32_t offset = regParam[1];
 			uint32_t count = regParam[2];
 			uint32_t guestBuf = regParam[3];
 
-			fprintf(stderr, "[ExtFS] Read h=%u off=%u cnt=%u buf=$%08X\n", handle, offset, count,
-					guestBuf);
+			fprintf(stderr, "[ExtFS] Read h=%u off=%u cnt=%u\n", handle, offset, count);
 
-			auto it = s_openFiles.find(handle);
-			if (it == s_openFiles.end())
+			std::vector<uint8_t> buf(count);
+			uint32_t got = 0;
+			auto err = s_volume.readFork(handle, offset, buf, got);
+			if (err != storage::FMErr::kNoErr)
 			{
-				regResult = 43; /* fnfErr */
+				regResult = fmErrToReg(err);
 				break;
 			}
 
-			FILE *fp = it->second.fp;
-			fseek(fp, static_cast<long>(offset), SEEK_SET);
-
-			/* Read in chunks to avoid huge stack allocations */
-			uint32_t totalRead = 0;
-			uint8_t buf[4096];
-			while (totalRead < count)
-			{
-				uint32_t chunk = std::min(count - totalRead, uint32_t(sizeof(buf)));
-				size_t got = fread(buf, 1, chunk, fp);
-				for (size_t i = 0; i < got; i++)
-					put_vm_byte(guestBuf + totalRead + static_cast<uint32_t>(i), buf[i]);
-				totalRead += static_cast<uint32_t>(got);
-				if (got < chunk) break; /* EOF */
-			}
-			regParam[0] = totalRead;
-			fprintf(stderr, "[ExtFS]   → read %u bytes\n", totalRead);
+			for (uint32_t i = 0; i < got; i++)
+				put_vm_byte(guestBuf + i, buf[i]);
+			regParam[0] = got;
+			fprintf(stderr, "[ExtFS]   → read %u bytes\n", got);
 			regResult = 0;
 		}
 		break;
 
 		case kExtFSClose:
 		{
-			/* p0 = handle */
 			uint32_t handle = regParam[0];
 			fprintf(stderr, "[ExtFS] Close h=%u\n", handle);
-			auto it = s_openFiles.find(handle);
-			if (it != s_openFiles.end())
-			{
-				fclose(it->second.fp);
-				s_openFiles.erase(it);
-			}
+			s_volume.closeFork(handle);
 			regResult = 0;
 		}
 		break;
 
 		case kExtFSGetFileInfo:
 		{
-			/* p0 = CNID → p0=type, p1=creator, p2=crDate, p3=modDate */
 			uint32_t cnid = regParam[0];
 
-			/* Root dir (cnid=2) and root parent (cnid=1) are virtual — not in catalog */
 			if (cnid == kRootDirID || cnid == kRootParentID)
 			{
-				/* Return zero type/creator (it's a directory) and current time */
-				uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + kMacEpochOffset;
-				regParam[0] = 0;   /* type */
-				regParam[1] = 0;   /* creator */
-				regParam[2] = now; /* crDate */
-				regParam[3] = now; /* modDate */
-				fprintf(stderr, "[ExtFS] GetFileInfo cnid=%u → root dir (virtual)\n", cnid);
+				uint32_t now =
+					static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
+				regParam[0] = 0;
+				regParam[1] = 0;
+				regParam[2] = now;
+				regParam[3] = now;
 				regResult = 0;
 				break;
 			}
 
-			const CatalogEntry *e = findByCNID(cnid);
+			auto *e = s_volume.findByCNID(cnid);
 			if (e)
 			{
-				char t[5], c[5];
-				t[0] = (e->type >> 24) & 0xFF;
-				t[1] = (e->type >> 16) & 0xFF;
-				t[2] = (e->type >> 8) & 0xFF;
-				t[3] = e->type & 0xFF;
-				t[4] = 0;
-				c[0] = (e->creator >> 24) & 0xFF;
-				c[1] = (e->creator >> 16) & 0xFF;
-				c[2] = (e->creator >> 8) & 0xFF;
-				c[3] = e->creator & 0xFF;
-				c[4] = 0;
-				fprintf(stderr, "[ExtFS] GetFileInfo cnid=%u name=\"%s\" type='%s' creator='%s'\n",
-						cnid, e->macName.c_str(), t, c);
 				regParam[0] = e->type;
 				regParam[1] = e->creator;
 				regParam[2] = e->crDate;
@@ -705,17 +351,15 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			}
 			else
 			{
-				fprintf(stderr, "[ExtFS] GetFileInfo cnid=%u → fnfErr\n", cnid);
-				regResult = 43; /* fnfErr */
+				regResult = 43;
 			}
 		}
 		break;
 
 		case kExtFSReadDir:
 		{
-			/* p0 = dirID → p0 = child count */
 			uint32_t dirID = regParam[0];
-			regParam[0] = static_cast<uint32_t>(countChildren(dirID));
+			regParam[0] = static_cast<uint32_t>(s_volume.childCount(dirID));
 			fprintf(stderr, "[ExtFS] ReadDir dir=%u → %u children\n", dirID, regParam[0]);
 			regResult = 0;
 		}
@@ -723,11 +367,9 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		case kExtFSObjByName:
 		{
-			/* p0 = parentDirID, p1 = name ptr → p0 = CNID or 0 */
 			uint32_t parentDir = regParam[0];
-			uint32_t nameAddr = regParam[1];
-			std::string name = readPascalString(nameAddr);
-			const CatalogEntry *e = findByNameInDir(parentDir, name);
+			std::string name = readPascalString(regParam[1]);
+			auto *e = s_volume.findByName(parentDir, name);
 			regParam[0] = e ? e->cnid : 0;
 			fprintf(stderr, "[ExtFS] ObjByName dir=%u name=\"%s\" → cnid=%u\n", parentDir,
 					name.c_str(), regParam[0]);
@@ -737,31 +379,26 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		case kExtFSGetWDInfo:
 		{
-			/* p0 = wdRefNum → p0 = vRefNum, p1 = dirID */
 			uint32_t wdRef = regParam[0];
 			fprintf(stderr, "[ExtFS] GetWDInfo wd=%u\n", wdRef);
-			auto it = s_wdTable.find(wdRef);
-			if (it != s_wdTable.end())
+			uint32_t dirID = s_volume.wdToDirID(wdRef);
+			if (dirID != 0)
 			{
-				regParam[0] = 0; /* vRefNum filled by INIT */
-				regParam[1] = it->second.dirID;
-				fprintf(stderr, "[ExtFS]   → dirID=%u\n", it->second.dirID);
+				regParam[0] = 0;
+				regParam[1] = dirID;
 				regResult = 0;
 			}
 			else
 			{
-				fprintf(stderr, "[ExtFS]   → not found\n");
-				regResult = 43; /* fnfErr */
+				regResult = 43;
 			}
 		}
 		break;
 
 		case kExtFSOpenWD:
 		{
-			/* p0 = vRefNum (unused), p1 = dirID → p0 = wdRefNum */
 			uint32_t dirID = regParam[1];
-			uint32_t wdRef = s_nextWD++;
-			s_wdTable[wdRef] = {dirID};
+			uint32_t wdRef = s_volume.openWD(dirID);
 			regParam[0] = wdRef;
 			fprintf(stderr, "[ExtFS] OpenWD dir=%u → wd=%u\n", dirID, wdRef);
 			regResult = 0;
@@ -770,10 +407,9 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		case kExtFSCloseWD:
 		{
-			/* p0 = wdRefNum */
 			uint32_t wdRef = regParam[0];
 			fprintf(stderr, "[ExtFS] CloseWD wd=%u\n", wdRef);
-			s_wdTable.erase(wdRef);
+			s_volume.closeWD(wdRef);
 			regResult = 0;
 		}
 		break;
@@ -788,11 +424,8 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		case kExtFSGuestVars:
 		{
-			/* Guest INIT stores/retrieves its globals pointer via
-			   the host so it doesn't need a low-memory slot.
-			   p1=1 → SET (store p0), else GET (return in p0). */
 			static uint32_t s_guestVarsPtr = 0;
-			if (regParam[1] != 0) s_guestVarsPtr = regParam[0]; /* SET */
+			if (regParam[1] != 0) s_guestVarsPtr = regParam[0];
 			regParam[0] = s_guestVarsPtr;
 			regResult = 0;
 		}
@@ -818,344 +451,98 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		case kExtFSCreateFile:
 		{
-			/* p0 = parentDirID, p1 = name ptr in guest RAM → p0 = CNID */
 			uint32_t parentDir = regParam[0];
-			uint32_t nameAddr = regParam[1];
-			std::string macName = readPascalString(nameAddr);
-
+			std::string macName = readPascalString(regParam[1]);
 			fprintf(stderr, "[ExtFS] CreateFile dir=%u name=\"%s\"\n", parentDir, macName.c_str());
 
-			/* Check if it already exists */
-			const CatalogEntry *existing = findByNameInDir(parentDir, macName);
-			if (existing)
+			storage::FMErr err;
+			uint32_t cnid = s_volume.createFile(parentDir, macName, err);
+			if (cnid == 0)
 			{
-				fprintf(stderr, "[ExtFS]   → dupFNErr (already exists cnid=%u)\n", existing->cnid);
-				regResult = 48; /* dupFNErr */
+				regResult = fmErrToReg(err);
 				break;
 			}
-
-			/* Find host path of parent directory */
-			std::string hostDir;
-			if (parentDir == kRootDirID)
-				hostDir = s_sharedDir;
-			else
-			{
-				const CatalogEntry *parent = findByCNID(parentDir);
-				if (!parent || !parent->isDirectory)
-				{
-					fprintf(stderr, "[ExtFS]   → dirNFErr\n");
-					regResult = 120; /* dirNFErr */
-					break;
-				}
-				hostDir = parent->hostPath;
-			}
-
-			/* Create the file on disk */
-			std::string hostPath = hostDir + "/" + macName;
-			FILE *fp = fopen(hostPath.c_str(), "wb");
-			if (!fp)
-			{
-				fprintf(stderr, "[ExtFS]   → ioErr (fopen failed)\n");
-				regResult = 36; /* ioErr */
-				break;
-			}
-			fclose(fp);
-
-			/* Add to catalog */
-			CatalogEntry ce{};
-			ce.cnid = s_nextCNID++;
-			ce.parentDirID = parentDir;
-			ce.hostPath = hostPath;
-			ce.macName = macName;
-			ce.isDirectory = false;
-			ce.dataForkSize = 0;
-			ce.type = 0;
-			ce.creator = 0;
-			uint32_t now =
-				static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-										  std::chrono::system_clock::now().time_since_epoch())
-										  .count() +
-									  kMacEpochOffset);
-			ce.crDate = now;
-			ce.modDate = now;
-			s_catalog.push_back(ce);
-
-			regParam[0] = ce.cnid;
-			fprintf(stderr, "[ExtFS]   → cnid=%u path=\"%s\"\n", ce.cnid, hostPath.c_str());
+			regParam[0] = cnid;
+			fprintf(stderr, "[ExtFS]   → cnid=%u\n", cnid);
 			regResult = 0;
 		}
 		break;
 
 		case kExtFSWrite:
 		{
-			/* p0 = handle, p1 = offset, p2 = count, p3 = guest buf addr */
 			uint32_t handle = regParam[0];
 			uint32_t offset = regParam[1];
 			uint32_t count = regParam[2];
 			uint32_t guestBuf = regParam[3];
 
-			fprintf(stderr, "[ExtFS] Write h=%u off=%u cnt=%u buf=$%08X\n", handle, offset, count,
-					guestBuf);
+			fprintf(stderr, "[ExtFS] Write h=%u off=%u cnt=%u\n", handle, offset, count);
 
-			auto it = s_openFiles.find(handle);
-			if (it == s_openFiles.end())
+			std::vector<uint8_t> data(count);
+			for (uint32_t i = 0; i < count; i++)
+				data[i] = get_vm_byte(guestBuf + i);
+
+			uint32_t written = 0;
+			auto err = s_volume.writeFork(handle, offset, data, written);
+			if (err != storage::FMErr::kNoErr)
 			{
-				fprintf(stderr, "[ExtFS]   → rfNumErr\n");
-				regResult = 51; /* rfNumErr */
+				regResult = fmErrToReg(err);
 				break;
 			}
-
-			FILE *fp = it->second.fp;
-			fseek(fp, static_cast<long>(offset), SEEK_SET);
-
-			uint32_t totalWritten = 0;
-			uint8_t buf[4096];
-			while (totalWritten < count)
-			{
-				uint32_t chunk = std::min(count - totalWritten, uint32_t(sizeof(buf)));
-				for (uint32_t i = 0; i < chunk; i++)
-					buf[i] = get_vm_byte(guestBuf + totalWritten + i);
-				size_t wrote = fwrite(buf, 1, chunk, fp);
-				totalWritten += static_cast<uint32_t>(wrote);
-				if (wrote < chunk) break;
-			}
-			fflush(fp);
-
-			/* Update catalog entry so subsequent GetCatInfo sees the real size */
-			{
-				uint32_t cnid = it->second.cnid;
-				for (auto &ce : s_catalog)
-				{
-					if (ce.cnid == cnid && !ce.isDirectory)
-					{
-						fseek(fp, 0, SEEK_END);
-						ce.dataForkSize = static_cast<uint32_t>(ftell(fp));
-						ce.modDate = static_cast<uint32_t>(
-							std::chrono::duration_cast<std::chrono::seconds>(
-								std::chrono::system_clock::now().time_since_epoch())
-								.count() +
-							kMacEpochOffset);
-						break;
-					}
-				}
-			}
-
-			regParam[0] = totalWritten;
-			fprintf(stderr, "[ExtFS]   → wrote %u bytes\n", totalWritten);
+			regParam[0] = written;
+			fprintf(stderr, "[ExtFS]   → wrote %u bytes\n", written);
 			regResult = 0;
 		}
 		break;
 
 		case kExtFSDeleteFile:
 		{
-			/* p0 = parentDirID, p1 = name ptr in guest RAM */
 			uint32_t parentDir = regParam[0];
-			uint32_t nameAddr = regParam[1];
-			std::string macName = readPascalString(nameAddr);
-
+			std::string macName = readPascalString(regParam[1]);
 			fprintf(stderr, "[ExtFS] Delete dir=%u name=\"%s\"\n", parentDir, macName.c_str());
-
-			const CatalogEntry *e = findByNameInDir(parentDir, macName);
-			if (!e)
-			{
-				fprintf(stderr, "[ExtFS]   → fnfErr\n");
-				regResult = 43; /* fnfErr */
-				break;
-			}
-			if (e->isDirectory)
-			{
-				if (countChildren(e->cnid) > 0)
-				{
-					fprintf(stderr, "[ExtFS]   → fBsyErr (directory not empty)\n");
-					regResult = 47; /* fBsyErr */
-					break;
-				}
-				std::error_code ec;
-				fs::remove(e->hostPath, ec);
-			}
-			else
-			{
-				std::error_code ec;
-				fs::remove(e->hostPath, ec);
-				fs::remove(e->hostPath + ".rsrc", ec);
-			}
-
-			/* Remove from catalog */
-			uint32_t cnid = e->cnid;
-			for (auto it = s_catalog.begin(); it != s_catalog.end(); ++it)
-			{
-				if (it->cnid == cnid)
-				{
-					s_catalog.erase(it);
-					break;
-				}
-			}
-
-			fprintf(stderr, "[ExtFS]   → deleted cnid=%u\n", cnid);
-			regResult = 0;
+			auto err = s_volume.remove(parentDir, macName);
+			regResult = fmErrToReg(err);
 		}
 		break;
 
 		case kExtFSSetFileInfo:
 		{
-			/* p0 = CNID, p1 = type, p2 = creator */
 			uint32_t cnid = regParam[0];
 			uint32_t type = regParam[1];
 			uint32_t creator = regParam[2];
-
-			char t[5], c[5];
-			t[0] = (type >> 24) & 0xFF;
-			t[1] = (type >> 16) & 0xFF;
-			t[2] = (type >> 8) & 0xFF;
-			t[3] = type & 0xFF;
-			t[4] = 0;
-			c[0] = (creator >> 24) & 0xFF;
-			c[1] = (creator >> 16) & 0xFF;
-			c[2] = (creator >> 8) & 0xFF;
-			c[3] = creator & 0xFF;
-			c[4] = 0;
-			fprintf(stderr, "[ExtFS] SetFileInfo cnid=%u type='%s' creator='%s'\n", cnid, t, c);
-
-			/* Find and update catalog entry */
-			for (auto &entry : s_catalog)
-			{
-				if (entry.cnid == cnid)
-				{
-					entry.type = type;
-					entry.creator = creator;
-					regResult = 0;
-					fprintf(stderr, "[ExtFS]   → updated\n");
-					goto setfileinfo_done;
-				}
-			}
-			fprintf(stderr, "[ExtFS]   → fnfErr\n");
-			regResult = 43; /* fnfErr */
-		setfileinfo_done:;
-		}
-		break;
-
-		case kExtFSCatMove:
-		{
-			/* p0 = sourceDirID, p1 = name ptr in guest RAM, p2 = destDirID */
-			uint32_t srcDir = regParam[0];
-			uint32_t nameAddr = regParam[1];
-			uint32_t dstDir = regParam[2];
-			std::string macName = readPascalString(nameAddr);
-
-			fprintf(stderr, "[ExtFS] CatMove srcDir=%u name=\"%s\" dstDir=%u\n", srcDir,
-					macName.c_str(), dstDir);
-
-			const CatalogEntry *e = findByNameInDir(srcDir, macName);
-			if (!e)
-			{
-				regResult = 43; /* fnfErr */
-				break;
-			}
-
-			/* Find destination directory host path */
-			std::string dstPath;
-			if (dstDir == kRootDirID)
-				dstPath = s_sharedDir;
-			else
-			{
-				const CatalogEntry *de = findByCNID(dstDir);
-				if (!de || !de->isDirectory)
-				{
-					regResult = 43; /* fnfErr */
-					break;
-				}
-				dstPath = de->hostPath;
-			}
-
-			std::string newHostPath = dstPath + "/" + macName;
-			std::error_code ec;
-			fs::rename(e->hostPath, newHostPath, ec);
-			if (ec)
-			{
-				fprintf(stderr, "[ExtFS]   → rename failed: %s\n", ec.message().c_str());
-				regResult = 43;
-				break;
-			}
-
-			/* Also move .rsrc sidecar if it exists */
-			if (!e->isDirectory) fs::rename(e->hostPath + ".rsrc", newHostPath + ".rsrc", ec);
-
-			/* Update catalog entry and fix descendant paths */
-			uint32_t cnid = e->cnid;
-			std::string oldHostPath = e->hostPath;
-			for (auto &entry : s_catalog)
-			{
-				if (entry.cnid == cnid)
-				{
-					entry.parentDirID = dstDir;
-					entry.hostPath = newHostPath;
-				}
-				else if (e->isDirectory && entry.hostPath.size() > oldHostPath.size() &&
-						 entry.hostPath.compare(0, oldHostPath.size(), oldHostPath) == 0 &&
-						 entry.hostPath[oldHostPath.size()] == '/')
-				{
-					/* Descendant — rewrite path prefix */
-					entry.hostPath = newHostPath + entry.hostPath.substr(oldHostPath.size());
-				}
-			}
-
-			fprintf(stderr, "[ExtFS]   → moved to \"%s\"\n", newHostPath.c_str());
-			regResult = 0;
+			fprintf(stderr, "[ExtFS] SetFileInfo cnid=%u\n", cnid);
+			auto err = s_volume.setFileInfo(cnid, type, creator);
+			regResult = fmErrToReg(err);
 		}
 		break;
 
 		case kExtFSCreateDir:
 		{
-			/* p0 = parentDirID, p1 = name ptr in guest RAM → p0 = new dirID */
 			uint32_t parentDir = regParam[0];
-			uint32_t nameAddr = regParam[1];
-			std::string macName = readPascalString(nameAddr);
-
+			std::string macName = readPascalString(regParam[1]);
 			fprintf(stderr, "[ExtFS] CreateDir dir=%u name=\"%s\"\n", parentDir, macName.c_str());
 
-			/* Find parent's host path */
-			std::string parentPath;
-			if (parentDir == kRootDirID)
-				parentPath = s_sharedDir;
-			else
+			storage::FMErr err;
+			uint32_t cnid = s_volume.createDir(parentDir, macName, err);
+			if (cnid == 0)
 			{
-				const CatalogEntry *pe = findByCNID(parentDir);
-				if (!pe || !pe->isDirectory)
-				{
-					regResult = 43; /* fnfErr */
-					break;
-				}
-				parentPath = pe->hostPath;
-			}
-
-			std::string hostPath = parentPath + "/" + macName;
-			std::error_code ec;
-			if (!fs::create_directory(hostPath, ec))
-			{
-				fprintf(stderr, "[ExtFS]   → mkdir failed: %s\n", ec.message().c_str());
-				regResult = 48; /* dupFNErr */
+				regResult = fmErrToReg(err);
 				break;
 			}
-
-			CatalogEntry ce{};
-			ce.cnid = s_nextCNID++;
-			ce.parentDirID = parentDir;
-			ce.hostPath = hostPath;
-			ce.macName = macName;
-			ce.isDirectory = true;
-			ce.dataForkSize = 0;
-			uint32_t now =
-				static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
-										  std::chrono::system_clock::now().time_since_epoch())
-										  .count() +
-									  kMacEpochOffset);
-			ce.crDate = now;
-			ce.modDate = now;
-			s_catalog.push_back(ce);
-
-			regParam[0] = ce.cnid;
-			fprintf(stderr, "[ExtFS]   → cnid=%u path=\"%s\"\n", ce.cnid, hostPath.c_str());
+			regParam[0] = cnid;
+			fprintf(stderr, "[ExtFS]   → cnid=%u\n", cnid);
 			regResult = 0;
+		}
+		break;
+
+		case kExtFSCatMove:
+		{
+			uint32_t srcDir = regParam[0];
+			std::string macName = readPascalString(regParam[1]);
+			uint32_t dstDir = regParam[2];
+			fprintf(stderr, "[ExtFS] CatMove srcDir=%u name=\"%s\" dstDir=%u\n", srcDir,
+					macName.c_str(), dstDir);
+			auto err = s_volume.move(srcDir, macName, dstDir);
+			regResult = fmErrToReg(err);
 		}
 		break;
 

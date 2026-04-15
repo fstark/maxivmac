@@ -6,106 +6,84 @@ Ranked by actual time wasted.
 
 ## Summary
 
-| ID | Type | Title | Impact |
-|----|------|-------|--------|
-| BUG-1 | Bug | Client has no connect retry / server-ready signal | **Critical** — every invocation needed `sleep 2-3` |
-| BUG-2 | Bug | Stale sockets from killed processes break FindSocket | **High** — `rm -f /tmp/maxivmac-dbg-*.sock` in every script |
-| BUG-3 | Bug | Watchpoint MATC interaction unclear | **Medium** — worked at $0AD4, earlier report says broken at $7E9180 |
-| FEAT-1 | Want | `break #-N` relative instruction breakpoints | High — manual arithmetic on 8-digit insn counts is error-prone |
-| FEAT-2 | Want | Trace filtering / streaming to file | High — 1.8M-line traces overwhelm stdout |
-| FEAT-3 | Want | `disas` command with address range | Medium — `x/Ni` requires guessing instruction count |
-| FEAT-4 | Want | `info globals` / low-memory map awareness | Medium — constant `x/1l $0B06` to check globals |
-| FEAT-5 | Want | Script-level timeout for `run`/`continue` | Medium — scripts hang forever if no breakpoint fires |
+| ID | Type | Status | Title | Impact |
+|----|------|--------|-------|--------|
+| BUG-1 | Bug | Valid | Client has no connect retry | **High** — every invocation needed `sleep 2-3` |
+| BUG-2 | Bug | Valid | Stale sockets from killed processes break FindSocket | **High** — `rm -f /tmp/maxivmac-dbg-*.sock` in every script |
+| BUG-3 | Bug | Invalid | Watchpoint MATC interaction unclear | Reporter likely had a wrong address/mode; code analysis and subsequent testing confirmed correctness |
+| FEAT-1 | Want | Invalid | `break #-N` relative instruction breakpoints | Already implemented — `break #-N` resolves relative to `g_instructionCount` |
+| FEAT-2 | Want | Mostly invalid | Trace filtering / streaming to file | Name filtering already works (`trace traps GetResource OpenRF`); only `file` and `depth` options missing |
+| FEAT-3 | Want | Invalid | `disas` command with address range | Already implemented — `disas $start $end` and `disas $start +$len` both work |
+| FEAT-4 | Want | Invalid | `info globals` / low-memory map awareness | Already implemented — `info globals` with prefix search |
+| FEAT-5 | Want | Valid | Script-level timeout for `run`/`continue` | **Medium** — scripts hang forever if no breakpoint fires |
 
 ---
 
 ## Bugs
 
-### BUG-1: No server-ready signaling; client has no connect retry
+### BUG-1: Client has no connect retry
 
-**Time wasted**: Hours total across the session (every single emulator
-restart).
+**Status**: Valid
 
 **Symptom**: The debug client fails immediately if the server socket
 doesn't exist yet. Every scripted workflow required a blind `sleep 2`
 (sometimes `sleep 3`) between starting the emulator and sending the
-first debug command. On a slow start or under load, the sleep was too
-short and the command failed. On a fast start, 2 seconds was wasted
-for nothing.
+first debug command.
 
-**Root cause**: `ConnectToSocket()` (dbg_client.cpp L44–62) calls
-`connect()` once with no retry. `FindSocket()` (L20–41) uses `glob()`
-to discover the socket file; if the file doesn't exist yet, it prints
-"No debug server found" and returns empty.
+**Root cause**: `ConnectToSocket()` (dbg_client.cpp) calls `connect()`
+once with no retry. `FindSocket()` uses `glob()` to discover the socket
+file; if the file doesn't exist yet, it returns empty.
 
-The server creates the listen socket in `CreateListenSocket()`
-(dbg_io.cpp L168–210) but prints no machine-readable ready indicator.
+Note: the original report claimed the server prints no ready indicator,
+but it does (`"debugserver: listening on %s\n"` on stderr). The real
+problem is solely on the client side.
 
-**Suggested fix**: Add `--wait` (or make it the default) to the client:
-poll for the socket file with exponential backoff (10ms, 20ms, …
-up to 2s total), then connect with retry. Print a clear error if the
-timeout expires. This eliminates every `sleep N` in the workflow.
-
-Alternatively, the server could write a sentinel file or print a
-known string that a wrapper script can `grep` for.
+**Planned fix**: Make the client retry by default — poll for the socket
+file with exponential backoff (10 ms → 20 ms → … up to ~3 s total),
+then `connect()` with retry on each found socket. Print a clear error
+if the total timeout expires. A `--no-wait` flag disables the retry
+for callers that want immediate failure. This eliminates every
+`sleep N` in wrapper scripts.
 
 ---
 
 ### BUG-2: Stale sockets from killed processes confuse FindSocket
 
-**Time wasted**: Moderate — every script had `rm -f /tmp/maxivmac-dbg-*.sock`.
+**Status**: Valid
 
 **Symptom**: After killing the emulator with SIGKILL (exit 137), the
-socket file remains in `/tmp/`. On the next launch, if the PID changes,
-a **new** socket file is created alongside the stale one. `FindSocket()`
-finds 2 matches, prints "Multiple debug servers found", and bails.
+socket file remains in `/tmp/`. On the next launch, `FindSocket()`
+finds 2 matches and bails.
 
-**Root cause**: `atexit(CleanupSocket)` (dbg_io.cpp L206) doesn't run
-on SIGKILL. `CreateListenSocket()` does `unlink(path)` before `bind()`,
-so the **new** server's socket is fine — but the **old** stale socket
-from the killed process remains. With PID-based socket names, each run
-creates a different file.
+**Root cause**: `atexit(CleanupSocket)` doesn't run on SIGKILL. With
+PID-based socket names, each run creates a different file, leaving
+stale sockets behind.
 
-**Suggested fix**: Either:
-1. Register a `SIGTERM`/`SIGINT` handler that calls `unlink()`, or
-2. In `FindSocket()`, when multiple sockets exist, probe each with
-   `connect()` and discard stale ones that refuse connection, or
-3. Use a fixed socket name (no PID) so `CreateListenSocket()`'s
-   `unlink()` always cleans up the previous one.
-
-Option 3 is simplest and fine for single-instance use.
+**Planned fix**: On startup, `FindSocket()` probes each discovered
+socket with a non-blocking `connect()`. Sockets where `connect()`
+returns `ECONNREFUSED` (no listener) are stale — unlink them
+automatically and continue. This is simpler and more robust than
+signal handlers (which cannot catch SIGKILL anyway) and eliminates the
+need for manual `rm -f` cleanup.
 
 ---
 
 ### BUG-3: Watchpoint MATC interaction — uncertain reliability
 
-**Severity**: Needs investigation.
+**Status**: Invalid (likely user error)
 
-**Symptom**: In an earlier part of the session, a watchpoint on address
-$7E9180 reportedly never fired despite the watched address being
-written to (confirmed by manual memory reads before/after). Later in
-the session, a watchpoint on $0AD4 (AppPacks[7]) worked correctly —
-it caught 5 writes with correct values and the final NULL write.
+The reporter observed a watchpoint on `$7E9180` not firing, but a later
+watchpoint on `$0AD4` worked correctly.
 
-**Analysis**: `RecalcWatchpointFlag()` (debugger.cpp L307–314) sets
-`g_watchpointActive` and calls `m68k_InvalidateMATC()`. The `_ext()`
-slow-path functions (m68k.cpp L8324–8519) check `g_watchpointActive`
-to prevent MATC re-population, and call `memoryHook()` for every access.
+Code analysis confirms the mechanism is sound:
+`RecalcWatchpointFlag()` sets `g_watchpointActive` and calls
+`m68k_InvalidateMATC()`. After invalidation, every memory access goes
+through the `_ext()` slow path and `memoryHook()`. The reporter
+themselves listed "user error (wrong address or mode)" as a possible
+explanation, and subsequent successful use of watchpoints in the same
+session confirms the mechanism works.
 
-The design looks correct: after MATC invalidation, the fast path
-(m68k.cpp L807–862) should always miss (`(addr & 0) == 0xFFFFFFFF`
-is always false), forcing every access through `_ext()`.
-
-**Possible explanations for the $7E9180 failure**:
-- A write via `put_long()` that is composed of two `put_word()` calls,
-  where the MATC invalidation timing left a window, or
-- The watchpoint was on a byte/word boundary and the write crossed it
-  in a way the range check in `memoryHook()` didn't catch, or
-- User error (wrong address or mode).
-
-**Recommendation**: Add a self-test: set a watchpoint, write to the
-address via `put_vm_long()`, confirm the watchpoint fires. If it
-doesn't, the MATC path has a real bug.
+No action required.
 
 ---
 
@@ -113,130 +91,108 @@ doesn't, the MATC path has a real bug.
 
 ### FEAT-1: `break #-N` relative instruction breakpoints
 
-**Time wasted**: High — every "go back and look earlier" iteration
-required manually computing large instruction-count arithmetic.
+**Status**: Invalid — already implemented
 
-**Context**: Runs are deterministic (identical disk image + shared/
-contents = identical instruction sequence). We used `break #N`
-extensively. The workflow was:
-1. Run to crash at insn #28117145
-2. Want to examine state 50K instructions earlier
-3. Manually compute: 28117145 - 50000 = 28067145
-4. `break #28067145` → `run` (restarts emulator)
+`break #-N` is already supported. The parser in `CmdBreak()` detects
+the `-` operator, validates that N ≤ `g_instructionCount`, resolves to
+an absolute instruction number, and reports:
+`(resolved to instruction #NNNNNN)`.
 
-With 8-digit numbers, arithmetic errors are likely. A `break #-50000`
-syntax would compute the offset from the current (or last-stopped)
-instruction count automatically.
-
-**Implementation**: Trivial — in `CmdBreak()` (cmd_break.cpp L84–90),
-if the token after `#` is negative, compute
-`g_instructionCount + N` (where N is negative). Store the last stop
-instruction count so it persists across `run` restarts.
+The reporter was apparently unaware of this feature and was doing
+the arithmetic manually.
 
 ---
 
 ### FEAT-2: Trace filtering / streaming to file
 
-**Time wasted**: High — processing 1.8M-line traces was slow and
-required external tools (`grep`, `head`, `tail`, `wc -l`).
+**Status**: Mostly invalid — name filtering already works
 
-**Current**: `trace traps on` dumps every trap call to the debug
-client's stdout. For a full Finder boot, this produces ~1.8 million
-lines. Even with `--script` redirecting to a file, the volume is
-unwieldy.
+`trace traps GetResource OpenRF` already filters output to named traps
+via `SymbolsResolve()` and `addTrapFilter()`. This was the reporter's
+primary pain point.
 
-**Wanted**:
-```
-(dbg) trace traps on filter GetResource,GetCatInfo
-(dbg) trace traps on file /tmp/trace.txt
-(dbg) trace traps on depth 1         # top-level only, skip nested
-```
+Two sub-features remain unimplemented:
+- **`depth N`** — suppress nested trap calls beyond depth N
+- **Server-side file output** — write trace directly to a file on the
+  server, bypassing socket throughput limits
 
-The `filter` option would restrict output to named traps. The `file`
-option would write directly to a file from the server side (avoiding
-socket throughput limits). The `depth` option would skip nested trap
-calls.
-
-During the session, the most useful traces were the filtered ones
-(e.g., only GetResource calls during InitAllPacks), but filtering
-had to be done post-hoc with grep.
+These are nice-to-haves, not currently planned.
 
 ---
 
 ### FEAT-3: `disas` command with address range
 
-**Context**: Used `x/Ni addr` extensively to examine ROM trap dispatch
-code. Determining the right instruction count `N` required guessing,
-overshooting, and re-running.
+**Status**: Invalid — already implemented
 
-**Wanted**:
-```
-(dbg) disas $40826456 $408264F2      # disassemble range
-(dbg) disas $40826456 +40            # disassemble 40 bytes
-```
-
-Sugar over `x/Ni` but auto-calculates the count from the byte range.
+Both `disas $start $end` and `disas $start +$len` are supported
+(cmd_memory.cpp). The reporter was using `x/Ni` unnecessarily.
 
 ---
 
 ### FEAT-4: `info globals` / low-memory map
 
-**Context**: Spent significant time manually reading low-memory globals
-by address:
-```
-(dbg) x/1l $0A50     # TopMapHndl
-(dbg) x/1l $0A54     # SysMapHndl
-(dbg) x/1l $0B06     # ROMMapHndl
-(dbg) x/1l $0AD4     # AppPacks[7]
-```
+**Status**: Invalid — already implemented
 
-It would help to have a command that knows the Mac low-memory map:
-```
-(dbg) info globals TopMapHndl ROMMapHndl AppPacks
-(dbg) info globals resource    # show all resource-related globals
-```
-
-This could be a simple table lookup — the classic Mac low-memory map
-is well-documented and static. Even just accepting symbolic names in
-`x/` and `print` would help: `print ROMMapHndl` instead of `x/1l $0B06`.
+`info globals` lists low-memory globals with symbolic names; an
+optional prefix argument filters results (e.g. `info globals ROM`).
+The `SymbolsSearch()` backend provides name, address, and size.
 
 ---
 
 ### FEAT-5: Script-level timeout for blocking commands
 
-**Context**: When a `run` or `continue` command in a `--script` doesn't
+**Status**: Valid
+
+**Symptom**: When a `run` or `continue` command in a `--script` doesn't
 hit a breakpoint, the debug client blocks forever. Had to kill the
 emulator process externally.
 
-**Wanted**: A per-command timeout in scripts:
+**Planned fix**: Instruction-count budget, not wall-clock timeout.
+Add a `budget <N>` script command that sets a maximum number of
+emulated instructions for the next blocking command (`run`, `continue`).
+When the budget is exhausted, the emulator breaks automatically —
+equivalent to an ephemeral `break #(current + N)`.
+
 ```
 # debug_finder.dbg
-break #28000000
-timeout 30
+break StopAlert
+budget 5000000
 run
-# if no breakpoint within 30 seconds, stop and report
+# breaks at StopAlert, OR after 5M instructions with:
+#   [budget exhausted after 5000000 instructions]
 trace traps on
 step 200
 ```
 
-Or a global `--timeout=N` flag for the client. When the timeout
-fires, the client should send an interrupt/break signal to the server
-(equivalent to Ctrl+C in interactive mode).
+Why instruction count, not wall-clock seconds:
+- **Deterministic**: same budget always covers the same guest work,
+  regardless of host speed or load.
+- **Composable**: `budget` + `break #-N` lets you bracket any region
+  of execution precisely.
+- **Simple to implement**: decrement a counter in the main emulation
+  loop; when it hits zero, trigger a break. No threads, no timers,
+  no signal races.
+
+A global `--budget=N` client flag sets a default for all blocking
+commands in the script.
 
 ---
 
 ## Already Working (verified during session)
 
-These features from the previous version of this document were confirmed
-working and used successfully:
+These features were confirmed working and used successfully during
+the SharedDrive debugging session. Several were re-reported as missing
+(FEAT-1, FEAT-2 filtering, FEAT-3, FEAT-4) by a reporter who was
+unaware they existed.
 
-- **`;`-separated commands** in one-shot mode (dbg_client.cpp L185–191)
-- **`--script=file.dbg`** reads commands from a file (L147–172)
+- **`;`-separated commands** in one-shot mode
+- **`--script=file.dbg`** reads commands from a file
 - **`finish` for trap calls** — correctly waits for RTS at matching SP
-- **`ignore <id> <count>`** — skip N breakpoint hits (cmd_break.cpp L339–363)
+- **`ignore <id> <count>`** — skip N breakpoint hits
 - **`.b`/`.w`/`.l` size modifiers** on memory dereferences in expressions
-  (expr.cpp L127–145)
-- **`break #N`** instruction-count breakpoints — fully reproducible with
-  deterministic boot
+- **`break #N`** and **`break #-N`** instruction-count breakpoints
 - **`commands <id>`** auto-execute on breakpoint hit
 - **Trap tracing** with nested call depth and return values
+- **`trace traps <name> [name...]`** — filter by trap name
+- **`disas $start $end`** and **`disas $start +$len`** — disassembly
+- **`info globals [prefix]`** — low-memory global lookup with search
