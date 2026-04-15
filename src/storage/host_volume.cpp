@@ -223,16 +223,64 @@ FMErr HostVolume::remove(uint32_t parentDirID, std::string_view macName)
 
 /* ── Move / rename ────────────────────────────────── */
 
-FMErr HostVolume::move(uint32_t /*srcDirID*/, std::string_view /*macName*/, uint32_t /*dstDirID*/)
+FMErr HostVolume::move(uint32_t srcDirID, std::string_view macName, uint32_t dstDirID)
 {
-	return FMErr::kFnfErr;
+	const CatalogEntry *e = findByName(srcDirID, macName);
+	if (!e) return FMErr::kFnfErr;
+
+	std::string dstPath = resolveParentPath(dstDirID);
+	if (dstPath.empty()) return FMErr::kFnfErr;
+
+	std::string newHostPath = dstPath + "/" + fs::path(e->hostPath).filename().string();
+
+	if (e->isDirectory)
+	{
+		std::error_code ec;
+		fs::rename(e->hostPath, newHostPath, ec);
+		if (ec) return FMErr::kIoErr;
+	}
+	else
+	{
+		if (!appledouble::RenameWithSidecar(e->hostPath, newHostPath)) return FMErr::kIoErr;
+	}
+
+	uint32_t cnid = e->cnid;
+	std::string oldHostPath = e->hostPath;
+	bool isDir = e->isDirectory;
+
+	for (auto &entry : catalog_)
+	{
+		if (entry.cnid == cnid)
+		{
+			entry.parentDirID = dstDirID;
+			entry.hostPath = newHostPath;
+		}
+		else if (isDir && entry.hostPath.size() > oldHostPath.size() &&
+				 entry.hostPath.compare(0, oldHostPath.size(), oldHostPath) == 0 &&
+				 entry.hostPath[oldHostPath.size()] == '/')
+		{
+			entry.hostPath = newHostPath + entry.hostPath.substr(oldHostPath.size());
+		}
+	}
+	return FMErr::kNoErr;
 }
 
 /* ── Metadata ─────────────────────────────────────── */
 
-FMErr HostVolume::setFileInfo(uint32_t /*cnid*/, uint32_t /*type*/, uint32_t /*creator*/)
+FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator)
 {
-	return FMErr::kFnfErr;
+	CatalogEntry *e = mutableFindByCNID(cnid);
+	if (!e) return FMErr::kFnfErr;
+
+	appledouble::SetFinderInfo(e->hostPath, {type, creator, e->finderFlags});
+	e->type = type;
+	e->creator = creator;
+
+	bool wasText = e->isText;
+	e->isText = (type == appledouble::FourCC("TEXT"));
+	if (e->isText != wasText) invalidateTextSize(*e);
+
+	return FMErr::kNoErr;
 }
 
 /* ── Fork I/O ─────────────────────────────────────── */
@@ -352,6 +400,18 @@ std::string HostVolume::resolveParentPath(uint32_t parentDirID) const
 	return {};
 }
 
-void HostVolume::invalidateTextSize(CatalogEntry & /*entry*/) {}
+void HostVolume::invalidateTextSize(CatalogEntry &entry)
+{
+	if (entry.isDirectory) return;
+	if (entry.isText)
+	{
+		entry.dataForkSize = appledouble::MacRomanSizeFromUTF8File(entry.hostPath);
+	}
+	else
+	{
+		std::error_code ec;
+		entry.dataForkSize = static_cast<uint32_t>(fs::file_size(entry.hostPath, ec));
+	}
+}
 
 } // namespace storage

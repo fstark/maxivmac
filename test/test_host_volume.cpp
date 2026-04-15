@@ -328,3 +328,114 @@ TEST_CASE("HostVolume: remove non-existent")
 	auto result = vol.remove(storage::HostVolume::kRootDirID, "nope");
 	CHECK(result == storage::FMErr::kFnfErr);
 }
+
+/* ── Phase 4: move/rename + metadata ──────────────── */
+
+TEST_CASE("HostVolume: move file between dirs")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t dirA = vol.createDir(storage::HostVolume::kRootDirID, "dirA", err);
+	uint32_t dirB = vol.createDir(storage::HostVolume::kRootDirID, "dirB", err);
+	vol.createFile(dirA, "moveme.txt", err);
+
+	auto result = vol.move(dirA, "moveme.txt", dirB);
+	CHECK(result == storage::FMErr::kNoErr);
+
+	CHECK(vol.findByName(dirA, "moveme.txt") == nullptr);
+	auto *e = vol.findByName(dirB, "moveme.txt");
+	REQUIRE(e != nullptr);
+	CHECK(e->parentDirID == dirB);
+	CHECK(fs::exists(td.path / "dirB" / "moveme.txt"));
+	CHECK_FALSE(fs::exists(td.path / "dirA" / "moveme.txt"));
+}
+
+TEST_CASE("HostVolume: move file with sidecar")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t dirA = vol.createDir(storage::HostVolume::kRootDirID, "srcdir", err);
+	uint32_t dirB = vol.createDir(storage::HostVolume::kRootDirID, "dstdir", err);
+	vol.createFile(dirA, "withsc", err);
+	appledouble::SetFinderInfo(td.path / "srcdir" / "withsc",
+							   {appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0});
+
+	auto result = vol.move(dirA, "withsc", dirB);
+	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(fs::exists(td.path / "dstdir" / "withsc"));
+	CHECK(fs::exists(td.path / "dstdir" / "._withsc"));
+	CHECK_FALSE(fs::exists(td.path / "srcdir" / "withsc"));
+}
+
+TEST_CASE("HostVolume: move directory with children")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t sub = vol.createDir(storage::HostVolume::kRootDirID, "sub", err);
+	vol.createFile(sub, "child.txt", err);
+	uint32_t dest = vol.createDir(storage::HostVolume::kRootDirID, "dest", err);
+
+	auto result = vol.move(storage::HostVolume::kRootDirID, "sub", dest);
+	CHECK(result == storage::FMErr::kNoErr);
+
+	auto *child = vol.findByName(sub, "child.txt");
+	REQUIRE(child != nullptr);
+	CHECK(child->hostPath.find("dest/sub/child.txt") != std::string::npos);
+}
+
+TEST_CASE("HostVolume: move non-existent")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto result =
+		vol.move(storage::HostVolume::kRootDirID, "nope", storage::HostVolume::kRootDirID);
+	CHECK(result == storage::FMErr::kFnfErr);
+}
+
+TEST_CASE("HostVolume: setFileInfo basic")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "meta", err);
+
+	auto result = vol.setFileInfo(cnid, appledouble::FourCC("APPL"), appledouble::FourCC("test"));
+	CHECK(result == storage::FMErr::kNoErr);
+
+	auto *e = vol.findByCNID(cnid);
+	REQUIRE(e != nullptr);
+	CHECK(e->type == appledouble::FourCC("APPL"));
+	CHECK(e->creator == appledouble::FourCC("test"));
+	CHECK(fs::exists(td.path / "._meta"));
+}
+
+TEST_CASE("HostVolume: setFileInfo updates isText")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "generic", err);
+
+	auto *e = vol.findByCNID(cnid);
+	REQUIRE(e != nullptr);
+	CHECK_FALSE(e->isText);
+
+	vol.setFileInfo(cnid, appledouble::FourCC("TEXT"), appledouble::FourCC("ttxt"));
+	e = vol.findByCNID(cnid);
+	CHECK(e->isText);
+}
