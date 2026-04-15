@@ -399,6 +399,7 @@ static long ResolveDir(short vRefNum, long dirID, char *regBase)
 {
 	if (dirID != 0) return dirID;  /* explicit dirID overrides */
 	if (vRefNum == kOurVRefNum) return kRootDirID;
+	if (vRefNum == kOurDriveNum) return kRootDirID;
 	if (vRefNum == 0) return kRootDirID; /* default volume */
 	/* Must be a WD refnum */
 	{
@@ -558,7 +559,7 @@ static OSErr DoCreate(char *pb, char *regBase)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, 0, regBase);
+	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
 
 	reg_set(regBase, 0, (unsigned long)dirID);
 	reg_set(regBase, 1, nameAddr);
@@ -576,7 +577,7 @@ static OSErr DoDelete(char *pb, char *regBase)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, 0, regBase);
+	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
 
 	reg_set(regBase, 0, (unsigned long)dirID);
 	reg_set(regBase, 1, nameAddr);
@@ -596,7 +597,7 @@ static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, 0, regBase);
+	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
 
 	/* Look up file by name */
 	reg_set(regBase, 0, (unsigned long)dirID);
@@ -701,7 +702,7 @@ static OSErr DoSetFileInfo(char *pb, char *regBase)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, 0, regBase);
+	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
 
 	reg_set(regBase, 0, (unsigned long)dirID);
 	reg_set(regBase, 1, nameAddr);
@@ -731,7 +732,7 @@ static OSErr DoOpen(char *pb, char *regBase, Ptr vcb)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, 0, regBase);
+	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
 
 	/* Look up file by name */
 	reg_set(regBase,0,(unsigned long)dirID); reg_set(regBase,1,nameAddr);
@@ -841,7 +842,7 @@ static OSErr DoGetFileInfo(char *pb, char *regBase)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, 0, regBase);
+	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
 
 	reg_set(regBase,0,(unsigned long)dirID); reg_set(regBase,1,nameAddr);
 	reg_set(regBase,2,(unsigned long)s_nameBuf);
@@ -1366,7 +1367,7 @@ short DispatchFlat(char *pb, short trapNum)
 				RestoreA4(); return 0;
 			}
 
-			dirID = ResolveDir(vRefNum, 0, g->regBase);
+			dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), g->regBase);
 
 			reg_set(g->regBase, 0, (unsigned long)dirID);
 			reg_set(g->regBase, 1, nameAddr);

@@ -115,6 +115,10 @@ public:
 	uint32_t wdToDirID(uint32_t wdRef) const;
 	void closeWD(uint32_t wdRef);
 
+	/* ── Catalog consistency ──────────────────────── */
+
+	bool validateCatalog() const;
+
 	/* ── TEXT conversion stats ────────────────────── */
 
 	struct TextStats

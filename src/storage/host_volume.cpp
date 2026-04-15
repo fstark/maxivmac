@@ -609,4 +609,58 @@ void HostVolume::invalidateTextSize(CatalogEntry &entry)
 	}
 }
 
+bool HostVolume::validateCatalog() const
+{
+	bool ok = true;
+	for (const auto &e : catalog_)
+	{
+		/* Check 1: hostPath must exist on disk */
+		std::error_code ec;
+		bool exists = fs::exists(e.hostPath, ec);
+		if (!exists)
+		{
+			fprintf(stderr, "[ValidateCatalog] MISSING: cnid=%u parent=%u \"%s\" -> %s\n", e.cnid,
+					e.parentDirID, e.macName.c_str(), e.hostPath.c_str());
+			ok = false;
+			continue;
+		}
+
+		/* Check 2: directory flag must match */
+		bool isDir = fs::is_directory(e.hostPath, ec);
+		if (isDir != e.isDirectory)
+		{
+			fprintf(stderr, "[ValidateCatalog] TYPE MISMATCH: cnid=%u \"%s\" catalog=%s disk=%s\n",
+					e.cnid, e.macName.c_str(), e.isDirectory ? "dir" : "file",
+					isDir ? "dir" : "file");
+			ok = false;
+		}
+
+		/* Check 3: hostPath parent must match resolveParentPath(parentDirID) */
+		std::string expectedParent = resolveParentPath(e.parentDirID);
+		if (expectedParent.empty() && e.parentDirID != kRootParentID)
+		{
+			fprintf(stderr,
+					"[ValidateCatalog] ORPHAN: cnid=%u parent=%u \"%s\" (parent not in catalog)\n",
+					e.cnid, e.parentDirID, e.macName.c_str());
+			ok = false;
+		}
+		else if (!expectedParent.empty())
+		{
+			fs::path actualParent = fs::path(e.hostPath).parent_path();
+			fs::path expected = fs::path(expectedParent);
+			if (fs::weakly_canonical(actualParent, ec) != fs::weakly_canonical(expected, ec))
+			{
+				fprintf(stderr,
+						"[ValidateCatalog] PATH MISMATCH: cnid=%u \"%s\"\n"
+						"  catalog parent=%u -> \"%s\"\n"
+						"  hostPath parent  -> \"%s\"\n",
+						e.cnid, e.macName.c_str(), e.parentDirID, expectedParent.c_str(),
+						actualParent.string().c_str());
+				ok = false;
+			}
+		}
+	}
+	return ok;
+}
+
 } // namespace storage

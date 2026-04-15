@@ -559,4 +559,23 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			regResult = 0xFFFF;
 			break;
 	}
+
+	/* After any mutating operation, validate that the catalog
+	   matches the actual filesystem.  Only runs for commands
+	   that can modify state (create/delete/move/rename/write). */
+	switch (cmd)
+	{
+		case kExtFSCreateFile:
+		case kExtFSCreateDir:
+		case kExtFSDeleteFile:
+		case kExtFSCatMove:
+		case kExtFSRename:
+		case kExtFSSetFileInfo:
+			if (!s_volume.validateCatalog())
+				fprintf(stderr, "[ExtFS] *** CATALOG VALIDATION FAILED after cmd=0x%03x ***\n",
+						cmd);
+			break;
+		default:
+			break;
+	}
 }
