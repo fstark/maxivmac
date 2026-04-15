@@ -1,0 +1,5 @@
+break #40000000
+run
+trace traps ExitToShell Launch InitFonts InitWindows OpenRFPerm CloseResFile
+break #80000000
+continue

@@ -1,0 +1,6 @@
+break #28117100
+run
+trace traps on
+step 50
+trace traps off
+x/1l 0x0AD4
