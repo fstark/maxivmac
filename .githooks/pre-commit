@@ -17,7 +17,8 @@ done
 
 if [ "$FAILED" -eq 1 ]; then
 	echo ""
-	echo "Run: find src -name '*.cpp' -o -name '*.h' -o -name '*.hpp' | xargs clang-format -i"
+	echo "Run:"
+	echo "  find src -name '*.cpp' -o -name '*.h' -o -name '*.hpp' | xargs clang-format -i"
 	echo "Then re-stage and commit."
 	exit 1
 fi
