@@ -92,6 +92,8 @@ public:
 
 	FMErr move(uint32_t srcDirID, std::string_view macName, uint32_t dstDirID);
 
+	FMErr rename(uint32_t dirID, std::string_view oldMacName, std::string_view newMacName);
+
 	/* ── Metadata ─────────────────────────────────── */
 
 	FMErr setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator);

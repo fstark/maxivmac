@@ -41,6 +41,7 @@ static constexpr uint16_t kExtFSDeleteFile = 0x212;
 static constexpr uint16_t kExtFSSetFileInfo = 0x213;
 static constexpr uint16_t kExtFSCreateDir = 0x215;
 static constexpr uint16_t kExtFSCatMove = 0x216;
+static constexpr uint16_t kExtFSRename = 0x217;
 
 /* ── HostVolume instance ──────────────────────────── */
 
@@ -538,6 +539,18 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			fprintf(stderr, "[ExtFS] CatMove srcDir=%u name=\"%s\" dstDir=%u\n", srcDir,
 					macName.c_str(), dstDir);
 			auto err = s_volume.move(srcDir, macName, dstDir);
+			regResult = fmErrToReg(err);
+		}
+		break;
+
+		case kExtFSRename:
+		{
+			uint32_t dirID = regParam[0];
+			std::string oldName = readPascalString(regParam[1]);
+			std::string newName = readPascalString(regParam[2]);
+			fprintf(stderr, "[ExtFS] Rename dir=%u old=\"%s\" new=\"%s\"\n", dirID, oldName.c_str(),
+					newName.c_str());
+			auto err = s_volume.rename(dirID, oldName, newName);
 			regResult = fmErrToReg(err);
 		}
 		break;

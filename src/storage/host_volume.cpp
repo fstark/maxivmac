@@ -273,6 +273,53 @@ FMErr HostVolume::move(uint32_t srcDirID, std::string_view macName, uint32_t dst
 	return FMErr::kNoErr;
 }
 
+FMErr HostVolume::rename(uint32_t dirID, std::string_view oldMacName, std::string_view newMacName)
+{
+	if (newMacName.empty() || newMacName.size() > 31) return FMErr::kParamErr;
+
+	const CatalogEntry *e = findByName(dirID, oldMacName);
+	if (!e) return FMErr::kFnfErr;
+
+	if (findByName(dirID, newMacName)) return FMErr::kDupFNErr;
+
+	std::string parentPath = resolveParentPath(dirID);
+	if (parentPath.empty()) return FMErr::kDirNFErr;
+
+	std::string newHostName = appledouble::HostNameFromMac(newMacName);
+	std::string newHostPath = parentPath + "/" + newHostName;
+
+	if (e->isDirectory)
+	{
+		std::error_code ec;
+		fs::rename(e->hostPath, newHostPath, ec);
+		if (ec) return FMErr::kIoErr;
+	}
+	else
+	{
+		if (!appledouble::RenameWithSidecar(e->hostPath, newHostPath)) return FMErr::kIoErr;
+	}
+
+	uint32_t cnid = e->cnid;
+	std::string oldHostPath = e->hostPath;
+	bool isDir = e->isDirectory;
+
+	for (auto &entry : catalog_)
+	{
+		if (entry.cnid == cnid)
+		{
+			entry.hostPath = newHostPath;
+			entry.macName = std::string(newMacName);
+		}
+		else if (isDir && entry.hostPath.size() > oldHostPath.size() &&
+				 entry.hostPath.compare(0, oldHostPath.size(), oldHostPath) == 0 &&
+				 entry.hostPath[oldHostPath.size()] == '/')
+		{
+			entry.hostPath = newHostPath + entry.hostPath.substr(oldHostPath.size());
+		}
+	}
+	return FMErr::kNoErr;
+}
+
 /* ── Metadata ─────────────────────────────────────── */
 
 FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator)

@@ -403,6 +403,75 @@ TEST_CASE("HostVolume: move non-existent")
 	CHECK(result == storage::FMErr::kFnfErr);
 }
 
+TEST_CASE("HostVolume: rename file")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	vol.createFile(storage::HostVolume::kRootDirID, "old.txt", err);
+
+	auto result = vol.rename(storage::HostVolume::kRootDirID, "old.txt", "new.txt");
+	CHECK(result == storage::FMErr::kNoErr);
+
+	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "old.txt") == nullptr);
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "new.txt");
+	REQUIRE(e != nullptr);
+	CHECK(e->macName == "new.txt");
+	CHECK(fs::exists(td.path / "new.txt"));
+	CHECK_FALSE(fs::exists(td.path / "old.txt"));
+}
+
+TEST_CASE("HostVolume: rename directory updates descendant paths")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t dir = vol.createDir(storage::HostVolume::kRootDirID, "olddir", err);
+	vol.createFile(dir, "child.txt", err);
+
+	auto result = vol.rename(storage::HostVolume::kRootDirID, "olddir", "newdir");
+	CHECK(result == storage::FMErr::kNoErr);
+
+	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "olddir") == nullptr);
+	auto *d = vol.findByName(storage::HostVolume::kRootDirID, "newdir");
+	REQUIRE(d != nullptr);
+	CHECK(d->macName == "newdir");
+
+	auto *child = vol.findByName(d->cnid, "child.txt");
+	REQUIRE(child != nullptr);
+	CHECK(child->hostPath.find("newdir/child.txt") != std::string::npos);
+	CHECK(fs::exists(td.path / "newdir" / "child.txt"));
+}
+
+TEST_CASE("HostVolume: rename duplicate name")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	vol.createFile(storage::HostVolume::kRootDirID, "fileA", err);
+	vol.createFile(storage::HostVolume::kRootDirID, "fileB", err);
+
+	auto result = vol.rename(storage::HostVolume::kRootDirID, "fileA", "fileB");
+	CHECK(result == storage::FMErr::kDupFNErr);
+	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "fileA") != nullptr);
+}
+
+TEST_CASE("HostVolume: rename non-existent")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto result = vol.rename(storage::HostVolume::kRootDirID, "nope", "whatever");
+	CHECK(result == storage::FMErr::kFnfErr);
+}
+
 TEST_CASE("HostVolume: setFileInfo basic")
 {
 	TempDir td;
