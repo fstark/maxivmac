@@ -1,265 +1,242 @@
-# Debugger — Bugs & Feature Requests
+# Debugger — Bugs & Friction (SharedDrive Session, April 2025)
 
-Collected during the SharedDrive debugging session (April 2026).
+Issues encountered by an AI agent during multi-day SharedDrive INIT
+debugging (root-cause analysis of a Pack7/ROMMapHndl corruption bug).
+Ranked by actual time wasted.
 
 ## Summary
 
-| ID | Title | Verdict | Effort |
-|----|-------|---------|--------|
-| BUG-1 | Watchpoints bypass MATC fast path | **IMPLEMENT** — invalidate MATC for watched ranges | Medium |
-| BUG-2 | x/Ni garbled at trap PC | **INVALID** — correct behavior, cosmetic confusion | None |
-| FEAT-1 | Multi-command one-shot mode | **IMPLEMENT** — `;`-split in client + `--script` | Low |
-| FEAT-2 | `disas` command | **IMPLEMENT** — sugar over existing Disassemble() | Low |
-| FEAT-3 | Guest log in debugger | **IMPLEMENT** — infra exists, just add command | Very low |
-| FEAT-4 | `break #-N` relative insn break | **IMPLEMENT** — simple arithmetic on g_instructionCount | Low |
-| FEAT-5 | Condition memory deref sizes | **IMPLEMENT** — add `.b`/`.w`/`.l` suffixes to expr parser | Moderate |
-| FEAT-6 | `finish` for trap calls | **ALREADY WORKS** — just needs documentation | None |
-| FEAT-7 | `ignore` / hit counts | **IMPLEMENT** — add hitCount/ignoreCount to Breakpoint | Low-medium |
-| FEAT-8 | Print with size modifiers | **IMPLEMENT** — same expr parser change as FEAT-5 | (shared with FEAT-5) |
+| ID | Type | Title | Impact |
+|----|------|-------|--------|
+| BUG-1 | Bug | Client has no connect retry / server-ready signal | **Critical** — every invocation needed `sleep 2-3` |
+| BUG-2 | Bug | Stale sockets from killed processes break FindSocket | **High** — `rm -f /tmp/maxivmac-dbg-*.sock` in every script |
+| BUG-3 | Bug | Watchpoint MATC interaction unclear | **Medium** — worked at $0AD4, earlier report says broken at $7E9180 |
+| FEAT-1 | Want | `break #-N` relative instruction breakpoints | High — manual arithmetic on 8-digit insn counts is error-prone |
+| FEAT-2 | Want | Trace filtering / streaming to file | High — 1.8M-line traces overwhelm stdout |
+| FEAT-3 | Want | `disas` command with address range | Medium — `x/Ni` requires guessing instruction count |
+| FEAT-4 | Want | `info globals` / low-memory map awareness | Medium — constant `x/1l $0B06` to check globals |
+| FEAT-5 | Want | Script-level timeout for `run`/`continue` | Medium — scripts hang forever if no breakpoint fires |
 
 ---
 
 ## Bugs
 
-### BUG-1: Watchpoints never fire (MATC cache bypass)
+### BUG-1: No server-ready signaling; client has no connect retry
 
-**Verdict**: IMPLEMENT (Option 1) — Confirmed real bug. The fast path in
-`get_byte()`/`put_byte()`/`get_word()`/`put_word()` (m68k.cpp L807–862)
-returns directly from the MATC cache without calling `memoryHook()`.
-Only the `_ext()` slow path checks watchpoints. Option 1 (invalidate MATC
-lines for watched ranges, prevent re-population in `_ext()`) is cleanest.
+**Time wasted**: Hours total across the session (every single emulator
+restart).
 
-**Severity**: High — watchpoints are effectively broken for normal RAM.
+**Symptom**: The debug client fails immediately if the server socket
+doesn't exist yet. Every scripted workflow required a blind `sleep 2`
+(sometimes `sleep 3`) between starting the emulator and sending the
+first debug command. On a slow start or under load, the sleep was too
+short and the command failed. On a fast start, 2 seconds was wasted
+for nothing.
 
-**Symptom**: `watch 0x7E9180 2` was set. The address was written to
-(confirmed by subsequent reads showing changed values) but the
-watchpoint never fired.
+**Root cause**: `ConnectToSocket()` (dbg_client.cpp L44–62) calls
+`connect()` once with no retry. `FindSocket()` (L20–41) uses `glob()`
+to discover the socket file; if the file doesn't exist yet, it prints
+"No debug server found" and returns empty.
 
-**Root Cause**: The MATC fast path in `get_byte()` / `put_byte()` /
-`get_word()` / `put_word()` (m68k.cpp ~L807–861) returns directly
-from the cache without calling the `_ext()` functions. Only the
-`_ext()` slow path calls `Debugger::instance()->memoryHook()`.
+The server creates the listen socket in `CreateListenSocket()`
+(dbg_io.cpp L168–210) but prints no machine-readable ready indicator.
 
-Since stack and normal RAM almost always hit the MATC cache, watchpoints
-on those addresses never trigger.
+**Suggested fix**: Add `--wait` (or make it the default) to the client:
+poll for the socket file with exponential backoff (10ms, 20ms, …
+up to 2s total), then connect with retry. Print a clear error if the
+timeout expires. This eliminates every `sleep N` in the workflow.
 
-**Suggested Fix**: When any watchpoint is active (`g_debuggerActive &&
-!watchpoints.empty()`), either:
-1. Invalidate the MATC entries that cover watched address ranges, forcing
-   those accesses through the `_ext()` path, or
-2. Add watchpoint range checks to the fast path (more invasive, but
-   avoids MATC thrashing when many watchpoints are set).
-
-Option 1 is simpler: on watchpoint add/remove, call a function that
-clears the relevant MATC line so the next access goes through `_ext()`.
-The `_ext()` function should also avoid re-populating the MATC line
-for watched ranges.
+Alternatively, the server could write a sentinel file or print a
+known string that a wrapper script can `grep` for.
 
 ---
 
-### BUG-2: `x/Ni` disassembly address calculation for multi-word instructions
+### BUG-2: Stale sockets from killed processes confuse FindSocket
 
-**Verdict**: INVALID — The disassembler is working correctly. When stopped
-at an A-line trap, the PC *is* at the trap word, and `DisasmALine()`
-handles it. The "garbled" appearance is the trap word itself being
-displayed, which is the correct behavior. This is purely cosmetic/UX
-confusion, not a bug. No action needed.
+**Time wasted**: Moderate — every script had `rm -f /tmp/maxivmac-dbg-*.sock`.
 
-**Severity**: Low.
+**Symptom**: After killing the emulator with SIGKILL (exit 137), the
+socket file remains in `/tmp/`. On the next launch, if the PID changes,
+a **new** socket file is created alongside the stale one. `FindSocket()`
+finds 2 matches, prints "Multiple debug servers found", and bails.
+
+**Root cause**: `atexit(CleanupSocket)` (dbg_io.cpp L206) doesn't run
+on SIGKILL. `CreateListenSocket()` does `unlink(path)` before `bind()`,
+so the **new** server's socket is fine — but the **old** stale socket
+from the killed process remains. With PID-based socket names, each run
+creates a different file.
+
+**Suggested fix**: Either:
+1. Register a `SIGTERM`/`SIGINT` handler that calls `unlink()`, or
+2. In `FindSocket()`, when multiple sockets exist, probe each with
+   `connect()` and discard stale ones that refuse connection, or
+3. Use a fixed socket name (no PID) so `CreateListenSocket()`'s
+   `unlink()` always cleans up the previous one.
+
+Option 3 is simplest and fine for single-instance use.
+
+---
+
+### BUG-3: Watchpoint MATC interaction — uncertain reliability
+
+**Severity**: Needs investigation.
+
+**Symptom**: In an earlier part of the session, a watchpoint on address
+$7E9180 reportedly never fired despite the watched address being
+written to (confirmed by manual memory reads before/after). Later in
+the session, a watchpoint on $0AD4 (AppPacks[7]) worked correctly —
+it caught 5 writes with correct values and the final NULL write.
+
+**Analysis**: `RecalcWatchpointFlag()` (debugger.cpp L307–314) sets
+`g_watchpointActive` and calls `m68k_InvalidateMATC()`. The `_ext()`
+slow-path functions (m68k.cpp L8324–8519) check `g_watchpointActive`
+to prevent MATC re-population, and call `memoryHook()` for every access.
+
+The design looks correct: after MATC invalidation, the fast path
+(m68k.cpp L807–862) should always miss (`(addr & 0) == 0xFFFFFFFF`
+is always false), forcing every access through `_ext()`.
+
+**Possible explanations for the $7E9180 failure**:
+- A write via `put_long()` that is composed of two `put_word()` calls,
+  where the MATC invalidation timing left a window, or
+- The watchpoint was on a byte/word boundary and the write crossed it
+  in a way the range check in `memoryHook()` didn't catch, or
+- User error (wrong address or mode).
+
+**Recommendation**: Add a self-test: set a watchpoint, write to the
+address via `put_vm_long()`, confirm the watchpoint fires. If it
+doesn't, the MATC path has a real bug.
 
 ---
 
 ## Feature Requests
 
-### FEAT-1: Multi-command one-shot mode
+### FEAT-1: `break #-N` relative instruction breakpoints
 
-**Verdict**: IMPLEMENT — Confirmed one-command-per-connection in
-`DebugClientMain()` (dbg_client.cpp L85–127). Simplest approach: parse
-`;`-separated commands in the client, loop send/recv for each. Also add
-`--script=file.dbg` for reading commands from a file. Low complexity.
+**Time wasted**: High — every "go back and look earlier" iteration
+required manually computing large instruction-count arithmetic.
 
-**Current**: Each `maxivmac debug "cmd"` invocation opens a new socket
-connection, sends one command, reads one response, and disconnects.
+**Context**: Runs are deterministic (identical disk image + shared/
+contents = identical instruction sequence). We used `break #N`
+extensively. The workflow was:
+1. Run to crash at insn #28117145
+2. Want to examine state 50K instructions earlier
+3. Manually compute: 28117145 - 50000 = 28067145
+4. `break #28067145` → `run` (restarts emulator)
 
-**Wanted**: Support sending multiple commands separated by `;` or
-newlines in a single invocation:
-```
-maxivmac debug "break GetResource; commands 1; print d0; continue; end; run"
-```
+With 8-digit numbers, arithmetic errors are likely. A `break #-50000`
+syntax would compute the offset from the current (or last-stopped)
+instruction count automatically.
 
-This would dramatically speed up automated debugging from scripts and
-AI agents, which currently need one round-trip per command.
-
-**Alternative**: A `--script=file.dbg` flag that reads commands from a
-file.
-
----
-
-### FEAT-2: `disas` command (standalone disassembly)
-
-**Verdict**: IMPLEMENT — Trivial sugar. Add a `CmdDisas()` handler that
-parses range syntax (`disas $start $end` or `disas $start +len`),
-computes the byte range, then calls the existing `Disassemble()` loop.
-No new disassembly logic needed.
-
-**Current**: Disassembly is only available via `x/Ni addr`.
-
-**Wanted**: A `disas` / `disassemble` command with range or function
-syntax:
-```
-(dbg) disas $7C3A60 $7C3AC0
-(dbg) disas $7C3A60 +40
-```
-
-Mostly sugar over `x/Ni`, but auto-calculates count from address range
-and avoids the cryptic format string.
+**Implementation**: Trivial — in `CmdBreak()` (cmd_break.cpp L84–90),
+if the token after `#` is negative, compute
+`g_instructionCount + N` (where N is negative). Store the last stop
+instruction count so it persists across `run` restarts.
 
 ---
 
-### FEAT-3: Access guest console log from debugger
+### FEAT-2: Trace filtering / streaming to file
 
-**Verdict**: IMPLEMENT — The infrastructure is fully in place.
-`guestConsoleAppend()` (extn_clip.cpp L34–53) already stores up to 2048
-lines in `s_consoleLines` deque, exposed via `extnDbgConsoleLines()`.
-Just needs a `CmdLog()` handler registered in the command table. Very
-low effort.
+**Time wasted**: High — processing 1.8M-line traces was slow and
+required external tools (`grep`, `head`, `tail`, `wc -l`).
 
-**Current**: `[GUEST]` log lines go to stderr only. When using
-`--debugserver` with stderr redirected, the agent must `tail` the log
-file in a separate terminal.
+**Current**: `trace traps on` dumps every trap call to the debug
+client's stdout. For a full Finder boot, this produces ~1.8 million
+lines. Even with `--script` redirecting to a file, the volume is
+unwieldy.
 
-**Wanted**: A debugger command to read recent guest log lines:
+**Wanted**:
 ```
-(dbg) log              # show last 20 lines
-(dbg) log 50           # show last 50 lines
-(dbg) log grep Desktop # show lines matching "Desktop"
+(dbg) trace traps on filter GetResource,GetCatInfo
+(dbg) trace traps on file /tmp/trace.txt
+(dbg) trace traps on depth 1         # top-level only, skip nested
 ```
 
-The infrastructure already exists — `guestConsoleAppend()` stores lines
-in a `std::deque`. Just expose it through a debugger command.
+The `filter` option would restrict output to named traps. The `file`
+option would write directly to a file from the server side (avoiding
+socket throughput limits). The `depth` option would skip nested trap
+calls.
+
+During the session, the most useful traces were the filtered ones
+(e.g., only GetResource calls during InitAllPacks), but filtering
+had to be done post-hoc with grep.
 
 ---
 
-### FEAT-4: Deterministic instruction-number breakpoints for INIT debugging
+### FEAT-3: `disas` command with address range
 
-**Verdict**: IMPLEMENT (simple arithmetic only) — `break #N` already
-works (cmd_break.cpp L84–90, fires at debugger.cpp L659 when
-`g_instructionCount >= N`). The `break #-N` syntax is just arithmetic:
-compute `g_instructionCount - N` and set a forward breakpoint. No
-instruction history or rewind needed — the user restarts manually with
-`run`. Implementing the subtraction syntax is trivial. A `rewind`
-command that auto-restarts the emulator is out of scope (would require
-emulator reset support).
+**Context**: Used `x/Ni addr` extensively to examine ROM trap dispatch
+code. Determining the right instruction count `N` required guessing,
+overshooting, and re-running.
 
-**Note from user**: The INIT loads at startup, so with identical disk
-images and `shared/` contents, every run executes the exact same
-instruction sequence. This makes instruction-number breakpoints
-(`break #N`) extremely powerful — they are fully reproducible.
-
-**Current**: `break #N` works, but the workflow to find the right N
-requires either:
-- Running to crash, noting the instruction count, then restarting
-- Guessing a range for `--log-start` / `--log-count`
-
-**Wanted**: A `break #-N` syntax meaning "break N instructions before
-the last stop point":
+**Wanted**:
 ```
-(dbg) run
-[GUEST FATAL at insn #31451989]
-(dbg) break #-50000      # → break #31401989
-(dbg) run                # restart from scratch, stop 50K insns before crash
+(dbg) disas $40826456 $408264F2      # disassemble range
+(dbg) disas $40826456 +40            # disassemble 40 bytes
 ```
 
-Or simpler: `rewind N` that restarts the emulator and sets a breakpoint
-at `current_insn - N`. Since runs are deterministic, this is safe.
+Sugar over `x/Ni` but auto-calculates the count from the byte range.
 
 ---
 
-### FEAT-5: Conditional trap breakpoints with param-block inspection
+### FEAT-4: `info globals` / low-memory map
 
-**Verdict**: PARTIALLY IMPLEMENTED — The expression evaluator (expr.cpp
-L95–125) already supports `(a0+22)` dereference syntax, but it always
-reads a 32-bit long. The condition `break HFSDispatch if d0 == 9 &&
-(a0+22) == $FFFF8300` works today (using the sign-extended 32-bit value).
-What's missing is `.w`/`.b` size modifiers. Add size suffix parsing
-after the closing `)` — `.b` masks to 8 bits, `.w` masks to 16 bits,
-default remains `.l`. Moderate effort.
-
-**Current**: Trap breakpoints can condition on registers (`d0`, `a0`),
-but not on memory pointed to by registers.
-
-**Wanted**: Conditions that dereference pointers:
+**Context**: Spent significant time manually reading low-memory globals
+by address:
 ```
-(dbg) break HFSDispatch if d0 == 9 && *(a0+22).w == -32000
+(dbg) x/1l $0A50     # TopMapHndl
+(dbg) x/1l $0A54     # SysMapHndl
+(dbg) x/1l $0B06     # ROMMapHndl
+(dbg) x/1l $0AD4     # AppPacks[7]
 ```
 
-This would let us break only when `_HFSDispatch(GetCatInfo)` is called
-with `ioVRefNum == kOurVRefNum`, skipping thousands of irrelevant calls.
+It would help to have a command that knows the Mac low-memory map:
+```
+(dbg) info globals TopMapHndl ROMMapHndl AppPacks
+(dbg) info globals resource    # show all resource-related globals
+```
 
-Without this, the agent had to manually `c` through dozens of
-GetCatInfo calls checking vRefNum by hand.
+This could be a simple table lookup — the classic Mac low-memory map
+is well-documented and static. Even just accepting symbolic names in
+`x/` and `print` would help: `print ROMMapHndl` instead of `x/1l $0B06`.
 
 ---
 
-### FEAT-6: `finish` for trap calls
+### FEAT-5: Script-level timeout for blocking commands
 
-**Verdict**: ALREADY WORKS — Verified in code. `CmdFinish()` (cmd_exec.cpp
-L68–74) saves SP and `setFinishing()` sets the finish flag. The check
-at debugger.cpp L601–616 waits for `SP >= savedSP` AND an RTS/RTD/RTE
-opcode. This works correctly when stopped at an A-line trap — the trap
-handler eventually executes RTS at the right stack depth. The `next`
-command also explicitly handles A-line traps. No code change needed;
-just document this in help text.
+**Context**: When a `run` or `continue` command in a `--script` doesn't
+hit a breakpoint, the debug client blocks forever. Had to kill the
+emulator process externally.
 
-**Current**: `finish` watches for RTS/RTD/RTE at the same stack depth.
-When stopped at a trap breakpoint (A-line instruction), `finish` should
-run until the trap handler returns to the caller.
+**Wanted**: A per-command timeout in scripts:
+```
+# debug_finder.dbg
+break #28000000
+timeout 30
+run
+# if no breakpoint within 30 seconds, stop and report
+trace traps on
+step 200
+```
 
-**Status**: ~~Untested — may already work.~~ Confirmed working.
+Or a global `--timeout=N` flag for the client. When the timeout
+fires, the client should send an interrupt/break signal to the server
+(equivalent to Ctrl+C in interactive mode).
 
 ---
 
-### FEAT-7: Breakpoint hit counts and auto-skip
+## Already Working (verified during session)
 
-**Verdict**: IMPLEMENT — Not implemented; no `ignore` command or hit
-counter in the breakpoint struct. Add a `hitCount` and `ignoreCount`
-field to the `Breakpoint` struct, increment on every match, skip if
-`hitCount <= ignoreCount`. Register an `ignore` command handler.
-Low-moderate effort. Note: auto-execute `commands` already exists
-(cmd_break.cpp L278–312), so a workaround is possible but clunky.
+These features from the previous version of this document were confirmed
+working and used successfully:
 
-**Current**: Every breakpoint fires on every hit.
-
-**Wanted**: `ignore <id> <count>` — skip the next N hits:
-```
-(dbg) break HFSDispatch if d0 == 9
-Breakpoint 1 on trap HFSDispatch
-(dbg) ignore 1 15        # skip first 15 GetCatInfo calls
-(dbg) c                   # stops on the 16th
-```
-
-Useful when the interesting call is deep in a boot sequence with many
-earlier benign calls.
-
----
-
-### FEAT-8: Expression printing with memory dereference
-
-**Verdict**: PARTIALLY IMPLEMENTED — `print (a0)`, `print (a0+18)`,
-`print (a0-4)` all work today (expr.cpp L95–125), but always read
-32-bit longs. Same gap as FEAT-5: no `.b`/`.w`/`.l` size modifiers.
-Fix in the same place — after the closing `)` in the expression
-parser, check for `.b`/`.w`/`.l` suffix and mask/truncate accordingly.
-This is the same change needed for FEAT-5, so implement once.
-
-**Current**: `print d0`, `print a0 + 4` work. `print (a0)` dereferences
-a long at the address in A0.
-
-**Wanted**: Extend to arbitrary sizes and offsets:
-```
-(dbg) print (a0 + 18).l    # read long at A0+18 (ioNamePtr)
-(dbg) print (a0 + 22).w    # read word at A0+22 (ioVRefNum)
-(dbg) print (a0).b         # read byte
-```
-
-This would eliminate many `x/` commands during param block inspection.
+- **`;`-separated commands** in one-shot mode (dbg_client.cpp L185–191)
+- **`--script=file.dbg`** reads commands from a file (L147–172)
+- **`finish` for trap calls** — correctly waits for RTS at matching SP
+- **`ignore <id> <count>`** — skip N breakpoint hits (cmd_break.cpp L339–363)
+- **`.b`/`.w`/`.l` size modifiers** on memory dereferences in expressions
+  (expr.cpp L127–145)
+- **`break #N`** instruction-count breakpoints — fully reproducible with
+  deterministic boot
+- **`commands <id>`** auto-execute on breakpoint hit
+- **Trap tracing** with nested call depth and return values
