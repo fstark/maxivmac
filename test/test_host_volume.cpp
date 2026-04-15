@@ -855,3 +855,68 @@ TEST_CASE("HostVolume: TEXT file dataForkSize in catalog")
 	CHECK(e->isText);
 	CHECK(e->dataForkSize == 6);
 }
+
+/* ── Phase 8: working dirs + volumeStats ──────────── */
+
+TEST_CASE("HostVolume: openWD / wdToDirID round-trip")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	uint32_t wdRef = vol.openWD(42);
+	CHECK(wdRef > 0);
+	CHECK(vol.wdToDirID(wdRef) == 42);
+}
+
+TEST_CASE("HostVolume: closeWD")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	uint32_t wdRef = vol.openWD(42);
+	vol.closeWD(wdRef);
+	CHECK(vol.wdToDirID(wdRef) == 0);
+}
+
+TEST_CASE("HostVolume: multiple WDs")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	uint32_t wd1 = vol.openWD(10);
+	uint32_t wd2 = vol.openWD(20);
+	CHECK(wd1 != wd2);
+	CHECK(vol.wdToDirID(wd1) == 10);
+	CHECK(vol.wdToDirID(wd2) == 20);
+}
+
+TEST_CASE("HostVolume: volumeStats")
+{
+	TempDir td;
+	writeFile(td.path / "a.bin", std::string(30, 'x'));
+	writeFile(td.path / "b.bin", std::string(40, 'y'));
+	writeFile(td.path / "c.bin", std::string(30, 'z'));
+
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	uint32_t files = 0, bytes = 0;
+	vol.volumeStats(files, bytes);
+	CHECK(files == 3);
+	CHECK(bytes == 100);
+}
+
+TEST_CASE("HostVolume: volumeStats empty")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	uint32_t files = 0, bytes = 0;
+	vol.volumeStats(files, bytes);
+	CHECK(files == 0);
+	CHECK(bytes == 0);
+}

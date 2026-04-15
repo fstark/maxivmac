@@ -107,6 +107,14 @@ void HostVolume::volumeStats(uint32_t &outFiles, uint32_t &outBytes) const
 {
 	outFiles = 0;
 	outBytes = 0;
+	for (const auto &e : catalog_)
+	{
+		if (!e.isDirectory)
+		{
+			outFiles++;
+			outBytes += e.dataForkSize;
+		}
+	}
 }
 
 /* ── File/directory creation ──────────────────────── */
@@ -446,18 +454,23 @@ void HostVolume::closeFork(uint32_t handle)
 
 /* ── Working directories ──────────────────────────── */
 
-uint32_t HostVolume::openWD(uint32_t /*dirID*/)
+uint32_t HostVolume::openWD(uint32_t dirID)
 {
-	(void)nextWD_;
-	return 0;
+	uint32_t wdRef = nextWD_++;
+	wdTable_[wdRef] = dirID;
+	return wdRef;
 }
 
-uint32_t HostVolume::wdToDirID(uint32_t /*wdRef*/) const
+uint32_t HostVolume::wdToDirID(uint32_t wdRef) const
 {
-	return 0;
+	auto it = wdTable_.find(wdRef);
+	return (it != wdTable_.end()) ? it->second : 0;
 }
 
-void HostVolume::closeWD(uint32_t /*wdRef*/) {}
+void HostVolume::closeWD(uint32_t wdRef)
+{
+	wdTable_.erase(wdRef);
+}
 
 /* ── TEXT conversion stats ────────────────────────── */
 
