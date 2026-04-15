@@ -580,3 +580,129 @@ TEST_CASE("HostVolume: write updates modDate")
 	auto *after = vol.findByCNID(cnid);
 	CHECK(after->modDate >= origMod);
 }
+
+/* ── Phase 6: resource fork I/O ───────────────────── */
+
+TEST_CASE("HostVolume: open resource fork (no sidecar)")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "norsrc.bin", err);
+	uint32_t size = 0;
+	uint32_t handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
+	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(handle > 0);
+	CHECK(size == 0);
+	vol.closeFork(handle);
+}
+
+TEST_CASE("HostVolume: write then read resource fork")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "rsrc.bin", err);
+	uint32_t size = 0;
+
+	uint32_t handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
+	std::vector<uint8_t> writeData = {0xDE, 0xAD, 0xBE, 0xEF};
+	uint32_t written = 0;
+	vol.writeFork(handle, 0, writeData, written);
+	CHECK(written == 4);
+	vol.closeFork(handle);
+
+	handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
+	CHECK(size == 4);
+
+	std::vector<uint8_t> readBuf(4);
+	uint32_t got = 0;
+	vol.readFork(handle, 0, readBuf, got);
+	CHECK(got == 4);
+	CHECK(readBuf == writeData);
+	vol.closeFork(handle);
+}
+
+TEST_CASE("HostVolume: resource fork write creates sidecar")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	vol.createFile(storage::HostVolume::kRootDirID, "sctest", err);
+	CHECK_FALSE(fs::exists(td.path / "._sctest"));
+
+	uint32_t cnid = vol.findByName(storage::HostVolume::kRootDirID, "sctest")->cnid;
+	uint32_t size = 0;
+	uint32_t handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
+
+	std::vector<uint8_t> data = {1, 2, 3};
+	uint32_t written = 0;
+	vol.writeFork(handle, 0, data, written);
+	vol.closeFork(handle);
+
+	CHECK(fs::exists(td.path / "._sctest"));
+}
+
+TEST_CASE("HostVolume: resource fork at offset")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "rsrcoff.bin", err);
+	uint32_t size = 0;
+
+	/* Write 10 bytes at offset 0 */
+	uint32_t handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
+	std::vector<uint8_t> first(10, 0xAA);
+	uint32_t written = 0;
+	vol.writeFork(handle, 0, first, written);
+	vol.closeFork(handle);
+
+	/* Write 5 bytes at offset 5 (overwrites bytes 5-9) */
+	handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
+	std::vector<uint8_t> second(5, 0xBB);
+	vol.writeFork(handle, 5, second, written);
+	vol.closeFork(handle);
+
+	/* Read all 10 bytes */
+	handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
+	CHECK(size == 10);
+	std::vector<uint8_t> readBuf(10);
+	uint32_t got = 0;
+	vol.readFork(handle, 0, readBuf, got);
+	CHECK(got == 10);
+	/* Bytes 0-4 should be 0xAA, bytes 5-9 should be 0xBB */
+	for (int i = 0; i < 5; ++i)
+		CHECK(readBuf[i] == 0xAA);
+	for (int i = 5; i < 10; ++i)
+		CHECK(readBuf[i] == 0xBB);
+	vol.closeFork(handle);
+}
+
+TEST_CASE("HostVolume: resource fork updates rsrcForkSize")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "rsrcsz.bin", err);
+	uint32_t size = 0;
+	uint32_t handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
+
+	std::vector<uint8_t> data(42, 0xFF);
+	uint32_t written = 0;
+	vol.writeFork(handle, 0, data, written);
+	vol.closeFork(handle);
+
+	auto *e = vol.findByCNID(cnid);
+	CHECK(e->rsrcForkSize == 42);
+}
