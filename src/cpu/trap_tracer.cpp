@@ -293,6 +293,16 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 {
 	int indent = frame.depth * 2;
 
+	/* Toolbox (Pascal) stack layout at entry:
+	     frame.sp → [input params...]   inStackSize bytes
+	                [result space...]    outStackSize bytes
+	   The trap consumes inputs and writes results into the result space,
+	   so output values live at frame.sp + inStackSize. */
+	int inStackSize = 0;
+	for (const auto &pd : def.paramsIn)
+		if (pd.loc == ParamLoc::Stack) inStackSize += paramSize(pd.type);
+	uint32_t outBase = frame.sp + inStackSize;
+
 	std::string outParams;
 	int totalStack = 0;
 	for (const auto &pd : def.paramsOut)
@@ -303,7 +313,7 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 		if (i > 0) outParams += " ";
 		const ParamDef &pd = def.paramsOut[i];
 		if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd.type);
-		uint32_t raw = readParamRaw(pd, frame.sp, stackOff);
+		uint32_t raw = readParamRaw(pd, outBase, stackOff);
 		outParams += pd.name;
 		outParams += ':';
 		outParams += formatParam(pd, raw);
