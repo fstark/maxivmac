@@ -294,8 +294,8 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 	int indent = frame.depth * 2;
 
 	/* Toolbox (Pascal) stack layout at entry:
-	     frame.sp → [input params...]   inStackSize bytes
-	                [result space...]    outStackSize bytes
+		 frame.sp → [input params...]   inStackSize bytes
+					[result space...]    outStackSize bytes
 	   The trap consumes inputs and writes results into the result space,
 	   so output values live at frame.sp + inStackSize. */
 	int inStackSize = 0;
