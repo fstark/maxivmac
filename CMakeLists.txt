@@ -50,6 +50,12 @@ set(MINIVMAC_SOURCES
     src/core/extn_extfs.cpp
     src/core/state_recorder.cpp
 
+    # Storage
+    src/storage/appledouble.cpp
+    src/storage/filename_encoding.cpp
+    src/storage/text_convert.cpp
+    src/storage/host_volume.cpp
+
     # CPU
     src/cpu/m68k_tables.cpp
     src/cpu/m68k.cpp
