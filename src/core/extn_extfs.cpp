@@ -36,13 +36,14 @@ static constexpr uint16_t kExtFSGetWDInfo = 0x20A;
 static constexpr uint16_t kExtFSOpenWD = 0x20B;
 static constexpr uint16_t kExtFSCloseWD = 0x20C;
 static constexpr uint16_t kExtFSDbgLog = 0x20D;
-/* 0x20E (BeginTrace) and 0x20F (EndTrace) removed — tracing is now
-   handled by the debugger.  Command numbers deliberately not reused. */
+static constexpr uint16_t kExtFSGuestVars = 0x20E;
 static constexpr uint16_t kExtFSFatal = 0x0214;
 static constexpr uint16_t kExtFSCreateFile = 0x210;
 static constexpr uint16_t kExtFSWrite = 0x211;
 static constexpr uint16_t kExtFSDeleteFile = 0x212;
 static constexpr uint16_t kExtFSSetFileInfo = 0x213;
+static constexpr uint16_t kExtFSCreateDir = 0x215;
+static constexpr uint16_t kExtFSCatMove = 0x216;
 
 /* ── Catalog ──────────────────────────────────────── */
 
@@ -785,6 +786,17 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		}
 		break;
 
+		case kExtFSGuestVars:
+		{
+			/* Guest INIT stores/retrieves its globals pointer via
+			   the host so it doesn't need a low-memory slot.
+			   p1=1 → SET (store p0), else GET (return in p0). */
+			static uint32_t s_guestVarsPtr = 0;
+			if (regParam[1] != 0) s_guestVarsPtr = regParam[0]; /* SET */
+			regParam[0] = s_guestVarsPtr;
+			regResult = 0;
+		}
+		break;
 
 		case kExtFSFatal:
 		{
@@ -908,6 +920,26 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 				if (wrote < chunk) break;
 			}
 			fflush(fp);
+
+			/* Update catalog entry so subsequent GetCatInfo sees the real size */
+			{
+				uint32_t cnid = it->second.cnid;
+				for (auto &ce : s_catalog)
+				{
+					if (ce.cnid == cnid && !ce.isDirectory)
+					{
+						fseek(fp, 0, SEEK_END);
+						ce.dataForkSize = static_cast<uint32_t>(ftell(fp));
+						ce.modDate = static_cast<uint32_t>(
+							std::chrono::duration_cast<std::chrono::seconds>(
+								std::chrono::system_clock::now().time_since_epoch())
+								.count() +
+							kMacEpochOffset);
+						break;
+					}
+				}
+			}
+
 			regParam[0] = totalWritten;
 			fprintf(stderr, "[ExtFS]   → wrote %u bytes\n", totalWritten);
 			regResult = 0;
@@ -932,16 +964,21 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			}
 			if (e->isDirectory)
 			{
-				fprintf(stderr, "[ExtFS]   → fBsyErr (is directory)\n");
-				regResult = 47; /* fBsyErr */
-				break;
+				if (countChildren(e->cnid) > 0)
+				{
+					fprintf(stderr, "[ExtFS]   → fBsyErr (directory not empty)\n");
+					regResult = 47; /* fBsyErr */
+					break;
+				}
+				std::error_code ec;
+				fs::remove(e->hostPath, ec);
 			}
-
-			/* Delete from disk */
-			std::error_code ec;
-			fs::remove(e->hostPath, ec);
-			/* Also delete .rsrc if it exists */
-			fs::remove(e->hostPath + ".rsrc", ec);
+			else
+			{
+				std::error_code ec;
+				fs::remove(e->hostPath, ec);
+				fs::remove(e->hostPath + ".rsrc", ec);
+			}
 
 			/* Remove from catalog */
 			uint32_t cnid = e->cnid;
@@ -994,6 +1031,131 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			fprintf(stderr, "[ExtFS]   → fnfErr\n");
 			regResult = 43; /* fnfErr */
 		setfileinfo_done:;
+		}
+		break;
+
+		case kExtFSCatMove:
+		{
+			/* p0 = sourceDirID, p1 = name ptr in guest RAM, p2 = destDirID */
+			uint32_t srcDir = regParam[0];
+			uint32_t nameAddr = regParam[1];
+			uint32_t dstDir = regParam[2];
+			std::string macName = readPascalString(nameAddr);
+
+			fprintf(stderr, "[ExtFS] CatMove srcDir=%u name=\"%s\" dstDir=%u\n", srcDir,
+					macName.c_str(), dstDir);
+
+			const CatalogEntry *e = findByNameInDir(srcDir, macName);
+			if (!e)
+			{
+				regResult = 43; /* fnfErr */
+				break;
+			}
+
+			/* Find destination directory host path */
+			std::string dstPath;
+			if (dstDir == kRootDirID)
+				dstPath = s_sharedDir;
+			else
+			{
+				const CatalogEntry *de = findByCNID(dstDir);
+				if (!de || !de->isDirectory)
+				{
+					regResult = 43; /* fnfErr */
+					break;
+				}
+				dstPath = de->hostPath;
+			}
+
+			std::string newHostPath = dstPath + "/" + macName;
+			std::error_code ec;
+			fs::rename(e->hostPath, newHostPath, ec);
+			if (ec)
+			{
+				fprintf(stderr, "[ExtFS]   → rename failed: %s\n", ec.message().c_str());
+				regResult = 43;
+				break;
+			}
+
+			/* Also move .rsrc sidecar if it exists */
+			if (!e->isDirectory) fs::rename(e->hostPath + ".rsrc", newHostPath + ".rsrc", ec);
+
+			/* Update catalog entry and fix descendant paths */
+			uint32_t cnid = e->cnid;
+			std::string oldHostPath = e->hostPath;
+			for (auto &entry : s_catalog)
+			{
+				if (entry.cnid == cnid)
+				{
+					entry.parentDirID = dstDir;
+					entry.hostPath = newHostPath;
+				}
+				else if (e->isDirectory && entry.hostPath.size() > oldHostPath.size() &&
+						 entry.hostPath.compare(0, oldHostPath.size(), oldHostPath) == 0 &&
+						 entry.hostPath[oldHostPath.size()] == '/')
+				{
+					/* Descendant — rewrite path prefix */
+					entry.hostPath = newHostPath + entry.hostPath.substr(oldHostPath.size());
+				}
+			}
+
+			fprintf(stderr, "[ExtFS]   → moved to \"%s\"\n", newHostPath.c_str());
+			regResult = 0;
+		}
+		break;
+
+		case kExtFSCreateDir:
+		{
+			/* p0 = parentDirID, p1 = name ptr in guest RAM → p0 = new dirID */
+			uint32_t parentDir = regParam[0];
+			uint32_t nameAddr = regParam[1];
+			std::string macName = readPascalString(nameAddr);
+
+			fprintf(stderr, "[ExtFS] CreateDir dir=%u name=\"%s\"\n", parentDir, macName.c_str());
+
+			/* Find parent's host path */
+			std::string parentPath;
+			if (parentDir == kRootDirID)
+				parentPath = s_sharedDir;
+			else
+			{
+				const CatalogEntry *pe = findByCNID(parentDir);
+				if (!pe || !pe->isDirectory)
+				{
+					regResult = 43; /* fnfErr */
+					break;
+				}
+				parentPath = pe->hostPath;
+			}
+
+			std::string hostPath = parentPath + "/" + macName;
+			std::error_code ec;
+			if (!fs::create_directory(hostPath, ec))
+			{
+				fprintf(stderr, "[ExtFS]   → mkdir failed: %s\n", ec.message().c_str());
+				regResult = 48; /* dupFNErr */
+				break;
+			}
+
+			CatalogEntry ce{};
+			ce.cnid = s_nextCNID++;
+			ce.parentDirID = parentDir;
+			ce.hostPath = hostPath;
+			ce.macName = macName;
+			ce.isDirectory = true;
+			ce.dataForkSize = 0;
+			uint32_t now =
+				static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(
+										  std::chrono::system_clock::now().time_since_epoch())
+										  .count() +
+									  kMacEpochOffset);
+			ce.crDate = now;
+			ce.modDate = now;
+			s_catalog.push_back(ce);
+
+			regParam[0] = ce.cnid;
+			fprintf(stderr, "[ExtFS]   → cnid=%u path=\"%s\"\n", ce.cnid, hostPath.c_str());
+			regResult = 0;
 		}
 		break;
 

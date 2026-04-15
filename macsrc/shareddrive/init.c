@@ -179,9 +179,8 @@ typedef struct {
 	long     volFileCount;
 	long     volTotalBytes;
 	long     savedA4;        /* THINK C code resource A4 */
+	short    ejected;        /* nonzero after _Eject */
 } Globals;
-
-#define kGlobalsPtr     0x0B04
 
 /* ---- Extension discovery ---- */
 
@@ -220,6 +219,25 @@ static void reg_command(char *base, unsigned short cmd)
 
 static unsigned short reg_result(char *base)
 {	return *(unsigned short *)(base + REG_RESULT); }
+
+/* ---- Guest globals via host storage ---- */
+
+static Globals *get_globals(void)
+{
+	char *base = find_reg_base();
+	if (base == NULL) return NULL;
+	reg_set(base, 0, 0);
+	reg_set(base, 1, 0);  /* GET */
+	reg_command(base, 0x020E);
+	return (Globals *)reg_get(base, 0);
+}
+
+static void set_globals(char *base, Globals *g)
+{
+	reg_set(base, 0, (unsigned long)g);
+	reg_set(base, 1, 1);  /* SET */
+	reg_command(base, 0x020E);
+}
 
 /* ---- Debug log ---- */
 
@@ -340,7 +358,7 @@ static Ptr GetFCB(short refNum)
 
 static Boolean IsOurFCB(short refNum)
 {
-	Globals *g = *(Globals **)kGlobalsPtr;
+	Globals *g = get_globals();
 	Ptr fcb;
 	if (g == NULL) return false;
 	fcb = GetFCB(refNum);
@@ -360,7 +378,7 @@ static Boolean IsOurVolume(short vRefNum)
 	/* vRefNum 0 means "default volume". Check if the default VCB
 	   is ours by reading the DefVCBPtr low-memory global. */
 	if (vRefNum == 0) {
-		Globals *g = *(Globals **)kGlobalsPtr;
+		Globals *g = get_globals();
 		if (g != NULL && *(Ptr *)kDefVCBPtr == g->vcb)
 			return true;
 	}
@@ -700,29 +718,27 @@ static OSErr DoSetFileInfo(char *pb, char *regBase)
 static OSErr DoOpen(char *pb, char *regBase, Ptr vcb)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
 	unsigned long cnid, size, handle;
 	short refNum;
+	long dirID;
 
 	if (nameAddr == 0) return -50;
 
-	/* Look up file by name in root (simplified — no WD yet) */
-	reg_set(regBase,0,kRootDirID); reg_set(regBase,1,nameAddr);
+	dirID = ResolveDir(vRefNum, 0, regBase);
+
+	/* Look up file by name */
+	reg_set(regBase,0,(unsigned long)dirID); reg_set(regBase,1,nameAddr);
 	reg_command(regBase, 0x0209);
 	cnid = reg_get(regBase, 0);
 	if (cnid == 0) return -43;
 
-	/* Get size */
-	reg_set(regBase,0,kRootDirID); reg_set(regBase,1,nameAddr);
-	reg_set(regBase,2,0);
-	reg_command(regBase, 0x0203);
-	if (reg_result(regBase) != 0) return -43;
-	size = reg_get(regBase, 2);
-
-	/* Open on host */
+	/* Open on host — returns handle in p0, file size in p1 */
 	reg_set(regBase,0,cnid); reg_set(regBase,1,0);
 	reg_command(regBase, 0x0204);
 	if (reg_result(regBase) != 0) return -43;
 	handle = reg_get(regBase, 0);
+	size = reg_get(regBase, 1);
 
 	/* Allocate FCB — data fork + write */
 	refNum = AllocFCB(vcb, cnid, size, 0x01);
@@ -739,7 +755,7 @@ static OSErr DoOpen(char *pb, char *regBase, Ptr vcb)
 		unsigned char len = src[0];
 		short j;
 		*(long *)(fcb + kFCBPLen) = handle;
-		*(long *)(fcb + kFCBDirID) = kRootDirID;
+		*(long *)(fcb + kFCBDirID) = dirID;
 		if (len > 31) len = 31;
 		*(unsigned char *)(fcb + kFCBCName) = len;
 		for (j = 0; j < len; j++)
@@ -813,10 +829,15 @@ static OSErr DoClose(char *pb, char *regBase)
 static OSErr DoGetFileInfo(char *pb, char *regBase)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
 	unsigned long cnid, size, type, creator, crDate, modDate;
+	long dirID;
 
 	if (nameAddr == 0) return -50;
-	reg_set(regBase,0,kRootDirID); reg_set(regBase,1,nameAddr);
+
+	dirID = ResolveDir(vRefNum, 0, regBase);
+
+	reg_set(regBase,0,(unsigned long)dirID); reg_set(regBase,1,nameAddr);
 	reg_set(regBase,2,(unsigned long)s_nameBuf);
 	reg_command(regBase, 0x0203);
 	if (reg_result(regBase) != 0) return -43;
@@ -1087,8 +1108,8 @@ short DispatchFlat(char *pb, short trapNum)
 	unsigned long nameAddr;
 
 	SetUpA4();
-	g = *(Globals **)kGlobalsPtr;
-	if (g == NULL) { RestoreA4(); return 1; }
+	g = get_globals();
+	if (g == NULL || g->ejected) { RestoreA4(); return 1; }
 
 	vRefNum  = *(short *)(pb + pb_ioVRefNum);
 	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
@@ -1167,6 +1188,14 @@ short DispatchFlat(char *pb, short trapNum)
 			dbg_log2(g->regBase, "SD _SetFPos ref=%ld -> %ld",
 				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			RestoreA4(); return 0;
+
+		case 0x45: /* _FlushFile */
+			refNum = *(short *)(pb + pb_ioRefNum);
+			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
+			dbg_log1(g->regBase, "SD _FlushFile ref=%ld -> 0",
+				(long)refNum);
+			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
 	}
 
@@ -1311,10 +1340,14 @@ short DispatchFlat(char *pb, short trapNum)
 			RestoreA4(); return 0;
 
 		case 0x0E: /* _UnmountVol */
+		{
 			dbg_log1(g->regBase,
-				"SD _UnmountVol vr=%ld -> 0", (long)vRefNum);
+				"SD _UnmountVol vr=%ld", (long)vRefNum);
+			Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
+			g->ejected = 1;
 			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
+		}
 
 		case 0x10: /* _Allocate */
 			dbg_log(g->regBase, "SD _Allocate -> 0");
@@ -1329,10 +1362,14 @@ short DispatchFlat(char *pb, short trapNum)
 			RestoreA4(); return 0;
 
 		case 0x17: /* _Eject */
+		{
 			dbg_log1(g->regBase,
-				"SD _Eject vr=%ld -> 0", (long)vRefNum);
+				"SD _Eject vr=%ld", (long)vRefNum);
+			Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
+			g->ejected = 1;
 			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
+		}
 	}
 
 	dbg_log1(g->regBase,
@@ -1353,8 +1390,8 @@ short DispatchHFS(char *pb, short selector)
 	unsigned long nameAddr;
 
 	SetUpA4();
-	g = *(Globals **)kGlobalsPtr;
-	if (g == NULL) { RestoreA4(); return 1; }
+	g = get_globals();
+	if (g == NULL || g->ejected) { RestoreA4(); return 1; }
 
 	vRefNum  = *(short *)(pb + pb_ioVRefNum);
 	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
@@ -1402,19 +1439,75 @@ short DispatchHFS(char *pb, short selector)
 		}
 
 		case kSetCatInfo:
-			dbg_log(g->regBase, "SD _SetCatInfo -> wPrErr");
-			*(short *)(pb + pb_ioResult) = -46;
+			dbg_log(g->regBase, "SD _SetCatInfo -> noErr");
+			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
 
 		case kCatMove:
-			dbg_log(g->regBase, "SD _CatMove -> wPrErr");
-			*(short *)(pb + pb_ioResult) = -46;
+		{
+			long srcDirID = *(long *)(pb + pb_ioDirID);
+			long dstDirID = *(long *)(pb + 36);  /* ioNewDirID */
+
+			dbg_log2(g->regBase, "SD _CatMove srcDir=%ld nm=%S",
+				srcDirID, nameAddr);
+			dbg_log1(g->regBase, "SD _CatMove dstDir=%ld",
+				dstDirID);
+
+			if (nameAddr == 0) {
+				*(short *)(pb + pb_ioResult) = -50;
+				RestoreA4(); return 0;
+			}
+
+			if (srcDirID == 0)
+				srcDirID = ResolveDir(vRefNum, 0, g->regBase);
+			if (dstDirID == 0)
+				dstDirID = ResolveDir(vRefNum, 0, g->regBase);
+
+			reg_set(g->regBase, 0, (unsigned long)srcDirID);
+			reg_set(g->regBase, 1, nameAddr);
+			reg_set(g->regBase, 2, (unsigned long)dstDirID);
+			reg_command(g->regBase, 0x0216); /* ExtFSCatMove */
+
+			if (reg_result(g->regBase) != 0) {
+				err = -(short)reg_result(g->regBase);
+				dbg_log1(g->regBase, "SD _CatMove -> %ld", (long)err);
+				*(short *)(pb + pb_ioResult) = err;
+				RestoreA4(); return 0;
+			}
+
+			dbg_log(g->regBase, "SD _CatMove -> 0");
+			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
+		}
 
 		case kDirCreate:
-			dbg_log(g->regBase, "SD _DirCreate -> wPrErr");
-			*(short *)(pb + pb_ioResult) = -46;
+		{
+			long dirID = *(long *)(pb + pb_ioDirID);
+			unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+
+			dbg_log2(g->regBase, "SD _DirCreate dir=%ld nm=%S",
+				dirID, nmAddr);
+
+			if (nmAddr == 0) {
+				*(short *)(pb + pb_ioResult) = -50;
+				RestoreA4(); return 0;
+			}
+
+			if (dirID == 0)
+				dirID = ResolveDir(vRefNum, 0, g->regBase);
+
+			reg_set(g->regBase, 0, (unsigned long)dirID);
+			reg_set(g->regBase, 1, nmAddr);
+			reg_command(g->regBase, 0x0215); /* ExtFSCreateDir */
+			if (reg_result(g->regBase) != 0) {
+				*(short *)(pb + pb_ioResult) =
+					-(short)reg_result(g->regBase);
+				RestoreA4(); return 0;
+			}
+			*(long *)(pb + pb_ioDirID) = (long)reg_get(g->regBase, 0);
+			*(short *)(pb + pb_ioResult) = 0;
 			RestoreA4(); return 0;
+		}
 
 		case kSetVInfo:
 			dbg_log(g->regBase, "SD _SetVInfo -> noErr");
@@ -1794,7 +1887,7 @@ void main(void)
 		}
 	}
 
-	*(Globals **)kGlobalsPtr = g;
+	set_globals(regBase, g);
 
 	dbg_log2(regBase, "SharedDrive: %ld files, %ld bytes",
 		g->volFileCount, g->volTotalBytes);
@@ -1869,12 +1962,9 @@ void main(void)
 	InstallFlatPatch(0xA017, regBase);  /* _Eject */
 	InstallFlatPatch(0xA018, regBase);  /* _GetFPos */
 	InstallFlatPatch(0xA044, regBase);  /* _SetFPos */
+	InstallFlatPatch(0xA045, regBase);  /* _FlushFile */
 
 	dbg_log(regBase, "SharedDrive: traps patched");
-
-	/* Enable host-side trap tracing so we can see what the
-	   system does with our volume after the INIT finishes. */
-//	reg_command(regBase, 0x020E); /* BeginTraceTraps */
 
 	/*
 	 * Don't PostEvent — it would trigger _MountVol for drive 8,
