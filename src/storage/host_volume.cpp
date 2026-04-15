@@ -285,29 +285,164 @@ FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator)
 
 /* ── Fork I/O ─────────────────────────────────────── */
 
-uint32_t HostVolume::openFork(uint32_t /*cnid*/, ForkType /*fork*/, uint32_t & /*outSize*/,
-							  FMErr &errOut)
+uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, FMErr &errOut)
 {
-	(void)nextHandle_;
-	errOut = FMErr::kFnfErr;
-	return 0;
+	const CatalogEntry *e = findByCNID(cnid);
+	if (!e || e->isDirectory)
+	{
+		errOut = FMErr::kFnfErr;
+		return 0;
+	}
+
+	uint32_t handle = nextHandle_++;
+
+	if (fork == ForkType::Data)
+	{
+		FILE *fp = fopen(e->hostPath.c_str(), "r+b");
+		if (!fp) fp = fopen(e->hostPath.c_str(), "rb");
+		if (!fp) fp = fopen(e->hostPath.c_str(), "w+b");
+		if (!fp)
+		{
+			errOut = FMErr::kIoErr;
+			return 0;
+		}
+
+		if (e->isText)
+		{
+			outSize = e->dataForkSize;
+		}
+		else
+		{
+			fseek(fp, 0, SEEK_END);
+			outSize = static_cast<uint32_t>(ftell(fp));
+			fseek(fp, 0, SEEK_SET);
+		}
+
+		openForks_[handle] = {cnid, ForkType::Data, fp};
+	}
+	else
+	{
+		/* Resource fork: no FILE*, handled by AppleDouble library */
+		openForks_[handle] = {cnid, ForkType::Resource, nullptr};
+		outSize = appledouble::ResourceForkSize(e->hostPath);
+	}
+
+	errOut = FMErr::kNoErr;
+	return handle;
 }
 
-FMErr HostVolume::readFork(uint32_t /*handle*/, uint32_t /*offset*/, std::span<uint8_t> /*buf*/,
+FMErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> buf,
 						   uint32_t &outRead)
 {
-	outRead = 0;
-	return FMErr::kRfNumErr;
+	auto it = openForks_.find(handle);
+	if (it == openForks_.end())
+	{
+		outRead = 0;
+		return FMErr::kRfNumErr;
+	}
+
+	const OpenFork &of = it->second;
+	CatalogEntry *e = mutableFindByCNID(of.cnid);
+	if (!e)
+	{
+		outRead = 0;
+		return FMErr::kFnfErr;
+	}
+
+	if (of.fork == ForkType::Resource)
+	{
+		auto data =
+			appledouble::ReadResourceFork(e->hostPath, offset, static_cast<uint32_t>(buf.size()));
+		uint32_t toRead = static_cast<uint32_t>(data.size());
+		std::memcpy(buf.data(), data.data(), toRead);
+		outRead = toRead;
+		return FMErr::kNoErr;
+	}
+
+	if (e->isText)
+	{
+		auto converted = appledouble::MacRomanFromUTF8File(e->hostPath);
+
+		std::error_code ec;
+		textStats_.conversions++;
+		textStats_.bytesIn += fs::file_size(e->hostPath, ec);
+		textStats_.bytesOut += converted.size();
+
+		uint32_t available =
+			(offset < converted.size()) ? static_cast<uint32_t>(converted.size() - offset) : 0;
+		uint32_t toRead = std::min(static_cast<uint32_t>(buf.size()), available);
+		std::memcpy(buf.data(), converted.data() + offset, toRead);
+		outRead = toRead;
+		return FMErr::kNoErr;
+	}
+
+	/* Non-TEXT data fork */
+	FILE *fp = of.fp;
+	fseek(fp, static_cast<long>(offset), SEEK_SET);
+	size_t got = fread(buf.data(), 1, buf.size(), fp);
+	outRead = static_cast<uint32_t>(got);
+	return FMErr::kNoErr;
 }
 
-FMErr HostVolume::writeFork(uint32_t /*handle*/, uint32_t /*offset*/,
-							std::span<const uint8_t> /*data*/, uint32_t &outWritten)
+FMErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const uint8_t> data,
+							uint32_t &outWritten)
 {
-	outWritten = 0;
-	return FMErr::kRfNumErr;
+	auto it = openForks_.find(handle);
+	if (it == openForks_.end())
+	{
+		outWritten = 0;
+		return FMErr::kRfNumErr;
+	}
+
+	const OpenFork &of = it->second;
+	CatalogEntry *e = mutableFindByCNID(of.cnid);
+	if (!e)
+	{
+		outWritten = 0;
+		return FMErr::kFnfErr;
+	}
+
+	if (of.fork == ForkType::Resource)
+	{
+		appledouble::WriteResourceFork(e->hostPath, offset, data);
+		e->rsrcForkSize = appledouble::ResourceForkSize(e->hostPath);
+		e->modDate = currentMacDate();
+		outWritten = static_cast<uint32_t>(data.size());
+		return FMErr::kNoErr;
+	}
+
+	if (e->isText)
+	{
+		auto utf8 = appledouble::UTF8FromMacRoman(data);
+		std::ofstream out(e->hostPath, std::ios::binary | std::ios::trunc);
+		out.write(utf8.data(), static_cast<std::streamsize>(utf8.size()));
+		out.close();
+		outWritten = static_cast<uint32_t>(data.size());
+		e->dataForkSize = appledouble::MacRomanSizeFromUTF8File(e->hostPath);
+		e->modDate = currentMacDate();
+		return FMErr::kNoErr;
+	}
+
+	/* Non-TEXT data fork */
+	FILE *fp = of.fp;
+	fseek(fp, static_cast<long>(offset), SEEK_SET);
+	size_t wrote = fwrite(data.data(), 1, data.size(), fp);
+	fflush(fp);
+
+	fseek(fp, 0, SEEK_END);
+	e->dataForkSize = static_cast<uint32_t>(ftell(fp));
+	e->modDate = currentMacDate();
+	outWritten = static_cast<uint32_t>(wrote);
+	return FMErr::kNoErr;
 }
 
-void HostVolume::closeFork(uint32_t /*handle*/) {}
+void HostVolume::closeFork(uint32_t handle)
+{
+	auto it = openForks_.find(handle);
+	if (it == openForks_.end()) return;
+	if (it->second.fp) fclose(it->second.fp);
+	openForks_.erase(it);
+}
 
 /* ── Working directories ──────────────────────────── */
 
