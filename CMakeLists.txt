@@ -259,6 +259,7 @@ add_executable(tests
     test/test_tracing.cpp
     test/test_debugger.cpp
     test/test_appledouble.cpp
+    test/test_host_volume.cpp
     test/test_stubs.cpp
     src/cpu/trap_defs.cpp
     src/cpu/trap_tracer.cpp
@@ -270,6 +271,7 @@ add_executable(tests
     src/storage/appledouble.cpp
     src/storage/filename_encoding.cpp
     src/storage/text_convert.cpp
+    src/storage/host_volume.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
