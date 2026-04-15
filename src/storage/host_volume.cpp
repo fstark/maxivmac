@@ -21,9 +21,29 @@ uint32_t HostVolume::currentMacDate()
 
 /* ── Mount ────────────────────────────────────────── */
 
-bool HostVolume::mount(const std::filesystem::path & /*hostDir*/)
+bool HostVolume::mount(const std::filesystem::path &hostDir)
 {
-	return false;
+	if (!fs::is_directory(hostDir)) return false;
+
+	rootPath_ = hostDir;
+	catalog_.clear();
+	nextCNID_ = 16;
+	openForks_.clear();
+	nextHandle_ = 1;
+	wdTable_.clear();
+	nextWD_ = 0x8000;
+	textStats_ = {};
+
+	static bool s_typesLoaded = false;
+	if (!s_typesLoaded)
+	{
+		appledouble::LoadTypeMappings("assets/typemap.def");
+		s_typesLoaded = true;
+	}
+
+	scanDirectory(hostDir, kRootDirID);
+	mounted_ = true;
+	return true;
 }
 
 bool HostVolume::isMounted() const
@@ -33,26 +53,54 @@ bool HostVolume::isMounted() const
 
 /* ── Catalog queries ──────────────────────────────── */
 
-const CatalogEntry *HostVolume::findByCNID(uint32_t /*cnid*/) const
+const CatalogEntry *HostVolume::findByCNID(uint32_t cnid) const
 {
-	(void)nextCNID_;
+	for (const auto &e : catalog_)
+		if (e.cnid == cnid) return &e;
 	return nullptr;
 }
 
-const CatalogEntry *HostVolume::findByName(uint32_t /*parentDirID*/,
-										   std::string_view /*macName*/) const
+const CatalogEntry *HostVolume::findByName(uint32_t parentDirID, std::string_view macName) const
 {
+	for (const auto &e : catalog_)
+	{
+		if (e.parentDirID != parentDirID) continue;
+		if (e.macName.size() != macName.size()) continue;
+		bool match = true;
+		for (size_t i = 0; i < macName.size(); ++i)
+		{
+			if (tolower(static_cast<unsigned char>(e.macName[i])) !=
+				tolower(static_cast<unsigned char>(macName[i])))
+			{
+				match = false;
+				break;
+			}
+		}
+		if (match) return &e;
+	}
 	return nullptr;
 }
 
-const CatalogEntry *HostVolume::nthChild(uint32_t /*parentDirID*/, int /*index*/) const
+const CatalogEntry *HostVolume::nthChild(uint32_t parentDirID, int index) const
 {
+	int count = 0;
+	for (const auto &e : catalog_)
+	{
+		if (e.parentDirID == parentDirID)
+		{
+			++count;
+			if (count == index) return &e;
+		}
+	}
 	return nullptr;
 }
 
-int HostVolume::childCount(uint32_t /*parentDirID*/) const
+int HostVolume::childCount(uint32_t parentDirID) const
 {
-	return 0;
+	int count = 0;
+	for (const auto &e : catalog_)
+		if (e.parentDirID == parentDirID) ++count;
+	return count;
 }
 
 void HostVolume::volumeStats(uint32_t &outFiles, uint32_t &outBytes) const
@@ -153,17 +201,65 @@ void HostVolume::resetTextConversionStats()
 
 /* ── Private helpers ──────────────────────────────── */
 
-void HostVolume::scanDirectory(const std::filesystem::path & /*hostDir*/, uint32_t /*parentDirID*/)
+void HostVolume::scanDirectory(const std::filesystem::path &hostDir, uint32_t parentDirID)
 {
+	std::error_code ec;
+	for (const auto &entry : fs::directory_iterator(hostDir, ec))
+	{
+		if (ec) break;
+		std::string name = entry.path().filename().string();
+		if (name.empty() || name[0] == '.') continue;
+		if (appledouble::IsSidecar(name)) continue;
+
+		std::string macName = appledouble::MacNameFromHost(name);
+		if (macName.size() > 31) macName = macName.substr(0, 31);
+		if (macName.empty()) continue;
+
+		CatalogEntry ce{};
+		ce.cnid = nextCNID_++;
+		ce.parentDirID = parentDirID;
+		ce.hostPath = entry.path().string();
+		ce.macName = macName;
+
+		if (entry.is_directory(ec))
+		{
+			ce.isDirectory = true;
+			auto ftime = fs::last_write_time(entry.path(), ec);
+			ce.crDate = ec ? 0 : appledouble::MacDateFromFileTime(ftime);
+			ce.modDate = ce.crDate;
+			uint32_t thisDirID = ce.cnid;
+			catalog_.push_back(std::move(ce));
+			scanDirectory(entry.path(), thisDirID);
+		}
+		else if (entry.is_regular_file(ec))
+		{
+			auto info = appledouble::GetFileInfo(entry.path());
+			ce.isDirectory = false;
+			ce.type = info.finder.type;
+			ce.creator = info.finder.creator;
+			ce.finderFlags = info.finder.flags;
+			ce.dataForkSize = info.dataForkSize;
+			ce.rsrcForkSize = info.rsrcForkSize;
+			ce.crDate = info.crDate;
+			ce.modDate = info.modDate;
+			ce.isText = info.isText;
+			catalog_.push_back(std::move(ce));
+		}
+	}
 }
 
-CatalogEntry *HostVolume::mutableFindByCNID(uint32_t /*cnid*/)
+CatalogEntry *HostVolume::mutableFindByCNID(uint32_t cnid)
 {
+	for (auto &e : catalog_)
+		if (e.cnid == cnid) return &e;
 	return nullptr;
 }
 
-std::string HostVolume::resolveParentPath(uint32_t /*parentDirID*/) const
+std::string HostVolume::resolveParentPath(uint32_t parentDirID) const
 {
+	if (parentDirID == kRootDirID) return rootPath_.string();
+	for (const auto &e : catalog_)
+		if (e.cnid == parentDirID && e.isDirectory) return e.hostPath;
 	return {};
 }
 

@@ -24,13 +24,13 @@ extern void test_set_pc(uint32_t pc);
 
 static void put_be16(uint32_t addr, uint16_t v)
 {
-	g_ram[addr]     = static_cast<uint8_t>(v >> 8);
+	g_ram[addr] = static_cast<uint8_t>(v >> 8);
 	g_ram[addr + 1] = static_cast<uint8_t>(v);
 }
 
 static void put_be32(uint32_t addr, uint32_t v)
 {
-	g_ram[addr]     = static_cast<uint8_t>(v >> 24);
+	g_ram[addr] = static_cast<uint8_t>(v >> 24);
 	g_ram[addr + 1] = static_cast<uint8_t>(v >> 16);
 	g_ram[addr + 2] = static_cast<uint8_t>(v >> 8);
 	g_ram[addr + 3] = static_cast<uint8_t>(v);
@@ -347,10 +347,10 @@ TEST_CASE("Tracer toolbox output reads past input params")
 	   GetResource(resType:OSType, resID:word) → rsrc:Handle
 
 	   Pascal stack layout at trap entry (SP points to top):
-	     SP+0  resID     (2 bytes)   = $0001
-	     SP+2  resType   (4 bytes)   = 'PACK'
-	     SP+6  result    (4 bytes)   = handle value $00CAFE00
-	                                   (which dereferences to $DEADBEEF)
+		 SP+0  resID     (2 bytes)   = $0001
+		 SP+2  resType   (4 bytes)   = 'PACK'
+		 SP+6  result    (4 bytes)   = handle value $00CAFE00
+									   (which dereferences to $DEADBEEF)
 
 	   The old bug: emitExit read output from SP+0 (resID slot),
 	   producing garbage like $00014082.
@@ -358,10 +358,9 @@ TEST_CASE("Tracer toolbox output reads past input params")
 	*/
 
 	/* Set up trap definition */
-	auto path = writeTempFile("test_tracer_output.def",
-		"A9A0 GetResource toolbox\n"
-		"  in  resType:OSType  resID:word\n"
-		"  out rsrc:Handle\n");
+	auto path = writeTempFile("test_tracer_output.def", "A9A0 GetResource toolbox\n"
+														"  in  resType:OSType  resID:word\n"
+														"  out rsrc:Handle\n");
 	TrapDefs defs;
 	defs.load(path);
 	std::filesystem::remove(path);
@@ -428,10 +427,9 @@ TEST_CASE("Tracer OS trap output uses registers not stack")
 	   OS traps read outputs from registers — stack offset bug doesn't apply.
 	*/
 
-	auto path = writeTempFile("test_tracer_os.def",
-		"A122 NewHandle os\n"
-		"  in  size:long.D0\n"
-		"  out h:Handle.A0  err:OSErr.D0\n");
+	auto path = writeTempFile("test_tracer_os.def", "A122 NewHandle os\n"
+													"  in  size:long.D0\n"
+													"  out h:Handle.A0  err:OSErr.D0\n");
 	TrapDefs defs;
 	defs.load(path);
 	std::filesystem::remove(path);
