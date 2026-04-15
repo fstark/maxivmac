@@ -1,0 +1,23 @@
+# Extension → type/creator mapping for the AppleDouble library.
+# Format: <extension> <type> <creator>
+
+.txt   TEXT ttxt
+.text  TEXT ttxt
+.c     TEXT KAHL
+.h     TEXT KAHL
+.p     TEXT KAHL
+.r     TEXT KAHL
+.cpp   TEXT KAHL
+.hpp   TEXT KAHL
+.s     TEXT KAHL
+.asm   TEXT KAHL
+.md    TEXT ttxt
+.csv   TEXT ttxt
+.htm   TEXT MOSS
+.html  TEXT MOSS
+.jpg   JPEG ogle
+.jpeg  JPEG ogle
+.gif   GIFf ogle
+.bmp   BMPf ogle
+.png   PNGf ogle
+.bin   BINA hDmp

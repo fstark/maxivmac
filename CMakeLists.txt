@@ -258,13 +258,18 @@ add_executable(tests
     test/test_slip.cpp
     test/test_tracing.cpp
     test/test_debugger.cpp
+    test/test_appledouble.cpp
     test/test_stubs.cpp
     src/cpu/trap_defs.cpp
+    src/cpu/trap_tracer.cpp
     src/cpu/trap_counter.cpp
     src/platform/lomem_globals.cpp
     src/debugger/symbols.cpp
     src/debugger/expr.cpp
     src/debugger/cmd_parser.cpp
+    src/storage/appledouble.cpp
+    src/storage/filename_encoding.cpp
+    src/storage/text_convert.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
