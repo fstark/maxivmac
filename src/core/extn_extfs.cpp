@@ -11,15 +11,11 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
-#include <unordered_map>
-#include <filesystem>
 #include <cstring>
 
 /* Guest RAM access */
 extern uint8_t get_vm_byte(uint32_t addr);
 extern void put_vm_byte(uint32_t addr, uint8_t b);
-
-namespace fs = std::filesystem;
 
 /* ── Command codes ────────────────────────────────── */
 
