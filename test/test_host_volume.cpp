@@ -706,3 +706,152 @@ TEST_CASE("HostVolume: resource fork updates rsrcForkSize")
 	auto *e = vol.findByCNID(cnid);
 	CHECK(e->rsrcForkSize == 42);
 }
+
+/* ── Phase 7: TEXT fork I/O + stats ───────────────── */
+
+TEST_CASE("HostVolume: TEXT file read converts UTF-8")
+{
+	TempDir td;
+	/* Write UTF-8 "café" = 63 61 66 C3 A9 (5 bytes UTF-8, 4 bytes Mac Roman) */
+	writeFile(td.path / "cafe.txt", "caf\xC3\xA9");
+
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "cafe.txt");
+	REQUIRE(e != nullptr);
+	CHECK(e->isText);
+	CHECK(e->dataForkSize == 4); /* Mac Roman size */
+
+	storage::FMErr err;
+	uint32_t size = 0;
+	uint32_t handle = vol.openFork(e->cnid, storage::ForkType::Data, size, err);
+	CHECK(size == 4);
+
+	std::vector<uint8_t> buf(4);
+	uint32_t got = 0;
+	vol.readFork(handle, 0, buf, got);
+	CHECK(got == 4);
+	/* 'c'=0x63, 'a'=0x61, 'f'=0x66, 'é'=0x8E in Mac Roman */
+	CHECK(buf[0] == 'c');
+	CHECK(buf[1] == 'a');
+	CHECK(buf[2] == 'f');
+	CHECK(buf[3] == 0x8E);
+	vol.closeFork(handle);
+}
+
+TEST_CASE("HostVolume: TEXT file read at offset")
+{
+	TempDir td;
+	writeFile(td.path / "off.txt", "caf\xC3\xA9");
+
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "off.txt");
+	REQUIRE(e != nullptr);
+
+	storage::FMErr err;
+	uint32_t size = 0;
+	uint32_t handle = vol.openFork(e->cnid, storage::ForkType::Data, size, err);
+
+	std::vector<uint8_t> buf(2);
+	uint32_t got = 0;
+	vol.readFork(handle, 2, buf, got);
+	CHECK(got == 2);
+	CHECK(buf[0] == 'f');
+	CHECK(buf[1] == 0x8E);
+	vol.closeFork(handle);
+}
+
+TEST_CASE("HostVolume: TEXT file write converts to UTF-8")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "write.txt", err);
+	vol.setFileInfo(cnid, appledouble::FourCC("TEXT"), appledouble::FourCC("ttxt"));
+
+	uint32_t size = 0;
+	uint32_t handle = vol.openFork(cnid, storage::ForkType::Data, size, err);
+
+	/* Write Mac Roman "café" = 63 61 66 8E */
+	std::vector<uint8_t> macData = {0x63, 0x61, 0x66, 0x8E};
+	uint32_t written = 0;
+	vol.writeFork(handle, 0, macData, written);
+	CHECK(written == 4);
+	vol.closeFork(handle);
+
+	/* Read back the host file — should be valid UTF-8 */
+	std::ifstream f(td.path / "write.txt", std::ios::binary);
+	std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+	CHECK(content == "caf\xC3\xA9");
+}
+
+TEST_CASE("HostVolume: TEXT conversion stats")
+{
+	TempDir td;
+	writeFile(td.path / "stats.txt", "hello");
+
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "stats.txt");
+	REQUIRE(e != nullptr);
+
+	storage::FMErr err;
+	uint32_t size = 0;
+
+	for (int i = 0; i < 3; ++i)
+	{
+		uint32_t handle = vol.openFork(e->cnid, storage::ForkType::Data, size, err);
+		std::vector<uint8_t> buf(5);
+		uint32_t got = 0;
+		vol.readFork(handle, 0, buf, got);
+		vol.closeFork(handle);
+	}
+
+	auto stats = vol.textConversionStats();
+	CHECK(stats.conversions == 3);
+	CHECK(stats.bytesOut == 15); /* 3 × 5 */
+}
+
+TEST_CASE("HostVolume: reset text stats")
+{
+	TempDir td;
+	writeFile(td.path / "rs.txt", "x");
+
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "rs.txt");
+
+	storage::FMErr err;
+	uint32_t size = 0;
+	uint32_t handle = vol.openFork(e->cnid, storage::ForkType::Data, size, err);
+	std::vector<uint8_t> buf(1);
+	uint32_t got = 0;
+	vol.readFork(handle, 0, buf, got);
+	vol.closeFork(handle);
+
+	CHECK(vol.textConversionStats().conversions == 1);
+	vol.resetTextConversionStats();
+	CHECK(vol.textConversionStats().conversions == 0);
+}
+
+TEST_CASE("HostVolume: TEXT file dataForkSize in catalog")
+{
+	TempDir td;
+	/* UTF-8 "résumé" = 72 C3 A9 73 75 6D C3 A9 (8 bytes UTF-8, 6 bytes Mac Roman) */
+	writeFile(td.path / "resume.txt", "r\xC3\xA9sum\xC3\xA9");
+
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "resume.txt");
+	REQUIRE(e != nullptr);
+	CHECK(e->isText);
+	CHECK(e->dataForkSize == 6);
+}
