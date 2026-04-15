@@ -184,3 +184,147 @@ TEST_CASE("HostVolume: mount nonexistent directory")
 	CHECK_FALSE(vol.mount("/tmp/nonexistent_hv_test_dir_xyz"));
 	CHECK_FALSE(vol.isMounted());
 }
+
+/* ── Phase 3: create / delete ─────────────────────── */
+
+TEST_CASE("HostVolume: createFile basic")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "newfile.txt", err);
+	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(cnid > 0);
+	CHECK(fs::exists(td.path / "newfile.txt"));
+	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "newfile.txt") != nullptr);
+}
+
+TEST_CASE("HostVolume: createFile duplicate")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	vol.createFile(storage::HostVolume::kRootDirID, "dup.txt", err);
+	CHECK(err == storage::FMErr::kNoErr);
+
+	uint32_t cnid2 = vol.createFile(storage::HostVolume::kRootDirID, "dup.txt", err);
+	CHECK(err == storage::FMErr::kDupFNErr);
+	CHECK(cnid2 == 0);
+}
+
+TEST_CASE("HostVolume: createFile escaped name")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	vol.createFile(storage::HostVolume::kRootDirID, ":special", err);
+	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(fs::exists(td.path / "^3Aspecial"));
+}
+
+TEST_CASE("HostVolume: createFile bad parent")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(9999, "file.txt", err);
+	CHECK(err == storage::FMErr::kDirNFErr);
+	CHECK(cnid == 0);
+}
+
+TEST_CASE("HostVolume: createDir basic")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createDir(storage::HostVolume::kRootDirID, "newdir", err);
+	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(cnid > 0);
+	CHECK(fs::is_directory(td.path / "newdir"));
+
+	auto *e = vol.findByCNID(cnid);
+	REQUIRE(e != nullptr);
+	CHECK(e->isDirectory);
+}
+
+TEST_CASE("HostVolume: remove file")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	vol.createFile(storage::HostVolume::kRootDirID, "gone.txt", err);
+	CHECK(err == storage::FMErr::kNoErr);
+
+	auto result = vol.remove(storage::HostVolume::kRootDirID, "gone.txt");
+	CHECK(result == storage::FMErr::kNoErr);
+	CHECK_FALSE(fs::exists(td.path / "gone.txt"));
+	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "gone.txt") == nullptr);
+}
+
+TEST_CASE("HostVolume: remove file with sidecar")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	vol.createFile(storage::HostVolume::kRootDirID, "withsc", err);
+	appledouble::SetFinderInfo(td.path / "withsc",
+							   {appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0});
+	CHECK(fs::exists(td.path / "._withsc"));
+
+	auto result = vol.remove(storage::HostVolume::kRootDirID, "withsc");
+	CHECK(result == storage::FMErr::kNoErr);
+	CHECK_FALSE(fs::exists(td.path / "withsc"));
+	CHECK_FALSE(fs::exists(td.path / "._withsc"));
+}
+
+TEST_CASE("HostVolume: remove non-empty directory")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t dirCnid = vol.createDir(storage::HostVolume::kRootDirID, "notempty", err);
+	vol.createFile(dirCnid, "child.txt", err);
+
+	auto result = vol.remove(storage::HostVolume::kRootDirID, "notempty");
+	CHECK(result == storage::FMErr::kFBsyErr);
+}
+
+TEST_CASE("HostVolume: remove empty directory")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	vol.createDir(storage::HostVolume::kRootDirID, "emptydir", err);
+
+	auto result = vol.remove(storage::HostVolume::kRootDirID, "emptydir");
+	CHECK(result == storage::FMErr::kNoErr);
+	CHECK_FALSE(fs::exists(td.path / "emptydir"));
+}
+
+TEST_CASE("HostVolume: remove non-existent")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto result = vol.remove(storage::HostVolume::kRootDirID, "nope");
+	CHECK(result == storage::FMErr::kFnfErr);
+}

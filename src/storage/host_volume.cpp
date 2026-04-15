@@ -111,25 +111,114 @@ void HostVolume::volumeStats(uint32_t &outFiles, uint32_t &outBytes) const
 
 /* ── File/directory creation ──────────────────────── */
 
-uint32_t HostVolume::createFile(uint32_t /*parentDirID*/, std::string_view /*macName*/,
-								FMErr &errOut)
+uint32_t HostVolume::createFile(uint32_t parentDirID, std::string_view macName, FMErr &errOut)
 {
-	errOut = FMErr::kFnfErr;
-	return 0;
+	if (findByName(parentDirID, macName))
+	{
+		errOut = FMErr::kDupFNErr;
+		return 0;
+	}
+
+	std::string parentPath = resolveParentPath(parentDirID);
+	if (parentPath.empty())
+	{
+		errOut = FMErr::kDirNFErr;
+		return 0;
+	}
+
+	std::string hostName = appledouble::HostNameFromMac(macName);
+	std::string hostPath = parentPath + "/" + hostName;
+
+	FILE *fp = fopen(hostPath.c_str(), "wb");
+	if (!fp)
+	{
+		errOut = FMErr::kIoErr;
+		return 0;
+	}
+	fclose(fp);
+
+	CatalogEntry ce{};
+	ce.cnid = nextCNID_++;
+	ce.parentDirID = parentDirID;
+	ce.hostPath = hostPath;
+	ce.macName = std::string(macName);
+	ce.isDirectory = false;
+	ce.dataForkSize = 0;
+	ce.crDate = currentMacDate();
+	ce.modDate = ce.crDate;
+	catalog_.push_back(std::move(ce));
+
+	errOut = FMErr::kNoErr;
+	return catalog_.back().cnid;
 }
 
-uint32_t HostVolume::createDir(uint32_t /*parentDirID*/, std::string_view /*macName*/,
-							   FMErr &errOut)
+uint32_t HostVolume::createDir(uint32_t parentDirID, std::string_view macName, FMErr &errOut)
 {
-	errOut = FMErr::kFnfErr;
-	return 0;
+	if (findByName(parentDirID, macName))
+	{
+		errOut = FMErr::kDupFNErr;
+		return 0;
+	}
+
+	std::string parentPath = resolveParentPath(parentDirID);
+	if (parentPath.empty())
+	{
+		errOut = FMErr::kDirNFErr;
+		return 0;
+	}
+
+	std::string hostName = appledouble::HostNameFromMac(macName);
+	std::string hostPath = parentPath + "/" + hostName;
+
+	std::error_code ec;
+	if (!fs::create_directory(hostPath, ec))
+	{
+		errOut = FMErr::kIoErr;
+		return 0;
+	}
+
+	CatalogEntry ce{};
+	ce.cnid = nextCNID_++;
+	ce.parentDirID = parentDirID;
+	ce.hostPath = hostPath;
+	ce.macName = std::string(macName);
+	ce.isDirectory = true;
+	ce.crDate = currentMacDate();
+	ce.modDate = ce.crDate;
+	catalog_.push_back(std::move(ce));
+
+	errOut = FMErr::kNoErr;
+	return catalog_.back().cnid;
 }
 
 /* ── Deletion ─────────────────────────────────────── */
 
-FMErr HostVolume::remove(uint32_t /*parentDirID*/, std::string_view /*macName*/)
+FMErr HostVolume::remove(uint32_t parentDirID, std::string_view macName)
 {
-	return FMErr::kFnfErr;
+	const CatalogEntry *e = findByName(parentDirID, macName);
+	if (!e) return FMErr::kFnfErr;
+
+	if (e->isDirectory)
+	{
+		if (childCount(e->cnid) > 0) return FMErr::kFBsyErr;
+		std::error_code ec;
+		fs::remove(e->hostPath, ec);
+	}
+	else
+	{
+		appledouble::DeleteWithSidecar(e->hostPath);
+	}
+
+	uint32_t cnid = e->cnid;
+	for (auto it = catalog_.begin(); it != catalog_.end(); ++it)
+	{
+		if (it->cnid == cnid)
+		{
+			catalog_.erase(it);
+			break;
+		}
+	}
+	return FMErr::kNoErr;
 }
 
 /* ── Move / rename ────────────────────────────────── */
