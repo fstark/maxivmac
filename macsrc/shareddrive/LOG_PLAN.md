@@ -1,6 +1,14 @@
 # SharedDrive Logging Overhaul — Plan
 
-## Goal
+**COMPLETED** — All 3 phases done. Commits: e0a9496..5fbef64
+
+- Phase 1: Host infrastructure (`extfs_log.h/cpp`, `kExtFSLogTrap` dispatch)
+- Phase 2: Guest migration (replaced all `dbg_log`/`dbg_hexdump` in DispatchFlat/DispatchHFS with `log_trap()`)
+- Phase 3: Cleanup (hexdumps already removed in Phase 2, no-op)
+
+---
+
+## Original Goal
 
 Replace the ad-hoc `dbg_log` calls in init.c with structured,
 human-friendly trace logging.  Every trap we intercept should produce
