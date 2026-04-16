@@ -857,7 +857,7 @@ static OSErr DoGetFileInfo(char *pb, char *regBase, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
-	unsigned long cnid, size, type, creator, crDate, modDate;
+	unsigned long cnid, size, rsrcSize, type, creator, crDate, modDate;
 	long dirID;
 
 	if (nameAddr == 0) return -50;
@@ -869,8 +869,9 @@ static OSErr DoGetFileInfo(char *pb, char *regBase, short isHFS)
 	reg_command(regBase, 0x0203);
 	if (reg_result(regBase) != 0) return -43;
 
-	cnid = reg_get(regBase, 0);
-	size = reg_get(regBase, 2);
+	cnid     = reg_get(regBase, 0);
+	size     = reg_get(regBase, 2);
+	rsrcSize = reg_get(regBase, 4);
 
 	reg_set(regBase,0,cnid);
 	reg_command(regBase, 0x0207);
@@ -889,8 +890,8 @@ static OSErr DoGetFileInfo(char *pb, char *regBase, short isHFS)
 	*(long *)(pb + pb_ioFlNum) = cnid;
 	*(long *)(pb + pb_ioFlLgLen) = size;
 	*(long *)(pb + pb_ioFlPyLen) = size;
-	*(long *)(pb + pb_ioFlRLgLen) = 0;
-	*(long *)(pb + pb_ioFlRPyLen) = 0;
+	*(long *)(pb + pb_ioFlRLgLen) = rsrcSize;
+	*(long *)(pb + pb_ioFlRPyLen) = rsrcSize;
 	*(long *)(pb + pb_ioFlCrDat) = crDate;
 	*(long *)(pb + pb_ioFlMdDat) = modDate;
 	return 0;
