@@ -1533,8 +1533,17 @@ short DispatchHFS(char *pb, short selector)
 				RestoreA4(); return 0;
 			}
 
-			/* File: CNID is in ioFlNum, set by prior PBGetCatInfo */
+			/* Fast path: CNID from ioFlNum (set by prior GetCatInfo).
+			   Fallback: resolve by name (Create→SetCatInfo path). */
 			cnid = *(unsigned long *)(pb + pb_ioFlNum);
+			if (cnid == 0 && nameAddr != 0) {
+				long dirID = ResolveDir(vRefNum,
+					*(long *)(pb + pb_ioDirID), g->regBase);
+				reg_set(g->regBase, 0, (unsigned long)dirID);
+				reg_set(g->regBase, 1, nameAddr);
+				reg_command(g->regBase, 0x0209); /* ObjByName */
+				cnid = reg_get(g->regBase, 0);
+			}
 			if (cnid == 0) {
 				*(short *)(pb + pb_ioResult) = -43;
 				log_trap(g->regBase, selector, pb,
