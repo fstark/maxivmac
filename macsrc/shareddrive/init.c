@@ -78,6 +78,10 @@
 /* HFS-specific fields (from FSEqu.a in SuperMario sources) */
 #define kFCBClmpSize    30   /* LONGINT — clump size */
 #define kFCBBTCBPtr     34   /* LONGINT — B*-Tree control block ptr */
+/* We repurpose kFCBBTCBPtr to store the host file handle.
+   kFCBPLen must hold the real physical EOF so the ROM
+   Resource Manager doesn't think the file is truncated. */
+#define kFCBHostHandle  kFCBBTCBPtr
 #define kFCBExtRec      38   /* 12 bytes — first 3 file extents */
 #define kFCBFType       50   /* LONGINT — file's 4 Finder type bytes */
 #define kFCBCatPos      54   /* LONGINT — catalog hint for Close */
@@ -649,7 +653,7 @@ static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb, short isHFS)
 		unsigned char *src = (unsigned char *)nameAddr;
 		unsigned char len = src[0];
 		short j;
-		*(long *)(fcb + kFCBPLen) = handle;
+		*(long *)(fcb + kFCBHostHandle) = handle;
 		*(long *)(fcb + kFCBDirID) = dirID;
 		if (len > 31) len = 31;
 		*(unsigned char *)(fcb + kFCBCName) = len;
@@ -679,7 +683,7 @@ static OSErr DoWrite(char *pb, char *regBase)
 
 	mark = *(long *)(fcb + kFCBCrPs);
 	eof  = *(long *)(fcb + kFCBEOF);
-	handle = *(long *)(fcb + kFCBPLen);
+	handle = *(long *)(fcb + kFCBHostHandle);
 
 	switch (posMode & 0x03) {
 		case 1: mark = posOffset; break;
@@ -706,6 +710,7 @@ static OSErr DoWrite(char *pb, char *regBase)
 	if (mark > eof) {
 		eof = mark;
 		*(long *)(fcb + kFCBEOF) = eof;
+		*(long *)(fcb + kFCBPLen) = eof;
 	}
 	*(long *)(fcb + kFCBCrPs) = mark;
 	*(long *)(pb + pb_ioActCount) = actual;
@@ -781,7 +786,7 @@ static OSErr DoOpen(char *pb, char *regBase, Ptr vcb, short isHFS)
 		unsigned char *src = (unsigned char *)nameAddr;
 		unsigned char len = src[0];
 		short j;
-		*(long *)(fcb + kFCBPLen) = handle;
+		*(long *)(fcb + kFCBHostHandle) = handle;
 		*(long *)(fcb + kFCBDirID) = dirID;
 		if (len > 31) len = 31;
 		*(unsigned char *)(fcb + kFCBCName) = len;
@@ -809,7 +814,7 @@ static OSErr DoRead(char *pb, char *regBase)
 
 	mark = *(long *)(fcb + kFCBCrPs);
 	eof  = *(long *)(fcb + kFCBEOF);
-	handle = *(long *)(fcb + kFCBPLen);
+	handle = *(long *)(fcb + kFCBHostHandle);
 
 	switch (posMode & 0x03) {
 		case 1: mark = posOffset; break;
@@ -847,7 +852,7 @@ static OSErr DoClose(char *pb, char *regBase)
 	short refNum = *(short *)(pb + pb_ioRefNum);
 	Ptr fcb = GetFCB(refNum);
 	if (fcb == NULL) return -43;
-	reg_set(regBase,0,*(unsigned long *)(fcb + kFCBPLen));
+	reg_set(regBase,0,*(unsigned long *)(fcb + kFCBHostHandle));
 	reg_command(regBase, 0x0206);
 	FreeFCB(refNum);
 	return 0;
