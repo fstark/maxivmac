@@ -1523,7 +1523,6 @@ short DispatchHFS(char *pb, short selector)
 
 		case kSetCatInfo:
 		{
-			long dirID = *(long *)(pb + pb_ioDirID);
 			unsigned long cnid;
 
 			/* Directories: nothing to persist, succeed silently */
@@ -1534,20 +1533,8 @@ short DispatchHFS(char *pb, short selector)
 				RestoreA4(); return 0;
 			}
 
-			/* File: resolve name → CNID, then set type/creator */
-			if (nameAddr == 0) {
-				*(short *)(pb + pb_ioResult) = -50;
-				log_trap(g->regBase, selector, pb,
-					LOG_ERROR, -50, LOG_F_HFS);
-				RestoreA4(); return 0;
-			}
-
-			dirID = ResolveDir(vRefNum, dirID, g->regBase);
-
-			reg_set(g->regBase, 0, (unsigned long)dirID);
-			reg_set(g->regBase, 1, nameAddr);
-			reg_command(g->regBase, 0x0209); /* ObjByName */
-			cnid = reg_get(g->regBase, 0);
+			/* File: CNID is in ioFlNum, set by prior PBGetCatInfo */
+			cnid = *(unsigned long *)(pb + pb_ioFlNum);
 			if (cnid == 0) {
 				*(short *)(pb + pb_ioResult) = -43;
 				log_trap(g->regBase, selector, pb,
