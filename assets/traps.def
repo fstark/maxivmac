@@ -197,7 +197,7 @@ A014 GetVol os
   out err:OSErr.D0
 
 A260 HFSDispatch os
-  in  pb:Ptr.A0
+  in  selector:Word.D0 pb:Ptr.A0
   out err:OSErr.D0
 
 # ── Event Manager ─────────────────────────────────────

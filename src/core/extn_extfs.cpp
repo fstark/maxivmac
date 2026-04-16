@@ -1,5 +1,6 @@
 #include "core/extn_extfs.h"
 #include "core/extn_clip.h"
+#include "core/extfs_log.h"
 #include "debugger/debugger.h"
 #include "cpu/trap_counter.h"
 #include "cpu/disasm.h"
@@ -42,6 +43,8 @@ static constexpr uint16_t kExtFSSetFileInfo = 0x213;
 static constexpr uint16_t kExtFSCreateDir = 0x215;
 static constexpr uint16_t kExtFSCatMove = 0x216;
 static constexpr uint16_t kExtFSRename = 0x217;
+static constexpr uint16_t kExtFSSetEOF = 0x218;
+static constexpr uint16_t kExtFSLogTrap = 0x20F;
 
 /* ── HostVolume instance ──────────────────────────── */
 
@@ -419,6 +422,15 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		}
 		break;
 
+		case kExtFSLogTrap:
+		{
+			extfsLogTrap(static_cast<uint16_t>(regParam[0]), regParam[1],
+						 static_cast<uint16_t>(regParam[2]), static_cast<int16_t>(regParam[3]),
+						 static_cast<uint16_t>(regParam[4]));
+			regResult = 0;
+		}
+		break;
+
 		case kExtFSGuestVars:
 		{
 			static uint32_t s_guestVarsPtr = 0;
@@ -551,6 +563,16 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			fprintf(stderr, "[ExtFS] Rename dir=%u old=\"%s\" new=\"%s\"\n", dirID, oldName.c_str(),
 					newName.c_str());
 			auto err = s_volume.rename(dirID, oldName, newName);
+			regResult = fmErrToReg(err);
+		}
+		break;
+
+		case kExtFSSetEOF:
+		{
+			uint32_t handle = regParam[0];
+			uint32_t newSize = regParam[1];
+			fprintf(stderr, "[ExtFS] SetEOF h=%u size=%u\n", handle, newSize);
+			auto err = s_volume.setEOF(handle, newSize);
 			regResult = fmErrToReg(err);
 		}
 		break;

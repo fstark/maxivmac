@@ -48,6 +48,7 @@ set(MINIVMAC_SOURCES
     src/core/machine.cpp
     src/core/extn_clip.cpp
     src/core/extn_extfs.cpp
+    src/core/extfs_log.cpp
     src/core/state_recorder.cpp
 
     # Storage

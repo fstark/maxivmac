@@ -107,6 +107,8 @@ public:
 	FMErr writeFork(uint32_t handle, uint32_t offset, std::span<const uint8_t> data,
 					uint32_t &outWritten);
 
+	FMErr setEOF(uint32_t handle, uint32_t newSize);
+
 	void closeFork(uint32_t handle);
 
 	/* ── Working directories ──────────────────────── */
@@ -147,7 +149,7 @@ private:
 	uint32_t nextHandle_ = 1;
 
 	std::unordered_map<uint32_t, uint32_t> wdTable_;
-	uint32_t nextWD_ = 0x8000;
+	uint32_t nextWD_ = 1;
 
 	mutable TextStats textStats_;
 

@@ -1,0 +1,11 @@
+# debug_create.dbg — dump param block fields on every _Create call
+# A0 = pb at trap entry.
+# Offset 18 = ioNamePtr (long), 22 = ioVRefNum (word), 48 = ioDirID/ioFlNum (long)
+break Create
+commands 1
+print (a0 + 22).w
+print (a0 + 48).l
+x/s (a0 + 18).l
+continue
+end
+continue

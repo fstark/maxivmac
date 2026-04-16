@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstring>
 #include <fstream>
+#include <unistd.h>
 
 namespace storage
 {
@@ -31,7 +32,7 @@ bool HostVolume::mount(const std::filesystem::path &hostDir)
 	openForks_.clear();
 	nextHandle_ = 1;
 	wdTable_.clear();
-	nextWD_ = 0x8000;
+	nextWD_ = 1;
 	textStats_ = {};
 
 	static bool s_typesLoaded = false;
@@ -488,6 +489,31 @@ FMErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 	e->dataForkSize = static_cast<uint32_t>(ftell(fp));
 	e->modDate = currentMacDate();
 	outWritten = static_cast<uint32_t>(wrote);
+	return FMErr::kNoErr;
+}
+
+FMErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
+{
+	auto it = openForks_.find(handle);
+	if (it == openForks_.end()) return FMErr::kRfNumErr;
+
+	const OpenFork &of = it->second;
+	CatalogEntry *e = mutableFindByCNID(of.cnid);
+	if (!e) return FMErr::kFnfErr;
+
+	if (of.fork == ForkType::Resource)
+	{
+		appledouble::SetResourceForkSize(e->hostPath, newSize);
+		e->rsrcForkSize = newSize;
+	}
+	else if (of.fp)
+	{
+		fflush(of.fp);
+		int fd = fileno(of.fp);
+		if (fd >= 0) ftruncate(fd, static_cast<off_t>(newSize));
+		e->dataForkSize = newSize;
+	}
+	e->modDate = currentMacDate();
 	return FMErr::kNoErr;
 }
 

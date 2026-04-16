@@ -1,0 +1,7 @@
+# debug_copy.dbg — trace File Manager traps during folder copy
+# Launch emulator, wait for boot, then trigger the copy.
+# All trap calls + args will be logged.
+trace traps Create HFSDispatch Open OpenRF Write SetFileInfo
+break StopAlert
+break Alert
+continue
