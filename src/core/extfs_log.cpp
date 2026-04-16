@@ -764,8 +764,16 @@ void extfsLogTrap(uint16_t trapWord, uint32_t pbAddr, uint16_t action, int16_t e
 	bool isHFS = (flags & kFlagHFS) != 0;
 	bool pbMod = (flags & kFlagPBMod) != 0;
 
-	const char *name = isHFS ? hfsTrapName(trapWord) : flatTrapName(trapWord);
-	TrapCategory cat = isHFS ? classifyHFS(trapWord) : classifyFlat(trapWord);
+	/* Flat traps arrive as full trap words ($A002, $A207, …);
+	   only the low byte indexes into the 256-entry OS trap table.
+	   HFS selectors come from D0.W and are always < 0x100.
+	   Hierarchical flat traps ($A2xx) have isHFS set but are still
+	   flat traps — distinguish by trapWord > 0xFF. */
+	bool isHFSDispatch = isHFS && (trapWord <= 0xFF);
+	uint16_t trapNum = (trapWord > 0xFF) ? (trapWord & 0xFF) : trapWord;
+
+	const char *name = isHFSDispatch ? hfsTrapName(trapNum) : flatTrapName(trapNum);
+	TrapCategory cat = isHFSDispatch ? classifyHFS(trapNum) : classifyFlat(trapNum);
 
 	/* Line 1: trap name + input fields */
 	std::string line = "SharedDrive | ";

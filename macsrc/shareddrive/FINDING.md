@@ -47,7 +47,7 @@ case kSetCatInfo:
 
 Returns `noErr` without doing anything. On HFS volumes, the Finder uses `PBSetCatInfo` (HFSDispatch selector `$000A`) — not the flat `_SetFileInfo` — to set TYPE, CREATOR, flags, and dates after copying. Since this silently succeeds, file metadata is never persisted to the AppleDouble sidecar.
 
-**Fix:** Extract TYPE/CREATOR from the CInfoPBRec and call `ExtFSSetFileInfo`.
+**Fix:** Extract TYPE/CREATOR from the CInfoPBRec, resolve name→CNID via ObjByName, and call `ExtFSSetFileInfo` (0x0213). Directories succeed silently. Full log_trap() coverage on all paths.
 
 ---
 

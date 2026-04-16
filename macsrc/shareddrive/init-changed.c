@@ -1575,38 +1575,58 @@ short DispatchHFS(char *pb, short selector)
 
 		case kSetCatInfo:
 		{
-			unsigned long scType, scCreator, scCnid;
+			long dirID = *(long *)(pb + pb_ioDirID);
+			unsigned long cnid;
 
-			dbg_log2(g->regBase, "SD _SetCatInfo vr=%ld nm=%S",
-				(long)vRefNum, nameAddr);
-
-			/* Directories: nothing to persist yet */
+			/* Directories: nothing to persist, succeed silently */
 			if (*(unsigned char *)(pb + pb_ioFlAttrib) & 0x10) {
-				dbg_log(g->regBase,
-					"SD _SetCatInfo dir -> noErr");
 				*(short *)(pb + pb_ioResult) = 0;
+				log_trap(g->regBase, selector, pb,
+					LOG_HANDLED, 0, LOG_F_HFS);
 				RestoreA4(); return 0;
 			}
 
-			/* File: extract type/creator from FInfo at offset 32 */
-			scType    = *(unsigned long *)(pb + pb_ioFlFndrInfo);
-			scCreator = *(unsigned long *)(pb + pb_ioFlFndrInfo + 4);
-			scCnid    = *(unsigned long *)(pb + pb_ioFlNum);
+			/* File: resolve name → CNID, then set type/creator */
+			if (nameAddr == 0) {
+				*(short *)(pb + pb_ioResult) = -50;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, -50, LOG_F_HFS);
+				RestoreA4(); return 0;
+			}
 
-			dbg_log2(g->regBase,
-				"SD _SetCatInfo cnid=%ld type=%lx",
-				(long)scCnid, scType);
-			dbg_log1(g->regBase,
-				"SD _SetCatInfo creator=%lx", scCreator);
+			dirID = ResolveDir(vRefNum, dirID, g->regBase);
 
-			if (scCnid != 0) {
-				reg_set(g->regBase, 0, scCnid);
-				reg_set(g->regBase, 1, scType);
-				reg_set(g->regBase, 2, scCreator);
-				reg_command(g->regBase, 0x0213);
+			reg_set(g->regBase, 0, (unsigned long)dirID);
+			reg_set(g->regBase, 1, nameAddr);
+			reg_command(g->regBase, 0x0209); /* ObjByName */
+			cnid = reg_get(g->regBase, 0);
+			if (cnid == 0) {
+				*(short *)(pb + pb_ioResult) = -43;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, -43, LOG_F_HFS);
+				RestoreA4(); return 0;
+			}
+
+			{
+				unsigned long type    = *(unsigned long *)(pb + pb_ioFlFndrInfo);
+				unsigned long creator = *(unsigned long *)(pb + pb_ioFlFndrInfo + 4);
+				reg_set(g->regBase, 0, cnid);
+				reg_set(g->regBase, 1, type);
+				reg_set(g->regBase, 2, creator);
+				reg_command(g->regBase, 0x0213); /* ExtFSSetFileInfo */
+			}
+
+			if (reg_result(g->regBase) != 0) {
+				err = -(short)reg_result(g->regBase);
+				*(short *)(pb + pb_ioResult) = err;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, err, LOG_F_HFS);
+				RestoreA4(); return 0;
 			}
 
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, selector, pb,
+				LOG_HANDLED, 0, LOG_F_HFS | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 		}
 

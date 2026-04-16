@@ -1522,10 +1522,61 @@ short DispatchHFS(char *pb, short selector)
 		}
 
 		case kSetCatInfo:
+		{
+			long dirID = *(long *)(pb + pb_ioDirID);
+			unsigned long cnid;
+
+			/* Directories: nothing to persist, succeed silently */
+			if (*(unsigned char *)(pb + pb_ioFlAttrib) & 0x10) {
+				*(short *)(pb + pb_ioResult) = 0;
+				log_trap(g->regBase, selector, pb,
+					LOG_HANDLED, 0, LOG_F_HFS);
+				RestoreA4(); return 0;
+			}
+
+			/* File: resolve name → CNID, then set type/creator */
+			if (nameAddr == 0) {
+				*(short *)(pb + pb_ioResult) = -50;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, -50, LOG_F_HFS);
+				RestoreA4(); return 0;
+			}
+
+			dirID = ResolveDir(vRefNum, dirID, g->regBase);
+
+			reg_set(g->regBase, 0, (unsigned long)dirID);
+			reg_set(g->regBase, 1, nameAddr);
+			reg_command(g->regBase, 0x0209); /* ObjByName */
+			cnid = reg_get(g->regBase, 0);
+			if (cnid == 0) {
+				*(short *)(pb + pb_ioResult) = -43;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, -43, LOG_F_HFS);
+				RestoreA4(); return 0;
+			}
+
+			{
+				unsigned long type    = *(unsigned long *)(pb + pb_ioFlFndrInfo);
+				unsigned long creator = *(unsigned long *)(pb + pb_ioFlFndrInfo + 4);
+				reg_set(g->regBase, 0, cnid);
+				reg_set(g->regBase, 1, type);
+				reg_set(g->regBase, 2, creator);
+				reg_command(g->regBase, 0x0213); /* ExtFSSetFileInfo */
+			}
+
+			if (reg_result(g->regBase) != 0) {
+				err = -(short)reg_result(g->regBase);
+				*(short *)(pb + pb_ioResult) = err;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, err, LOG_F_HFS);
+				RestoreA4(); return 0;
+			}
+
 			*(short *)(pb + pb_ioResult) = 0;
 			log_trap(g->regBase, selector, pb,
-				LOG_HANDLED, 0, LOG_F_HFS);
+				LOG_HANDLED, 0, LOG_F_HFS | LOG_F_PBMOD);
 			RestoreA4(); return 0;
+		}
 
 		case kCatMove:
 		{
