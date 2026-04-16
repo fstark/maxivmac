@@ -267,6 +267,26 @@ static void dbg_log6(char *base, char *fmt,
 #define dbg_log1(b,s,a)         dbg_log6(b,s,(long)(a),0,0,0,0,0)
 #define dbg_log2(b,s,a,c)       dbg_log6(b,s,(long)(a),(long)(c),0,0,0,0)
 
+/* ---- Structured trap logging (host-side pretty-print) ---- */
+
+#define LOG_PASSTHRU  0
+#define LOG_HANDLED   1
+#define LOG_ERROR     2
+
+#define LOG_F_HFS     0x0001
+#define LOG_F_PBMOD   0x0002
+
+static void log_trap(char *base, unsigned short trapWord,
+	char *pb, short action, short err, short flags)
+{
+	reg_set(base, 0, (unsigned long)trapWord);
+	reg_set(base, 1, (unsigned long)pb);
+	reg_set(base, 2, (unsigned long)action);
+	reg_set(base, 3, (unsigned long)(short)err);
+	reg_set(base, 4, (unsigned long)flags);
+	reg_command(base, 0x020F);
+}
+
 /* ---- Fatal shutdown ---- */
 
 static void dbg_fatal6(char *base, char *fmt,
@@ -1158,8 +1178,6 @@ short DispatchFlat(char *pb, short trapWord)
 	g = get_globals();
 	if (g == NULL || g->ejected) { RestoreA4(); return 1; }
 
-	dbg_log1(g->regBase, "SD DispatchFlat trap=%04lx", (long)(trapWord & 0xFFFF));
-
 	vRefNum  = *(short *)(pb + pb_ioVRefNum);
 	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 
@@ -1168,42 +1186,41 @@ short DispatchFlat(char *pb, short trapWord)
 		case 0x01: /* _Close */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log1(g->regBase, "SD _Close ref=%ld",
-				(long)refNum);
 			err = DoClose(pb, g->regBase);
-			dbg_log1(g->regBase, "SD _Close -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x02: /* _Read */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log2(g->regBase, "SD _Read ref=%ld cnt=%ld",
-				(long)refNum, *(long *)(pb + pb_ioReqCount));
 			err = DoRead(pb, g->regBase);
-			dbg_log2(g->regBase, "SD _Read -> %ld act=%ld",
-				(long)err, *(long *)(pb + pb_ioActCount));
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x03: /* _Write */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log2(g->regBase, "SD _Write ref=%ld cnt=%ld",
-				(long)refNum, *(long *)(pb + pb_ioReqCount));
 			err = DoWrite(pb, g->regBase);
-			dbg_log2(g->regBase, "SD _Write -> %ld act=%ld",
-				(long)err, *(long *)(pb + pb_ioActCount));
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x11: /* _GetEOF */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
 			err = DoGetEOF(pb);
-			dbg_log2(g->regBase, "SD _GetEOF ref=%ld -> %ld",
-				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x12: /* _SetEOF */
@@ -1212,39 +1229,41 @@ short DispatchFlat(char *pb, short trapWord)
 			{
 				long newEOF = *(long *)(pb + pb_ioMisc);
 				Ptr fcb = GetFCB(refNum);
-				dbg_log2(g->regBase,
-					"SD _SetEOF ref=%ld eof=%ld",
-					(long)refNum, newEOF);
 				if (fcb != NULL)
 					*(long *)(fcb + kFCBEOF) = newEOF;
 			}
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, trapWord, pb,
+				LOG_HANDLED, 0,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x18: /* _GetFPos */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
 			err = DoGetFPos(pb);
-			dbg_log2(g->regBase, "SD _GetFPos ref=%ld -> %ld",
-				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x44: /* _SetFPos */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
 			err = DoSetFPos(pb);
-			dbg_log2(g->regBase, "SD _SetFPos ref=%ld -> %ld",
-				(long)refNum, (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x45: /* _FlushFile */
 			refNum = *(short *)(pb + pb_ioRefNum);
 			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			dbg_log1(g->regBase, "SD _FlushFile ref=%ld -> 0",
-				(long)refNum);
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, trapWord, pb,
+				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
 			RestoreA4(); return 0;
 	}
 
@@ -1255,9 +1274,6 @@ short DispatchFlat(char *pb, short trapWord)
 	     - vidx == 0: lookup by vRefNum/drive number/name */
 	if (trapNum == 0x07) {
 		short vidx = *(short *)(pb + pb_ioVolIndex);
-		dbg_log2(g->regBase,
-			"SD _GetVolInfo vidx=%ld vr=%ld",
-			(long)vidx, (long)vRefNum);
 		if (vidx > 0) {
 			Ptr vcb = *(Ptr *)(kVCBQHdr + 2); /* qHead */
 			short i;
@@ -1274,9 +1290,6 @@ short DispatchFlat(char *pb, short trapWord)
 		/* vidx == 0: ROM matches by vRefNum OR drive number.
 		   SFGetFile passes drive number in ioVRefNum. */
 		if (vRefNum == kOurDriveNum || IsOurVolume(vRefNum)) {
-			dbg_log1(g->regBase,
-				"SD _GetVolInfo byDrv vr=%ld -> ours",
-				(long)vRefNum);
 			err = DoGetVolInfo(pb, g);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
@@ -1293,36 +1306,26 @@ short DispatchFlat(char *pb, short trapWord)
 				&& p[3] == 'a' && p[4] == 'r'
 				&& p[5] == 'e' && p[6] == 'd')
 			{
-				dbg_log(g->regBase,
-					"SD _SetVol by name -> setting DefVCBPtr");
 				*(Ptr *)kDefVCBPtr = g->vcb;
 				*(short *)(pb + pb_ioResult) = 0;
+				log_trap(g->regBase, trapWord, pb,
+					LOG_HANDLED, 0, LOG_F_PBMOD);
 				RestoreA4(); return 0;
 			}
 		}
-		/* Log pass-through for _Open/_OpenRF to diagnose Desktop issue */
-		if (trapNum == 0x00 || trapNum == 0x0A) {
-			dbg_log2(g->regBase,
-				"SD pass-thru %02lx vr=%ld",
-				(long)trapNum, (long)vRefNum);
-			if (nameAddr)
-				dbg_log1(g->regBase,
-					"SD pass-thru nm=%S", nameAddr);
-			dbg_log2(g->regBase,
-				"SD DefVCBPtr=%lx ourVCB=%lx",
-				(long)*(Ptr *)kDefVCBPtr, (long)g->vcb);
-		}
+		log_trap(g->regBase, trapWord, pb,
+			LOG_PASSTHRU, 0, isHFS ? LOG_F_HFS : 0);
 		RestoreA4(); return 1;
 	}
 
 	switch (trapNum) {
 		case 0x00: /* _Open */
 		{
-			dbg_log2(g->regBase, "SD _Open vr=%ld nm=%S",
-				(long)vRefNum, nameAddr);
 			err = DoOpen(pb, g->regBase, g->vcb, isHFS);
-			dbg_log1(g->regBase, "SD _Open -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 		}
 
@@ -1330,8 +1333,6 @@ short DispatchFlat(char *pb, short trapWord)
 		{
 			/* If default volume is ours, return our info */
 			unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-			dbg_log1(g->regBase,
-				"SD _GetVol vr=%ld", (long)vRefNum);
 			if (nmAddr != 0) {
 				unsigned char *p = (unsigned char *)nmAddr;
 				p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
@@ -1339,58 +1340,51 @@ short DispatchFlat(char *pb, short trapWord)
 			}
 			*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, trapWord, pb,
+				LOG_HANDLED, 0,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 		}
 
 		case 0x15: /* _SetVol */
-			dbg_log1(g->regBase,
-				"SD _SetVol vr=%ld -> setting DefVCBPtr",
-				(long)vRefNum);
 			*(Ptr *)kDefVCBPtr = g->vcb;
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, trapWord, pb,
+				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
 			RestoreA4(); return 0;
 
 		case 0x07: /* _GetVolInfo */
 		{
-			short vidx = *(short *)(pb + pb_ioVolIndex);
-			dbg_log2(g->regBase,
-				"SD _GetVolInfo vr=%ld vidx=%ld",
-				(long)vRefNum, (long)vidx);
 			err = DoGetVolInfo(pb, g);
-			dbg_log1(g->regBase, "SD _GetVolInfo -> %ld",
-				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 		}
 
 		case 0x08: /* _Create */
-			dbg_log2(g->regBase,
-				"SD _Create vr=%ld nm=%S",
-				(long)vRefNum, nameAddr);
 			err = DoCreate(pb, g->regBase, isHFS);
-			dbg_log1(g->regBase, "SD _Create -> %ld",
-				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x09: /* _Delete */
-			dbg_log2(g->regBase,
-				"SD _Delete vr=%ld nm=%S",
-				(long)vRefNum, nameAddr);
 			err = DoDelete(pb, g->regBase, isHFS);
-			dbg_log1(g->regBase, "SD _Delete -> %ld",
-				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x0A: /* _OpenRF */
-			dbg_log2(g->regBase,
-				"SD _OpenRF vr=%ld nm=%S",
-				(long)vRefNum, nameAddr);
 			err = DoOpenRF(pb, g->regBase, g->vcb, isHFS);
-			dbg_log1(g->regBase, "SD _OpenRF -> %ld",
-				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x0B: /* _Rename */
@@ -1398,12 +1392,10 @@ short DispatchFlat(char *pb, short trapWord)
 			unsigned long newNameAddr = *(unsigned long *)(pb + pb_ioMisc);
 			long dirID;
 
-			dbg_log2(g->regBase,
-				"SD _Rename vr=%ld nm=%S",
-				(long)vRefNum, nameAddr);
-
 			if (nameAddr == 0 || newNameAddr == 0) {
 				*(short *)(pb + pb_ioResult) = -50;
+				log_trap(g->regBase, trapWord, pb,
+					LOG_ERROR, -50, isHFS ? LOG_F_HFS : 0);
 				RestoreA4(); return 0;
 			}
 
@@ -1416,43 +1408,38 @@ short DispatchFlat(char *pb, short trapWord)
 
 			if (reg_result(g->regBase) != 0) {
 				err = -(short)reg_result(g->regBase);
-				dbg_log1(g->regBase, "SD _Rename -> %ld", (long)err);
 				*(short *)(pb + pb_ioResult) = err;
+				log_trap(g->regBase, trapWord, pb,
+					LOG_ERROR, err, isHFS ? LOG_F_HFS : 0);
 				RestoreA4(); return 0;
 			}
 
-			dbg_log(g->regBase, "SD _Rename -> 0");
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, trapWord, pb,
+				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
 			RestoreA4(); return 0;
 		}
 
 		case 0x0C: /* _GetFileInfo */
 		{
-			short fidx = *(short *)(pb + pb_ioFDirIndex);
-			dbg_log2(g->regBase,
-				"SD _GetFileInfo vr=%ld nm=%S",
-				(long)vRefNum, nameAddr);
 			err = DoGetFileInfo(pb, g->regBase, isHFS);
-			dbg_log1(g->regBase, "SD _GetFileInfo -> %ld",
-				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 		}
 
 		case 0x0D: /* _SetFileInfo */
-			dbg_log2(g->regBase,
-				"SD _SetFileInfo vr=%ld nm=%S",
-				(long)vRefNum, nameAddr);
 			err = DoSetFileInfo(pb, g->regBase, isHFS);
-			dbg_log1(g->regBase, "SD _SetFileInfo -> %ld",
-				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, trapWord, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case 0x0E: /* _UnmountVol */
 		{
-			dbg_log1(g->regBase,
-				"SD _UnmountVol vr=%ld", (long)vRefNum);
 			if (g->dqe != NULL) {
 				Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
 				g->dqe = NULL;
@@ -1460,25 +1447,26 @@ short DispatchFlat(char *pb, short trapWord)
 			Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
 			g->ejected = 1;
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, trapWord, pb,
+				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
 			RestoreA4(); return 0;
 		}
 
 		case 0x10: /* _Allocate */
-			dbg_log(g->regBase, "SD _Allocate -> 0");
 			/* Just return noErr — we don't pre-allocate disk space */
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, trapWord, pb,
+				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
 			RestoreA4(); return 0;
 
 		case 0x13: /* _FlushVol */
-			dbg_log1(g->regBase,
-				"SD _FlushVol vr=%ld -> 0", (long)vRefNum);
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, trapWord, pb,
+				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
 			RestoreA4(); return 0;
 
 		case 0x17: /* _Eject */
 		{
-			dbg_log1(g->regBase,
-				"SD _Eject vr=%ld", (long)vRefNum);
 			if (g->dqe != NULL) {
 				Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
 				g->dqe = NULL;
@@ -1486,12 +1474,14 @@ short DispatchFlat(char *pb, short trapWord)
 			Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
 			g->ejected = 1;
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, trapWord, pb,
+				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
 			RestoreA4(); return 0;
 		}
 	}
 
-	dbg_log1(g->regBase,
-		"SD UNHANDLED flat trap %02lx", (long)trapNum);
+	log_trap(g->regBase, trapWord, pb,
+		LOG_PASSTHRU, 0, isHFS ? LOG_F_HFS : 0);
 	RestoreA4(); return 1;
 }
 
@@ -1515,50 +1505,26 @@ short DispatchHFS(char *pb, short selector)
 	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 
 	if (!IsOurVolume(vRefNum)) {
+		log_trap(g->regBase, selector, pb,
+			LOG_PASSTHRU, 0, LOG_F_HFS);
 		RestoreA4(); return 1;
 	}
 
 	switch (selector) {
 		case kGetCatInfo:
 		{
-			short idx = *(short *)(pb + pb_ioFDirIndex);
-			long dirID = *(long *)(pb + pb_ioDirID);
-			dbg_log2(g->regBase,
-				"SD _GetCatInfo vr=%ld dir=%ld",
-				(long)vRefNum, dirID);
-			if (nameAddr)
-				dbg_log1(g->regBase,
-					"SD _GetCatInfo nm=%S", nameAddr);
-			else
-				dbg_log1(g->regBase,
-					"SD _GetCatInfo idx=%ld", (long)idx);
-			dbg_hexdump(g->regBase, "GCI pb",
-				(unsigned char *)pb, 108);
-			if (idx == -1 && nameAddr) {
-				/* Dump what RM put at ioNamePtr */
-				dbg_hexdump(g->regBase, "GCI namePtr",
-					(unsigned char *)nameAddr, 48);
-				/* Dump the FCB for refNum 660 to check
-				   if our fcbCName survived */
-				{
-					Ptr fcbBuf = *(Ptr *)kFCBSPtr;
-					if (fcbBuf)
-						dbg_hexdump(g->regBase,
-							"FCB@660",
-							(unsigned char *)(fcbBuf + 660),
-							kFCBLen);
-				}
-			}
 			err = DoGetCatInfo(pb, g->regBase);
-			dbg_log1(g->regBase,
-				"SD _GetCatInfo -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, selector, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				LOG_F_HFS | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 		}
 
 		case kSetCatInfo:
-			dbg_log(g->regBase, "SD _SetCatInfo -> noErr");
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, selector, pb,
+				LOG_HANDLED, 0, LOG_F_HFS);
 			RestoreA4(); return 0;
 
 		case kCatMove:
@@ -1566,13 +1532,10 @@ short DispatchHFS(char *pb, short selector)
 			long srcDirID = *(long *)(pb + pb_ioDirID);
 			long dstDirID = *(long *)(pb + 36);  /* ioNewDirID */
 
-			dbg_log2(g->regBase, "SD _CatMove srcDir=%ld nm=%S",
-				srcDirID, nameAddr);
-			dbg_log1(g->regBase, "SD _CatMove dstDir=%ld",
-				dstDirID);
-
 			if (nameAddr == 0) {
 				*(short *)(pb + pb_ioResult) = -50;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, -50, LOG_F_HFS);
 				RestoreA4(); return 0;
 			}
 
@@ -1588,13 +1551,15 @@ short DispatchHFS(char *pb, short selector)
 
 			if (reg_result(g->regBase) != 0) {
 				err = -(short)reg_result(g->regBase);
-				dbg_log1(g->regBase, "SD _CatMove -> %ld", (long)err);
 				*(short *)(pb + pb_ioResult) = err;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, err, LOG_F_HFS);
 				RestoreA4(); return 0;
 			}
 
-			dbg_log(g->regBase, "SD _CatMove -> 0");
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, selector, pb,
+				LOG_HANDLED, 0, LOG_F_HFS);
 			RestoreA4(); return 0;
 		}
 
@@ -1603,11 +1568,10 @@ short DispatchHFS(char *pb, short selector)
 			long dirID = *(long *)(pb + pb_ioDirID);
 			unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 
-			dbg_log2(g->regBase, "SD _DirCreate dir=%ld nm=%S",
-				dirID, nmAddr);
-
 			if (nmAddr == 0) {
 				*(short *)(pb + pb_ioResult) = -50;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, -50, LOG_F_HFS);
 				RestoreA4(); return 0;
 			}
 
@@ -1618,50 +1582,55 @@ short DispatchHFS(char *pb, short selector)
 			reg_set(g->regBase, 1, nmAddr);
 			reg_command(g->regBase, 0x0215); /* ExtFSCreateDir */
 			if (reg_result(g->regBase) != 0) {
-				*(short *)(pb + pb_ioResult) =
-					-(short)reg_result(g->regBase);
+				err = -(short)reg_result(g->regBase);
+				*(short *)(pb + pb_ioResult) = err;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, err, LOG_F_HFS);
 				RestoreA4(); return 0;
 			}
 			*(long *)(pb + pb_ioDirID) = (long)reg_get(g->regBase, 0);
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, selector, pb,
+				LOG_HANDLED, 0, LOG_F_HFS | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 		}
 
 		case kSetVInfo:
-			dbg_log(g->regBase, "SD _SetVInfo -> noErr");
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, selector, pb,
+				LOG_HANDLED, 0, LOG_F_HFS);
 			RestoreA4(); return 0;
 
 		case kOpenWD:
 			err = DoOpenWD(pb, g->regBase);
-			dbg_log1(g->regBase,
-				"SD _OpenWD -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, selector, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				LOG_F_HFS | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case kCloseWD:
 			err = DoCloseWD(pb, g->regBase);
-			dbg_log1(g->regBase,
-				"SD _CloseWD -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, selector, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err, LOG_F_HFS);
 			RestoreA4(); return 0;
 
 		case kGetWDInfo:
 			err = DoGetWDInfo(pb, g->regBase);
-			dbg_log1(g->regBase,
-				"SD _GetWDInfo -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, selector, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				LOG_F_HFS | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 
 		case kGetVolParms:
 		{
-			long rc = *(long *)(pb + pb_ioReqCount);
-			dbg_log1(g->regBase,
-				"SD _GetVolParms reqCnt=%ld", rc);
 			err = DoGetVolParms(pb, g->regBase);
-			dbg_log1(g->regBase,
-				"SD _GetVolParms -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
+			log_trap(g->regBase, selector, pb,
+				err ? LOG_ERROR : LOG_HANDLED, err,
+				LOG_F_HFS | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 		}
 
@@ -1672,23 +1641,19 @@ short DispatchHFS(char *pb, short selector)
 			unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 			Ptr fcb;
 
-			dbg_log2(g->regBase,
-				"SD _GetFCBInfo ref=%ld idx=%ld",
-				(long)refNum, (long)fcbIdx);
-
 			/* Only handle direct lookup by refNum (index=0) */
 			if (fcbIdx != 0) {
-				dbg_log(g->regBase,
-					"SD _GetFCBInfo idx!=0 -> paramErr");
 				*(short *)(pb + pb_ioResult) = -50;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, -50, LOG_F_HFS);
 				RestoreA4(); return 0;
 			}
 
 			fcb = GetFCB(refNum);
 			if (fcb == NULL || *(long *)(fcb + kFCBFlNum) == 0) {
-				dbg_log(g->regBase,
-					"SD _GetFCBInfo -> rfNumErr");
 				*(short *)(pb + pb_ioResult) = -51;
+				log_trap(g->regBase, selector, pb,
+					LOG_ERROR, -51, LOG_F_HFS);
 				RestoreA4(); return 0;
 			}
 
@@ -1701,8 +1666,6 @@ short DispatchHFS(char *pb, short selector)
 				*(unsigned char *)nmAddr = len;
 				for (j = 0; j < len; j++)
 					((char *)nmAddr)[1+j] = src[1+j];
-				dbg_log1(g->regBase,
-					"SD _GetFCBInfo name=%S", nmAddr);
 			}
 
 			/* Fill FCBPBRec output fields */
@@ -1717,18 +1680,16 @@ short DispatchHFS(char *pb, short selector)
 			*(long  *)(pb + pb_ioFCBClpSiz) = 0;
 			*(long  *)(pb + pb_ioFCBParID) = *(long *)(fcb + kFCBDirID);
 
-			dbg_log1(g->regBase,
-				"SD _GetFCBInfo -> 0 parID=%ld",
-				*(long *)(fcb + kFCBDirID));
 			*(short *)(pb + pb_ioResult) = 0;
+			log_trap(g->regBase, selector, pb,
+				LOG_HANDLED, 0, LOG_F_HFS | LOG_F_PBMOD);
 			RestoreA4(); return 0;
 		}
 
 		default:
-			dbg_log1(g->regBase,
-				"SD HFS UNHANDLED sel=%04lx",
-				(long)selector);
 			*(short *)(pb + pb_ioResult) = -50;
+			log_trap(g->regBase, selector, pb,
+				LOG_ERROR, -50, LOG_F_HFS);
 			RestoreA4(); return 0;
 	}
 }
