@@ -1099,14 +1099,19 @@ static OSErr DoGetWDInfo(char *pb, char *regBase)
 	/* Only handle direct lookup (ioWDIndex == 0) for now */
 	if (wdIndex != 0) return -35;
 
-	/* Decode WD refnum */
-	wdRef = (unsigned long)(-(long)vRefNum - 32000);
+	/* Plain volume refnum or drive number → return root dir */
+	if (vRefNum == kOurVRefNum || vRefNum == kOurDriveNum) {
+		dirID = kRootDirID;
+	} else {
+		/* Decode WD refnum */
+		wdRef = (unsigned long)(-(long)vRefNum - 32000);
 
-	reg_set(regBase, 0, wdRef);
-	reg_command(regBase, 0x020A);
-	if (reg_result(regBase) != 0) return -35;
+		reg_set(regBase, 0, wdRef);
+		reg_command(regBase, 0x020A);
+		if (reg_result(regBase) != 0) return -35;
 
-	dirID = reg_get(regBase, 1);
+		dirID = reg_get(regBase, 1);
+	}
 
 	*(short *)(pb + pb_ioWDVRefNum) = kOurVRefNum;
 	*(long *)(pb + pb_ioWDDirID) = dirID;
