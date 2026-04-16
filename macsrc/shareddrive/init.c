@@ -51,6 +51,12 @@
 #define kOurDrvrRefNum  (-64)
 #define kRootDirID      2
 
+/* Virtual volume geometry — report ~1 GB capacity so copy operations
+   don't fail with "disk full".  The host filesystem provides the
+   actual storage; these numbers are only what we tell the Finder. */
+#define kAllocBlkSize   32768L   /* 32 KB allocation blocks */
+#define kTotalAllocBlks 32000    /* 32000 * 32KB ≈ 1 GB */
+
 /* Low-memory globals */
 #define kSonyVarsPtr    0x0134
 #define kCheckVal       0x841339E2UL
@@ -957,12 +963,18 @@ static OSErr DoGetVolInfo(char *pb, Globals *g)
 	*(short *)(pb + 40) = (short)fileCount;      /* ioVNmFls */
 	*(short *)(pb + 42) = 0;                     /* ioVBitMap */
 	*(short *)(pb + 44) = 0;                     /* ioVAllocPtr */
-	*(short *)(pb + 46) = 1024;                  /* ioVNmAlBlks */
-	*(long  *)(pb + 48) = 512;                   /* ioVAlBlkSiz */
-	*(long  *)(pb + 52) = 512;                   /* ioVClpSiz */
+	*(short *)(pb + 46) = kTotalAllocBlks;       /* ioVNmAlBlks */
+	*(long  *)(pb + 48) = kAllocBlkSize;         /* ioVAlBlkSiz */
+	*(long  *)(pb + 52) = kAllocBlkSize;         /* ioVClpSiz */
 	*(short *)(pb + 56) = 0;                     /* ioAlBlSt */
 	*(long  *)(pb + 58) = fileCount + 16;        /* ioVNxtCNID (approx) */
-	*(short *)(pb + 62) = 512;                   /* ioVFrBlk */
+	{
+		long usedBlks = (long)((totalBytes + kAllocBlkSize - 1)
+			/ kAllocBlkSize);
+		long freeBlks = kTotalAllocBlks - usedBlks;
+		if (freeBlks < 0) freeBlks = 0;
+		*(short *)(pb + 62) = (short)freeBlks;   /* ioVFrBlk */
+	}
 	*(short *)(pb + 64) = 0x4244;                /* ioVSigWord = HFS */
 	*(short *)(pb + 66) = kOurDriveNum;          /* ioVDrvInfo */
 	*(short *)(pb + 68) = kOurDrvrRefNum;        /* ioVDRefNum */
@@ -2011,11 +2023,17 @@ void main(void)
 		*(long  *)(v + 14)  = now;           /* vcbLsMod */
 		*(short *)(v + 18)  = 0;             /* vcbAtrb: writable */
 		*(short *)(v + 20)  = (short)g->volFileCount; /* vcbNmFls */
-		*(short *)(v + 26)  = 1024;          /* vcbNmAlBlks */
-		*(long  *)(v + 28)  = 512;           /* vcbAlBlkSiz */
-		*(long  *)(v + 32)  = 512;           /* vcbClpSiz */
+		*(short *)(v + 26)  = kTotalAllocBlks; /* vcbNmAlBlks */
+		*(long  *)(v + 28)  = kAllocBlkSize; /* vcbAlBlkSiz */
+		*(long  *)(v + 32)  = kAllocBlkSize; /* vcbClpSiz */
 		*(long  *)(v + 38)  = 16;            /* vcbNxtCNID */
-		*(short *)(v + 42)  = 0;             /* vcbFreeBks */
+		{
+			long used = (long)((g->volTotalBytes + kAllocBlkSize - 1)
+				/ kAllocBlkSize);
+			long free = kTotalAllocBlks - used;
+			if (free < 0) free = 0;
+			*(short *)(v + 42) = (short)free;  /* vcbFreeBks */
+		}
 
 		/* vcbVN at offset 44: Pascal string, 1 len + 27 chars */
 		v[44] = 6;
@@ -2040,8 +2058,14 @@ void main(void)
 			*(long *)dqe = 0x00080000L;        /* flags: non-ejectable */
 			*(short *)(dqe + 8)  = 1;          /* qType = 1 (use dQDrvSz2) */
 			*(short *)(dqe + 14) = 0;          /* dQFSID = 0 (native HFS) */
-			*(short *)(dqe + 16) = 1024;       /* dQDrvSz: 1024 blocks */
-			*(short *)(dqe + 18) = 0;          /* dQDrvSz2: high word */
+			/* Drive size in 512-byte sectors:
+			   32000 * 32768 / 512 = 2,048,000 sectors */
+			{
+				long sectors = (long)kTotalAllocBlks
+					* (kAllocBlkSize / 512);
+				*(short *)(dqe + 16) = (short)(sectors & 0xFFFF);
+				*(short *)(dqe + 18) = (short)((sectors >> 16) & 0xFFFF);
+			}
 			AddDrive(kOurDrvrRefNum, kOurDriveNum,
 				(DrvQElPtr)(dqe + 4));
 			g->dqe = dqe;
