@@ -1585,10 +1585,11 @@ short DispatchHFS(char *pb, short selector)
 				RestoreA4(); return 0;
 			}
 
-			/* Fast path: CNID from ioFlNum (set by prior GetCatInfo).
-			   Fallback: resolve by name (Create→SetCatInfo path). */
-			cnid = *(unsigned long *)(pb + pb_ioFlNum);
-			if (cnid == 0 && nameAddr != 0) {
+			/* Resolve CNID: try ioFlNum first (populated by prior
+			   GetCatInfo), fall back to name lookup (covers the
+			   Create→SetCatInfo path where ioFlNum is stale). */
+			cnid = 0;
+			if (nameAddr != 0) {
 				long dirID = ResolveDir(vRefNum,
 					*(long *)(pb + pb_ioDirID), g->regBase);
 				reg_set(g->regBase, 0, (unsigned long)dirID);

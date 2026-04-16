@@ -487,11 +487,11 @@ static std::string formatInput(TrapCategory cat, uint32_t pb, bool isHFS)
 		{
 			auto name = pbName(pb);
 			int16_t vr = pbVRefNum(pb);
-			uint32_t dirID = get_vm_long(pb + kPB_ioDirID);
+			uint32_t ioFlNum = get_vm_long(pb + kPB_ioDirID); /* same offset as ioDirID */
 			uint32_t ftype = get_vm_long(pb + kPB_ioFlFndrInfo);
 			uint32_t fcreator = get_vm_long(pb + kPB_ioFlFndrInfo + 4);
-			std::snprintf(buf, sizeof(buf), "vRefNum=%d dirID=%u name=\"%s\" type=%s creator=%s",
-						  vr, dirID, name.c_str(), formatFourCC(ftype).c_str(),
+			std::snprintf(buf, sizeof(buf), "vRefNum=%d ioFlNum=%u name=\"%s\" type=%s creator=%s",
+						  vr, ioFlNum, name.c_str(), formatFourCC(ftype).c_str(),
 						  formatFourCC(fcreator).c_str());
 			s = buf;
 			break;
