@@ -412,6 +412,20 @@ static long ResolveDir(short vRefNum, long dirID, char *regBase)
 	return kRootDirID;
 }
 
+/* Resolve directory for flat-file traps ($A0xx).
+   PBHxxx ($A2xx) shares the same OS trap as PBxxx ($A0xx) —
+   only bits 0–7 select the trap entry.  PBHCreate etc. put
+   a valid dirID at offset 48, but for plain PBCreate that
+   field is ioFlNum (output garbage).  The ROM trap dispatcher
+   sets D1.W = full trap word; bit 9 distinguishes the two. */
+static long ResolveFlatDir(short vRefNum, long rawDirID,
+	short isHFS, char *regBase)
+{
+	if (isHFS && rawDirID != 0)
+		return rawDirID;
+	return ResolveDir(vRefNum, 0, regBase);
+}
+
 static OSErr DoGetCatInfo(char *pb, char *regBase)
 {
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
@@ -551,7 +565,7 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 
 /* ---- File creation / deletion / writing ---- */
 
-static OSErr DoCreate(char *pb, char *regBase)
+static OSErr DoCreate(char *pb, char *regBase, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
@@ -559,7 +573,7 @@ static OSErr DoCreate(char *pb, char *regBase)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
+	dirID = ResolveFlatDir(vRefNum, *(long *)(pb + pb_ioDirID), isHFS, regBase);
 
 	reg_set(regBase, 0, (unsigned long)dirID);
 	reg_set(regBase, 1, nameAddr);
@@ -569,7 +583,7 @@ static OSErr DoCreate(char *pb, char *regBase)
 	return 0;
 }
 
-static OSErr DoDelete(char *pb, char *regBase)
+static OSErr DoDelete(char *pb, char *regBase, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
@@ -577,7 +591,7 @@ static OSErr DoDelete(char *pb, char *regBase)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
+	dirID = ResolveFlatDir(vRefNum, *(long *)(pb + pb_ioDirID), isHFS, regBase);
 
 	reg_set(regBase, 0, (unsigned long)dirID);
 	reg_set(regBase, 1, nameAddr);
@@ -587,7 +601,7 @@ static OSErr DoDelete(char *pb, char *regBase)
 	return 0;
 }
 
-static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb)
+static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
@@ -597,7 +611,7 @@ static OSErr DoOpenRF(char *pb, char *regBase, Ptr vcb)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
+	dirID = ResolveFlatDir(vRefNum, *(long *)(pb + pb_ioDirID), isHFS, regBase);
 
 	/* Look up file by name */
 	reg_set(regBase, 0, (unsigned long)dirID);
@@ -693,7 +707,7 @@ static OSErr DoWrite(char *pb, char *regBase)
 	return (actual < (unsigned long)reqCount) ? -36 : 0;
 }
 
-static OSErr DoSetFileInfo(char *pb, char *regBase)
+static OSErr DoSetFileInfo(char *pb, char *regBase, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
@@ -702,7 +716,7 @@ static OSErr DoSetFileInfo(char *pb, char *regBase)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
+	dirID = ResolveFlatDir(vRefNum, *(long *)(pb + pb_ioDirID), isHFS, regBase);
 
 	reg_set(regBase, 0, (unsigned long)dirID);
 	reg_set(regBase, 1, nameAddr);
@@ -722,7 +736,7 @@ static OSErr DoSetFileInfo(char *pb, char *regBase)
 	return 0;
 }
 
-static OSErr DoOpen(char *pb, char *regBase, Ptr vcb)
+static OSErr DoOpen(char *pb, char *regBase, Ptr vcb, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
@@ -732,7 +746,7 @@ static OSErr DoOpen(char *pb, char *regBase, Ptr vcb)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
+	dirID = ResolveFlatDir(vRefNum, *(long *)(pb + pb_ioDirID), isHFS, regBase);
 
 	/* Look up file by name */
 	reg_set(regBase,0,(unsigned long)dirID); reg_set(regBase,1,nameAddr);
@@ -833,7 +847,7 @@ static OSErr DoClose(char *pb, char *regBase)
 	return 0;
 }
 
-static OSErr DoGetFileInfo(char *pb, char *regBase)
+static OSErr DoGetFileInfo(char *pb, char *regBase, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
@@ -842,7 +856,7 @@ static OSErr DoGetFileInfo(char *pb, char *regBase)
 
 	if (nameAddr == 0) return -50;
 
-	dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), regBase);
+	dirID = ResolveFlatDir(vRefNum, *(long *)(pb + pb_ioDirID), isHFS, regBase);
 
 	reg_set(regBase,0,(unsigned long)dirID); reg_set(regBase,1,nameAddr);
 	reg_set(regBase,2,(unsigned long)s_nameBuf);
@@ -1102,23 +1116,26 @@ static OSErr DoGetWDInfo(char *pb, char *regBase)
 
 /*
 	DispatchFlat: called from generated 68k stub code.
-	pb = ParamBlockRec pointer, trapNum = low byte of trap word.
+	pb = ParamBlockRec pointer, trapWord = full trap word from D1.W.
+	Bit 9 of trapWord distinguishes PBHxxx ($A2xx) from PBxxx ($A0xx).
 	Returns: 0 if handled, non-zero to pass through.
 	If handled, ioResult is already set in pb.
 */
-short DispatchFlat(char *pb, short trapNum)
+short DispatchFlat(char *pb, short trapWord)
 {
 	Globals *g;
 	OSErr err;
 	short refNum;
 	short vRefNum;
 	unsigned long nameAddr;
+	short trapNum = trapWord & 0xFF;
+	short isHFS = (trapWord & 0x0200) != 0;
 
 	SetUpA4();
 	g = get_globals();
 	if (g == NULL || g->ejected) { RestoreA4(); return 1; }
 
-	dbg_log1(g->regBase, "SD DispatchFlat trap=%02lx", (long)trapNum);
+	dbg_log1(g->regBase, "SD DispatchFlat trap=%04lx", (long)(trapWord & 0xFFFF));
 
 	vRefNum  = *(short *)(pb + pb_ioVRefNum);
 	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
@@ -1280,7 +1297,7 @@ short DispatchFlat(char *pb, short trapNum)
 		{
 			dbg_log2(g->regBase, "SD _Open vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			err = DoOpen(pb, g->regBase, g->vcb);
+			err = DoOpen(pb, g->regBase, g->vcb, isHFS);
 			dbg_log1(g->regBase, "SD _Open -> %ld", (long)err);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
@@ -1327,7 +1344,7 @@ short DispatchFlat(char *pb, short trapNum)
 			dbg_log2(g->regBase,
 				"SD _Create vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			err = DoCreate(pb, g->regBase);
+			err = DoCreate(pb, g->regBase, isHFS);
 			dbg_log1(g->regBase, "SD _Create -> %ld",
 				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
@@ -1337,7 +1354,7 @@ short DispatchFlat(char *pb, short trapNum)
 			dbg_log2(g->regBase,
 				"SD _Delete vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			err = DoDelete(pb, g->regBase);
+			err = DoDelete(pb, g->regBase, isHFS);
 			dbg_log1(g->regBase, "SD _Delete -> %ld",
 				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
@@ -1347,7 +1364,7 @@ short DispatchFlat(char *pb, short trapNum)
 			dbg_log2(g->regBase,
 				"SD _OpenRF vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			err = DoOpenRF(pb, g->regBase, g->vcb);
+			err = DoOpenRF(pb, g->regBase, g->vcb, isHFS);
 			dbg_log1(g->regBase, "SD _OpenRF -> %ld",
 				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
@@ -1367,7 +1384,7 @@ short DispatchFlat(char *pb, short trapNum)
 				RestoreA4(); return 0;
 			}
 
-			dirID = ResolveDir(vRefNum, *(long *)(pb + pb_ioDirID), g->regBase);
+			dirID = ResolveFlatDir(vRefNum, *(long *)(pb + pb_ioDirID), isHFS, g->regBase);
 
 			reg_set(g->regBase, 0, (unsigned long)dirID);
 			reg_set(g->regBase, 1, nameAddr);
@@ -1392,7 +1409,7 @@ short DispatchFlat(char *pb, short trapNum)
 			dbg_log2(g->regBase,
 				"SD _GetFileInfo vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			err = DoGetFileInfo(pb, g->regBase);
+			err = DoGetFileInfo(pb, g->regBase, isHFS);
 			dbg_log1(g->regBase, "SD _GetFileInfo -> %ld",
 				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
@@ -1403,7 +1420,7 @@ short DispatchFlat(char *pb, short trapNum)
 			dbg_log2(g->regBase,
 				"SD _SetFileInfo vr=%ld nm=%S",
 				(long)vRefNum, nameAddr);
-			err = DoSetFileInfo(pb, g->regBase);
+			err = DoSetFileInfo(pb, g->regBase, isHFS);
 			dbg_log1(g->regBase, "SD _SetFileInfo -> %ld",
 				(long)err);
 			*(short *)(pb + pb_ioResult) = err;
@@ -1702,7 +1719,7 @@ short DispatchHFS(char *pb, short selector)
 	flat-file OS trap. The stub:
 
 	  MOVEM.L D0-D2/A0-A1, -(SP)  ; save regs (20 bytes)
-	  MOVE.W  #trapNum, -(SP)      ; push trapNum arg
+	  MOVE.W  D1, -(SP)            ; push trapWord (D1.W set by ROM dispatcher)
 	  MOVE.L  A0, -(SP)            ; push pb arg
 	  JSR     dispatchAddr          ; call DispatchFlat
 	  ADDQ.L  #6, SP               ; pop args
@@ -1718,40 +1735,38 @@ short DispatchHFS(char *pb, short selector)
 
 	Byte layout:
 	  0: MOVEM.L D0-D2/A0-A1,-(SP) 48E7 E0C0       4
-	  4: MOVE.W  #imm,-(SP)         3F3C xxxx       4
-	  8: MOVE.L  A0,-(SP)           2F08            2
-	 10: JSR     abs.L              4EB9 xxxx xxxx  6
-	 16: ADDQ.L  #6,SP              5C8F            2
-	 18: TST.W   D0                 4A40            2
-	 20: BNE.S   +10                660A            2
-	 22: MOVEM.L (SP)+,D0-D2/A0-A1 4CDF 0307       4
-	 26: MOVE.W  16(A0),D0         3028 0010       4
-	 30: RTS                        4E75            2
-	 32: MOVEM.L (SP)+,D0-D2/A0-A1 4CDF 0307       4
-	 36: MOVE.L  #imm,-(SP)         2F3C xxxx xxxx  6
-	 42: RTS                        4E75            2
-	 Total: 44 bytes
+	  4: MOVE.W  D1,-(SP)           3F01            2
+	  6: MOVE.L  A0,-(SP)           2F08            2
+	  8: JSR     abs.L              4EB9 xxxx xxxx  6
+	 14: ADDQ.L  #6,SP              5C8F            2
+	 16: TST.W   D0                 4A40            2
+	 18: BNE.S   +10                660A            2
+	 20: MOVEM.L (SP)+,D0-D2/A0-A1 4CDF 0307       4
+	 24: MOVE.W  16(A0),D0         3028 0010       4
+	 28: RTS                        4E75            2
+	 30: MOVEM.L (SP)+,D0-D2/A0-A1 4CDF 0307       4
+	 34: MOVE.L  #imm,-(SP)         2F3C xxxx xxxx  6
+	 40: RTS                        4E75            2
+	 Total: 42 bytes
 
-	Register mask encoding (68000 PRM):
-	  Predecrement: bit15=D0..bit8=D7, bit7=A0..bit0=A7
-	    D0-D2 = $E000, A0-A1 = $00C0 → $E0C0
-	  Postincrement: bit0=D0..bit7=D7, bit8=A0..bit15=A7
-	    D0-D2 = $0007, A0-A1 = $0300 → $0307
+	The ROM trap dispatcher sets D1.W = full trap word before
+	calling the handler. Bit 9 distinguishes PBHxxx ($A2xx)
+	from PBxxx ($A0xx) — the "hierarchical" flag.
 */
-static Ptr MakeFlatStub(short trapNum, long dispatchAddr, long oldAddr)
+static Ptr MakeFlatStub(long dispatchAddr, long oldAddr)
 {
 	Ptr p;
 	short *w;
 
-	p = NewPtrSys(44);
+	p = NewPtrSys(42);
 	if (p == NULL) return NULL;
 	w = (short *)p;
 
 	/* MOVEM.L D0-D2/A0-A1, -(SP) */
 	*w++ = 0x48E7; *w++ = (short)0xE0C0;
 
-	/* MOVE.W #trapNum, -(SP) */
-	*w++ = 0x3F3C; *w++ = trapNum;
+	/* MOVE.W D1, -(SP) — push trap word from D1 */
+	*w++ = 0x3F01;
 
 	/* MOVE.L A0, -(SP) */
 	*w++ = 0x2F08;
@@ -1886,7 +1901,7 @@ static void InstallFlatPatch(unsigned short trapWord, char *regBase)
 
 	oldAddr = (long)NGetTrapAddress(trapWord, OSTrap);
 	dispAddr = (long)DispatchFlat;
-	stub = MakeFlatStub(trapWord & 0xFF, dispAddr, oldAddr);
+	stub = MakeFlatStub(dispAddr, oldAddr);
 	if (stub == NULL) {
 		dbg_log1(regBase, "SharedDrive: stub alloc failed for %lx",
 			(long)trapWord);
