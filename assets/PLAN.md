@@ -1,296 +1,704 @@
-# Trap Dictionary Unification — Implementation Plan
+# Low Memory Globals — Implementation Plan
 
-Spec: this document (no separate spec/design)
-Related: [traps.def](traps.def), [trap_counter.cpp](../src/cpu/trap_counter.cpp), [trap_defs.h](../src/cpu/trap_defs.h)
+Move the hardcoded `kLowMemGlobals[]` table to a data-driven
+`assets/globals.def` file, with types from the type system
+(`assets/types.def`).  Source of truth: THINK C 3 headers (System 6).
 
-## Goal
-
-Eliminate the hard-coded `s_dict` array of ~681 {trapWord, name} entries
-in `trap_counter.cpp`.  Instead, have a single trap dictionary loaded
-from `assets/traps.def` at startup (`TrapDefs`), and make
-`trap_counter.cpp` delegate all name lookups to `TrapDefs`.
-
-This requires:
-1. Expanding `traps.def` with all ~681 trap names (most as header-only
-   entries without `in`/`out` parameter lines).
-2. Adding name-lookup helpers to the `TrapDefs` class so it can serve
-   the role `s_dict` currently fills.
-3. Rewiring `trap_counter.cpp` to use `TrapDefs` instead of `s_dict`.
-4. Removing the dead `s_dict` code.
+Globals or structs not in THINK C 3:
+- If clearly System 7 → remove
+- If uncertain → comment out with `#?`
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Expand `traps.def` with all 693 trap names | Done |
-| 2 | Add name/search API to `TrapDefs` | Done |
-| 3 | Rewire `trap_counter.cpp` to use `TrapDefs` | Done |
-| 4 | Remove dead `s_dict` code and `TrapInfo` struct | Done |
+| 1 | Add missing struct types to types.def | |
+| 2 | Create assets/globals.def from THINK C 3 | |
+| 3 | Write GlobalRegistry parser | |
+| 4 | Wire GlobalRegistry into startup and debugger | |
+| 5 | Update imgui\_lomem\_tool to compile | |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
 Test gate:  `./bld/macos/tests`
 
 ---
 
-## Phase 1 — Expand `traps.def` with all 681 trap names
+## Phase 1 — Add missing struct types to types.def
 
-The current `assets/traps.def` has 58 entries with full parameter
-definitions.  The hard-coded `s_dict` in `trap_counter.cpp` has ~681
-entries.  In this phase we add every trap from `s_dict` that is not
-already in `traps.def`, as header-only lines (trap word, name,
-convention — no `in`/`out` lines).
+### Goal
 
-### 1.1 — Generate the missing entries
+Add struct definitions required by low-memory globals that do not yet
+exist in `assets/types.def`.  Seven structs are needed: four used
+directly as inline global types, and three used as pointer targets
+(`^Struct` / `^^Struct`).
 
-For each `{0xAXXX, "Name"}` in `s_dict`:
-- If `traps.def` already has a line starting with the same hex word
-  (without `0x` prefix, e.g. `A122`), skip it.
-- Otherwise, emit a new header line: `AXXX Name os|toolbox`
-  - Convention: bit 11 set (trap word & 0x0800) → `toolbox`, else → `os`.
+### Sub-tasks
 
-Group the new entries into labelled sections matching the existing
-`traps.def` style (`# ── Section Name ──`).  Append after existing
-sections.  Suggested groupings:
+1. **Add QHdr** — Queue header (used inline by EventQueue, VBLQueue,
+   DrvQHdr, VCBQHdr, FSQHdr).
 
-- `# ── Memory Manager (additional)` — OS traps not already present
-- `# ── Toolbox (A–Z)` — remaining Toolbox traps, alphabetically
+   ```
+   struct QHdr {
+       0  sword    qFlags
+       2  Ptr      qHead
+       6  Ptr      qTail
+   }
+   ```
 
-Keep existing entries with their `in`/`out`/`show-in`/`show-out` lines
-**exactly as they are** — do not touch them.
+2. **Add SysParmType** — Parameter RAM image (used inline by SysParam).
 
-### 1.2 — Verify
+   ```
+   struct SysParmType {
+       0  byte     valid
+       1  byte     aTalkA
+       2  byte     aTalkB
+       3  byte     config
+       4  sword    portA
+       6  sword    portB
+       8  slong    alarm
+       12 sword    font
+       14 sword    kbdPrint
+       16 sword    volClik
+       18 sword    misc
+   }
+   ```
 
-Confirm the file parses correctly by running the emulator and checking
-the `trap_defs: loaded N traps` diagnostic is ≥ 681.
+3. **Add ScrapStuff** — Scrap info record (used inline by ScrapInfo).
+
+   ```
+   struct ScrapStuff {
+       0  slong    scrapSize
+       4  Handle   scrapHandle
+       8  sword    scrapCount
+       10 sword    scrapState
+       12 Ptr      scrapName
+   }
+   ```
+
+4. **Add Pattern** — QuickDraw 8-byte pattern (used inline by
+   DragPattern, DeskPattern).
+
+   ```
+   struct Pattern {
+       0  byte     pat[8]
+   }
+   ```
+
+5. **Add Region** — QuickDraw region header (target of `^^Region`
+   for GrayRgn).  Source: Quickdraw.h.
+
+   ```
+   struct Region {
+       0  sword    rgnSize
+       2  Rect     rgnBBox
+   }
+   ```
+
+6. **Add Zone** — Heap zone header (target of `^Zone` for TheZone,
+   SysZone, ApplZone).  Source: MemoryMgr.h.  All primitives.
+
+   ```
+   struct Zone {
+       0  Ptr      bkLim
+       4  Ptr      purgePtr
+       8  Ptr      hFstFree
+       12 slong    zcbFree
+       16 ProcPtr  gzProc
+       20 sword    moreMast
+       22 sword    flags
+       24 sword    cntRel
+       26 sword    maxRel
+       28 sword    cntNRel
+       30 sword    maxNRel
+       32 sword    cntEmpty
+       34 sword    cntHandles
+       36 slong    minCBFree
+       40 ProcPtr  purgeProc
+       44 Ptr      sparePtr
+       48 Ptr      allocPtr
+       52 sword    heapData
+   }
+   ```
+
+7. **Add VCB** — Volume control block (target of `^VCB` for
+   DefVCBPtr).  Source: FileMgr.h.  All primitives + byte array.
+
+   ```
+   struct VCB {
+       0  Ptr      qLink
+       4  sword    qType
+       6  sword    vcbFlags
+       8  sword    vcbSigWord
+       10 slong    vcbCrDate
+       14 slong    vcbLsBkUp
+       18 sword    vcbAtrb
+       20 sword    vcbNmFls
+       22 sword    vcbDirSt
+       24 sword    vcbBlLn
+       26 sword    vcbNmBlks
+       28 slong    vcbAlBlkSiz
+       32 slong    vcbClpSiz
+       36 sword    vcbAlBlSt
+       38 slong    vcbNxtFNum
+       42 sword    vcbFreeBks
+       44 byte     vcbVN[28]
+       72 sword    vcbDrvNum
+       74 sword    vcbDRefNum
+       76 sword    vcbFSID
+       78 sword    vcbVRefNum
+       80 Ptr      vcbMAdr
+       84 Ptr      vcbBufAdr
+       88 sword    vcbMLen
+       90 sword    vcbDirIndex
+       92 sword    vcbDirBlk
+   }
+   ```
 
 ### Fence
 
-- [ ] `assets/traps.def` contains ≥ 681 header lines (one per trap)
-- [ ] All 58 existing entries retain their parameter definitions
-- [ ] No duplicate trap words
-- [ ] Build clean
-- [ ] Commit: `"traps: expand traps.def with all 681 trap names"`
+- `types.def` parses without error (TypeRegistry load succeeds)
+- Build passes
+- Existing tests pass
+- Commit: `"globals: add QHdr, SysParmType, ScrapStuff, Pattern, Region, Zone, VCB to types.def"`
 
 ---
 
-## Phase 2 — Add name/search API to `TrapDefs`
+## Phase 2 — Create assets/globals.def
 
-The `trap_counter.cpp` code currently exposes four dict functions that
-callers depend on: `trap_dict_size()`, `trap_dict_entry(int)`,
-`trap_dict_name(uint16_t)`, and `trap_dict_search(prefix, ...)`.
+### Goal
 
-In this phase we add equivalent methods to `TrapDefs` so it can fully
-replace `s_dict`.
+Create the data file containing all THINK C 3 low-memory globals,
+organized by include-file section.
 
-### 2.1 — Add a sorted name vector to `TrapDefs`
+### File format
 
-At the end of `TrapDefs::load()`, build a sorted `std::vector<TrapInfo>`
-(reusing the existing `TrapInfo` struct from `trap_counter.h` for now)
-from the loaded `defs_` map.  Sort alphabetically by name.  This mirrors
-the sorted order of the old `s_dict`.
-
-Add a private member:
-
-```cpp
-// trap_defs.h, inside class TrapDefs:
-std::vector<std::pair<uint16_t, std::string>> sortedNames_;
+```
+# globals.def — Macintosh low-memory global definitions
+#
+# Format: <hex_addr>  <type>  <name>  "<description>"
+#
+# Types: primitives (byte, sbyte, word, sword, long, slong, Ptr,
+#        Handle, ProcPtr, OSType, Boolean, OSErr) or struct names
+#        from types.def (QHdr, Pattern, Rect, ScrapStuff, etc.).
+# Arrays: <type>[N] — N elements packed contiguously.
+#         For PStr[N], N is the total buffer size incl. length byte.
+# Commented-out entries: lines starting with #? are globals whose
+#         System 6 status is uncertain.
+# Sections: # ── SectionName ── comments group by THINK C 3 include file.
 ```
 
-Populate in `load()` after all entries are parsed:
+### Type mapping rules
 
-```cpp
-sortedNames_.clear();
-sortedNames_.reserve(defs_.size());
-for (auto &[tw, def] : defs_)
-    sortedNames_.push_back({def.trapWord, def.name});
-std::sort(sortedNames_.begin(), sortedNames_.end(),
-    [](auto &a, auto &b) { return a.second < b.second; });
-```
+| THINK C 3 type | globals.def type |
+|----------------|-----------------|
+| `int` | `sword` |
+| `long` | `slong` |
+| `char` | `sbyte` |
+| `Byte` | `byte` |
+| `Boolean` | `byte` |
+| `THz` | `^Zone` |
+| `GrafPtr`, `WindowPtr` | `^GrafPort` |
+| `WindowPeek` | `^WindowRecord` |
+| `VCB *` | `^VCB` |
+| `RgnHandle` | `^^Region` |
+| `Ptr` (raw address: screen base, ROM, RAM, hardware) | `Ptr` |
+| `Handle` (target struct not in types.def: GDHandle, AuxWinHndl, etc.) | `Handle` |
+| `HFSDefaults *`, `Ptr` (opaque pointer) | `Ptr` |
+| `ProcPtr` | `ProcPtr` |
+| `struct QHdr` | `QHdr` |
+| `SysParmType` | `SysParmType` |
+| `ScrapStuff` | `ScrapStuff` |
+| `Pattern` | `Pattern` |
+| `Rect` | `Rect` |
+| `char[32]` (Str31 Pascal string buffer) | `Str31` |
+| `char[N]` (other fixed-size byte buffers) | `byte[N]` |
 
-### 2.2 — Add public query methods to `TrapDefs`
+Note: `^StructName` means pointer-to-struct (4 bytes, same as Ptr).
+`^^StructName` means handle (pointer-to-pointer-to-struct, 4 bytes,
+same as Handle).  This reuses the syntax already in `traps.def`.
+Globals whose target struct is not yet in `types.def` (GDevice,
+AuxWinRec, WidthTable, FamRec, etc.) remain bare `Handle`/`Ptr`
+until those structs are added.
 
-In `trap_defs.h`:
+### Sections and globals
 
-```cpp
-/* Number of loaded trap definitions. */
-int size() const;
+Complete listing by THINK C 3 include-file section.  Read each header
+in `macdocs/THINK_C_3/Mac #includes/` and extract all globals defined
+as `#define Name (*(type*)0xAddr)` patterns.
 
-/* Access by index (0 .. size()-1), sorted by name. */
-std::pair<uint16_t, std::string_view> entry(int index) const;
+#### MacTypes (1 global)
 
-/* Look up trap word → name.  Returns empty string_view if unknown. */
-std::string_view nameOf(uint16_t trapWord) const;
+| Addr | Type | Name |
+|------|------|------|
+| 0x28E | sword | ROM85 |
 
-/* Search for entries whose name starts with prefix (case-insensitive).
-   Appends {trapWord, name} pairs to results.  Stops after maxResults. */
-void search(std::string_view prefix,
-            std::vector<std::pair<uint16_t, std::string_view>> &results,
-            int maxResults = 20) const;
-```
+#### MemoryMgr (14 globals)
 
-Implement in `trap_defs.cpp`:
+| Addr | Type | Name |
+|------|------|------|
+| 0x108 | Ptr | MemTop |
+| 0x10C | Ptr | BufPtr |
+| 0x114 | Ptr | HeapEnd |
+| 0x118 | ^Zone | TheZone |
+| 0x130 | Ptr | ApplLimit |
+| 0x220 | sword | MemErr |
+| 0x2A6 | ^Zone | SysZone |
+| 0x2AA | ^Zone | ApplZone |
+| 0x2AE | Ptr | ROMBase |
+| 0x2B2 | Ptr | RAMBase |
+| 0x31A | long | Lo3Bytes |
+| 0x33C | ProcPtr | IAZNotify |
+| 0x904 | Ptr | CurrentA5 |
+| 0x908 | Ptr | CurStackBase |
 
-- `size()` — return `sortedNames_.size()`.
-- `entry(int)` — return `{sortedNames_[i].first, sortedNames_[i].second}`.
-- `nameOf(uint16_t)` — call `find(trapWord)` and return `def->name` or `{}`.
-- `search(prefix, ...)` — linear scan `sortedNames_`, case-insensitive
-  prefix match on `.second`.
+#### OSUtil (3 globals)
 
-### 2.3 — Tests
+| Addr | Type | Name |
+|------|------|------|
+| 0x15A | sword | SysVersion |
+| 0x1F8 | SysParmType | SysParam |
+| 0x20C | long | Time |
 
-Add test cases in `test/test_tracing.cpp` (already includes `trap_defs.h`):
+#### EventMgr (12 globals)
 
-- `TEST_CASE("TrapDefs nameOf returns name for known trap")`
-- `TEST_CASE("TrapDefs nameOf returns empty for unknown trap")`
-- `TEST_CASE("TrapDefs search prefix match")`
-- `TEST_CASE("TrapDefs size matches loaded count")`
+| Addr | Type | Name |
+|------|------|------|
+| 0x144 | sword | SysEvtMask |
+| 0x14A | QHdr | EventQueue |
+| 0x15C | sbyte | SEvtEnb |
+| 0x16A | long | Ticks |
+| 0x18E | sword | KeyThresh |
+| 0x190 | sword | KeyRepThresh |
+| 0x29A | ProcPtr | JGNEFilter |
+| 0x29E | ProcPtr | Key1Trans |
+| 0x2A2 | ProcPtr | Key2Trans |
+| 0x2F0 | long | DoubleTime |
+| 0x2F4 | long | CaretTime |
+| 0x2F8 | sbyte | ScrDmpEnb |
+
+#### Quickdraw (6 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x102 | sword | ScrVRes |
+| 0x104 | sword | ScrHRes |
+| 0x106 | sword | ScreenRow |
+| 0x156 | long | RndSeed |
+| 0x824 | Ptr | ScrnBase |
+| 0x834 | Rect | CrsrPin |
+
+#### WindowMgr (12 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x9D6 | ^WindowRecord | WindowList |
+| 0x9DA | sword | SaveUpdate |
+| 0x9DC | sword | PaintWhite |
+| 0x9DE | ^GrafPort | WMgrPort |
+| 0x9EE | ^^Region | GrayRgn |
+| 0x9F6 | ProcPtr | DragHook |
+| 0xA34 | Pattern | DragPattern |
+| 0xA3C | Pattern | DeskPattern |
+| 0xA64 | ^GrafPort | CurActivate |
+| 0xA68 | ^GrafPort | CurDeactive |
+| 0xA6C | ProcPtr | DeskHook |
+| 0xA84 | ^GrafPort | GhostWindow |
+
+#### MenuMgr (10 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0xA0A | sword | TopMenuItem |
+| 0xA0C | sword | AtMenuBottom |
+| 0xA1C | Handle | MenuList |
+| 0xA20 | sword | MBarEnable |
+| 0xA24 | sword | MenuFlash |
+| 0xA26 | sword | TheMenu |
+| 0xA2C | ProcPtr | MBarHook |
+| 0xA30 | ProcPtr | MenuHook |
+| 0xB54 | long | MenuDisable |
+| 0xBAA | sword | MBarHeight |
+
+#### DialogMgr (1 global)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0xA8C | ProcPtr | ResumeProc |
+
+#### TextEdit (2 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0xAB0 | sword | TEScrpLength |
+| 0xAB4 | Handle | TEScrpHandle |
+
+#### FontMgr (5 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x984 | sword | ApFontID |
+| 0xA63 | sbyte | FScaleDisable |
+| 0xB2A | Handle | WidthTabHandle |
+| 0xBF4 | sbyte | FractEnable |
+| 0xBC2 | Handle | LastFOND |
+
+#### FileMgr (7 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x210 | sword | BootDrive |
+| 0x308 | QHdr | DrvQHdr |
+| 0x338 | ProcPtr | EjectNotify |
+| 0x34E | Ptr | FCBSPtr |
+| 0x352 | ^VCB | DefVCBPtr |
+| 0x356 | QHdr | VCBQHdr |
+| 0x360 | QHdr | FSQHdr |
+
+#### HFS (2 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x39E | Ptr | FmtDefaults |
+| 0x3F6 | sword | FSFCBLen |
+
+#### ResourceMgr (9 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0xA50 | Handle | TopMapHndl |
+| 0xA54 | Handle | SysMapHndl |
+| 0xA58 | sword | SysMap |
+| 0xA5A | sword | CurMap |
+| 0xA5E | byte | ResLoad |
+| 0xA60 | sword | ResErr |
+| 0xAD8 | byte[20] | SysResName |
+| 0xAF2 | ProcPtr | ResErrProc |
+| 0xB9E | sword | RomMapInsert |
+
+#### ScrapMgr (1 global)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x960 | ScrapStuff | ScrapInfo |
+
+#### PackageMgr (1 global)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0xAB8 | Handle[8] | AppPacks |
+
+#### StdFilePkg (2 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x214 | sword | SFSaveDisk |
+| 0x398 | long | CurDirStore |
+
+#### SegmentLdr (6 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x2E0 | byte[16] | FinderName |
+| 0x900 | sword | CurApRefNum |
+| 0x910 | Str31 | CurApName |
+| 0x934 | sword | CurJTOffset |
+| 0x936 | sword | CurPageOption |
+| 0xAEC | Handle | AppParmHandle |
+
+#### PrintMgr (1 global)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x944 | sword | PrintErr |
+
+#### VRetraceMgr (1 global)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x160 | QHdr | VBLQueue |
+
+#### SoundDvr (1 global)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x260 | sbyte | SdVolume |
+
+#### DeviceMgr (9 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x11C | Ptr | UTableBase |
+| 0x192 | ProcPtr[8] | Lvl1DT |
+| 0x1B2 | ProcPtr[8] | Lvl2DT |
+| 0x1D2 | sword | UnitNtryCnt |
+| 0x1D4 | Ptr | VIA |
+| 0x1D8 | Ptr | SCCRd |
+| 0x1DC | Ptr | SCCWr |
+| 0x1E0 | Ptr | IWM |
+| 0x2BE | ProcPtr[4] | ExtStsDT |
+
+#### Color (4 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0x8A4 | Handle | MainDevice |
+| 0x8A8 | Handle | DeviceList |
+| 0x938 | sbyte | HiliteMode |
+| 0xCC8 | Handle | TheGDevice |
+
+#### ColorToolbox (3 globals)
+
+| Addr | Type | Name |
+|------|------|------|
+| 0xCD0 | Handle | AuxWinHead |
+| 0xCD4 | Handle | AuxCtlHead |
+| 0xD50 | Handle | MenuCInfo |
+
+**Total: 113 globals across 22 sections.**
+
+### Globals from current table NOT in THINK C 3
+
+The following exist in the current `kLowMemGlobals[]` but are absent
+from THINK C 3 headers.  Disposition:
+
+**Remove (System 7):**
+- MMU32Bit (0x0CB2) — 32-bit addressing
+- HiliteRGB (0x0DA0) — color highlight override
+- JVBLTask (0x0D28) — VBL jump vector
+- DTQueue (0x0D92), JDTInstall (0x0D9C) — Deferred Task queue/install
+- TimeDBRA (0x0D00), TimeSCCDB (0x0D02), TimeSCSIDB (0x0DA6) — timing
+
+**Comment out with `#?` (uncertain):**
+- CPUFlag (0x012F), KbdLast (0x0218), KbdType (0x021E)
+- SoundPtr (0x0262), SoundBase (0x0266), SoundLevel (0x027F),
+  CurPitch (0x0280)
+- PortBUse (0x0291), DSAlertTab (0x02BA), ABusVars (0x02D8)
+- Scratch20 (0x01E4), Scratch8 (0x09FA), ToolScratch (0x09CE),
+  ApplScratch (0x0A78)
+- SPValid..SPMisc2 (0x1F8–0x20B — overlaps with SysParmType struct)
+- BufTgFNum (0x02FC), BufTgFFlg (0x0300), BufTgFBkNum (0x0302),
+  BufTgDate (0x0304)
+- MinStack (0x031E), DefltStack (0x0322), GZRootHnd (0x0328)
+- ToExtFS (0x03F2), DSAlertRect (0x03F8)
+- JADBProc (0x06B8), QDColors (0x08B0)
+- JournalFlag (0x08DE), WidthListHand (0x08E4), JournalRef (0x08E8),
+  CrsrThresh (0x08EC)
+- JFetch (0x08F4), JStash (0x08F8), JIODone (0x08FC)
+- OldStructure (0x09E6), OldContent (0x09EA), SaveVisRgn (0x09F2)
+- OneOne (0x0A02), MinusOne (0x0A06)
+- TEDoText (0x0A70), TERecal (0x0A74)
+- ANumber (0x0A98), ACount (0x0A9A), DABeeper (0x0A9C),
+  DAStrings (0x0AA0)
+- DSErrCode (0x0AF0), DlgFont (0x0AFA), WidthPtr (0x0B10)
+- TmpResLoad (0x0B9F), IntlSpec (0x0BA0)
+- SysFontFam (0x0BA6), SysFontSize (0x0BA8)
+- SynListHandle (0x0D32)
+- ROMFont0 (0x0980), ScrapSize (0x0960), ScrapHandle (0x0964),
+  ScrapCount (0x0968), ScrapState (0x096A), ScrapName (0x096C)
+
+Note: ScrapInfo (0x960) as ScrapStuff replaces the five individual scrap
+fields (ScrapSize, ScrapHandle, ScrapCount, ScrapState, ScrapName).
+
+### Address fix
+
+Current table has VIA at 0x01DA.  THINK C 3 DeviceMgr.h has VIA at
+0x1D4.  Use the THINK C 3 value.
 
 ### Fence
 
-- [ ] `TrapDefs` has `size()`, `entry()`, `nameOf()`, `search()` methods
-- [ ] New tests pass
-- [ ] Build clean
-- [ ] Commit: `"traps: add name/search API to TrapDefs"`
+- `assets/globals.def` exists with 113+ entries across 22 sections
+- No code changes yet (pure data file)
+- Commit: `"globals: create globals.def from THINK C 3 headers"`
 
 ---
 
-## Phase 3 — Rewire `trap_counter.cpp` to use `TrapDefs`
+## Phase 3 — Write GlobalRegistry parser
 
-Replace all uses of `s_dict`, `s_revIndex`, `kDictSize`, and the four
-`trap_dict_*()` free functions to delegate to `g_trapDefs`.
+### Goal
 
-### 3.1 — Make `trap_counter.cpp` include and use `TrapDefs`
+Create `src/lang/global_registry.h` and `src/lang/global_registry.cpp`
+to parse `assets/globals.def` and expose the data through a C++ API.
 
-Add `#include "cpu/trap_tracer.h"` (which declares `extern TrapDefs
-g_trapDefs`).  This is already included for `g_tracer`.
-
-Rewrite the four functions:
+### Data structures
 
 ```cpp
-int trap_dict_size()
-{
-    return g_trapDefs.size();
-}
+// src/lang/global_registry.h
 
-const TrapInfo &trap_dict_entry(int index)
-{
-    // Provide a thin adapter — see 3.2 below
-}
+#pragma once
+#include <cstdint>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
 
-const char *trap_dict_name(uint16_t trapWord)
-{
-    auto sv = g_trapDefs.nameOf(trapWord);
-    return sv.empty() ? nullptr : sv.data();
-}
+class TypeRegistry;  // forward
 
-void trap_dict_search(const char *prefix,
-                      std::vector<TrapInfo> &results, int maxResults)
-{
-    results.clear();
-    if (!prefix || !prefix[0]) return;
-    std::vector<std::pair<uint16_t, std::string_view>> raw;
-    g_trapDefs.search(prefix, raw, maxResults);
-    for (auto &[tw, name] : raw)
-        results.push_back({tw, name.data()});
-}
+struct GlobalDef {
+    std::string name;          // e.g. "MemTop"
+    uint32_t    addr;          // low-memory address
+    uint16_t    size;          // computed from type (bytes)
+    std::string typeName;      // type from types.def, e.g. "Ptr", "QHdr"
+    uint16_t    count;         // array element count (1 for scalars)
+    std::string section;       // include-file section, e.g. "MemoryMgr"
+    std::string brief;         // one-line description
+};
+
+class GlobalRegistry {
+public:
+    // Parse globals.def.  Types validated against TypeRegistry.
+    // Returns count of loaded globals.
+    int load(const std::filesystem::path &path,
+             const TypeRegistry &types);
+
+    std::span<const GlobalDef> globals() const;
+    int count() const;
+
+    // Lookup helpers (binary search, sorted at load time).
+    const GlobalDef *findByName(std::string_view name) const;
+    const GlobalDef *findByAddr(uint32_t addr) const;
+
+private:
+    std::vector<GlobalDef> globals_;
+    std::vector<int>       byName_;   // indices sorted by name
+    std::vector<int>       byAddr_;   // indices sorted by addr
+};
 ```
 
-### 3.2 — Handle `trap_dict_entry()` return type
+### Parser logic (`global_registry.cpp`)
 
-`trap_dict_entry()` returns `const TrapInfo &` — a struct with a
-`const char *name`.  Since `TrapDefs` owns `std::string` names, we
-can't safely return a reference to a stack temporary.
+Follow the existing pattern from `trap_defs.cpp` / `type_registry.cpp`:
 
-**Option A (preferred):** Keep a `std::vector<TrapInfo>` cache in
-`trap_counter.cpp`, populated once on first call from
-`g_trapDefs.sortedNames_`.  Or better: build it in a local static:
+1. Open file, read line by line with `std::getline()`
+2. Skip blank lines and `#` comments (but NOT `#?` — those are
+   commented-out globals, skip them for now too)
+3. Track current section from `# ── SectionName ──` comment lines
+   (parse the section name between `── ` delimiters)
+4. Parse data lines: `<hex_addr> <type> <name> "<description>"`
+   - Address: parse `0xNNN` hex literal
+   - Type: handle prefixes first:
+     - `^^Name` → handle-to-struct, size = 4, store typeName as `^^Name`
+     - `^Name` → pointer-to-struct, size = 4, store typeName as `^Name`
+     - Then split on `[` to get base type and optional array count
+   - Name: single token
+   - Description: everything inside double quotes
+5. Resolve size: `^`/`^^` prefixed types are always 4 bytes.
+   For others, call `TypeRegistry::sizeOf(typeName)` which already
+   handles both primitives and struct types.  For arrays, multiply
+   by count.
 
-```cpp
-static const std::vector<TrapInfo> &CachedDict()
-{
-    static std::vector<TrapInfo> cache;
-    if (cache.empty()) {
-        int n = g_trapDefs.size();
-        cache.reserve(n);
-        for (int i = 0; i < n; ++i) {
-            auto [tw, sv] = g_trapDefs.entry(i);
-            cache.push_back({tw, sv.data()});
-            // sv.data() points into g_trapDefs' stable storage
-        }
-    }
-    return cache;
-}
+   Note: `TypeRegistry::sizeOf()` does not handle `^`/`^^` prefixes
+   itself — the caller must strip them first.  This mirrors what
+   `trap_defs.cpp` does (inline `^` check, then lookup the bare
+   struct name).  A future refactor could add a
+   `TypeRegistry::resolveSize()` that handles prefixes, arrays,
+   and `^^` uniformly — but that's out of scope here.
+6. Validate: for `^Name`/`^^Name`, strip prefix and verify the struct
+   exists in TypeRegistry (warn if not, but still load).
+7. After all lines are parsed, build `byName_` and `byAddr_` indices.
 
-const TrapInfo &trap_dict_entry(int index)
-{
-    return CachedDict()[index];
-}
-```
+### Files to create
 
-The `const char *` pointers are safe because `g_trapDefs.sortedNames_`
-(and the underlying `defs_` map) are stable after load.
+- `src/lang/global_registry.h` — header as shown above
+- `src/lang/global_registry.cpp` — parser implementation
 
-### 3.3 — Update `trap_trace_log`
+### Files to modify
 
-`trap_trace_log()` already calls `trap_dict_name()`, which will now
-delegate to `g_trapDefs`.  No change needed.
-
-### 3.4 — Verify callers
-
-Confirm all callers still compile and behave correctly:
-- `src/debugger/debugger.cpp` — uses `trap_dict_name()`
-- `src/debugger/cmd_break.cpp` — uses `trap_dict_name()`
-- `src/debugger/cmd_info.cpp` — uses `trap_dict_name()`
-- `src/debugger/symbols.cpp` — uses `trap_dict_size()`, `trap_dict_search()`
-- `src/cpu/trap_counter.cpp` — uses `trap_dict_name()` internally
-
-No header changes needed — the `trap_counter.h` API stays the same.
+- `src/lang/CMakeLists.txt` (or parent) — add new source files to build
 
 ### Fence
 
-- [ ] `trap_dict_name()`, `trap_dict_size()`, `trap_dict_entry()`,
-      `trap_dict_search()` all delegate to `g_trapDefs`
-- [ ] No direct use of `s_dict` remains (except the array itself,
-      removed in Phase 4)
-- [ ] All existing tests pass
-- [ ] Build clean
-- [ ] Commit: `"traps: rewire trap_counter dict functions to TrapDefs"`
+- New files compile cleanly
+- Build passes (no consumers yet, just the library)
+- Commit: `"globals: add GlobalRegistry parser for globals.def"`
 
 ---
 
-## Phase 4 — Remove dead `s_dict` code and `TrapInfo` struct
+## Phase 4 — Wire GlobalRegistry into startup and debugger
 
-### 4.1 — Delete from `trap_counter.cpp`
+### Goal
 
-Remove:
-- The entire `static const TrapInfo s_dict[]` array (~690 lines)
-- `kDictSize`
-- `s_revIndex[]`, `s_revReady`, `BuildRevIndex()`
-- The `ciStartsWith()` helper (no longer used)
+Load `globals.def` at startup, replace the hardcoded `kLowMemGlobals[]`
+table, and update the debugger's symbol resolution.
 
-### 4.2 — Evaluate `TrapInfo` struct
+### Sub-tasks
 
-`TrapInfo` (in `trap_counter.h`) is still used by:
-- `trap_dict_entry()` return type
-- `trap_dict_search()` output vector type
-- `WatchEntry` — but that uses its own struct, not `TrapInfo`
+1. **Load at startup** — In `src/core/main.cpp`, after TypeRegistry
+   load, add GlobalRegistry load:
+   ```cpp
+   g_globalRegistry.load(assetsDir / "globals.def", g_typeRegistry);
+   ```
+   Add `GlobalRegistry g_globalRegistry;` as a global or on the
+   appropriate object.
 
-If no external callers need `TrapInfo` (check `symbols.cpp` — it uses
-`trap_dict_search` which fills a `vector<TrapInfo>`), either:
-- Keep `TrapInfo` in the header as a lightweight adapter type, or
-- Migrate callers to use `std::pair<uint16_t, std::string_view>` and
-  remove `TrapInfo` entirely.
+2. **Update debugger/symbols.cpp** — Replace references to
+   `kLowMemGlobals[]` / `kLowMemCount` with `GlobalRegistry` API:
+   - `s_globalsByName` → use `g_globalRegistry.findByName()`
+   - `s_globalsByAddr` → use `g_globalRegistry.findByAddr()`
+   - Or populate the existing sorted indices from
+     `g_globalRegistry.globals()`.
 
-Preferred: keep `TrapInfo` for now as it provides a clean named struct
-for the public API.  It can be modernised later.
+3. **Strip lomem\_globals.h** — Remove `LMType`, `LMCategory` enums,
+   `LMGlobal` struct, `kLowMemGlobals[]`, `kLowMemCount`,
+   `kLMCategoryLabels[]`.  Keep the snapshot/format helpers
+   (`Lomem_SnapshotTake`, `lomem_snapshot_changed`) as they work
+   on raw `g_ram[]` and are independent of the globals table.
 
-### 4.3 — Verify
-
-Run full test suite and manual smoke test.
+4. **Strip lomem\_globals.cpp** — Remove the entire hardcoded table
+   and category labels.  Keep `Lomem_SnapshotTake`,
+   `lomem_snapshot_changed`, and the `rd8`/`rd16`/`rd32` helpers.
+   Remove `lomem_format_value` and `lomem_type_label` (they depend
+   on `LMType`; phase 5 will rewrite the display).
 
 ### Fence
 
-- [ ] `s_dict` array is gone from `trap_counter.cpp`
-- [ ] `BuildRevIndex`, `s_revIndex`, `kDictSize`, `ciStartsWith` removed
-- [ ] File is ~100 lines shorter
-- [ ] All tests pass
-- [ ] Build clean
-- [ ] Commit: `"traps: remove hard-coded s_dict — single source of truth is traps.def"`
+- Build passes
+- Debugger symbol resolution still works
+- Tests pass
+- Commit: `"globals: wire GlobalRegistry, remove hardcoded table"`
+
+---
+
+## Phase 5 — Update imgui\_lomem\_tool to compile
+
+### Goal
+
+Make `imgui_lomem_tool.cpp` compile against the new `GlobalRegistry`
+API.  The UI can be simplified — a proper redesign will come later.
+
+### Sub-tasks
+
+1. **Include GlobalRegistry header** — Replace `lomem_globals.h`
+   include (or keep it for snapshot helpers) and add
+   `global_registry.h`.
+
+2. **Iterate GlobalRegistry** — Replace `kLowMemGlobals[i]` /
+   `kLowMemCount` with `g_globalRegistry.globals()`.
+
+3. **Remove category filter** — The LMCategory enum no longer exists.
+   Either replace with section-based filtering (combo box listing
+   section names from GlobalRegistry) or remove filtering temporarily.
+   Simplest: remove the category combo entirely.
+
+4. **Simplified value display** — Write a local helper that formats
+   values based on `GlobalDef::typeName`:
+   - `"byte"` / `"sbyte"` → `$XX`
+   - `"word"` / `"sword"` / `"OSErr"` → `$XXXX`
+   - `"long"` / `"slong"` → `$XXXXXXXX`
+   - `"Ptr"` / `"ProcPtr"` / `"^*"` → `$XXXXXXXX`
+   - `"Handle"` / `"^^*"` → `$XXXXXXXX (H)`
+   - `"OSType"` → `'XXXX'`
+   - `"Rect"` → `(T,L)-(B,R)`
+   - `"Pattern"` → `XX XX XX XX XX XX XX XX`
+   - `"Str31"` / `"Str255"` → `"string"` (Pascal string decode)
+   - Anything else (structs, arrays) → raw hex bytes
+
+5. **Type column** — Show `GlobalDef::typeName` (possibly truncated)
+   instead of the old `lomem_type_label()`.
+
+6. **Table columns** — Keep Name, Addr, Type, Value, Brief.
+   Replace `LMGlobal` field accesses with `GlobalDef` field accesses.
+
+### Fence
+
+- Build passes with no warnings related to lomem/globals
+- Low Memory Globals panel opens and displays data
+- Tests pass
+- Commit: `"globals: update imgui lomem tool for GlobalRegistry"`
