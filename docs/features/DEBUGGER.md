@@ -364,6 +364,7 @@ Breakpoint 2 on trap SetTrapAddress ($A047)
 |---------|-------------|
 | `info traps [prefix]` | List trap names matching prefix |
 | `info globals [prefix]` | List low-memory globals matching prefix |
+| `info types [prefix]` | List type definitions matching prefix |
 | `info symbol <addr>` | Reverse-lookup: what's at this address? |
 
 Two built-in symbol tables are always available:
@@ -373,6 +374,8 @@ Two built-in symbol tables are always available:
 2. **Low-memory globals** — ~160 entries from Inside Macintosh
    (`GLOBAL_VARS.md` data compiled into the debugger).
    Each entry has name, address, and size.
+3. **Types** — struct and union definitions loaded from
+   `assets/types.def` (see `x/t` in Memory Examination).
 
 ```
 (dbg) info traps Get
@@ -391,6 +394,10 @@ CurrentA5    $0904  4 bytes
 …
 (dbg) info symbol $0900
 CurApRefNum (2 bytes, low-memory global)
+(dbg) info types Graf
+GrafPort                  struct   108
+(dbg) info types CInfo
+CInfoPBRec                union    108
 ```
 
 ### Miscellaneous
@@ -416,7 +423,7 @@ Watchpoints:  watch rwatch awatch
 Registers:    info reg, print, set
 Memory:       x, set *, find
 Tracing:      trace traps, trace insn, trace io
-Info:         info break, info traps, info globals, info symbol, info insn
+Info:         info break, info traps, info globals, info types, info symbol, info insn
 Other:        commands, backtrace, help, quit
 
 Type 'help <command>' for details on a specific command.

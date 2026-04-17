@@ -48,6 +48,14 @@ public:
 	std::string readField(std::string_view typeName, uint32_t addr, std::string_view fieldPath,
 						  std::string_view variant = {}) const;
 
+	struct TypeInfo
+	{
+		std::string_view name;
+		bool isUnion;
+		uint16_t size;
+	};
+	std::vector<TypeInfo> typeNames() const;
+
 private:
 	struct FieldDef;
 	struct StructDef;

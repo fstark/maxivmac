@@ -12,6 +12,8 @@
 #include "cpu/m68k.h"
 #include "cpu/trap_counter.h"
 
+#include "lang/type_registry.h"
+
 #include <cstdio>
 
 extern uint32_t g_instructionCount;
@@ -181,11 +183,37 @@ static void InfoInsn(Debugger &dbg)
 	dbg.io().write("Instructions executed: %u\n", g_instructionCount);
 }
 
+static void InfoTypes(Debugger &dbg, const std::vector<Token> &args)
+{
+	std::string_view prefix;
+	std::string prefixStr;
+	if (args.size() > 1 && args[1].kind == Token::Kind::Word)
+	{
+		prefixStr = args[1].text;
+		prefix = prefixStr;
+	}
+
+	auto all = g_typeRegistry().typeNames();
+
+	dbg.io().write("%-24s  Kind     Size\n", "Name");
+	int count = 0;
+	for (auto &ti : all)
+	{
+		if (!prefix.empty() &&
+			!(ti.name.size() >= prefix.size() && ti.name.substr(0, prefix.size()) == prefix))
+			continue;
+		dbg.io().write("%-24.*s  %-6s   %u\n", static_cast<int>(ti.name.size()), ti.name.data(),
+					   ti.isUnion ? "union" : "struct", ti.size);
+		++count;
+	}
+	dbg.io().write("(%d results)\n", count);
+}
+
 void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].kind == Token::Kind::End)
 	{
-		dbg.io().write("Usage: info <break|reg|traps|globals|symbol|insn>\n");
+		dbg.io().write("Usage: info <break|reg|traps|globals|types|symbol|insn>\n");
 		return;
 	}
 
@@ -202,9 +230,11 @@ void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 		InfoSymbol(dbg, args);
 	else if (sub == "insn")
 		InfoInsn(dbg);
+	else if (sub == "types")
+		InfoTypes(dbg, args);
 	else
 		dbg.io().write("Unknown info sub-command '%s'.\n"
-					   "  Available: break, reg, traps, globals, symbol, insn\n",
+					   "  Available: break, reg, traps, globals, types, symbol, insn\n",
 					   sub.c_str());
 }
 

@@ -506,6 +506,15 @@ std::string TypeRegistry::readField(std::string_view typeName, uint32_t addr,
 	return {};
 }
 
+std::vector<TypeRegistry::TypeInfo> TypeRegistry::typeNames() const
+{
+	std::vector<TypeInfo> out;
+	out.reserve(types_.size());
+	for (auto &te : types_)
+		out.push_back({te.name, te.isUnion, computeSize(te)});
+	return out;
+}
+
 const TypeRegistry::TypeEntry *TypeRegistry::findType(std::string_view name) const
 {
 	for (auto &te : types_)
