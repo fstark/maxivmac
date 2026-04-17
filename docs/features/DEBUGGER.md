@@ -185,7 +185,7 @@ Format: `x/[count][size][format] <addr>`
 - **count**: number of units (default 1)
 - **size**: `b` byte, `w` word (2), `l` long (4) — default `w`
 - **format**: `x` hex (default), `d` decimal, `s` string (Mac Roman),
-  `i` disassemble
+  `i` disassemble, `t` type-aware struct dump (see below)
 
 ```
 (dbg) x/8w $400
@@ -200,6 +200,34 @@ $000910: "Finder"
 (dbg) x/16b $0
 $000000: 00 04 00 00 00 00 04 00 00 00 28 00 00 00 04 1A
 ```
+
+#### Structured memory display (`x/t`)
+
+`x/t <addr> <TypeName> [variant]` formats guest memory as a named
+Mac OS structure, using definitions from `assets/types.def`.  The
+count and size fields are ignored for `t` format.  For unions, pass
+the variant tag to select the arm.
+
+```
+(dbg) x/t a0 HFileInfo
+  header.qLink:          $00000000
+  header.ioResult:       0 noErr
+  header.ioNamePtr:      $00FC2000
+  header.ioVRefNum:      -32000
+  ioFlFndrInfo.fdType:   'TEXT'
+  ioFlFndrInfo.fdCreator:'ttxt'
+  ...
+(dbg) x/t a0 CInfoPBRec file
+  (displays HFileInfo arm of the union)
+(dbg) x/t a0 Point
+  v:  100
+  h:  -50
+```
+
+Available types include `Point`, `Rect`, `FInfo`, `GrafPort`,
+`WindowRecord`, `HFileInfo`, `DirInfo`, `CInfoPBRec` (union:
+file/dir), and others — see `assets/types.def` for the full list.
+New types can be added to the `.def` file without recompiling.
 
 ### Memory Modification
 
