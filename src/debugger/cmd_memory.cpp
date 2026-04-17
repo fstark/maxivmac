@@ -11,6 +11,7 @@
 #include "core/machine.h"
 #include "cpu/m68k.h"
 #include "cpu/disasm.h"
+#include "lang/type_registry.h"
 
 #include <cstdio>
 #include <cstring>
@@ -84,7 +85,8 @@ static FmtSpec ParseFmtSpec(const std::string &spec)
 	}
 
 	/* Format letter */
-	if (pos < len && (spec[pos] == 'x' || spec[pos] == 'd' || spec[pos] == 's' || spec[pos] == 'i'))
+	if (pos < len && (spec[pos] == 'x' || spec[pos] == 'd' || spec[pos] == 's' ||
+					  spec[pos] == 'i' || spec[pos] == 't'))
 	{
 		f.format = spec[pos++];
 	}
@@ -120,7 +122,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 			if (tok.kind == Token::Kind::Word && fmtStr.size() > 0 && tok.text.size() == 1 &&
 				(tok.text[0] == 'b' || tok.text[0] == 'w' || tok.text[0] == 'l' ||
 				 tok.text[0] == 'x' || tok.text[0] == 'd' || tok.text[0] == 's' ||
-				 tok.text[0] == 'i'))
+				 tok.text[0] == 'i' || tok.text[0] == 't'))
 			{
 				fmtStr += tok.text;
 				++argIdx;
@@ -144,8 +146,23 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 		return;
 	}
 
-	/* Parse address — may be an expression */
+	/* Parse address — may be an expression.
+	   For /t format, only take one token as the address so the rest
+	   can be parsed as type name and optional variant. */
 	uint32_t addr;
+	if (fmt.format == 't')
+	{
+		/* Single token address for /t */
+		auto ctx = MakeLiveContext();
+		std::string err;
+		if (!ExprEval(args[argIdx].text, ctx, addr, err))
+		{
+			dbg.io().write("Cannot evaluate address: %s\n", err.c_str());
+			return;
+		}
+		++argIdx;
+	}
+	else
 	{
 		/* Build expression string from remaining tokens */
 		std::string exprStr;
@@ -191,6 +208,41 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 				dbg.io().write("\\x%02X", c);
 		}
 		dbg.io().write("\"\n");
+		return;
+	}
+
+	/* Type-aware structured dump */
+	if (fmt.format == 't')
+	{
+		std::string typeName;
+		std::string variant;
+
+		for (int i = argIdx; i < static_cast<int>(args.size()); ++i)
+		{
+			if (args[i].kind == Token::Kind::End) break;
+			if (args[i].kind == Token::Kind::Word)
+			{
+				if (typeName.empty())
+					typeName = args[i].text;
+				else if (variant.empty())
+					variant = args[i].text;
+			}
+		}
+
+		if (typeName.empty())
+		{
+			dbg.io().write("Usage: x/t <addr> <TypeName> [variant]\n");
+			return;
+		}
+
+		auto &tr = g_typeRegistry();
+		if (!tr.has(typeName))
+		{
+			dbg.io().write("Unknown type: %s\n", typeName.c_str());
+			return;
+		}
+
+		dbg.io().write("%s", tr.format(typeName, addr, variant).c_str());
 		return;
 	}
 
