@@ -1,0 +1,252 @@
+# globals.def — Macintosh low-memory global definitions
+#
+# Format: <hex_addr>  <type>  <name>  "<description>"
+#
+# Types: primitives (byte, sbyte, word, sword, long, slong, Ptr,
+#        Handle, ProcPtr, OSType, Boolean, OSErr) or struct names
+#        from types.def (QHdr, Pattern, Rect, ScrapStuff, etc.).
+# Arrays: <type>[N] — N elements packed contiguously.
+#         For PStr[N], N is the total buffer size incl. length byte.
+# Pointer/Handle to struct: ^StructName (4 bytes), ^^StructName (4 bytes).
+# Commented-out entries: lines starting with #? are globals whose
+#         System 6 status is uncertain.
+# Sections: # ── SectionName ── comments group by THINK C 3 include file.
+#
+# Source of truth: THINK C 3 headers (System 6).
+
+# ── MacTypes ──
+
+0x28E  sword  ROM85  "Version number of ROM"
+
+# ── MemoryMgr ──
+
+0x108  Ptr      MemTop        "Address of end of RAM"
+0x10C  Ptr      BufPtr        "Address of end of jump table"
+0x114  Ptr      HeapEnd       "End of application heap zone"
+0x118  ^Zone    TheZone       "Address of current heap zone"
+0x130  Ptr      ApplLimit     "Application heap limit"
+0x220  sword    MemErr        "Current value of MemError"
+0x2A6  ^Zone    SysZone       "Address of system heap zone"
+0x2AA  ^Zone    ApplZone      "Address of application heap zone"
+0x2AE  Ptr      ROMBase       "Base address of ROM"
+0x2B2  Ptr      RAMBase       "Trap dispatch table base for RAM routines"
+0x31A  long     Lo3Bytes      "$00FFFFFF constant"
+0x33C  ProcPtr  IAZNotify     "InitApplZone notify procedure"
+0x904  Ptr      CurrentA5     "Boundary between app globals and app params"
+0x908  Ptr      CurStackBase  "Address of base of stack; start of app globals"
+
+# ── OSUtil ──
+
+0x15A  sword        SysVersion  "System software version number"
+0x1F8  SysParmType  SysParam    "Low-memory copy of parameter RAM"
+0x20C  long         Time        "Seconds since midnight, January 1, 1904"
+
+# ── EventMgr ──
+
+0x144  sword    SysEvtMask     "System event mask"
+0x14A  QHdr     EventQueue     "Event queue header"
+0x15C  sbyte    SEvtEnb        "0 if SystemEvent returns FALSE"
+0x16A  long     Ticks          "Tick count since startup"
+0x18E  sword    KeyThresh      "Auto-key threshold"
+0x190  sword    KeyRepThresh   "Auto-key repeat rate"
+0x29A  ProcPtr  JGNEFilter     "GetNextEvent filter procedure"
+0x29E  ProcPtr  Key1Trans      "Keyboard translator procedure 1"
+0x2A2  ProcPtr  Key2Trans      "Keyboard translator procedure 2"
+0x2F0  long     DoubleTime     "Double-click interval in ticks"
+0x2F4  long     CaretTime      "Caret-blink interval in ticks"
+0x2F8  sbyte    ScrDmpEnb      "0 if GetNextEvent ignores Cmd-Shift-number"
+
+# ── Quickdraw ──
+
+0x102  sword  ScrVRes    "Pixels per inch vertically"
+0x104  sword  ScrHRes    "Pixels per inch horizontally"
+0x106  sword  ScreenRow  "Bytes per row of screen bitmap"
+0x156  long   RndSeed    "Random number seed"
+0x824  Ptr    ScrnBase   "Address of main screen buffer"
+0x834  Rect   CrsrPin    "Rectangle for cursor pinning"
+
+# ── WindowMgr ──
+
+0x9D6  ^WindowRecord  WindowList    "Pointer to first window in window list"
+0x9DA  sword          SaveUpdate    "Flag: generate update events"
+0x9DC  sword          PaintWhite    "Flag: paint window white before update event"
+0x9DE  ^GrafPort      WMgrPort      "Pointer to Window Manager port"
+0x9EE  ^^Region       GrayRgn       "Handle to region drawn as desktop"
+0x9F6  ProcPtr        DragHook      "Address of procedure during drag/track ops"
+0xA34  Pattern        DragPattern   "Pattern of dragged region outline"
+0xA3C  Pattern        DeskPattern   "Pattern for desktop painting"
+0xA64  ^GrafPort      CurActivate   "Pointer to window to receive activate event"
+0xA68  ^GrafPort      CurDeactive   "Pointer to window to receive deactivate event"
+0xA6C  ProcPtr        DeskHook      "Procedure for painting/clicking desktop"
+0xA84  ^GrafPort      GhostWindow   "Window never considered frontmost"
+
+# ── MenuMgr ──
+
+0xA0A  sword    TopMenuItem   "Pixel value of top of scrollable menu"
+0xA0C  sword    AtMenuBottom  "Flag for menu scrolling"
+0xA1C  Handle   MenuList      "Handle to current menu list"
+0xA20  sword    MBarEnable    "Unique menu ID for active desk accessory"
+0xA24  sword    MenuFlash     "Count for menu item blink duration"
+0xA26  sword    TheMenu       "Menu ID of currently highlighted menu"
+0xA2C  ProcPtr  MBarHook      "Routine called by MenuSelect before draw"
+0xA30  ProcPtr  MenuHook      "Routine called during MenuSelect"
+0xB54  long     MenuDisable   "Menu ID and item for selected disabled item"
+0xBAA  sword    MBarHeight    "Height of menu bar"
+
+# ── DialogMgr ──
+
+0xA8C  ProcPtr  ResumeProc  "Address of resume procedure"
+
+# ── TextEdit ──
+
+0xAB0  sword   TEScrpLength  "Size in bytes of TextEdit scrap"
+0xAB4  Handle  TEScrpHandle  "Handle to TextEdit scrap"
+
+# ── FontMgr ──
+
+0x984  sword   ApFontID        "Font number of application font"
+0xA63  sbyte   FScaleDisable   "Nonzero to disable font scaling"
+0xB2A  Handle  WidthTabHandle  "Handle to global width table"
+0xBF4  sbyte   FractEnable     "Nonzero to enable fractional widths"
+0xBC2  Handle  LastFOND        "Handle to last family record used"
+
+# ── FileMgr ──
+
+0x210  sword    BootDrive     "Working directory refnum for startup volume"
+0x308  QHdr     DrvQHdr       "Drive queue header"
+0x338  ProcPtr  EjectNotify   "Eject notify procedure"
+0x34E  Ptr      FCBSPtr       "Pointer to file-control-block buffer"
+0x352  ^VCB     DefVCBPtr     "Pointer to default volume control block"
+0x356  QHdr     VCBQHdr       "Volume-control-block queue header"
+0x360  QHdr     FSQHdr        "File I/O queue header"
+
+# ── HFS ──
+
+0x39E  Ptr    FmtDefaults  "Pointer to HFS format defaults"
+0x3F6  sword  FSFCBLen      "Size of file control block"
+
+# ── ResourceMgr ──
+
+0xA50  Handle    TopMapHndl   "Handle to resource map of most recently opened file"
+0xA54  Handle    SysMapHndl   "Handle to map of system resource file"
+0xA58  sword     SysMap       "Refnum of system resource file"
+0xA5A  sword     CurMap       "Refnum of current resource file"
+0xA5E  byte      ResLoad      "Current SetResLoad state"
+0xA60  sword     ResErr       "Current value of ResError"
+0xAD8  byte[20]  SysResName   "Name of system resource file"
+0xAF2  ProcPtr   ResErrProc   "Address of resource error procedure"
+0xB9E  sword     RomMapInsert "Flag: insert map to ROM resources"
+
+# ── ScrapMgr ──
+
+0x960  ScrapStuff  ScrapInfo  "Desk scrap information record"
+
+# ── PackageMgr ──
+
+0xAB8  Handle[8]  AppPacks  "Handles to application packages"
+
+# ── StdFilePkg ──
+
+0x214  sword  SFSaveDisk   "Negative of volume refnum for Standard File"
+0x398  long   CurDirStore  "Directory ID of directory last opened"
+
+# ── SegmentLdr ──
+
+0x2E0  byte[16]  FinderName     "Name of Finder"
+0x900  sword     CurApRefNum    "Refnum of current application's resource file"
+0x910  Str31     CurApName      "Name of current application"
+0x934  sword     CurJTOffset    "Offset to jump table from A5"
+0x936  sword     CurPageOption  "Sound/screen buffer config for Chain/Launch"
+0xAEC  Handle    AppParmHandle  "Handle to Finder information"
+
+# ── PrintMgr ──
+
+0x944  sword  PrintErr  "Result code from last Printing Manager routine"
+
+# ── VRetraceMgr ──
+
+0x160  QHdr  VBLQueue  "Vertical retrace queue header"
+
+# ── SoundDvr ──
+
+0x260  sbyte  SdVolume  "Current speaker volume (low 3 bits)"
+
+# ── DeviceMgr ──
+
+0x11C  Ptr         UTableBase  "Base address of unit table"
+0x192  ProcPtr[8]  Lvl1DT      "Level-1 secondary interrupt vector table"
+0x1B2  ProcPtr[8]  Lvl2DT      "Level-2 secondary interrupt vector table"
+0x1D2  sword       UnitNtryCnt "Number of entries in unit table"
+0x1D4  Ptr         VIA         "VIA base address"
+0x1D8  Ptr         SCCRd       "SCC read base address"
+0x1DC  Ptr         SCCWr       "SCC write base address"
+0x1E0  Ptr         IWM         "IWM base address"
+0x2BE  ProcPtr[4]  ExtStsDT    "External/status interrupt vector table"
+
+# ── Color ──
+
+0x8A4  Handle  MainDevice  "Handle to current main device"
+0x8A8  Handle  DeviceList  "Handle to first element in device list"
+0x938  sbyte   HiliteMode  "Set if highlighting is on"
+0xCC8  Handle  TheGDevice  "Handle to current active device"
+
+# ── ColorToolbox ──
+
+0xCD0  Handle  AuxWinHead  "Auxiliary window list header"
+0xCD4  Handle  AuxCtlHead  "Auxiliary control list header"
+0xD50  Handle  MenuCInfo   "Header for menu color information table"
+
+# ── Uncertain (not in THINK C 3) ──
+
+#? 0x12F  sword       CPUFlag        "Microprocessor in use"
+#? 0x218  byte        KbdLast        "ADB address of keyboard last used"
+#? 0x21E  byte        KbdType        "Keyboard type of keyboard last used"
+#? 0x262  Ptr         SoundPtr       "Pointer to four-tone record"
+#? 0x266  Ptr         SoundBase      "Pointer to free-form synthesizer buffer"
+#? 0x27F  byte        SoundLevel     "Amplitude in 740-byte buffer"
+#? 0x280  sword       CurPitch       "Count value in square-wave synthesizer buffer"
+#? 0x291  byte        PortBUse       "Current availability of serial port B"
+#? 0x2BA  Ptr         DSAlertTab     "Pointer to system error alert table"
+#? 0x2D8  Ptr         ABusVars       "Pointer to AppleTalk variables"
+#? 0x1E4  byte[20]    Scratch20      "20-byte scratch area"
+#? 0x9FA  byte[8]     Scratch8       "8-byte scratch area"
+#? 0x9CE  byte[8]     ToolScratch    "8-byte scratch area"
+#? 0xA78  byte[12]    ApplScratch    "12-byte scratch area for applications"
+#? 0x2FC  long        BufTgFNum      "File tags: file number"
+#? 0x300  sword       BufTgFFlg      "File tags: flags"
+#? 0x302  sword       BufTgFBkNum    "File tags: logical block number"
+#? 0x304  long        BufTgDate      "File tags: date/time of last modification"
+#? 0x31E  long        MinStack       "Minimum space allotment for stack"
+#? 0x322  long        DefltStack     "Default space allotment for stack"
+#? 0x328  Handle      GZRootHnd      "Handle to relocatable block not moved by grow zone"
+#? 0x3F2  Ptr         ToExtFS        "Pointer to external file system"
+#? 0x3F8  Rect        DSAlertRect    "Rectangle enclosing system error alert"
+#? 0x6B8  Ptr         JADBProc       "Pointer to ADBReInit pre/post-processing"
+#? 0x8B0  Ptr         QDColors       "Default QuickDraw colors"
+#? 0x8DE  sword       JournalFlag    "Journaling mode"
+#? 0x8E4  Handle      WidthListHand  "Handle to list of handles to width tables"
+#? 0x8E8  sword       JournalRef     "Refnum of journaling device driver"
+#? 0x8EC  sword       CrsrThresh     "Mouse-scaling threshold"
+#? 0x8F4  Ptr         JFetch         "Jump vector for Fetch function"
+#? 0x8F8  Ptr         JStash         "Jump vector for Stash function"
+#? 0x8FC  Ptr         JIODone        "Jump vector for IODone function"
+#? 0x9E6  Handle      OldStructure   "Handle to saved structure region"
+#? 0x9EA  Handle      OldContent     "Handle to saved content region"
+#? 0x9F2  Handle      SaveVisRgn     "Handle to saved visRgn"
+#? 0xA02  long        OneOne         "$00010001 constant"
+#? 0xA06  long        MinusOne       "$FFFFFFFF constant"
+#? 0xA70  Ptr         TEDoText       "Address of TextEdit multi-purpose routine"
+#? 0xA74  Ptr         TERecal        "Routine to recalculate TE line starts"
+#? 0xA98  sword       ANumber        "Resource ID of last alert"
+#? 0xA9A  sword       ACount         "Stage number (0-3) of last alert"
+#? 0xA9C  Ptr         DABeeper       "Address of current sound procedure"
+#? 0xAA0  byte[16]    DAStrings      "Handles to ParamText strings"
+#? 0xAF0  sword       DSErrCode      "Current system error ID"
+#? 0xAFA  sword       DlgFont        "Font number for dialogs and alerts"
+#? 0xB10  Ptr         WidthPtr       "Pointer to global width table"
+#? 0xB9F  byte        TmpResLoad     "Temporary SetResLoad state"
+#? 0xBA0  long        IntlSpec       "International software installed if != -1"
+#? 0xBA6  sword       SysFontFam     "Font number for system font (if nonzero)"
+#? 0xBA8  sword       SysFontSize    "Size of system font (if nonzero)"
+#? 0xD32  Handle      SynListHandle  "Handle to synthetic font list"
+#? 0x980  Handle      ROMFont0       "Handle to font record for system font"
