@@ -31,9 +31,11 @@
 #include "core/state_recorder.hpp"
 #include "core/md5.h"
 #include "cpu/cpu.h"
+#include "cpu/m68k.h"
 #include "cpu/trap_tracer.h"
 #include "debugger/debugger.h"
 #include "debugger/dbg_io.h"
+#include "lang/type_registry.h"
 
 #include <cstring>
 #include <memory>
@@ -234,6 +236,15 @@ bool InitEmulation()
 		int n = g_trapDefs.load("assets/traps.def");
 		int e = g_trapDefs.loadErrors("assets/errors.def");
 		if (n > 0) std::fprintf(stderr, "trap_defs: loaded %d traps, %d errors\n", n, e);
+	}
+
+	/* Load type definitions for structured memory display */
+	{
+		auto &tr = g_typeRegistry();
+		tr.init({get_vm_byte, get_vm_word, get_vm_long});
+		int n = tr.load("assets/types.def");
+		int e = tr.loadErrors("assets/errors.def");
+		if (n > 0) std::fprintf(stderr, "type_registry: loaded %d types, %d errors\n", n, e);
 	}
 
 	/* Wire ICT scheduler to CPU cycle counters */
