@@ -3,13 +3,18 @@
 Design: [TYPES_DESIGN.md](TYPES_DESIGN.md)
 Spec: [TYPES.md](TYPES.md)
 
+All phases completed on 17 April 2026.
+Commits: 9a96165..75b7307
+
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Header, data structures, primitive table, MemReader | |
-| 2 | Parser (struct + union + arrays) with tests | |
-| 3 | Read algorithm, primitive formatter, with tests | |
-| 4 | format() / readField() / sizeOf() with tests | |
-| 5 | assets/types.def — all structures from spec | |
+| 1 | Header, data structures, primitive table, MemReader | ✅ |
+| 2 | Parser (struct + union + arrays) with tests | ✅ |
+| 3 | Read algorithm, primitive formatter, with tests | ✅ |
+| 4 | format() / readField() / sizeOf() with tests | ✅ |
+| 5 | assets/types.def — all structures from spec | ✅ |
+| 6 | Build integration + startup loading | ✅ |
+| 7 | Debugger x/t command | ✅ |
 | 6 | Build integration + startup loading | |
 | 7 | Debugger x/t command | |
 
