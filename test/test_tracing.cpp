@@ -7,6 +7,7 @@
 #include "cpu/trap_defs.h"
 #include "cpu/trap_tracer.h"
 #include "debugger/dbg_io.h"
+#include "lang/type_registry.h"
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -469,4 +470,140 @@ TEST_CASE("Tracer OS trap output uses registers not stack")
 	CHECK(io.captured.find("$00000300") != std::string::npos);
 	/* D0=0 → OSErr formatted as "0" (no error name without loadErrors) */
 	CHECK(io.captured.find("err:0") != std::string::npos);
+}
+
+/* ════════════════════════════════════════════════════════
+   Phase 4 — StructPtr (^TypeName) support
+   ════════════════════════════════════════════════════════ */
+
+extern uint8_t get_vm_byte(uint32_t addr);
+extern uint16_t get_vm_word(uint32_t addr);
+extern uint32_t get_vm_long(uint32_t addr);
+
+/* Ensure g_typeRegistry has IOParam loaded for StructPtr tests. */
+static bool s_globalTypesLoaded = false;
+static void ensureGlobalTypes()
+{
+	if (s_globalTypesLoaded) return;
+	auto &tr = g_typeRegistry();
+	tr.init({get_vm_byte, get_vm_word, get_vm_long});
+	auto tmp = std::filesystem::temp_directory_path() / "test_tracing_types.def";
+	{
+		std::ofstream f(tmp);
+		f << "struct IOParam {\n"
+			 "     0 Ptr      qLink\n"
+			 "     4 Word     qType\n"
+			 "     6 Word     ioTrap\n"
+			 "     8 Ptr      ioCmdAddr\n"
+			 "    12 Ptr      ioCompletion\n"
+			 "    16 OSErr    ioResult\n"
+			 "    18 Ptr      ioNamePtr\n"
+			 "    22 sword    ioVRefNum\n"
+			 "    24 sword    ioRefNum\n"
+			 "}\n";
+	}
+	tr.load(tmp);
+	std::filesystem::remove(tmp);
+	s_globalTypesLoaded = true;
+}
+
+TEST_CASE("TrapDefs parse ^StructName param type")
+{
+	auto path = writeTempFile("test_traps_structptr.def", "A000 Open os\n"
+														  "  in  pb:^IOParam.A0\n"
+														  "  out err:OSErr.D0\n");
+	TrapDefs defs;
+	int count = defs.load(path);
+	std::filesystem::remove(path);
+
+	CHECK(count == 1);
+	const TrapDef *d = defs.find(0xA000);
+	REQUIRE(d != nullptr);
+	REQUIRE(d->paramsIn.size() == 1);
+	CHECK(d->paramsIn[0].name == "pb");
+	CHECK(d->paramsIn[0].type == ParamType::StructPtr);
+	CHECK(d->paramsIn[0].structName == "IOParam");
+	CHECK(d->paramsIn[0].loc == ParamLoc::A0);
+}
+
+TEST_CASE("TrapDefs parse ^StructName on stack (toolbox)")
+{
+	auto path = writeTempFile("test_traps_structptr_tb.def", "A913 NewWindow toolbox\n"
+															 "  out theWindow:^WindowRecord\n");
+	TrapDefs defs;
+	int count = defs.load(path);
+	std::filesystem::remove(path);
+
+	CHECK(count == 1);
+	const TrapDef *d = defs.find(0xA913);
+	REQUIRE(d != nullptr);
+	REQUIRE(d->paramsOut.size() == 1);
+	CHECK(d->paramsOut[0].type == ParamType::StructPtr);
+	CHECK(d->paramsOut[0].structName == "WindowRecord");
+	CHECK(d->paramsOut[0].loc == ParamLoc::Stack);
+}
+
+TEST_CASE("TrapTracer formatParam StructPtr with type registry")
+{
+	ensureGlobalTypes();
+
+	/* Set up a minimal IOParam in g_ram at address 0x100 */
+	memset(g_ram, 0, 256);
+
+	const uint32_t pb = 0x100;
+
+	/* ioResult = -43 (fnfErr) at offset 16 */
+	put_be16(pb + 16, static_cast<uint16_t>(static_cast<int16_t>(-43)));
+	/* ioVRefNum = -1 at offset 22 */
+	put_be16(pb + 22, static_cast<uint16_t>(static_cast<int16_t>(-1)));
+	/* ioRefNum = 2 at offset 24 */
+	put_be16(pb + 24, 2);
+
+	TrapDefs defs;
+	TrapTracer tracer(defs);
+
+	ParamDef pd;
+	pd.name = "pb";
+	pd.type = ParamType::StructPtr;
+	pd.structName = "IOParam";
+	pd.loc = ParamLoc::A0;
+
+	std::string result = tracer.formatParam(pd, pb);
+
+	/* Should contain the address */
+	CHECK(result.find("$00000100") != std::string::npos);
+	/* Should contain struct field dump from type registry */
+	CHECK(result.find("ioResult") != std::string::npos);
+	CHECK(result.find("ioVRefNum") != std::string::npos);
+	CHECK(result.find("ioRefNum") != std::string::npos);
+}
+
+TEST_CASE("TrapTracer formatParam StructPtr null pointer")
+{
+	TrapDefs defs;
+	TrapTracer tracer(defs);
+
+	ParamDef pd;
+	pd.name = "pb";
+	pd.type = ParamType::StructPtr;
+	pd.structName = "IOParam";
+	pd.loc = ParamLoc::A0;
+
+	std::string result = tracer.formatParam(pd, 0);
+	CHECK(result == "$00000000");
+}
+
+TEST_CASE("TrapTracer formatParam StructPtr unknown type")
+{
+	TrapDefs defs;
+	TrapTracer tracer(defs);
+
+	ParamDef pd;
+	pd.name = "pb";
+	pd.type = ParamType::StructPtr;
+	pd.structName = "NoSuchType";
+	pd.loc = ParamLoc::A0;
+
+	std::string result = tracer.formatParam(pd, 0x200);
+	CHECK(result == "$00000200");
 }

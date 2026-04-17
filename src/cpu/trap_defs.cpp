@@ -179,7 +179,8 @@ static bool ParseRegLoc(const std::string &s, ParamLoc &out)
 	return false;
 }
 
-/* Parse a single param token: "name:type" or "name:type.reg" */
+/* Parse a single param token: "name:type" or "name:type.reg"
+   Type may be "^StructName" for pointer-to-struct (StructPtr). */
 static bool ParseParam(const std::string &token, ParamDef &out)
 {
 	auto colon = token.find(':');
@@ -200,7 +201,17 @@ static bool ParseParam(const std::string &token, ParamDef &out)
 		typeStr = rest;
 	}
 
-	if (!ParseParamType(typeStr, out.type)) return false;
+	/* Check for ^StructName (pointer-to-struct) */
+	if (!typeStr.empty() && typeStr[0] == '^')
+	{
+		out.type = ParamType::StructPtr;
+		out.structName = typeStr.substr(1);
+		if (out.structName.empty()) return false;
+	}
+	else
+	{
+		if (!ParseParamType(typeStr, out.type)) return false;
+	}
 
 	if (!regStr.empty())
 	{

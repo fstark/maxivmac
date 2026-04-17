@@ -7,6 +7,7 @@
 #include "core/machine.h"
 #include "cpu/m68k.h"
 #include "debugger/dbg_io.h"
+#include "lang/type_registry.h"
 
 #include <algorithm>
 #include <cinttypes>
@@ -47,6 +48,8 @@ static int paramSize(ParamType t)
 			return 8;
 		case ParamType::Point:
 			return 4;
+		case ParamType::StructPtr:
+			return 4; /* pointer to struct */
 	}
 	return 2;
 }
@@ -489,6 +492,21 @@ std::string TrapTracer::formatParam(const ParamDef &p, uint32_t rawValue)
 			int16_t v = static_cast<int16_t>((rawValue >> 16) & 0xFFFF);
 			int16_t h = static_cast<int16_t>(rawValue & 0xFFFF);
 			snprintf(buf, sizeof(buf), "{%d,%d}", v, h);
+			return buf;
+		}
+		case ParamType::StructPtr:
+		{
+			auto &tr = g_typeRegistry();
+			if (rawValue != 0 && tr.has(p.structName))
+			{
+				std::string s;
+				snprintf(buf, sizeof(buf), "$%08X", rawValue);
+				s = buf;
+				s += '\n';
+				s += tr.format(p.structName, rawValue);
+				return s;
+			}
+			snprintf(buf, sizeof(buf), "$%08X", rawValue);
 			return buf;
 		}
 	}

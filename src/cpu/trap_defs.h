@@ -45,7 +45,8 @@ enum class ParamType
 	OSErr,
 	Boolean,
 	Rect,
-	Point
+	Point,
+	StructPtr /* ^TypeName — pointer to a type registry struct */
 };
 
 struct ParamDef
@@ -53,6 +54,7 @@ struct ParamDef
 	std::string name;
 	ParamType type;
 	ParamLoc loc;
+	std::string structName; /* populated only when type == StructPtr */
 };
 
 enum class TrapConvention
