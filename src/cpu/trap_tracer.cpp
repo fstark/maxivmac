@@ -287,37 +287,8 @@ static const StructFieldFilter *findFilter(const std::vector<StructFieldFilter> 
 	return nullptr;
 }
 
-/* Re-indent a struct dump block: prepend each line with an indent string
-   and a "paramName^." prefix on the field name portion.
-   Input lines have the form "  field.Name:  value\n".
-   Output lines become      "<pad>paramName^.field.Name:  value\n". */
-static std::string reindentDump(const std::string &dump, std::string_view pad,
-								std::string_view paramName)
-{
-	std::string result;
-	size_t pos = 0;
-	while (pos < dump.size())
-	{
-		size_t eol = dump.find('\n', pos);
-		if (eol == std::string::npos) eol = dump.size();
-
-		std::string_view line(dump.data() + pos, eol - pos);
-		/* Strip the leading "  " indent from format/formatFiltered */
-		if (line.size() >= 2 && line[0] == ' ' && line[1] == ' ') line = line.substr(2);
-
-		result += pad;
-		result += paramName;
-		result += "^.";
-		result += line;
-		result += '\n';
-		pos = eol + 1;
-	}
-	return result;
-}
-
-/* Format a StructPtr with an optional field filter and indentation.
-   Returns just "$ADDR" for inline display.  The caller handles the
-   indented field dump separately via formatStructDump(). */
+/* Format a StructPtr — returns just "$ADDR" for inline display.
+   The caller handles the indented field dump via formatStructDump(). */
 std::string TrapTracer::formatStructPtr(const ParamDef & /*p*/, uint32_t rawValue,
 										const StructFieldFilter * /*filter*/)
 {
@@ -326,21 +297,75 @@ std::string TrapTracer::formatStructPtr(const ParamDef & /*p*/, uint32_t rawValu
 	return buf;
 }
 
-/* Produce the indented field dump for a StructPtr param. */
+/* Produce an indented field dump for a struct at the given address.
+   Each line is formatted as: <pad><paramName>^.<fieldName>:  <value>\n
+   If filter is non-null, only matching fields are included. */
 std::string TrapTracer::formatStructDump(const ParamDef &p, uint32_t rawValue,
 										 const StructFieldFilter *filter, std::string_view pad)
 {
+	return formatStructDumpFor(p.structName, p.name, rawValue, filter, pad);
+}
+
+std::string TrapTracer::formatStructDumpFor(std::string_view structName, std::string_view paramName,
+											uint32_t addr, const StructFieldFilter *filter,
+											std::string_view pad)
+{
 	auto &tr = g_typeRegistry();
-	if (rawValue == 0 || !tr.has(p.structName)) return {};
+	if (addr == 0 || !tr.has(structName)) return {};
 
-	std::string raw;
-	if (filter && !filter->fields.empty())
-		raw = tr.formatFiltered(p.structName, rawValue, filter->fields);
-	else
-		raw = tr.format(p.structName, rawValue);
-	if (raw.empty()) return {};
+	auto fields = tr.read(structName, addr);
+	if (fields.empty()) return {};
 
-	return reindentDump(raw, pad, p.name);
+	/* Filter fields if requested */
+	std::vector<const FieldValue *> keep;
+	for (auto &f : fields)
+	{
+		if (filter && !filter->fields.empty())
+		{
+			std::string_view leaf = f.name;
+			auto dot = leaf.rfind('.');
+			if (dot != std::string_view::npos) leaf = leaf.substr(dot + 1);
+			bool match = false;
+			for (auto &want : filter->fields)
+				if (leaf == want)
+				{
+					match = true;
+					break;
+				}
+			if (!match) continue;
+		}
+		keep.push_back(&f);
+	}
+	if (keep.empty()) return {};
+
+	/* Measure the longest prefixed name for column alignment */
+	std::string prefix;
+	prefix += paramName;
+	prefix += "^.";
+	size_t maxLen = 0;
+	for (auto *f : keep)
+	{
+		size_t len = prefix.size() + f->name.size();
+		if (len > maxLen) maxLen = len;
+	}
+	if (maxLen > 40) maxLen = 40;
+
+	/* Format each field */
+	std::string result;
+	for (auto *f : keep)
+	{
+		result += pad;
+		std::string label = prefix + f->name + ":";
+		result += label;
+		size_t padTo = maxLen + 3; /* label + ":" + at least 1 space */
+		if (label.size() < padTo)
+			result.append(padTo - label.size(), ' ');
+		else
+			result += ' ';
+		result += f->display;
+		result += '\n';
+	}
+	return result;
 }
 
 void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
@@ -486,7 +511,6 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 		if (padWidth > 60) padWidth = indent + 20;
 		std::string pad(padWidth, ' ');
 
-		auto &tr = g_typeRegistry();
 		for (auto &filter : def.showOut)
 		{
 			uint32_t addr = 0;
@@ -508,13 +532,9 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 					break;
 				}
 			}
-			if (addr == 0 || structName.empty() || !tr.has(structName)) continue;
+			if (addr == 0 || structName.empty()) continue;
 
-			std::string raw = tr.formatFiltered(structName, addr, filter.fields);
-			if (!raw.empty())
-			{
-				showOutDump += reindentDump(raw, pad, filter.paramName);
-			}
+			showOutDump += formatStructDumpFor(structName, filter.paramName, addr, &filter, pad);
 		}
 	}
 
