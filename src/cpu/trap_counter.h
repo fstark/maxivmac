@@ -5,8 +5,7 @@
 	indexed by trap number.  A separate watchlist selects which
 	traps are displayed in the UI.
 
-	The full trap dictionary (~681 entries) maps trap words to
-	human-readable names for lookup and autocomplete.
+	Trap name lookups delegate to TrapDefs (loaded from assets/traps.def).
 */
 #pragma once
 
