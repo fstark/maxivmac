@@ -421,15 +421,48 @@ bool TypeRegistry::has(std::string_view typeName) const
 	return findType(typeName) != nullptr || FindPrimitive(typeName) != nullptr;
 }
 
-uint16_t TypeRegistry::sizeOf(std::string_view /*typeName*/) const
+uint16_t TypeRegistry::sizeOf(std::string_view typeName) const
 {
+	const auto *te = findType(typeName);
+	if (te) return computeSize(*te);
+	const auto *prim = FindPrimitive(typeName);
+	if (prim) return prim->size;
 	return 0;
 }
 
-std::vector<FieldValue> TypeRegistry::read(std::string_view /*typeName*/, uint32_t /*addr*/,
-										   std::string_view /*variant*/) const
+std::vector<FieldValue> TypeRegistry::read(std::string_view typeName, uint32_t addr,
+										   std::string_view variant) const
 {
-	return {};
+	const auto *te = findType(typeName);
+	if (!te) return {};
+
+	const StructDef *sd = nullptr;
+
+	if (te->isUnion)
+	{
+		/* Find matching variant arm */
+		std::string_view armType;
+		for (auto &[tag, tn] : te->unionDef.arms)
+		{
+			if (tag == variant || variant.empty())
+			{
+				armType = tn;
+				break;
+			}
+		}
+		if (armType.empty()) return {};
+		const auto *armEntry = findType(armType);
+		if (!armEntry || armEntry->isUnion) return {};
+		sd = &armEntry->structDef;
+	}
+	else
+	{
+		sd = &te->structDef;
+	}
+
+	std::vector<FieldValue> out;
+	readStruct(*sd, addr, addr, "", out);
+	return out;
 }
 
 std::string TypeRegistry::format(std::string_view /*typeName*/, uint32_t /*addr*/,
@@ -454,18 +487,186 @@ const TypeRegistry::TypeEntry *TypeRegistry::findType(std::string_view name) con
 	return nullptr;
 }
 
-void TypeRegistry::readStruct(const StructDef & /*sd*/, uint32_t /*baseAddr*/,
-							  uint32_t /*origBase*/, std::string_view /*prefix*/,
-							  std::vector<FieldValue> & /*out*/) const
+void TypeRegistry::readStruct(const StructDef &sd, uint32_t baseAddr, uint32_t origBase,
+							  std::string_view prefix, std::vector<FieldValue> &out) const
 {
+	for (auto &field : sd.fields)
+	{
+		const auto *prim = FindPrimitive(field.typeName);
+		uint16_t elemSize = 0;
+		if (prim)
+		{
+			elemSize = prim->size;
+		}
+		else
+		{
+			const auto *inner = findType(field.typeName);
+			if (inner) elemSize = computeSize(*inner);
+		}
+
+		for (uint16_t i = 0; i < field.arrayCount; ++i)
+		{
+			uint32_t fieldAddr = baseAddr + field.offset + i * elemSize;
+			std::string name(prefix);
+			name += field.fieldName;
+			if (field.arrayCount > 1)
+			{
+				name += '[';
+				name += std::to_string(i);
+				name += ']';
+			}
+
+			if (prim)
+			{
+				std::string display = formatPrimitive(field.typeName, fieldAddr);
+				out.push_back({name, fieldAddr - origBase, prim->size, std::move(display)});
+			}
+			else
+			{
+				const auto *inner = findType(field.typeName);
+				if (inner && !inner->isUnion)
+				{
+					readStruct(inner->structDef, fieldAddr, origBase, name + ".", out);
+				}
+			}
+		}
+	}
 }
 
-std::string TypeRegistry::formatPrimitive(std::string_view /*typeName*/, uint32_t /*addr*/) const
+std::string TypeRegistry::formatPrimitive(std::string_view typeName, uint32_t addr) const
 {
-	return {};
+	const auto *prim = FindPrimitive(typeName);
+	if (!prim) return {};
+
+	char buf[280];
+
+	switch (prim->kind)
+	{
+		case PrimitiveKind::Byte:
+			std::snprintf(buf, sizeof(buf), "$%02X", mem_.readByte(addr));
+			break;
+		case PrimitiveKind::SByte:
+			std::snprintf(buf, sizeof(buf), "%d", static_cast<int8_t>(mem_.readByte(addr)));
+			break;
+		case PrimitiveKind::BooleanK:
+			return mem_.readByte(addr) ? "true" : "false";
+		case PrimitiveKind::Word:
+			std::snprintf(buf, sizeof(buf), "$%04X", mem_.readWord(addr));
+			break;
+		case PrimitiveKind::SWord:
+			std::snprintf(buf, sizeof(buf), "%d", static_cast<int16_t>(mem_.readWord(addr)));
+			break;
+		case PrimitiveKind::Long:
+			std::snprintf(buf, sizeof(buf), "$%08X", mem_.readLong(addr));
+			break;
+		case PrimitiveKind::SLong:
+			std::snprintf(buf, sizeof(buf), "%d", static_cast<int32_t>(mem_.readLong(addr)));
+			break;
+		case PrimitiveKind::Ptr:
+		case PrimitiveKind::Handle:
+		case PrimitiveKind::ProcPtr:
+			std::snprintf(buf, sizeof(buf), "$%08X", mem_.readLong(addr));
+			break;
+		case PrimitiveKind::OSType:
+			return FormatFourCC(mem_.readLong(addr));
+		case PrimitiveKind::OSErr:
+		{
+			auto val = static_cast<int16_t>(mem_.readWord(addr));
+			auto it = errors_.find(val);
+			if (it != errors_.end())
+				std::snprintf(buf, sizeof(buf), "%d %s", val, it->second.c_str());
+			else
+				std::snprintf(buf, sizeof(buf), "%d", val);
+			break;
+		}
+		case PrimitiveKind::Fixed:
+		{
+			auto raw = static_cast<int32_t>(mem_.readLong(addr));
+			int intPart = raw >> 16;
+			int fracPart = ((raw & 0xFFFF) * 10000) >> 16;
+			if (fracPart < 0) fracPart = -fracPart;
+			std::snprintf(buf, sizeof(buf), "%d.%04d", intPart, fracPart);
+			break;
+		}
+		case PrimitiveKind::Fract:
+		{
+			auto raw = static_cast<int32_t>(mem_.readLong(addr));
+			int intPart = raw >> 30;
+			int fracPart = ((raw & 0x3FFFFFFF) * 10000) >> 30;
+			if (fracPart < 0) fracPart = -fracPart;
+			std::snprintf(buf, sizeof(buf), "%d.%04d", intPart, fracPart);
+			break;
+		}
+		case PrimitiveKind::Str255:
+		case PrimitiveKind::Str63:
+		case PrimitiveKind::Str31:
+		{
+			uint8_t len = mem_.readByte(addr);
+			uint8_t maxLen = (prim->kind == PrimitiveKind::Str255)	? 255
+							 : (prim->kind == PrimitiveKind::Str63) ? 63
+																	: 31;
+			if (len > maxLen) len = maxLen;
+			std::string result = "\"";
+			for (uint8_t i = 0; i < len; ++i)
+			{
+				uint8_t c = mem_.readByte(addr + 1 + i);
+				if (c >= 0x20 && c < 0x7F)
+					result += static_cast<char>(c);
+				else
+				{
+					char esc[5];
+					std::snprintf(esc, sizeof(esc), "\\x%02X", c);
+					result += esc;
+				}
+			}
+			result += '"';
+			return result;
+		}
+	}
+
+	return buf;
 }
 
-uint16_t TypeRegistry::computeSize(const TypeEntry & /*te*/) const
+uint16_t TypeRegistry::computeSize(const TypeEntry &te) const
 {
-	return 0;
+	if (te.cachedSize > 0) return te.cachedSize;
+
+	if (te.isUnion)
+	{
+		uint16_t maxSize = 0;
+		for (auto &[tag, tn] : te.unionDef.arms)
+		{
+			const auto *arm = findType(tn);
+			if (arm)
+			{
+				uint16_t s = computeSize(*arm);
+				if (s > maxSize) maxSize = s;
+			}
+		}
+		te.cachedSize = maxSize;
+	}
+	else
+	{
+		if (te.structDef.fields.empty())
+		{
+			te.cachedSize = 0;
+		}
+		else
+		{
+			auto &last = te.structDef.fields.back();
+			const auto *prim = FindPrimitive(last.typeName);
+			uint16_t elemSize = 0;
+			if (prim)
+			{
+				elemSize = prim->size;
+			}
+			else
+			{
+				const auto *inner = findType(last.typeName);
+				if (inner) elemSize = computeSize(*inner);
+			}
+			te.cachedSize = last.offset + elemSize * last.arrayCount;
+		}
+	}
+	return te.cachedSize;
 }
