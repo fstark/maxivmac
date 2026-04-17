@@ -63,6 +63,12 @@ enum class TrapConvention
 	Toolbox
 };
 
+struct StructFieldFilter
+{
+	std::string paramName;			 /* back-reference to an in/out param name */
+	std::vector<std::string> fields; /* field names to display */
+};
+
 struct TrapDef
 {
 	uint16_t trapWord;
@@ -71,6 +77,8 @@ struct TrapDef
 	bool noreturn = false;
 	std::vector<ParamDef> paramsIn;
 	std::vector<ParamDef> paramsOut;
+	std::vector<StructFieldFilter> showIn;	/* entry-time struct field filters */
+	std::vector<StructFieldFilter> showOut; /* exit-time struct field filters */
 };
 
 class TrapDefs

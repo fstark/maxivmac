@@ -3,6 +3,8 @@
 #   <trap_word> <name> <convention> [noreturn]
 #   in  <name>:<type>[.reg] ...
 #   out <name>:<type>[.reg] ...
+#   show-in  <param> <field> ...   (entry-time struct field filter)
+#   show-out <param> <field> ...  (exit-time struct field filter)
 #
 # Convention: toolbox | os
 # Types: byte word long Ptr Handle OSType Str255 OSErr Boolean Rect Point
@@ -148,54 +150,79 @@ A146 GetTrapAddress os
 A000 Open os
   in  pb:^IOParam.A0
   out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult ioRefNum
 
 A001 Close os
   in  pb:^IOParam.A0
   out err:OSErr.D0
+  show-in  pb ioRefNum
+  show-out pb ioResult
 
 A002 Read os
   in  pb:^IOParam.A0
   out err:OSErr.D0
+  show-in  pb ioRefNum ioReqCount ioPosMode ioPosOffset
+  show-out pb ioResult ioActCount ioPosOffset
 
 A003 Write os
   in  pb:^IOParam.A0
   out err:OSErr.D0
+  show-in  pb ioRefNum ioReqCount ioPosMode ioPosOffset
+  show-out pb ioResult ioActCount ioPosOffset
 
 A007 GetVolInfo os
   in  pb:^VolumeParam.A0
   out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioVolIndex
+  show-out pb ioResult ioNamePtr ioVRefNum ioVCrDate ioVLsMod ioVAtrb ioVNmFls ioVNmAlBlks ioVAlBlkSiz ioVFrBlk
 
 A008 Create os
   in  pb:^FileParam.A0
   out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
 
 A009 Delete os
   in  pb:^FileParam.A0
   out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
 
 A00A OpenRF os
   in  pb:^IOParam.A0
   out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult ioRefNum
 
 A00C GetFileInfo os
   in  pb:^FileParam.A0
   out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioFDirIndex
+  show-out pb ioResult ioNamePtr ioFlFndrInfo ioFlNum ioFlLgLen ioFlRLgLen
 
 A00D SetFileInfo os
   in  pb:^FileParam.A0
   out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioFlFndrInfo
+  show-out pb ioResult
 
 A011 GetEOF os
   in  pb:^IOParam.A0
   out err:OSErr.D0
+  show-in  pb ioRefNum
+  show-out pb ioResult ioMisc
 
 A013 FlushVol os
   in  pb:^VolumeParam.A0
   out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
 
 A014 GetVol os
   in  pb:^VolumeParam.A0
   out err:OSErr.D0
+  show-out pb ioResult ioNamePtr ioVRefNum
 
 A260 HFSDispatch os
   in  selector:Word.D0 pb:Ptr.A0

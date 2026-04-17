@@ -496,6 +496,58 @@ std::string TypeRegistry::format(std::string_view typeName, uint32_t addr,
 	return result;
 }
 
+std::string TypeRegistry::formatFiltered(std::string_view typeName, uint32_t addr,
+										 const std::vector<std::string> &fields,
+										 std::string_view variant) const
+{
+	auto allFields = read(typeName, addr, variant);
+	if (allFields.empty()) return {};
+
+	/* Keep only fields whose suffix (after the last '.') matches the filter list. */
+	std::vector<FieldValue *> keep;
+	for (auto &f : allFields)
+	{
+		/* Nested fields have prefixed names like "header.ioResult".
+		   Match against the leaf name. */
+		std::string_view leaf = f.name;
+		auto dot = leaf.rfind('.');
+		if (dot != std::string_view::npos) leaf = leaf.substr(dot + 1);
+
+		for (auto &want : fields)
+		{
+			if (leaf == want)
+			{
+				keep.push_back(&f);
+				break;
+			}
+		}
+	}
+	if (keep.empty()) return {};
+
+	size_t maxNameLen = 0;
+	for (auto *f : keep)
+	{
+		if (f->name.size() > maxNameLen) maxNameLen = f->name.size();
+	}
+	if (maxNameLen > 30) maxNameLen = 30;
+
+	std::string result;
+	for (auto *f : keep)
+	{
+		result += "  ";
+		std::string label = f->name + ":";
+		result += label;
+		size_t padTo = maxNameLen + 3;
+		if (label.size() < padTo)
+			result.append(padTo - label.size(), ' ');
+		else
+			result += ' ';
+		result += f->display;
+		result += '\n';
+	}
+	return result;
+}
+
 std::string TypeRegistry::readField(std::string_view typeName, uint32_t addr,
 									std::string_view fieldPath, std::string_view variant) const
 {

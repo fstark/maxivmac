@@ -45,6 +45,10 @@ public:
 	std::string format(std::string_view typeName, uint32_t addr,
 					   std::string_view variant = {}) const;
 
+	std::string formatFiltered(std::string_view typeName, uint32_t addr,
+							   const std::vector<std::string> &fields,
+							   std::string_view variant = {}) const;
+
 	std::string readField(std::string_view typeName, uint32_t addr, std::string_view fieldPath,
 						  std::string_view variant = {}) const;
 

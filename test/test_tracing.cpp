@@ -607,3 +607,121 @@ TEST_CASE("TrapTracer formatParam StructPtr unknown type")
 	std::string result = tracer.formatParam(pd, 0x200);
 	CHECK(result == "$00000200");
 }
+
+/* ════════════════════════════════════════════════════════
+   Phase 5 — show-in / show-out field filters
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("TrapDefs parse show-in and show-out")
+{
+	auto path = writeTempFile("test_traps_show.def", "A000 Open os\n"
+													 "  in  pb:^IOParam.A0\n"
+													 "  out err:OSErr.D0\n"
+													 "  show-in  pb ioNamePtr ioVRefNum\n"
+													 "  show-out pb ioResult ioRefNum\n");
+	TrapDefs defs;
+	int count = defs.load(path);
+	std::filesystem::remove(path);
+
+	CHECK(count == 1);
+	const TrapDef *d = defs.find(0xA000);
+	REQUIRE(d != nullptr);
+
+	/* show-in */
+	REQUIRE(d->showIn.size() == 1);
+	CHECK(d->showIn[0].paramName == "pb");
+	REQUIRE(d->showIn[0].fields.size() == 2);
+	CHECK(d->showIn[0].fields[0] == "ioNamePtr");
+	CHECK(d->showIn[0].fields[1] == "ioVRefNum");
+
+	/* show-out */
+	REQUIRE(d->showOut.size() == 1);
+	CHECK(d->showOut[0].paramName == "pb");
+	REQUIRE(d->showOut[0].fields.size() == 2);
+	CHECK(d->showOut[0].fields[0] == "ioResult");
+	CHECK(d->showOut[0].fields[1] == "ioRefNum");
+}
+
+TEST_CASE("TypeRegistry formatFiltered")
+{
+	ensureGlobalTypes();
+	memset(g_ram, 0, 256);
+
+	const uint32_t pb = 0x100;
+	/* ioResult = -43 at offset 16 */
+	put_be16(pb + 16, static_cast<uint16_t>(static_cast<int16_t>(-43)));
+	/* ioVRefNum = -1 at offset 22 */
+	put_be16(pb + 22, static_cast<uint16_t>(static_cast<int16_t>(-1)));
+	/* ioRefNum = 5 at offset 24 */
+	put_be16(pb + 24, 5);
+
+	auto &tr = g_typeRegistry();
+	std::vector<std::string> fields = {"ioResult", "ioRefNum"};
+	std::string result = tr.formatFiltered("IOParam", pb, fields);
+
+	/* Should contain only the requested fields */
+	CHECK(result.find("ioResult") != std::string::npos);
+	CHECK(result.find("ioRefNum") != std::string::npos);
+	/* Should NOT contain other fields */
+	CHECK(result.find("ioVRefNum") == std::string::npos);
+	CHECK(result.find("qLink") == std::string::npos);
+	CHECK(result.find("ioTrap") == std::string::npos);
+}
+
+TEST_CASE("TrapTracer formatStructPtr with filter")
+{
+	ensureGlobalTypes();
+	memset(g_ram, 0, 256);
+
+	const uint32_t pb = 0x100;
+	put_be16(pb + 16, static_cast<uint16_t>(static_cast<int16_t>(-43)));
+	put_be16(pb + 22, static_cast<uint16_t>(static_cast<int16_t>(-1)));
+	put_be16(pb + 24, 5);
+
+	TrapDefs defs;
+	TrapTracer tracer(defs);
+
+	ParamDef pd;
+	pd.name = "pb";
+	pd.type = ParamType::StructPtr;
+	pd.structName = "IOParam";
+	pd.loc = ParamLoc::A0;
+
+	/* With filter — only show ioResult and ioRefNum */
+	StructFieldFilter filter;
+	filter.paramName = "pb";
+	filter.fields = {"ioResult", "ioRefNum"};
+
+	std::string result = tracer.formatStructPtr(pd, pb, &filter);
+
+	CHECK(result.find("$00000100") != std::string::npos);
+	CHECK(result.find("ioResult") != std::string::npos);
+	CHECK(result.find("ioRefNum") != std::string::npos);
+	CHECK(result.find("ioVRefNum") == std::string::npos);
+	CHECK(result.find("qLink") == std::string::npos);
+}
+
+TEST_CASE("TrapTracer formatStructPtr without filter dumps all")
+{
+	ensureGlobalTypes();
+	memset(g_ram, 0, 256);
+
+	const uint32_t pb = 0x100;
+	put_be16(pb + 22, static_cast<uint16_t>(static_cast<int16_t>(-1)));
+
+	TrapDefs defs;
+	TrapTracer tracer(defs);
+
+	ParamDef pd;
+	pd.name = "pb";
+	pd.type = ParamType::StructPtr;
+	pd.structName = "IOParam";
+	pd.loc = ParamLoc::A0;
+
+	std::string result = tracer.formatStructPtr(pd, pb, nullptr);
+
+	/* Without filter, should dump all fields including qLink */
+	CHECK(result.find("qLink") != std::string::npos);
+	CHECK(result.find("ioVRefNum") != std::string::npos);
+	CHECK(result.find("ioRefNum") != std::string::npos);
+}

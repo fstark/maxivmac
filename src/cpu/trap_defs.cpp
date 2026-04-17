@@ -280,6 +280,28 @@ void TrapDefs::parseParamLine(const std::string &line, TrapDef &out)
 	std::string direction;
 	iss >> direction;
 	auto dir = StrToLower(direction);
+
+	/* show-in / show-out: field filter for StructPtr params */
+	if (dir == "show-in" || dir == "show-out")
+	{
+		std::string paramName;
+		if (!(iss >> paramName))
+		{
+			fprintf(stderr, "trap_defs: %s missing param name\n", direction.c_str());
+			return;
+		}
+		StructFieldFilter filter;
+		filter.paramName = paramName;
+		std::string field;
+		while (iss >> field)
+			filter.fields.push_back(field);
+		if (dir == "show-in")
+			out.showIn.push_back(std::move(filter));
+		else
+			out.showOut.push_back(std::move(filter));
+		return;
+	}
+
 	bool isIn = (dir == "in");
 	bool isOut = (dir == "out");
 	if (!isIn && !isOut)

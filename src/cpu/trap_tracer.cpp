@@ -179,7 +179,40 @@ void TrapTracer::enter(uint16_t trapWord)
 
 	/* Emit entry and push frame */
 	if (def)
+	{
+		/* Save StructPtr addresses for show-out at exit */
+		if (!def->showOut.empty())
+		{
+			int totalStack = 0;
+			for (const auto &pd : def->paramsIn)
+				if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd.type);
+			int stackOff = totalStack;
+			for (const auto &pd : def->paramsIn)
+			{
+				if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd.type);
+				if (pd.type == ParamType::StructPtr &&
+					frame.nStructAddrs < TrapFrame::kMaxStructAddrs)
+				{
+					uint32_t raw = readParamRaw(pd, frame.sp, stackOff);
+					auto &sa = frame.structAddrs[frame.nStructAddrs++];
+					sa.paramName = nullptr; /* will be set below */
+					sa.addr = raw;
+					/* Store param name — it lives in the TrapDef which outlives the frame.
+					   We look it up by index at exit. */
+				}
+			}
+			/* Store param name pointers separately — we need them stable.
+			   Re-scan to set them (TrapDef strings are stable in the map). */
+			int idx = 0;
+			for (const auto &pd : def->paramsIn)
+			{
+				if (pd.type == ParamType::StructPtr && idx < frame.nStructAddrs)
+					frame.structAddrs[idx++].paramName = pd.name.c_str();
+			}
+		}
+
 		emitEntry(frame, *def);
+	}
 	else
 		emitEntry(frame);
 	stack_[depth_++] = frame;
@@ -245,6 +278,37 @@ static std::string unknownTrapName(uint16_t trapWord)
 	return buf;
 }
 
+/* Find a show-in or show-out filter for a given param name. */
+static const StructFieldFilter *findFilter(const std::vector<StructFieldFilter> &filters,
+										   std::string_view paramName)
+{
+	for (auto &f : filters)
+		if (f.paramName == paramName) return &f;
+	return nullptr;
+}
+
+/* Format a StructPtr with an optional field filter. */
+std::string TrapTracer::formatStructPtr(const ParamDef &p, uint32_t rawValue,
+										const StructFieldFilter *filter)
+{
+	char buf[64];
+	auto &tr = g_typeRegistry();
+	if (rawValue != 0 && tr.has(p.structName))
+	{
+		std::string s;
+		snprintf(buf, sizeof(buf), "$%08X", rawValue);
+		s = buf;
+		s += '\n';
+		if (filter && !filter->fields.empty())
+			s += tr.formatFiltered(p.structName, rawValue, filter->fields);
+		else
+			s += tr.format(p.structName, rawValue);
+		return s;
+	}
+	snprintf(buf, sizeof(buf), "$%08X", rawValue);
+	return buf;
+}
+
 void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 {
 	int indent = frame.depth * 2;
@@ -264,7 +328,15 @@ void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 		uint32_t raw = readParamRaw(pd, frame.sp, stackOff);
 		params += pd.name;
 		params += ':';
-		params += formatParam(pd, raw);
+		if (pd.type == ParamType::StructPtr)
+		{
+			auto *filter = findFilter(def.showIn, pd.name);
+			params += formatStructPtr(pd, raw, filter);
+		}
+		else
+		{
+			params += formatParam(pd, raw);
+		}
 	}
 
 	emit("%*s→ %u [%u] %s(%s) [caller:$%06X]\n", indent, "", (unsigned)frame.entryCycle,
@@ -319,7 +391,15 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 		uint32_t raw = readParamRaw(pd, outBase, stackOff);
 		outParams += pd.name;
 		outParams += ':';
-		outParams += formatParam(pd, raw);
+		if (pd.type == ParamType::StructPtr)
+		{
+			auto *filter = findFilter(def.showOut, pd.name);
+			outParams += formatStructPtr(pd, raw, filter);
+		}
+		else
+		{
+			outParams += formatParam(pd, raw);
+		}
 	}
 
 	uint32_t delta = g_instructionCount - frame.entryCycle;
@@ -333,6 +413,44 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 	{
 		emit("%*s← %u [%u] %s  (+%u cycles)\n", indent, "", (unsigned)g_instructionCount,
 			 (unsigned)frame.appId, def.name.c_str(), (unsigned)delta);
+	}
+
+	/* show-out: dump filtered struct fields from saved addresses */
+	if (!def.showOut.empty())
+	{
+		auto &tr = g_typeRegistry();
+		for (auto &filter : def.showOut)
+		{
+			/* Find the saved struct address for this param */
+			uint32_t addr = 0;
+			std::string structName;
+			for (int i = 0; i < frame.nStructAddrs; ++i)
+			{
+				if (frame.structAddrs[i].paramName &&
+					filter.paramName == frame.structAddrs[i].paramName)
+				{
+					addr = frame.structAddrs[i].addr;
+					break;
+				}
+			}
+			/* Find the struct type from the param def */
+			for (auto &pd : def.paramsIn)
+			{
+				if (pd.name == filter.paramName && pd.type == ParamType::StructPtr)
+				{
+					structName = pd.structName;
+					break;
+				}
+			}
+			if (addr == 0 || structName.empty() || !tr.has(structName)) continue;
+
+			std::string dump = tr.formatFiltered(structName, addr, filter.fields);
+			if (!dump.empty())
+			{
+				emit("%*s  %s @ $%08X:\n%s", indent, "", filter.paramName.c_str(), (unsigned)addr,
+					 dump.c_str());
+			}
+		}
 	}
 }
 
@@ -495,20 +613,7 @@ std::string TrapTracer::formatParam(const ParamDef &p, uint32_t rawValue)
 			return buf;
 		}
 		case ParamType::StructPtr:
-		{
-			auto &tr = g_typeRegistry();
-			if (rawValue != 0 && tr.has(p.structName))
-			{
-				std::string s;
-				snprintf(buf, sizeof(buf), "$%08X", rawValue);
-				s = buf;
-				s += '\n';
-				s += tr.format(p.structName, rawValue);
-				return s;
-			}
-			snprintf(buf, sizeof(buf), "$%08X", rawValue);
-			return buf;
-		}
+			return formatStructPtr(p, rawValue, nullptr);
 	}
 	snprintf(buf, sizeof(buf), "$%08X", rawValue);
 	return buf;

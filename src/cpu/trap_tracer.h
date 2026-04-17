@@ -22,6 +22,16 @@ struct TrapFrame
 	uint32_t sp;		 /* SP at entry (for toolbox param read) */
 	uint16_t appId;		 /* CurApRefNum at entry time */
 	int depth;			 /* nesting depth when pushed */
+
+	/* Saved StructPtr addresses for show-out (indexed by in-param order) */
+	static constexpr int kMaxStructAddrs = 4;
+	struct StructAddr
+	{
+		const char *paramName = nullptr;
+		uint32_t addr = 0;
+	};
+	StructAddr structAddrs[kMaxStructAddrs]{};
+	int nStructAddrs = 0;
 };
 
 class TrapTracer
@@ -43,6 +53,8 @@ public:
 
 public: /* public for testability */
 	std::string formatParam(const ParamDef &p, uint32_t rawValue);
+	std::string formatStructPtr(const ParamDef &p, uint32_t rawValue,
+								const StructFieldFilter *filter);
 	std::string formatOSType(uint32_t raw);
 	std::string formatStr255(uint32_t addr);
 	std::string formatOSErr(int16_t err);
