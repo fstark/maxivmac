@@ -33,28 +33,12 @@ enum class ParamLoc
 	A7
 };
 
-enum class ParamType
-{
-	Byte,
-	Word,
-	Long,
-	Ptr,
-	Handle,
-	OSType,
-	Str255,
-	OSErr,
-	Boolean,
-	Rect,
-	Point,
-	StructPtr /* ^TypeName — pointer to a type registry struct */
-};
-
 struct ParamDef
 {
 	std::string name;
-	ParamType type;
-	ParamLoc loc;
-	std::string structName; /* populated only when type == StructPtr */
+	std::string typeName; /* TypeRegistry type name (e.g. "long", "PStr", "IOParam") */
+	ParamLoc loc = ParamLoc::Stack;
+	bool isStructPtr = false; /* true when typeName is a ^struct pointer */
 };
 
 enum class TrapConvention

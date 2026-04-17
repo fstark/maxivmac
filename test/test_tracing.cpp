@@ -69,12 +69,27 @@ static std::filesystem::path writeTempFile(const char *name, const char *content
 	return p;
 }
 
+/* ── Helper: ensure TypeRegistry primitives are loaded ── */
+
+extern uint8_t get_vm_byte(uint32_t addr);
+extern uint16_t get_vm_word(uint32_t addr);
+extern uint32_t get_vm_long(uint32_t addr);
+
+static void ensureTypeRegistryInit()
+{
+	static bool done = false;
+	if (done) return;
+	g_typeRegistry().init({get_vm_byte, get_vm_word, get_vm_long});
+	done = true;
+}
+
 /* ════════════════════════════════════════════════════════
    Phase 1 — TrapDefs::load()
    ════════════════════════════════════════════════════════ */
 
 TEST_CASE("TrapDefs load basic")
 {
+	ensureTypeRegistryInit();
 	auto path = writeTempFile("test_traps_basic.def", "A122 NewHandle os\n"
 													  "  in  size:long.D0\n"
 													  "  out h:Handle.A0  err:OSErr.D0\n"
@@ -92,6 +107,7 @@ TEST_CASE("TrapDefs load basic")
 
 TEST_CASE("TrapDefs find known OS trap")
 {
+	ensureTypeRegistryInit();
 	auto path = writeTempFile("test_traps_os.def", "A122 NewHandle os\n"
 												   "  in  size:long.D0\n"
 												   "  out h:Handle.A0  err:OSErr.D0\n");
@@ -106,15 +122,15 @@ TEST_CASE("TrapDefs find known OS trap")
 
 	REQUIRE(d->paramsIn.size() == 1);
 	CHECK(d->paramsIn[0].name == "size");
-	CHECK(d->paramsIn[0].type == ParamType::Long);
+	CHECK(d->paramsIn[0].typeName == "long");
 	CHECK(d->paramsIn[0].loc == ParamLoc::D0);
 
 	REQUIRE(d->paramsOut.size() == 2);
 	CHECK(d->paramsOut[0].name == "h");
-	CHECK(d->paramsOut[0].type == ParamType::Handle);
+	CHECK(d->paramsOut[0].typeName == "Handle");
 	CHECK(d->paramsOut[0].loc == ParamLoc::A0);
 	CHECK(d->paramsOut[1].name == "err");
-	CHECK(d->paramsOut[1].type == ParamType::OSErr);
+	CHECK(d->paramsOut[1].typeName == "OSErr");
 	CHECK(d->paramsOut[1].loc == ParamLoc::D0);
 
 	std::filesystem::remove(path);
@@ -122,6 +138,7 @@ TEST_CASE("TrapDefs find known OS trap")
 
 TEST_CASE("TrapDefs find toolbox trap")
 {
+	ensureTypeRegistryInit();
 	auto path = writeTempFile("test_traps_tb.def", "A9A0 GetResource toolbox\n"
 												   "  in  resType:OSType  resID:word\n"
 												   "  out rsrc:Handle\n");
@@ -134,15 +151,15 @@ TEST_CASE("TrapDefs find toolbox trap")
 
 	REQUIRE(d->paramsIn.size() == 2);
 	CHECK(d->paramsIn[0].name == "resType");
-	CHECK(d->paramsIn[0].type == ParamType::OSType);
+	CHECK(d->paramsIn[0].typeName == "OSType");
 	CHECK(d->paramsIn[0].loc == ParamLoc::Stack);
 	CHECK(d->paramsIn[1].name == "resID");
-	CHECK(d->paramsIn[1].type == ParamType::Word);
+	CHECK(d->paramsIn[1].typeName == "word");
 	CHECK(d->paramsIn[1].loc == ParamLoc::Stack);
 
 	REQUIRE(d->paramsOut.size() == 1);
 	CHECK(d->paramsOut[0].name == "rsrc");
-	CHECK(d->paramsOut[0].type == ParamType::Handle);
+	CHECK(d->paramsOut[0].typeName == "Handle");
 	CHECK(d->paramsOut[0].loc == ParamLoc::Stack);
 
 	std::filesystem::remove(path);
@@ -173,6 +190,7 @@ TEST_CASE("TrapDefs find unknown returns null")
 
 TEST_CASE("TrapDefs trap word masking — flag bits")
 {
+	ensureTypeRegistryInit();
 	auto path = writeTempFile("test_traps_mask.def", "A122 NewHandle os\n"
 													 "  in  size:long.D0\n");
 	TrapDefs defs;
@@ -193,6 +211,7 @@ TEST_CASE("TrapDefs trap word masking — flag bits")
 
 TEST_CASE("TrapDefs skip malformed lines")
 {
+	ensureTypeRegistryInit();
 	auto path = writeTempFile("test_traps_bad.def", "A122 NewHandle os\n"
 													"  in  size:long.D0\n"
 													"\n"
@@ -275,6 +294,7 @@ TEST_CASE("errors unknown code")
 
 TEST_CASE("TrapDefs multiple param types")
 {
+	ensureTypeRegistryInit();
 	auto path = writeTempFile("test_traps_multi.def",
 							  "A913 NewWindow toolbox\n"
 							  "  in  wStorage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  "
@@ -287,21 +307,22 @@ TEST_CASE("TrapDefs multiple param types")
 	REQUIRE(d != nullptr);
 	CHECK(d->name == "NewWindow");
 	REQUIRE(d->paramsIn.size() == 8);
-	CHECK(d->paramsIn[0].type == ParamType::Ptr);
-	CHECK(d->paramsIn[1].type == ParamType::Rect);
-	CHECK(d->paramsIn[2].type == ParamType::Str255);
-	CHECK(d->paramsIn[3].type == ParamType::Boolean);
-	CHECK(d->paramsIn[4].type == ParamType::Word);
-	CHECK(d->paramsIn[5].type == ParamType::Ptr);
-	CHECK(d->paramsIn[6].type == ParamType::Boolean);
-	CHECK(d->paramsIn[7].type == ParamType::Long);
+	CHECK(d->paramsIn[0].typeName == "Ptr");
+	CHECK(d->paramsIn[1].typeName == "Rect");
+	CHECK(d->paramsIn[2].typeName == "Str255");
+	CHECK(d->paramsIn[3].typeName == "Boolean");
+	CHECK(d->paramsIn[4].typeName == "word");
+	CHECK(d->paramsIn[5].typeName == "Ptr");
+	CHECK(d->paramsIn[6].typeName == "Boolean");
+	CHECK(d->paramsIn[7].typeName == "long");
 	REQUIRE(d->paramsOut.size() == 1);
-	CHECK(d->paramsOut[0].type == ParamType::Ptr);
+	CHECK(d->paramsOut[0].typeName == "Ptr");
 	std::filesystem::remove(path);
 }
 
 TEST_CASE("TrapDefs load actual traps.def")
 {
+	ensureTypeRegistryInit();
 	/* Verify the shipped traps.def file parses without error */
 	TrapDefs defs;
 	int count = defs.load("assets/traps.def");
@@ -344,6 +365,7 @@ TEST_CASE("TrapDefs load actual errors.def")
 
 TEST_CASE("Tracer toolbox output reads past input params")
 {
+	ensureTypeRegistryInit();
 	/*
 	   GetResource(resType:OSType, resID:word) → rsrc:Handle
 
@@ -423,6 +445,7 @@ TEST_CASE("Tracer toolbox output reads past input params")
 
 TEST_CASE("Tracer OS trap output uses registers not stack")
 {
+	ensureTypeRegistryInit();
 	/*
 	   NewHandle: in size:long.D0, out h:Handle.A0 err:OSErr.D0
 	   OS traps read outputs from registers — stack offset bug doesn't apply.
@@ -475,18 +498,6 @@ TEST_CASE("Tracer OS trap output uses registers not stack")
 /* ════════════════════════════════════════════════════════
    TypeRegistry::formatValue — raw value formatting
    ════════════════════════════════════════════════════════ */
-
-extern uint8_t get_vm_byte(uint32_t addr);
-extern uint16_t get_vm_word(uint32_t addr);
-extern uint32_t get_vm_long(uint32_t addr);
-
-static void ensureTypeRegistryInit()
-{
-	static bool done = false;
-	if (done) return;
-	g_typeRegistry().init({get_vm_byte, get_vm_word, get_vm_long});
-	done = true;
-}
 
 TEST_CASE("TypeRegistry formatValue primitives")
 {
@@ -605,6 +616,7 @@ static void ensureGlobalTypes()
 
 TEST_CASE("TrapDefs parse ^StructName param type")
 {
+	ensureTypeRegistryInit();
 	auto path = writeTempFile("test_traps_structptr.def", "A000 Open os\n"
 														  "  in  pb:^IOParam.A0\n"
 														  "  out err:OSErr.D0\n");
@@ -617,13 +629,14 @@ TEST_CASE("TrapDefs parse ^StructName param type")
 	REQUIRE(d != nullptr);
 	REQUIRE(d->paramsIn.size() == 1);
 	CHECK(d->paramsIn[0].name == "pb");
-	CHECK(d->paramsIn[0].type == ParamType::StructPtr);
-	CHECK(d->paramsIn[0].structName == "IOParam");
+	CHECK(d->paramsIn[0].isStructPtr == true);
+	CHECK(d->paramsIn[0].typeName == "IOParam");
 	CHECK(d->paramsIn[0].loc == ParamLoc::A0);
 }
 
 TEST_CASE("TrapDefs parse ^StructName on stack (toolbox)")
 {
+	ensureTypeRegistryInit();
 	auto path = writeTempFile("test_traps_structptr_tb.def", "A913 NewWindow toolbox\n"
 															 "  out theWindow:^WindowRecord\n");
 	TrapDefs defs;
@@ -634,8 +647,8 @@ TEST_CASE("TrapDefs parse ^StructName on stack (toolbox)")
 	const TrapDef *d = defs.find(0xA913);
 	REQUIRE(d != nullptr);
 	REQUIRE(d->paramsOut.size() == 1);
-	CHECK(d->paramsOut[0].type == ParamType::StructPtr);
-	CHECK(d->paramsOut[0].structName == "WindowRecord");
+	CHECK(d->paramsOut[0].isStructPtr == true);
+	CHECK(d->paramsOut[0].typeName == "WindowRecord");
 	CHECK(d->paramsOut[0].loc == ParamLoc::Stack);
 }
 
@@ -660,8 +673,8 @@ TEST_CASE("TrapTracer formatParam StructPtr with type registry")
 
 	ParamDef pd;
 	pd.name = "pb";
-	pd.type = ParamType::StructPtr;
-	pd.structName = "IOParam";
+	pd.isStructPtr = true;
+	pd.typeName = "IOParam";
 	pd.loc = ParamLoc::A0;
 
 	std::string result = tracer.formatParam(pd, pb);
@@ -683,8 +696,8 @@ TEST_CASE("TrapTracer formatParam StructPtr null pointer")
 
 	ParamDef pd;
 	pd.name = "pb";
-	pd.type = ParamType::StructPtr;
-	pd.structName = "IOParam";
+	pd.isStructPtr = true;
+	pd.typeName = "IOParam";
 	pd.loc = ParamLoc::A0;
 
 	std::string result = tracer.formatParam(pd, 0);
@@ -698,8 +711,8 @@ TEST_CASE("TrapTracer formatParam StructPtr unknown type")
 
 	ParamDef pd;
 	pd.name = "pb";
-	pd.type = ParamType::StructPtr;
-	pd.structName = "NoSuchType";
+	pd.isStructPtr = true;
+	pd.typeName = "NoSuchType";
 	pd.loc = ParamLoc::A0;
 
 	std::string result = tracer.formatParam(pd, 0x200);
@@ -712,6 +725,7 @@ TEST_CASE("TrapTracer formatParam StructPtr unknown type")
 
 TEST_CASE("TrapDefs parse show-in and show-out")
 {
+	ensureTypeRegistryInit();
 	auto path = writeTempFile("test_traps_show.def", "A000 Open os\n"
 													 "  in  pb:^IOParam.A0\n"
 													 "  out err:OSErr.D0\n"
@@ -781,8 +795,8 @@ TEST_CASE("TrapTracer formatStructPtr with filter")
 
 	ParamDef pd;
 	pd.name = "pb";
-	pd.type = ParamType::StructPtr;
-	pd.structName = "IOParam";
+	pd.isStructPtr = true;
+	pd.typeName = "IOParam";
 	pd.loc = ParamLoc::A0;
 
 	/* With filter — only show ioResult and ioRefNum */
@@ -815,8 +829,8 @@ TEST_CASE("TrapTracer formatStructPtr without filter dumps all")
 
 	ParamDef pd;
 	pd.name = "pb";
-	pd.type = ParamType::StructPtr;
-	pd.structName = "IOParam";
+	pd.isStructPtr = true;
+	pd.typeName = "IOParam";
 	pd.loc = ParamLoc::A0;
 
 	/* formatStructPtr returns just the address */

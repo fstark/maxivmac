@@ -22,36 +22,10 @@ TrapTracer g_tracer(g_trapDefs);
 
 /* -- param size helper --------------------------------- */
 
-static int paramSize(ParamType t)
+static int paramSize(const ParamDef &pd)
 {
-	switch (t)
-	{
-		case ParamType::Byte:
-			return 2; /* pushed as word on 68K stack */
-		case ParamType::Word:
-			return 2;
-		case ParamType::Long:
-			return 4;
-		case ParamType::Ptr:
-			return 4;
-		case ParamType::Handle:
-			return 4;
-		case ParamType::OSType:
-			return 4;
-		case ParamType::Str255:
-			return 4; /* pointer to string */
-		case ParamType::OSErr:
-			return 2;
-		case ParamType::Boolean:
-			return 2; /* pushed as word on 68K stack */
-		case ParamType::Rect:
-			return 8;
-		case ParamType::Point:
-			return 4;
-		case ParamType::StructPtr:
-			return 4; /* pointer to struct */
-	}
-	return 2;
+	if (pd.isStructPtr) return 4;
+	return g_typeRegistry().stackSize(pd.typeName);
 }
 
 /* -- TrapTracer ---------------------------------------- */
@@ -180,13 +154,12 @@ void TrapTracer::enter(uint16_t trapWord)
 		{
 			int totalStack = 0;
 			for (const auto &pd : def->paramsIn)
-				if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd.type);
+				if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd);
 			int stackOff = totalStack;
 			for (const auto &pd : def->paramsIn)
 			{
-				if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd.type);
-				if (pd.type == ParamType::StructPtr &&
-					frame.nStructAddrs < TrapFrame::kMaxStructAddrs)
+				if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd);
+				if (pd.isStructPtr && frame.nStructAddrs < TrapFrame::kMaxStructAddrs)
 				{
 					uint32_t raw = readParamRaw(pd, frame.sp, stackOff);
 					auto &sa = frame.structAddrs[frame.nStructAddrs++];
@@ -201,7 +174,7 @@ void TrapTracer::enter(uint16_t trapWord)
 			int idx = 0;
 			for (const auto &pd : def->paramsIn)
 			{
-				if (pd.type == ParamType::StructPtr && idx < frame.nStructAddrs)
+				if (pd.isStructPtr && idx < frame.nStructAddrs)
 					frame.structAddrs[idx++].paramName = pd.name.c_str();
 			}
 		}
@@ -298,7 +271,7 @@ std::string TrapTracer::formatStructPtr(const ParamDef & /*p*/, uint32_t rawValu
 std::string TrapTracer::formatStructDump(const ParamDef &p, uint32_t rawValue,
 										 const StructFieldFilter *filter, std::string_view pad)
 {
-	return formatStructDumpFor(p.structName, p.name, rawValue, filter, pad);
+	return formatStructDumpFor(p.typeName, p.name, rawValue, filter, pad);
 }
 
 std::string TrapTracer::formatStructDumpFor(std::string_view structName, std::string_view paramName,
@@ -380,19 +353,19 @@ void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 
 	int totalStack = 0;
 	for (const auto &pd : def.paramsIn)
-		if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd.type);
+		if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd);
 	int stackOff = totalStack;
 
 	for (size_t i = 0; i < def.paramsIn.size(); ++i)
 	{
 		if (i > 0) params += ", ";
 		const ParamDef &pd = def.paramsIn[i];
-		if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd.type);
+		if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd);
 		uint32_t raw = readParamRaw(pd, frame.sp, stackOff);
 		params += pd.name;
 		params += ':';
 
-		if (pd.type == ParamType::StructPtr)
+		if (pd.isStructPtr)
 		{
 			auto *filter = findFilter(def.showIn, pd.name);
 			params += formatStructPtr(pd, raw, filter);
@@ -450,23 +423,23 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 	   so output values live at frame.sp + inStackSize. */
 	int inStackSize = 0;
 	for (const auto &pd : def.paramsIn)
-		if (pd.loc == ParamLoc::Stack) inStackSize += paramSize(pd.type);
+		if (pd.loc == ParamLoc::Stack) inStackSize += paramSize(pd);
 	uint32_t outBase = frame.sp + inStackSize;
 
 	std::string outParams;
 	int totalStack = 0;
 	for (const auto &pd : def.paramsOut)
-		if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd.type);
+		if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd);
 	int stackOff = totalStack;
 	for (size_t i = 0; i < def.paramsOut.size(); ++i)
 	{
 		if (i > 0) outParams += " ";
 		const ParamDef &pd = def.paramsOut[i];
-		if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd.type);
+		if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd);
 		uint32_t raw = readParamRaw(pd, outBase, stackOff);
 		outParams += pd.name;
 		outParams += ':';
-		if (pd.type == ParamType::StructPtr)
+		if (pd.isStructPtr)
 		{
 			auto *filter = findFilter(def.showOut, pd.name);
 			outParams += formatStructPtr(pd, raw, filter);
@@ -513,9 +486,9 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 			}
 			for (auto &pd : def.paramsIn)
 			{
-				if (pd.name == filter.paramName && pd.type == ParamType::StructPtr)
+				if (pd.name == filter.paramName && pd.isStructPtr)
 				{
-					structName = pd.structName;
+					structName = pd.typeName;
 					break;
 				}
 			}
@@ -578,7 +551,7 @@ uint32_t TrapTracer::readParamRaw(const ParamDef &p, uint32_t sp, int &stackOffs
 
 	/* Stack-based (Toolbox traps) -- Pascal convention, offset pre-computed by caller */
 	uint32_t addr = sp + stackOffset;
-	int sz = paramSize(p.type);
+	int sz = paramSize(p);
 
 	switch (sz)
 	{
@@ -593,105 +566,15 @@ uint32_t TrapTracer::readParamRaw(const ParamDef &p, uint32_t sp, int &stackOffs
 	}
 }
 
-/* -- type-specific formatters -------------------------- */
-
-std::string TrapTracer::formatOSType(uint32_t raw)
-{
-	char buf[7];
-	buf[0] = '\'';
-	for (int i = 0; i < 4; ++i)
-	{
-		uint8_t ch = (raw >> (24 - i * 8)) & 0xFF;
-		buf[1 + i] = (ch >= 0x20 && ch < 0x7F) ? static_cast<char>(ch) : '.';
-	}
-	buf[5] = '\'';
-	buf[6] = '\0';
-	return buf;
-}
-
-std::string TrapTracer::formatStr255(uint32_t addr)
-{
-	if (addr == 0) return "\"\"";
-
-	uint8_t len = static_cast<uint8_t>(get_vm_byte(addr));
-	if (len > 63) len = 63; /* cap for display */
-
-	std::string s = "\"";
-	for (int i = 0; i < len; ++i)
-	{
-		char ch = static_cast<char>(get_vm_byte(addr + 1 + i));
-		if (ch >= 0x20 && ch < 0x7F)
-			s += ch;
-		else
-			s += '.';
-	}
-	s += '"';
-	return s;
-}
-
-std::string TrapTracer::formatOSErr(int16_t err)
-{
-	const char *name = defs_.errorName(err);
-	char buf[64];
-	if (name)
-		snprintf(buf, sizeof(buf), "%d %s", (int)err, name);
-	else
-		snprintf(buf, sizeof(buf), "%d", (int)err);
-	return buf;
-}
-
 std::string TrapTracer::formatParam(const ParamDef &p, uint32_t rawValue)
 {
-	char buf[64];
-	switch (p.type)
-	{
-		case ParamType::Byte:
-			snprintf(buf, sizeof(buf), "$%02X", rawValue & 0xFF);
-			return buf;
-		case ParamType::Word:
-			snprintf(buf, sizeof(buf), "%d", static_cast<int16_t>(rawValue & 0xFFFF));
-			return buf;
-		case ParamType::Long:
-			snprintf(buf, sizeof(buf), "$%08X", rawValue);
-			return buf;
-		case ParamType::Ptr:
-			snprintf(buf, sizeof(buf), "$%08X", rawValue);
-			return buf;
-		case ParamType::Handle:
-		{
-			uint32_t deref = 0;
-			if (rawValue != 0) deref = get_vm_long(rawValue);
-			snprintf(buf, sizeof(buf), "$%08X->$%08X", rawValue, deref);
-			return buf;
-		}
-		case ParamType::OSType:
-			return formatOSType(rawValue);
-		case ParamType::Str255:
-			return formatStr255(rawValue);
-		case ParamType::OSErr:
-			return formatOSErr(static_cast<int16_t>(rawValue));
-		case ParamType::Boolean:
-			return (rawValue & 0xFF) ? "true" : "false";
-		case ParamType::Rect:
-		{
-			/* rawValue is address of rect; read 4 words */
-			int16_t t = static_cast<int16_t>(get_vm_word(rawValue));
-			int16_t l = static_cast<int16_t>(get_vm_word(rawValue + 2));
-			int16_t b = static_cast<int16_t>(get_vm_word(rawValue + 4));
-			int16_t r = static_cast<int16_t>(get_vm_word(rawValue + 6));
-			snprintf(buf, sizeof(buf), "{%d,%d,%d,%d}", t, l, b, r);
-			return buf;
-		}
-		case ParamType::Point:
-		{
-			int16_t v = static_cast<int16_t>((rawValue >> 16) & 0xFFFF);
-			int16_t h = static_cast<int16_t>(rawValue & 0xFFFF);
-			snprintf(buf, sizeof(buf), "{%d,%d}", v, h);
-			return buf;
-		}
-		case ParamType::StructPtr:
-			return formatStructPtr(p, rawValue, nullptr);
-	}
+	if (p.isStructPtr) return formatStructPtr(p, rawValue, nullptr);
+
+	std::string s = g_typeRegistry().formatValue(p.typeName, rawValue);
+	if (!s.empty()) return s;
+
+	/* fallback for unknown types */
+	char buf[16];
 	snprintf(buf, sizeof(buf), "$%08X", rawValue);
 	return buf;
 }

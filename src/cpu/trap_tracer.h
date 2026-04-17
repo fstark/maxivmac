@@ -60,9 +60,6 @@ public: /* public for testability */
 	std::string formatStructDumpFor(std::string_view structName, std::string_view paramName,
 									uint32_t addr, const StructFieldFilter *filter,
 									std::string_view pad);
-	std::string formatOSType(uint32_t raw);
-	std::string formatStr255(uint32_t addr);
-	std::string formatOSErr(int16_t err);
 
 private:
 	void emitStr(std::string_view s);

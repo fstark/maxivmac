@@ -32,66 +32,8 @@ static bool BlankOrComment(const std::string &line)
 	return true;
 }
 
-static bool ParseParamType(const std::string &s, ParamType &out)
-{
-	auto low = StrToLower(s);
-	if (low == "byte")
-	{
-		out = ParamType::Byte;
-		return true;
-	}
-	if (low == "word")
-	{
-		out = ParamType::Word;
-		return true;
-	}
-	if (low == "long")
-	{
-		out = ParamType::Long;
-		return true;
-	}
-	if (low == "ptr")
-	{
-		out = ParamType::Ptr;
-		return true;
-	}
-	if (low == "handle")
-	{
-		out = ParamType::Handle;
-		return true;
-	}
-	if (low == "ostype")
-	{
-		out = ParamType::OSType;
-		return true;
-	}
-	if (low == "str255")
-	{
-		out = ParamType::Str255;
-		return true;
-	}
-	if (low == "oserr")
-	{
-		out = ParamType::OSErr;
-		return true;
-	}
-	if (low == "boolean")
-	{
-		out = ParamType::Boolean;
-		return true;
-	}
-	if (low == "rect")
-	{
-		out = ParamType::Rect;
-		return true;
-	}
-	if (low == "point")
-	{
-		out = ParamType::Point;
-		return true;
-	}
-	return false;
-}
+/* Parse a single param token: "name:type" or "name:type.reg"
+   Type may be "^StructName" for pointer-to-struct. */
 
 static bool ParseRegLoc(const std::string &s, ParamLoc &out)
 {
@@ -179,8 +121,6 @@ static bool ParseRegLoc(const std::string &s, ParamLoc &out)
 	return false;
 }
 
-/* Parse a single param token: "name:type" or "name:type.reg"
-   Type may be "^StructName" for pointer-to-struct (StructPtr). */
 static bool ParseParam(const std::string &token, ParamDef &out)
 {
 	auto colon = token.find(':');
@@ -204,13 +144,15 @@ static bool ParseParam(const std::string &token, ParamDef &out)
 	/* Check for ^StructName (pointer-to-struct) */
 	if (!typeStr.empty() && typeStr[0] == '^')
 	{
-		out.type = ParamType::StructPtr;
-		out.structName = typeStr.substr(1);
-		if (out.structName.empty()) return false;
+		out.isStructPtr = true;
+		out.typeName = typeStr.substr(1);
+		if (out.typeName.empty()) return false;
 	}
 	else
 	{
-		if (!ParseParamType(typeStr, out.type)) return false;
+		out.isStructPtr = false;
+		out.typeName = typeStr;
+		if (out.typeName.empty()) return false;
 	}
 
 	if (!regStr.empty())
