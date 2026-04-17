@@ -27,6 +27,7 @@ enum class PrimitiveKind
 	Str255,
 	Str63,
 	Str31,
+	PStr,
 };
 
 struct PrimitiveInfo
@@ -45,7 +46,7 @@ static constexpr PrimitiveInfo kPrimitives[] = {
 	{"OSType", PrimitiveKind::OSType, 4},	 {"OSErr", PrimitiveKind::OSErr, 2},
 	{"Fixed", PrimitiveKind::Fixed, 4},		 {"Fract", PrimitiveKind::Fract, 4},
 	{"Str255", PrimitiveKind::Str255, 256},	 {"Str63", PrimitiveKind::Str63, 64},
-	{"Str31", PrimitiveKind::Str31, 32},
+	{"Str31", PrimitiveKind::Str31, 32},	 {"PStr", PrimitiveKind::PStr, 4},
 };
 
 [[maybe_unused]]
@@ -633,6 +634,31 @@ std::string TypeRegistry::formatPrimitive(std::string_view typeName, uint32_t ad
 			if (fracPart < 0) fracPart = -fracPart;
 			std::snprintf(buf, sizeof(buf), "%d.%04d", intPart, fracPart);
 			break;
+		}
+		case PrimitiveKind::PStr:
+		{
+			uint32_t ptr = mem_.readLong(addr);
+			if (ptr == 0) return "$00000000";
+			uint8_t len = mem_.readByte(ptr);
+			if (len > 255) len = 255;
+			std::string result;
+			char hdr[16];
+			std::snprintf(hdr, sizeof(hdr), "$%08X \"", ptr);
+			result = hdr;
+			for (uint8_t i = 0; i < len; ++i)
+			{
+				uint8_t c = mem_.readByte(ptr + 1 + i);
+				if (c >= 0x20 && c < 0x7F)
+					result += static_cast<char>(c);
+				else
+				{
+					char esc[5];
+					std::snprintf(esc, sizeof(esc), "\\x%02X", c);
+					result += esc;
+				}
+			}
+			result += '"';
+			return result;
 		}
 		case PrimitiveKind::Str255:
 		case PrimitiveKind::Str63:

@@ -65,7 +65,7 @@ struct ParamBlockHeader {
     8  Ptr      ioCmdAddr
     12 ProcPtr  ioCompletion
     16 OSErr    ioResult
-    18 Ptr      ioNamePtr
+    18 PStr     ioNamePtr
     22 sword    ioVRefNum
 }
 

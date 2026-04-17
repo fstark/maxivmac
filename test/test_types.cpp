@@ -445,3 +445,32 @@ TEST_CASE("types.def loads all expected types")
 	CHECK(reg.sizeOf("GrafPort") == 108);
 	CHECK(reg.sizeOf("WindowRecord") == 156);
 }
+
+TEST_CASE("TypeRegistry PStr formatting")
+{
+	auto tmp = writeTempDef("struct Hdr {\n"
+							"    0  PStr  name\n"
+							"}\n");
+	TypeRegistry reg;
+	reg.init({get_vm_byte, get_vm_word, get_vm_long});
+	reg.load(tmp);
+
+	/* Put a pointer at 0x100 that points to 0x200 */
+	put_be32(0x100, 0x00000200);
+	/* Put Pascal string "Hi" at 0x200 */
+	g_ram[0x200] = 2;
+	g_ram[0x201] = 'H';
+	g_ram[0x202] = 'i';
+
+	auto fields = reg.read("Hdr", 0x100);
+	REQUIRE(fields.size() == 1);
+	CHECK(fields[0].display == "$00000200 \"Hi\"");
+
+	/* Null pointer */
+	put_be32(0x100, 0x00000000);
+	fields = reg.read("Hdr", 0x100);
+	REQUIRE(fields.size() == 1);
+	CHECK(fields[0].display == "$00000000");
+
+	std::filesystem::remove(tmp);
+}
