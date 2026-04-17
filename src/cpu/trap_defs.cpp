@@ -318,6 +318,15 @@ int TrapDefs::load(const std::filesystem::path &path)
 	}
 
 	flushEntry();
+
+	/* Build sorted name index for name/search API */
+	sortedNames_.clear();
+	sortedNames_.reserve(defs_.size());
+	for (auto &[tw, def] : defs_)
+		sortedNames_.push_back({def.trapWord, def.name});
+	std::sort(sortedNames_.begin(), sortedNames_.end(),
+			  [](auto &a, auto &b) { return a.second < b.second; });
+
 	return count;
 }
 
@@ -356,4 +365,51 @@ const char *TrapDefs::errorName(int16_t code) const
 	auto it = errors_.find(code);
 	if (it != errors_.end()) return it->second.c_str();
 	return nullptr;
+}
+
+/* ── Name/search API ──────────────────────────────────── */
+
+int TrapDefs::size() const
+{
+	return static_cast<int>(sortedNames_.size());
+}
+
+std::pair<uint16_t, std::string_view> TrapDefs::entry(int index) const
+{
+	return {sortedNames_[index].first, sortedNames_[index].second};
+}
+
+std::string_view TrapDefs::nameOf(uint16_t trapWord) const
+{
+	const TrapDef *def = find(trapWord);
+	if (def) return def->name;
+	return {};
+}
+
+static inline bool ciStartsWith(std::string_view str, std::string_view prefix)
+{
+	if (str.size() < prefix.size()) return false;
+	for (size_t i = 0; i < prefix.size(); ++i)
+	{
+		if (std::tolower(static_cast<unsigned char>(str[i])) !=
+			std::tolower(static_cast<unsigned char>(prefix[i])))
+			return false;
+	}
+	return true;
+}
+
+void TrapDefs::search(std::string_view prefix,
+					  std::vector<std::pair<uint16_t, std::string_view>> &results,
+					  int maxResults) const
+{
+	results.clear();
+	if (prefix.empty()) return;
+	for (auto &[tw, name] : sortedNames_)
+	{
+		if (ciStartsWith(name, prefix))
+		{
+			results.push_back({tw, name});
+			if (static_cast<int>(results.size()) >= maxResults) break;
+		}
+	}
 }

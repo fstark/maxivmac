@@ -829,3 +829,61 @@ TEST_CASE("TrapTracer formatStructPtr without filter dumps all")
 	CHECK(dump.find("ioVRefNum") != std::string::npos);
 	CHECK(dump.find("ioRefNum") != std::string::npos);
 }
+
+/* ── TrapDefs name/search API ─────────────────────────── */
+
+TEST_CASE("TrapDefs nameOf returns name for known trap")
+{
+	TrapDefs defs;
+	auto p = writeTempFile("test_nameOf.def",
+		"A122 NewHandle os\n"
+		"  in  size:long.D0\n"
+		"A9A0 GetResource toolbox\n");
+	ensureTypeRegistryInit();
+	defs.load(p);
+	CHECK(defs.nameOf(0xA122) == "NewHandle");
+	CHECK(defs.nameOf(0xA9A0) == "GetResource");
+}
+
+TEST_CASE("TrapDefs nameOf returns empty for unknown trap")
+{
+	TrapDefs defs;
+	auto p = writeTempFile("test_nameOf_empty.def",
+		"A122 NewHandle os\n");
+	ensureTypeRegistryInit();
+	defs.load(p);
+	CHECK(defs.nameOf(0xA999).empty());
+}
+
+TEST_CASE("TrapDefs search prefix match")
+{
+	TrapDefs defs;
+	auto p = writeTempFile("test_search.def",
+		"A122 NewHandle os\n"
+		"A11E NewPtr os\n"
+		"A9A0 GetResource toolbox\n"
+		"A025 GetHandleSize os\n");
+	ensureTypeRegistryInit();
+	defs.load(p);
+	std::vector<std::pair<uint16_t, std::string_view>> results;
+	defs.search("New", results);
+	CHECK(results.size() == 2);
+	/* sorted alphabetically: NewHandle, NewPtr */
+	CHECK(results[0].second == "NewHandle");
+	CHECK(results[1].second == "NewPtr");
+
+	defs.search("get", results); /* case-insensitive */
+	CHECK(results.size() == 2);
+}
+
+TEST_CASE("TrapDefs size matches loaded count")
+{
+	TrapDefs defs;
+	auto p = writeTempFile("test_size.def",
+		"A122 NewHandle os\n"
+		"A11E NewPtr os\n"
+		"A9A0 GetResource toolbox\n");
+	ensureTypeRegistryInit();
+	defs.load(p);
+	CHECK(defs.size() == 3);
+}

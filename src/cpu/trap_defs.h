@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 #include <filesystem>
@@ -73,6 +74,14 @@ public:
 	const TrapDef *find(uint16_t trapWord) const;
 	const char *errorName(int16_t code) const;
 
+	/* Name/search API (replaces trap_counter.cpp's s_dict) */
+	int size() const;
+	std::pair<uint16_t, std::string_view> entry(int index) const;
+	std::string_view nameOf(uint16_t trapWord) const;
+	void search(std::string_view prefix,
+				std::vector<std::pair<uint16_t, std::string_view>> &results,
+				int maxResults = 20) const;
+
 private:
 	static uint16_t maskTrapWord(uint16_t tw);
 	static bool parseHeaderLine(const std::string &line, TrapDef &out);
@@ -80,4 +89,5 @@ private:
 
 	std::unordered_map<uint16_t, TrapDef> defs_;
 	std::unordered_map<int16_t, std::string> errors_;
+	std::vector<std::pair<uint16_t, std::string>> sortedNames_;
 };
