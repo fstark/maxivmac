@@ -260,3 +260,10 @@ struct WindowRecord {
     148 Handle    windowPic
     152 slong     refCon
 }
+
+# Custom: pre-Multifinder launch trap
+
+struct LaunchParam {
+	0 PStr name
+	4 sword flags
+}
