@@ -337,3 +337,73 @@ TEST_CASE("TypeRegistry Str255 formatting")
 
 	std::filesystem::remove(tmp);
 }
+
+/* ════════════════════════════════════════════════════════
+   Phase 4 — format() and readField()
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("TypeRegistry format output")
+{
+	auto tmp = writeTempDef("struct Point {\n"
+							"    0  sword  v\n"
+							"    2  sword  h\n"
+							"}\n");
+	TypeRegistry reg;
+	reg.init({get_vm_byte, get_vm_word, get_vm_long});
+	reg.load(tmp);
+
+	put_be16(0x100, 100);
+	put_be16(0x102, static_cast<uint16_t>(-50));
+
+	auto output = reg.format("Point", 0x100);
+	CHECK(output.find("v:") != std::string::npos);
+	CHECK(output.find("h:") != std::string::npos);
+	CHECK(output.find("100") != std::string::npos);
+	CHECK(output.find("-50") != std::string::npos);
+
+	std::filesystem::remove(tmp);
+}
+
+TEST_CASE("TypeRegistry readField")
+{
+	auto tmp = writeTempDef("struct Point {\n"
+							"    0  sword  v\n"
+							"    2  sword  h\n"
+							"}\n");
+	TypeRegistry reg;
+	reg.init({get_vm_byte, get_vm_word, get_vm_long});
+	reg.load(tmp);
+
+	put_be16(0x100, 100);
+	put_be16(0x102, static_cast<uint16_t>(-50));
+
+	CHECK(reg.readField("Point", 0x100, "v") == "100");
+	CHECK(reg.readField("Point", 0x100, "h") == "-50");
+	CHECK(reg.readField("Point", 0x100, "nonexistent") == "");
+
+	std::filesystem::remove(tmp);
+}
+
+TEST_CASE("TypeRegistry format nested struct")
+{
+	auto tmp = writeTempDef("struct FInfo {\n"
+							"    0  OSType  fdType\n"
+							"    4  OSType  fdCreator\n"
+							"    8  word    fdFlags\n"
+							"}\n");
+	TypeRegistry reg;
+	reg.init({get_vm_byte, get_vm_word, get_vm_long});
+	reg.load(tmp);
+
+	/* 'TEXT' = 0x54455854 */
+	put_be32(0x100, 0x54455854);
+	/* 'ttxt' = 0x74747874 */
+	put_be32(0x104, 0x74747874);
+	put_be16(0x108, 0x0100);
+
+	auto output = reg.format("FInfo", 0x100);
+	CHECK(output.find("'TEXT'") != std::string::npos);
+	CHECK(output.find("'ttxt'") != std::string::npos);
+
+	std::filesystem::remove(tmp);
+}

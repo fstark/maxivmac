@@ -465,16 +465,44 @@ std::vector<FieldValue> TypeRegistry::read(std::string_view typeName, uint32_t a
 	return out;
 }
 
-std::string TypeRegistry::format(std::string_view /*typeName*/, uint32_t /*addr*/,
-								 std::string_view /*variant*/) const
+std::string TypeRegistry::format(std::string_view typeName, uint32_t addr,
+								 std::string_view variant) const
 {
-	return {};
+	auto fields = read(typeName, addr, variant);
+	if (fields.empty()) return {};
+
+	size_t maxNameLen = 0;
+	for (auto &f : fields)
+	{
+		if (f.name.size() > maxNameLen) maxNameLen = f.name.size();
+	}
+	if (maxNameLen > 30) maxNameLen = 30;
+
+	std::string result;
+	for (auto &f : fields)
+	{
+		result += "  ";
+		std::string label = f.name + ":";
+		result += label;
+		size_t padTo = maxNameLen + 3; /* name + ":" + at least 1 space */
+		if (label.size() < padTo)
+			result.append(padTo - label.size(), ' ');
+		else
+			result += ' ';
+		result += f.display;
+		result += '\n';
+	}
+	return result;
 }
 
-std::string TypeRegistry::readField(std::string_view /*typeName*/, uint32_t /*addr*/,
-									std::string_view /*fieldPath*/,
-									std::string_view /*variant*/) const
+std::string TypeRegistry::readField(std::string_view typeName, uint32_t addr,
+									std::string_view fieldPath, std::string_view variant) const
 {
+	auto fields = read(typeName, addr, variant);
+	for (auto &f : fields)
+	{
+		if (f.name == fieldPath) return f.display;
+	}
 	return {};
 }
 
