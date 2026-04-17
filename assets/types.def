@@ -267,3 +267,92 @@ struct LaunchParam {
 	0 PStr name
 	4 sword flags
 }
+
+# ── Low-memory global structs ───────────
+
+struct QHdr {
+    0  sword    qFlags
+    2  Ptr      qHead
+    6  Ptr      qTail
+}
+
+struct SysParmType {
+    0  byte     valid
+    1  byte     aTalkA
+    2  byte     aTalkB
+    3  byte     config
+    4  sword    portA
+    6  sword    portB
+    8  slong    alarm
+    12 sword    font
+    14 sword    kbdPrint
+    16 sword    volClik
+    18 sword    misc
+}
+
+struct ScrapStuff {
+    0  slong    scrapSize
+    4  Handle   scrapHandle
+    8  sword    scrapCount
+    10 sword    scrapState
+    12 Ptr      scrapName
+}
+
+struct Pattern {
+    0  byte     pat[8]
+}
+
+struct Region {
+    0  sword    rgnSize
+    2  Rect     rgnBBox
+}
+
+struct Zone {
+    0  Ptr      bkLim
+    4  Ptr      purgePtr
+    8  Ptr      hFstFree
+    12 slong    zcbFree
+    16 ProcPtr  gzProc
+    20 sword    moreMast
+    22 sword    flags
+    24 sword    cntRel
+    26 sword    maxRel
+    28 sword    cntNRel
+    30 sword    maxNRel
+    32 sword    cntEmpty
+    34 sword    cntHandles
+    36 slong    minCBFree
+    40 ProcPtr  purgeProc
+    44 Ptr      sparePtr
+    48 Ptr      allocPtr
+    52 sword    heapData
+}
+
+struct VCB {
+    0  Ptr      qLink
+    4  sword    qType
+    6  sword    vcbFlags
+    8  sword    vcbSigWord
+    10 slong    vcbCrDate
+    14 slong    vcbLsBkUp
+    18 sword    vcbAtrb
+    20 sword    vcbNmFls
+    22 sword    vcbDirSt
+    24 sword    vcbBlLn
+    26 sword    vcbNmBlks
+    28 slong    vcbAlBlkSiz
+    32 slong    vcbClpSiz
+    36 sword    vcbAlBlSt
+    38 slong    vcbNxtFNum
+    42 sword    vcbFreeBks
+    44 byte     vcbVN[28]
+    72 sword    vcbDrvNum
+    74 sword    vcbDRefNum
+    76 sword    vcbFSID
+    78 sword    vcbVRefNum
+    80 Ptr      vcbMAdr
+    84 Ptr      vcbBufAdr
+    88 sword    vcbMLen
+    90 sword    vcbDirIndex
+    92 sword    vcbDirBlk
+}
