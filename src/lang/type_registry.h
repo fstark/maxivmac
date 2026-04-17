@@ -38,6 +38,7 @@ public:
 
 	bool has(std::string_view typeName) const;
 	uint16_t sizeOf(std::string_view typeName) const;
+	uint16_t stackSize(std::string_view typeName) const;
 
 	std::vector<FieldValue> read(std::string_view typeName, uint32_t addr,
 								 std::string_view variant = {}) const;

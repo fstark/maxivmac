@@ -544,6 +544,35 @@ TEST_CASE("TypeRegistry formatValue unknown type")
 }
 
 /* ════════════════════════════════════════════════════════
+   TypeRegistry::stackSize — 68K stack push sizes
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("TypeRegistry stackSize")
+{
+	ensureTypeRegistryInit();
+	auto &tr = g_typeRegistry();
+
+	/* byte/Boolean round up to 2 (68K pushes at least a word) */
+	CHECK(tr.stackSize("byte") == 2);
+	CHECK(tr.stackSize("Boolean") == 2);
+
+	/* word-sized types stay at 2 */
+	CHECK(tr.stackSize("word") == 2);
+	CHECK(tr.stackSize("sword") == 2);
+
+	/* long-sized types */
+	CHECK(tr.stackSize("long") == 4);
+	CHECK(tr.stackSize("slong") == 4);
+	CHECK(tr.stackSize("Ptr") == 4);
+	CHECK(tr.stackSize("Handle") == 4);
+	CHECK(tr.stackSize("OSType") == 4);
+	CHECK(tr.stackSize("PStr") == 4);
+
+	/* unknown type defaults to 2 */
+	CHECK(tr.stackSize("NoSuchType") == 2);
+}
+
+/* ════════════════════════════════════════════════════════
    Phase 4 — StructPtr (^TypeName) support
    ════════════════════════════════════════════════════════ */
 

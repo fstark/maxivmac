@@ -431,6 +431,14 @@ uint16_t TypeRegistry::sizeOf(std::string_view typeName) const
 	return 0;
 }
 
+uint16_t TypeRegistry::stackSize(std::string_view typeName) const
+{
+	uint16_t sz = sizeOf(typeName);
+	if (sz == 0) return 2; /* unknown -> assume word */
+	if (sz == 1) return 2; /* byte/Boolean pushed as word on 68K stack */
+	return sz;
+}
+
 std::vector<FieldValue> TypeRegistry::read(std::string_view typeName, uint32_t addr,
 										   std::string_view variant) const
 {
