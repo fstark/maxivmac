@@ -120,7 +120,6 @@ struct TypeRegistry::TypeEntry
 
 /* ── Parser helpers ───────────────────────────────────── */
 
-[[maybe_unused]]
 static bool BlankOrComment(const std::string &line)
 {
 	for (char c : line)
@@ -128,6 +127,64 @@ static bool BlankOrComment(const std::string &line)
 		if (c == '#') return true;
 		if (!std::isspace(static_cast<unsigned char>(c))) return false;
 	}
+	return true;
+}
+
+static std::string StripComment(const std::string &line)
+{
+	auto pos = line.find('#');
+	if (pos == std::string::npos) return line;
+	return line.substr(0, pos);
+}
+
+static bool ParseFieldLine(const std::string &raw, uint16_t &outOffset, std::string &outType,
+						   std::string &outField, uint16_t &outArray, const std::string &file,
+						   int lineNo)
+{
+	std::string line = StripComment(raw);
+	std::istringstream iss(line);
+	int offset;
+	std::string typeName;
+	std::string fieldName;
+	if (!(iss >> offset >> typeName >> fieldName)) return false;
+
+	if (offset < 0 || offset > 65535)
+	{
+		std::fprintf(stderr, "%s:%d: offset %d out of range\n", file.c_str(), lineNo, offset);
+		return false;
+	}
+
+	outOffset = static_cast<uint16_t>(offset);
+	outArray = 1;
+
+	/* Check for array suffix on the type: type[N] */
+	auto bracket = typeName.find('[');
+	if (bracket != std::string::npos)
+	{
+		auto end = typeName.find(']', bracket);
+		if (end != std::string::npos)
+		{
+			int n = std::atoi(typeName.c_str() + bracket + 1);
+			if (n > 0) outArray = static_cast<uint16_t>(n);
+			typeName = typeName.substr(0, bracket);
+		}
+	}
+
+	/* Check for array suffix on the field name: name[N] */
+	bracket = fieldName.find('[');
+	if (bracket != std::string::npos)
+	{
+		auto end = fieldName.find(']', bracket);
+		if (end != std::string::npos)
+		{
+			int n = std::atoi(fieldName.c_str() + bracket + 1);
+			if (n > 0) outArray = static_cast<uint16_t>(n);
+			fieldName = fieldName.substr(0, bracket);
+		}
+	}
+
+	outType = std::move(typeName);
+	outField = std::move(fieldName);
 	return true;
 }
 
@@ -153,19 +210,215 @@ void TypeRegistry::init(MemReader reader)
 	mem_ = reader;
 }
 
-int TypeRegistry::load(const std::filesystem::path & /*path*/)
+int TypeRegistry::load(const std::filesystem::path &path)
 {
-	return 0;
+	std::ifstream f(path);
+	if (!f.is_open()) return 0;
+
+	std::string fileName = path.filename().string();
+	int count = 0;
+	int lineNo = 0;
+	std::string line;
+
+	enum class State
+	{
+		Idle,
+		Struct,
+		Union
+	};
+	State state = State::Idle;
+	StructDef currentStruct;
+	UnionDef currentUnion;
+
+	auto finishStruct = [&]()
+	{
+		TypeEntry te;
+		te.name = currentStruct.name;
+		te.isUnion = false;
+		te.structDef = std::move(currentStruct);
+
+		/* Check for duplicate, overwrite */
+		bool replaced = false;
+		for (auto &existing : types_)
+		{
+			if (existing.name == te.name)
+			{
+				std::fprintf(stderr, "%s:%d: duplicate type '%s', overwriting\n", fileName.c_str(),
+							 lineNo, te.name.c_str());
+				existing = std::move(te);
+				replaced = true;
+				break;
+			}
+		}
+		if (!replaced) types_.push_back(std::move(te));
+		++count;
+		currentStruct = StructDef{};
+	};
+
+	auto finishUnion = [&]()
+	{
+		TypeEntry te;
+		te.name = currentUnion.name;
+		te.isUnion = true;
+		te.unionDef = std::move(currentUnion);
+
+		bool replaced = false;
+		for (auto &existing : types_)
+		{
+			if (existing.name == te.name)
+			{
+				std::fprintf(stderr, "%s:%d: duplicate type '%s', overwriting\n", fileName.c_str(),
+							 lineNo, te.name.c_str());
+				existing = std::move(te);
+				replaced = true;
+				break;
+			}
+		}
+		if (!replaced) types_.push_back(std::move(te));
+		++count;
+		currentUnion = UnionDef{};
+	};
+
+	while (std::getline(f, line))
+	{
+		++lineNo;
+		if (BlankOrComment(line)) continue;
+
+		if (state == State::Idle)
+		{
+			std::istringstream iss(line);
+			std::string keyword, name, brace;
+			iss >> keyword >> name >> brace;
+
+			if (keyword == "struct" && brace == "{")
+			{
+				currentStruct = StructDef{};
+				currentStruct.name = name;
+				state = State::Struct;
+			}
+			else if (keyword == "union" && brace == "{")
+			{
+				currentUnion = UnionDef{};
+				currentUnion.name = name;
+				state = State::Union;
+			}
+			else
+			{
+				std::fprintf(stderr, "%s:%d: unexpected line in idle state\n", fileName.c_str(),
+							 lineNo);
+			}
+		}
+		else if (state == State::Struct)
+		{
+			std::string trimmed = line;
+			/* Trim leading whitespace */
+			auto start = trimmed.find_first_not_of(" \t");
+			if (start != std::string::npos) trimmed = trimmed.substr(start);
+
+			if (trimmed[0] == '}')
+			{
+				finishStruct();
+				state = State::Idle;
+				continue;
+			}
+
+			uint16_t offset;
+			std::string typeName, fieldName;
+			uint16_t arrayCount;
+			if (!ParseFieldLine(line, offset, typeName, fieldName, arrayCount, fileName, lineNo))
+			{
+				std::fprintf(stderr, "%s:%d: bad field line\n", fileName.c_str(), lineNo);
+				continue;
+			}
+
+			/* Validate non-decreasing offsets */
+			if (!currentStruct.fields.empty())
+			{
+				auto &prev = currentStruct.fields.back();
+				const auto *prevPrim = FindPrimitive(prev.typeName);
+				uint16_t prevSize = prevPrim ? prevPrim->size : 0;
+				if (!prevPrim)
+				{
+					/* Check user-defined type */
+					const auto *prevType = findType(prev.typeName);
+					if (prevType) prevSize = computeSize(*prevType);
+				}
+				uint16_t prevEnd = prev.offset + prevSize * prev.arrayCount;
+				if (offset < prevEnd)
+				{
+					std::fprintf(stderr,
+								 "%s:%d: overlapping field at offset %d (previous ends at %d)\n",
+								 fileName.c_str(), lineNo, offset, prevEnd);
+					continue;
+				}
+			}
+
+			FieldDef fd;
+			fd.offset = offset;
+			fd.typeName = std::move(typeName);
+			fd.fieldName = std::move(fieldName);
+			fd.arrayCount = arrayCount;
+			currentStruct.fields.push_back(std::move(fd));
+		}
+		else if (state == State::Union)
+		{
+			std::string trimmed = line;
+			auto start = trimmed.find_first_not_of(" \t");
+			if (start != std::string::npos) trimmed = trimmed.substr(start);
+
+			if (trimmed[0] == '}')
+			{
+				finishUnion();
+				state = State::Idle;
+				continue;
+			}
+
+			std::string stripped = StripComment(line);
+			std::istringstream iss(stripped);
+			std::string tag, typeName;
+			if (!(iss >> tag >> typeName))
+			{
+				std::fprintf(stderr, "%s:%d: bad union arm line\n", fileName.c_str(), lineNo);
+				continue;
+			}
+			currentUnion.arms.emplace_back(std::move(tag), std::move(typeName));
+		}
+	}
+
+	/* Missing closing brace */
+	if (state != State::Idle)
+	{
+		std::fprintf(stderr, "%s:%d: missing '}' at end of file\n", fileName.c_str(), lineNo);
+	}
+
+	return count;
 }
 
-int TypeRegistry::loadErrors(const std::filesystem::path & /*path*/)
+int TypeRegistry::loadErrors(const std::filesystem::path &path)
 {
-	return 0;
+	std::ifstream f(path);
+	if (!f.is_open()) return 0;
+
+	int count = 0;
+	std::string line;
+	while (std::getline(f, line))
+	{
+		if (BlankOrComment(line)) continue;
+
+		std::istringstream iss(line);
+		int code;
+		std::string name;
+		if (!(iss >> code >> name)) continue;
+
+		errors_[static_cast<int16_t>(code)] = name;
+		++count;
+	}
+	return count;
 }
 
-bool TypeRegistry::has(std::string_view /*typeName*/) const
+bool TypeRegistry::has(std::string_view typeName) const
 {
-	return false;
+	return findType(typeName) != nullptr || FindPrimitive(typeName) != nullptr;
 }
 
 uint16_t TypeRegistry::sizeOf(std::string_view /*typeName*/) const
@@ -192,8 +445,12 @@ std::string TypeRegistry::readField(std::string_view /*typeName*/, uint32_t /*ad
 	return {};
 }
 
-const TypeRegistry::TypeEntry *TypeRegistry::findType(std::string_view /*name*/) const
+const TypeRegistry::TypeEntry *TypeRegistry::findType(std::string_view name) const
 {
+	for (auto &te : types_)
+	{
+		if (te.name == name) return &te;
+	}
 	return nullptr;
 }
 
