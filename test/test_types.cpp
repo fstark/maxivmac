@@ -407,3 +407,41 @@ TEST_CASE("TypeRegistry format nested struct")
 
 	std::filesystem::remove(tmp);
 }
+
+/* ════════════════════════════════════════════════════════
+   Phase 5 — assets/types.def smoke test
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("types.def loads all expected types")
+{
+	TypeRegistry reg;
+	reg.init({get_vm_byte, get_vm_word, get_vm_long});
+	int n = reg.load("assets/types.def");
+	CHECK(n > 0);
+
+	CHECK(reg.has("Point"));
+	CHECK(reg.has("Rect"));
+	CHECK(reg.has("FInfo"));
+	CHECK(reg.has("FXInfo"));
+	CHECK(reg.has("DInfo"));
+	CHECK(reg.has("DXInfo"));
+	CHECK(reg.has("ParamBlockHeader"));
+	CHECK(reg.has("IOParam"));
+	CHECK(reg.has("FileParam"));
+	CHECK(reg.has("VolumeParam"));
+	CHECK(reg.has("HFileInfo"));
+	CHECK(reg.has("DirInfo"));
+	CHECK(reg.has("CInfoPBRec"));
+	CHECK(reg.has("WDParam"));
+	CHECK(reg.has("FCBPBRec"));
+	CHECK(reg.has("BitMap"));
+	CHECK(reg.has("GrafPort"));
+	CHECK(reg.has("WindowRecord"));
+
+	CHECK(reg.sizeOf("Point") == 4);
+	CHECK(reg.sizeOf("Rect") == 8);
+	CHECK(reg.sizeOf("FInfo") == 16);
+	CHECK(reg.sizeOf("ParamBlockHeader") == 24);
+	CHECK(reg.sizeOf("GrafPort") == 108);
+	CHECK(reg.sizeOf("WindowRecord") == 156);
+}

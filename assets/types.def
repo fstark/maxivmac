@@ -1,0 +1,262 @@
+# types.def — Classic Mac OS structure definitions for maxivmac
+#
+# Loaded by TypeRegistry at startup.  Field offsets are decimal bytes
+# from the start of the struct.  Types are primitives (byte, sword, etc.)
+# or previously-defined struct names.
+#
+# Source: THINK C 5 "Apple #includes" headers (Files.h, Quickdraw.h, Windows.h)
+
+# ── Small composites ────────────────────
+
+struct Point {
+    0  sword    v
+    2  sword    h
+}
+
+struct Rect {
+    0  sword    top
+    2  sword    left
+    4  sword    bottom
+    6  sword    right
+}
+
+# ── Finder Info ──────────────────────────
+
+struct FInfo {
+    0  OSType   fdType
+    4  OSType   fdCreator
+    8  word     fdFlags
+    10 Point    fdLocation
+    14 sword    fdFldr
+}
+
+struct FXInfo {
+    0  sword    fdIconID
+    2  sword    fdUnused[3]
+    8  sbyte    fdScript
+    9  sbyte    fdXFlags
+    10 sword    fdComment
+    12 long     fdPutAway
+}
+
+struct DInfo {
+    0  Rect     frRect
+    8  word     frFlags
+    10 Point    frLocation
+    14 sword    frView
+}
+
+struct DXInfo {
+    0  Point    frScroll
+    4  long     frOpenChain
+    8  sbyte    frScript
+    9  sbyte    frXFlags
+    10 sword    frComment
+    12 long     frPutAway
+}
+
+# ── ParamBlockHeader ────────────────────
+# Shared prefix for all File Manager param blocks.
+
+struct ParamBlockHeader {
+    0  Ptr      qLink
+    4  sword    qType
+    6  word     ioTrap
+    8  Ptr      ioCmdAddr
+    12 ProcPtr  ioCompletion
+    16 OSErr    ioResult
+    18 Ptr      ioNamePtr
+    22 sword    ioVRefNum
+}
+
+# ── File Manager param blocks ───────────
+
+struct IOParam {
+    0  ParamBlockHeader header
+    24 sword    ioRefNum
+    26 sbyte    ioVersNum
+    27 sbyte    ioPermssn
+    28 Ptr      ioMisc
+    32 Ptr      ioBuffer
+    36 long     ioReqCount
+    40 long     ioActCount
+    44 sword    ioPosMode
+    46 slong    ioPosOffset
+}
+
+struct FileParam {
+    0  ParamBlockHeader header
+    24 sword    ioFRefNum
+    26 sbyte    ioFVersNum
+    27 sbyte    filler1
+    28 sword    ioFDirIndex
+    30 sbyte    ioFlAttrib
+    31 sbyte    ioFlVersNum
+    32 FInfo    ioFlFndrInfo
+    48 long     ioFlNum
+    52 word     ioFlStBlk
+    54 slong    ioFlLgLen
+    58 slong    ioFlPyLen
+    62 word     ioFlRStBlk
+    64 slong    ioFlRLgLen
+    68 slong    ioFlRPyLen
+    72 long     ioFlCrDat
+    76 long     ioFlMdDat
+}
+
+struct VolumeParam {
+    0  ParamBlockHeader header
+    24 sword    ioFRefNum
+    26 sbyte    filler1
+    27 sbyte    filler2
+    28 sword    ioVolIndex
+    30 long     ioVCrDate
+    34 long     ioVLsMod
+    38 sword    ioVAtrb
+    40 sword    ioVNmFls
+    42 word     ioVBitMap
+    44 word     ioAllocPtr
+    46 word     ioVNmAlBlks
+    48 long     ioVAlBlkSiz
+    52 long     ioVClpSiz
+    56 word     ioAlBlSt
+    58 long     ioVNxtCNID
+    62 word     ioVFrBlk
+}
+
+# ── HFS catalog info ────────────────────
+
+struct HFileInfo {
+    0  ParamBlockHeader header
+    24 sword    ioFRefNum
+    26 sbyte    ioFVersNum
+    27 sbyte    filler1
+    28 sword    ioFDirIndex
+    30 sbyte    ioFlAttrib
+    31 sbyte    filler2
+    32 FInfo    ioFlFndrInfo
+    48 long     ioDirID
+    52 word     ioFlStBlk
+    54 slong    ioFlLgLen
+    58 slong    ioFlPyLen
+    62 word     ioFlRStBlk
+    64 slong    ioFlRLgLen
+    68 slong    ioFlRPyLen
+    72 long     ioFlCrDat
+    76 long     ioFlMdDat
+    80 long     ioFlBkDat
+    84 FXInfo   ioFlXFndrInfo
+    100 long    ioFlParID
+    104 long    ioFlClpSiz
+}
+
+struct DirInfo {
+    0  ParamBlockHeader header
+    24 sword    ioFRefNum
+    26 sword    filler1
+    28 sword    ioFDirIndex
+    30 sbyte    ioFlAttrib
+    31 sbyte    filler2
+    32 DInfo    ioDrUsrWds
+    48 long     ioDrDirID
+    52 word     ioDrNmFls
+    54 sword    filler3[9]
+    72 long     ioDrCrDat
+    76 long     ioDrMdDat
+    80 long     ioDrBkDat
+    84 DXInfo   ioDrFndrInfo
+    100 long    ioDrParID
+}
+
+union CInfoPBRec {
+    file HFileInfo
+    dir  DirInfo
+}
+
+# ── Working directory / FCB ─────────────
+
+struct WDParam {
+    0  ParamBlockHeader header
+    24 sword    filler1
+    26 sword    ioWDIndex
+    28 long     ioWDProcID
+    32 sword    ioWDVRefNum
+    34 sword    filler2[7]
+    48 long     ioWDDirID
+}
+
+struct FCBPBRec {
+    0  ParamBlockHeader header
+    24 sword    ioFRefNum
+    26 sword    filler
+    28 sword    ioFCBIndx
+    30 sword    filler2
+    32 long     ioFCBFlNm
+    36 sword    ioFCBFlags
+    38 word     ioFCBStBlk
+    40 long     ioFCBEOF
+    44 long     ioFCBPLen
+    48 long     ioFCBCrPs
+    52 sword    ioFCBVRefNum
+    54 long     ioFCBClpSiz
+    58 long     ioFCBParID
+}
+
+# ── QuickDraw ───────────────────────────
+
+struct BitMap {
+    0  Ptr      baseAddr
+    4  sword    rowBytes
+    6  Rect     bounds
+}
+
+struct GrafPort {
+    0  sword    device
+    2  BitMap   portBits
+    16 Rect     portRect
+    24 Handle   visRgn
+    28 Handle   clipRgn
+    32 byte     bkPat[8]
+    40 byte     fillPat[8]
+    48 Point    pnLoc
+    52 Point    pnSize
+    56 sword    pnMode
+    58 byte     pnPat[8]
+    66 sword    pnVis
+    68 sword    txFont
+    70 byte     txFace
+    71 sbyte    filler
+    72 sword    txMode
+    74 sword    txSize
+    76 Fixed    spExtra
+    80 slong    fgColor
+    84 slong    bkColor
+    88 sword    colrBit
+    90 sword    patStretch
+    92 Handle   picSave
+    96 Handle   rgnSave
+    100 Handle  polySave
+    104 Ptr     grafProcs
+}
+
+# ── Window Manager ──────────────────────
+
+struct WindowRecord {
+    0   GrafPort  port
+    108 sword     windowKind
+    110 Boolean   visible
+    111 Boolean   hilited
+    112 Boolean   goAwayFlag
+    113 Boolean   spareFlag
+    114 Handle    strucRgn
+    118 Handle    contRgn
+    122 Handle    updateRgn
+    126 Handle    windowDefProc
+    130 Handle    dataHandle
+    134 Handle    titleHandle
+    138 sword     titleWidth
+    140 Handle    controlList
+    144 Ptr       nextWindow
+    148 Handle    windowPic
+    152 slong     refCon
+}
