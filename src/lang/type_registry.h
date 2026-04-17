@@ -52,6 +52,11 @@ public:
 	std::string readField(std::string_view typeName, uint32_t addr, std::string_view fieldPath,
 						  std::string_view variant = {}) const;
 
+	/* Format a raw value by type name, without reading from guest memory.
+	   For value types, raw is the value itself.  For pointer types (Ptr,
+	   Handle, PStr), raw is a guest address that will be dereferenced. */
+	std::string formatValue(std::string_view typeName, uint32_t raw) const;
+
 	struct TypeInfo
 	{
 		std::string_view name;

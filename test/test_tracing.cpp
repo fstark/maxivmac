@@ -473,12 +473,79 @@ TEST_CASE("Tracer OS trap output uses registers not stack")
 }
 
 /* ════════════════════════════════════════════════════════
-   Phase 4 — StructPtr (^TypeName) support
+   TypeRegistry::formatValue — raw value formatting
    ════════════════════════════════════════════════════════ */
 
 extern uint8_t get_vm_byte(uint32_t addr);
 extern uint16_t get_vm_word(uint32_t addr);
 extern uint32_t get_vm_long(uint32_t addr);
+
+static void ensureTypeRegistryInit()
+{
+	static bool done = false;
+	if (done) return;
+	g_typeRegistry().init({get_vm_byte, get_vm_word, get_vm_long});
+	done = true;
+}
+
+TEST_CASE("TypeRegistry formatValue primitives")
+{
+	ensureTypeRegistryInit();
+	auto &tr = g_typeRegistry();
+
+	CHECK(tr.formatValue("long", 0x12345678) == "$12345678");
+	CHECK(tr.formatValue("sword", 0xFFFF) == "-1");
+	CHECK(tr.formatValue("sword", 0x0005) == "5");
+	CHECK(tr.formatValue("word", 0x00FF) == "$00FF");
+	CHECK(tr.formatValue("byte", 0x42) == "$42");
+	CHECK(tr.formatValue("sbyte", 0xFF) == "-1");
+	CHECK(tr.formatValue("slong", 0xFFFFFFFF) == "-1");
+	CHECK(tr.formatValue("Boolean", 1) == "true");
+	CHECK(tr.formatValue("Boolean", 0) == "false");
+	CHECK(tr.formatValue("Ptr", 0x00001000) == "$00001000");
+	CHECK(tr.formatValue("OSType", 0x54455854) == "'TEXT'");
+	CHECK(tr.formatValue("OSErr", static_cast<uint32_t>(static_cast<int16_t>(-43))) == "-43");
+}
+
+TEST_CASE("TypeRegistry formatValue Handle dereferences")
+{
+	ensureTypeRegistryInit();
+	auto &tr = g_typeRegistry();
+
+	memset(g_ram, 0, 256);
+	put_be32(0x100, 0xDEADBEEF);
+	CHECK(tr.formatValue("Handle", 0x100) == "$00000100->$DEADBEEF");
+	CHECK(tr.formatValue("Handle", 0) == "$00000000->$00000000");
+}
+
+TEST_CASE("TypeRegistry formatValue PStr dereferences")
+{
+	ensureTypeRegistryInit();
+	auto &tr = g_typeRegistry();
+
+	memset(g_ram, 0, 256);
+	/* Build a Pascal string "Hi" at address 0x50 */
+	g_ram[0x50] = 2;
+	g_ram[0x51] = 'H';
+	g_ram[0x52] = 'i';
+
+	std::string result = tr.formatValue("PStr", 0x50);
+	CHECK(result.find("$00000050") != std::string::npos);
+	CHECK(result.find("\"Hi\"") != std::string::npos);
+
+	CHECK(tr.formatValue("PStr", 0) == "$00000000");
+}
+
+TEST_CASE("TypeRegistry formatValue unknown type")
+{
+	ensureTypeRegistryInit();
+	auto &tr = g_typeRegistry();
+	CHECK(tr.formatValue("NoSuchType", 42) == "");
+}
+
+/* ════════════════════════════════════════════════════════
+   Phase 4 — StructPtr (^TypeName) support
+   ════════════════════════════════════════════════════════ */
 
 /* Ensure g_typeRegistry has IOParam loaded for StructPtr tests. */
 static bool s_globalTypesLoaded = false;

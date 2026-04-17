@@ -623,7 +623,7 @@ void TypeRegistry::readStruct(const StructDef &sd, uint32_t baseAddr, uint32_t o
 	}
 }
 
-std::string TypeRegistry::formatPrimitive(std::string_view typeName, uint32_t addr) const
+std::string TypeRegistry::formatValue(std::string_view typeName, uint32_t raw) const
 {
 	const auto *prim = FindPrimitive(typeName);
 	if (!prim) return {};
@@ -633,35 +633,42 @@ std::string TypeRegistry::formatPrimitive(std::string_view typeName, uint32_t ad
 	switch (prim->kind)
 	{
 		case PrimitiveKind::Byte:
-			std::snprintf(buf, sizeof(buf), "$%02X", mem_.readByte(addr));
+			std::snprintf(buf, sizeof(buf), "$%02X", raw & 0xFF);
 			break;
 		case PrimitiveKind::SByte:
-			std::snprintf(buf, sizeof(buf), "%d", static_cast<int8_t>(mem_.readByte(addr)));
+			std::snprintf(buf, sizeof(buf), "%d", static_cast<int8_t>(raw & 0xFF));
 			break;
 		case PrimitiveKind::BooleanK:
-			return mem_.readByte(addr) ? "true" : "false";
+			return (raw & 0xFF) ? "true" : "false";
 		case PrimitiveKind::Word:
-			std::snprintf(buf, sizeof(buf), "$%04X", mem_.readWord(addr));
+			std::snprintf(buf, sizeof(buf), "$%04X", raw & 0xFFFF);
 			break;
 		case PrimitiveKind::SWord:
-			std::snprintf(buf, sizeof(buf), "%d", static_cast<int16_t>(mem_.readWord(addr)));
+			std::snprintf(buf, sizeof(buf), "%d", static_cast<int16_t>(raw & 0xFFFF));
 			break;
 		case PrimitiveKind::Long:
-			std::snprintf(buf, sizeof(buf), "$%08X", mem_.readLong(addr));
+			std::snprintf(buf, sizeof(buf), "$%08X", raw);
 			break;
 		case PrimitiveKind::SLong:
-			std::snprintf(buf, sizeof(buf), "%d", static_cast<int32_t>(mem_.readLong(addr)));
+			std::snprintf(buf, sizeof(buf), "%d", static_cast<int32_t>(raw));
 			break;
 		case PrimitiveKind::Ptr:
-		case PrimitiveKind::Handle:
 		case PrimitiveKind::ProcPtr:
-			std::snprintf(buf, sizeof(buf), "$%08X", mem_.readLong(addr));
+			std::snprintf(buf, sizeof(buf), "$%08X", raw);
 			break;
+		case PrimitiveKind::Handle:
+		{
+			/* Show master pointer dereference for handles */
+			uint32_t deref = 0;
+			if (raw != 0 && mem_.readLong) deref = mem_.readLong(raw);
+			std::snprintf(buf, sizeof(buf), "$%08X->$%08X", raw, deref);
+			break;
+		}
 		case PrimitiveKind::OSType:
-			return FormatFourCC(mem_.readLong(addr));
+			return FormatFourCC(raw);
 		case PrimitiveKind::OSErr:
 		{
-			auto val = static_cast<int16_t>(mem_.readWord(addr));
+			auto val = static_cast<int16_t>(raw & 0xFFFF);
 			auto it = errors_.find(val);
 			if (it != errors_.end())
 				std::snprintf(buf, sizeof(buf), "%d %s", val, it->second.c_str());
@@ -671,35 +678,35 @@ std::string TypeRegistry::formatPrimitive(std::string_view typeName, uint32_t ad
 		}
 		case PrimitiveKind::Fixed:
 		{
-			auto raw = static_cast<int32_t>(mem_.readLong(addr));
-			int intPart = raw >> 16;
-			int fracPart = ((raw & 0xFFFF) * 10000) >> 16;
+			auto v = static_cast<int32_t>(raw);
+			int intPart = v >> 16;
+			int fracPart = ((v & 0xFFFF) * 10000) >> 16;
 			if (fracPart < 0) fracPart = -fracPart;
 			std::snprintf(buf, sizeof(buf), "%d.%04d", intPart, fracPart);
 			break;
 		}
 		case PrimitiveKind::Fract:
 		{
-			auto raw = static_cast<int32_t>(mem_.readLong(addr));
-			int intPart = raw >> 30;
-			int fracPart = ((raw & 0x3FFFFFFF) * 10000) >> 30;
+			auto v = static_cast<int32_t>(raw);
+			int intPart = v >> 30;
+			int fracPart = ((v & 0x3FFFFFFF) * 10000) >> 30;
 			if (fracPart < 0) fracPart = -fracPart;
 			std::snprintf(buf, sizeof(buf), "%d.%04d", intPart, fracPart);
 			break;
 		}
 		case PrimitiveKind::PStr:
 		{
-			uint32_t ptr = mem_.readLong(addr);
-			if (ptr == 0) return "$00000000";
-			uint8_t len = mem_.readByte(ptr);
+			/* raw is a guest pointer to a Pascal string */
+			if (raw == 0) return "$00000000";
+			uint8_t len = mem_.readByte(raw);
 			if (len > 255) len = 255;
 			std::string result;
 			char hdr[16];
-			std::snprintf(hdr, sizeof(hdr), "$%08X \"", ptr);
+			std::snprintf(hdr, sizeof(hdr), "$%08X \"", raw);
 			result = hdr;
 			for (uint8_t i = 0; i < len; ++i)
 			{
-				uint8_t c = mem_.readByte(ptr + 1 + i);
+				uint8_t c = mem_.readByte(raw + 1 + i);
 				if (c >= 0x20 && c < 0x7F)
 					result += static_cast<char>(c);
 				else
@@ -716,7 +723,8 @@ std::string TypeRegistry::formatPrimitive(std::string_view typeName, uint32_t ad
 		case PrimitiveKind::Str63:
 		case PrimitiveKind::Str31:
 		{
-			uint8_t len = mem_.readByte(addr);
+			/* Inline string: raw is the address of the length byte */
+			uint8_t len = mem_.readByte(raw);
 			uint8_t maxLen = (prim->kind == PrimitiveKind::Str255)	? 255
 							 : (prim->kind == PrimitiveKind::Str63) ? 63
 																	: 31;
@@ -724,7 +732,7 @@ std::string TypeRegistry::formatPrimitive(std::string_view typeName, uint32_t ad
 			std::string result = "\"";
 			for (uint8_t i = 0; i < len; ++i)
 			{
-				uint8_t c = mem_.readByte(addr + 1 + i);
+				uint8_t c = mem_.readByte(raw + 1 + i);
 				if (c >= 0x20 && c < 0x7F)
 					result += static_cast<char>(c);
 				else
@@ -740,6 +748,44 @@ std::string TypeRegistry::formatPrimitive(std::string_view typeName, uint32_t ad
 	}
 
 	return buf;
+}
+
+std::string TypeRegistry::formatPrimitive(std::string_view typeName, uint32_t addr) const
+{
+	const auto *prim = FindPrimitive(typeName);
+	if (!prim) return {};
+
+	/* Read the raw value from guest memory, then delegate to formatValue */
+	uint32_t raw = 0;
+	switch (prim->size)
+	{
+		case 1:
+			raw = mem_.readByte(addr);
+			break;
+		case 2:
+			raw = mem_.readWord(addr);
+			break;
+		default:
+			raw = mem_.readLong(addr);
+			break;
+	}
+
+	/* Special cases where the raw value is the address itself */
+	switch (prim->kind)
+	{
+		case PrimitiveKind::PStr:
+			/* PStr: the raw value read from the struct field is the pointer.
+			   formatValue will dereference it. */
+			return formatValue(typeName, raw);
+		case PrimitiveKind::Str255:
+		case PrimitiveKind::Str63:
+		case PrimitiveKind::Str31:
+			/* Inline strings: the raw address is where the length byte is.
+			   formatValue expects raw = address of the string. */
+			return formatValue(typeName, addr);
+		default:
+			return formatValue(typeName, raw);
+	}
 }
 
 uint16_t TypeRegistry::computeSize(const TypeEntry &te) const
