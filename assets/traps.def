@@ -7,7 +7,7 @@
 #   show-out <param> <field> ...  (exit-time struct field filter)
 #
 # Convention: toolbox | os
-# Types: byte word long Ptr Handle OSType Str255 OSErr Boolean Rect Point
+# Types: byte sbyte word sword long slong Ptr Handle OSType PStr OSErr Boolean Rect Point
 #        ^StructName — pointer to a type registry struct (e.g. ^IOParam)
 # Register suffix (.D0-.D7, .A0-.A7) for OS traps; omit for toolbox (stack).
 
@@ -56,19 +56,19 @@ A02E BlockMove os
 # ── Resource Manager ─────────────────────────────────
 
 A9A0 GetResource toolbox
-  in  resType:OSType  resID:word
+  in  resType:OSType  resID:sword
   out rsrc:Handle
 
 A81F Get1Resource toolbox
-  in  resType:OSType  resID:word
+  in  resType:OSType  resID:sword
   out rsrc:Handle
 
 A9A1 GetNamedResource toolbox
-  in  resType:OSType  name:Str255
+  in  resType:OSType  name:PStr
   out rsrc:Handle
 
 A9AB AddResource toolbox
-  in  rsrc:Handle  resType:OSType  resID:word  name:Str255
+  in  rsrc:Handle  resType:OSType  resID:sword  name:PStr
 
 A9A2 LoadResource toolbox
   in  rsrc:Handle
@@ -78,27 +78,27 @@ A9A3 ReleaseResource toolbox
 
 A9A4 HomeResFile toolbox
   in  rsrc:Handle
-  out refNum:word
+  out refNum:sword
 
 A9A5 SizeRsrc toolbox
   in  rsrc:Handle
   out size:long
 
 A994 CurResFile toolbox
-  out refNum:word
+  out refNum:sword
 
 A997 OpenResFile toolbox
-  in  fileName:Str255
-  out refNum:word
+  in  fileName:PStr
+  out refNum:sword
 
 A998 UseResFile toolbox
-  in  refNum:word
+  in  refNum:sword
 
 A999 UpdateResFile toolbox
-  in  refNum:word
+  in  refNum:sword
 
 A99A CloseResFile toolbox
-  in  refNum:word
+  in  refNum:sword
 
 A99B SetResLoad toolbox
   in  load:Boolean
@@ -108,7 +108,7 @@ A99C CountResources toolbox
   out count:word
 
 A99D GetIndResource toolbox
-  in  resType:OSType  index:word
+  in  resType:OSType  index:sword
   out rsrc:Handle
 
 A9A8 GetResInfo toolbox
@@ -122,11 +122,11 @@ A992 DetachResource toolbox
   in  rsrc:Handle
 
 A9F6 GetResFileAttrs toolbox
-  in  refNum:word
+  in  refNum:sword
   out attrs:word
 
 A9F7 SetResFileAttrs toolbox
-  in  refNum:word  attrs:word
+  in  refNum:sword  attrs:word
 
 A94D AddResMenu toolbox
   in  theMenu:Handle  resType:OSType
@@ -135,11 +135,11 @@ A040 ResrvMem os
   in  size:long.D0
 
 A9B1 CreateResFile toolbox
-  in  fileName:Str255
+  in  fileName:PStr
 
 A9C4 OpenRFPerm toolbox
-  in  fileName:Str255  vRefNum:word  permission:byte
-  out refNum:word
+  in  fileName:PStr  vRefNum:sword  permission:byte
+  out refNum:sword
 
 A146 GetTrapAddress os
   in  trapNum:word.D0
@@ -225,7 +225,7 @@ A014 GetVol os
   show-out pb ioResult ioNamePtr ioVRefNum
 
 A260 HFSDispatch os
-  in  selector:Word.D0 pb:Ptr.A0
+  in  selector:word.D0 pb:Ptr.A0
   out err:OSErr.D0
 
 # ── Event Manager ─────────────────────────────────────
@@ -241,25 +241,25 @@ A971 EventAvail toolbox
 # ── Window Manager ────────────────────────────────────
 
 A913 NewWindow toolbox
-  in  wStorage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  procID:word  behind:Ptr  goAwayFlag:Boolean  refCon:long
+  in  wStorage:Ptr  boundsRect:Rect  title:PStr  visible:Boolean  procID:sword  behind:Ptr  goAwayFlag:Boolean  refCon:long
   out theWindow:^WindowRecord
 
 A92C FindWindow toolbox
   in  thePoint:Point
-  out partCode:word
+  out partCode:sword
 
 # ── Misc ──────────────────────────────────────────────
 
 A884 DrawString toolbox
-  in  s:Str255
+  in  s:PStr
 
 A9F0 LoadSeg toolbox noreturn
-  in  segNum:word
+  in  segNum:sword
 
 A9F4 ExitToShell toolbox noreturn
 
 A9F2 Launch os noreturn
-  in  launchPtr:Ptr.A0
+  in  launchPtr:^LaunchParam.A0
 
 A9C9 SysError toolbox noreturn
-  in  errorCode:word
+  in  errorCode:sword
