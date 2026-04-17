@@ -20,10 +20,10 @@ This requires:
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Expand `traps.def` with all 681 trap names | |
-| 2 | Add name/search API to `TrapDefs` | |
-| 3 | Rewire `trap_counter.cpp` to use `TrapDefs` | |
-| 4 | Remove dead `s_dict` code and `TrapInfo` struct | |
+| 1 | Expand `traps.def` with all 693 trap names | Done |
+| 2 | Add name/search API to `TrapDefs` | Done |
+| 3 | Rewire `trap_counter.cpp` to use `TrapDefs` | Done |
+| 4 | Remove dead `s_dict` code and `TrapInfo` struct | Done |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
 Test gate:  `./bld/macos/tests`
