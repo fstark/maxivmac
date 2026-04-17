@@ -1,5 +1,5 @@
 /*
-	trap_tracer.cpp — Hierarchical A-line trap tracer implementation
+	trap_tracer.cpp -- Hierarchical A-line trap tracer implementation
 */
 
 #include "cpu/trap_tracer.h"
@@ -11,16 +11,16 @@
 
 #include <algorithm>
 #include <cinttypes>
-#include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <format>
 
-/* ── globals ─────────────────────────────────────────── */
+/* -- globals ------------------------------------------- */
 
 TrapDefs g_trapDefs;
 TrapTracer g_tracer(g_trapDefs);
 
-/* ── param size helper ───────────────────────────────── */
+/* -- param size helper --------------------------------- */
 
 static int paramSize(ParamType t)
 {
@@ -54,7 +54,7 @@ static int paramSize(ParamType t)
 	return 2;
 }
 
-/* ── TrapTracer ──────────────────────────────────────── */
+/* -- TrapTracer ---------------------------------------- */
 
 TrapTracer::TrapTracer(TrapDefs &defs) : defs_(defs) {}
 
@@ -63,18 +63,12 @@ void TrapTracer::setIO(DbgIO *io)
 	io_ = io;
 }
 
-void TrapTracer::emit(const char *fmt, ...)
+void TrapTracer::emitStr(std::string_view s)
 {
-	char buf[512];
-	va_list ap;
-	va_start(ap, fmt);
-	vsnprintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-
 	if (io_)
-		io_->write("%s", buf);
+		io_->write("%.*s", (int)s.size(), s.data());
 	else
-		fputs(buf, stdout);
+		fwrite(s.data(), 1, s.size(), stdout);
 }
 
 void TrapTracer::enable(bool on)
@@ -103,7 +97,7 @@ void TrapTracer::clearFilter()
 	filter_.clear();
 }
 
-/* ── enter ───────────────────────────────────────────── */
+/* -- enter --------------------------------------------- */
 
 void TrapTracer::enter(uint16_t trapWord)
 {
@@ -120,7 +114,7 @@ void TrapTracer::enter(uint16_t trapWord)
 	{
 		flushStack("context switch");
 		std::string appName = readAppName();
-		emit("── context switch: appId=%u \"%s\" ──\n", (unsigned)appId, appName.c_str());
+		emitStr(std::format("-- context switch: appId={} \"{}\" --\n", appId, appName));
 	}
 	lastAppId_ = appId;
 
@@ -129,7 +123,8 @@ void TrapTracer::enter(uint16_t trapWord)
 	{
 		if (!overflowWarned_)
 		{
-			emit("[TRACE] nesting overflow at depth %d, suppressing further nesting\n", maxDepth_);
+			emitStr(std::format(
+				"[TRACE] nesting overflow at depth {}, suppressing further nesting\n", maxDepth_));
 			overflowWarned_ = true;
 		}
 		return;
@@ -197,11 +192,11 @@ void TrapTracer::enter(uint16_t trapWord)
 					auto &sa = frame.structAddrs[frame.nStructAddrs++];
 					sa.paramName = nullptr; /* will be set below */
 					sa.addr = raw;
-					/* Store param name — it lives in the TrapDef which outlives the frame.
+					/* Store param name -- it lives in the TrapDef which outlives the frame.
 					   We look it up by index at exit. */
 				}
 			}
-			/* Store param name pointers separately — we need them stable.
+			/* Store param name pointers separately -- we need them stable.
 			   Re-scan to set them (TrapDef strings are stable in the map). */
 			int idx = 0;
 			for (const auto &pd : def->paramsIn)
@@ -218,7 +213,7 @@ void TrapTracer::enter(uint16_t trapWord)
 	stack_[depth_++] = frame;
 }
 
-/* ── checkReturn ─────────────────────────────────────── */
+/* -- checkReturn --------------------------------------- */
 
 void TrapTracer::checkReturn(uint32_t pc)
 {
@@ -252,7 +247,7 @@ void TrapTracer::checkReturn(uint32_t pc)
 				snprintf(nameBuf, sizeof(nameBuf), "$%04X", orphan.trapWord);
 				name = nameBuf;
 			}
-			emit("%*s⊘ %s [missed return]\n", orphan.depth * 2, "", name);
+			emitStr(std::format("{:>{}} X {} [missed return]\n", "", orphan.depth * 2, name));
 		}
 	}
 
@@ -267,7 +262,7 @@ void TrapTracer::checkReturn(uint32_t pc)
 	overflowWarned_ = false;
 }
 
-/* ── emit helpers ────────────────────────────────────── */
+/* -- emit helpers -------------------------------------- */
 
 static std::string unknownTrapName(uint16_t trapWord)
 {
@@ -287,7 +282,7 @@ static const StructFieldFilter *findFilter(const std::vector<StructFieldFilter> 
 	return nullptr;
 }
 
-/* Format a StructPtr — returns just "$ADDR" for inline display.
+/* Format a StructPtr -- returns just "$ADDR" for inline display.
    The caller handles the indented field dump via formatStructDump(). */
 std::string TrapTracer::formatStructPtr(const ParamDef & /*p*/, uint32_t rawValue,
 										const StructFieldFilter * /*filter*/)
@@ -372,14 +367,12 @@ void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 {
 	int indent = frame.depth * 2;
 
-	/* Build header: "→ CYCLE [APP] TrapName(" */
-	char hdr[128];
-	snprintf(hdr, sizeof(hdr), "%*s→ %u [%u] %s(", indent, "", (unsigned)frame.entryCycle,
-			 (unsigned)frame.appId, def.name.c_str());
-	size_t hdrLen = strlen(hdr);
+	/* Build header: "-> CYCLE [APP] TrapName(" */
+	std::string hdr =
+		std::format("{:>{}}-> {} [{}] {}(", "", indent, frame.entryCycle, frame.appId, def.name);
 
-	/* Padding string for continuation lines — aligns under the '(' */
-	std::string pad(hdrLen, ' ');
+	/* Padding string for continuation lines -- aligns under the '(' */
+	std::string pad(hdr.size(), ' ');
 
 	/* Build inline params and collect StructPtr dumps */
 	std::string params;
@@ -415,13 +408,13 @@ void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 	if (structDumps.empty())
 	{
 		/* Simple case: everything fits on one line */
-		emit("%s%s) [caller:$%06X]\n", hdr, params.c_str(), (unsigned)frame.callerPC);
+		emitStr(std::format("{}{}) [caller:${:06X}]\n", hdr, params, frame.callerPC));
 	}
 	else
 	{
 		/* Multi-line: header + inline params, then struct fields, then closing */
-		emit("%s%s\n%s%*s) [caller:$%06X]\n", hdr, params.c_str(), structDumps.c_str(), (int)hdrLen,
-			 "", (unsigned)frame.callerPC);
+		emitStr(std::format("{}{}\n{}{}) [caller:${:06X}]\n", hdr, params, structDumps, pad,
+							frame.callerPC));
 	}
 }
 
@@ -429,8 +422,8 @@ void TrapTracer::emitEntry(const TrapFrame &frame)
 {
 	std::string name = unknownTrapName(frame.trapWord);
 
-	emit("%*s→ %u [%u] %s() [caller:$%06X]\n", frame.depth * 2, "", (unsigned)frame.entryCycle,
-		 (unsigned)frame.appId, name.c_str(), (unsigned)frame.callerPC);
+	emitStr(std::format("{:>{}}-> {} [{}] {}() [caller:${:06X}]\n", "", frame.depth * 2,
+						frame.entryCycle, frame.appId, name, frame.callerPC));
 }
 
 void TrapTracer::emitAutoPop(const TrapFrame &frame, const char *name)
@@ -442,8 +435,8 @@ void TrapTracer::emitAutoPop(const TrapFrame &frame, const char *name)
 		name = nameBuf.c_str();
 	}
 
-	emit("%*s= %u [%u] %s [auto-pop $%04X]\n", frame.depth * 2, "", (unsigned)frame.entryCycle,
-		 (unsigned)frame.appId, name, (unsigned)frame.trapWord);
+	emitStr(std::format("{:>{}}= {} [{}] {} [auto-pop ${:04X}]\n", "", frame.depth * 2,
+						frame.entryCycle, frame.appId, name, frame.trapWord));
 }
 
 void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
@@ -451,7 +444,7 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 	int indent = frame.depth * 2;
 
 	/* Toolbox (Pascal) stack layout at entry:
-		 frame.sp → [input params...]   inStackSize bytes
+		 frame.sp -> [input params...]   inStackSize bytes
 					[result space...]    outStackSize bytes
 	   The trap consumes inputs and writes results into the result space,
 	   so output values live at frame.sp + inStackSize. */
@@ -487,26 +480,20 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 	uint32_t delta = g_instructionCount - frame.entryCycle;
 
 	/* Build the exit header to measure its width for alignment */
-	char hdr[128];
+	std::string hdr;
 	if (!outParams.empty())
-	{
-		snprintf(hdr, sizeof(hdr), "%*s← %u [%u] %s → %s  (+%u cycles)", indent, "",
-				 (unsigned)g_instructionCount, (unsigned)frame.appId, def.name.c_str(),
-				 outParams.c_str(), (unsigned)delta);
-	}
+		hdr = std::format("{:>{}}<- {} [{}] {} -> {}  (+{} cycles)", "", indent, g_instructionCount,
+						  frame.appId, def.name, outParams, delta);
 	else
-	{
-		snprintf(hdr, sizeof(hdr), "%*s← %u [%u] %s  (+%u cycles)", indent, "",
-				 (unsigned)g_instructionCount, (unsigned)frame.appId, def.name.c_str(),
-				 (unsigned)delta);
-	}
+		hdr = std::format("{:>{}}<- {} [{}] {}  (+{} cycles)", "", indent, g_instructionCount,
+						  frame.appId, def.name, delta);
 
 	/* show-out: dump filtered struct fields from saved addresses */
 	std::string showOutDump;
 	if (!def.showOut.empty())
 	{
 		/* Compute pad width to align with the entry header position */
-		size_t padWidth = strlen(hdr);
+		size_t padWidth = hdr.size();
 		/* Cap at a reasonable width to avoid huge indents */
 		if (padWidth > 60) padWidth = indent + 20;
 		std::string pad(padWidth, ' ');
@@ -539,13 +526,9 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 	}
 
 	if (showOutDump.empty())
-	{
-		emit("%s\n", hdr);
-	}
+		emitStr(hdr + "\n");
 	else
-	{
-		emit("%s\n%s", hdr, showOutDump.c_str());
-	}
+		emitStr(hdr + "\n" + showOutDump);
 }
 
 void TrapTracer::emitExit(const TrapFrame &frame)
@@ -553,8 +536,8 @@ void TrapTracer::emitExit(const TrapFrame &frame)
 	std::string name = unknownTrapName(frame.trapWord);
 	uint32_t delta = g_instructionCount - frame.entryCycle;
 
-	emit("%*s← %u [%u] %s  (+%u cycles)\n", frame.depth * 2, "", (unsigned)g_instructionCount,
-		 (unsigned)frame.appId, name.c_str(), (unsigned)delta);
+	emitStr(std::format("{:>{}}<- {} [{}] {}  (+{} cycles)\n", "", frame.depth * 2,
+						g_instructionCount, frame.appId, name, delta));
 }
 
 void TrapTracer::flushStack(const char *reason)
@@ -571,20 +554,20 @@ void TrapTracer::flushStack(const char *reason)
 			name = nameBuf;
 		}
 		int indent = frame.depth * 2;
-		emit("%*s⊘ %s [abandoned — %s]\n", indent, "", name, reason);
+		emitStr(std::format("{:>{}}X {} [abandoned -- {}]\n", "", indent, name, reason));
 	}
 	depth_ = 0;
 	overflowWarned_ = false;
 }
 
-/* ── parameter reading ───────────────────────────────── */
+/* -- parameter reading --------------------------------- */
 
 uint32_t TrapTracer::readParamRaw(const ParamDef &p, uint32_t sp, int &stackOffset)
 {
 	if (p.loc != ParamLoc::Stack)
 	{
 		/* Register-based (OS traps) */
-		int idx = static_cast<int>(p.loc) - 1; /* D0=1 → index 0 */
+		int idx = static_cast<int>(p.loc) - 1; /* D0=1 -> index 0 */
 		uint32_t dregs[8], aregs[8];
 		m68k_getRegs(dregs, aregs);
 		if (idx < 8)
@@ -593,7 +576,7 @@ uint32_t TrapTracer::readParamRaw(const ParamDef &p, uint32_t sp, int &stackOffs
 			return aregs[idx - 8];
 	}
 
-	/* Stack-based (Toolbox traps) — Pascal convention, offset pre-computed by caller */
+	/* Stack-based (Toolbox traps) -- Pascal convention, offset pre-computed by caller */
 	uint32_t addr = sp + stackOffset;
 	int sz = paramSize(p.type);
 
@@ -610,7 +593,7 @@ uint32_t TrapTracer::readParamRaw(const ParamDef &p, uint32_t sp, int &stackOffs
 	}
 }
 
-/* ── type-specific formatters ────────────────────────── */
+/* -- type-specific formatters -------------------------- */
 
 std::string TrapTracer::formatOSType(uint32_t raw)
 {
@@ -678,7 +661,7 @@ std::string TrapTracer::formatParam(const ParamDef &p, uint32_t rawValue)
 		{
 			uint32_t deref = 0;
 			if (rawValue != 0) deref = get_vm_long(rawValue);
-			snprintf(buf, sizeof(buf), "$%08X→$%08X", rawValue, deref);
+			snprintf(buf, sizeof(buf), "$%08X->$%08X", rawValue, deref);
 			return buf;
 		}
 		case ParamType::OSType:
@@ -713,7 +696,7 @@ std::string TrapTracer::formatParam(const ParamDef &p, uint32_t rawValue)
 	return buf;
 }
 
-/* ── low-memory readers ──────────────────────────────── */
+/* -- low-memory readers -------------------------------- */
 
 uint16_t TrapTracer::readAppId() const
 {

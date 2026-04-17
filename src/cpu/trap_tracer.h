@@ -1,5 +1,5 @@
 /*
-	trap_tracer.h — Hierarchical A-line trap tracer
+	trap_tracer.h -- Hierarchical A-line trap tracer
 
 	Tracks trap entry/exit with nesting, decodes parameters
 	using external definitions from TrapDefs.
@@ -65,7 +65,7 @@ public: /* public for testability */
 	std::string formatOSErr(int16_t err);
 
 private:
-	void emit(const char *fmt, ...);
+	void emitStr(std::string_view s);
 	void flushStack(const char *reason);
 	void emitEntry(const TrapFrame &frame, const TrapDef &def);
 	void emitEntry(const TrapFrame &frame);
