@@ -113,9 +113,9 @@ TypeRegistry &g_typeRegistry();
 
 Define:
 
-- `PrimKind` enum class (Design §3)
-- `PrimInfo` struct and `kPrimitives[]` table (Design §5)
-- `FindPrimitive()` free function — linear scan, returns `const PrimInfo *`
+- `PrimitiveKind` enum class (Design §3)
+- `PrimitiveInfo` struct and `kPrimitives[]` table (Design §5)
+- `FindPrimitive()` free function — linear scan, returns `const PrimitiveInfo *`
 - `FieldDef`, `StructDef`, `UnionDef`, `TypeEntry` nested structs (Design §3)
 - `g_typeRegistry()` — returns `static TypeRegistry s_instance;`
 - `init()` — stores the `MemReader`
@@ -240,7 +240,7 @@ by walking a struct definition and reading guest memory.
 
 ### 3.1 — `formatPrimitive()`
 
-Implement the switch on `PrimKind` from Design §6.  Each case reads
+Implement the switch on `PrimitiveKind` from Design §6.  Each case reads
 from guest memory via `mem_.readByte/readWord/readLong` and formats:
 
 - `Byte` → `"$%02X"`, `SByte` → `"%d"` (signed)

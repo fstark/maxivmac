@@ -124,7 +124,7 @@ fine for the expected scale; if profiling shows otherwise, add a
 ```cpp
 /* Inside type_registry.cpp */
 
-enum class PrimKind
+enum class PrimitiveKind
 {
     Byte,       /* 1, $XX */
     SByte,      /* 1, signed decimal */
@@ -238,31 +238,31 @@ definition and continue — the registry is usable with partial data.
 ## 5. Primitive Table
 
 ```cpp
-struct PrimInfo
+struct PrimitiveInfo
 {
     std::string_view name;
-    PrimKind kind;
+    PrimitiveKind kind;
     uint16_t size;
 };
 
-static constexpr PrimInfo kPrimitives[] = {
-    {"byte",    PrimKind::Byte,     1},
-    {"sbyte",   PrimKind::SByte,    1},
-    {"Boolean", PrimKind::BooleanK, 1},
-    {"word",    PrimKind::Word,     2},
-    {"sword",   PrimKind::SWord,    2},
-    {"long",    PrimKind::Long,     4},
-    {"slong",   PrimKind::SLong,    4},
-    {"Ptr",     PrimKind::Ptr,      4},
-    {"Handle",  PrimKind::Handle,   4},
-    {"ProcPtr", PrimKind::ProcPtr,  4},
-    {"OSType",  PrimKind::OSType,   4},
-    {"OSErr",   PrimKind::OSErr,    2},
-    {"Fixed",   PrimKind::Fixed,    4},
-    {"Fract",   PrimKind::Fract,    4},
-    {"Str255",  PrimKind::Str255,   256},
-    {"Str63",   PrimKind::Str63,    64},
-    {"Str31",   PrimKind::Str31,    32},
+static constexpr PrimitiveInfo kPrimitives[] = {
+    {"byte",    PrimitiveKind::Byte,     1},
+    {"sbyte",   PrimitiveKind::SByte,    1},
+    {"Boolean", PrimitiveKind::BooleanK, 1},
+    {"word",    PrimitiveKind::Word,     2},
+    {"sword",   PrimitiveKind::SWord,    2},
+    {"long",    PrimitiveKind::Long,     4},
+    {"slong",   PrimitiveKind::SLong,    4},
+    {"Ptr",     PrimitiveKind::Ptr,      4},
+    {"Handle",  PrimitiveKind::Handle,   4},
+    {"ProcPtr", PrimitiveKind::ProcPtr,  4},
+    {"OSType",  PrimitiveKind::OSType,   4},
+    {"OSErr",   PrimitiveKind::OSErr,    2},
+    {"Fixed",   PrimitiveKind::Fixed,    4},
+    {"Fract",   PrimitiveKind::Fract,    4},
+    {"Str255",  PrimitiveKind::Str255,   256},
+    {"Str63",   PrimitiveKind::Str63,    64},
+    {"Str31",   PrimitiveKind::Str31,    32},
 };
 ```
 
@@ -309,7 +309,7 @@ readStruct(sd, baseAddr, prefix, out):
 
 ```
 formatPrimitive(typeName, addr, size):
-    switch primKind:
+    switch primitiveKind:
         Byte:     "$%02X" % get_vm_byte(addr)
         SByte:    "%d" % (int8_t)get_vm_byte(addr)
         BooleanK: get_vm_byte(addr) ? "true" : "false"
