@@ -991,31 +991,31 @@ TEST_CASE("HostVolume: volumeStats empty")
 }
 TEST_CASE("HostVolume: validateCatalog passes on clean mount")
 {
-        TempDir td;
-        writeFile(td.path / "hello.txt", "content");
-        std::filesystem::create_directory(td.path / "subdir");
-        writeFile(td.path / "subdir" / "inner.bin", "data");
+	TempDir td;
+	writeFile(td.path / "hello.txt", "content");
+	std::filesystem::create_directory(td.path / "subdir");
+	writeFile(td.path / "subdir" / "inner.bin", "data");
 
-        storage::HostVolume vol;
-        vol.mount(td.path);
-        CHECK(vol.validateCatalog());
+	storage::HostVolume vol;
+	vol.mount(td.path);
+	CHECK(vol.validateCatalog());
 }
 
 TEST_CASE("HostVolume: validateCatalog passes after createFile in subdir")
 {
-        TempDir td;
-        std::filesystem::create_directory(td.path / "subdir");
+	TempDir td;
+	std::filesystem::create_directory(td.path / "subdir");
 
-        storage::HostVolume vol;
-        vol.mount(td.path);
+	storage::HostVolume vol;
+	vol.mount(td.path);
 
-        /* Find the subdir's CNID */
-        auto *sub = vol.findByName(storage::HostVolume::kRootDirID, "subdir");
-        REQUIRE(sub != nullptr);
+	/* Find the subdir's CNID */
+	auto *sub = vol.findByName(storage::HostVolume::kRootDirID, "subdir");
+	REQUIRE(sub != nullptr);
 
-        storage::FMErr err;
-        uint32_t cnid = vol.createFile(sub->cnid, "newfile.bin", err);
-        CHECK(cnid != 0);
-        CHECK(err == storage::FMErr::kNoErr);
-        CHECK(vol.validateCatalog());
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(sub->cnid, "newfile.bin", err);
+	CHECK(cnid != 0);
+	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(vol.validateCatalog());
 }

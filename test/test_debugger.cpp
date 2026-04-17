@@ -7,6 +7,7 @@
 #include "debugger/symbols.h"
 #include "debugger/expr.h"
 #include "debugger/cmd_parser.h"
+#include "cpu/trap_tracer.h"
 
 #include <cstring>
 
@@ -20,6 +21,7 @@ static void EnsureSymbolsInit()
 {
 	if (!s_symbolsReady)
 	{
+		g_trapDefs.load("assets/traps.def");
 		SymbolsInit();
 		s_symbolsReady = true;
 	}

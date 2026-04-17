@@ -835,10 +835,9 @@ TEST_CASE("TrapTracer formatStructPtr without filter dumps all")
 TEST_CASE("TrapDefs nameOf returns name for known trap")
 {
 	TrapDefs defs;
-	auto p = writeTempFile("test_nameOf.def",
-		"A122 NewHandle os\n"
-		"  in  size:long.D0\n"
-		"A9A0 GetResource toolbox\n");
+	auto p = writeTempFile("test_nameOf.def", "A122 NewHandle os\n"
+											  "  in  size:long.D0\n"
+											  "A9A0 GetResource toolbox\n");
 	ensureTypeRegistryInit();
 	defs.load(p);
 	CHECK(defs.nameOf(0xA122) == "NewHandle");
@@ -848,8 +847,7 @@ TEST_CASE("TrapDefs nameOf returns name for known trap")
 TEST_CASE("TrapDefs nameOf returns empty for unknown trap")
 {
 	TrapDefs defs;
-	auto p = writeTempFile("test_nameOf_empty.def",
-		"A122 NewHandle os\n");
+	auto p = writeTempFile("test_nameOf_empty.def", "A122 NewHandle os\n");
 	ensureTypeRegistryInit();
 	defs.load(p);
 	CHECK(defs.nameOf(0xA999).empty());
@@ -858,11 +856,10 @@ TEST_CASE("TrapDefs nameOf returns empty for unknown trap")
 TEST_CASE("TrapDefs search prefix match")
 {
 	TrapDefs defs;
-	auto p = writeTempFile("test_search.def",
-		"A122 NewHandle os\n"
-		"A11E NewPtr os\n"
-		"A9A0 GetResource toolbox\n"
-		"A025 GetHandleSize os\n");
+	auto p = writeTempFile("test_search.def", "A122 NewHandle os\n"
+											  "A11E NewPtr os\n"
+											  "A9A0 GetResource toolbox\n"
+											  "A025 GetHandleSize os\n");
 	ensureTypeRegistryInit();
 	defs.load(p);
 	std::vector<std::pair<uint16_t, std::string_view>> results;
@@ -879,10 +876,9 @@ TEST_CASE("TrapDefs search prefix match")
 TEST_CASE("TrapDefs size matches loaded count")
 {
 	TrapDefs defs;
-	auto p = writeTempFile("test_size.def",
-		"A122 NewHandle os\n"
-		"A11E NewPtr os\n"
-		"A9A0 GetResource toolbox\n");
+	auto p = writeTempFile("test_size.def", "A122 NewHandle os\n"
+											"A11E NewPtr os\n"
+											"A9A0 GetResource toolbox\n");
 	ensureTypeRegistryInit();
 	defs.load(p);
 	CHECK(defs.size() == 3);
