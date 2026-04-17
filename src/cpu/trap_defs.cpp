@@ -3,6 +3,7 @@
 */
 
 #include "cpu/trap_defs.h"
+#include "lang/type_registry.h"
 
 #include <algorithm>
 #include <cctype>
@@ -153,6 +154,11 @@ static bool ParseParam(const std::string &token, ParamDef &out)
 		out.isStructPtr = false;
 		out.typeName = typeStr;
 		if (out.typeName.empty()) return false;
+		if (!g_typeRegistry().has(out.typeName))
+		{
+			fprintf(stderr, "trap_defs: unknown type '%s'\n", out.typeName.c_str());
+			return false;
+		}
 	}
 
 	if (!regStr.empty())

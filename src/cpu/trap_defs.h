@@ -36,7 +36,7 @@ enum class ParamLoc
 struct ParamDef
 {
 	std::string name;
-	std::string typeName; /* TypeRegistry type name (e.g. "long", "PStr", "IOParam") */
+	std::string typeName; /* TypeRegistry type name (e.g. "long", "Str255", "IOParam") */
 	ParamLoc loc = ParamLoc::Stack;
 	bool isStructPtr = false; /* true when typeName is a ^struct pointer */
 };

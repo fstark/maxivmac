@@ -570,7 +570,12 @@ std::string TrapTracer::formatParam(const ParamDef &p, uint32_t rawValue)
 {
 	if (p.isStructPtr) return formatStructPtr(p, rawValue, nullptr);
 
-	std::string s = g_typeRegistry().formatValue(p.typeName, rawValue);
+	/* Str255/Str63/Str31 in params are pointers — format as PStr */
+	auto &tr = g_typeRegistry();
+	std::string_view effective = p.typeName;
+	if (effective == "Str255" || effective == "Str63" || effective == "Str31") effective = "PStr";
+
+	std::string s = tr.formatValue(effective, rawValue);
 	if (!s.empty()) return s;
 
 	/* fallback for unknown types */

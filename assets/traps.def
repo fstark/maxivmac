@@ -7,7 +7,7 @@
 #   show-out <param> <field> ...  (exit-time struct field filter)
 #
 # Convention: toolbox | os
-# Types: byte sbyte word sword long slong Ptr Handle OSType PStr OSErr Boolean Rect Point
+# Types: byte sbyte word sword long slong Ptr Handle OSType Str255 OSErr Boolean Rect Point
 #        ^StructName — pointer to a type registry struct (e.g. ^IOParam)
 # Register suffix (.D0-.D7, .A0-.A7) for OS traps; omit for toolbox (stack).
 
@@ -64,11 +64,11 @@ A81F Get1Resource toolbox
   out rsrc:Handle
 
 A9A1 GetNamedResource toolbox
-  in  resType:OSType  name:PStr
+  in  resType:OSType  name:Str255
   out rsrc:Handle
 
 A9AB AddResource toolbox
-  in  rsrc:Handle  resType:OSType  resID:sword  name:PStr
+  in  rsrc:Handle  resType:OSType  resID:sword  name:Str255
 
 A9A2 LoadResource toolbox
   in  rsrc:Handle
@@ -88,7 +88,7 @@ A994 CurResFile toolbox
   out refNum:sword
 
 A997 OpenResFile toolbox
-  in  fileName:PStr
+  in  fileName:Str255
   out refNum:sword
 
 A998 UseResFile toolbox
@@ -135,10 +135,10 @@ A040 ResrvMem os
   in  size:long.D0
 
 A9B1 CreateResFile toolbox
-  in  fileName:PStr
+  in  fileName:Str255
 
 A9C4 OpenRFPerm toolbox
-  in  fileName:PStr  vRefNum:sword  permission:byte
+  in  fileName:Str255  vRefNum:sword  permission:byte
   out refNum:sword
 
 A146 GetTrapAddress os
@@ -241,7 +241,7 @@ A971 EventAvail toolbox
 # ── Window Manager ────────────────────────────────────
 
 A913 NewWindow toolbox
-  in  wStorage:Ptr  boundsRect:Rect  title:PStr  visible:Boolean  procID:sword  behind:Ptr  goAwayFlag:Boolean  refCon:long
+  in  wStorage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  procID:sword  behind:Ptr  goAwayFlag:Boolean  refCon:long
   out theWindow:^WindowRecord
 
 A92C FindWindow toolbox
@@ -251,7 +251,7 @@ A92C FindWindow toolbox
 # ── Misc ──────────────────────────────────────────────
 
 A884 DrawString toolbox
-  in  s:PStr
+  in  s:Str255
 
 A9F0 LoadSeg toolbox noreturn
   in  segNum:sword

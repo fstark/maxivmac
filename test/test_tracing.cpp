@@ -79,7 +79,9 @@ static void ensureTypeRegistryInit()
 {
 	static bool done = false;
 	if (done) return;
-	g_typeRegistry().init({get_vm_byte, get_vm_word, get_vm_long});
+	auto &tr = g_typeRegistry();
+	tr.init({get_vm_byte, get_vm_word, get_vm_long});
+	tr.load("assets/types.def");
 	done = true;
 }
 
@@ -579,6 +581,11 @@ TEST_CASE("TypeRegistry stackSize")
 	CHECK(tr.stackSize("OSType") == 4);
 	CHECK(tr.stackSize("PStr") == 4);
 
+	/* Str255/Str63/Str31 are passed as 4-byte pointers */
+	CHECK(tr.stackSize("Str255") == 4);
+	CHECK(tr.stackSize("Str63") == 4);
+	CHECK(tr.stackSize("Str31") == 4);
+
 	/* unknown type defaults to 2 */
 	CHECK(tr.stackSize("NoSuchType") == 2);
 }
@@ -587,31 +594,10 @@ TEST_CASE("TypeRegistry stackSize")
    Phase 4 — StructPtr (^TypeName) support
    ════════════════════════════════════════════════════════ */
 
-/* Ensure g_typeRegistry has IOParam loaded for StructPtr tests. */
-static bool s_globalTypesLoaded = false;
+/* Ensure g_typeRegistry has struct types loaded for StructPtr tests. */
 static void ensureGlobalTypes()
 {
-	if (s_globalTypesLoaded) return;
-	auto &tr = g_typeRegistry();
-	tr.init({get_vm_byte, get_vm_word, get_vm_long});
-	auto tmp = std::filesystem::temp_directory_path() / "test_tracing_types.def";
-	{
-		std::ofstream f(tmp);
-		f << "struct IOParam {\n"
-			 "     0 Ptr      qLink\n"
-			 "     4 Word     qType\n"
-			 "     6 Word     ioTrap\n"
-			 "     8 Ptr      ioCmdAddr\n"
-			 "    12 Ptr      ioCompletion\n"
-			 "    16 OSErr    ioResult\n"
-			 "    18 Ptr      ioNamePtr\n"
-			 "    22 sword    ioVRefNum\n"
-			 "    24 sword    ioRefNum\n"
-			 "}\n";
-	}
-	tr.load(tmp);
-	std::filesystem::remove(tmp);
-	s_globalTypesLoaded = true;
+	ensureTypeRegistryInit();
 }
 
 TEST_CASE("TrapDefs parse ^StructName param type")

@@ -433,6 +433,20 @@ uint16_t TypeRegistry::sizeOf(std::string_view typeName) const
 
 uint16_t TypeRegistry::stackSize(std::string_view typeName) const
 {
+	/* Str255/Str63/Str31 are always passed as 4-byte pointers */
+	const auto *prim = FindPrimitive(typeName);
+	if (prim)
+	{
+		switch (prim->kind)
+		{
+			case PrimitiveKind::Str255:
+			case PrimitiveKind::Str63:
+			case PrimitiveKind::Str31:
+				return 4;
+			default:
+				break;
+		}
+	}
 	uint16_t sz = sizeOf(typeName);
 	if (sz == 0) return 2; /* unknown -> assume word */
 	if (sz == 1) return 2; /* byte/Boolean pushed as word on 68K stack */
