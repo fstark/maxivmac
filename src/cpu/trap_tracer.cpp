@@ -287,39 +287,84 @@ static const StructFieldFilter *findFilter(const std::vector<StructFieldFilter> 
 	return nullptr;
 }
 
-/* Format a StructPtr with an optional field filter. */
-std::string TrapTracer::formatStructPtr(const ParamDef &p, uint32_t rawValue,
-										const StructFieldFilter *filter)
+/* Re-indent a struct dump block: prepend each line with an indent string
+   and a "paramName^." prefix on the field name portion.
+   Input lines have the form "  field.Name:  value\n".
+   Output lines become      "<pad>paramName^.field.Name:  value\n". */
+static std::string reindentDump(const std::string &dump, std::string_view pad,
+								std::string_view paramName)
+{
+	std::string result;
+	size_t pos = 0;
+	while (pos < dump.size())
+	{
+		size_t eol = dump.find('\n', pos);
+		if (eol == std::string::npos) eol = dump.size();
+
+		std::string_view line(dump.data() + pos, eol - pos);
+		/* Strip the leading "  " indent from format/formatFiltered */
+		if (line.size() >= 2 && line[0] == ' ' && line[1] == ' ') line = line.substr(2);
+
+		result += pad;
+		result += paramName;
+		result += "^.";
+		result += line;
+		result += '\n';
+		pos = eol + 1;
+	}
+	return result;
+}
+
+/* Format a StructPtr with an optional field filter and indentation.
+   Returns just "$ADDR" for inline display.  The caller handles the
+   indented field dump separately via formatStructDump(). */
+std::string TrapTracer::formatStructPtr(const ParamDef & /*p*/, uint32_t rawValue,
+										const StructFieldFilter * /*filter*/)
 {
 	char buf[64];
-	auto &tr = g_typeRegistry();
-	if (rawValue != 0 && tr.has(p.structName))
-	{
-		std::string s;
-		snprintf(buf, sizeof(buf), "$%08X", rawValue);
-		s = buf;
-		s += '\n';
-		if (filter && !filter->fields.empty())
-			s += tr.formatFiltered(p.structName, rawValue, filter->fields);
-		else
-			s += tr.format(p.structName, rawValue);
-		return s;
-	}
 	snprintf(buf, sizeof(buf), "$%08X", rawValue);
 	return buf;
+}
+
+/* Produce the indented field dump for a StructPtr param. */
+std::string TrapTracer::formatStructDump(const ParamDef &p, uint32_t rawValue,
+										 const StructFieldFilter *filter, std::string_view pad)
+{
+	auto &tr = g_typeRegistry();
+	if (rawValue == 0 || !tr.has(p.structName)) return {};
+
+	std::string raw;
+	if (filter && !filter->fields.empty())
+		raw = tr.formatFiltered(p.structName, rawValue, filter->fields);
+	else
+		raw = tr.format(p.structName, rawValue);
+	if (raw.empty()) return {};
+
+	return reindentDump(raw, pad, p.name);
 }
 
 void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 {
 	int indent = frame.depth * 2;
 
-	/* Parameters — Pascal convention: first declared param is deepest on stack.
-	   Compute total stack size, then read each param from the bottom up. */
+	/* Build header: "→ CYCLE [APP] TrapName(" */
+	char hdr[128];
+	snprintf(hdr, sizeof(hdr), "%*s→ %u [%u] %s(", indent, "", (unsigned)frame.entryCycle,
+			 (unsigned)frame.appId, def.name.c_str());
+	size_t hdrLen = strlen(hdr);
+
+	/* Padding string for continuation lines — aligns under the '(' */
+	std::string pad(hdrLen, ' ');
+
+	/* Build inline params and collect StructPtr dumps */
 	std::string params;
+	std::string structDumps;
+
 	int totalStack = 0;
 	for (const auto &pd : def.paramsIn)
 		if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd.type);
 	int stackOff = totalStack;
+
 	for (size_t i = 0; i < def.paramsIn.size(); ++i)
 	{
 		if (i > 0) params += ", ";
@@ -328,10 +373,13 @@ void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 		uint32_t raw = readParamRaw(pd, frame.sp, stackOff);
 		params += pd.name;
 		params += ':';
+
 		if (pd.type == ParamType::StructPtr)
 		{
 			auto *filter = findFilter(def.showIn, pd.name);
 			params += formatStructPtr(pd, raw, filter);
+			std::string dump = formatStructDump(pd, raw, filter, pad);
+			if (!dump.empty()) structDumps += dump;
 		}
 		else
 		{
@@ -339,8 +387,17 @@ void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 		}
 	}
 
-	emit("%*s→ %u [%u] %s(%s) [caller:$%06X]\n", indent, "", (unsigned)frame.entryCycle,
-		 (unsigned)frame.appId, def.name.c_str(), params.c_str(), (unsigned)frame.callerPC);
+	if (structDumps.empty())
+	{
+		/* Simple case: everything fits on one line */
+		emit("%s%s) [caller:$%06X]\n", hdr, params.c_str(), (unsigned)frame.callerPC);
+	}
+	else
+	{
+		/* Multi-line: header + inline params, then struct fields, then closing */
+		emit("%s%s\n%s%*s) [caller:$%06X]\n", hdr, params.c_str(), structDumps.c_str(), (int)hdrLen,
+			 "", (unsigned)frame.callerPC);
+	}
 }
 
 void TrapTracer::emitEntry(const TrapFrame &frame)
@@ -404,24 +461,34 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 
 	uint32_t delta = g_instructionCount - frame.entryCycle;
 
+	/* Build the exit header to measure its width for alignment */
+	char hdr[128];
 	if (!outParams.empty())
 	{
-		emit("%*s← %u [%u] %s → %s  (+%u cycles)\n", indent, "", (unsigned)g_instructionCount,
-			 (unsigned)frame.appId, def.name.c_str(), outParams.c_str(), (unsigned)delta);
+		snprintf(hdr, sizeof(hdr), "%*s← %u [%u] %s → %s  (+%u cycles)", indent, "",
+				 (unsigned)g_instructionCount, (unsigned)frame.appId, def.name.c_str(),
+				 outParams.c_str(), (unsigned)delta);
 	}
 	else
 	{
-		emit("%*s← %u [%u] %s  (+%u cycles)\n", indent, "", (unsigned)g_instructionCount,
-			 (unsigned)frame.appId, def.name.c_str(), (unsigned)delta);
+		snprintf(hdr, sizeof(hdr), "%*s← %u [%u] %s  (+%u cycles)", indent, "",
+				 (unsigned)g_instructionCount, (unsigned)frame.appId, def.name.c_str(),
+				 (unsigned)delta);
 	}
 
 	/* show-out: dump filtered struct fields from saved addresses */
+	std::string showOutDump;
 	if (!def.showOut.empty())
 	{
+		/* Compute pad width to align with the entry header position */
+		size_t padWidth = strlen(hdr);
+		/* Cap at a reasonable width to avoid huge indents */
+		if (padWidth > 60) padWidth = indent + 20;
+		std::string pad(padWidth, ' ');
+
 		auto &tr = g_typeRegistry();
 		for (auto &filter : def.showOut)
 		{
-			/* Find the saved struct address for this param */
 			uint32_t addr = 0;
 			std::string structName;
 			for (int i = 0; i < frame.nStructAddrs; ++i)
@@ -433,7 +500,6 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 					break;
 				}
 			}
-			/* Find the struct type from the param def */
 			for (auto &pd : def.paramsIn)
 			{
 				if (pd.name == filter.paramName && pd.type == ParamType::StructPtr)
@@ -444,13 +510,21 @@ void TrapTracer::emitExit(const TrapFrame &frame, const TrapDef &def)
 			}
 			if (addr == 0 || structName.empty() || !tr.has(structName)) continue;
 
-			std::string dump = tr.formatFiltered(structName, addr, filter.fields);
-			if (!dump.empty())
+			std::string raw = tr.formatFiltered(structName, addr, filter.fields);
+			if (!raw.empty())
 			{
-				emit("%*s  %s @ $%08X:\n%s", indent, "", filter.paramName.c_str(), (unsigned)addr,
-					 dump.c_str());
+				showOutDump += reindentDump(raw, pad, filter.paramName);
 			}
 		}
+	}
+
+	if (showOutDump.empty())
+	{
+		emit("%s\n", hdr);
+	}
+	else
+	{
+		emit("%s\n%s", hdr, showOutDump.c_str());
 	}
 }
 

@@ -570,12 +570,14 @@ TEST_CASE("TrapTracer formatParam StructPtr with type registry")
 
 	std::string result = tracer.formatParam(pd, pb);
 
-	/* Should contain the address */
-	CHECK(result.find("$00000100") != std::string::npos);
-	/* Should contain struct field dump from type registry */
-	CHECK(result.find("ioResult") != std::string::npos);
-	CHECK(result.find("ioVRefNum") != std::string::npos);
-	CHECK(result.find("ioRefNum") != std::string::npos);
+	/* formatParam now returns just the address for StructPtr */
+	CHECK(result == "$00000100");
+
+	/* Field dump comes from formatStructDump */
+	std::string dump = tracer.formatStructDump(pd, pb, nullptr, "  ");
+	CHECK(dump.find("ioResult") != std::string::npos);
+	CHECK(dump.find("ioVRefNum") != std::string::npos);
+	CHECK(dump.find("ioRefNum") != std::string::npos);
 }
 
 TEST_CASE("TrapTracer formatParam StructPtr null pointer")
@@ -692,13 +694,16 @@ TEST_CASE("TrapTracer formatStructPtr with filter")
 	filter.paramName = "pb";
 	filter.fields = {"ioResult", "ioRefNum"};
 
-	std::string result = tracer.formatStructPtr(pd, pb, &filter);
+	/* formatStructPtr now returns just the address */
+	std::string addr = tracer.formatStructPtr(pd, pb, &filter);
+	CHECK(addr == "$00000100");
 
-	CHECK(result.find("$00000100") != std::string::npos);
-	CHECK(result.find("ioResult") != std::string::npos);
-	CHECK(result.find("ioRefNum") != std::string::npos);
-	CHECK(result.find("ioVRefNum") == std::string::npos);
-	CHECK(result.find("qLink") == std::string::npos);
+	/* Field dump with filter via formatStructDump */
+	std::string dump = tracer.formatStructDump(pd, pb, &filter, "  ");
+	CHECK(dump.find("ioResult") != std::string::npos);
+	CHECK(dump.find("ioRefNum") != std::string::npos);
+	CHECK(dump.find("ioVRefNum") == std::string::npos);
+	CHECK(dump.find("qLink") == std::string::npos);
 }
 
 TEST_CASE("TrapTracer formatStructPtr without filter dumps all")
@@ -718,10 +723,13 @@ TEST_CASE("TrapTracer formatStructPtr without filter dumps all")
 	pd.structName = "IOParam";
 	pd.loc = ParamLoc::A0;
 
-	std::string result = tracer.formatStructPtr(pd, pb, nullptr);
+	/* formatStructPtr returns just the address */
+	std::string addr = tracer.formatStructPtr(pd, pb, nullptr);
+	CHECK(addr == "$00000100");
 
-	/* Without filter, should dump all fields including qLink */
-	CHECK(result.find("qLink") != std::string::npos);
-	CHECK(result.find("ioVRefNum") != std::string::npos);
-	CHECK(result.find("ioRefNum") != std::string::npos);
+	/* Without filter, formatStructDump dumps all fields */
+	std::string dump = tracer.formatStructDump(pd, pb, nullptr, "  ");
+	CHECK(dump.find("qLink") != std::string::npos);
+	CHECK(dump.find("ioVRefNum") != std::string::npos);
+	CHECK(dump.find("ioRefNum") != std::string::npos);
 }

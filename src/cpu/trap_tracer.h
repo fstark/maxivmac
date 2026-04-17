@@ -55,6 +55,8 @@ public: /* public for testability */
 	std::string formatParam(const ParamDef &p, uint32_t rawValue);
 	std::string formatStructPtr(const ParamDef &p, uint32_t rawValue,
 								const StructFieldFilter *filter);
+	std::string formatStructDump(const ParamDef &p, uint32_t rawValue,
+								 const StructFieldFilter *filter, std::string_view pad);
 	std::string formatOSType(uint32_t raw);
 	std::string formatStr255(uint32_t addr);
 	std::string formatOSErr(int16_t err);
