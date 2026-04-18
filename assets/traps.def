@@ -628,547 +628,1758 @@ A04E AddDrive os
 
 # ── Toolbox Traps (additional) ─────────────────────────
 
-AA94 ActivatePalette toolbox
-AA3B AddComp toolbox
-A87E AddPt toolbox
-AA3A AddSearch toolbox
-A985 Alert toolbox
-AA1D AllocCursor toolbox
-A8C4 AngleFromSlope toolbox
-AA99 AnimateEntry toolbox
-AA9A AnimatePalette toolbox
-A933 AppendMenu toolbox
-A863 BackColor toolbox
-A87C BackPat toolbox
-AA0B BackPixPat toolbox
-A922 BeginUpdate toolbox
-A858 BitAnd toolbox
-A85F BitClr toolbox
-A85A BitNot toolbox
-A85B BitOr toolbox
-A85E BitSet toolbox
-A85C BitShift toolbox
-A85D BitTst toolbox
-A859 BitXor toolbox
-A920 BringToFront toolbox
-A974 Button toolbox
-AA9F CTab2Palette toolbox
-AA4F CalcCMask toolbox
-A838 CalcMask toolbox
-A948 CalcMenuSize toolbox
-A90A CalcVBehind toolbox
-A909 CalcVis toolbox
-A988 CautionAlert toolbox
-A9F3 Chain toolbox
-A9AA ChangedResource toolbox
-AA23 CharExtra toolbox
-A88D CharWidth toolbox
-A945 CheckItem toolbox
-A911 CheckUpdate toolbox
-A934 ClearMenuBar toolbox
-A90B ClipAbove toolbox
-A87B ClipRect toolbox
-A87D CloseCPort toolbox
-A9B7 CloseDeskAcc toolbox
-A982 CloseDialog toolbox
-A8CC ClosePgon toolbox
-A8F4 ClosePicture toolbox
-A8DB CloseRgn toolbox
-A92D CloseWindow toolbox
-AA33 Color2Index toolbox
-A864 ColorBit toolbox
-A8EC CopyBits toolbox
-A817 CopyMask toolbox
-AA05 CopyPixMap toolbox
-AA09 CopyPixPat toolbox
-A8DC CopyRgn toolbox
-A989 CouldAlert toolbox
-A979 CouldDialog toolbox
-A80D Count1Resources toolbox
-A81C Count1Types toolbox
-A950 CountMItems toolbox
-A99E CountTypes toolbox
-A9C7 Date2Secs toolbox
-AA4D DelComp toolbox
-AA60 DelMCEntries toolbox
-A952 DelMenuItem toolbox
-AA4C DelSearch toolbox
-A936 DeleteMenu toolbox
-A94F DeltaPoint toolbox
-A96E Dequeue toolbox
-A980 DialogSelect toolbox
-A8E6 DiffRgn toolbox
-A93A DisableItem toolbox
-AA63 DispMCInfo toolbox
-AA26 DisposCCursor toolbox
-AA25 DisposCIcon toolbox
-AA24 DisposCTable toolbox
-A955 DisposControl toolbox
-A983 DisposDialog toolbox
-AA30 DisposGDevice toolbox
-A932 DisposMenu toolbox
-AA04 DisposPixMap toolbox
-AA08 DisposPixPat toolbox
-A8D9 DisposRgn toolbox
-A914 DisposWindow toolbox
-AA93 DisposePalette toolbox
-A967 DragControl toolbox
-A905 DragGrayRgn toolbox
-A926 DragTheRgn toolbox
-A925 DragWindow toolbox
-A96D Draw1Control toolbox
-A883 DrawChar toolbox
-A969 DrawControls toolbox
-A981 DrawDialog toolbox
-A904 DrawGrowIcon toolbox
-A937 DrawMenuBar toolbox
-A90F DrawNew toolbox
-A8F6 DrawPicture toolbox
-A885 DrawText toolbox
-A9EC Elems68K toolbox
-A8AE EmptyRect toolbox
-A8E2 EmptyRgn toolbox
-A939 EnableItem toolbox
-A923 EndUpdate toolbox
-A96F Enqueue toolbox
-A881 EqualPt toolbox
-A8A6 EqualRect toolbox
-A8E3 EqualRgn toolbox
-A8C0 EraseArc toolbox
-A8B9 EraseOval toolbox
-A8C8 ErasePoly toolbox
-A8A3 EraseRect toolbox
-A8D4 EraseRgn toolbox
-A8B2 EraseRoundRect toolbox
-A98C ErrorSound toolbox
-A901 FMSwapFont toolbox
-A9EB FP68K toolbox
-A8C2 FillArc toolbox
-AA11 FillCArc toolbox
-AA0F FillCOval toolbox
-AA13 FillCPoly toolbox
-AA0E FillCRect toolbox
-AA12 FillCRgn toolbox
-AA10 FillCRoundRect toolbox
-A8BB FillOval toolbox
-A8CA FillPoly toolbox
-A8A5 FillRect toolbox
-A8D6 FillRgn toolbox
-A8B4 FillRoundRect toolbox
-A96C FindControl toolbox
-A984 FindDItem toolbox
-A841 Fix2Frac toolbox
-A840 Fix2Long toolbox
-A843 Fix2X toolbox
-A818 FixAtan2 toolbox
-A84D FixDiv toolbox
-A868 FixMul toolbox
-A869 FixRatio toolbox
-A86C FixRound toolbox
-A94C FlashMenuBar toolbox
-A835 FontMetrics toolbox
-A862 ForeColor toolbox
-A842 Frac2Fix toolbox
-A845 Frac2X toolbox
-A847 FracCos toolbox
-A84B FracDiv toolbox
-A84A FracMul toolbox
-A848 FracSin toolbox
-A849 FracSqrt toolbox
-A8BE FrameArc toolbox
-A8B7 FrameOval toolbox
-A8C6 FramePoly toolbox
-A8A1 FrameRect toolbox
-A8D2 FrameRgn toolbox
-A8B0 FrameRoundRect toolbox
-A98A FreeAlert toolbox
-A97A FreeDialog toolbox
-A924 FrontWindow toolbox
-A80E Get1IxResource toolbox
-A80F Get1IxType toolbox
-A820 Get1NamedResource toolbox
-A9F5 GetAppParms toolbox
-AA44 GetAuxCtl toolbox
-AA42 GetAuxWin toolbox
-AA1A GetBackColor toolbox
-AA1B GetCCursor toolbox
-AA1E GetCIcon toolbox
-AA17 GetCPixel toolbox
-A95A GetCRefCon toolbox
-AA28 GetCTSeed toolbox
-AA18 GetCTable toolbox
-A95E GetCTitle toolbox
-A809 GetCVariant toolbox
-AA48 GetCWMgrPort toolbox
-A87A GetClip toolbox
-A96A GetCtlAction toolbox
-A960 GetCtlValue toolbox
-A9B9 GetCursor toolbox
-A98D GetDItem toolbox
-AA29 GetDeviceList toolbox
-AA9B GetEntryColor toolbox
-AA9D GetEntryUsage toolbox
-A8FF GetFName toolbox
-A900 GetFNum toolbox
-A88B GetFontInfo toolbox
-AA19 GetForeColor toolbox
-AA32 GetGDevice toolbox
-A990 GetIText toolbox
-A9BB GetIcon toolbox
-A99F GetIndType toolbox
-A946 GetItem toolbox
-A84E GetItemCmd toolbox
-A93F GetItmIcon toolbox
-A943 GetItmMark toolbox
-A941 GetItmStyle toolbox
-A976 GetKeys toolbox
-AA64 GetMCEntry toolbox
-AA61 GetMCInfo toolbox
-A949 GetMHandle toolbox
-AA2A GetMainDevice toolbox
-A962 GetMaxCtl toolbox
-AA27 GetMaxDevice toolbox
-A93B GetMenuBar toolbox
-A961 GetMinCtl toolbox
-A972 GetMouse toolbox
-AA46 GetNewCWindow toolbox
-A9BE GetNewControl toolbox
-A97C GetNewDialog toolbox
-A9C0 GetNewMBar toolbox
-AA92 GetNewPalette toolbox
-A9BD GetNewWindow toolbox
-AA2B GetNextDevice toolbox
-AA96 GetPalette toolbox
-A9B8 GetPattern toolbox
-A89A GetPen toolbox
-A898 GetPenState toolbox
-A9BC GetPicture toolbox
-AA0C GetPixPat toolbox
-A865 GetPixel toolbox
-A874 GetPort toolbox
-A9BF GetRMenu toolbox
-A9FD GetScrap toolbox
-A9BA GetString toolbox
-AA37 GetSubTable toolbox
-A910 GetWMgrPort toolbox
-A917 GetWRefCon toolbox
-A919 GetWTitle toolbox
-A80A GetWVariant toolbox
-A92F GetWindowPic toolbox
-A871 GlobalToLocal toolbox
-A872 GrafDevice toolbox
-A92B GrowWindow toolbox
-A9E4 HandAndHand toolbox
-A9E1 HandToHand toolbox
-A86A HiWord toolbox
-A958 HideControl toolbox
-A852 HideCursor toolbox
-A827 HideDItem toolbox
-A896 HidePen toolbox
-A916 HideWindow toolbox
-AA22 HiliteColor toolbox
-A95D HiliteControl toolbox
-A938 HiliteMenu toolbox
-A91C HiliteWindow toolbox
-AA34 Index2Color toolbox
-A9F9 InfoScrap toolbox
-A9E6 InitAllPacks toolbox
-AA01 InitCport toolbox
-A850 InitCursor toolbox
-A97B InitDialogs toolbox
-A8FE InitFonts toolbox
-AA2E InitGDevice toolbox
-A86E InitGraf toolbox
-A930 InitMenus toolbox
-A9E5 InitPack toolbox
-AA90 InitPalettes toolbox
-A86D InitPort toolbox
-A808 InitProcMenu toolbox
-A995 InitResources toolbox
-A912 InitWindows toolbox
-A826 InsMenuItem toolbox
-A935 InsertMenu toolbox
-A951 InsertResMenu toolbox
-A8A9 InsetRect toolbox
-A8E1 InsetRgn toolbox
-A928 InvalRect toolbox
-A927 InvalRgn toolbox
-A8A4 InverRect toolbox
-A8D5 InverRgn toolbox
-A8B3 InverRoundRect toolbox
-A8C1 InvertArc toolbox
-AA35 InvertColor toolbox
-A8BA InvertOval toolbox
-A8C9 InvertPoly toolbox
-A97F IsDialogEvent toolbox
-A9C3 KeyTrans toolbox
-A956 KillControls toolbox
-A8F5 KillPicture toolbox
-A8CD KillPoly toolbox
-A892 Line toolbox
-A891 LineTo toolbox
-A86B LoWord toolbox
-A870 LocalToGlobal toolbox
-A9FB LodeScrap toolbox
-A83F Long2Fix toolbox
-A867 LongMul toolbox
-AA39 MakeITable toolbox
-AA0D MakeRGBPat toolbox
-A8FC MapPoly toolbox
-A8F9 MapPt toolbox
-A8FA MapRect toolbox
-A8FB MapRgn toolbox
-A821 MaxSizeRsrc toolbox
-A837 MeasureText toolbox
-AA66 MenuChoice toolbox
-A93E MenuKey toolbox
-A93D MenuSelect toolbox
-A991 ModalDialog toolbox
-A894 Move toolbox
-A959 MoveControl toolbox
-A877 MovePortTo toolbox
-A893 MoveTo toolbox
-A91B MoveWindow toolbox
-A9E0 Munger toolbox
-AA4B NewCDialog toolbox
-AA45 NewCWindow toolbox
-A954 NewControl toolbox
-A97D NewDialog toolbox
-AA2F NewGDevice toolbox
-A931 NewMenu toolbox
-AA91 NewPalette toolbox
-AA03 NewPixMap toolbox
-AA07 NewPixPat toolbox
-A8D8 NewRgn toolbox
-A906 NewString toolbox
-A987 NoteAlert toolbox
-A856 ObscureCursor toolbox
-A8CE OffsetPoly toolbox
-A8A8 OffsetRect toolbox
-A8E0 OfsetRgn toolbox
-AA21 OpColor toolbox
-AA00 OpenCport toolbox
-A9B6 OpenDeskAcc toolbox
-A8F3 OpenPicture toolbox
-A8CB OpenPoly toolbox
-A86F OpenPort toolbox
-A8DA OpenRgn toolbox
-A9E7 Pack0 toolbox
-A82E Pack12 toolbox
-A9E9 Pack2 toolbox
-A9EA Pack3 toolbox
-A9ED Pack6 toolbox
-A9EE Pack7 toolbox
-A8CF PackBits toolbox
-A8BF PaintArc toolbox
-A90D PaintBehind toolbox
-A90C PaintOne toolbox
-A8B8 PaintOval toolbox
-A8C7 PaintPoly toolbox
-A8A2 PaintRect toolbox
-A8D3 PaintRgn toolbox
-A8B1 PaintRoundRect toolbox
-AAA0 Palette2CTab toolbox
-A98B ParamText toolbox
-A89C PenMode toolbox
-A89E PenNormal toolbox
-A89D PenPat toolbox
-AA0A PenPixPat toolbox
-A89B PenSize toolbox
-A8F2 PicComment toolbox
-A94E PinRect toolbox
-AA1F PlotCIcon toolbox
-A94B PlotIcon toolbox
-AA98 PmBackColor toolbox
-AA97 PmForeColor toolbox
-A80B PopUpMenuSelect toolbox
-A876 PortSize toolbox
-A8FD PrGlue toolbox
-AA3D ProtectEntry toolbox
-A8AC Pt2Rect toolbox
-A8AD PtInRect toolbox
-A8E8 PtInRgn toolbox
-A8C3 PtToAngle toolbox
-A9EF PtrAndHand toolbox
-A9E3 PtrToHand toolbox
-A9E2 PtrToXHand toolbox
-A9FE PutScrap toolbox
-AA40 QDError toolbox
-AA15 RGBBackColor toolbox
-AA14 RGBForeColor toolbox
-A80C RGetResource toolbox
-A861 Random toolbox
-AA36 RealColor toolbox
-A902 RealFont toolbox
-A8E9 RectInRgn toolbox
-A8DF RectRgn toolbox
-A9AF ResError toolbox
-AA3E ReserveEntry toolbox
-AA4A RestoreEntries toolbox
-A9AD RmveResource toolbox
-A9C5 RsrcMapEntry toolbox
-A996 RsrcZoneInit toolbox
-A815 SCSIDispatch toolbox
-AA49 SaveEntries toolbox
-A90E SaveOld toolbox
-A8F8 ScalePt toolbox
-A8B5 ScriptUtil toolbox
-A8EF ScrollRect toolbox
-A9C6 Secs2Date toolbox
-A8AA SectRect toolbox
-A8E4 SectRgn toolbox
-AA50 SeedCFill toolbox
-A839 SeedFill toolbox
-A97E SelIText toolbox
-A91F SelectWindow toolbox
-A921 SendBehind toolbox
-AA1C SetCCursor toolbox
-AA16 SetCPixel toolbox
-AA06 SetCPortPix toolbox
-A95B SetCRefCon toolbox
-A95F SetCTitle toolbox
-AA3C SetClientID toolbox
-A879 SetClip toolbox
-A96B SetCtlAction toolbox
-AA43 SetCtlColor toolbox
-A963 SetCtlValue toolbox
-A851 SetCursor toolbox
-A98E SetDItem toolbox
-AA47 SetDeskCPat toolbox
-AA2D SetDeviceAttribute toolbox
-A8DD SetEmptyRgn toolbox
-AA3F SetEntries toolbox
-AA9C SetEntryColor toolbox
-AA9E SetEntryUsage toolbox
-A834 SetFScaleDisable toolbox
-A903 SetFontLock toolbox
-AA31 SetGDevice toolbox
-A98F SetIText toolbox
-A947 SetItem toolbox
-A84F SetItemCmd toolbox
-A940 SetItmIcon toolbox
-A944 SetItmMark toolbox
-A942 SetItmStyle toolbox
-AA65 SetMCEntries toolbox
-AA62 SetMCInfo toolbox
-A94A SetMFlash toolbox
-A965 SetMaxCtl toolbox
-A93C SetMenuBar toolbox
-A964 SetMinCtl toolbox
-A878 SetOrigin toolbox
-A875 SetPBits toolbox
-AA95 SetPalette toolbox
-A899 SetPenState toolbox
-A873 SetPort toolbox
-A880 SetPt toolbox
-A8DE SetRecRgn toolbox
-A8A7 SetRect toolbox
-A9A7 SetResAttrs toolbox
-A9A9 SetResInfo toolbox
-A993 SetResPurge toolbox
-AA4E SetStdCProcs toolbox
-A8EA SetStdProcs toolbox
-A907 SetString toolbox
-A918 SetWRefCon toolbox
-A91A SetWTitle toolbox
-AA41 SetWinColor toolbox
-A92E SetWindowPic toolbox
-A855 ShieldCursor toolbox
-A957 ShowControl toolbox
-A853 ShowCursor toolbox
-A828 ShowDItem toolbox
-A908 ShowHide toolbox
-A897 ShowPen toolbox
-A915 ShowWindow toolbox
-A895 Shutdown toolbox
-A95C SizeControl toolbox
-A91D SizeWindow toolbox
-A8BC SlopeFromAngle toolbox
-A802 SndAddModifier toolbox
-A806 SndControl toolbox
 A801 SndDisposeChannel toolbox
+  in  chan:Ptr  quiet:Boolean
+    out err:OSErr
+
+A802 SndAddModifier toolbox
+  in  chan:Ptr  modifier:ProcPtr  id:sword  init:long
+    out err:OSErr
+
 A803 SndDoCommand toolbox
+  in  chan:Ptr  cmd:Ptr  noWait:Boolean
+    out err:OSErr
+
 A804 SndDoImmediate toolbox
-A807 SndNewChannel toolbox
+  in  chan:Ptr  cmd:Ptr
+    out err:OSErr
+
 A805 SndPlay toolbox
-A88E SpaceExtra toolbox
-A8BD StdArc toolbox
-A8EB StdBits toolbox
-A8F1 StdComment toolbox
-A8EE StdGetPic toolbox
-A890 StdLine toolbox
-A8B6 StdOval toolbox
-A8C5 StdPoly toolbox
-A8F0 StdPutPic toolbox
-A8AF StdRRect toolbox
-A8A0 StdRect toolbox
-A8D1 StdRgn toolbox
-A882 StdText toolbox
-A8ED StdTxMeas toolbox
-A973 StillDown toolbox
-A986 StopAlert toolbox
-A88C StringWidth toolbox
-A866 StuffHex toolbox
-A87F SubPt toolbox
-A9C8 SysBeep toolbox
-A9C2 SysEdit toolbox
-A9B3 SystemClick toolbox
-A9B2 SystemEvent toolbox
-A9B5 SystemMenu toolbox
-A9B4 SystemTask toolbox
-A9D8 TEActivate toolbox
-A813 TEAutoView toolbox
-A9D0 TECalText toolbox
-A9D4 TEClick toolbox
-A9D5 TECopy toolbox
-A9D6 TECut toolbox
-A9D9 TEDeactivate toolbox
-A9D7 TEDelete toolbox
-A83D TEDispatch toolbox
-A9CD TEDispose toolbox
-A83C TEGetOffset toolbox
-A9CB TEGetText toolbox
-A9DA TEIdle toolbox
-A9CC TEInit toolbox
-A9DE TEInsert toolbox
-A9DC TEKey toolbox
-A9D2 TENew toolbox
-A9DB TEPaste toolbox
-A812 TEPinScroll toolbox
-A9DD TEScroll toolbox
-A811 TESelView toolbox
-A9DF TESetJust toolbox
-A9D1 TESetSelect toolbox
-A9CF TESetText toolbox
-A83E TEStyleNew toolbox
-A9D3 TEUpdate toolbox
-A966 TestControl toolbox
-AA2C TestDeviceAttribute toolbox
-A9CE TextBox toolbox
-A888 TextFace toolbox
-A887 TextFont toolbox
-A889 TextMode toolbox
-A88A TextSize toolbox
-A886 TextWidth toolbox
-A975 TickCount toolbox
-A83B TrackBox toolbox
-A968 TrackControl toolbox
-A91E TrackGoAway toolbox
-A8AB UnionRect toolbox
-A8E5 UnionRgn toolbox
+  in  chan:Ptr  snd:Handle  async:Boolean
+    out err:OSErr
+
+A806 SndControl toolbox
+  in  id:sword  cmd:Ptr
+    out err:OSErr
+
+A807 SndNewChannel toolbox
+  in  chan:Ptr  synth:sword  init:long  proc:ProcPtr
+    out err:OSErr
+
+A808 InitProcMenu toolbox
+  in  mbResID:sword
+
+A809 GetCVariant toolbox
+  in  window:Ptr
+    out variant:sword
+
+A80A GetWVariant toolbox
+  in  window:Ptr
+    out variant:sword
+
+A80B PopUpMenuSelect toolbox
+  in  menu:Handle  top:sword  left:sword  popUpItem:sword
+    out result:long
+
+A80C RGetResource toolbox
+  in  resType:OSType  resID:sword
+    out rsrc:Handle
+
+A80D Count1Resources toolbox
+  in  resType:OSType
+    out count:sword
+
+A80E Get1IxResource toolbox
+  in  resType:OSType  index:sword
+    out rsrc:Handle
+
+A80F Get1IxType toolbox
+  in  index:sword  resType:OSType
+
 A810 Unique1ID toolbox
-A9C1 UniqueID toolbox
-A9F1 UnloadSeg toolbox
-A9FA UnlodeScrap toolbox
-A8D0 UnpackBits toolbox
-A953 UpdtControl toolbox
-A978 UpdtDialog toolbox
-A92A ValidRect toolbox
-A929 ValidRgn toolbox
-A977 WaitMouseUp toolbox
-A9B0 WriteResource toolbox
-A844 X2Fix toolbox
-A846 X2Frac toolbox
-A8E7 XorRgn toolbox
-A9FC ZeroScrap toolbox
+  in  resType:OSType
+    out id:sword
+
+A811 TESelView toolbox
+  in  te:Handle
+
+A812 TEPinScroll toolbox
+  in  dh:sword  dv:sword  te:Handle
+
+A813 TEAutoView toolbox
+  in  auto:Boolean  te:Handle
+
+A815 SCSIDispatch toolbox
+  in  selector:sword
+
+A817 CopyMask toolbox
+  in  srcBits:Ptr  maskBits:Ptr  dstBits:Ptr  srcRect:Rect  maskRect:Rect  dstRect:Rect
+
+A818 FixAtan2 toolbox
+  in  x:long  y:long
+    out result:long
+
+A81C Count1Types toolbox
+  out count:sword
+
+A820 Get1NamedResource toolbox
+  in  resType:OSType  name:Str255
+    out rsrc:Handle
+
+A821 MaxSizeRsrc toolbox
+  in  rsrc:Handle
+    out size:long
+
+A826 InsMenuItem toolbox
+  in  menu:Handle  data:Str255  afterItem:sword
+
+A827 HideDItem toolbox
+  in  dialog:Ptr  item:sword
+
+A828 ShowDItem toolbox
+  in  dialog:Ptr  item:sword
+
+A82E Pack12 toolbox
+
+A834 SetFScaleDisable toolbox
+  in  disable:Boolean
+
+A835 FontMetrics toolbox
+  in  info:^FontInfo
+
+A837 MeasureText toolbox
+  in  count:sword  text:Ptr  charLocs:Ptr
+
+A838 CalcMask toolbox
+  in  src:Ptr  dst:Ptr  srcRow:sword  dstRow:sword  height:sword  words:sword
+
+A839 SeedFill toolbox
+  in  src:Ptr  dst:Ptr  srcRow:sword  dstRow:sword  height:sword  words:sword  seedH:sword  seedV:sword
+
 A83A ZoomWindow toolbox
+  in  window:Ptr  partCode:sword  front:Boolean
+
+A83B TrackBox toolbox
+  in  window:Ptr  pt:Point  partCode:sword
+    out inside:Boolean
+
+A83C TEGetOffset toolbox
+  in  pt:Point  te:Handle
+    out offset:sword
+
+A83D TEDispatch toolbox
+  in  selector:sword
+
+A83E TEStyleNew toolbox
+  in  destRect:Rect  viewRect:Rect
+    out te:Handle
+
+A83F Long2Fix toolbox
+  in  x:long
+    out result:long
+
+A840 Fix2Long toolbox
+  in  x:long
+    out result:long
+
+A841 Fix2Frac toolbox
+  in  x:long
+    out result:long
+
+A842 Frac2Fix toolbox
+  in  x:long
+    out result:long
+
+A843 Fix2X toolbox
+  in  x:long
+
+A844 X2Fix toolbox
+  out result:long
+
+A845 Frac2X toolbox
+  in  x:long
+
+A846 X2Frac toolbox
+  out result:long
+
+A847 FracCos toolbox
+  in  x:long
+    out result:long
+
+A848 FracSin toolbox
+  in  x:long
+    out result:long
+
+A849 FracSqrt toolbox
+  in  x:long
+    out result:long
+
+A84A FracMul toolbox
+  in  a:long  b:long
+    out result:long
+
+A84B FracDiv toolbox
+  in  a:long  b:long
+    out result:long
+
+A84D FixDiv toolbox
+  in  a:long  b:long
+    out result:long
+
+A84E GetItemCmd toolbox
+  in  menu:Handle  item:sword
+    out cmd:sword
+
+A84F SetItemCmd toolbox
+  in  menu:Handle  item:sword  cmd:sword
+
+A850 InitCursor toolbox
+
+A851 SetCursor toolbox
+  in  cursor:Ptr
+
+A852 HideCursor toolbox
+
+A853 ShowCursor toolbox
+
+A855 ShieldCursor toolbox
+  in  r:Rect  offset:Point
+
+A856 ObscureCursor toolbox
+
+A858 BitAnd toolbox
+  in  a:long  b:long
+    out result:long
+
+A859 BitXor toolbox
+  in  a:long  b:long
+    out result:long
+
+A85A BitNot toolbox
+  in  x:long
+    out result:long
+
+A85B BitOr toolbox
+  in  a:long  b:long
+    out result:long
+
+A85C BitShift toolbox
+  in  x:long  count:sword
+    out result:long
+
+A85D BitTst toolbox
+  in  addr:Ptr  bitNum:long
+    out result:Boolean
+
+A85E BitSet toolbox
+  in  addr:Ptr  bitNum:long
+
+A85F BitClr toolbox
+  in  addr:Ptr  bitNum:long
+
+A861 Random toolbox
+  out result:sword
+
+A862 ForeColor toolbox
+  in  color:slong
+
+A863 BackColor toolbox
+  in  color:slong
+
+A864 ColorBit toolbox
+  in  whichBit:sword
+
+A865 GetPixel toolbox
+  in  h:sword  v:sword
+    out pixel:Boolean
+
+A866 StuffHex toolbox
+  in  dst:Ptr  s:Str255
+
+A867 LongMul toolbox
+  in  a:long  b:long
+
+A868 FixMul toolbox
+  in  a:long  b:long
+    out result:long
+
+A869 FixRatio toolbox
+  in  numer:sword  denom:sword
+    out result:long
+
+A86A HiWord toolbox
+  in  x:long
+    out hi:sword
+
+A86B LoWord toolbox
+  in  x:long
+    out lo:sword
+
+A86C FixRound toolbox
+  in  x:long
+    out result:sword
+
+A86D InitPort toolbox
+  in  port:Ptr
+
+A86E InitGraf toolbox
+  in  globalPtr:Ptr
+
+A86F OpenPort toolbox
+  in  port:Ptr
+
+A870 LocalToGlobal toolbox
+  in  pt:Point
+
+A871 GlobalToLocal toolbox
+  in  pt:Point
+
+A872 GrafDevice toolbox
+  in  device:sword
+
+A873 SetPort toolbox
+  in  port:Ptr
+
+A874 GetPort toolbox
+  out port:Ptr
+
+A875 SetPBits toolbox
+  in  portBits:Ptr
+
+A876 PortSize toolbox
+  in  width:sword  height:sword
+
+A877 MovePortTo toolbox
+  in  leftGlobal:sword  topGlobal:sword
+
+A878 SetOrigin toolbox
+  in  h:sword  v:sword
+
+A879 SetClip toolbox
+  in  rgn:Handle
+
+A87A GetClip toolbox
+  in  rgn:Handle
+
+A87B ClipRect toolbox
+  in  r:Rect
+
+A87C BackPat toolbox
+  in  pat:Ptr
+
+A87D CloseCPort toolbox
+  in  port:Ptr
+
+A87E AddPt toolbox
+  in  src:Point  dst:Point
+
+A87F SubPt toolbox
+  in  src:Point  dst:Point
+
+A880 SetPt toolbox
+  in  pt:Point  h:sword  v:sword
+
+A881 EqualPt toolbox
+  in  pt1:Point  pt2:Point
+    out equal:Boolean
+
+A882 StdText toolbox
+  in  count:sword  text:Ptr  numer:Point  denom:Point
+
+A883 DrawChar toolbox
+  in  ch:sword
+
+A885 DrawText toolbox
+  in  text:Ptr  start:sword  count:sword
+
+A886 TextWidth toolbox
+  in  text:Ptr  start:sword  count:sword
+    out width:sword
+
+A887 TextFont toolbox
+  in  font:sword
+
+A888 TextFace toolbox
+  in  style:sword
+
+A889 TextMode toolbox
+  in  mode:sword
+
+A88A TextSize toolbox
+  in  size:sword
+
+A88B GetFontInfo toolbox
+  in  info:^FontInfo
+
+A88C StringWidth toolbox
+  in  s:Str255
+    out width:sword
+
+A88D CharWidth toolbox
+  in  ch:sword
+    out width:sword
+
+A88E SpaceExtra toolbox
+  in  extra:long
+
+A890 StdLine toolbox
+  in  newPt:Point
+
+A891 LineTo toolbox
+  in  h:sword  v:sword
+
+A892 Line toolbox
+  in  dh:sword  dv:sword
+
+A893 MoveTo toolbox
+  in  h:sword  v:sword
+
+A894 Move toolbox
+  in  dh:sword  dv:sword
+
+A895 Shutdown toolbox
+
+A896 HidePen toolbox
+
+A897 ShowPen toolbox
+
+A898 GetPenState toolbox
+  in  penState:^PenState
+
+A899 SetPenState toolbox
+  in  penState:^PenState
+
+A89A GetPen toolbox
+  in  pt:Point
+
+A89B PenSize toolbox
+  in  width:sword  height:sword
+
+A89C PenMode toolbox
+  in  mode:sword
+
+A89D PenPat toolbox
+  in  pat:Ptr
+
+A89E PenNormal toolbox
+
+A8A0 StdRect toolbox
+  in  verb:byte  r:Rect
+
+A8A1 FrameRect toolbox
+  in  r:Rect
+
+A8A2 PaintRect toolbox
+  in  r:Rect
+
+A8A3 EraseRect toolbox
+  in  r:Rect
+
+A8A4 InverRect toolbox
+  in  r:Rect
+
+A8A5 FillRect toolbox
+  in  r:Rect  pat:Ptr
+
+A8A6 EqualRect toolbox
+  in  r1:Rect  r2:Rect
+    out equal:Boolean
+
+A8A7 SetRect toolbox
+  in  r:Rect  left:sword  top:sword  right:sword  bottom:sword
+
+A8A8 OffsetRect toolbox
+  in  r:Rect  dh:sword  dv:sword
+
+A8A9 InsetRect toolbox
+  in  r:Rect  dh:sword  dv:sword
+
+A8AA SectRect toolbox
+  in  r1:Rect  r2:Rect  dst:Rect
+    out result:Boolean
+
+A8AB UnionRect toolbox
+  in  r1:Rect  r2:Rect  dst:Rect
+
+A8AC Pt2Rect toolbox
+  in  pt1:Point  pt2:Point  dst:Rect
+
+A8AD PtInRect toolbox
+  in  pt:Point  r:Rect
+    out inside:Boolean
+
+A8AE EmptyRect toolbox
+  in  r:Rect
+    out empty:Boolean
+
+A8AF StdRRect toolbox
+  in  verb:byte  r:Rect  ovalW:sword  ovalH:sword
+
+A8B0 FrameRoundRect toolbox
+  in  r:Rect  ovalW:sword  ovalH:sword
+
+A8B1 PaintRoundRect toolbox
+  in  r:Rect  ovalW:sword  ovalH:sword
+
+A8B2 EraseRoundRect toolbox
+  in  r:Rect  ovalW:sword  ovalH:sword
+
+A8B3 InverRoundRect toolbox
+  in  r:Rect  ovalW:sword  ovalH:sword
+
+A8B4 FillRoundRect toolbox
+  in  r:Rect  ovalW:sword  ovalH:sword  pat:Ptr
+
+A8B5 ScriptUtil toolbox
+  in  selector:long
+
+A8B6 StdOval toolbox
+  in  verb:byte  r:Rect
+
+A8B7 FrameOval toolbox
+  in  r:Rect
+
+A8B8 PaintOval toolbox
+  in  r:Rect
+
+A8B9 EraseOval toolbox
+  in  r:Rect
+
+A8BA InvertOval toolbox
+  in  r:Rect
+
+A8BB FillOval toolbox
+  in  r:Rect  pat:Ptr
+
+A8BC SlopeFromAngle toolbox
+  in  angle:sword
+    out slope:long
+
+A8BD StdArc toolbox
+  in  verb:byte  r:Rect  startAngle:sword  arcAngle:sword
+
+A8BE FrameArc toolbox
+  in  r:Rect  startAngle:sword  arcAngle:sword
+
+A8BF PaintArc toolbox
+  in  r:Rect  startAngle:sword  arcAngle:sword
+
+A8C0 EraseArc toolbox
+  in  r:Rect  startAngle:sword  arcAngle:sword
+
+A8C1 InvertArc toolbox
+  in  r:Rect  startAngle:sword  arcAngle:sword
+
+A8C2 FillArc toolbox
+  in  r:Rect  startAngle:sword  arcAngle:sword  pat:Ptr
+
+A8C3 PtToAngle toolbox
+  in  r:Rect  pt:Point
+    out angle:sword
+
+A8C4 AngleFromSlope toolbox
+  in  slope:long
+    out angle:sword
+
+A8C5 StdPoly toolbox
+  in  verb:byte  poly:Handle
+
+A8C6 FramePoly toolbox
+  in  poly:Handle
+
+A8C7 PaintPoly toolbox
+  in  poly:Handle
+
+A8C8 ErasePoly toolbox
+  in  poly:Handle
+
+A8C9 InvertPoly toolbox
+  in  poly:Handle
+
+A8CA FillPoly toolbox
+  in  poly:Handle  pat:Ptr
+
+A8CB OpenPoly toolbox
+  out poly:Handle
+
+A8CC ClosePgon toolbox
+
+A8CD KillPoly toolbox
+  in  poly:Handle
+
+A8CE OffsetPoly toolbox
+  in  poly:Handle  dh:sword  dv:sword
+
+A8CF PackBits toolbox
+  in  srcPtr:Ptr  dstPtr:Ptr  srcBytes:sword
+
+A8D0 UnpackBits toolbox
+  in  srcPtr:Ptr  dstPtr:Ptr  dstBytes:sword
+
+A8D1 StdRgn toolbox
+  in  verb:byte  rgn:Handle
+
+A8D2 FrameRgn toolbox
+  in  rgn:Handle
+
+A8D3 PaintRgn toolbox
+  in  rgn:Handle
+
+A8D4 EraseRgn toolbox
+  in  rgn:Handle
+
+A8D5 InverRgn toolbox
+  in  rgn:Handle
+
+A8D6 FillRgn toolbox
+  in  rgn:Handle  pat:Ptr
+
+A8D8 NewRgn toolbox
+  out rgn:Handle
+
+A8D9 DisposRgn toolbox
+  in  rgn:Handle
+
+A8DA OpenRgn toolbox
+
+A8DB CloseRgn toolbox
+  in  rgn:Handle
+
+A8DC CopyRgn toolbox
+  in  src:Handle  dst:Handle
+
+A8DD SetEmptyRgn toolbox
+  in  rgn:Handle
+
+A8DE SetRecRgn toolbox
+  in  rgn:Handle  left:sword  top:sword  right:sword  bottom:sword
+
+A8DF RectRgn toolbox
+  in  rgn:Handle  r:Rect
+
+A8E0 OfsetRgn toolbox
+  in  rgn:Handle  dh:sword  dv:sword
+
+A8E1 InsetRgn toolbox
+  in  rgn:Handle  dh:sword  dv:sword
+
+A8E2 EmptyRgn toolbox
+  in  rgn:Handle
+    out empty:Boolean
+
+A8E3 EqualRgn toolbox
+  in  rgn1:Handle  rgn2:Handle
+    out equal:Boolean
+
+A8E4 SectRgn toolbox
+  in  src1:Handle  src2:Handle  dst:Handle
+
+A8E5 UnionRgn toolbox
+  in  src1:Handle  src2:Handle  dst:Handle
+
+A8E6 DiffRgn toolbox
+  in  src1:Handle  src2:Handle  dst:Handle
+
+A8E7 XorRgn toolbox
+  in  src1:Handle  src2:Handle  dst:Handle
+
+A8E8 PtInRgn toolbox
+  in  pt:Point  rgn:Handle
+    out inside:Boolean
+
+A8E9 RectInRgn toolbox
+  in  r:Rect  rgn:Handle
+    out inside:Boolean
+
+A8EA SetStdProcs toolbox
+  in  procs:Ptr
+
+A8EB StdBits toolbox
+  in  srcBits:Ptr  srcRect:Rect  dstRect:Rect  mode:sword  maskRgn:Handle
+
+A8EC CopyBits toolbox
+  in  srcBits:Ptr  dstBits:Ptr  srcRect:Rect  dstRect:Rect  mode:sword  maskRgn:Handle
+
+A8ED StdTxMeas toolbox
+  in  count:sword  text:Ptr  numer:Point  denom:Point  info:^FontInfo
+
+A8EE StdGetPic toolbox
+  in  data:Ptr  count:sword
+
+A8EF ScrollRect toolbox
+  in  r:Rect  dh:sword  dv:sword  updateRgn:Handle
+
+A8F0 StdPutPic toolbox
+  in  data:Ptr  count:sword
+
+A8F1 StdComment toolbox
+  in  kind:sword  dataSize:sword  data:Handle
+
+A8F2 PicComment toolbox
+  in  kind:sword  dataSize:sword  data:Handle
+
+A8F3 OpenPicture toolbox
+  in  picFrame:Rect
+    out pic:Handle
+
+A8F4 ClosePicture toolbox
+
+A8F5 KillPicture toolbox
+  in  pic:Handle
+
+A8F6 DrawPicture toolbox
+  in  pic:Handle  dst:Rect
+
+A8F8 ScalePt toolbox
+  in  pt:Point  src:Rect  dst:Rect
+
+A8F9 MapPt toolbox
+  in  pt:Point  src:Rect  dst:Rect
+
+A8FA MapRect toolbox
+  in  r:Rect  src:Rect  dst:Rect
+
+A8FB MapRgn toolbox
+  in  rgn:Handle  src:Rect  dst:Rect
+
+A8FC MapPoly toolbox
+  in  poly:Handle  src:Rect  dst:Rect
+
+A8FD PrGlue toolbox
+
+A8FE InitFonts toolbox
+
+A8FF GetFName toolbox
+  in  fontNum:sword  name:Str255
+
+A900 GetFNum toolbox
+  in  name:Str255
+    out fontNum:sword
+
+A901 FMSwapFont toolbox
+  in  inRec:Ptr
+    out outRec:Ptr
+
+A902 RealFont toolbox
+  in  fontNum:sword  size:sword
+    out real:Boolean
+
+A903 SetFontLock toolbox
+  in  lock:Boolean
+
+A904 DrawGrowIcon toolbox
+  in  window:Ptr
+
+A905 DragGrayRgn toolbox
+  in  rgn:Handle  startPt:Point  bounds:Rect  slop:Rect  axis:sword  proc:ProcPtr
+    out result:long
+
+A906 NewString toolbox
+  in  s:Str255
+    out h:Handle
+
+A907 SetString toolbox
+  in  h:Handle  s:Str255
+
+A908 ShowHide toolbox
+  in  window:Ptr  showFlag:Boolean
+
+A909 CalcVis toolbox
+  in  window:Ptr
+
+A90A CalcVBehind toolbox
+  in  window:Ptr  clobbered:Handle
+
+A90B ClipAbove toolbox
+  in  window:Ptr
+
+A90C PaintOne toolbox
+  in  window:Ptr  clobbered:Handle
+
+A90D PaintBehind toolbox
+  in  startWindow:Ptr  clobbered:Handle
+
+A90E SaveOld toolbox
+  in  window:Ptr
+
+A90F DrawNew toolbox
+  in  window:Ptr  update:Boolean
+
+A910 GetWMgrPort toolbox
+  out port:Ptr
+
+A911 CheckUpdate toolbox
+  out event:Ptr  result:Boolean
+
+A912 InitWindows toolbox
+
+A913 NewWindow toolbox
+  in  storage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  procID:sword  behind:Ptr  goAway:Boolean  refCon:slong
+    out window:Ptr
+
+A914 DisposWindow toolbox
+  in  window:Ptr
+
+A915 ShowWindow toolbox
+  in  window:Ptr
+
+A916 HideWindow toolbox
+  in  window:Ptr
+
+A917 GetWRefCon toolbox
+  in  window:Ptr
+    out refCon:slong
+
+A918 SetWRefCon toolbox
+  in  window:Ptr  refCon:slong
+
+A919 GetWTitle toolbox
+  in  window:Ptr  title:Str255
+
+A91A SetWTitle toolbox
+  in  window:Ptr  title:Str255
+
+A91B MoveWindow toolbox
+  in  window:Ptr  h:sword  v:sword  front:Boolean
+
+A91C HiliteWindow toolbox
+  in  window:Ptr  hilite:Boolean
+
+A91D SizeWindow toolbox
+  in  window:Ptr  w:sword  h:sword  update:Boolean
+
+A91E TrackGoAway toolbox
+  in  window:Ptr  pt:Point
+    out goAway:Boolean
+
+A91F SelectWindow toolbox
+  in  window:Ptr
+
+A920 BringToFront toolbox
+  in  window:Ptr
+
+A921 SendBehind toolbox
+  in  window:Ptr  behindWindow:Ptr
+
+A922 BeginUpdate toolbox
+  in  window:Ptr
+
+A923 EndUpdate toolbox
+  in  window:Ptr
+
+A924 FrontWindow toolbox
+  out window:Ptr
+
+A925 DragWindow toolbox
+  in  window:Ptr  startPt:Point  bounds:Rect
+
+A926 DragTheRgn toolbox
+  in  rgn:Handle  startPt:Point  bounds:Rect  slop:Rect  axis:sword  proc:ProcPtr
+    out result:long
+
+A927 InvalRgn toolbox
+  in  rgn:Handle
+
+A928 InvalRect toolbox
+  in  r:Rect
+
+A929 ValidRgn toolbox
+  in  rgn:Handle
+
+A92A ValidRect toolbox
+  in  r:Rect
+
+A92B GrowWindow toolbox
+  in  window:Ptr  startPt:Point  sizeRect:Rect
+    out newSize:long
+
+A92C FindWindow toolbox
+  in  pt:Point
+    out partCode:sword  window:Ptr
+
+A92D CloseWindow toolbox
+  in  window:Ptr
+
+A92E SetWindowPic toolbox
+  in  window:Ptr  pic:Handle
+
+A92F GetWindowPic toolbox
+  in  window:Ptr
+    out pic:Handle
+
+A930 InitMenus toolbox
+
+A931 NewMenu toolbox
+  in  menuID:sword  title:Str255
+    out menu:Handle
+
+A932 DisposMenu toolbox
+  in  menu:Handle
+
+A933 AppendMenu toolbox
+  in  menu:Handle  data:Str255
+
+A934 ClearMenuBar toolbox
+
+A935 InsertMenu toolbox
+  in  menu:Handle  beforeID:sword
+
+A936 DeleteMenu toolbox
+  in  menuID:sword
+
+A937 DrawMenuBar toolbox
+
+A938 HiliteMenu toolbox
+  in  menuID:sword
+
+A939 EnableItem toolbox
+  in  menu:Handle  item:sword
+
+A93A DisableItem toolbox
+  in  menu:Handle  item:sword
+
+A93B GetMenuBar toolbox
+  out menuBar:Handle
+
+A93C SetMenuBar toolbox
+  in  menuBar:Handle
+
+A93D MenuSelect toolbox
+  in  startPt:Point
+    out result:long
+
+A93E MenuKey toolbox
+  in  ch:sword
+    out result:long
+
+A93F GetItmIcon toolbox
+  in  menu:Handle  item:sword
+    out icon:byte
+
+A940 SetItmIcon toolbox
+  in  menu:Handle  item:sword  icon:byte
+
+A941 GetItmStyle toolbox
+  in  menu:Handle  item:sword
+    out style:sword
+
+A942 SetItmStyle toolbox
+  in  menu:Handle  item:sword  style:sword
+
+A943 GetItmMark toolbox
+  in  menu:Handle  item:sword
+    out mark:sword
+
+A944 SetItmMark toolbox
+  in  menu:Handle  item:sword  mark:sword
+
+A945 CheckItem toolbox
+  in  menu:Handle  item:sword  checked:Boolean
+
+A946 GetItem toolbox
+  in  menu:Handle  item:sword  name:Str255
+
+A947 SetItem toolbox
+  in  menu:Handle  item:sword  name:Str255
+
+A948 CalcMenuSize toolbox
+  in  menu:Handle
+
+A949 GetMHandle toolbox
+  in  menuID:sword
+    out menu:Handle
+
+A94A SetMFlash toolbox
+  in  count:sword
+
+A94B PlotIcon toolbox
+  in  r:Rect  icon:Handle
+
+A94C FlashMenuBar toolbox
+  in  menuID:sword
+
+A94E PinRect toolbox
+  in  r:Rect  pt:Point
+    out result:long
+
+A94F DeltaPoint toolbox
+  in  ptA:Point  ptB:Point
+    out result:long
+
+A950 CountMItems toolbox
+  in  menu:Handle
+    out count:sword
+
+A951 InsertResMenu toolbox
+  in  menu:Handle  resType:OSType  afterItem:sword
+
+A952 DelMenuItem toolbox
+  in  menu:Handle  item:sword
+
+A953 UpdtControl toolbox
+  in  window:Ptr  updateRgn:Handle
+
+A954 NewControl toolbox
+  in  window:Ptr  bounds:Rect  title:Str255  visible:Boolean  value:sword  min:sword  max:sword  procID:sword  refCon:slong
+    out ctrl:Ptr
+
+A955 DisposControl toolbox
+  in  ctrl:Ptr
+
+A956 KillControls toolbox
+  in  window:Ptr
+
+A957 ShowControl toolbox
+  in  ctrl:Ptr
+
+A958 HideControl toolbox
+  in  ctrl:Ptr
+
+A959 MoveControl toolbox
+  in  ctrl:Ptr  h:sword  v:sword
+
+A95A GetCRefCon toolbox
+  in  ctrl:Ptr
+    out refCon:slong
+
+A95B SetCRefCon toolbox
+  in  ctrl:Ptr  refCon:slong
+
+A95C SizeControl toolbox
+  in  ctrl:Ptr  w:sword  h:sword
+
+A95D HiliteControl toolbox
+  in  ctrl:Ptr  hilite:sword
+
+A95E GetCTitle toolbox
+  in  ctrl:Ptr  title:Str255
+
+A95F SetCTitle toolbox
+  in  ctrl:Ptr  title:Str255
+
+A960 GetCtlValue toolbox
+  in  ctrl:Ptr
+    out value:sword
+
+A961 GetMinCtl toolbox
+  in  ctrl:Ptr
+    out min:sword
+
+A962 GetMaxCtl toolbox
+  in  ctrl:Ptr
+    out max:sword
+
+A963 SetCtlValue toolbox
+  in  ctrl:Ptr  value:sword
+
+A964 SetMinCtl toolbox
+  in  ctrl:Ptr  min:sword
+
+A965 SetMaxCtl toolbox
+  in  ctrl:Ptr  max:sword
+
+A966 TestControl toolbox
+  in  ctrl:Ptr  pt:Point
+    out partCode:sword
+
+A967 DragControl toolbox
+  in  ctrl:Ptr  startPt:Point  bounds:Rect  slop:Rect  axis:sword
+
+A968 TrackControl toolbox
+  in  ctrl:Ptr  pt:Point  proc:ProcPtr
+    out partCode:sword
+
+A969 DrawControls toolbox
+  in  window:Ptr
+
+A96A GetCtlAction toolbox
+  in  ctrl:Ptr
+    out proc:ProcPtr
+
+A96B SetCtlAction toolbox
+  in  ctrl:Ptr  proc:ProcPtr
+
+A96C FindControl toolbox
+  in  pt:Point  window:Ptr
+    out partCode:sword  ctrl:Ptr
+
+A96D Draw1Control toolbox
+  in  ctrl:Ptr
+
+A96E Dequeue toolbox
+  in  elem:Ptr  queue:Ptr
+    out err:OSErr
+
+A96F Enqueue toolbox
+  in  elem:Ptr  queue:Ptr
+
+A972 GetMouse toolbox
+  in  pt:Point
+
+A973 StillDown toolbox
+  out down:Boolean
+
+A974 Button toolbox
+  out down:Boolean
+
+A975 TickCount toolbox
+  out ticks:long
+
+A976 GetKeys toolbox
+  in  keys:Ptr
+
+A977 WaitMouseUp toolbox
+  out released:Boolean
+
+A978 UpdtDialog toolbox
+  in  dialog:Ptr  updateRgn:Handle
+
+A979 CouldDialog toolbox
+  in  dialogID:sword
+
+A97A FreeDialog toolbox
+  in  dialogID:sword
+
+A97B InitDialogs toolbox
+  in  resumeProc:ProcPtr
+
+A97C GetNewDialog toolbox
+  in  dialogID:sword  storage:Ptr  behind:Ptr
+    out dialog:Ptr
+
+A97D NewDialog toolbox
+  in  storage:Ptr  bounds:Rect  title:Str255  visible:Boolean  procID:sword  behind:Ptr  goAway:Boolean  refCon:slong  items:Handle
+    out dialog:Ptr
+
+A97E SelIText toolbox
+  in  dialog:Ptr  item:sword  selStart:sword  selEnd:sword
+
+A97F IsDialogEvent toolbox
+  in  event:Ptr
+    out result:Boolean
+
+A980 DialogSelect toolbox
+  in  event:Ptr
+    out dialog:Ptr  itemHit:sword  result:Boolean
+
+A981 DrawDialog toolbox
+  in  dialog:Ptr
+
+A982 CloseDialog toolbox
+  in  dialog:Ptr
+
+A983 DisposDialog toolbox
+  in  dialog:Ptr
+
+A984 FindDItem toolbox
+  in  dialog:Ptr  pt:Point
+    out item:sword
+
+A985 Alert toolbox
+  in  alertID:sword  filterProc:ProcPtr
+    out itemHit:sword
+
+A986 StopAlert toolbox
+  in  alertID:sword  filterProc:ProcPtr
+    out itemHit:sword
+
+A987 NoteAlert toolbox
+  in  alertID:sword  filterProc:ProcPtr
+    out itemHit:sword
+
+A988 CautionAlert toolbox
+  in  alertID:sword  filterProc:ProcPtr
+    out itemHit:sword
+
+A989 CouldAlert toolbox
+  in  alertID:sword
+
+A98A FreeAlert toolbox
+  in  alertID:sword
+
+A98B ParamText toolbox
+  in  param0:Str255  param1:Str255  param2:Str255  param3:Str255
+
+A98C ErrorSound toolbox
+  in  proc:ProcPtr
+
+A98D GetDItem toolbox
+  in  dialog:Ptr  item:sword
+    out itemType:sword  itemHandle:Handle  itemBox:Rect
+
+A98E SetDItem toolbox
+  in  dialog:Ptr  item:sword  itemType:sword  itemHandle:Handle  itemBox:Rect
+
+A98F SetIText toolbox
+  in  item:Handle  text:Str255
+
+A990 GetIText toolbox
+  in  item:Handle  text:Str255
+
+A991 ModalDialog toolbox
+  in  filterProc:ProcPtr
+    out itemHit:sword
+
+A993 SetResPurge toolbox
+  in  install:Boolean
+
+A995 InitResources toolbox
+
+A996 RsrcZoneInit toolbox
+
+A99E CountTypes toolbox
+  out count:sword
+
+A99F GetIndType toolbox
+  in  index:sword  resType:OSType
+
+A9A7 SetResAttrs toolbox
+  in  rsrc:Handle  attrs:word
+
+A9A9 SetResInfo toolbox
+  in  rsrc:Handle  resID:sword  name:Str255
+
+A9AA ChangedResource toolbox
+  in  rsrc:Handle
+
+A9AD RmveResource toolbox
+  in  rsrc:Handle
+
+A9AF ResError toolbox
+  out err:OSErr
+
+A9B0 WriteResource toolbox
+  in  rsrc:Handle
+
+A9B2 SystemEvent toolbox
+  in  event:Ptr
+    out handled:Boolean
+
+A9B3 SystemClick toolbox
+  in  event:Ptr  window:Ptr
+
+A9B4 SystemTask toolbox
+
+A9B5 SystemMenu toolbox
+  in  menuResult:long
+
+A9B6 OpenDeskAcc toolbox
+  in  name:Str255
+    out refNum:sword
+
+A9B7 CloseDeskAcc toolbox
+  in  refNum:sword
+
+A9B8 GetPattern toolbox
+  in  patID:sword
+    out pat:Handle
+
+A9B9 GetCursor toolbox
+  in  cursorID:sword
+    out cursor:Handle
+
+A9BA GetString toolbox
+  in  stringID:sword
+    out s:Handle
+
+A9BB GetIcon toolbox
+  in  iconID:sword
+    out icon:Handle
+
+A9BC GetPicture toolbox
+  in  picID:sword
+    out pic:Handle
+
+A9BD GetNewWindow toolbox
+  in  templateID:sword  storage:Ptr  behind:Ptr
+    out window:Ptr
+
+A9BE GetNewControl toolbox
+  in  ctrlID:sword  window:Ptr
+    out ctrl:Ptr
+
+A9BF GetRMenu toolbox
+  in  menuID:sword
+    out menu:Handle
+
+A9C0 GetNewMBar toolbox
+  in  menuBarID:sword
+    out menuBar:Handle
+
+A9C1 UniqueID toolbox
+  in  resType:OSType
+    out id:sword
+
+A9C2 SysEdit toolbox
+  in  editCmd:sword
+    out result:Boolean
+
+A9C3 KeyTrans toolbox
+  in  transData:Ptr  keycode:sword
+    out result:long
+
+A9C5 RsrcMapEntry toolbox
+  in  rsrc:Handle
+    out offset:long
+
+A9C6 Secs2Date toolbox
+  in  secs:long  d:Ptr
+
+A9C7 Date2Secs toolbox
+  in  d:Ptr
+    out secs:long
+
+A9C8 SysBeep toolbox
+  in  duration:sword
+
+A9CB TEGetText toolbox
+  in  te:Handle
+    out text:Handle
+
+A9CC TEInit toolbox
+
+A9CD TEDispose toolbox
+  in  te:Handle
+
+A9CE TextBox toolbox
+  in  text:Ptr  length:long  box:Rect  just:sword
+
+A9CF TESetText toolbox
+  in  text:Ptr  length:long  te:Handle
+
+A9D0 TECalText toolbox
+  in  te:Handle
+
+A9D1 TESetSelect toolbox
+  in  selStart:sword  selEnd:sword  te:Handle
+
+A9D2 TENew toolbox
+  in  destRect:Rect  viewRect:Rect
+    out te:Handle
+
+A9D3 TEUpdate toolbox
+  in  r:Rect  te:Handle
+
+A9D4 TEClick toolbox
+  in  pt:Point  extend:Boolean  te:Handle
+
+A9D5 TECopy toolbox
+  in  te:Handle
+
+A9D6 TECut toolbox
+  in  te:Handle
+
+A9D7 TEDelete toolbox
+  in  te:Handle
+
+A9D8 TEActivate toolbox
+  in  te:Handle
+
+A9D9 TEDeactivate toolbox
+  in  te:Handle
+
+A9DA TEIdle toolbox
+  in  te:Handle
+
+A9DB TEPaste toolbox
+  in  te:Handle
+
+A9DC TEKey toolbox
+  in  ch:sword  te:Handle
+
+A9DD TEScroll toolbox
+  in  dh:sword  dv:sword  te:Handle
+
+A9DE TEInsert toolbox
+  in  text:Ptr  length:long  te:Handle
+
+A9DF TESetJust toolbox
+  in  just:sword  te:Handle
+
+A9E0 Munger toolbox
+  in  h:Handle  offset:long  ptr1:Ptr  len1:long  ptr2:Ptr  len2:long
+    out result:long
+
+A9E1 HandToHand toolbox
+  in  h:Handle
+    out err:OSErr
+
+A9E2 PtrToXHand toolbox
+  in  src:Ptr  dst:Handle  size:long
+    out err:OSErr
+
+A9E3 PtrToHand toolbox
+  in  src:Ptr  size:long
+    out h:Handle  err:OSErr
+
+A9E4 HandAndHand toolbox
+  in  src:Handle  dst:Handle
+    out err:OSErr
+
+A9E5 InitPack toolbox
+  in  packID:sword
+
+A9E6 InitAllPacks toolbox
+
+A9E7 Pack0 toolbox
+
+A9E9 Pack2 toolbox
+
+A9EA Pack3 toolbox
+
+A9EB FP68K toolbox
+
+A9EC Elems68K toolbox
+
+A9ED Pack6 toolbox
+
+A9EE Pack7 toolbox
+
+A9EF PtrAndHand toolbox
+  in  src:Ptr  dst:Handle  size:long
+    out err:OSErr
+
+A9F1 UnloadSeg toolbox
+  in  routine:Ptr
+
+A9F3 Chain toolbox
+  in  fileName:Str255
+
+A9F5 GetAppParms toolbox
+  in  name:Str255  refNum:sword  appHandle:Handle
+
+A9F9 InfoScrap toolbox
+  out scrap:Ptr
+
+A9FA UnlodeScrap toolbox
+  out err:long
+
+A9FB LodeScrap toolbox
+  out err:long
+
+A9FC ZeroScrap toolbox
+  out err:long
+
+A9FD GetScrap toolbox
+  in  dst:Handle  type:OSType
+    out length:long
+
+A9FE PutScrap toolbox
+  in  length:long  type:OSType  src:Ptr
+    out err:long
+
+AA00 OpenCport toolbox
+  in  port:Ptr
+
+AA01 InitCport toolbox
+  in  port:Ptr
+
+AA03 NewPixMap toolbox
+  out pixMap:Handle
+
+AA04 DisposPixMap toolbox
+  in  pixMap:Handle
+
+AA05 CopyPixMap toolbox
+  in  src:Handle  dst:Handle
+
+AA06 SetCPortPix toolbox
+  in  pixMap:Handle
+
+AA07 NewPixPat toolbox
+  out pixPat:Handle
+
+AA08 DisposPixPat toolbox
+  in  pixPat:Handle
+
+AA09 CopyPixPat toolbox
+  in  src:Handle  dst:Handle
+
+AA0A PenPixPat toolbox
+  in  pixPat:Handle
+
+AA0B BackPixPat toolbox
+  in  pixPat:Handle
+
+AA0C GetPixPat toolbox
+  in  patID:sword
+    out pixPat:Handle
+
+AA0D MakeRGBPat toolbox
+  in  pixPat:Handle  color:Ptr
+
+AA0E FillCRect toolbox
+  in  r:Rect  pixPat:Handle
+
+AA0F FillCOval toolbox
+  in  r:Rect  pixPat:Handle
+
+AA10 FillCRoundRect toolbox
+  in  r:Rect  ovalW:sword  ovalH:sword  pixPat:Handle
+
+AA11 FillCArc toolbox
+  in  r:Rect  startAngle:sword  arcAngle:sword  pixPat:Handle
+
+AA12 FillCRgn toolbox
+  in  rgn:Handle  pixPat:Handle
+
+AA13 FillCPoly toolbox
+  in  poly:Handle  pixPat:Handle
+
+AA14 RGBForeColor toolbox
+  in  color:Ptr
+
+AA15 RGBBackColor toolbox
+  in  color:Ptr
+
+AA16 SetCPixel toolbox
+  in  h:sword  v:sword  color:Ptr
+
+AA17 GetCPixel toolbox
+  in  h:sword  v:sword  color:Ptr
+
+AA18 GetCTable toolbox
+  in  ctID:sword
+    out ct:Handle
+
+AA19 GetForeColor toolbox
+  in  color:Ptr
+
+AA1A GetBackColor toolbox
+  in  color:Ptr
+
+AA1B GetCCursor toolbox
+  in  cursorID:sword
+    out cursor:Handle
+
+AA1C SetCCursor toolbox
+  in  cursor:Handle
+
+AA1D AllocCursor toolbox
+
+AA1E GetCIcon toolbox
+  in  iconID:sword
+    out icon:Handle
+
+AA1F PlotCIcon toolbox
+  in  r:Rect  icon:Handle
+
+AA21 OpColor toolbox
+  in  color:Ptr
+
+AA22 HiliteColor toolbox
+  in  color:Ptr
+
+AA23 CharExtra toolbox
+  in  extra:long
+
+AA24 DisposCTable toolbox
+  in  ct:Handle
+
+AA25 DisposCIcon toolbox
+  in  icon:Handle
+
+AA26 DisposCCursor toolbox
+  in  cursor:Handle
+
+AA27 GetMaxDevice toolbox
+  in  r:Rect
+    out device:Handle
+
+AA28 GetCTSeed toolbox
+  out seed:long
+
+AA29 GetDeviceList toolbox
+  out device:Handle
+
+AA2A GetMainDevice toolbox
+  out device:Handle
+
+AA2B GetNextDevice toolbox
+  in  device:Handle
+    out next:Handle
+
+AA2C TestDeviceAttribute toolbox
+  in  device:Handle  attr:sword
+    out result:Boolean
+
+AA2D SetDeviceAttribute toolbox
+  in  device:Handle  attr:sword  value:Boolean
+
+AA2E InitGDevice toolbox
+  in  qdRefNum:sword  mode:long  device:Handle
+
+AA2F NewGDevice toolbox
+  in  qdRefNum:sword  mode:long
+    out device:Handle
+
+AA30 DisposGDevice toolbox
+  in  device:Handle
+
+AA31 SetGDevice toolbox
+  in  device:Handle
+
+AA32 GetGDevice toolbox
+  out device:Handle
+
+AA33 Color2Index toolbox
+  in  color:Ptr
+    out index:long
+
+AA34 Index2Color toolbox
+  in  index:long  color:Ptr
+
+AA35 InvertColor toolbox
+  in  color:Ptr
+
+AA36 RealColor toolbox
+  in  color:Ptr
+    out result:Boolean
+
+AA37 GetSubTable toolbox
+  in  ctab:Handle  index:sword  target:Handle
+
+AA39 MakeITable toolbox
+  in  ctab:Handle  itab:Handle  res:sword
+
+AA3A AddSearch toolbox
+  in  proc:ProcPtr
+
+AA3B AddComp toolbox
+  in  proc:ProcPtr
+
+AA3C SetClientID toolbox
+  in  id:sword
+
+AA3D ProtectEntry toolbox
+  in  index:sword  protect:Boolean
+
+AA3E ReserveEntry toolbox
+  in  index:sword  reserve:Boolean
+
+AA3F SetEntries toolbox
+  in  start:sword  count:sword  table:Ptr
+
+AA40 QDError toolbox
+  out err:sword
+
+AA41 SetWinColor toolbox
+  in  window:Ptr  table:Handle
+
+AA42 GetAuxWin toolbox
+  in  window:Ptr
+    out table:Handle  result:Boolean
+
+AA43 SetCtlColor toolbox
+  in  ctrl:Ptr  table:Handle
+
+AA44 GetAuxCtl toolbox
+  in  ctrl:Ptr
+    out table:Handle  result:Boolean
+
+AA45 NewCWindow toolbox
+  in  storage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  procID:sword  behind:Ptr  goAway:Boolean  refCon:slong
+    out window:Ptr
+
+AA46 GetNewCWindow toolbox
+  in  windowID:sword  storage:Ptr  behind:Ptr
+    out window:Ptr
+
+AA47 SetDeskCPat toolbox
+  in  pixPat:Handle
+
+AA48 GetCWMgrPort toolbox
+  out port:Ptr
+
+AA49 SaveEntries toolbox
+  in  ctab:Handle  selection:Handle
+    out result:Handle
+
+AA4A RestoreEntries toolbox
+  in  saved:Handle  ctab:Handle  selection:Handle
+
+AA4B NewCDialog toolbox
+  in  storage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  procID:sword  behind:Ptr  goAway:Boolean  refCon:slong  items:Handle
+    out dialog:Ptr
+
+AA4C DelSearch toolbox
+  in  proc:ProcPtr
+
+AA4D DelComp toolbox
+  in  proc:ProcPtr
+
+AA4E SetStdCProcs toolbox
+  in  procs:Ptr
+
+AA4F CalcCMask toolbox
+  in  src:Ptr  dst:Ptr  srcRow:sword  dstRow:sword  height:sword  words:sword  color:Ptr  proc:ProcPtr  flags:long
+
+AA50 SeedCFill toolbox
+  in  src:Ptr  dst:Ptr  srcRow:sword  dstRow:sword  height:sword  words:sword  seedH:sword  seedV:sword  proc:ProcPtr  flags:long
+
+AA60 DelMCEntries toolbox
+  in  menuID:sword  item:sword
+
+AA61 GetMCInfo toolbox
+  out table:Handle
+
+AA62 SetMCInfo toolbox
+  in  table:Handle
+
+AA63 DispMCInfo toolbox
+  in  table:Handle
+
+AA64 GetMCEntry toolbox
+  in  menuID:sword  item:sword
+    out entry:Ptr
+
+AA65 SetMCEntries toolbox
+  in  count:sword  entries:Ptr
+
+AA66 MenuChoice toolbox
+  out result:long
+
+AA90 InitPalettes toolbox
+
+AA91 NewPalette toolbox
+  in  entries:sword  ctab:Handle  srcUsage:sword  tolerance:sword
+    out palette:Handle
+
+AA92 GetNewPalette toolbox
+  in  paletteID:sword
+    out palette:Handle
+
+AA93 DisposePalette toolbox
+  in  palette:Handle
+
+AA94 ActivatePalette toolbox
+  in  window:Ptr
+
+AA95 SetPalette toolbox
+  in  window:Ptr  palette:Handle  update:Boolean
+
+AA96 GetPalette toolbox
+  in  window:Ptr
+    out palette:Handle
+
+AA97 PmForeColor toolbox
+  in  entry:sword
+
+AA98 PmBackColor toolbox
+  in  entry:sword
+
+AA99 AnimateEntry toolbox
+  in  window:Ptr  entry:sword  color:Ptr
+
+AA9A AnimatePalette toolbox
+  in  window:Ptr  ctab:Handle  srcIndex:sword  dstEntry:sword  dstLength:sword
+
+AA9B GetEntryColor toolbox
+  in  palette:Handle  entry:sword  color:Ptr
+
+AA9C SetEntryColor toolbox
+  in  palette:Handle  entry:sword  color:Ptr
+
+AA9D GetEntryUsage toolbox
+  in  palette:Handle  entry:sword
+    out usage:sword
+
+AA9E SetEntryUsage toolbox
+  in  palette:Handle  entry:sword  usage:sword  tolerance:sword
+
+AA9F CTab2Palette toolbox
+  in  ctab:Handle  palette:Handle  srcUsage:sword  tolerance:sword
+
+AAA0 Palette2CTab toolbox
+  in  palette:Handle  ctab:Handle
+
