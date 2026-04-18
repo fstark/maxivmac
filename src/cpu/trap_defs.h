@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -54,6 +55,11 @@ struct StructFieldFilter
 	std::vector<std::string> fields; /* field names to display */
 };
 
+struct DispatchInfo
+{
+	ParamDef selectorParam; /* type + location of the selector */
+};
+
 struct TrapDef
 {
 	uint16_t trapWord;
@@ -64,6 +70,13 @@ struct TrapDef
 	std::vector<ParamDef> paramsOut;
 	std::vector<StructFieldFilter> showIn;	/* entry-time struct field filters */
 	std::vector<StructFieldFilter> showOut; /* exit-time struct field filters */
+	std::optional<DispatchInfo> dispatch;	/* nullopt for non-dispatch traps */
+};
+
+struct SubtrapDef
+{
+	uint16_t selector; /* selector value (e.g. 0x09 for PBGetCatInfo) */
+	TrapDef def;	   /* full definition (name, params, show-in/out) */
 };
 
 class TrapDefs
@@ -90,4 +103,7 @@ private:
 	std::unordered_map<uint16_t, TrapDef> defs_;
 	std::unordered_map<int16_t, std::string> errors_;
 	std::vector<std::pair<uint16_t, std::string>> sortedNames_;
+
+	/* Key: parent trapWord (masked). Value: selector → SubtrapDef. */
+	std::unordered_map<uint16_t, std::unordered_map<uint16_t, SubtrapDef>> subtraps_;
 };

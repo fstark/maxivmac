@@ -225,9 +225,61 @@ A014 GetVol os
   out err:OSErr.D0
   show-out pb ioResult ioNamePtr ioVRefNum
 
-A260 HFSDispatch os
+A260 HFSDispatch os dispatch=word.D0
   in  selector:word.D0 pb:Ptr.A0
   out err:OSErr.D0
+  subtrap 0x01 PBOpenWD
+    in  pb:^WDParam.A0
+    out err:OSErr.D0
+    show-out pb ioResult
+  subtrap 0x02 PBCloseWD
+    in  pb:^WDParam.A0
+    out err:OSErr.D0
+    show-out pb ioResult
+  subtrap 0x05 PBCatMove
+    in  pb:^CInfoPBRec.A0
+    out err:OSErr.D0
+    show-in  pb ioNamePtr ioDirID
+    show-out pb ioResult
+  subtrap 0x06 PBDirCreate
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioNamePtr ioDirID
+    show-out pb ioResult ioDirID
+  subtrap 0x07 PBGetWDInfo
+    in  pb:^WDParam.A0
+    out err:OSErr.D0
+    show-out pb ioResult ioWDProcID ioWDVRefNum
+  subtrap 0x08 PBGetFCBInfo
+    in  pb:^FCBPBRec.A0
+    out err:OSErr.D0
+    show-out pb ioResult
+  subtrap 0x09 PBGetCatInfo
+    in  pb:^CInfoPBRec.A0
+    out err:OSErr.D0
+    show-in  pb ioNamePtr ioDirID
+    show-out pb ioResult ioFlAttrib ioFlFndrInfo
+  subtrap 0x0A PBSetCatInfo
+    in  pb:^CInfoPBRec.A0
+    out err:OSErr.D0
+    show-in  pb ioNamePtr ioDirID
+    show-out pb ioResult
+  subtrap 0x0B PBSetVInfo
+    in  pb:^VolumeParam.A0
+    out err:OSErr.D0
+    show-out pb ioResult
+  subtrap 0x10 PBCreateFileIDRef
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-out pb ioResult
+  subtrap 0x11 PBDeleteFileIDRef
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-out pb ioResult
+  subtrap 0x30 PBGetVolParms
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-out pb ioResult
 
 # ── Event Manager ─────────────────────────────────────
 
