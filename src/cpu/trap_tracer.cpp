@@ -82,6 +82,34 @@ void TrapTracer::removeAllTraps()
 	allowed_.reset();
 }
 
+void TrapTracer::addSubtrap(uint16_t parentTrapWord, uint16_t selector)
+{
+	uint32_t synKey =
+		(static_cast<uint32_t>(TrapDefs::maskTrapWord(parentTrapWord)) << 16) | selector;
+	subtrapAllowed_[synKey] = true;
+	/* Ensure parent is allowed so enter() fires */
+	allowed_.set(parentTrapWord);
+}
+
+void TrapTracer::removeSubtrap(uint16_t parentTrapWord, uint16_t selector)
+{
+	uint32_t synKey =
+		(static_cast<uint32_t>(TrapDefs::maskTrapWord(parentTrapWord)) << 16) | selector;
+	subtrapAllowed_.erase(synKey);
+}
+
+bool TrapTracer::hasSubtrapFilter() const
+{
+	return !subtrapAllowed_.empty();
+}
+
+uint16_t TrapTracer::readSelector(const DispatchInfo &info)
+{
+	int stackOff = 0;
+	uint32_t raw = readParamRaw(info.selectorParam, 0, stackOff);
+	return static_cast<uint16_t>(raw);
+}
+
 /* -- enter --------------------------------------------- */
 
 void TrapTracer::enter(uint16_t trapWord)
@@ -134,37 +162,56 @@ void TrapTracer::enter(uint16_t trapWord)
 	/* Look up definition (masking handles auto-pop bit automatically) */
 	const TrapDef *def = defs_.find(trapWord);
 
+	/* Dispatch trap resolution: read selector and resolve subtrap */
+	const TrapDef *effectiveDef = def;
+	uint16_t subtrapSel = 0;
+	if (def && def->dispatch)
+	{
+		subtrapSel = readSelector(*def->dispatch);
+		auto *sub = defs_.findSubtrap(trapWord, subtrapSel);
+		if (sub) effectiveDef = &sub->def;
+
+		/* Check subtrap filter */
+		if (!subtrapAllowed_.empty())
+		{
+			uint32_t synKey =
+				(static_cast<uint32_t>(TrapDefs::maskTrapWord(trapWord)) << 16) | subtrapSel;
+			if (subtrapAllowed_.find(synKey) == subtrapAllowed_.end()) return;
+		}
+	}
+	frame.subtrapSelector = subtrapSel;
+
 	/* Auto-pop Toolbox trap: bit 10 set on a Toolbox trap ($Axxx where bit 11 set).
 	   The ROM dispatcher discards the return address, so the ROM routine
 	   returns directly to the caller's caller.  Don't push a frame. */
 	bool autoPop = (trapWord & 0x0800) && (trapWord & 0x0400);
 
 	/* Handle noreturn traps */
-	if (def && def->noreturn)
+	if (effectiveDef && effectiveDef->noreturn)
 	{
-		emitEntry(frame, *def);
-		flushStack(def->name.c_str());
+		emitEntry(frame, *effectiveDef);
+		flushStack(effectiveDef->name.c_str());
 		return;
 	}
 
 	if (autoPop)
 	{
-		const char *name = def ? def->name.c_str() : nullptr;
+		const char *name = effectiveDef ? effectiveDef->name.c_str() : nullptr;
 		emitAutoPop(frame, name);
 		return;
 	}
 
 	/* Emit entry and push frame */
-	if (def)
+	if (effectiveDef)
 	{
 		/* Save StructPtr addresses for show-out at exit */
-		if (!def->showOut.empty())
+		if (!effectiveDef->showOut.empty())
 		{
 			int totalStack = 0;
-			for (const auto &pd : def->paramsIn)
+			for (const auto &pd : effectiveDef->paramsIn)
 				if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd);
 			int stackOff = totalStack;
-			for (const auto &pd : def->paramsIn)
+			for (const auto &pd : effectiveDef->paramsIn)
 			{
 				if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd);
 				if (pd.isStructPtr && frame.nStructAddrs < TrapFrame::kMaxStructAddrs)
@@ -180,14 +227,14 @@ void TrapTracer::enter(uint16_t trapWord)
 			/* Store param name pointers separately -- we need them stable.
 			   Re-scan to set them (TrapDef strings are stable in the map). */
 			int idx = 0;
-			for (const auto &pd : def->paramsIn)
+			for (const auto &pd : effectiveDef->paramsIn)
 			{
 				if (pd.isStructPtr && idx < frame.nStructAddrs)
 					frame.structAddrs[idx++].paramName = pd.name.c_str();
 			}
 		}
 
-		emitEntry(frame, *def);
+		emitEntry(frame, *effectiveDef);
 	}
 	else
 		emitEntry(frame);
@@ -236,8 +283,15 @@ void TrapTracer::checkReturn(uint32_t pc)
 	depth_ = match;
 	const TrapFrame &frame = stack_[match];
 	const TrapDef *def = defs_.find(frame.trapWord);
-	if (def)
-		emitExit(frame, *def);
+	/* Resolve subtrap for exit formatting */
+	const TrapDef *exitDef = def;
+	if (frame.subtrapSelector != 0)
+	{
+		auto *sub = defs_.findSubtrap(frame.trapWord, frame.subtrapSelector);
+		if (sub) exitDef = &sub->def;
+	}
+	if (exitDef)
+		emitExit(frame, *exitDef);
 	else
 		emitExit(frame);
 	overflowWarned_ = false;

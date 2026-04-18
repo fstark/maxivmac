@@ -11,17 +11,19 @@
 #include <bitset>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 
 class DbgIO;
 
 struct TrapFrame
 {
 	uint16_t trapWord;
-	uint32_t callerPC;	 /* return address from stack */
-	uint32_t entryCycle; /* g_instructionCount at entry */
-	uint32_t sp;		 /* SP at entry (for toolbox param read) */
-	uint16_t appId;		 /* CurApRefNum at entry time */
-	int depth;			 /* nesting depth when pushed */
+	uint32_t callerPC;			  /* return address from stack */
+	uint32_t entryCycle;		  /* g_instructionCount at entry */
+	uint32_t sp;				  /* SP at entry (for toolbox param read) */
+	uint16_t appId;				  /* CurApRefNum at entry time */
+	int depth;					  /* nesting depth when pushed */
+	uint16_t subtrapSelector = 0; /* non-zero for dispatch traps */
 
 	/* Saved StructPtr addresses for show-out (indexed by in-param order) */
 	static constexpr int kMaxStructAddrs = 4;
@@ -53,6 +55,10 @@ public:
 	void addAllTraps();
 	void removeAllTraps();
 
+	void addSubtrap(uint16_t parentTrapWord, uint16_t selector);
+	void removeSubtrap(uint16_t parentTrapWord, uint16_t selector);
+	bool hasSubtrapFilter() const;
+
 public: /* public for testability */
 	std::string formatParam(const ParamDef &p, uint32_t rawValue);
 	std::string formatStructPtr(const ParamDef &p, uint32_t rawValue,
@@ -72,6 +78,7 @@ private:
 	void emitExit(const TrapFrame &frame, const TrapDef &def);
 	void emitExit(const TrapFrame &frame);
 	uint32_t readParamRaw(const ParamDef &p, uint32_t sp, int &stackOffset);
+	uint16_t readSelector(const DispatchInfo &info);
 	uint16_t readAppId() const;
 	std::string readAppName() const;
 
@@ -83,6 +90,7 @@ private:
 	uint16_t lastAppId_ = 0;
 	bool overflowWarned_ = false;
 	std::bitset<65536> allowed_;
+	std::unordered_map<uint32_t, bool> subtrapAllowed_;
 	DbgIO *io_ = nullptr;
 };
 
