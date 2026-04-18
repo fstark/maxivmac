@@ -59,6 +59,7 @@ set(MINIVMAC_SOURCES
 
     # Language / type system
     src/lang/type_registry.cpp
+    src/lang/global_registry.cpp
 
     # CPU
     src/cpu/m68k_tables.cpp
@@ -283,6 +284,7 @@ add_executable(tests
     src/storage/text_convert.cpp
     src/storage/host_volume.cpp
     src/lang/type_registry.cpp
+    src/lang/global_registry.cpp
     test/test_types.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
