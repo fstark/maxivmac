@@ -151,7 +151,7 @@ A146 GetTrapAddress os
 A000 Open os
   in  pb:^IOParam.A0
   out err:OSErr.D0
-  show-in  pb ioNamePtr ioVRefNum
+  show-in  pb ioNamePtr ioVRefNum ioPermssn
   show-out pb ioResult ioRefNum
 
 A001 Close os
@@ -193,14 +193,14 @@ A009 Delete os
 A00A OpenRF os
   in  pb:^IOParam.A0
   out err:OSErr.D0
-  show-in  pb ioNamePtr ioVRefNum
+  show-in  pb ioNamePtr ioVRefNum ioPermssn
   show-out pb ioResult ioRefNum
 
 A00C GetFileInfo os
   in  pb:^FileParam.A0
   out err:OSErr.D0
   show-in  pb ioNamePtr ioVRefNum ioFDirIndex
-  show-out pb ioResult ioNamePtr ioFlFndrInfo ioFlNum ioFlLgLen ioFlRLgLen
+  show-out pb ioResult ioNamePtr ioFlAttrib ioFlFndrInfo ioFlNum ioFlLgLen ioFlRLgLen ioFlCrDat ioFlMdDat
 
 A00D SetFileInfo os
   in  pb:^FileParam.A0
@@ -231,42 +231,47 @@ A260 HFSDispatch os dispatch=word.D0
   subtrap 0x01 PBOpenWD
     in  pb:^WDParam.A0
     out err:OSErr.D0
-    show-out pb ioResult
+    show-in  pb ioNamePtr ioVRefNum ioWDProcID ioWDDirID
+    show-out pb ioResult ioVRefNum
   subtrap 0x02 PBCloseWD
     in  pb:^WDParam.A0
     out err:OSErr.D0
+    show-in  pb ioVRefNum
     show-out pb ioResult
   subtrap 0x05 PBCatMove
     in  pb:^CInfoPBRec.A0
     out err:OSErr.D0
-    show-in  pb ioNamePtr ioDirID
+    show-in  pb ioNamePtr ioVRefNum ioDirID
     show-out pb ioResult
   subtrap 0x06 PBDirCreate
     in  pb:^HFileInfo.A0
     out err:OSErr.D0
-    show-in  pb ioNamePtr ioDirID
+    show-in  pb ioNamePtr ioVRefNum ioDirID
     show-out pb ioResult ioDirID
   subtrap 0x07 PBGetWDInfo
     in  pb:^WDParam.A0
     out err:OSErr.D0
-    show-out pb ioResult ioWDProcID ioWDVRefNum
+    show-in  pb ioVRefNum ioWDIndex
+    show-out pb ioResult ioWDProcID ioWDVRefNum ioWDDirID
   subtrap 0x08 PBGetFCBInfo
     in  pb:^FCBPBRec.A0
     out err:OSErr.D0
-    show-out pb ioResult
+    show-in  pb ioRefNum ioFCBIndx
+    show-out pb ioResult ioNamePtr ioFCBFlNm ioFCBFlags ioFCBEOF ioFCBVRefNum ioFCBParID
   subtrap 0x09 PBGetCatInfo
     in  pb:^CInfoPBRec.A0
     out err:OSErr.D0
-    show-in  pb ioNamePtr ioDirID
-    show-out pb ioResult ioFlAttrib ioFlFndrInfo
+    show-in  pb ioNamePtr ioVRefNum ioFDirIndex ioDirID
+    show-out pb ioResult ioNamePtr ioFlAttrib ioFlFndrInfo ioFlLgLen ioFlRLgLen ioFlCrDat ioFlMdDat ioFlParID
   subtrap 0x0A PBSetCatInfo
     in  pb:^CInfoPBRec.A0
     out err:OSErr.D0
-    show-in  pb ioNamePtr ioDirID
+    show-in  pb ioNamePtr ioVRefNum ioDirID ioFlFndrInfo
     show-out pb ioResult
   subtrap 0x0B PBSetVInfo
     in  pb:^VolumeParam.A0
     out err:OSErr.D0
+    show-in  pb ioNamePtr ioVRefNum
     show-out pb ioResult
   subtrap 0x10 PBCreateFileIDRef
     in  pb:^HFileInfo.A0
@@ -462,6 +467,7 @@ A00E UnmountVol os
 A00F MountVol os
   in  pb:^VolumeParam.A0
   out err:OSErr.D0
+  show-out pb ioResult ioVRefNum
 
 A017 Eject os
   in  pb:^VolumeParam.A0
