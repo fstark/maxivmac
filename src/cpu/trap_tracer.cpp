@@ -116,7 +116,7 @@ void TrapTracer::enter(uint16_t trapWord)
 {
 	if (!enabled_) return;
 
-	if (!allowed_.test(trapWord)) return;
+	if (!allowed_.test(TrapDefs::maskTrapWord(trapWord))) return;
 
 	/* Context-switch detection */
 	uint16_t appId = readAppId();
