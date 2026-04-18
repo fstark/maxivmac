@@ -238,15 +238,7 @@ A971 EventAvail toolbox
   in  eventMask:word
   out gotEvent:Boolean
 
-# ── Window Manager ────────────────────────────────────
-
-A913 NewWindow toolbox
-  in  wStorage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  procID:sword  behind:Ptr  goAwayFlag:Boolean  refCon:long
-  out theWindow:^WindowRecord
-
-A92C FindWindow toolbox
-  in  thePoint:Point
-  out partCode:sword
+# ── Window Manager (see Toolbox section for complete definitions) ────
 
 # ── Misc ──────────────────────────────────────────────
 
