@@ -125,7 +125,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			regParam[0] = files;
 			regParam[1] = bytes;
 			regResult = 0;
-			fprintf(stderr, "[ExtFS] GetVol → %u files, %u bytes\n", files, bytes);
+			fprintf(stdout, "[ExtFS] GetVol → %u files, %u bytes\n", files, bytes);
 		}
 		break;
 
@@ -135,7 +135,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			int32_t index = static_cast<int32_t>(regParam[1]);
 			uint32_t nameBuf = regParam[2];
 
-			fprintf(stderr, "[ExtFS] GetCatInfo dir=%u idx=%d\n", dirID, index);
+			fprintf(stdout, "[ExtFS] GetCatInfo dir=%u idx=%d\n", dirID, index);
 
 			if (index == 0)
 			{
@@ -217,7 +217,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t nameBuf = regParam[2];
 
 			std::string name = readPascalString(nameAddr);
-			fprintf(stderr, "[ExtFS] GetCatInfoByName dir=%u name=\"%s\"\n", parentDir,
+			fprintf(stdout, "[ExtFS] GetCatInfoByName dir=%u name=\"%s\"\n", parentDir,
 					name.c_str());
 
 			if (parentDir == kRootParentID)
@@ -284,7 +284,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			}
 			regParam[0] = handle;
 			regParam[1] = size;
-			fprintf(stderr, "[ExtFS] Open cnid=%u → handle=%u size=%u\n", cnid, handle, size);
+			fprintf(stdout, "[ExtFS] Open cnid=%u → handle=%u size=%u\n", cnid, handle, size);
 			regResult = 0;
 		}
 		break;
@@ -296,7 +296,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t count = regParam[2];
 			uint32_t guestBuf = regParam[3];
 
-			fprintf(stderr, "[ExtFS] Read h=%u off=%u cnt=%u\n", handle, offset, count);
+			fprintf(stdout, "[ExtFS] Read h=%u off=%u cnt=%u\n", handle, offset, count);
 
 			std::vector<uint8_t> buf(count);
 			uint32_t got = 0;
@@ -310,7 +310,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			for (uint32_t i = 0; i < got; i++)
 				put_vm_byte(guestBuf + i, buf[i]);
 			regParam[0] = got;
-			fprintf(stderr, "[ExtFS]   → read %u bytes\n", got);
+			fprintf(stdout, "[ExtFS]   → read %u bytes\n", got);
 			regResult = 0;
 		}
 		break;
@@ -318,7 +318,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSClose:
 		{
 			uint32_t handle = regParam[0];
-			fprintf(stderr, "[ExtFS] Close h=%u\n", handle);
+			fprintf(stdout, "[ExtFS] Close h=%u\n", handle);
 			s_volume.closeFork(handle);
 			regResult = 0;
 		}
@@ -360,7 +360,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			uint32_t dirID = regParam[0];
 			regParam[0] = static_cast<uint32_t>(s_volume.childCount(dirID));
-			fprintf(stderr, "[ExtFS] ReadDir dir=%u → %u children\n", dirID, regParam[0]);
+			fprintf(stdout, "[ExtFS] ReadDir dir=%u → %u children\n", dirID, regParam[0]);
 			regResult = 0;
 		}
 		break;
@@ -371,7 +371,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			std::string name = readPascalString(regParam[1]);
 			auto *e = s_volume.findByName(parentDir, name);
 			regParam[0] = e ? e->cnid : 0;
-			fprintf(stderr, "[ExtFS] ObjByName dir=%u name=\"%s\" → cnid=%u\n", parentDir,
+			fprintf(stdout, "[ExtFS] ObjByName dir=%u name=\"%s\" → cnid=%u\n", parentDir,
 					name.c_str(), regParam[0]);
 			regResult = 0;
 		}
@@ -380,7 +380,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSGetWDInfo:
 		{
 			uint32_t wdRef = regParam[0];
-			fprintf(stderr, "[ExtFS] GetWDInfo wd=%u\n", wdRef);
+			fprintf(stdout, "[ExtFS] GetWDInfo wd=%u\n", wdRef);
 			uint32_t dirID = s_volume.wdToDirID(wdRef);
 			if (dirID != 0)
 			{
@@ -400,7 +400,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t dirID = regParam[1];
 			uint32_t wdRef = s_volume.openWD(dirID);
 			regParam[0] = wdRef;
-			fprintf(stderr, "[ExtFS] OpenWD dir=%u → wd=%u\n", dirID, wdRef);
+			fprintf(stdout, "[ExtFS] OpenWD dir=%u → wd=%u\n", dirID, wdRef);
 			regResult = 0;
 		}
 		break;
@@ -408,7 +408,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSCloseWD:
 		{
 			uint32_t wdRef = regParam[0];
-			fprintf(stderr, "[ExtFS] CloseWD wd=%u\n", wdRef);
+			fprintf(stdout, "[ExtFS] CloseWD wd=%u\n", wdRef);
 			s_volume.closeWD(wdRef);
 			regResult = 0;
 		}
@@ -462,7 +462,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			uint32_t parentDir = regParam[0];
 			std::string macName = readPascalString(regParam[1]);
-			fprintf(stderr, "[ExtFS] CreateFile dir=%u name=\"%s\"\n", parentDir, macName.c_str());
+			fprintf(stdout, "[ExtFS] CreateFile dir=%u name=\"%s\"\n", parentDir, macName.c_str());
 
 			storage::FMErr err;
 			uint32_t cnid = s_volume.createFile(parentDir, macName, err);
@@ -472,7 +472,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 				break;
 			}
 			regParam[0] = cnid;
-			fprintf(stderr, "[ExtFS]   → cnid=%u\n", cnid);
+			fprintf(stdout, "[ExtFS]   → cnid=%u\n", cnid);
 			regResult = 0;
 		}
 		break;
@@ -484,7 +484,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t count = regParam[2];
 			uint32_t guestBuf = regParam[3];
 
-			fprintf(stderr, "[ExtFS] Write h=%u off=%u cnt=%u\n", handle, offset, count);
+			fprintf(stdout, "[ExtFS] Write h=%u off=%u cnt=%u\n", handle, offset, count);
 
 			std::vector<uint8_t> data(count);
 			for (uint32_t i = 0; i < count; i++)
@@ -498,7 +498,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 				break;
 			}
 			regParam[0] = written;
-			fprintf(stderr, "[ExtFS]   → wrote %u bytes\n", written);
+			fprintf(stdout, "[ExtFS]   → wrote %u bytes\n", written);
 			regResult = 0;
 		}
 		break;
@@ -507,7 +507,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			uint32_t parentDir = regParam[0];
 			std::string macName = readPascalString(regParam[1]);
-			fprintf(stderr, "[ExtFS] Delete dir=%u name=\"%s\"\n", parentDir, macName.c_str());
+			fprintf(stdout, "[ExtFS] Delete dir=%u name=\"%s\"\n", parentDir, macName.c_str());
 			auto err = s_volume.remove(parentDir, macName);
 			regResult = fmErrToReg(err);
 		}
@@ -518,7 +518,9 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t cnid = regParam[0];
 			uint32_t type = regParam[1];
 			uint32_t creator = regParam[2];
-			fprintf(stderr, "[ExtFS] SetFileInfo cnid=%u\n", cnid);
+			fprintf(stdout, "[ExtFS] setFileInfo cnid=%u type='%.4s' creator='%.4s'\n", cnid,
+					reinterpret_cast<const char *>(&type),
+					reinterpret_cast<const char *>(&creator));
 			auto err = s_volume.setFileInfo(cnid, type, creator);
 			regResult = fmErrToReg(err);
 		}
@@ -528,7 +530,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			uint32_t parentDir = regParam[0];
 			std::string macName = readPascalString(regParam[1]);
-			fprintf(stderr, "[ExtFS] CreateDir dir=%u name=\"%s\"\n", parentDir, macName.c_str());
+			fprintf(stdout, "[ExtFS] CreateDir dir=%u name=\"%s\"\n", parentDir, macName.c_str());
 
 			storage::FMErr err;
 			uint32_t cnid = s_volume.createDir(parentDir, macName, err);
@@ -538,7 +540,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 				break;
 			}
 			regParam[0] = cnid;
-			fprintf(stderr, "[ExtFS]   → cnid=%u\n", cnid);
+			fprintf(stdout, "[ExtFS]   → cnid=%u\n", cnid);
 			regResult = 0;
 		}
 		break;
@@ -548,7 +550,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t srcDir = regParam[0];
 			std::string macName = readPascalString(regParam[1]);
 			uint32_t dstDir = regParam[2];
-			fprintf(stderr, "[ExtFS] CatMove srcDir=%u name=\"%s\" dstDir=%u\n", srcDir,
+			fprintf(stdout, "[ExtFS] CatMove srcDir=%u name=\"%s\" dstDir=%u\n", srcDir,
 					macName.c_str(), dstDir);
 			auto err = s_volume.move(srcDir, macName, dstDir);
 			regResult = fmErrToReg(err);
@@ -560,7 +562,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t dirID = regParam[0];
 			std::string oldName = readPascalString(regParam[1]);
 			std::string newName = readPascalString(regParam[2]);
-			fprintf(stderr, "[ExtFS] Rename dir=%u old=\"%s\" new=\"%s\"\n", dirID, oldName.c_str(),
+			fprintf(stdout, "[ExtFS] Rename dir=%u old=\"%s\" new=\"%s\"\n", dirID, oldName.c_str(),
 					newName.c_str());
 			auto err = s_volume.rename(dirID, oldName, newName);
 			regResult = fmErrToReg(err);
@@ -571,7 +573,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			uint32_t handle = regParam[0];
 			uint32_t newSize = regParam[1];
-			fprintf(stderr, "[ExtFS] SetEOF h=%u size=%u\n", handle, newSize);
+			fprintf(stdout, "[ExtFS] SetEOF h=%u size=%u\n", handle, newSize);
 			auto err = s_volume.setEOF(handle, newSize);
 			regResult = fmErrToReg(err);
 		}
@@ -594,7 +596,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSRename:
 		case kExtFSSetFileInfo:
 			if (!s_volume.validateCatalog())
-				fprintf(stderr, "[ExtFS] *** CATALOG VALIDATION FAILED after cmd=0x%03x ***\n",
+				fprintf(stdout, "[ExtFS] *** CATALOG VALIDATION FAILED after cmd=0x%03x ***\n",
 						cmd);
 			break;
 		default:

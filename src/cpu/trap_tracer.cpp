@@ -64,12 +64,12 @@ void TrapTracer::setMaxDepth(int depth)
 
 void TrapTracer::addTrap(uint16_t trapWord)
 {
-	allowed_.set(trapWord);
+	allowed_.set(TrapDefs::maskTrapWord(trapWord));
 }
 
 void TrapTracer::removeTrap(uint16_t trapWord)
 {
-	allowed_.reset(trapWord);
+	allowed_.reset(TrapDefs::maskTrapWord(trapWord));
 }
 
 void TrapTracer::addAllTraps()
@@ -88,7 +88,7 @@ void TrapTracer::addSubtrap(uint16_t parentTrapWord, uint16_t selector)
 		(static_cast<uint32_t>(TrapDefs::maskTrapWord(parentTrapWord)) << 16) | selector;
 	subtrapAllowed_[synKey] = true;
 	/* Ensure parent is allowed so enter() fires */
-	allowed_.set(parentTrapWord);
+	allowed_.set(TrapDefs::maskTrapWord(parentTrapWord));
 }
 
 void TrapTracer::removeSubtrap(uint16_t parentTrapWord, uint16_t selector)

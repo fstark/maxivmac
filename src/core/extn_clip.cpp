@@ -46,7 +46,7 @@ void ExtnDbgConsoleClear()
 
 void guestConsoleAppend(const std::string &line)
 {
-	fprintf(stderr, "[GUEST] %s\n", line.c_str());
+	fprintf(stdout, "[GUEST] %s\n", line.c_str());
 	s_consoleLines.push_back(line);
 	while (s_consoleLines.size() > kMaxConsoleLines)
 	{
