@@ -83,7 +83,10 @@ void TrapTracer::enter(uint16_t trapWord)
 {
 	if (!enabled_) return;
 
-	if (std::find(filter_.begin(), filter_.end(), trapWord) == filter_.end()) return;
+	if (!filter_.empty())
+	{
+		if (std::find(filter_.begin(), filter_.end(), trapWord) == filter_.end()) return;
+	}
 
 	/* Context-switch detection */
 	uint16_t appId = readAppId();
