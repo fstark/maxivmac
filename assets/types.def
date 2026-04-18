@@ -261,6 +261,122 @@ struct WindowRecord {
     152 slong     refCon
 }
 
+# ── Event Manager ────────────────────────
+
+struct EventRecord {
+    0  sword    what
+    2  long     message
+    6  long     when
+    10 Point    where
+    14 word     modifiers
+}
+
+# ── Control Manager ─────────────────────
+
+struct ControlRecord {
+    0  Ptr      nextControl
+    4  Ptr      contrlOwner
+    8  Rect     contrlRect
+    16 byte     contrlVis
+    17 byte     contrlHilite
+    18 sword    contrlValue
+    20 sword    contrlMin
+    22 sword    contrlMax
+    24 Handle   contrlDefProc
+    28 Handle   contrlData
+    32 Handle   contrlAction
+    36 slong    contrlRfCon
+    40 Str255   contrlTitle
+}
+
+# ── Dialog Manager ──────────────────────
+
+struct DialogRecord {
+    0   WindowRecord window
+    156 Handle   items
+    160 Handle   textH
+    164 sword    editField
+    166 sword    editOpen
+    168 sword    aDefItem
+}
+
+# ── Menu Manager ────────────────────────
+
+struct MenuInfo {
+    0  sword    menuID
+    2  sword    menuWidth
+    4  sword    menuHeight
+    6  Handle   menuProc
+    10 long     enableFlags
+    14 Str255   menuData
+}
+
+# ── TextEdit ────────────────────────────
+
+struct TERecord {
+    0  Rect     destRect
+    8  Rect     viewRect
+    16 Rect     selRect
+    24 sword    lineHeight
+    26 sword    fontAscent
+    28 Point    selPoint
+    32 sword    selStart
+    34 sword    selEnd
+    36 sword    active
+    38 ProcPtr  wordBreak
+    42 ProcPtr  clikLoop
+    46 Handle   hText
+    50 sword    teLength
+    52 sword    txFont
+    54 sword    txFace
+    56 sword    txMode
+    58 sword    txSize
+    60 Handle   inPort
+    64 ProcPtr  highHook
+    68 ProcPtr  caretHook
+    72 sword    nLines
+}
+
+# ── QuickDraw (additional) ──────────────
+
+struct PenState {
+    0  Point    pnLoc
+    4  Point    pnSize
+    8  sword    pnMode
+    10 byte     pnPat[8]
+}
+
+struct FontInfo {
+    0  sword    ascent
+    2  sword    descent
+    4  sword    widMax
+    6  sword    leading
+}
+
+# ── OS Utilities ────────────────────────
+
+struct DateTimeRec {
+    0  sword    year
+    2  sword    month
+    4  sword    day
+    6  sword    hour
+    8  sword    minute
+    10 sword    second
+    12 sword    dayOfWeek
+}
+
+struct SysEnvRec {
+    0  sword    environsVersion
+    2  sword    machineType
+    4  sword    systemVersion
+    6  sword    processor
+    8  Boolean  hasFPU
+    9  Boolean  hasColorQD
+    10 sword    keyBoardType
+    12 sword    atDrvrVersNum
+    14 sword    sysVRefNum
+}
+
 # Custom: pre-Multifinder launch trap
 
 struct LaunchParam {
