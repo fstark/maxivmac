@@ -752,8 +752,45 @@ A812 TEPinScroll toolbox
 A813 TEAutoView toolbox
   in  auto:Boolean  te:Handle
 
-A815 SCSIDispatch toolbox
+A815 SCSIDispatch toolbox dispatch=sword
   in  selector:sword
+  subtrap 0x00 SCSIReset
+    void
+  subtrap 0x01 SCSIGet
+    void
+  subtrap 0x02 SCSISelect
+    in  targetID:sword
+    out err:OSErr
+  subtrap 0x03 SCSICmd
+    in  buffer:Ptr  count:word
+    out err:OSErr
+  subtrap 0x04 SCSIComplete
+    in  stat:Ptr  message:Ptr  wait:long
+    out err:OSErr
+  subtrap 0x05 SCSIRead
+    in  tibPtr:Ptr
+    out err:OSErr
+  subtrap 0x06 SCSIWrite
+    in  tibPtr:Ptr
+    out err:OSErr
+  subtrap 0x07 SCSIInstall
+    void
+  subtrap 0x08 SCSIRBlind
+    in  tibPtr:Ptr
+    out err:OSErr
+  subtrap 0x09 SCSIWBlind
+    in  tibPtr:Ptr
+    out err:OSErr
+  subtrap 0x0A SCSIStat
+    out stat:word
+  subtrap 0x0B SCSISelAtn
+    in  targetID:sword
+    out err:OSErr
+  subtrap 0x0C SCSIMsgIn
+    out message:word
+  subtrap 0x0D SCSIMsgOut
+    in  message:sword
+    out err:OSErr
 
 A817 CopyMask toolbox
   in  srcBits:Ptr  maskBits:Ptr  dstBits:Ptr  srcRect:Rect  maskRect:Rect  dstRect:Rect
@@ -811,8 +848,32 @@ A83C TEGetOffset toolbox
   in  pt:Point  te:Handle
     out offset:sword
 
-A83D TEDispatch toolbox
+A83D TEDispatch toolbox dispatch=sword
   in  selector:sword
+  subtrap 0x00 TEStylePaste
+    in  te:Handle
+  subtrap 0x01 TESetStyle
+    in  mode:sword  newStyle:Ptr  redraw:Boolean  te:Handle
+  subtrap 0x02 TEReplaceStyle
+    in  mode:sword  oldStyle:Ptr  newStyle:Ptr  redraw:Boolean  te:Handle
+  subtrap 0x03 TEGetStyle
+    in  offset:sword  theStyle:Ptr  lineHeight:Ptr  fontAscent:Ptr  te:Handle
+  subtrap 0x04 GetStyleHandle
+    in  te:Handle
+    out style:Handle
+  subtrap 0x05 SetStyleHandle
+    in  style:Handle  te:Handle
+  subtrap 0x06 GetStyleScrap
+    in  te:Handle
+    out scrap:Handle
+  subtrap 0x07 TEStyleInsert
+    in  text:Ptr  length:long  style:Handle  te:Handle
+  subtrap 0x08 TEGetPoint
+    in  offset:sword  te:Handle
+    out pt:long
+  subtrap 0x09 TEGetHeight
+    in  endLine:long  startLine:long  te:Handle
+    out height:long
 
 A83E TEStyleNew toolbox
   in  destRect:Rect  viewRect:Rect
@@ -1085,8 +1146,16 @@ A893 MoveTo toolbox
 A894 Move toolbox
   in  dh:sword  dv:sword
 
-A895 Shutdown toolbox
-  void
+A895 Shutdown toolbox dispatch=sword
+  in  selector:sword
+  subtrap 0x01 ShutDwnPower
+    void
+  subtrap 0x02 ShutDwnStart
+    void
+  subtrap 0x03 ShutDwnInstall
+    in  proc:Ptr  flags:sword
+  subtrap 0x04 ShutDwnRemove
+    in  proc:Ptr
 
 A896 HidePen toolbox
   void
@@ -1182,8 +1251,29 @@ A8B3 InverRoundRect toolbox
 A8B4 FillRoundRect toolbox
   in  r:Rect  ovalW:sword  ovalH:sword  pat:Ptr
 
-A8B5 ScriptUtil toolbox
+A8B5 ScriptUtil toolbox dispatch=long
   in  selector:long
+  subtrap 0x00 smFontScript
+    out result:sword
+  subtrap 0x02 smIntlScript
+    out result:sword
+  subtrap 0x04 smKybdScript
+    out result:sword
+  subtrap 0x06 smFont2Script
+    in  fontNum:sword
+    out result:sword
+  subtrap 0x08 smGetEnvirons
+    in  verb:sword
+    out result:long
+  subtrap 0x0A smSetEnvirons
+    in  verb:sword  value:long
+    out result:OSErr
+  subtrap 0x0C smGetScript
+    in  script:sword  verb:sword
+    out result:long
+  subtrap 0x0E smSetScript
+    in  script:sword  verb:sword  value:long
+    out result:OSErr
 
 A8B6 StdOval toolbox
   in  verb:byte  r:Rect

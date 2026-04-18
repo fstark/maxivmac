@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <atomic>
 #include <string_view>
+#include <unordered_map>
 
 extern TrapDefs g_trapDefs;
 
@@ -50,6 +51,24 @@ void trap_counter_reset()
 uint32_t trap_counter_get(uint16_t trapWord)
 {
 	return s_counters[TrapIndex(trapWord)].load(std::memory_order_relaxed);
+}
+
+/* ── Subtrap counters (diagnostic, not hot-path) ───── */
+
+static std::unordered_map<uint32_t, std::atomic<uint32_t>> s_subtrapCounters;
+
+void trap_counter_record_subtrap(uint16_t parentTrapWord, uint16_t selector)
+{
+	uint32_t key = (static_cast<uint32_t>(parentTrapWord) << 16) | selector;
+	s_subtrapCounters[key].fetch_add(1, std::memory_order_relaxed);
+}
+
+uint32_t trap_counter_get_subtrap(uint16_t parentTrapWord, uint16_t selector)
+{
+	uint32_t key = (static_cast<uint32_t>(parentTrapWord) << 16) | selector;
+	auto it = s_subtrapCounters.find(key);
+	if (it != s_subtrapCounters.end()) return it->second.load(std::memory_order_relaxed);
+	return 0;
 }
 
 /* ── Trap dictionary (delegates to g_trapDefs) ────── */

@@ -23,6 +23,12 @@ void trap_counter_reset();
 /* Read the current count for a single trap word. */
 uint32_t trap_counter_get(uint16_t trapWord);
 
+/* Record one invocation of a dispatch subtrap. */
+void trap_counter_record_subtrap(uint16_t parentTrapWord, uint16_t selector);
+
+/* Read the current count for a subtrap. */
+uint32_t trap_counter_get_subtrap(uint16_t parentTrapWord, uint16_t selector);
+
 /* ── Trap dictionary ──────────────────────────────── */
 
 struct TrapInfo

@@ -8,6 +8,7 @@
 
 #include "core/extfs_log.h"
 #include "core/extn_clip.h" /* guestConsoleAppend */
+#include "cpu/trap_defs.h"
 #include "lang/type_registry.h"
 
 #include <cstdint>
@@ -83,39 +84,12 @@ static const char *flatTrapName(uint16_t trapNum)
 
 static const char *hfsTrapName(uint16_t selector)
 {
-	switch (selector)
-	{
-		case 0x01:
-			return "OpenWD";
-		case 0x02:
-			return "CloseWD";
-		case 0x05:
-			return "CatMove";
-		case 0x06:
-			return "DirCreate";
-		case 0x07:
-			return "GetWDInfo";
-		case 0x08:
-			return "GetFCBInfo";
-		case 0x09:
-			return "GetCatInfo";
-		case 0x0A:
-			return "SetCatInfo";
-		case 0x0B:
-			return "SetVInfo";
-		case 0x10:
-			return "CreateFileIDRef";
-		case 0x11:
-			return "DeleteFileIDRef";
-		case 0x30:
-			return "GetVolParms";
-		default:
-		{
-			static thread_local char buf[16];
-			std::snprintf(buf, sizeof(buf), "HFS$%02X", selector);
-			return buf;
-		}
-	}
+	extern TrapDefs g_trapDefs;
+	auto *sub = g_trapDefs.findSubtrap(0xA260, selector);
+	if (sub) return sub->def.name.c_str();
+	static thread_local char buf[16];
+	std::snprintf(buf, sizeof(buf), "HFS$%02X", selector);
+	return buf;
 }
 
 /* ------------------------------------------------------------------ */
