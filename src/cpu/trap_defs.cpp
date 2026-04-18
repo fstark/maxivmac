@@ -250,6 +250,9 @@ void TrapDefs::parseParamLine(const std::string &line, TrapDef &out)
 		return;
 	}
 
+	/* "void" marks a confirmed-parameterless trap (no in/out params). */
+	if (dir == "void") return;
+
 	bool isIn = (dir == "in");
 	bool isOut = (dir == "out");
 	if (!isIn && !isOut)

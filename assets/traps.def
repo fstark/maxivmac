@@ -3,6 +3,7 @@
 #   <trap_word> <name> <convention> [noreturn]
 #   in  <name>:<type>[.reg] ...
 #   out <name>:<type>[.reg] ...
+#   void                           (confirmed parameterless — no in/out)
 #   show-in  <param> <field> ...   (entry-time struct field filter)
 #   show-out <param> <field> ...  (exit-time struct field filter)
 #
@@ -249,6 +250,7 @@ A9F0 LoadSeg toolbox noreturn
   in  segNum:sword
 
 A9F4 ExitToShell toolbox noreturn
+  void
 
 A9F2 Launch os noreturn
   in  launchPtr:^LaunchParam.A0
@@ -274,8 +276,10 @@ A01B SetZone os
   in  zone:Ptr.A0
 
 A063 MaxApplZone os
+  void
 
 A036 MoreMasters os
+  void
 
 A061 MaxBlock os
   out size:long.D0
@@ -345,6 +349,7 @@ A021 GetPtrSize os
   out size:long.D0
 
 A02C InitApplZone os
+  void
 
 A02D SetApplLimit os
   in  limit:Ptr.A0
@@ -356,6 +361,7 @@ A04B SetGrowZone os
   in  proc:ProcPtr.A0
 
 A019 InitZone os
+  void
 
 # File Manager
 
@@ -510,6 +516,7 @@ A050 RelString os
   out result:sword.D0
 
 A03F InitUtil os
+  void
 
 A032 FlushEvents os
   in  mask:word.D0
@@ -578,6 +585,7 @@ A07A SetADBInfo os
   out err:OSErr.D0
 
 A07B ADBReInit os
+  void
 
 A07C ADBOp os
   in  data:Ptr.A0  cmd:sword.D0
@@ -590,6 +598,7 @@ A07E SetDefaultStartup os
   in  buf:Ptr.A0
 
 A07F InternalWait os
+  void
 
 A080 GetVideoDefault os
   in  buf:Ptr.A0
@@ -722,6 +731,7 @@ A828 ShowDItem toolbox
   in  dialog:Ptr  item:sword
 
 A82E Pack12 toolbox
+  void
 
 A834 SetFScaleDisable toolbox
   in  disable:Boolean
@@ -816,18 +826,22 @@ A84F SetItemCmd toolbox
   in  menu:Handle  item:sword  cmd:sword
 
 A850 InitCursor toolbox
+  void
 
 A851 SetCursor toolbox
   in  cursor:Ptr
 
 A852 HideCursor toolbox
+  void
 
 A853 ShowCursor toolbox
+  void
 
 A855 ShieldCursor toolbox
   in  r:Rect  offset:Point
 
 A856 ObscureCursor toolbox
+  void
 
 A858 BitAnd toolbox
   in  a:long  b:long
@@ -1020,10 +1034,13 @@ A894 Move toolbox
   in  dh:sword  dv:sword
 
 A895 Shutdown toolbox
+  void
 
 A896 HidePen toolbox
+  void
 
 A897 ShowPen toolbox
+  void
 
 A898 GetPenState toolbox
   in  penState:^PenState
@@ -1044,6 +1061,7 @@ A89D PenPat toolbox
   in  pat:Ptr
 
 A89E PenNormal toolbox
+  void
 
 A8A0 StdRect toolbox
   in  verb:byte  r:Rect
@@ -1185,6 +1203,7 @@ A8CB OpenPoly toolbox
   out poly:Handle
 
 A8CC ClosePgon toolbox
+  void
 
 A8CD KillPoly toolbox
   in  poly:Handle
@@ -1223,6 +1242,7 @@ A8D9 DisposRgn toolbox
   in  rgn:Handle
 
 A8DA OpenRgn toolbox
+  void
 
 A8DB CloseRgn toolbox
   in  rgn:Handle
@@ -1305,6 +1325,7 @@ A8F3 OpenPicture toolbox
     out pic:Handle
 
 A8F4 ClosePicture toolbox
+  void
 
 A8F5 KillPicture toolbox
   in  pic:Handle
@@ -1328,8 +1349,10 @@ A8FC MapPoly toolbox
   in  poly:Handle  src:Rect  dst:Rect
 
 A8FD PrGlue toolbox
+  void
 
 A8FE InitFonts toolbox
+  void
 
 A8FF GetFName toolbox
   in  fontNum:sword  name:Str255
@@ -1394,6 +1417,7 @@ A911 CheckUpdate toolbox
   out event:Ptr  result:Boolean
 
 A912 InitWindows toolbox
+  void
 
 A913 NewWindow toolbox
   in  storage:Ptr  boundsRect:Rect  title:Str255  visible:Boolean  procID:sword  behind:Ptr  goAway:Boolean  refCon:slong
@@ -1490,6 +1514,7 @@ A92F GetWindowPic toolbox
     out pic:Handle
 
 A930 InitMenus toolbox
+  void
 
 A931 NewMenu toolbox
   in  menuID:sword  title:Str255
@@ -1502,6 +1527,7 @@ A933 AppendMenu toolbox
   in  menu:Handle  data:Str255
 
 A934 ClearMenuBar toolbox
+  void
 
 A935 InsertMenu toolbox
   in  menu:Handle  beforeID:sword
@@ -1510,6 +1536,7 @@ A936 DeleteMenu toolbox
   in  menuID:sword
 
 A937 DrawMenuBar toolbox
+  void
 
 A938 HiliteMenu toolbox
   in  menuID:sword
@@ -1806,8 +1833,10 @@ A993 SetResPurge toolbox
   in  install:Boolean
 
 A995 InitResources toolbox
+  void
 
 A996 RsrcZoneInit toolbox
+  void
 
 A99E CountTypes toolbox
   out count:sword
@@ -1841,6 +1870,7 @@ A9B3 SystemClick toolbox
   in  event:Ptr  window:Ptr
 
 A9B4 SystemTask toolbox
+  void
 
 A9B5 SystemMenu toolbox
   in  menuResult:long
@@ -1919,6 +1949,7 @@ A9CB TEGetText toolbox
     out text:Handle
 
 A9CC TEInit toolbox
+  void
 
 A9CD TEDispose toolbox
   in  te:Handle
@@ -2002,20 +2033,28 @@ A9E5 InitPack toolbox
   in  packID:sword
 
 A9E6 InitAllPacks toolbox
+  void
 
 A9E7 Pack0 toolbox
+  void
 
 A9E9 Pack2 toolbox
+  void
 
 A9EA Pack3 toolbox
+  void
 
 A9EB FP68K toolbox
+  void
 
 A9EC Elems68K toolbox
+  void
 
 A9ED Pack6 toolbox
+  void
 
 A9EE Pack7 toolbox
+  void
 
 A9EF PtrAndHand toolbox
   in  src:Ptr  dst:Handle  size:long
@@ -2138,6 +2177,7 @@ AA1C SetCCursor toolbox
   in  cursor:Handle
 
 AA1D AllocCursor toolbox
+  void
 
 AA1E GetCIcon toolbox
   in  iconID:sword
@@ -2322,6 +2362,7 @@ AA66 MenuChoice toolbox
   out result:long
 
 AA90 InitPalettes toolbox
+  void
 
 AA91 NewPalette toolbox
   in  entries:sword  ctab:Handle  srcUsage:sword  tolerance:sword

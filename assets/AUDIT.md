@@ -67,8 +67,8 @@ table entry.  All are valid System 6 dispatch multiplexers.
 
 ## Parameterless Traps (40)
 
-These have no `in`/`out` lines because they take no arguments and
-return nothing.  They are complete — not stubs.
+These have a `void` marker line in traps.def — they take no arguments
+and return nothing.  They are complete, not stubs.
 
 ### OS (7)
 
