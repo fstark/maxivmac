@@ -15,7 +15,7 @@ public:
 
 private:
 	char filterBuf_[64] = {};
-	int categoryFilter_ = 0; /* 0 = All */
+	int sectionFilter_ = 0; /* 0 = All */
 	bool snapshotValid_ = false;
 	uint8_t snapshot_[4096] = {};
 };

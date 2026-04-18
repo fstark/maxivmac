@@ -8,6 +8,8 @@
 #include "debugger/expr.h"
 #include "debugger/cmd_parser.h"
 #include "cpu/trap_tracer.h"
+#include "lang/type_registry.h"
+#include "lang/global_registry.h"
 
 #include <cstring>
 
@@ -21,6 +23,8 @@ static void EnsureSymbolsInit()
 {
 	if (!s_symbolsReady)
 	{
+		g_typeRegistry().load("assets/types.def");
+		g_globalRegistry().load("assets/globals.def", g_typeRegistry());
 		g_trapDefs.load("assets/traps.def");
 		SymbolsInit();
 		s_symbolsReady = true;
