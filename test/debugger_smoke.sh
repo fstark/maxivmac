@@ -102,6 +102,26 @@ check "trace traps +/- mixed" "trace traps GetResource
 trace traps +OpenResFile -GetResource
 quit" "- filter: GetResource"
 
+# Test 15: info trace (all off)
+check "info trace off" "info trace
+quit" "Trap tracing: off"
+
+# Test 16: info trace (filtered, shows +list)
+check "info trace filtered" "trace traps GetResource
+info trace
+quit" "+GetResource"
+
+# Test 17: trace traps -name from all removes from all
+check "trace -from all" "trace traps on
+trace traps -StripAddress
+info trace
+quit" "-StripAddress"
+
+# Test 18: info trace on (all traps)
+check "info trace on" "trace traps on
+info trace
+quit" "Trap tracing: on"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 

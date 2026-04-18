@@ -42,3 +42,7 @@ void SymbolsSearch(std::string_view prefix, char kind, std::vector<SymbolEntry> 
 
 // Get the size of a low-memory global by address.  Returns 0 if unknown.
 uint16_t SymbolsSizeAt(uint32_t addr);
+
+// Return a display name for a trap word: the dictionary name if known,
+// otherwise "$XXXX".  The returned pointer is valid until the next call.
+const char *SymbolsTrapName(uint16_t tw);

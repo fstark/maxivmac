@@ -7,6 +7,8 @@
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 
+#include "cpu/trap_counter.h"
+
 #include <cstdio>
 
 void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
@@ -25,6 +27,8 @@ void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
 		if (action == "on")
 		{
 			dbg.clearTrapFilter();
+			for (int i = 0, n = trap_dict_size(); i < n; ++i)
+				dbg.addTrapFilter(trap_dict_entry(i).trapWord);
 			dbg.setTraceTraps(true);
 			dbg.io().write("Trap tracing enabled (all traps)\n");
 		}

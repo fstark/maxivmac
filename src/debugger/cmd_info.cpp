@@ -60,13 +60,8 @@ static void InfoBreak(Debugger &dbg)
 		const char *enb = bp.enabled ? "y" : "n";
 		if (bp.trapWord)
 		{
-			const char *name = trap_dict_name(bp.trapWord);
-			if (name)
-				dbg.io().write("%-4u breakpoint  %s    $%04X       trap %s\n", bp.id, enb,
-							   bp.trapWord, name);
-			else
-				dbg.io().write("%-4u breakpoint  %s    $%04X       trap\n", bp.id, enb,
-							   bp.trapWord);
+			dbg.io().write("%-4u breakpoint  %s    $%04X       trap %s\n", bp.id, enb, bp.trapWord,
+						   SymbolsTrapName(bp.trapWord));
 		}
 		else
 		{
@@ -209,11 +204,56 @@ static void InfoTypes(Debugger &dbg, const std::vector<Token> &args)
 	dbg.io().write("(%d results)\n", count);
 }
 
+static void WriteTrapList(DbgIO &io, const char *prefix, const std::vector<uint16_t> &traps)
+{
+	io.write(" ");
+	for (uint16_t tw : traps)
+		io.write(" %s%s", prefix, SymbolsTrapName(tw));
+	io.write("\n");
+}
+
+static void InfoTrace(Debugger &dbg)
+{
+	auto &io = dbg.io();
+
+	if (dbg.traceTraps())
+	{
+		auto enabled = dbg.trapFilterEnabled();
+		auto disabled = dbg.trapFilterDisabled();
+
+		if (disabled.empty())
+		{
+			io.write("Trap tracing: on\n");
+		}
+		else if (enabled.empty())
+		{
+			io.write("Trap tracing: off\n");
+		}
+		else if (enabled.size() <= disabled.size())
+		{
+			io.write("Trap tracing:\n");
+			WriteTrapList(io, "+", enabled);
+		}
+		else
+		{
+			io.write("Trap tracing:\n");
+			WriteTrapList(io, "-", disabled);
+		}
+	}
+	else
+	{
+		io.write("Trap tracing: off\n");
+	}
+
+	io.write("Insn tracing: %s\n", dbg.traceInsn() ? "on" : "off");
+	io.write("I/O tracing:  %s\n", dbg.traceIO() ? "on" : "off");
+}
+
 void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].kind == Token::Kind::End)
 	{
-		dbg.io().write("Usage: info <break|reg|traps|globals|types|symbol|insn>\n");
+		dbg.io().write("Usage: info <break|reg|trace|traps|globals|types|symbol|insn>\n");
 		return;
 	}
 
@@ -230,11 +270,13 @@ void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 		InfoSymbol(dbg, args);
 	else if (sub == "insn")
 		InfoInsn(dbg);
+	else if (sub == "trace")
+		InfoTrace(dbg);
 	else if (sub == "types")
 		InfoTypes(dbg, args);
 	else
 		dbg.io().write("Unknown info sub-command '%s'.\n"
-					   "  Available: break, reg, traps, globals, types, symbol, insn\n",
+					   "  Available: break, reg, trace, traps, globals, types, symbol, insn\n",
 					   sub.c_str());
 }
 

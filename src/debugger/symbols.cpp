@@ -10,6 +10,8 @@
 #include "cpu/trap_counter.h"
 #include "lang/global_registry.h"
 
+#include <cstdio>
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -127,4 +129,13 @@ uint16_t SymbolsSizeAt(uint32_t addr)
 	const GlobalDef *gd = g_globalRegistry().findByAddr(addr);
 	if (gd) return gd->size;
 	return 0;
+}
+
+const char *SymbolsTrapName(uint16_t tw)
+{
+	const char *name = trap_dict_name(tw);
+	if (name) return name;
+	static char buf[8];
+	std::snprintf(buf, sizeof(buf), "$%04X", tw);
+	return buf;
 }

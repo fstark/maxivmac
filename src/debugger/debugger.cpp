@@ -449,7 +449,6 @@ void Debugger::setTraceIO(bool on)
 
 bool Debugger::trapInFilter(uint16_t tw) const
 {
-	if (impl_->trapFilter.empty()) return true; /* no filter = all */
 	return impl_->trapFilter.count(tw) > 0;
 }
 
@@ -469,6 +468,22 @@ void Debugger::clearTrapFilter()
 {
 	impl_->trapFilter.clear();
 	g_tracer.clearFilter();
+}
+
+std::vector<uint16_t> Debugger::trapFilterEnabled() const
+{
+	return {impl_->trapFilter.begin(), impl_->trapFilter.end()};
+}
+
+std::vector<uint16_t> Debugger::trapFilterDisabled() const
+{
+	std::vector<uint16_t> result;
+	for (int i = 0, n = trap_dict_size(); i < n; ++i)
+	{
+		uint16_t tw = trap_dict_entry(i).trapWord;
+		if (impl_->trapFilter.count(tw) == 0) result.push_back(tw);
+	}
+	return result;
 }
 
 /* ── Command table access ───────────────────────────── */
@@ -783,11 +798,8 @@ bool Debugger::trapHook(uint16_t trapWord)
 			return false;
 		}
 
-		const char *name = trap_dict_name(trapWord);
-		if (name)
-			impl_->io->write("Breakpoint %u on trap $%04X (%s)\n", bp->id, trapWord, name);
-		else
-			impl_->io->write("Breakpoint %u on trap $%04X\n", bp->id, trapWord);
+		impl_->io->write("Breakpoint %u on trap %s ($%04X)\n", bp->id, SymbolsTrapName(trapWord),
+						 trapWord);
 
 		if (!bp->commands.empty())
 		{

@@ -89,6 +89,8 @@ public:
 	void addTrapFilter(uint16_t tw);
 	void removeTrapFilter(uint16_t tw);
 	void clearTrapFilter();
+	std::vector<uint16_t> trapFilterEnabled() const;
+	std::vector<uint16_t> trapFilterDisabled() const;
 
 	// Breakpoint commands (used by cmd_break.cpp)
 	void executeCommands(const std::vector<std::string> &cmds);

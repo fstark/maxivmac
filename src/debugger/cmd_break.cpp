@@ -159,11 +159,8 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 
 	if (trapWord)
 	{
-		const char *name = trap_dict_name(trapWord);
-		if (name)
-			dbg.io().write("Breakpoint %u on trap $%04X (%s)\n", id, trapWord, name);
-		else
-			dbg.io().write("Breakpoint %u on trap $%04X\n", id, trapWord);
+		dbg.io().write("Breakpoint %u on trap %s ($%04X)\n", id, SymbolsTrapName(trapWord),
+					   trapWord);
 	}
 	else
 	{

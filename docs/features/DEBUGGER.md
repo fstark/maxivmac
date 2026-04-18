@@ -303,6 +303,7 @@ If no end address is given, disassembles 64 bytes from start.
 | `trace traps off` | Disable trap call logging |
 | `trace traps [name…]` | Trace only listed traps (replaces filter) |
 | `trace traps [+name… -name…]` | Add/remove individual traps from filter |
+| `info trace` | Show current trace settings and trap filter |
 | `trace insn on` | Enable instruction logging to stdout |
 | `trace insn off` | Disable instruction logging |
 | `trace io on` | Enable I/O read/write logging |
