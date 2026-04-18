@@ -63,8 +63,20 @@ static const std::vector<TrapInfo> &CachedDict()
 		cache.reserve(n);
 		for (int i = 0; i < n; ++i)
 		{
-			auto [tw, sv] = g_trapDefs.entry(i);
-			cache.push_back({tw, sv.data()});
+			auto [key, sv] = g_trapDefs.entry(i);
+			TrapInfo info;
+			if (key > 0xFFFF)
+			{
+				info.trapWord = static_cast<uint16_t>(key >> 16);
+				info.subtrapSelector = static_cast<uint16_t>(key & 0xFFFF);
+			}
+			else
+			{
+				info.trapWord = static_cast<uint16_t>(key);
+				info.subtrapSelector = 0;
+			}
+			info.name = sv.data();
+			cache.push_back(info);
 		}
 	}
 	return cache;
@@ -90,10 +102,24 @@ void trap_dict_search(const char *prefix, std::vector<TrapInfo> &results, int ma
 {
 	results.clear();
 	if (!prefix || !prefix[0]) return;
-	std::vector<std::pair<uint16_t, std::string_view>> raw;
+	std::vector<std::pair<uint32_t, std::string_view>> raw;
 	g_trapDefs.search(prefix, raw, maxResults);
-	for (auto &[tw, name] : raw)
-		results.push_back({tw, name.data()});
+	for (auto &[key, name] : raw)
+	{
+		TrapInfo info;
+		if (key > 0xFFFF)
+		{
+			info.trapWord = static_cast<uint16_t>(key >> 16);
+			info.subtrapSelector = static_cast<uint16_t>(key & 0xFFFF);
+		}
+		else
+		{
+			info.trapWord = static_cast<uint16_t>(key);
+			info.subtrapSelector = 0;
+		}
+		info.name = name.data();
+		results.push_back(info);
+	}
 }
 
 /* ── Watchlist ────────────────────────────────────── */

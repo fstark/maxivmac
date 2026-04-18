@@ -89,23 +89,27 @@ public:
 
 	/* Name/search API (replaces trap_counter.cpp's s_dict) */
 	int size() const;
-	std::pair<uint16_t, std::string_view> entry(int index) const;
+	std::pair<uint32_t, std::string_view> entry(int index) const;
 	std::string_view nameOf(uint16_t trapWord) const;
 	void search(std::string_view prefix,
-				std::vector<std::pair<uint16_t, std::string_view>> &results,
+				std::vector<std::pair<uint32_t, std::string_view>> &results,
 				int maxResults = 20) const;
 
 	/* Dispatch subtrap API */
 	const SubtrapDef *findSubtrap(uint16_t parentTrapWord, uint16_t selector) const;
+	bool isDispatch(uint16_t trapWord) const;
+	const DispatchInfo *dispatchInfo(uint16_t trapWord) const;
+	std::string_view nameOfSubtrap(uint32_t syntheticKey) const;
+
+	static uint16_t maskTrapWord(uint16_t tw);
 
 private:
-	static uint16_t maskTrapWord(uint16_t tw);
 	static bool parseHeaderLine(const std::string &line, TrapDef &out);
 	static void parseParamLine(const std::string &line, TrapDef &out);
 
 	std::unordered_map<uint16_t, TrapDef> defs_;
 	std::unordered_map<int16_t, std::string> errors_;
-	std::vector<std::pair<uint16_t, std::string>> sortedNames_;
+	std::vector<std::pair<uint32_t, std::string>> sortedNames_;
 
 	/* Key: parent trapWord (masked). Value: selector → SubtrapDef. */
 	std::unordered_map<uint16_t, std::unordered_map<uint16_t, SubtrapDef>> subtraps_;

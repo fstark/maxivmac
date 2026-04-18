@@ -862,7 +862,7 @@ TEST_CASE("TrapDefs search prefix match")
 											  "A025 GetHandleSize os\n");
 	ensureTypeRegistryInit();
 	defs.load(p);
-	std::vector<std::pair<uint16_t, std::string_view>> results;
+	std::vector<std::pair<uint32_t, std::string_view>> results;
 	defs.search("New", results);
 	CHECK(results.size() == 2);
 	/* sorted alphabetically: NewHandle, NewPtr */
@@ -960,4 +960,67 @@ TEST_CASE("TrapDefs no dispatch= means no subtraps")
 	auto *def = defs.find(0xA000);
 	REQUIRE(def != nullptr);
 	CHECK_FALSE(def->dispatch.has_value());
+}
+
+/* ════════════════════════════════════════════════════════
+   Dispatch subtrap lookup API
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("TrapDefs findSubtrap lookup")
+{
+	ensureTypeRegistryInit();
+	auto path = writeTempFile("test_find_sub.def", "A260 HFSDispatch os dispatch=word.D0\n"
+												   "  subtrap 0x09 PBGetCatInfo\n"
+												   "    in  pb:^CInfoPBRec.A0\n"
+												   "  subtrap 0x01 PBOpenWD\n"
+												   "    in  pb:^WDParam.A0\n");
+	TrapDefs defs;
+	defs.load(path);
+
+	CHECK(defs.isDispatch(0xA260));
+	CHECK_FALSE(defs.isDispatch(0xA000));
+
+	auto *info = defs.dispatchInfo(0xA260);
+	REQUIRE(info != nullptr);
+	CHECK(info->selectorParam.loc == ParamLoc::D0);
+
+	auto *sub = defs.findSubtrap(0xA260, 0x09);
+	REQUIRE(sub != nullptr);
+	CHECK(sub->def.name == "PBGetCatInfo");
+
+	CHECK(defs.findSubtrap(0xA260, 0xFF) == nullptr);
+	CHECK(defs.findSubtrap(0xA000, 0x01) == nullptr);
+}
+
+TEST_CASE("TrapDefs synthetic key name lookup")
+{
+	ensureTypeRegistryInit();
+	auto path = writeTempFile("test_synkey.def", "A260 HFSDispatch os dispatch=word.D0\n"
+												 "  subtrap 0x09 PBGetCatInfo\n"
+												 "    in  pb:^CInfoPBRec.A0\n");
+	TrapDefs defs;
+	defs.load(path);
+
+	/* masked A260 = A060 (OS trap: keep bits 0-8) */
+	uint32_t key = (0xA060u << 16) | 0x0009u;
+	CHECK(defs.nameOfSubtrap(key) == "PBGetCatInfo");
+	CHECK(defs.nameOfSubtrap(0x00000000).empty());
+}
+
+TEST_CASE("TrapDefs search finds subtrap names")
+{
+	ensureTypeRegistryInit();
+	auto path = writeTempFile("test_search_sub.def", "A260 HFSDispatch os dispatch=word.D0\n"
+													 "  subtrap 0x09 PBGetCatInfo\n"
+													 "    in  pb:^CInfoPBRec.A0\n"
+													 "  subtrap 0x07 PBGetWDInfo\n"
+													 "    in  pb:^WDParam.A0\n"
+													 "A000 Open os\n"
+													 "  in  pb:^IOParam.A0\n");
+	TrapDefs defs;
+	defs.load(path);
+
+	std::vector<std::pair<uint32_t, std::string_view>> results;
+	defs.search("PBGet", results);
+	CHECK(results.size() == 2);
 }

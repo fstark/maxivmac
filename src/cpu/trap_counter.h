@@ -28,6 +28,7 @@ uint32_t trap_counter_get(uint16_t trapWord);
 struct TrapInfo
 {
 	uint16_t trapWord;
+	uint16_t subtrapSelector = 0;
 	const char *name;
 };
 

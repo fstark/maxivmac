@@ -390,11 +390,19 @@ int TrapDefs::load(const std::filesystem::path &path)
 
 	flushEntry();
 
-	/* Build sorted name index for name/search API */
+	/* Build sorted name index for name/search API (includes subtraps) */
 	sortedNames_.clear();
-	sortedNames_.reserve(defs_.size());
+	sortedNames_.reserve(defs_.size() + 64);
 	for (auto &[tw, def] : defs_)
-		sortedNames_.push_back({def.trapWord, def.name});
+		sortedNames_.push_back({static_cast<uint32_t>(def.trapWord), def.name});
+	for (auto &[parentTw, selMap] : subtraps_)
+	{
+		for (auto &[sel, sub] : selMap)
+		{
+			uint32_t synKey = (static_cast<uint32_t>(parentTw) << 16) | sel;
+			sortedNames_.push_back({synKey, sub.def.name});
+		}
+	}
 	std::sort(sortedNames_.begin(), sortedNames_.end(),
 			  [](auto &a, auto &b) { return a.second < b.second; });
 
@@ -455,7 +463,7 @@ int TrapDefs::size() const
 	return static_cast<int>(sortedNames_.size());
 }
 
-std::pair<uint16_t, std::string_view> TrapDefs::entry(int index) const
+std::pair<uint32_t, std::string_view> TrapDefs::entry(int index) const
 {
 	return {sortedNames_[index].first, sortedNames_[index].second};
 }
@@ -480,7 +488,7 @@ static inline bool ciStartsWith(std::string_view str, std::string_view prefix)
 }
 
 void TrapDefs::search(std::string_view prefix,
-					  std::vector<std::pair<uint16_t, std::string_view>> &results,
+					  std::vector<std::pair<uint32_t, std::string_view>> &results,
 					  int maxResults) const
 {
 	results.clear();
@@ -493,4 +501,26 @@ void TrapDefs::search(std::string_view prefix,
 			if (static_cast<int>(results.size()) >= maxResults) break;
 		}
 	}
+}
+
+bool TrapDefs::isDispatch(uint16_t trapWord) const
+{
+	auto *def = find(trapWord);
+	return def && def->dispatch.has_value();
+}
+
+const DispatchInfo *TrapDefs::dispatchInfo(uint16_t trapWord) const
+{
+	auto *def = find(trapWord);
+	if (!def || !def->dispatch) return nullptr;
+	return &*def->dispatch;
+}
+
+std::string_view TrapDefs::nameOfSubtrap(uint32_t syntheticKey) const
+{
+	uint16_t parent = static_cast<uint16_t>(syntheticKey >> 16);
+	uint16_t sel = static_cast<uint16_t>(syntheticKey & 0xFFFF);
+	auto *sub = findSubtrap(parent, sel);
+	if (sub) return sub->def.name;
+	return {};
 }
