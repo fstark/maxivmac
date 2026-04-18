@@ -100,3 +100,13 @@ void CmdUntil(Debugger &dbg, const std::vector<Token> &args)
 	dbg.io().write("[running until $%08X]\n", addr);
 	dbg.setUntil(addr);
 }
+
+void CmdSource(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (args.empty() || args[0].kind == Token::Kind::End)
+	{
+		dbg.io().write("Usage: source <path>\n");
+		return;
+	}
+	SourceFile(dbg, args[0].text);
+}

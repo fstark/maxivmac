@@ -672,5 +672,12 @@ bool ProgramMain()
 
 	if (s_launchConfig.traceTraps) g_tracer.enable(true);
 
+	/* Execute startup debug scripts (after registries so trap names resolve) */
+	if (auto *dbg = Debugger::instance())
+	{
+		for (auto &script : s_launchConfig.dbgScripts)
+			SourceFile(*dbg, script);
+	}
+
 	return true;
 }

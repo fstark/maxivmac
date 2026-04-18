@@ -207,6 +207,7 @@ void PrintUsage(const char *progname)
 			"  --silent         Disable audio output\n"
 			"  --trace-traps    Enable hierarchical A-line trap tracing to stderr\n"
 			"  --debugger       Start with debugger prompt (paused at first instruction)\n"
+			"  --dbg-script=FILE  Execute .dbg script at debugger startup (repeatable)\n"
 			"  --debugserver[=PATH] Start debug server on Unix socket\n"
 			"  --title=TEXT     Window title\n"
 			"  --record=PATH    Record golden file for non-regression testing\n"
@@ -268,6 +269,11 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strcmp(arg, "--debugger") == 0)
 		{
 			lc.debugger = true;
+			continue;
+		}
+		if (strncmp(arg, "--dbg-script=", 13) == 0)
+		{
+			lc.dbgScripts.emplace_back(arg + 13);
 			continue;
 		}
 		if (strcmp(arg, "--debugserver") == 0)
@@ -493,6 +499,9 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		std::fprintf(stderr, "Error: --debugger and --debugserver are mutually exclusive\n");
 		std::exit(1);
 	}
+
+	/* --dbg-script implies --debugger (unless --debugserver is active) */
+	if (!lc.dbgScripts.empty() && !lc.debugger && lc.debugServerPath.empty()) lc.debugger = true;
 
 	return lc;
 }

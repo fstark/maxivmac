@@ -52,6 +52,7 @@ void CmdLog(Debugger &dbg, const std::vector<Token> &args);
 void CmdBacktrace(Debugger &dbg, const std::vector<Token> &args);
 void CmdHelp(Debugger &dbg, const std::vector<Token> &args);
 void CmdQuit(Debugger &dbg, const std::vector<Token> &args);
+void CmdSource(Debugger &dbg, const std::vector<Token> &args);
 
 /* ── Command table ──────────────────────────────────── */
 
@@ -113,6 +114,8 @@ static CmdEntry s_commands[] = {
 	 "backtrace\n  Scan stack for return addresses (heuristic, best-effort).\n"},
 	{"help", "h", CmdHelp, "Show help",
 	 "help [command]\n  Show command list or detailed help for a command.\n"},
+	{"source", "so", CmdSource, "Execute commands from a file",
+	 "source <path>\n  Read and execute debugger commands from a file.\n"},
 	{"quit", "q", CmdQuit, "Quit emulator", "quit\n  Exit the emulator immediately.\n"},
 };
 
@@ -546,6 +549,9 @@ void Debugger::executeCommands(const std::vector<std::string> &cmds)
 {
 	for (auto &line : cmds)
 	{
+		if (auto p = line.find_first_not_of(" \t"); p != std::string::npos && line[p] == '#')
+			continue;
+
 		auto tokens = Tokenize(line);
 		if (tokens.empty() || tokens[0].kind == Token::Kind::End) continue;
 
@@ -558,6 +564,32 @@ void Debugger::executeCommands(const std::vector<std::string> &cmds)
 				return; /* command changed state (e.g. continue) */
 		}
 	}
+}
+
+/* ── Source file ─────────────────────────────────────── */
+
+bool SourceFile(Debugger &dbg, std::string_view path)
+{
+	std::string p(path);
+	std::FILE *f = std::fopen(p.c_str(), "r");
+	if (!f)
+	{
+		dbg.io().write("source: cannot open '%s'\n", p.c_str());
+		return false;
+	}
+
+	std::vector<std::string> cmds;
+	char buf[1024];
+	while (std::fgets(buf, sizeof(buf), f))
+	{
+		size_t len = std::strlen(buf);
+		if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0';
+		cmds.emplace_back(buf);
+	}
+	std::fclose(f);
+
+	dbg.executeCommands(cmds);
+	return true;
 }
 
 /* ── Build ExprContext from live CPU state ───────────── */
