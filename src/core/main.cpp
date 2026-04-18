@@ -35,6 +35,7 @@
 #include "cpu/trap_tracer.h"
 #include "debugger/debugger.h"
 #include "debugger/dbg_io.h"
+#include "debugger/symbols.h"
 #include "lang/type_registry.h"
 #include "lang/global_registry.h"
 
@@ -238,7 +239,7 @@ bool InitEmulation()
 		tr.init({get_vm_byte, get_vm_word, get_vm_long});
 		int n = tr.load("assets/types.def");
 		int e = tr.loadErrors("assets/errors.def");
-		if (n > 0) std::fprintf(stderr, "type_registry: loaded %d types, %d errors\n", n, e);
+		if (n > 0) std::fprintf(stderr, "type_registry: loaded %d types, %d error codes\n", n, e);
 	}
 
 	/* Load low-memory global definitions (must follow type registry) */
@@ -251,7 +252,14 @@ bool InitEmulation()
 	{
 		int n = g_trapDefs.load("assets/traps.def");
 		int e = g_trapDefs.loadErrors("assets/errors.def");
-		if (n > 0) std::fprintf(stderr, "trap_defs: loaded %d traps, %d errors\n", n, e);
+		if (n > 0) std::fprintf(stderr, "trap_defs: loaded %d traps, %d error codes\n", n, e);
+	}
+
+	/* Print symbol counts to the debugger console, now that all registries are loaded */
+	if (auto *dbg = Debugger::instance())
+	{
+		dbg->io().write("Loaded %d trap symbols, %d low-memory globals\n", SymbolsTrapCount(),
+						SymbolsGlobalCount());
 	}
 
 	/* Wire ICT scheduler to CPU cycle counters */

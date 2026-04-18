@@ -209,8 +209,6 @@ void Debugger::create(DbgIO *io)
 
 	auto &out = *s_instance->impl_->io;
 	out.write("maxivmac debugger — type 'help' for commands\n");
-	out.write("Loaded %d trap symbols, %d low-memory globals\n", SymbolsTrapCount(),
-			  SymbolsGlobalCount());
 }
 
 /* ── I/O accessor ───────────────────────────────────── */
