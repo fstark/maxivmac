@@ -1,0 +1,4 @@
+trace traps PBGetCatInfo PBOpenWD
+continue
+# Output should show PBGetCatInfo(...) / PBOpenWD(...)
+# not HFSDispatch(selector:...)

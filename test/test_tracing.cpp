@@ -1024,3 +1024,70 @@ TEST_CASE("TrapDefs search finds subtrap names")
 	defs.search("PBGet", results);
 	CHECK(results.size() == 2);
 }
+
+/* ════════════════════════════════════════════════════════
+   Integration: actual traps.def dispatch subtraps
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("TrapDefs load actual traps.def has dispatch subtraps")
+{
+	ensureTypeRegistryInit();
+	TrapDefs defs;
+	int n = defs.load("../../assets/traps.def");
+	REQUIRE(n > 0);
+
+	/* HFSDispatch should have subtraps */
+	CHECK(defs.isDispatch(0xA260));
+	auto *sub = defs.findSubtrap(0xA260, 0x09);
+	REQUIRE(sub != nullptr);
+	CHECK(sub->def.name == "PBGetCatInfo");
+
+	/* SCSIDispatch should have subtraps */
+	CHECK(defs.isDispatch(0xA815));
+	auto *scsi = defs.findSubtrap(0xA815, 0x02);
+	REQUIRE(scsi != nullptr);
+	CHECK(scsi->def.name == "SCSISelect");
+
+	/* Search finds subtraps alongside regular traps */
+	std::vector<std::pair<uint32_t, std::string_view>> results;
+	defs.search("SCSI", results, 50);
+	bool foundSCSISelect = false;
+	for (auto &[key, name] : results)
+		if (name == "SCSISelect") foundSCSISelect = true;
+	CHECK(foundSCSISelect);
+}
+
+TEST_CASE("TrapTracer emits subtrap name for dispatch trap")
+{
+	ensureTypeRegistryInit();
+	auto path = writeTempFile("test_trace_sub.def", "A260 HFSDispatch os dispatch=word.D0\n"
+													"  in  selector:word.D0 pb:Ptr.A0\n"
+													"  out err:OSErr.D0\n"
+													"  subtrap 0x09 PBGetCatInfo\n"
+													"    in  pb:^CInfoPBRec.A0\n"
+													"    out err:OSErr.D0\n");
+	TrapDefs defs;
+	defs.load(path);
+
+	TrapTracer tracer(defs);
+	CaptureIO io;
+	tracer.setIO(&io);
+	tracer.enable(true);
+	tracer.addAllTraps();
+
+	/* Set D0 = 0x09 (PBGetCatInfo selector), A0 = some PB address */
+	uint32_t dregs[8] = {}, aregs[8] = {};
+	dregs[0] = 0x0009; /* D0 = selector */
+	aregs[0] = 0x1000; /* A0 = PB pointer */
+	aregs[7] = 0x2000; /* SP */
+	test_set_regs(dregs, aregs);
+
+	/* Set return address on stack */
+	put_be32(0x2000, 0x00004000);
+	test_set_pc(0x00003000);
+	g_instructionCount = 100;
+
+	tracer.enter(0xA260);
+
+	CHECK(io.captured.find("PBGetCatInfo") != std::string::npos);
+}

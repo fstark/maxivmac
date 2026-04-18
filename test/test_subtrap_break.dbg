@@ -1,0 +1,3 @@
+break PBGetCatInfo
+continue
+# Should stop on HFSDispatch when D0=0x09
