@@ -459,6 +459,12 @@ void Debugger::addTrapFilter(uint16_t tw)
 	g_tracer.addFilter(tw);
 }
 
+void Debugger::removeTrapFilter(uint16_t tw)
+{
+	impl_->trapFilter.erase(tw);
+	g_tracer.removeFilter(tw);
+}
+
 void Debugger::clearTrapFilter()
 {
 	impl_->trapFilter.clear();

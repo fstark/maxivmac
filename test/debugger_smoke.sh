@@ -29,7 +29,7 @@ check() {
     local pattern="$3"
 
     output=$(printf '%s\n' "$input" | $MAXIVMAC --debugger --headless --model="$MODEL" --rom "$ROM" 2>/dev/null || true)
-    if echo "$output" | grep -q "$pattern"; then
+    if echo "$output" | grep -qF -- "$pattern"; then
         echo "  PASS: $desc"
         PASS=$((PASS + 1))
     else
@@ -82,6 +82,25 @@ quit" "\$00400000:"
 check "watch command" "watch \$0900
 info break
 quit" "watchpoint"
+
+# Test 11: trace traps replace-all filter
+check "trace traps filter" "trace traps GetResource OpenResFile
+quit" "+ filter: GetResource"
+
+# Test 12: trace traps incremental add
+check "trace traps +add" "trace traps GetResource
+trace traps +OpenResFile
+quit" "+ filter: OpenResFile"
+
+# Test 13: trace traps incremental remove
+check "trace traps -remove" "trace traps GetResource OpenResFile
+trace traps -GetResource
+quit" "- filter: GetResource"
+
+# Test 14: trace traps mixed +/-
+check "trace traps +/- mixed" "trace traps GetResource
+trace traps +OpenResFile -GetResource
+quit" "- filter: GetResource"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

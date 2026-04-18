@@ -301,7 +301,8 @@ If no end address is given, disassembles 64 bytes from start.
 |---------|-------------|
 | `trace traps on` | Enable trap call logging to stdout |
 | `trace traps off` | Disable trap call logging |
-| `trace traps [name…]` | Trace only listed traps |
+| `trace traps [name…]` | Trace only listed traps (replaces filter) |
+| `trace traps [+name… -name…]` | Add/remove individual traps from filter |
 | `trace insn on` | Enable instruction logging to stdout |
 | `trace insn off` | Disable instruction logging |
 | `trace io on` | Enable I/O read/write logging |
@@ -677,6 +678,11 @@ Breakpoint 1 hit: GetResource ($A9A0)
 (dbg) delete 1
 (dbg) trace traps GetResource Get1Resource
 Tracing 2 traps
+
+(dbg) trace traps +OpenResFile -GetResource
+  + filter: OpenResFile ($A997)
+  - filter: GetResource ($A9A0)
+Trap tracing enabled (filtered)
 
 (dbg) c
 [running]

@@ -49,6 +49,7 @@ public:
 	void setIO(DbgIO *io);
 
 	void addFilter(uint16_t trapWord);
+	void removeFilter(uint16_t trapWord);
 	void clearFilter();
 
 public: /* public for testability */

@@ -66,6 +66,12 @@ void TrapTracer::addFilter(uint16_t trapWord)
 		filter_.push_back(trapWord);
 }
 
+void TrapTracer::removeFilter(uint16_t trapWord)
+{
+	auto it = std::find(filter_.begin(), filter_.end(), trapWord);
+	if (it != filter_.end()) filter_.erase(it);
+}
+
 void TrapTracer::clearFilter()
 {
 	filter_.clear();

@@ -36,17 +36,38 @@ void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
 		}
 		else
 		{
-			/* Named trap filter */
-			dbg.clearTrapFilter();
-			for (size_t i = 1; i < args.size(); ++i)
+			/* Detect incremental mode: any +/- prefix means add/remove */
+			bool incremental = false;
+			for (size_t i = 1; i < args.size() && args[i].kind != Token::Kind::End; ++i)
+				if (args[i].kind == Token::Kind::Operator &&
+					(args[i].text == "+" || args[i].text == "-"))
+				{
+					incremental = true;
+					break;
+				}
+
+			if (!incremental) dbg.clearTrapFilter();
+
+			for (size_t i = 1; i < args.size() && args[i].kind != Token::Kind::End; ++i)
 			{
-				if (args[i].kind == Token::Kind::End) break;
+				bool adding = true;
+				if (args[i].kind == Token::Kind::Operator &&
+					(args[i].text == "+" || args[i].text == "-"))
+				{
+					adding = (args[i].text == "+");
+					if (++i >= args.size() || args[i].kind == Token::Kind::End)
+					{
+						dbg.io().write("  missing trap name after '%c'\n", adding ? '+' : '-');
+						break;
+					}
+				}
 				uint32_t addr;
 				uint16_t tw;
 				if (SymbolsResolve(args[i].text, addr, tw) && tw != 0)
 				{
-					dbg.addTrapFilter(tw);
-					dbg.io().write("  filter: %s ($%04X)\n", args[i].text.c_str(), tw);
+					adding ? dbg.addTrapFilter(tw) : dbg.removeTrapFilter(tw);
+					dbg.io().write("  %c filter: %s ($%04X)\n", adding ? '+' : '-',
+								   args[i].text.c_str(), tw);
 				}
 				else
 				{

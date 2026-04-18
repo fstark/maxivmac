@@ -87,6 +87,7 @@ public:
 	void setTraceIO(bool on);
 	bool trapInFilter(uint16_t tw) const;
 	void addTrapFilter(uint16_t tw);
+	void removeTrapFilter(uint16_t tw);
 	void clearTrapFilter();
 
 	// Breakpoint commands (used by cmd_break.cpp)
