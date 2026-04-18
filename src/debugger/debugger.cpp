@@ -306,11 +306,18 @@ static void RecalcWatchpointFlag(const std::vector<Debugger::Watchpoint> &watchp
 
 uint32_t Debugger::addBreakpoint(uint32_t addr, uint16_t trapWord, const std::string &condition)
 {
+	return addBreakpoint(addr, trapWord, 0, condition);
+}
+
+uint32_t Debugger::addBreakpoint(uint32_t addr, uint16_t trapWord, uint16_t subtrapSelector,
+								 const std::string &condition)
+{
 	Breakpoint bp;
 	bp.id = impl_->nextBpId++;
 	bp.enabled = true;
 	bp.address = addr;
 	bp.trapWord = trapWord;
+	bp.subtrapSelector = subtrapSelector;
 	bp.condition = condition;
 	impl_->breakpoints.push_back(std::move(bp));
 	return impl_->breakpoints.back().id;
@@ -396,7 +403,19 @@ const Debugger::Breakpoint *Debugger::lookupByTrap(uint16_t trapWord) const
 {
 	for (auto &bp : impl_->breakpoints)
 	{
-		if (bp.enabled && bp.trapWord == trapWord && bp.trapWord != 0) return &bp;
+		if (bp.enabled && bp.trapWord == trapWord && bp.trapWord != 0 && bp.subtrapSelector == 0)
+			return &bp;
+	}
+	return nullptr;
+}
+
+const Debugger::Breakpoint *Debugger::lookupBySubtrap(uint16_t trapWord, uint16_t selector) const
+{
+	for (auto &bp : impl_->breakpoints)
+	{
+		if (bp.enabled && bp.trapWord == trapWord && bp.subtrapSelector == selector &&
+			bp.subtrapSelector != 0)
+			return &bp;
 	}
 	return nullptr;
 }
@@ -474,6 +493,17 @@ void Debugger::removeAllTraps()
 {
 	impl_->trapFilter.reset();
 	g_tracer.removeAllTraps();
+}
+
+void Debugger::addSubtrap(uint16_t trapWord, uint16_t selector)
+{
+	impl_->trapFilter.set(trapWord);
+	g_tracer.addSubtrap(trapWord, selector);
+}
+
+void Debugger::removeSubtrap(uint16_t trapWord, uint16_t selector)
+{
+	g_tracer.removeSubtrap(trapWord, selector);
 }
 
 std::vector<uint16_t> Debugger::trapsEnabled() const
@@ -789,6 +819,26 @@ bool Debugger::trapHook(uint16_t trapWord)
 {
 	/* Trap breakpoint check */
 	auto *bp = lookupByTrap(trapWord);
+
+	/* Check for subtrap breakpoints on dispatch traps */
+	if (!bp && g_trapDefs.isDispatch(trapWord))
+	{
+		auto *info = g_trapDefs.dispatchInfo(trapWord);
+		if (info)
+		{
+			/* Read selector from current CPU state */
+			int idx = static_cast<int>(info->selectorParam.loc) - 1;
+			uint32_t dregs[8], aregs[8];
+			m68k_getRegs(dregs, aregs);
+			uint16_t selector = 0;
+			if (idx < 8)
+				selector = static_cast<uint16_t>(dregs[idx]);
+			else
+				selector = static_cast<uint16_t>(aregs[idx - 8]);
+			bp = lookupBySubtrap(trapWord, selector);
+		}
+	}
+
 	if (bp)
 	{
 		/* Evaluate condition if present */
@@ -810,8 +860,13 @@ bool Debugger::trapHook(uint16_t trapWord)
 			return false;
 		}
 
-		impl_->io->write("Breakpoint %u on trap %s ($%04X)\n", bp->id, SymbolsTrapName(trapWord),
-						 trapWord);
+		if (bp->subtrapSelector != 0)
+			impl_->io->write("Breakpoint %u on subtrap %s ($%04X sel $%02X)\n", bp->id,
+							 SymbolsSubtrapName(bp->trapWord, bp->subtrapSelector), trapWord,
+							 bp->subtrapSelector);
+		else
+			impl_->io->write("Breakpoint %u on trap %s ($%04X)\n", bp->id,
+							 SymbolsTrapName(trapWord), trapWord);
 
 		if (!bp->commands.empty())
 		{

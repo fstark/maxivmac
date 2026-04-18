@@ -31,6 +31,10 @@ int SymbolsGlobalCount();
 // For globals, sets outAddr to the global's address and outTrapWord=0.
 bool SymbolsResolve(std::string_view name, uint32_t &outAddr, uint16_t &outTrapWord);
 
+// Subtrap-aware overload: also returns subtrapSelector (non-zero for dispatch subtraps).
+bool SymbolsResolve(std::string_view name, uint32_t &outAddr, uint16_t &outTrapWord,
+					uint16_t &outSubtrapSelector);
+
 // Reverse-lookup: given an address, find the symbol name.
 // Returns empty string_view if no symbol at that address.
 std::string_view SymbolsAtAddress(uint32_t addr);
@@ -46,3 +50,6 @@ uint16_t SymbolsSizeAt(uint32_t addr);
 // Return a display name for a trap word: the dictionary name if known,
 // otherwise "$XXXX".  The returned pointer is valid until the next call.
 const char *SymbolsTrapName(uint16_t tw);
+
+// Return a display name for a subtrap, or the parent trap name "$XXXX" if unknown.
+const char *SymbolsSubtrapName(uint16_t trapWord, uint16_t selector);

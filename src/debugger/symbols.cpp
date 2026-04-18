@@ -8,6 +8,7 @@
 #include "debugger/symbols.h"
 
 #include "cpu/trap_counter.h"
+#include "cpu/trap_defs.h"
 #include "lang/global_registry.h"
 
 #include <cstdio>
@@ -59,6 +60,15 @@ int SymbolsGlobalCount()
 
 bool SymbolsResolve(std::string_view name, uint32_t &outAddr, uint16_t &outTrapWord)
 {
+	uint16_t subSel = 0;
+	return SymbolsResolve(name, outAddr, outTrapWord, subSel);
+}
+
+bool SymbolsResolve(std::string_view name, uint32_t &outAddr, uint16_t &outTrapWord,
+					uint16_t &outSubtrapSelector)
+{
+	outSubtrapSelector = 0;
+
 	/* Try trap dictionary first (exact, case-insensitive) */
 	std::vector<TrapInfo> results;
 	trap_dict_search(std::string(name).c_str(), results, 100);
@@ -68,6 +78,7 @@ bool SymbolsResolve(std::string_view name, uint32_t &outAddr, uint16_t &outTrapW
 		{
 			outAddr = 0;
 			outTrapWord = ti.trapWord;
+			outSubtrapSelector = ti.subtrapSelector;
 			return true;
 		}
 	}
@@ -137,5 +148,15 @@ const char *SymbolsTrapName(uint16_t tw)
 	if (name) return name;
 	static char buf[8];
 	std::snprintf(buf, sizeof(buf), "$%04X", tw);
+	return buf;
+}
+
+const char *SymbolsSubtrapName(uint16_t trapWord, uint16_t selector)
+{
+	extern TrapDefs g_trapDefs;
+	auto *sub = g_trapDefs.findSubtrap(trapWord, selector);
+	if (sub) return sub->def.name.c_str();
+	static thread_local char buf[16];
+	std::snprintf(buf, sizeof(buf), "%s$%02X", SymbolsTrapName(trapWord), selector);
 	return buf;
 }

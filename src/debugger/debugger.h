@@ -50,6 +50,7 @@ public:
 		bool enabled;
 		uint32_t address;				   // PC address (0 for trap-only breakpoints)
 		uint16_t trapWord;				   // non-zero for trap breakpoints
+		uint16_t subtrapSelector = 0;	   // non-zero for subtrap breakpoints
 		std::string condition;			   // raw condition text
 		std::vector<std::string> commands; // auto-execute on hit
 		uint32_t ignoreCount = 0;		   // remaining hits to skip
@@ -68,12 +69,15 @@ public:
 	};
 
 	uint32_t addBreakpoint(uint32_t addr, uint16_t trapWord, const std::string &condition);
+	uint32_t addBreakpoint(uint32_t addr, uint16_t trapWord, uint16_t subtrapSelector,
+						   const std::string &condition);
 	uint32_t addWatchpoint(uint32_t addr, uint32_t len, char mode, bool hasValCond,
 						   uint8_t valCondOp, uint32_t valCondValue);
 	bool deleteById(uint32_t id);
 	bool enableById(uint32_t id, bool enable);
 	const Breakpoint *lookupByAddr(uint32_t addr) const;
 	const Breakpoint *lookupByTrap(uint16_t trapWord) const;
+	const Breakpoint *lookupBySubtrap(uint16_t trapWord, uint16_t selector) const;
 	const std::vector<Breakpoint> &breakpoints() const;
 	std::vector<Breakpoint> &breakpoints();
 	const std::vector<Watchpoint> &watchpoints() const;
@@ -90,6 +94,8 @@ public:
 	void removeTrap(uint16_t tw);
 	void addAllTraps();
 	void removeAllTraps();
+	void addSubtrap(uint16_t trapWord, uint16_t selector);
+	void removeSubtrap(uint16_t trapWord, uint16_t selector);
 	std::vector<uint16_t> trapsEnabled() const;
 	std::vector<uint16_t> trapsDisabled() const;
 
