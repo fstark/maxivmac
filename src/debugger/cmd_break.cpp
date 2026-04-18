@@ -119,6 +119,7 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 
 	uint32_t addr = 0;
 	uint16_t trapWord = 0;
+	uint16_t subtrapSelector = 0;
 
 	if (args[0].kind == Token::Kind::Number)
 	{
@@ -126,7 +127,7 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 	}
 	else if (args[0].kind == Token::Kind::Word)
 	{
-		if (!SymbolsResolve(args[0].text, addr, trapWord))
+		if (!SymbolsResolve(args[0].text, addr, trapWord, subtrapSelector))
 		{
 			dbg.io().write("Cannot resolve '%s'\n", args[0].text.c_str());
 			return;
@@ -155,9 +156,14 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 		}
 	}
 
-	uint32_t id = dbg.addBreakpoint(addr, trapWord, condition);
+	uint32_t id = dbg.addBreakpoint(addr, trapWord, subtrapSelector, condition);
 
-	if (trapWord)
+	if (subtrapSelector != 0)
+	{
+		dbg.io().write("Breakpoint %u on subtrap %s ($%04X sel $%02X)\n", id,
+					   SymbolsSubtrapName(trapWord, subtrapSelector), trapWord, subtrapSelector);
+	}
+	else if (trapWord)
 	{
 		dbg.io().write("Breakpoint %u on trap %s ($%04X)\n", id, SymbolsTrapName(trapWord),
 					   trapWord);

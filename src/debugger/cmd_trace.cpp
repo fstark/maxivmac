@@ -63,11 +63,21 @@ void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
 				}
 				uint32_t addr;
 				uint16_t tw;
-				if (SymbolsResolve(args[i].text, addr, tw) && tw != 0)
+				uint16_t subSel = 0;
+				if (SymbolsResolve(args[i].text, addr, tw, subSel) && tw != 0)
 				{
-					adding ? dbg.addTrap(tw) : dbg.removeTrap(tw);
-					dbg.io().write("  %c filter: %s ($%04X)\n", adding ? '+' : '-',
-								   args[i].text.c_str(), tw);
+					if (subSel != 0)
+					{
+						adding ? dbg.addSubtrap(tw, subSel) : dbg.removeSubtrap(tw, subSel);
+						dbg.io().write("  %c filter: %s ($%04X sel $%02X)\n", adding ? '+' : '-',
+									   args[i].text.c_str(), tw, subSel);
+					}
+					else
+					{
+						adding ? dbg.addTrap(tw) : dbg.removeTrap(tw);
+						dbg.io().write("  %c filter: %s ($%04X)\n", adding ? '+' : '-',
+									   args[i].text.c_str(), tw);
+					}
 				}
 				else
 				{
