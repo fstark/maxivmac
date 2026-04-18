@@ -266,97 +266,365 @@ A9C9 SysError toolbox noreturn
 
 # ── OS Traps (additional) ──────────────────────────────
 
-A07C ADBOp os
-A07B ADBReInit os
-A04E AddDrive os
-A010 Allocate os
-A071 AttachVBL os
-A03C CmpString os
+# Memory Manager
+
 A04C CompactMem os
-A004 Control os
-A077 CountADBs os
-A082 DTInstall os
-A03B Delay os
-A072 DoVBLTask os
-A03D DrvrInstall os
-A03E DrvrRemove os
-A017 Eject os
-A02B EmptyHandle os
-A032 FlushEvents os
-A045 FlushFile os
+  in  size:long.D0
+  out size:long.D0
+
 A01C FreeMem os
-A079 GetADBInfo os
-A07D GetDefaultStartup os
-A018 GetFPos os
-A078 GetIndADB os
-A084 GetOSDefault os
-A031 GetOSEvent os
-A021 GetPtrSize os
-A080 GetVideoDefault os
+  out size:long.D0
+
 A11A GetZone os
-A068 HClrRBit os
-A069 HGetState os
-A04A HNoPurge os
-A049 HPurge os
-A067 HSetRBit os
-A06A HSetState os
-A126 HandleZone os
-A02C InitApplZone os
-A016 InitQueue os
-A03F InitUtil os
-A019 InitZone os
-A07F InternalWait os
-A006 KillIO os
-A063 MaxApplZone os
-A061 MaxBlock os
-A11D MaxMem os
-A036 MoreMasters os
-A00F MountVol os
-A064 MoveHHi os
-A066 NewEmptyHandle os
-A030 OSEventAvail os
-A035 Offline os
-A12F PPostEvent os
-A02F PostEvent os
-A148 PtrZone os
-A04D PurgeMem os
-A062 PurgeSpace os
-A04F RDrvrInstall os
-A039 ReadDateTime os
-A027 ReallocHandle os
-A128 RecoverHandle os
-A050 RelString os
-A00B Rename os
-A042 RstFilLock os
-A07A SetADBInfo os
-A057 SetAppBase os
-A02D SetApplLimit os
-A03A SetDateTime os
-A07E SetDefaultStartup os
-A012 SetEOF os
-A044 SetFPos os
-A041 SetFilLock os
-A043 SetFilType os
-A04B SetGrowZone os
-A083 SetOSDefault os
-A020 SetPtrSize os
-A047 SetTrapAddress os
-A081 SetVideoDefault os
-A015 SetVol os
+  out zone:Ptr.A0
+
 A01B SetZone os
-A06E SlotManager os
-A06F SlotVInstall os
-A070 SlotVRemove os
+  in  zone:Ptr.A0
+
+A063 MaxApplZone os
+
+A036 MoreMasters os
+
+A061 MaxBlock os
+  out size:long.D0
+
+A11D MaxMem os
+  out size:long.D0  grow:long.A0
+
+A02B EmptyHandle os
+  in  h:Handle.A0
+
+A04A HNoPurge os
+  in  h:Handle.A0
+
+A049 HPurge os
+  in  h:Handle.A0
+
+A066 NewEmptyHandle os
+  out h:Handle.A0  err:OSErr.D0
+
+A128 RecoverHandle os
+  in  p:Ptr.A0
+  out h:Handle.A0
+
+A148 PtrZone os
+  in  p:Ptr.A0
+  out zone:Ptr.A0
+
+A126 HandleZone os
+  in  h:Handle.A0
+  out zone:Ptr.A0
+
+A027 ReallocHandle os
+  in  h:Handle.A0  size:long.D0
+  out err:OSErr.D0
+
+A069 HGetState os
+  in  h:Handle.A0
+  out state:byte.D0
+
+A06A HSetState os
+  in  h:Handle.A0  state:byte.D0
+
+A067 HSetRBit os
+  in  h:Handle.A0
+
+A068 HClrRBit os
+  in  h:Handle.A0
+
+A064 MoveHHi os
+  in  h:Handle.A0
+
+A04D PurgeMem os
+  in  size:long.D0
+
+A062 PurgeSpace os
+  out total:long.D0  contig:long.A0
+
 A065 StackSpace os
-A005 Status os
-A055 StripAddress os
-A05D SwapMMUMode os
-A090 SysEnvirons os
+  out size:long.D0
+
+A020 SetPtrSize os
+  in  p:Ptr.A0  size:long.D0
+  out err:OSErr.D0
+
+A021 GetPtrSize os
+  in  p:Ptr.A0
+  out size:long.D0
+
+A02C InitApplZone os
+
+A02D SetApplLimit os
+  in  limit:Ptr.A0
+
+A057 SetAppBase os
+  in  base:Ptr.A0
+
+A04B SetGrowZone os
+  in  proc:ProcPtr.A0
+
+A019 InitZone os
+
+# File Manager
+
+A010 Allocate os
+  in  pb:^IOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioRefNum ioReqCount
+  show-out pb ioResult ioActCount
+
+A045 FlushFile os
+  in  pb:^IOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioRefNum
+  show-out pb ioResult
+
+A012 SetEOF os
+  in  pb:^IOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioRefNum ioMisc
+  show-out pb ioResult
+
+A018 GetFPos os
+  in  pb:^IOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioRefNum
+  show-out pb ioResult ioPosOffset
+
+A044 SetFPos os
+  in  pb:^IOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioRefNum ioPosMode ioPosOffset
+  show-out pb ioResult ioPosOffset
+
+A015 SetVol os
+  in  pb:^VolumeParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
+
 A00E UnmountVol os
-A054 UprString os
+  in  pb:^VolumeParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
+
+A00F MountVol os
+  in  pb:^VolumeParam.A0
+  out err:OSErr.D0
+
+A017 Eject os
+  in  pb:^VolumeParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
+
+A035 Offline os
+  in  pb:^VolumeParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
+
+A00B Rename os
+  in  pb:^IOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioMisc
+  show-out pb ioResult
+
+A041 SetFilLock os
+  in  pb:^FileParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
+
+A042 RstFilLock os
+  in  pb:^FileParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
+
+A043 SetFilType os
+  in  pb:^FileParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum
+  show-out pb ioResult
+
+# Device Manager
+
+A004 Control os
+  in  pb:^IOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioRefNum
+  show-out pb ioResult
+
+A005 Status os
+  in  pb:^IOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioRefNum
+  show-out pb ioResult
+
+A006 KillIO os
+  in  pb:^IOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioRefNum
+  show-out pb ioResult
+
+# VBL / Interrupt
+
 A033 VInstall os
+  in  vbl:Ptr.A0
+  out err:OSErr.D0
+
 A034 VRemove os
+  in  vbl:Ptr.A0
+  out err:OSErr.D0
+
+A071 AttachVBL os
+  in  vbl:Ptr.A0
+  out err:OSErr.D0
+
+A072 DoVBLTask os
+  in  vbl:Ptr.A0
+
+A082 DTInstall os
+  in  dt:Ptr.A0
+  out err:OSErr.D0
+
+# OS Utilities
+
+A039 ReadDateTime os
+  out secs:long.D0  err:OSErr.D0
+
+A03A SetDateTime os
+  in  secs:long.D0
+  out err:OSErr.D0
+
 A038 WriteParam os
+  out err:OSErr.D0
+
+A03B Delay os
+  in  ticks:long.A0
+  out finalTicks:long.D0
+
+A03C CmpString os
+  in  str1:Ptr.A0  str2:Ptr.D0
+  out result:sword.D0
+
+A054 UprString os
+  in  str:Ptr.A0  len:sword.D0
+
+A050 RelString os
+  in  str1:Ptr.A0  str2:Ptr.D0
+  out result:sword.D0
+
+A03F InitUtil os
+
+A032 FlushEvents os
+  in  mask:word.D0
+
+A030 OSEventAvail os
+  in  mask:word.D0  event:Ptr.A0
+  out found:Boolean.D0
+
+A031 GetOSEvent os
+  in  mask:word.D0  event:Ptr.A0
+  out found:Boolean.D0
+
+A02F PostEvent os
+  in  what:word.A0  msg:long.D0
+  out err:OSErr.D0
+
+A12F PPostEvent os
+  in  what:word.A0  msg:long.D0
+  out err:OSErr.D0  evtPtr:Ptr.A0
+
+A090 SysEnvirons os
+  in  version:sword.D0  env:^SysEnvRec.A0
+  out err:OSErr.D0
+
+A055 StripAddress os
+  in  addr:Ptr.D0
+  out addr:Ptr.D0
+
+A05D SwapMMUMode os
+  in  mode:byte.D0
+  out oldMode:byte.D0
+
+A047 SetTrapAddress os
+  in  addr:Ptr.A0  trapNum:word.D0
+
+A016 InitQueue os
+  in  q:Ptr.A0
+
+# Driver Install / ADB / Slot
+
+A03D DrvrInstall os
+  in  dce:Ptr.A0  refNum:sword.D0
+  out err:OSErr.D0
+
+A03E DrvrRemove os
+  in  refNum:sword.D0
+  out err:OSErr.D0
+
+A04F RDrvrInstall os
+  in  dce:Ptr.A0  refNum:sword.D0
+  out err:OSErr.D0
+
+A077 CountADBs os
+  out count:sword.D0
+
+A078 GetIndADB os
+  in  data:Ptr.A0  index:sword.D0
+  out addr:sword.D0
+
+A079 GetADBInfo os
+  in  data:Ptr.A0  addr:sword.D0
+  out err:OSErr.D0
+
+A07A SetADBInfo os
+  in  data:Ptr.A0  addr:sword.D0
+  out err:OSErr.D0
+
+A07B ADBReInit os
+
+A07C ADBOp os
+  in  data:Ptr.A0  cmd:sword.D0
+  out err:OSErr.D0
+
+A07D GetDefaultStartup os
+  in  buf:Ptr.A0
+
+A07E SetDefaultStartup os
+  in  buf:Ptr.A0
+
+A07F InternalWait os
+
+A080 GetVideoDefault os
+  in  buf:Ptr.A0
+
+A081 SetVideoDefault os
+  in  buf:Ptr.A0
+
+A083 SetOSDefault os
+  in  buf:Ptr.A0
+
+A084 GetOSDefault os
+  in  buf:Ptr.A0
+
+A06E SlotManager os
+  in  pb:Ptr.A0
+  out err:OSErr.D0
+
+A06F SlotVInstall os
+  in  sq:Ptr.A0
+  out err:OSErr.D0
+
+A070 SlotVRemove os
+  in  sq:Ptr.A0
+  out err:OSErr.D0
+
+A04E AddDrive os
+  in  drvrRef:sword.D0  drvNum:sword.D1  queue:Ptr.A0
 
 # ── Toolbox Traps (additional) ─────────────────────────
 
