@@ -86,11 +86,12 @@ public:
 	void setTraceInsn(bool on);
 	void setTraceIO(bool on);
 	bool trapInFilter(uint16_t tw) const;
-	void addTrapFilter(uint16_t tw);
-	void removeTrapFilter(uint16_t tw);
-	void clearTrapFilter();
-	std::vector<uint16_t> trapFilterEnabled() const;
-	std::vector<uint16_t> trapFilterDisabled() const;
+	void addTrap(uint16_t tw);
+	void removeTrap(uint16_t tw);
+	void addAllTraps();
+	void removeAllTraps();
+	std::vector<uint16_t> trapsEnabled() const;
+	std::vector<uint16_t> trapsDisabled() const;
 
 	// Breakpoint commands (used by cmd_break.cpp)
 	void executeCommands(const std::vector<std::string> &cmds);

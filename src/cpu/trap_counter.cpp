@@ -10,11 +10,12 @@
 */
 
 #include "cpu/trap_counter.h"
-#include "cpu/trap_tracer.h"
+#include "cpu/trap_defs.h"
 #include <algorithm>
 #include <atomic>
-#include <cstdio>
 #include <string_view>
+
+extern TrapDefs g_trapDefs;
 
 /* ── Counter array ────────────────────────────────── */
 
@@ -49,36 +50,6 @@ void trap_counter_reset()
 uint32_t trap_counter_get(uint16_t trapWord)
 {
 	return s_counters[TrapIndex(trapWord)].load(std::memory_order_relaxed);
-}
-
-/* ── Console tracing ──────────────────────────────── */
-
-static std::atomic<int> s_traceDepth{0};
-
-void BeginTraceTraps()
-{
-	int prev = s_traceDepth.fetch_add(1, std::memory_order_relaxed);
-	if (prev == 0) g_tracer.enable(true);
-}
-
-void EndTraceTraps()
-{
-	int prev = s_traceDepth.fetch_sub(1, std::memory_order_relaxed);
-	if (prev <= 1)
-	{
-		s_traceDepth.store(0, std::memory_order_relaxed);
-		g_tracer.enable(false);
-	}
-}
-
-void trap_trace_log(uint16_t trapWord)
-{
-	if (s_traceDepth.load(std::memory_order_relaxed) <= 0) return;
-	const char *name = trap_dict_name(trapWord);
-	if (name)
-		fprintf(stdout, "[TRAP] $%04X %s\n", trapWord, name);
-	else
-		fprintf(stdout, "[TRAP] $%04X\n", trapWord);
 }
 
 /* ── Trap dictionary (delegates to g_trapDefs) ────── */

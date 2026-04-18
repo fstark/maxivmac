@@ -9,7 +9,6 @@
 #include "debugger/dbg_io.h"
 #include "lang/type_registry.h"
 
-#include <algorithm>
 #include <cinttypes>
 #include <cstdio>
 #include <cstring>
@@ -30,7 +29,10 @@ static int paramSize(const ParamDef &pd)
 
 /* -- TrapTracer ---------------------------------------- */
 
-TrapTracer::TrapTracer(TrapDefs &defs) : defs_(defs) {}
+TrapTracer::TrapTracer(TrapDefs &defs) : defs_(defs)
+{
+	allowed_.set(); /* trace all traps by default */
+}
 
 void TrapTracer::setIO(DbgIO *io)
 {
@@ -60,21 +62,24 @@ void TrapTracer::setMaxDepth(int depth)
 	if (depth > 0 && depth <= 64) maxDepth_ = depth;
 }
 
-void TrapTracer::addFilter(uint16_t trapWord)
+void TrapTracer::addTrap(uint16_t trapWord)
 {
-	if (std::find(filter_.begin(), filter_.end(), trapWord) == filter_.end())
-		filter_.push_back(trapWord);
+	allowed_.set(trapWord);
 }
 
-void TrapTracer::removeFilter(uint16_t trapWord)
+void TrapTracer::removeTrap(uint16_t trapWord)
 {
-	auto it = std::find(filter_.begin(), filter_.end(), trapWord);
-	if (it != filter_.end()) filter_.erase(it);
+	allowed_.reset(trapWord);
 }
 
-void TrapTracer::clearFilter()
+void TrapTracer::addAllTraps()
 {
-	filter_.clear();
+	allowed_.set();
+}
+
+void TrapTracer::removeAllTraps()
+{
+	allowed_.reset();
 }
 
 /* -- enter --------------------------------------------- */
@@ -83,10 +88,7 @@ void TrapTracer::enter(uint16_t trapWord)
 {
 	if (!enabled_) return;
 
-	if (!filter_.empty())
-	{
-		if (std::find(filter_.begin(), filter_.end(), trapWord) == filter_.end()) return;
-	}
+	if (!allowed_.test(trapWord)) return;
 
 	/* Context-switch detection */
 	uint16_t appId = readAppId();

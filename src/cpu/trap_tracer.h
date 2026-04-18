@@ -8,9 +8,9 @@
 
 #include "cpu/trap_defs.h"
 #include <array>
+#include <bitset>
 #include <cstdint>
 #include <string>
-#include <vector>
 
 class DbgIO;
 
@@ -48,9 +48,10 @@ public:
 	void setMaxDepth(int depth);
 	void setIO(DbgIO *io);
 
-	void addFilter(uint16_t trapWord);
-	void removeFilter(uint16_t trapWord);
-	void clearFilter();
+	void addTrap(uint16_t trapWord);
+	void removeTrap(uint16_t trapWord);
+	void addAllTraps();
+	void removeAllTraps();
 
 public: /* public for testability */
 	std::string formatParam(const ParamDef &p, uint32_t rawValue);
@@ -81,7 +82,7 @@ private:
 	int maxDepth_ = 64;
 	uint16_t lastAppId_ = 0;
 	bool overflowWarned_ = false;
-	std::vector<uint16_t> filter_;
+	std::bitset<65536> allowed_;
 	DbgIO *io_ = nullptr;
 };
 

@@ -218,8 +218,8 @@ static void InfoTrace(Debugger &dbg)
 
 	if (dbg.traceTraps())
 	{
-		auto enabled = dbg.trapFilterEnabled();
-		auto disabled = dbg.trapFilterDisabled();
+		auto enabled = dbg.trapsEnabled();
+		auto disabled = dbg.trapsDisabled();
 
 		if (disabled.empty())
 		{

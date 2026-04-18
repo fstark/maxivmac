@@ -7,8 +7,6 @@
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 
-#include "cpu/trap_counter.h"
-
 #include <cstdio>
 
 void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
@@ -26,16 +24,14 @@ void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
 	{
 		if (action == "on")
 		{
-			dbg.clearTrapFilter();
-			for (int i = 0, n = trap_dict_size(); i < n; ++i)
-				dbg.addTrapFilter(trap_dict_entry(i).trapWord);
+			dbg.addAllTraps();
 			dbg.setTraceTraps(true);
 			dbg.io().write("Trap tracing enabled (all traps)\n");
 		}
 		else if (action == "off")
 		{
 			dbg.setTraceTraps(false);
-			dbg.clearTrapFilter();
+			dbg.removeAllTraps();
 			dbg.io().write("Trap tracing disabled\n");
 		}
 		else
@@ -50,7 +46,7 @@ void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
 					break;
 				}
 
-			if (!incremental) dbg.clearTrapFilter();
+			if (!incremental) dbg.removeAllTraps();
 
 			for (size_t i = 1; i < args.size() && args[i].kind != Token::Kind::End; ++i)
 			{
@@ -69,7 +65,7 @@ void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
 				uint16_t tw;
 				if (SymbolsResolve(args[i].text, addr, tw) && tw != 0)
 				{
-					adding ? dbg.addTrapFilter(tw) : dbg.removeTrapFilter(tw);
+					adding ? dbg.addTrap(tw) : dbg.removeTrap(tw);
 					dbg.io().write("  %c filter: %s ($%04X)\n", adding ? '+' : '-',
 								   args[i].text.c_str(), tw);
 				}

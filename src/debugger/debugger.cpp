@@ -15,11 +15,11 @@
 #include "cpu/disasm.h"
 
 #include <algorithm>
+#include <bitset>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <unordered_map>
-#include <unordered_set>
 
 extern uint32_t g_instructionCount;
 
@@ -162,7 +162,7 @@ struct Debugger::Impl
 	bool trTraps = false;
 	bool trInsn = false;
 	bool trIO = false;
-	std::unordered_set<uint16_t> trapFilter;
+	std::bitset<65536> trapFilter;
 
 	/* Last command (for empty-line repeat) */
 	std::string lastLine;
@@ -449,39 +449,51 @@ void Debugger::setTraceIO(bool on)
 
 bool Debugger::trapInFilter(uint16_t tw) const
 {
-	return impl_->trapFilter.count(tw) > 0;
+	return impl_->trapFilter.test(tw);
 }
 
-void Debugger::addTrapFilter(uint16_t tw)
+void Debugger::addTrap(uint16_t tw)
 {
-	impl_->trapFilter.insert(tw);
-	g_tracer.addFilter(tw);
+	impl_->trapFilter.set(tw);
+	g_tracer.addTrap(tw);
 }
 
-void Debugger::removeTrapFilter(uint16_t tw)
+void Debugger::removeTrap(uint16_t tw)
 {
-	impl_->trapFilter.erase(tw);
-	g_tracer.removeFilter(tw);
+	impl_->trapFilter.reset(tw);
+	g_tracer.removeTrap(tw);
 }
 
-void Debugger::clearTrapFilter()
+void Debugger::addAllTraps()
 {
-	impl_->trapFilter.clear();
-	g_tracer.clearFilter();
+	impl_->trapFilter.set();
+	g_tracer.addAllTraps();
 }
 
-std::vector<uint16_t> Debugger::trapFilterEnabled() const
+void Debugger::removeAllTraps()
 {
-	return {impl_->trapFilter.begin(), impl_->trapFilter.end()};
+	impl_->trapFilter.reset();
+	g_tracer.removeAllTraps();
 }
 
-std::vector<uint16_t> Debugger::trapFilterDisabled() const
+std::vector<uint16_t> Debugger::trapsEnabled() const
 {
 	std::vector<uint16_t> result;
 	for (int i = 0, n = trap_dict_size(); i < n; ++i)
 	{
 		uint16_t tw = trap_dict_entry(i).trapWord;
-		if (impl_->trapFilter.count(tw) == 0) result.push_back(tw);
+		if (impl_->trapFilter.test(tw)) result.push_back(tw);
+	}
+	return result;
+}
+
+std::vector<uint16_t> Debugger::trapsDisabled() const
+{
+	std::vector<uint16_t> result;
+	for (int i = 0, n = trap_dict_size(); i < n; ++i)
+	{
+		uint16_t tw = trap_dict_entry(i).trapWord;
+		if (!impl_->trapFilter.test(tw)) result.push_back(tw);
 	}
 	return result;
 }
