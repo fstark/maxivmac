@@ -95,6 +95,9 @@ public:
 				std::vector<std::pair<uint16_t, std::string_view>> &results,
 				int maxResults = 20) const;
 
+	/* Dispatch subtrap API */
+	const SubtrapDef *findSubtrap(uint16_t parentTrapWord, uint16_t selector) const;
+
 private:
 	static uint16_t maskTrapWord(uint16_t tw);
 	static bool parseHeaderLine(const std::string &line, TrapDef &out);

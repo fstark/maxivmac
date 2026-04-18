@@ -883,3 +883,81 @@ TEST_CASE("TrapDefs size matches loaded count")
 	defs.load(p);
 	CHECK(defs.size() == 3);
 }
+
+/* ════════════════════════════════════════════════════════
+   Dispatch trap parsing (dispatch= and subtrap)
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("TrapDefs parse dispatch= header")
+{
+	ensureTypeRegistryInit();
+	auto path = writeTempFile("test_dispatch.def", "A260 HFSDispatch os dispatch=word.D0\n"
+												   "  in  selector:word.D0 pb:Ptr.A0\n"
+												   "  out err:OSErr.D0\n");
+	TrapDefs defs;
+	REQUIRE(defs.load(path) > 0);
+	auto *def = defs.find(0xA260);
+	REQUIRE(def != nullptr);
+	CHECK(def->name == "HFSDispatch");
+	REQUIRE(def->dispatch.has_value());
+	CHECK(def->dispatch->selectorParam.typeName == "word");
+	CHECK(def->dispatch->selectorParam.loc == ParamLoc::D0);
+}
+
+TEST_CASE("TrapDefs parse subtrap blocks")
+{
+	ensureTypeRegistryInit();
+	auto path =
+		writeTempFile("test_subtraps.def", "A260 HFSDispatch os dispatch=word.D0\n"
+										   "  in  selector:word.D0 pb:Ptr.A0\n"
+										   "  out err:OSErr.D0\n"
+										   "  subtrap 0x09 PBGetCatInfo\n"
+										   "    in  pb:^CInfoPBRec.A0\n"
+										   "    out err:OSErr.D0\n"
+										   "    show-in  pb ioNamePtr ioDirID\n"
+										   "    show-out pb ioResult ioFlAttrib ioFlFndrInfo\n"
+										   "  subtrap 0x01 PBOpenWD\n"
+										   "    in  pb:^WDParam.A0\n"
+										   "    out err:OSErr.D0\n");
+	TrapDefs defs;
+	REQUIRE(defs.load(path) > 0);
+
+	auto *sub9 = defs.findSubtrap(0xA260, 0x09);
+	REQUIRE(sub9 != nullptr);
+	CHECK(sub9->def.name == "PBGetCatInfo");
+	CHECK(sub9->selector == 0x09);
+	CHECK(sub9->def.paramsIn.size() == 1);
+	CHECK(sub9->def.paramsIn[0].isStructPtr == true);
+	CHECK(sub9->def.showIn.size() == 1);
+	CHECK(sub9->def.showOut.size() == 1);
+
+	auto *sub1 = defs.findSubtrap(0xA260, 0x01);
+	REQUIRE(sub1 != nullptr);
+	CHECK(sub1->def.name == "PBOpenWD");
+}
+
+TEST_CASE("TrapDefs subtrap inherits parent convention")
+{
+	ensureTypeRegistryInit();
+	auto path = writeTempFile("test_sub_conv.def", "A260 HFSDispatch os dispatch=word.D0\n"
+												   "  subtrap 0x09 PBGetCatInfo\n"
+												   "    in  pb:^CInfoPBRec.A0\n");
+	TrapDefs defs;
+	REQUIRE(defs.load(path) > 0);
+	auto *sub = defs.findSubtrap(0xA260, 0x09);
+	REQUIRE(sub != nullptr);
+	CHECK(sub->def.convention == TrapConvention::OS);
+	CHECK(sub->def.trapWord == 0xA260);
+}
+
+TEST_CASE("TrapDefs no dispatch= means no subtraps")
+{
+	ensureTypeRegistryInit();
+	auto path = writeTempFile("test_no_dispatch.def", "A000 Open os\n"
+													  "  in  pb:^IOParam.A0\n");
+	TrapDefs defs;
+	REQUIRE(defs.load(path) > 0);
+	auto *def = defs.find(0xA000);
+	REQUIRE(def != nullptr);
+	CHECK_FALSE(def->dispatch.has_value());
+}

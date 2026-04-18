@@ -217,7 +217,24 @@ bool TrapDefs::parseHeaderLine(const std::string &line, TrapDef &out)
 	std::string extra;
 	if (iss >> extra)
 	{
-		if (StrToLower(extra) == "noreturn") out.noreturn = true;
+		if (extra.starts_with("dispatch="))
+		{
+			std::string dispatchSpec = extra.substr(9); /* e.g. "word.D0" */
+			ParamDef selectorParam;
+			selectorParam.name = "selector";
+			if (ParseParam("selector:" + dispatchSpec, selectorParam))
+			{
+				out.dispatch = DispatchInfo{std::move(selectorParam)};
+			}
+			else
+			{
+				fprintf(stderr, "trap_defs: bad dispatch spec '%s'\n", dispatchSpec.c_str());
+			}
+		}
+		else if (StrToLower(extra) == "noreturn")
+		{
+			out.noreturn = true;
+		}
 	}
 	return true;
 }
@@ -288,8 +305,24 @@ int TrapDefs::load(const std::filesystem::path &path)
 	TrapDef current{};
 	bool inEntry = false;
 
+	/* Subtrap parsing state */
+	bool inSubtrap = false;
+	uint16_t currentSubSelector = 0;
+	SubtrapDef currentSub{};
+	uint16_t currentParentMasked = 0;
+
+	auto flushSubtrap = [&]()
+	{
+		if (inSubtrap)
+		{
+			subtraps_[currentParentMasked][currentSubSelector] = std::move(currentSub);
+			inSubtrap = false;
+		}
+	};
+
 	auto flushEntry = [&]()
 	{
+		flushSubtrap();
 		if (inEntry)
 		{
 			defs_[maskTrapWord(current.trapWord)] = std::move(current);
@@ -307,11 +340,46 @@ int TrapDefs::load(const std::filesystem::path &path)
 			continue;
 		}
 
-		bool isParam = std::isspace(static_cast<unsigned char>(line[0]));
+		bool isIndented = std::isspace(static_cast<unsigned char>(line[0]));
 
-		if (isParam && inEntry)
+		if (isIndented && inEntry)
 		{
-			parseParamLine(line, current);
+			/* Check for subtrap directive */
+			std::string_view sv(line);
+			auto pos = sv.find_first_not_of(" \t");
+			if (pos != std::string_view::npos)
+			{
+				std::string_view trimmed = sv.substr(pos);
+				if (trimmed.starts_with("subtrap "))
+				{
+					flushSubtrap();
+
+					std::istringstream iss{std::string(trimmed)};
+					std::string directive, hexSel, name;
+					if (!(iss >> directive >> hexSel >> name))
+					{
+						fprintf(stderr, "trap_defs: bad subtrap line '%s'\n", line.c_str());
+						continue;
+					}
+					char *end = nullptr;
+					unsigned long sel = std::strtoul(hexSel.c_str(), &end, 16);
+
+					inSubtrap = true;
+					currentSubSelector = static_cast<uint16_t>(sel);
+					currentParentMasked = maskTrapWord(current.trapWord);
+					currentSub = SubtrapDef{};
+					currentSub.selector = currentSubSelector;
+					currentSub.def.trapWord = current.trapWord;
+					currentSub.def.name = name;
+					currentSub.def.convention = current.convention;
+					continue;
+				}
+			}
+
+			if (inSubtrap)
+				parseParamLine(line, currentSub.def);
+			else
+				parseParamLine(line, current);
 		}
 		else
 		{
@@ -361,6 +429,16 @@ const TrapDef *TrapDefs::find(uint16_t trapWord) const
 	auto it = defs_.find(key);
 	if (it != defs_.end()) return &it->second;
 	return nullptr;
+}
+
+const SubtrapDef *TrapDefs::findSubtrap(uint16_t parentTrapWord, uint16_t selector) const
+{
+	uint16_t key = maskTrapWord(parentTrapWord);
+	auto it = subtraps_.find(key);
+	if (it == subtraps_.end()) return nullptr;
+	auto sit = it->second.find(selector);
+	if (sit == it->second.end()) return nullptr;
+	return &sit->second;
 }
 
 const char *TrapDefs::errorName(int16_t code) const
