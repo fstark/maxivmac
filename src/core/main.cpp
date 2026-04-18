@@ -36,6 +36,7 @@
 #include "debugger/debugger.h"
 #include "debugger/dbg_io.h"
 #include "lang/type_registry.h"
+#include "lang/global_registry.h"
 
 #include <cstring>
 #include <memory>
@@ -238,6 +239,12 @@ bool InitEmulation()
 		int n = tr.load("assets/types.def");
 		int e = tr.loadErrors("assets/errors.def");
 		if (n > 0) std::fprintf(stderr, "type_registry: loaded %d types, %d errors\n", n, e);
+	}
+
+	/* Load low-memory global definitions (must follow type registry) */
+	{
+		int n = g_globalRegistry().load("assets/globals.def", g_typeRegistry());
+		if (n > 0) std::fprintf(stderr, "global_registry: loaded %d globals\n", n);
 	}
 
 	/* Load external trap definitions for the hierarchical tracer */

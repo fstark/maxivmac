@@ -8,27 +8,11 @@
 #include "debugger/symbols.h"
 
 #include "cpu/trap_counter.h"
-#include "platform/lomem_globals.h"
+#include "lang/global_registry.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cstring>
-
-/* ── Sorted index over low-memory globals ──────────── */
-
-struct GlobalByName
-{
-	const LMGlobal *g;
-};
-
-struct GlobalByAddr
-{
-	const LMGlobal *g;
-};
-
-static std::vector<GlobalByName> s_globalsByName;
-static std::vector<GlobalByAddr> s_globalsByAddr;
-static bool s_initialized = false;
 
 static int CaseInsensitiveCmp(std::string_view a, std::string_view b)
 {
@@ -57,27 +41,8 @@ static bool CaseInsensitiveStartsWith(std::string_view str, std::string_view pre
 
 void SymbolsInit()
 {
-	if (s_initialized) return;
-	s_initialized = true;
-
-	/* Build globals-by-name index */
-	s_globalsByName.reserve(kLowMemCount);
-	for (int i = 0; i < kLowMemCount; ++i)
-	{
-		s_globalsByName.push_back({&kLowMemGlobals[i]});
-	}
-	std::sort(s_globalsByName.begin(), s_globalsByName.end(),
-			  [](const GlobalByName &a, const GlobalByName &b)
-			  { return CaseInsensitiveCmp(a.g->name, b.g->name) < 0; });
-
-	/* Build globals-by-address index */
-	s_globalsByAddr.reserve(kLowMemCount);
-	for (int i = 0; i < kLowMemCount; ++i)
-	{
-		s_globalsByAddr.push_back({&kLowMemGlobals[i]});
-	}
-	std::sort(s_globalsByAddr.begin(), s_globalsByAddr.end(),
-			  [](const GlobalByAddr &a, const GlobalByAddr &b) { return a.g->addr < b.g->addr; });
+	/* GlobalRegistry is initialized at startup in InitEmulation().
+	   Nothing else to do here. */
 }
 
 int SymbolsTrapCount()
@@ -87,7 +52,7 @@ int SymbolsTrapCount()
 
 int SymbolsGlobalCount()
 {
-	return kLowMemCount;
+	return g_globalRegistry().count();
 }
 
 bool SymbolsResolve(std::string_view name, uint32_t &outAddr, uint16_t &outTrapWord)
@@ -105,13 +70,11 @@ bool SymbolsResolve(std::string_view name, uint32_t &outAddr, uint16_t &outTrapW
 		}
 	}
 
-	/* Binary search the globals-by-name index */
-	auto it = std::lower_bound(s_globalsByName.begin(), s_globalsByName.end(), name,
-							   [](const GlobalByName &entry, std::string_view n)
-							   { return CaseInsensitiveCmp(entry.g->name, n) < 0; });
-	if (it != s_globalsByName.end() && CaseInsensitiveEqual(it->g->name, name))
+	/* Lookup in GlobalRegistry */
+	const GlobalDef *gd = g_globalRegistry().findByName(name);
+	if (gd)
 	{
-		outAddr = it->g->addr;
+		outAddr = gd->addr;
 		outTrapWord = 0;
 		return true;
 	}
@@ -121,14 +84,8 @@ bool SymbolsResolve(std::string_view name, uint32_t &outAddr, uint16_t &outTrapW
 
 std::string_view SymbolsAtAddress(uint32_t addr)
 {
-	/* Binary search globals-by-address */
-	auto it =
-		std::lower_bound(s_globalsByAddr.begin(), s_globalsByAddr.end(), addr,
-						 [](const GlobalByAddr &entry, uint32_t a) { return entry.g->addr < a; });
-	if (it != s_globalsByAddr.end() && it->g->addr == addr)
-	{
-		return it->g->name;
-	}
+	const GlobalDef *gd = g_globalRegistry().findByAddr(addr);
+	if (gd) return gd->name;
 	return {};
 }
 
@@ -150,30 +107,24 @@ void SymbolsSearch(std::string_view prefix, char kind, std::vector<SymbolEntry> 
 		}
 	}
 
-	/* Search globals */
+	/* Search globals — linear scan with prefix match */
 	if (kind == 'g' || kind == '*')
 	{
-		auto it = std::lower_bound(s_globalsByName.begin(), s_globalsByName.end(), prefix,
-								   [](const GlobalByName &entry, std::string_view p)
-								   { return CaseInsensitiveCmp(entry.g->name, p) < 0; });
-		while (it != s_globalsByName.end() && count < maxResults)
+		for (auto &gd : g_globalRegistry().globals())
 		{
-			if (!CaseInsensitiveStartsWith(it->g->name, prefix)) break;
-			results.push_back({it->g->name, it->g->addr, it->g->size, false, 0});
-			++count;
-			++it;
+			if (count >= maxResults) break;
+			if (CaseInsensitiveStartsWith(gd.name, prefix))
+			{
+				results.push_back({gd.name, gd.addr, gd.size, false, 0});
+				++count;
+			}
 		}
 	}
 }
 
 uint16_t SymbolsSizeAt(uint32_t addr)
 {
-	auto it =
-		std::lower_bound(s_globalsByAddr.begin(), s_globalsByAddr.end(), addr,
-						 [](const GlobalByAddr &entry, uint32_t a) { return entry.g->addr < a; });
-	if (it != s_globalsByAddr.end() && it->g->addr == addr)
-	{
-		return it->g->size;
-	}
+	const GlobalDef *gd = g_globalRegistry().findByAddr(addr);
+	if (gd) return gd->size;
 	return 0;
 }
