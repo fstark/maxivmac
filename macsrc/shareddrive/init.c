@@ -575,8 +575,10 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		*(long  *)(pb + pb_ioFlFndrInfo + 10) = 0;  /* fdLocation */
 		*(short *)(pb + pb_ioFlFndrInfo + 14) = 0;  /* fdFldr */
 		*(long *)(pb + pb_ioFlNum) = cnid;
+		*(short *)(pb + pb_ioFlStBlk) = 0;
 		*(long *)(pb + pb_ioFlLgLen) = sizeOrCount;
 		*(long *)(pb + pb_ioFlPyLen) = sizeOrCount;
+		*(short *)(pb + pb_ioFlRStBlk) = 0;
 		*(long *)(pb + pb_ioFlRLgLen) = rsrcSize;
 		*(long *)(pb + pb_ioFlRPyLen) = rsrcSize;
 		*(long *)(pb + pb_ioFlCrDat) = crDate;
@@ -589,6 +591,7 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 				*(char *)(pb + 84 + j) = 0;
 		}
 		*(long *)(pb + pb_ioFlParID) = parentID;
+		*(long *)(pb + 104) = 0;  /* ioFlClpSiz */
 	}
 	return 0;
 }
@@ -913,12 +916,25 @@ static OSErr DoGetFileInfo(char *pb, char *regBase, short isHFS)
 	*(long  *)(pb + pb_ioFlFndrInfo + 10) = 0;
 	*(short *)(pb + pb_ioFlFndrInfo + 14) = 0;
 	*(long *)(pb + pb_ioFlNum) = cnid;
+	*(short *)(pb + pb_ioFlStBlk) = 0;
 	*(long *)(pb + pb_ioFlLgLen) = size;
 	*(long *)(pb + pb_ioFlPyLen) = size;
+	*(short *)(pb + pb_ioFlRStBlk) = 0;
 	*(long *)(pb + pb_ioFlRLgLen) = rsrcSize;
 	*(long *)(pb + pb_ioFlRPyLen) = rsrcSize;
 	*(long *)(pb + pb_ioFlCrDat) = crDate;
 	*(long *)(pb + pb_ioFlMdDat) = modDate;
+	if (isHFS) {
+		*(long *)(pb + 80) = 0;  /* ioFlBkDat */
+		/* ioFlXFndrInfo: FXInfo (16 bytes) — zero */
+		{
+			short j;
+			for (j = 0; j < 16; j++)
+				*(char *)(pb + 84 + j) = 0;
+		}
+		*(long *)(pb + pb_ioFlParID) = dirID;
+		*(long *)(pb + 104) = 0;  /* ioFlClpSiz */
+	}
 	return 0;
 }
 
@@ -963,7 +979,7 @@ static OSErr DoSetFPos(char *pb)
 	return 0;
 }
 
-static OSErr DoGetVolInfo(char *pb, Globals *g)
+static OSErr DoGetVolInfo(char *pb, Globals *g, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	Ptr v = g->vcb;
@@ -1001,20 +1017,27 @@ static OSErr DoGetVolInfo(char *pb, Globals *g)
 		if (freeBlks < 0) freeBlks = 0;
 		*(short *)(pb + 62) = (short)freeBlks;   /* ioVFrBlk */
 	}
-	*(short *)(pb + 64) = 0x4244;                /* ioVSigWord = HFS */
-	*(short *)(pb + 66) = kOurDriveNum;          /* ioVDrvInfo */
-	*(short *)(pb + 68) = kOurDrvrRefNum;        /* ioVDRefNum */
-	*(short *)(pb + 70) = 0x5344;                /* ioVFSID = 'SD' */
-	*(long  *)(pb + 72) = 0;                     /* ioVBkUp */
-	*(short *)(pb + 76) = 0;                     /* ioVSeqNum */
-	*(long  *)(pb + 78) = 0;                     /* ioVWrCnt */
-	*(long  *)(pb + 82) = fileCount;             /* ioVFilCnt */
-	*(long  *)(pb + 86) = 1;                     /* ioVDirCnt */
-	/* ioVFndrInfo at 90, 32 bytes — zero to avoid garbage */
-	{
-		short j;
-		for (j = 0; j < 32; j++)
-			*(char *)(pb + 90 + j) = 0;
+
+	/* HFS-specific fields (offsets 64–121) — only safe to write when
+	   the caller used PBHGetVInfo ($A2xx).  MFS PBGetVInfo ($A0xx)
+	   callers allocate only a VolumeParam (ends at offset 64);
+	   writing beyond that corrupts the caller's stack frame. */
+	if (isHFS) {
+		*(short *)(pb + 64) = 0x4244;                /* ioVSigWord = HFS */
+		*(short *)(pb + 66) = kOurDriveNum;          /* ioVDrvInfo */
+		*(short *)(pb + 68) = kOurDrvrRefNum;        /* ioVDRefNum */
+		*(short *)(pb + 70) = 0x5344;                /* ioVFSID = 'SD' */
+		*(long  *)(pb + 72) = 0;                     /* ioVBkUp */
+		*(short *)(pb + 76) = 0;                     /* ioVSeqNum */
+		*(long  *)(pb + 78) = 0;                     /* ioVWrCnt */
+		*(long  *)(pb + 82) = fileCount;             /* ioVFilCnt */
+		*(long  *)(pb + 86) = 1;                     /* ioVDirCnt */
+		/* ioVFndrInfo at 90, 32 bytes — zero to avoid garbage */
+		{
+			short j;
+			for (j = 0; j < 32; j++)
+				*(char *)(pb + 90 + j) = 0;
+		}
 	}
 	return 0;
 }
@@ -1280,7 +1303,7 @@ short DispatchFlat(char *pb, short trapWord)
 			for (i = 1; i < vidx && vcb != NULL; i++)
 				vcb = *(Ptr *)vcb; /* follow qLink */
 			if (vcb != NULL && vcb == g->vcb) {
-				err = DoGetVolInfo(pb, g);
+				err = DoGetVolInfo(pb, g, isHFS);
 				*(short *)(pb + pb_ioResult) = err;
 				RestoreA4(); return 0;
 			}
@@ -1290,7 +1313,7 @@ short DispatchFlat(char *pb, short trapWord)
 		/* vidx == 0: ROM matches by vRefNum OR drive number.
 		   SFGetFile passes drive number in ioVRefNum. */
 		if (vRefNum == kOurDriveNum || IsOurVolume(vRefNum)) {
-			err = DoGetVolInfo(pb, g);
+			err = DoGetVolInfo(pb, g, isHFS);
 			*(short *)(pb + pb_ioResult) = err;
 			RestoreA4(); return 0;
 		}
@@ -1355,7 +1378,7 @@ short DispatchFlat(char *pb, short trapWord)
 
 		case 0x07: /* _GetVolInfo */
 		{
-			err = DoGetVolInfo(pb, g);
+			err = DoGetVolInfo(pb, g, isHFS);
 			*(short *)(pb + pb_ioResult) = err;
 			log_trap(g->regBase, trapWord, pb,
 				err ? LOG_ERROR : LOG_HANDLED, err,
@@ -1719,7 +1742,8 @@ short DispatchHFS(char *pb, short selector)
 			/* Fill FCBPBRec output fields */
 			*(short *)(pb + pb_ioRefNum) = refNum;
 			*(long  *)(pb + pb_ioFCBFlNm) = *(long *)(fcb + kFCBFlNum);
-			*(short *)(pb + pb_ioFCBFlags) = (short)(*(unsigned char *)(fcb + kFCBFlags));
+			*(short *)(pb + pb_ioFCBFlags) = (short)((unsigned short)(*(unsigned char *)(fcb + kFCBFlags)) << 8
+				| (unsigned char)(*(unsigned char *)(fcb + kFCBTypByt)));
 			*(short *)(pb + pb_ioFCBStBlk) = 0;
 			*(long  *)(pb + pb_ioFCBEOF) = *(long *)(fcb + kFCBEOF);
 			*(long  *)(pb + pb_ioFCBPLen) = *(long *)(fcb + kFCBPLen);

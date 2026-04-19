@@ -1,0 +1,18 @@
+# shared.dbg — trace all traps patched by the SharedDrive INIT
+trace traps Open Close Read Write GetVolInfo Create Delete OpenRF Rename GetFileInfo SetFileInfo UnmountVol Allocate GetEOF SetEOF FlushVol GetVol SetVol Eject GetFPos SetFPos FlushFile HFSDispatch 
+trace traps +Alert
+trace traps +SysError
+trace traps +OpenResFile
+#trace traps +SetFileInfo 
+#watch $40000 2
+
+br Launch 2
+run
+br $40000 if A6 == 0
+trace traps on
+trace insn on
+log file resedit.txt
+continue
+
+
+# A1AD
