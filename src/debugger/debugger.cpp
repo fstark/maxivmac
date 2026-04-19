@@ -836,12 +836,14 @@ bool Debugger::instructionHook(uint32_t pc)
 	if (impl_->trInsn)
 	{
 		uint16_t opcode = get_vm_word(pc);
+		uint32_t disasmPC = pc;
+		auto disasm = Disassemble(disasmPC);
 		uint32_t d[8], a[8];
 		m68k_getRegs(d, a);
-		impl_->io->write("%u %08X: %04X D=%08X %08X %08X %08X %08X %08X %08X %08X "
+		impl_->io->write("%u %08X: %04X  %-30s D=%08X %08X %08X %08X %08X %08X %08X %08X "
 						 "A=%08X %08X %08X %08X %08X %08X %08X %08X\n",
-						 g_instructionCount, pc, opcode, d[0], d[1], d[2], d[3], d[4], d[5], d[6],
-						 d[7], a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
+						 g_instructionCount, pc, opcode, disasm.c_str(), d[0], d[1], d[2], d[3],
+						 d[4], d[5], d[6], d[7], a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
 	}
 
 	return false;
