@@ -259,7 +259,25 @@ void TrapDefs::parseParamLine(const std::string &line, TrapDef &out)
 		filter.paramName = paramName;
 		std::string field;
 		while (iss >> field)
+		{
+			/* Check for hexdump annotation: fieldName:hexdump(sizeField) */
+			auto colon = field.find(':');
+			if (colon != std::string::npos)
+			{
+				auto tag = field.substr(colon + 1);
+				auto ptrField = field.substr(0, colon);
+				if (tag.starts_with("hexdump(") && tag.back() == ')')
+				{
+					HexdumpAnnotation hd;
+					hd.ptrField = ptrField;
+					hd.sizeField = tag.substr(8, tag.size() - 9);
+					hd.maxBytes = 16;
+					filter.hexdumps.push_back(std::move(hd));
+					continue;
+				}
+			}
 			filter.fields.push_back(field);
+		}
 		if (dir == "show-in")
 			out.showIn.push_back(std::move(filter));
 		else

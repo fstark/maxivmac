@@ -395,6 +395,40 @@ std::string TrapTracer::formatStructDumpFor(std::string_view structName, std::st
 		result += f->display;
 		result += '\n';
 	}
+
+	/* Hexdump annotations: dump bytes from a Ptr field, sized by another field */
+	if (filter)
+	{
+		for (auto &hd : filter->hexdumps)
+		{
+			/* Find the raw values of the ptr and size fields */
+			uint32_t bufAddr = 0;
+			uint32_t byteCount = 0;
+			for (auto &f : fields)
+			{
+				std::string_view leaf = f.name;
+				auto dot = leaf.rfind('.');
+				if (dot != std::string_view::npos) leaf = leaf.substr(dot + 1);
+				if (leaf == hd.ptrField && f.size == 4)
+					bufAddr = get_vm_long(addr + f.offset);
+				else if (leaf == hd.sizeField && f.size == 4)
+					byteCount = get_vm_long(addr + f.offset);
+				else if (leaf == hd.sizeField && f.size == 2)
+					byteCount = get_vm_word(addr + f.offset);
+			}
+			if (bufAddr == 0 || byteCount == 0) continue;
+			if (byteCount > hd.maxBytes) byteCount = hd.maxBytes;
+
+			result += pad;
+			result += prefix;
+			result += hd.ptrField;
+			result += std::format("[0..{}]:  ", byteCount - 1);
+			for (uint32_t i = 0; i < byteCount; ++i)
+				result += std::format("{:02X} ", get_vm_byte(bufAddr + i));
+			result += '\n';
+		}
+	}
+
 	return result;
 }
 

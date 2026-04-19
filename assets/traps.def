@@ -164,12 +164,12 @@ A002 Read os
   in  pb:^IOParam.A0
   out err:OSErr.D0
   show-in  pb ioRefNum ioReqCount ioPosMode ioPosOffset
-  show-out pb ioResult ioActCount ioPosOffset
+  show-out pb ioResult ioActCount ioPosOffset ioBuffer:hexdump(ioActCount)
 
 A003 Write os
   in  pb:^IOParam.A0
   out err:OSErr.D0
-  show-in  pb ioRefNum ioReqCount ioPosMode ioPosOffset
+  show-in  pb ioRefNum ioReqCount ioPosMode ioPosOffset ioBuffer:hexdump(ioReqCount)
   show-out pb ioResult ioActCount ioPosOffset
 
 A007 GetVolInfo os

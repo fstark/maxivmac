@@ -49,10 +49,20 @@ enum class TrapConvention
 	Toolbox
 };
 
+/* Annotation: display N bytes from a Ptr field as a hex dump.
+   The size comes from another field in the same struct (capped at maxBytes). */
+struct HexdumpAnnotation
+{
+	std::string ptrField;	/* field whose value is the buffer address (e.g. "ioBuffer") */
+	std::string sizeField;	/* field whose value gives the byte count  (e.g. "ioActCount") */
+	uint32_t maxBytes = 16; /* hard cap on bytes to dump */
+};
+
 struct StructFieldFilter
 {
-	std::string paramName;			 /* back-reference to an in/out param name */
-	std::vector<std::string> fields; /* field names to display */
+	std::string paramName;					 /* back-reference to an in/out param name */
+	std::vector<std::string> fields;		 /* field names to display */
+	std::vector<HexdumpAnnotation> hexdumps; /* buffer hex-dump annotations */
 };
 
 struct DispatchInfo
