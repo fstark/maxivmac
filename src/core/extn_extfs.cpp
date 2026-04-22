@@ -111,6 +111,106 @@ static std::string readPascalString(uint32_t addr)
 	return s;
 }
 
+/* ── GetCatInfoFull helper ─────────────────────────── */
+
+static void doCatInfoFull(uint32_t dirID, int32_t index, uint32_t nameAddr, uint32_t nameBuf,
+						  uint32_t regParam[], uint16_t &regResult)
+{
+	dbg_printf("[ExtFS] GetCatInfoFull dir=%u idx=%d\n", dirID, index);
+
+	const storage::CatalogEntry *e = nullptr;
+
+	if (index > 0)
+	{
+		/* Indexed enumeration */
+		if (dirID == kRootParentID)
+		{
+			if (index == 1)
+			{
+				/* Return root volume itself */
+				regParam[0] = kRootDirID;
+				regParam[1] = 0x10; /* isDir */
+				regParam[2] = static_cast<uint32_t>(s_volume.childCount(kRootDirID));
+				regParam[3] = 0; /* rsrcSize=0 for dirs */
+				regParam[4] = kRootParentID;
+				regParam[5] = 0;
+				regParam[6] = 0; /* type/creator */
+				{
+					uint32_t now =
+						static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
+					regParam[7] = now;
+					regParam[8] = now;
+				}
+				regParam[9] = 0; /* finderFlags */
+				if (nameBuf) writePascalString(nameBuf, "Shared");
+				regResult = 0;
+				return;
+			}
+			regResult = fmErrToReg(storage::FMErr::kFnfErr);
+			return;
+		}
+		e = s_volume.nthChild(dirID, index);
+	}
+	else if (index == 0 && nameAddr != 0)
+	{
+		/* By-name lookup */
+		std::string name = readPascalString(nameAddr);
+		if (!name.empty())
+		{
+			e = s_volume.findByName(dirID, name);
+		}
+		else
+		{
+			/* Empty name = info about dirID itself */
+			e = s_volume.findByCNID(dirID);
+		}
+	}
+	else
+	{
+		/* index <= 0: info about dirID itself */
+		e = s_volume.findByCNID(dirID);
+	}
+
+	/* Synthesize root if needed */
+	if (!e && (dirID == kRootDirID || dirID == kRootParentID))
+	{
+		uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
+		regParam[0] = kRootDirID;
+		regParam[1] = 0x10;
+		regParam[2] = static_cast<uint32_t>(s_volume.childCount(kRootDirID));
+		regParam[3] = 0;
+		regParam[4] = kRootParentID;
+		regParam[5] = 0;
+		regParam[6] = 0;
+		regParam[7] = now;
+		regParam[8] = now;
+		regParam[9] = 0;
+		if (nameBuf) writePascalString(nameBuf, "Shared");
+		regResult = 0;
+		return;
+	}
+
+	if (!e)
+	{
+		regResult = fmErrToReg(storage::FMErr::kFnfErr);
+		return;
+	}
+
+	regParam[0] = e->cnid;
+	regParam[1] = e->isDirectory ? 0x10u : 0u;
+	regParam[2] =
+		e->isDirectory ? static_cast<uint32_t>(s_volume.childCount(e->cnid)) : e->dataForkSize;
+	regParam[3] = e->isDirectory ? 0u : e->rsrcForkSize;
+	regParam[4] = e->parentDirID;
+	regParam[5] = e->type;
+	regParam[6] = e->creator;
+	regParam[7] = e->crDate;
+	regParam[8] = e->modDate;
+	regParam[9] = e->finderFlags;
+	if (nameBuf) writePascalString(nameBuf, e->macName);
+	regResult = 0;
+}
+
 /* ── Dispatch ─────────────────────────────────────── */
 
 void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
@@ -686,6 +786,15 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		break;
 
 		case kExtFSGetCatInfoFull:
+		{
+			uint32_t dirID = regParam[0];
+			int32_t index = static_cast<int32_t>(regParam[1]);
+			uint32_t nameAddr = regParam[2];
+			uint32_t nameBuf = regParam[3];
+			doCatInfoFull(dirID, index, nameAddr, nameBuf, regParam, regResult);
+		}
+		break;
+
 		case kExtFSResolveAndOpen:
 		case kExtFSGetCatInfoResolved:
 		case kExtFSFileOpByName:
