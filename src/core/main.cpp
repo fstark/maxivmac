@@ -670,7 +670,11 @@ bool ProgramMain()
 {
 	if (!InitEmulation()) return false;
 
-	if (s_launchConfig.traceTraps) g_tracer.enable(true);
+	if (s_launchConfig.traceTraps)
+	{
+		g_tracer.addAllTraps();
+		g_tracer.enable(true);
+	}
 
 	/* Execute startup debug scripts (after registries so trap names resolve) */
 	if (auto *dbg = Debugger::instance())

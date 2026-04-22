@@ -31,7 +31,7 @@ static int paramSize(const ParamDef &pd)
 
 TrapTracer::TrapTracer(TrapDefs &defs) : defs_(defs)
 {
-	allowed_.set(); /* trace all traps by default */
+	allowed_.reset(); /* nothing allowed until explicitly added */
 }
 
 void TrapTracer::setIO(DbgIO *io)

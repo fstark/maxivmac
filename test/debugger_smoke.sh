@@ -92,6 +92,11 @@ check "trace traps +add" "trace traps GetResource
 trace traps +OpenResFile
 quit" "+ filter: OpenResFile"
 
+# Test 12b: trace traps + as first command (only that trap, not all)
+check "trace traps + first-use" "trace traps +GetFileInfo
+info trace
+quit" "+GetFileInfo"
+
 # Test 13: trace traps incremental remove
 check "trace traps -remove" "trace traps GetResource OpenResFile
 trace traps -GetResource
