@@ -1070,3 +1070,36 @@ TEST_CASE("HostVolume: resolveDir unknown WD falls back to root")
 	int16_t badVRef = static_cast<int16_t>(-32099);
 	CHECK(vol.resolveDir(badVRef, 0) == storage::HostVolume::kRootDirID);
 }
+
+/* ── Phase 10: resolveDir with WD open/close cycle ── */
+
+TEST_CASE("HostVolume: resolveDir with WD open close cycle")
+{
+	TempDir td;
+	fs::create_directory(td.path / "A");
+	fs::create_directory(td.path / "A" / "B");
+	writeFile(td.path / "A" / "B" / "hello.txt", "hello");
+
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto *a = vol.findByName(storage::HostVolume::kRootDirID, "A");
+	REQUIRE(a != nullptr);
+	auto *b = vol.findByName(a->cnid, "B");
+	REQUIRE(b != nullptr);
+
+	uint32_t wd = vol.openWD(b->cnid);
+	int16_t encoded =
+		static_cast<int16_t>(-(static_cast<int32_t>(wd)) - 32000);
+
+	/* resolveDir with the encoded WD should find B */
+	CHECK(vol.resolveDir(encoded, 0) == b->cnid);
+
+	/* findByName in that resolved dir should find the file */
+	auto resolved = vol.resolveDir(encoded, 0);
+	auto *f = vol.findByName(resolved, "hello.txt");
+	CHECK(f != nullptr);
+	CHECK(f->dataForkSize > 0);
+
+	vol.closeWD(wd);
+}
