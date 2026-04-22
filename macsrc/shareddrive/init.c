@@ -124,6 +124,15 @@
 #define pb_ioFlCrDat    72   /* LONGINT — creation date */
 #define pb_ioFlMdDat    76   /* LONGINT — modification date */
 
+/* HFS-extended fileParam / CInfoPBRec offsets (Inside Mac IV-109) */
+#define pb_ioFlBkDat     80   /* LONGINT — backup date */
+#define pb_ioFlXFndrInfo 84   /* FXInfo, 16 bytes */
+#define pb_ioFlClpSiz    104  /* LONGINT — clump size */
+
+/* HFS-extended dirInfo offsets */
+#define pb_ioDrBkDat     80   /* LONGINT — backup date */
+#define pb_ioDrFndrInfo  84   /* DXInfo, 16 bytes */
+
 /* CInfoPBRec hFileInfo variant (for PBGetCatInfo, files) */
 /* Same as fileParam up through ioFlMdDat, then: */
 #define pb_ioFlParID    100  /* LONGINT — parent dir ID */
@@ -183,6 +192,41 @@
 #define kResolveFileIDRef 0x0012
 #define kGetFCBInfo       0x0008
 #define kGetVolParms      0x0030
+
+/* Mac OS error codes */
+#define kNoErr       0
+#define kIoErr     (-36)
+#define kEofErr    (-39)
+#define kTmfoErr   (-42)
+#define kFnfErr    (-43)
+#define kWPrErr    (-44)
+#define kParamErr  (-50)
+#define kNsvErr    (-35)
+
+/* Host register-block command numbers (coarse, Phase 1) */
+#define kCmdResolveAndOpen     0x0223
+#define kCmdGetCatInfoResolved 0x0224
+#define kCmdGetFileInfoByName  0x0222
+#define kCmdFileOpByName       0x0225
+#define kCmdClose              0x0206
+#define kCmdRead               0x0205
+#define kCmdWrite              0x0211
+#define kCmdSetEOF             0x0218
+#define kCmdGetVol             0x0201
+#define kCmdOpenWD             0x020B
+#define kCmdCloseWD            0x020C
+#define kCmdGetWDInfo          0x020A
+#define kCmdCreateDir          0x0215
+#define kCmdCatMove            0x0216
+#define kCmdGetDirInfo         0x0219
+#define kCmdSetDirInfo         0x021A
+
+/* FileOpByName sub-opcodes */
+#define kFileOpCreate      0
+#define kFileOpDelete      1
+#define kFileOpRename      2
+#define kFileOpSetFileInfo 3
+#define kFileOpSetCatInfo  4
 
 /* ---- Globals ---- */
 
