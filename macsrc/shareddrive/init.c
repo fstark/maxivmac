@@ -823,6 +823,87 @@ static OSErr TrapSetFileInfo(char *pb, Globals *g, short isHFS)
 	return host_err(g->regBase);
 }
 
+static OSErr TrapGetCatInfo(char *pb, Globals *g, short isHFS)
+{
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	long dirID = *(long *)(pb + pb_ioDirID);
+	short index = *(short *)(pb + pb_ioFDirIndex);
+	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+
+	reg_set(g->regBase, 0, (unsigned long)(short)vRefNum);
+	reg_set(g->regBase, 1, (unsigned long)dirID);
+	reg_set(g->regBase, 2, (unsigned long)(long)index);
+	reg_set(g->regBase, 3, nameAddr);
+	reg_set(g->regBase, 4, (unsigned long)s_nameBuf);
+	reg_command(g->regBase, kCmdGetCatInfoResolved);
+	if (reg_result(g->regBase) != 0)
+		return host_err(g->regBase);
+
+	{
+		unsigned long cnid    = reg_get(g->regBase, 0);
+		unsigned long flags   = reg_get(g->regBase, 1);
+		unsigned long dataSz  = reg_get(g->regBase, 2);
+		unsigned long rsrcSz  = reg_get(g->regBase, 3);
+		unsigned long parentID= reg_get(g->regBase, 4);
+		unsigned long type    = reg_get(g->regBase, 5);
+		unsigned long creator = reg_get(g->regBase, 6);
+		unsigned long crDate  = reg_get(g->regBase, 7);
+		unsigned long modDate = reg_get(g->regBase, 8);
+		unsigned long fFlags  = reg_get(g->regBase, 9);
+
+		/* Copy name to caller's buffer */
+		if (nameAddr != 0)
+			pstr_copy((char *)nameAddr, s_nameBuf);
+
+		if (flags & 0x10) {
+			/* Directory */
+			*(unsigned char *)(pb + pb_ioFlAttrib) = 0x10;
+			*(unsigned char *)(pb + 31) = 0;  /* ioACUser */
+
+			/* Fetch DInfo + DXInfo from host */
+			reg_set(g->regBase, 0, cnid);
+			reg_set(g->regBase, 1, (unsigned long)s_dirInfoBuf);
+			reg_command(g->regBase, kCmdGetDirInfo);
+			if (reg_result(g->regBase) == 0) {
+				mem_copy(pb + pb_ioDrUsrWds, s_dirInfoBuf, 16);
+				mem_copy(pb + pb_ioDrFndrInfo, s_dirInfoBuf + 16, 16);
+			} else {
+				mem_zero(pb + pb_ioDrUsrWds, 16);
+				mem_zero(pb + pb_ioDrFndrInfo, 16);
+			}
+
+			*(short *)(pb + pb_ioDrNmFls) = (short)dataSz;
+			*(long  *)(pb + pb_ioDrDirID) = cnid;
+			*(long  *)(pb + pb_ioDrParID) = parentID;
+			*(long  *)(pb + pb_ioDrCrDat) = crDate;
+			*(long  *)(pb + pb_ioDrMdDat) = modDate;
+			*(long  *)(pb + pb_ioDrBkDat) = 0;
+		} else {
+			/* File */
+			*(unsigned char *)(pb + pb_ioFlAttrib) = 0;
+			*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
+			*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
+			*(short *)(pb + pb_ioFlFndrInfo + 8)         = (short)fFlags;
+			*(long  *)(pb + pb_ioFlFndrInfo + 10)        = 0;
+			*(short *)(pb + pb_ioFlFndrInfo + 14)        = 0;
+			*(long  *)(pb + pb_ioFlNum)    = cnid;
+			*(short *)(pb + pb_ioFlStBlk)  = 0;
+			*(long  *)(pb + pb_ioFlLgLen)  = dataSz;
+			*(long  *)(pb + pb_ioFlPyLen)  = dataSz;
+			*(short *)(pb + pb_ioFlRStBlk) = 0;
+			*(long  *)(pb + pb_ioFlRLgLen) = rsrcSz;
+			*(long  *)(pb + pb_ioFlRPyLen) = rsrcSz;
+			*(long  *)(pb + pb_ioFlCrDat)  = crDate;
+			*(long  *)(pb + pb_ioFlMdDat)  = modDate;
+			*(long  *)(pb + pb_ioFlBkDat)  = 0;
+			mem_zero(pb + pb_ioFlXFndrInfo, 16);
+			*(long  *)(pb + pb_ioFlParID)  = parentID;
+			*(long  *)(pb + pb_ioFlClpSiz) = 0;
+		}
+	}
+	return kNoErr;
+}
+
 /* ================================================================ */
 /*                    File Manager handlers                         */
 /* ================================================================ */
