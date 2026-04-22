@@ -760,6 +760,69 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 	return kNoErr;
 }
 
+static OSErr TrapGetFileInfo(char *pb, Globals *g, short isHFS)
+{
+	TrapLocation loc = ExtractLocation(pb, isHFS);
+	if (loc.nameAddr == 0) return kParamErr;
+
+	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
+	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
+	reg_set(g->regBase, 2, loc.nameAddr);
+	reg_command(g->regBase, kCmdGetFileInfoByName);
+	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
+
+	{
+		unsigned long cnid    = reg_get(g->regBase, 0);
+		unsigned long size    = reg_get(g->regBase, 1);
+		unsigned long rsrc    = reg_get(g->regBase, 2);
+		unsigned long type    = reg_get(g->regBase, 3);
+		unsigned long creator = reg_get(g->regBase, 4);
+		unsigned long crDate  = reg_get(g->regBase, 5);
+		unsigned long modDate = reg_get(g->regBase, 6);
+		unsigned long fFlags  = reg_get(g->regBase, 7);
+
+		*(unsigned char *)(pb + pb_ioFlAttrib)       = 0;
+		*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
+		*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
+		*(short *)(pb + pb_ioFlFndrInfo + 8)         = (short)fFlags;
+		*(long  *)(pb + pb_ioFlFndrInfo + 10)        = 0;
+		*(short *)(pb + pb_ioFlFndrInfo + 14)        = 0;
+		*(long  *)(pb + pb_ioFlNum)   = cnid;
+		*(short *)(pb + pb_ioFlStBlk) = 0;
+		*(long  *)(pb + pb_ioFlLgLen) = size;
+		*(long  *)(pb + pb_ioFlPyLen) = size;
+		*(short *)(pb + pb_ioFlRStBlk) = 0;
+		*(long  *)(pb + pb_ioFlRLgLen) = rsrc;
+		*(long  *)(pb + pb_ioFlRPyLen) = rsrc;
+		*(long  *)(pb + pb_ioFlCrDat) = crDate;
+		*(long  *)(pb + pb_ioFlMdDat) = modDate;
+		if (isHFS) {
+			*(long *)(pb + pb_ioFlBkDat) = 0;
+			mem_zero(pb + pb_ioFlXFndrInfo, 16);
+			*(long *)(pb + pb_ioFlParID) = (long)reg_get(g->regBase, 8);
+			*(long *)(pb + pb_ioFlClpSiz) = 0;
+		}
+	}
+	return kNoErr;
+}
+
+static OSErr TrapSetFileInfo(char *pb, Globals *g, short isHFS)
+{
+	TrapLocation loc = ExtractLocation(pb, isHFS);
+	if (loc.nameAddr == 0) return kParamErr;
+
+	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
+	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
+	reg_set(g->regBase, 2, loc.nameAddr);
+	reg_set(g->regBase, 3, kFileOpSetFileInfo);
+	reg_set(g->regBase, 4, *(unsigned long *)(pb + pb_ioFlFndrInfo));
+	reg_set(g->regBase, 5, *(unsigned long *)(pb + pb_ioFlFndrInfo + 4));
+	reg_set(g->regBase, 6, (unsigned long)(unsigned short)
+		*(short *)(pb + pb_ioFlFndrInfo + 8));
+	reg_command(g->regBase, kCmdFileOpByName);
+	return host_err(g->regBase);
+}
+
 /* ================================================================ */
 /*                    File Manager handlers                         */
 /* ================================================================ */
