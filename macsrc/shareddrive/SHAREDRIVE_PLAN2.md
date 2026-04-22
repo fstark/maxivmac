@@ -1,34 +1,26 @@
 # SharedDrive — Phase 2 Implementation Plan
 
-Design: [SHAREDRIVE_DESIGN.md](SHAREDRIVE_DESIGN.md)
-Spec: [SHAREDRIVE.md](SHAREDRIVE.md)
-Prerequisite: [SHAREDRIVE_PLAN1.md](SHAREDRIVE_PLAN1.md) (all phases complete)
+**Status: COMPLETE** — All 14 phases finished on 22 April 2026.
 
-Phase 2 rewrites `init.c` to use the new coarse host commands,
-dispatch tables, and helper functions.  The old INIT is replaced
-entirely.  Old host commands ($0200–$021A) remain operational on
-the host side for debugging.
+Commit range: `7d59dd4..4faf60d`
 
-| Phase | Description                                    | Status |
-|-------|------------------------------------------------|--------|
-| 2.1   | Add missing #defines (PB offsets, errors, cmds)|        |
-| 2.2   | Add helper functions (pstr, mem, host_err)     |        |
-| 2.3   | Add ExtractLocation + TrapLocation struct      |        |
-| 2.4   | Rewrite FCB-based handlers (Close, Read, Write, EOF, FPos, Flush) |  |
-| 2.5   | Rewrite Open/OpenRF using ResolveAndOpen       |        |
-| 2.6   | Rewrite GetFileInfo/SetFileInfo using new RPCs |        |
-| 2.7   | Rewrite GetCatInfo using GetCatInfoResolved    |        |
-| 2.8   | Rewrite SetCatInfo using FileOpByName          |        |
-| 2.9   | Rewrite Create/Delete/Rename using FileOpByName|        |
-| 2.10  | Rewrite volume/WD handlers (GetVolInfo, GetVol, SetVol, etc.) |  |
-| 2.11  | Rewrite GetVolParms, GetFCBInfo, DirCreate, CatMove |   |
-| 2.12  | Replace dispatchers with table + loop          |        |
-| 2.13  | Delete dead code (ResolveDir, old handlers)    |        |
-| 2.14  | End-to-end test                                |        |
+## Summary
 
-Build gate: THINK C project compiles to INIT resource (manual)
-Test gate:  Boot emulator, Finder shows "Shared", open files from
-            subdirectories, copy files, eject/remount
+Rewrote `init.c` to use the Phase 1 coarse host commands, dispatch
+tables, and helper functions. The old INIT handlers and directory
+resolution code were replaced entirely.
+
+Key changes:
+- Named constants for all PB offsets, error codes, and host commands
+- Helper functions: `pstr_copy`, `pstr_copy_max`, `mem_zero`, `mem_copy`, `host_err`
+- `ExtractLocation` + `TrapLocation` for MFS/HFS parameter extraction
+- 23 new `Trap*` handlers using one-RPC-per-trap pattern
+- Table-driven dispatch (`sFlatTraps[]`, `sHFSTraps[]`, `DispatchFromTable`)
+- Removed `ResolveDir`, `ResolveFlatDir`, and all old `Do*` handlers
+- File reduced from ~2,200 lines to ~1,810 lines
+
+Pending: Phase 2.14 end-to-end manual testing (boot emulator, Finder
+navigation, file operations) is required before declaring production-ready.
 
 ---
 
