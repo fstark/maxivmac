@@ -551,7 +551,7 @@ static uint16_t s_paramAddrHi;
 /* --- New register block state (offsets 16–31, byte $20–$3F) --- */
 
 static uint16_t s_regResult;
-static uint32_t s_regParam[7]; /* p0–p6 */
+static uint32_t s_regParam[12]; /* p0–p11 */
 
 /* Forward declaration — implemented in extn_clip.cpp */
 #include "core/extn_clip.h"
@@ -590,7 +590,7 @@ static uint32_t regBlockAccess(uint32_t data, bool writeMem, uint32_t regOff)
 		return s_regResult;
 	}
 	/* regOff 2..15 → param words (p0 high, p0 low, p1 high, ...) */
-	if (regOff >= 2 && regOff < 16)
+	if (regOff >= 2 && regOff < 26)
 	{
 		uint32_t paramIdx = (regOff - 2) / 2;
 		bool isLow = ((regOff - 2) % 2) != 0;
