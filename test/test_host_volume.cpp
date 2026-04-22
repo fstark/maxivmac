@@ -1019,3 +1019,54 @@ TEST_CASE("HostVolume: validateCatalog passes after createFile in subdir")
 	CHECK(err == storage::FMErr::kNoErr);
 	CHECK(vol.validateCatalog());
 }
+
+/* ── Phase 9: resolveDir ─────────────────────────── */
+
+TEST_CASE("HostVolume: resolveDir explicit dirID wins")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	CHECK(vol.resolveDir(-32000, 17) == 17);
+	CHECK(vol.resolveDir(0, 42) == 42);
+}
+
+TEST_CASE("HostVolume: resolveDir vRefNum to root")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	CHECK(vol.resolveDir(-32000, 0) == storage::HostVolume::kRootDirID);
+	CHECK(vol.resolveDir(8, 0) == storage::HostVolume::kRootDirID);
+	CHECK(vol.resolveDir(0, 0) == storage::HostVolume::kRootDirID);
+}
+
+TEST_CASE("HostVolume: resolveDir WD decode")
+{
+	TempDir td;
+	fs::create_directory(td.path / "Sub");
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	auto *sub = vol.findByName(storage::HostVolume::kRootDirID, "Sub");
+	REQUIRE(sub != nullptr);
+
+	uint32_t wd = vol.openWD(sub->cnid);
+	int16_t encodedVRef =
+		static_cast<int16_t>(-(static_cast<int32_t>(wd)) - 32000);
+	CHECK(vol.resolveDir(encodedVRef, 0) == sub->cnid);
+
+	vol.closeWD(wd);
+}
+
+TEST_CASE("HostVolume: resolveDir unknown WD falls back to root")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	int16_t badVRef = static_cast<int16_t>(-32099);
+	CHECK(vol.resolveDir(badVRef, 0) == storage::HostVolume::kRootDirID);
+}

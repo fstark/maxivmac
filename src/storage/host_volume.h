@@ -128,6 +128,13 @@ public:
 	static constexpr int16_t kGuestVRefNum = -32000;
 	static constexpr int16_t kGuestDriveNum = 8;
 
+	/* Resolve a guest (vRefNum, dirID) pair to a catalog dirID.
+	   If rawDirID is non-zero, returns it directly.
+	   Otherwise decodes vRefNum: our volume / drive → root,
+	   WD refnum → wdToDirID lookup, 0 → root.
+	   See SHAREDRIVE_DESIGN.md §3.4. */
+	uint32_t resolveDir(int16_t vRefNum, uint32_t rawDirID) const;
+
 	/* ── Catalog queries ──────────────────────────── */
 
 	// Look up a catalog entry by its CNID.  Returns nullptr if not found.
