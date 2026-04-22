@@ -48,6 +48,14 @@ static constexpr uint16_t kExtFSGetDirInfo = 0x219;
 static constexpr uint16_t kExtFSSetDirInfo = 0x21A;
 static constexpr uint16_t kExtFSLogTrap = 0x20F;
 
+/* ── Coarse commands (Phase 1) ────────────────────── */
+static constexpr uint16_t kExtFSOpenByName = 0x220;
+static constexpr uint16_t kExtFSGetCatInfoFull = 0x221;
+static constexpr uint16_t kExtFSGetFileInfoByName = 0x222;
+static constexpr uint16_t kExtFSResolveAndOpen = 0x223;
+static constexpr uint16_t kExtFSGetCatInfoResolved = 0x224;
+static constexpr uint16_t kExtFSFileOpByName = 0x225;
+
 /* ── HostVolume instance ──────────────────────────── */
 
 static storage::HostVolume s_volume;
@@ -612,6 +620,78 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			regResult = fmErrToReg(err);
 		}
 		break;
+
+			/* ── Coarse commands (Phase 1) ────────────────── */
+
+		case kExtFSOpenByName:
+		{
+			uint32_t dirID = regParam[0];
+			std::string name = readPascalString(regParam[1]);
+			auto forkType =
+				(regParam[2] == 1) ? storage::ForkType::Resource : storage::ForkType::Data;
+
+			dbg_printf("[ExtFS] OpenByName dir=%u name=\"%s\" fork=%u\n", dirID, name.c_str(),
+					   regParam[2]);
+
+			auto *e = s_volume.findByName(dirID, name);
+			if (!e)
+			{
+				regResult = fmErrToReg(storage::FMErr::kFnfErr);
+				break;
+			}
+
+			uint32_t size = 0;
+			storage::FMErr err;
+			uint32_t handle = s_volume.openFork(e->cnid, forkType, size, err);
+			if (handle == 0)
+			{
+				regResult = fmErrToReg(err);
+				break;
+			}
+
+			regParam[0] = handle;
+			regParam[1] = size;
+			regParam[2] = e->cnid;
+			regResult = 0;
+		}
+		break;
+
+		case kExtFSGetFileInfoByName:
+		{
+			int16_t vRefNum = static_cast<int16_t>(regParam[0]);
+			uint32_t rawDirID = regParam[1];
+			std::string name = readPascalString(regParam[2]);
+
+			uint32_t dirID = s_volume.resolveDir(vRefNum, rawDirID);
+			dbg_printf("[ExtFS] GetFileInfoByName dir=%u name=\"%s\"\n", dirID, name.c_str());
+
+			auto *e = s_volume.findByName(dirID, name);
+			if (!e)
+			{
+				regResult = fmErrToReg(storage::FMErr::kFnfErr);
+				break;
+			}
+
+			regParam[0] = e->cnid;
+			regParam[1] = e->dataForkSize;
+			regParam[2] = e->rsrcForkSize;
+			regParam[3] = e->type;
+			regParam[4] = e->creator;
+			regParam[5] = e->crDate;
+			regParam[6] = e->modDate;
+			regParam[7] = e->finderFlags;
+			regParam[8] = e->parentDirID;
+			regResult = 0;
+		}
+		break;
+
+		case kExtFSGetCatInfoFull:
+		case kExtFSResolveAndOpen:
+		case kExtFSGetCatInfoResolved:
+		case kExtFSFileOpByName:
+			/* Stubs — filled in subsequent phases */
+			regResult = 0xFFFF;
+			break;
 
 		default:
 			regResult = 0xFFFF;
