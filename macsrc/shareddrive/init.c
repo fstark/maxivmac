@@ -524,13 +524,17 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 	parentID    = reg_get(regBase, 3);
 	rsrcSize    = reg_get(regBase, 4);
 
-	/* Get type/creator/dates */
+	/* Get type/creator/dates/flags */
 	reg_set(regBase,0,cnid);
 	reg_command(regBase, 0x0207);
 	type    = reg_get(regBase, 0);
 	creator = reg_get(regBase, 1);
 	crDate  = reg_get(regBase, 2);
 	modDate = reg_get(regBase, 3);
+	{
+		unsigned long finderFlags = reg_get(regBase, 4);
+		*(short *)(pb + pb_ioFlFndrInfo + 8) = (short)finderFlags;
+	}
 
 	/* Copy name to caller's buffer */
 	if (nameAddr != 0) {
@@ -570,8 +574,7 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		*(unsigned char *)(pb + pb_ioFlAttrib) = 0x00;
 		*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
 		*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
-		/* FInfo remainder: fdFlags, fdLocation, fdFldr — zero */
-		*(short *)(pb + pb_ioFlFndrInfo + 8)  = 0;  /* fdFlags */
+		/* fdFlags already set above from host; zero fdLocation/fdFldr */
 		*(long  *)(pb + pb_ioFlFndrInfo + 10) = 0;  /* fdLocation */
 		*(short *)(pb + pb_ioFlFndrInfo + 14) = 0;  /* fdFldr */
 		*(long *)(pb + pb_ioFlNum) = cnid;
@@ -764,6 +767,7 @@ static OSErr DoSetFileInfo(char *pb, char *regBase, short isHFS)
 	reg_set(regBase, 0, cnid);
 	reg_set(regBase, 1, type);
 	reg_set(regBase, 2, creator);
+	reg_set(regBase, 3, (unsigned long)(unsigned short)*(short *)(pb + pb_ioFlFndrInfo + 8));
 	reg_command(regBase, 0x0213); /* ExtFSSetFileInfo */
 	if (reg_result(regBase) != 0)
 		return -(short)reg_result(regBase);
@@ -911,8 +915,8 @@ static OSErr DoGetFileInfo(char *pb, char *regBase, short isHFS)
 	*(unsigned char *)(pb + pb_ioFlAttrib) = 0x00;
 	*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
 	*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
-	/* FInfo remainder: fdFlags, fdLocation, fdFldr — zero */
-	*(short *)(pb + pb_ioFlFndrInfo + 8)  = 0;
+	/* FInfo remainder: fdFlags from host, fdLocation/fdFldr zero */
+	*(short *)(pb + pb_ioFlFndrInfo + 8)  = (short)reg_get(regBase, 4);
 	*(long  *)(pb + pb_ioFlFndrInfo + 10) = 0;
 	*(short *)(pb + pb_ioFlFndrInfo + 14) = 0;
 	*(long *)(pb + pb_ioFlNum) = cnid;

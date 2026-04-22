@@ -9,19 +9,23 @@
 
 #include <cstdarg>
 #include <cstddef>
+#include <cstdio>
 #include <memory>
 #include <string>
 
 class DbgIO
 {
 public:
-	virtual ~DbgIO() = default;
+	virtual ~DbgIO();
 
 	/* Read one line of input (blocking).  Returns false on EOF/error. */
 	virtual bool readLine(char *buf, size_t len) = 0;
 
 	/* Formatted write — printf semantics. */
 	virtual void write(const char *fmt, ...) = 0;
+
+	/* va_list variant of write(). */
+	virtual void vwrite(const char *fmt, std::va_list ap) = 0;
 
 	/* Mark end of one command's response.
 	   StdioIO: no-op.  SocketIO: sends EOT byte. */
@@ -39,6 +43,19 @@ public:
 
 	/* Close the current client connection.  No-op for stdio. */
 	virtual void closeClient() {}
+
+	/* Log-to-file support.  All write() output is mirrored to this file. */
+	bool setLogFile(const char *path);
+	void closeLogFile();
+	bool hasLogFile() const { return logFile_ != nullptr; }
+	const std::string &logFilePath() const { return logPath_; }
+
+protected:
+	void mirrorToLog(const char *fmt, std::va_list ap);
+
+private:
+	FILE *logFile_ = nullptr;
+	std::string logPath_;
 };
 
 /* Create a StdioIO that wraps fgets(stdin) / vprintf(stdout). */

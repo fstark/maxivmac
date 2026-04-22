@@ -481,7 +481,7 @@ TEST_CASE("HostVolume: setFileInfo basic")
 	storage::FMErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "meta", err);
 
-	auto result = vol.setFileInfo(cnid, appledouble::FourCC("APPL"), appledouble::FourCC("test"));
+	auto result = vol.setFileInfo(cnid, appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0);
 	CHECK(result == storage::FMErr::kNoErr);
 
 	auto *e = vol.findByCNID(cnid);
@@ -504,7 +504,7 @@ TEST_CASE("HostVolume: setFileInfo updates isText")
 	REQUIRE(e != nullptr);
 	CHECK_FALSE(e->isText);
 
-	vol.setFileInfo(cnid, appledouble::FourCC("TEXT"), appledouble::FourCC("ttxt"));
+	vol.setFileInfo(cnid, appledouble::FourCC("TEXT"), appledouble::FourCC("ttxt"), 0);
 	e = vol.findByCNID(cnid);
 	CHECK(e->isText);
 }
@@ -841,7 +841,7 @@ TEST_CASE("HostVolume: TEXT file write converts to UTF-8")
 
 	storage::FMErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "write.txt", err);
-	vol.setFileInfo(cnid, appledouble::FourCC("TEXT"), appledouble::FourCC("ttxt"));
+	vol.setFileInfo(cnid, appledouble::FourCC("TEXT"), appledouble::FourCC("ttxt"), 0);
 
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(cnid, storage::ForkType::Data, size, err);

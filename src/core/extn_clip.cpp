@@ -1,4 +1,5 @@
 #include "core/extn_clip.h"
+#include "debugger/debugger.h"
 #include "platform/common/clipboard.h"
 
 #include <string>
@@ -46,7 +47,7 @@ void ExtnDbgConsoleClear()
 
 void guestConsoleAppend(const std::string &line)
 {
-	fprintf(stdout, "[GUEST] %s\n", line.c_str());
+	dbg_printf("[GUEST] %s\n", line.c_str());
 	s_consoleLines.push_back(line);
 	while (s_consoleLines.size() > kMaxConsoleLines)
 	{

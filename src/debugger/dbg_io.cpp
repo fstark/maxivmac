@@ -13,6 +13,42 @@
 #include <unistd.h>
 #include <vector>
 
+/* ── DbgIO base ─────────────────────────────────────── */
+
+DbgIO::~DbgIO()
+{
+	closeLogFile();
+}
+
+bool DbgIO::setLogFile(const char *path)
+{
+	closeLogFile();
+	logFile_ = std::fopen(path, "a");
+	if (!logFile_) return false;
+	logPath_ = path;
+	return true;
+}
+
+void DbgIO::closeLogFile()
+{
+	if (logFile_)
+	{
+		std::fclose(logFile_);
+		logFile_ = nullptr;
+	}
+	logPath_.clear();
+}
+
+void DbgIO::mirrorToLog(const char *fmt, std::va_list ap)
+{
+	if (!logFile_) return;
+	std::va_list ap2;
+	va_copy(ap2, ap);
+	std::vfprintf(logFile_, fmt, ap2);
+	va_end(ap2);
+	std::fflush(logFile_);
+}
+
 /* ── StdioIO ────────────────────────────────────────── */
 
 class StdioIO final : public DbgIO
@@ -27,8 +63,16 @@ public:
 	{
 		std::va_list ap;
 		va_start(ap, fmt);
-		std::vprintf(fmt, ap);
+		vwrite(fmt, ap);
 		va_end(ap);
+	}
+
+	void vwrite(const char *fmt, std::va_list ap) override
+	{
+		if (hasLogFile())
+			mirrorToLog(fmt, ap);
+		else
+			std::vprintf(fmt, ap);
 	}
 
 	void endResponse() override {}
@@ -84,13 +128,27 @@ public:
 
 	void write(const char *fmt, ...) override
 	{
+		std::va_list ap;
+		va_start(ap, fmt);
+		vwrite(fmt, ap);
+		va_end(ap);
+	}
+
+	void vwrite(const char *fmt, std::va_list ap) override
+	{
+		if (hasLogFile())
+		{
+			mirrorToLog(fmt, ap);
+			return;
+		}
+
 		if (clientFd_ < 0) return;
 
 		char stackBuf[4096];
-		std::va_list ap;
-		va_start(ap, fmt);
-		int n = std::vsnprintf(stackBuf, sizeof(stackBuf), fmt, ap);
-		va_end(ap);
+		std::va_list ap2;
+		va_copy(ap2, ap);
+		int n = std::vsnprintf(stackBuf, sizeof(stackBuf), fmt, ap2);
+		va_end(ap2);
 
 		if (n < 0) return;
 		if (static_cast<size_t>(n) < sizeof(stackBuf))
@@ -101,9 +159,9 @@ public:
 		{
 			/* Allocate for large output */
 			std::vector<char> heapBuf(static_cast<size_t>(n) + 1);
-			va_start(ap, fmt);
-			std::vsnprintf(heapBuf.data(), heapBuf.size(), fmt, ap);
-			va_end(ap);
+			va_copy(ap2, ap);
+			std::vsnprintf(heapBuf.data(), heapBuf.size(), fmt, ap2);
+			va_end(ap2);
 			send(clientFd_, heapBuf.data(), static_cast<size_t>(n), 0);
 		}
 	}

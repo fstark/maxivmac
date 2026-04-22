@@ -279,6 +279,7 @@ add_executable(tests
     src/debugger/symbols.cpp
     src/debugger/expr.cpp
     src/debugger/cmd_parser.cpp
+    src/debugger/dbg_io.cpp
     src/storage/appledouble.cpp
     src/storage/filename_encoding.cpp
     src/storage/text_convert.cpp

@@ -160,10 +160,10 @@ public:
 
 	/* ── Metadata ─────────────────────────────────── */
 
-	// Update Finder type and creator codes.  Writes through to the
+	// Update Finder type/creator/flags.  Writes through to the
 	// AppleDouble sidecar.  Toggles isText and recalculates dataForkSize
 	// if the type changes to/from 'TEXT'.
-	FMErr setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator);
+	FMErr setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags);
 
 	/* ── Fork I/O ─────────────────────────────────── */
 	/*

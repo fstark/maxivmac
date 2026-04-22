@@ -334,6 +334,31 @@ void CmdBacktrace(Debugger &dbg, const std::vector<Token> &)
 
 void CmdLog(Debugger &dbg, const std::vector<Token> &args)
 {
+	/* log file <path> — start logging to file */
+	if (!args.empty() && args[0].kind == Token::Kind::Word && args[0].text == "file")
+	{
+		if (args.size() < 2 || args[1].kind == Token::Kind::End)
+		{
+			if (dbg.io().hasLogFile())
+				dbg.io().write("logging to %s\n", dbg.io().logFilePath().c_str());
+			else
+				dbg.io().write("no log file active\n");
+			return;
+		}
+		if (args[1].kind == Token::Kind::Word && args[1].text == "off")
+		{
+			dbg.io().closeLogFile();
+			dbg.io().write("log file closed\n");
+			return;
+		}
+		std::string path(args[1].text);
+		if (dbg.io().setLogFile(path.c_str()))
+			dbg.io().write("logging to %s\n", path.c_str());
+		else
+			dbg.io().write("cannot open '%s' for writing\n", path.c_str());
+		return;
+	}
+
 	const auto &lines = extnDbgConsoleLines();
 
 	if (lines.empty())

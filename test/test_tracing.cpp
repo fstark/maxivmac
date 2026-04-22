@@ -54,6 +54,12 @@ public:
 		va_end(ap);
 		captured += buf;
 	}
+	void vwrite(const char *fmt, std::va_list ap) override
+	{
+		char buf[1024];
+		vsnprintf(buf, sizeof(buf), fmt, ap);
+		captured += buf;
+	}
 	void endResponse() override {}
 	void flush() override {}
 };

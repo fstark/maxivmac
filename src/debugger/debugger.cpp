@@ -107,9 +107,12 @@ static CmdEntry s_commands[] = {
 	 "trace <traps|insn|io> <on|off|names...>\n  Enable/disable trace output.\n"},
 	{"info", "i", CmdInfo, "Show info about debugger state",
 	 "info <break|reg|traps|globals|symbol|insn>\n  Show various debugger information.\n"},
-	{"log", "", CmdLog, "Show guest console log",
+	{"log", "", CmdLog, "Show guest log / log to file",
 	 "log [N]\n  Show last N guest log lines (default 20).\n"
-	 "log grep <pattern>\n  Show guest log lines matching pattern.\n"},
+	 "log grep <pattern>\n  Show guest log lines matching pattern.\n"
+	 "log file <path>\n  Mirror all debugger output to <path> (append mode).\n"
+	 "log file off\n  Stop logging to file.\n"
+	 "log file\n  Show current log file status.\n"},
 	{"backtrace", "bt", CmdBacktrace, "Heuristic stack backtrace",
 	 "backtrace\n  Scan stack for return addresses (heuristic, best-effort).\n"},
 	{"help", "h", CmdHelp, "Show help",
@@ -180,6 +183,17 @@ struct Debugger::Impl
 bool g_debuggerActive = false;
 bool g_watchpointActive = false;
 static Debugger *s_instance = nullptr;
+
+void dbg_printf(const char *fmt, ...)
+{
+	std::va_list ap;
+	va_start(ap, fmt);
+	if (s_instance)
+		s_instance->io().vwrite(fmt, ap);
+	else
+		std::vprintf(fmt, ap);
+	va_end(ap);
+}
 
 Debugger::Debugger()
 {

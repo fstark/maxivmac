@@ -323,14 +323,15 @@ FMErr HostVolume::rename(uint32_t dirID, std::string_view oldMacName, std::strin
 
 /* ── Metadata ─────────────────────────────────────── */
 
-FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator)
+FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags)
 {
 	CatalogEntry *e = mutableFindByCNID(cnid);
 	if (!e) return FMErr::kFnfErr;
 
-	appledouble::SetFinderInfo(e->hostPath, {type, creator, e->finderFlags});
+	appledouble::SetFinderInfo(e->hostPath, {type, creator, flags});
 	e->type = type;
 	e->creator = creator;
+	e->finderFlags = flags;
 
 	bool wasText = e->isText;
 	e->isText = (type == appledouble::FourCC("TEXT"));

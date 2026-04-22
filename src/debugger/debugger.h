@@ -116,5 +116,9 @@ private:
 extern bool g_debuggerActive;
 extern bool g_watchpointActive;
 
+/* Printf that routes to the debugger log file when active,
+   otherwise falls through to stdout. */
+void dbg_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+
 // Load and execute every line of a .dbg script file.
 bool SourceFile(Debugger &dbg, std::string_view path);
