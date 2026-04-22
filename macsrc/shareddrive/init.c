@@ -1165,6 +1165,98 @@ static OSErr TrapGetWDInfo(char *pb, Globals *g, short isHFS)
 	return kNoErr;
 }
 
+static OSErr TrapGetVolParms(char *pb, Globals *g, short isHFS)
+{
+	unsigned long bufAddr = *(unsigned long *)(pb + pb_ioBuffer);
+	long reqCount = *(long *)(pb + pb_ioReqCount);
+	long actual;
+
+	if (bufAddr == 0) return kParamErr;
+
+	actual = 14;
+	if (reqCount < actual) actual = reqCount;
+
+	mem_zero((char *)bufAddr, (short)actual);
+
+	/* vMVersion = 1 */
+	if (actual >= 2)
+		*(short *)(bufAddr + 0) = 1;
+
+	/* vMAttrib = 0 (no special capabilities) */
+	if (actual >= 6)
+		*(long *)(bufAddr + 2) = 0;
+
+	*(long *)(pb + pb_ioActCount) = actual;
+	return kNoErr;
+}
+
+static OSErr TrapGetFCBInfo(char *pb, Globals *g, short isHFS)
+{
+	short refNum = *(short *)(pb + pb_ioRefNum);
+	short fcbIdx = *(short *)(pb + pb_ioFCBIndx);
+	unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	Ptr fcb;
+
+	if (fcbIdx != 0) return kParamErr;
+
+	fcb = GetFCB(refNum);
+	if (fcb == NULL || *(long *)(fcb + kFCBFlNum) == 0)
+		return -51; /* rfNumErr */
+
+	if (nmAddr != 0)
+		pstr_copy_max((char *)nmAddr, fcb + kFCBCName, 31);
+
+	*(short *)(pb + pb_ioRefNum) = refNum;
+	*(long  *)(pb + pb_ioFCBFlNm) = *(long *)(fcb + kFCBFlNum);
+	*(short *)(pb + pb_ioFCBFlags) = (short)((unsigned short)(*(unsigned char *)(fcb + kFCBFlags)) << 8
+		| (unsigned char)(*(unsigned char *)(fcb + kFCBTypByt)));
+	*(short *)(pb + pb_ioFCBStBlk) = 0;
+	*(long  *)(pb + pb_ioFCBEOF) = *(long *)(fcb + kFCBEOF);
+	*(long  *)(pb + pb_ioFCBPLen) = *(long *)(fcb + kFCBPLen);
+	*(long  *)(pb + pb_ioFCBCrPs) = *(long *)(fcb + kFCBCrPs);
+	*(short *)(pb + pb_ioFCBVRefNum) = kOurVRefNum;
+	*(long  *)(pb + pb_ioFCBClpSiz) = 0;
+	*(long  *)(pb + pb_ioFCBParID) = *(long *)(fcb + kFCBDirID);
+	return kNoErr;
+}
+
+static OSErr TrapDirCreate(char *pb, Globals *g, short isHFS)
+{
+	long dirID = *(long *)(pb + pb_ioDirID);
+	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	short vRefNum;
+
+	if (nameAddr == 0) return kParamErr;
+
+	vRefNum = *(short *)(pb + pb_ioVRefNum);
+	reg_set(g->regBase, 0, (unsigned long)dirID);
+	reg_set(g->regBase, 1, nameAddr);
+	reg_command(g->regBase, kCmdCreateDir);
+	if (reg_result(g->regBase) != 0)
+		return host_err(g->regBase);
+	*(long *)(pb + pb_ioDirID) = (long)reg_get(g->regBase, 0);
+	return kNoErr;
+}
+
+static OSErr TrapCatMove(char *pb, Globals *g, short isHFS)
+{
+	long srcDirID = *(long *)(pb + pb_ioDirID);
+	long dstDirID = *(long *)(pb + 36);  /* ioNewDirID */
+	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	if (nameAddr == 0) return kParamErr;
+
+	reg_set(g->regBase, 0, (unsigned long)srcDirID);
+	reg_set(g->regBase, 1, nameAddr);
+	reg_set(g->regBase, 2, (unsigned long)dstDirID);
+	reg_command(g->regBase, kCmdCatMove);
+	return host_err(g->regBase);
+}
+
+static OSErr TrapSetVInfo(char *pb, Globals *g, short isHFS)
+{
+	return kNoErr;
+}
+
 /* ================================================================ */
 /*                    File Manager handlers                         */
 /* ================================================================ */
