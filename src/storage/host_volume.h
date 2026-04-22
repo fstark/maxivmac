@@ -122,6 +122,12 @@ public:
 	static constexpr uint32_t kRootParentID = 1; // HFS convention: root's parent
 	static constexpr uint32_t kRootDirID = 2;	 // HFS convention: root directory
 
+	/* Guest-side volume identifiers.  The INIT uses these when
+	   building the VCB and drive queue entry.  They must match
+	   the #defines in macsrc/shareddrive/init.c. */
+	static constexpr int16_t kGuestVRefNum = -32000;
+	static constexpr int16_t kGuestDriveNum = 8;
+
 	/* ── Catalog queries ──────────────────────────── */
 
 	// Look up a catalog entry by its CNID.  Returns nullptr if not found.
