@@ -285,6 +285,75 @@ void SetFinderInfo(const std::filesystem::path &hostPath, const FinderInfo &info
 }
 
 /* ════════════════════════════════════════════════════
+   Directory Finder Info (raw DInfo+DXInfo blob)
+   ════════════════════════════════════════════════════ */
+
+size_t GetDirFinderInfo(const std::filesystem::path &hostPath, uint8_t *outBuf, size_t len)
+{
+	auto sc = detail::ParseSidecar(SidecarPathFor(hostPath));
+	if (!sc.valid || !sc.HasFinderInfo()) return 0;
+	size_t toCopy = std::min(len, sc.finderInfoData.size());
+	std::memcpy(outBuf, sc.finderInfoData.data(), toCopy);
+	return toCopy;
+}
+
+void SetDirFinderInfo(const std::filesystem::path &hostPath, const uint8_t *data, size_t len)
+{
+	auto sidecarPath = SidecarPathFor(hostPath);
+	auto sc = detail::ParseSidecar(sidecarPath);
+
+	/* Build a 32-byte finder blob from the raw directory info */
+	std::vector<uint8_t> finderBlob(kFinderInfoSize, 0);
+	std::memcpy(finderBlob.data(), data, std::min(len, size_t(kFinderInfoSize)));
+
+	/* Preserve existing resource fork if any */
+	std::optional<std::vector<uint8_t>> rsrc;
+	if (sc.valid && sc.HasResourceFork()) rsrc = sc.resourceForkData;
+
+	/* Count entries */
+	uint16_t numEntries = 1; /* always have finder info */
+	if (rsrc.has_value() && !rsrc->empty()) ++numEntries;
+
+	uint32_t descLen = numEntries * kEntryDescSize;
+	uint32_t dataOffset = kHeaderSize + descLen;
+
+	std::vector<uint8_t> output;
+	output.resize(kHeaderSize, 0);
+	detail::WriteBE32(output.data(), kAppleDoubleMagic);
+	detail::WriteBE32(output.data() + 4, kAppleDoubleVersion);
+	detail::WriteBE16(output.data() + 24, numEntries);
+
+	output.resize(kHeaderSize + descLen, 0);
+	uint32_t currentOffset = dataOffset;
+	uint16_t descIdx = 0;
+
+	/* Finder info entry */
+	uint8_t *desc = output.data() + kHeaderSize + descIdx * kEntryDescSize;
+	detail::WriteBE32(desc, kEntryIdFinderInfo);
+	detail::WriteBE32(desc + 4, currentOffset);
+	detail::WriteBE32(desc + 8, kFinderInfoSize);
+	currentOffset += kFinderInfoSize;
+	++descIdx;
+
+	/* Resource fork entry (if present) */
+	if (rsrc.has_value() && !rsrc->empty())
+	{
+		desc = output.data() + kHeaderSize + descIdx * kEntryDescSize;
+		detail::WriteBE32(desc, kEntryIdResourceFork);
+		detail::WriteBE32(desc + 4, currentOffset);
+		detail::WriteBE32(desc + 8, static_cast<uint32_t>(rsrc->size()));
+		++descIdx;
+	}
+
+	output.insert(output.end(), finderBlob.begin(), finderBlob.end());
+	if (rsrc.has_value() && !rsrc->empty()) output.insert(output.end(), rsrc->begin(), rsrc->end());
+
+	std::ofstream out(sidecarPath, std::ios::binary | std::ios::trunc);
+	out.write(reinterpret_cast<const char *>(output.data()),
+			  static_cast<std::streamsize>(output.size()));
+}
+
+/* ════════════════════════════════════════════════════
    Resource Fork Access
    ════════════════════════════════════════════════════ */
 

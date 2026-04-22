@@ -70,6 +70,15 @@ std::filesystem::path SidecarPathFor(const std::filesystem::path &hostPath);
 FinderInfo GetFinderInfo(const std::filesystem::path &hostPath);
 void SetFinderInfo(const std::filesystem::path &hostPath, const FinderInfo &info);
 
+/* ── Directory Finder info (DInfo+DXInfo, raw 32 bytes) ─── */
+
+// Read the raw 32-byte FinderInfo blob for a directory from its sidecar.
+// Returns number of bytes copied (0 if no sidecar exists).
+size_t GetDirFinderInfo(const std::filesystem::path &hostPath, uint8_t *outBuf, size_t len);
+
+// Write the raw 32-byte FinderInfo blob for a directory to its sidecar.
+void SetDirFinderInfo(const std::filesystem::path &hostPath, const uint8_t *data, size_t len);
+
 /* ── Resource fork access ─────────────────────────── */
 
 uint32_t ResourceForkSize(const std::filesystem::path &hostPath);

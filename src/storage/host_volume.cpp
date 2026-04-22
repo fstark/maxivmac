@@ -340,6 +340,23 @@ FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, ui
 	return FMErr::kNoErr;
 }
 
+bool HostVolume::getDirInfo(uint32_t cnid, uint8_t outBuf[32]) const
+{
+	const CatalogEntry *e = findByCNID(cnid);
+	if (!e || !e->isDirectory) return false;
+	std::memcpy(outBuf, e->dirFinderInfo, 32);
+	return true;
+}
+
+FMErr HostVolume::setDirInfo(uint32_t cnid, const uint8_t buf[32])
+{
+	CatalogEntry *e = mutableFindByCNID(cnid);
+	if (!e || !e->isDirectory) return FMErr::kFnfErr;
+	std::memcpy(e->dirFinderInfo, buf, 32);
+	appledouble::SetDirFinderInfo(e->hostPath, buf, 32);
+	return FMErr::kNoErr;
+}
+
 /* ── Fork I/O ─────────────────────────────────────── */
 
 uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, FMErr &errOut)
@@ -586,6 +603,7 @@ void HostVolume::scanDirectory(const std::filesystem::path &hostDir, uint32_t pa
 			auto ftime = fs::last_write_time(entry.path(), ec);
 			ce.crDate = ec ? 0 : appledouble::MacDateFromFileTime(ftime);
 			ce.modDate = ce.crDate;
+			appledouble::GetDirFinderInfo(entry.path(), ce.dirFinderInfo, 32);
 			uint32_t thisDirID = ce.cnid;
 			catalog_.push_back(std::move(ce));
 			scanDirectory(entry.path(), thisDirID);

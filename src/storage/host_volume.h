@@ -77,6 +77,12 @@ struct CatalogEntry
 	uint32_t crDate = 0;	   // creation date, Mac epoch (seconds since 1904)
 	uint32_t modDate = 0;	   // modification date, Mac epoch
 	bool isText = false;	   // true when type == 'TEXT'; enables encoding conversion
+
+	/* Directory Finder info: DInfo (16 bytes) + DXInfo (16 bytes).
+	   Only meaningful when isDirectory is true.  Stored in-memory and
+	   persisted to the AppleDouble sidecar for the directory.  Contains
+	   frRect, frFlags, frLocation, frView, frScroll, etc. */
+	uint8_t dirFinderInfo[32] = {};
 };
 
 /* ── Open fork descriptor ─────────────────────────── */
@@ -164,6 +170,14 @@ public:
 	// AppleDouble sidecar.  Toggles isText and recalculates dataForkSize
 	// if the type changes to/from 'TEXT'.
 	FMErr setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags);
+
+	// Get directory Finder info (DInfo + DXInfo, 32 bytes).
+	// Returns false if cnid is not a directory.
+	bool getDirInfo(uint32_t cnid, uint8_t outBuf[32]) const;
+
+	// Set directory Finder info (DInfo + DXInfo, 32 bytes).
+	// Persists to AppleDouble sidecar.
+	FMErr setDirInfo(uint32_t cnid, const uint8_t buf[32]);
 
 	/* ── Fork I/O ─────────────────────────────────── */
 	/*

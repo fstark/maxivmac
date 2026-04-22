@@ -24,8 +24,10 @@
 	  $210 ExtFSCreateFile p0=parentDirID, p1=namePtr -> p0=CNID
 	  $211 ExtFSWrite     p0=handle, p1=offset, p2=count, p3=bufAddr
 	  $212 ExtFSDeleteFile p0=parentDirID, p1=namePtr
-	  $213 ExtFSSetFileInfo p0=CNID, p1=type, p2=creator
+	  $213 ExtFSSetFileInfo p0=CNID, p1=type, p2=creator, p3=flags
 	  $214 ExtFSFatal     p0=fmt string addr, p1-p6=args  (shuts down emulator)
+	  $219 ExtFSGetDirInfo p0=CNID, p1=bufAddr -> 32 bytes DInfo+DXInfo
+	  $21A ExtFSSetDirInfo p0=CNID, p1=bufAddr (32 bytes DInfo+DXInfo)
 
 	Trap patching approach:
 	  Each patched trap gets a small dynamically-generated 68k code
@@ -347,6 +349,7 @@ static void dbg_hexdump(char *regBase, char *label,
 /* ---- Name buffer ---- */
 
 static char s_nameBuf[64];
+static char s_dirInfoBuf[32];  /* DInfo (16) + DXInfo (16) transfer buffer */
 
 /* ---- FCB management ---- */
 
@@ -551,24 +554,33 @@ static OSErr DoGetCatInfo(char *pb, char *regBase)
 		*(unsigned char *)(pb + 31) = 0;  /* ioACUser: full access */
 		dbg_log2(regBase, "SD GCI dir cnid=%ld acUser=%ld",
 			(long)cnid, (long)*(unsigned char *)(pb + 31));
-		/* ioDrUsrWds: DInfo (16 bytes) — zero = default window pos */
-		{
+
+		/* Fetch DInfo (16) + DXInfo (16) from host */
+		reg_set(regBase, 0, cnid);
+		reg_set(regBase, 1, (unsigned long)s_dirInfoBuf);
+		reg_command(regBase, 0x0219); /* ExtFSGetDirInfo */
+		if (reg_result(regBase) == 0) {
+			short j;
+			/* ioDrUsrWds: DInfo (16 bytes) */
+			for (j = 0; j < 16; j++)
+				*(char *)(pb + pb_ioDrUsrWds + j) = s_dirInfoBuf[j];
+			/* ioDrFndrInfo: DXInfo (16 bytes) at pb+84 */
+			for (j = 0; j < 16; j++)
+				*(char *)(pb + 84 + j) = s_dirInfoBuf[16 + j];
+		} else {
 			short j;
 			for (j = 0; j < 16; j++)
 				*(char *)(pb + pb_ioDrUsrWds + j) = 0;
+			for (j = 0; j < 16; j++)
+				*(char *)(pb + 84 + j) = 0;
 		}
+
 		*(short *)(pb + pb_ioDrNmFls) = (short)sizeOrCount;
 		*(long *)(pb + pb_ioDrDirID) = cnid;
 		*(long *)(pb + pb_ioDrParID) = parentID;
 		*(long *)(pb + pb_ioDrCrDat) = crDate;
 		*(long *)(pb + pb_ioDrMdDat) = modDate;
 		*(long *)(pb + 80) = 0;  /* ioDrBkDat */
-		/* ioDrFndrInfo: DXInfo (16 bytes) — zero */
-		{
-			short j;
-			for (j = 0; j < 16; j++)
-				*(char *)(pb + 84 + j) = 0;
-		}
 	} else {
 		/* File */
 		*(unsigned char *)(pb + pb_ioFlAttrib) = 0x00;
@@ -1552,8 +1564,20 @@ short DispatchHFS(char *pb, short selector)
 		{
 			unsigned long cnid;
 
-			/* Directories: nothing to persist, succeed silently */
+			/* Directories: persist DInfo + DXInfo */
 			if (*(unsigned char *)(pb + pb_ioFlAttrib) & 0x10) {
+				cnid = *(unsigned long *)(pb + pb_ioDrDirID);
+				if (cnid != 0) {
+					short j;
+					/* Copy DInfo (16) + DXInfo (16) into transfer buffer */
+					for (j = 0; j < 16; j++)
+						s_dirInfoBuf[j] = *(char *)(pb + pb_ioDrUsrWds + j);
+					for (j = 0; j < 16; j++)
+						s_dirInfoBuf[16 + j] = *(char *)(pb + 84 + j);
+					reg_set(g->regBase, 0, cnid);
+					reg_set(g->regBase, 1, (unsigned long)s_dirInfoBuf);
+					reg_command(g->regBase, 0x021A); /* ExtFSSetDirInfo */
+				}
 				*(short *)(pb + pb_ioResult) = 0;
 				log_trap(g->regBase, selector, pb,
 					LOG_HANDLED, 0, LOG_F_HFS);
@@ -1585,6 +1609,7 @@ short DispatchHFS(char *pb, short selector)
 				reg_set(g->regBase, 0, cnid);
 				reg_set(g->regBase, 1, type);
 				reg_set(g->regBase, 2, creator);
+				reg_set(g->regBase, 3, (unsigned long)(unsigned short)*(short *)(pb + pb_ioFlFndrInfo + 8));
 				reg_command(g->regBase, 0x0213); /* ExtFSSetFileInfo */
 			}
 
