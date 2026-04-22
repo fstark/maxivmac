@@ -796,6 +796,41 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		break;
 
 		case kExtFSResolveAndOpen:
+		{
+			int16_t vRefNum = static_cast<int16_t>(regParam[0]);
+			uint32_t rawDirID = regParam[1];
+			std::string name = readPascalString(regParam[2]);
+			auto forkType =
+				(regParam[3] == 1) ? storage::ForkType::Resource : storage::ForkType::Data;
+
+			uint32_t dirID = s_volume.resolveDir(vRefNum, rawDirID);
+			dbg_printf("[ExtFS] ResolveAndOpen vref=%d dir=%u→%u name=\"%s\"\n", vRefNum, rawDirID,
+					   dirID, name.c_str());
+
+			auto *e = s_volume.findByName(dirID, name);
+			if (!e)
+			{
+				regResult = fmErrToReg(storage::FMErr::kFnfErr);
+				break;
+			}
+
+			uint32_t size = 0;
+			storage::FMErr err;
+			uint32_t handle = s_volume.openFork(e->cnid, forkType, size, err);
+			if (handle == 0)
+			{
+				regResult = fmErrToReg(err);
+				break;
+			}
+
+			regParam[0] = handle;
+			regParam[1] = size;
+			regParam[2] = e->cnid;
+			regParam[3] = dirID; /* resolved dirID for guest FCB */
+			regResult = 0;
+		}
+		break;
+
 		case kExtFSGetCatInfoResolved:
 		case kExtFSFileOpByName:
 			/* Stubs — filled in subsequent phases */
