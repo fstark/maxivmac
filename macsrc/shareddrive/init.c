@@ -2032,603 +2032,160 @@ static OSErr DoGetWDInfo(char *pb, char *regBase)
 /*              Central dispatchers (called from stubs)             */
 /* ================================================================ */
 
-/*
-	DispatchFlat: called from generated 68k stub code.
-	pb = ParamBlockRec pointer, trapWord = full trap word from D1.W.
-	Bit 9 of trapWord distinguishes PBHxxx ($A2xx) from PBxxx ($A0xx).
-	Returns: 0 if handled, non-zero to pass through.
-	If handled, ioResult is already set in pb.
-*/
+/* Pass-through sentinel: returned by handlers that discover the
+   call is not for our volume, after internal ownership checks
+   (e.g. TrapGetVolInfo's indexed walk, TrapSetVol's name match). */
+#define kPassThrough  1
+
+typedef OSErr (*TrapHandler)(char *pb, Globals *g, short isHFS);
+
+typedef struct {
+	short       trapNum;
+	TrapHandler handler;
+	short       refBased;  /* 1=check IsOurFCB, 0=check IsOurVolume */
+} TrapEntry;
+
+static TrapEntry sFlatTraps[] = {
+	{ 0x00, TrapOpen,        0 },
+	{ 0x01, TrapClose,       1 },
+	{ 0x02, TrapRead,        1 },
+	{ 0x03, TrapWrite,       1 },
+	{ 0x07, TrapGetVolInfo,  0 },
+	{ 0x08, TrapCreate,      0 },
+	{ 0x09, TrapDelete,      0 },
+	{ 0x0A, TrapOpenRF,      0 },
+	{ 0x0B, TrapRename,      0 },
+	{ 0x0C, TrapGetFileInfo, 0 },
+	{ 0x0D, TrapSetFileInfo, 0 },
+	{ 0x0E, TrapUnmountVol,  0 },
+	{ 0x10, TrapAllocate,    0 },
+	{ 0x11, TrapGetEOF,      1 },
+	{ 0x12, TrapSetEOF,      1 },
+	{ 0x13, TrapFlushVol,    0 },
+	{ 0x14, TrapGetVol,      0 },
+	{ 0x15, TrapSetVol,      0 },
+	{ 0x17, TrapEject,       0 },
+	{ 0x18, TrapGetFPos,     1 },
+	{ 0x44, TrapSetFPos,     1 },
+	{ 0x45, TrapFlushFile,   1 },
+	{ 0, NULL, 0 }
+};
+
+static TrapEntry sHFSTraps[] = {
+	{ 0x0001, TrapOpenWD,     0 },
+	{ 0x0002, TrapCloseWD,    0 },
+	{ 0x0005, TrapCatMove,    0 },
+	{ 0x0006, TrapDirCreate,  0 },
+	{ 0x0007, TrapGetWDInfo,  0 },
+	{ 0x0008, TrapGetFCBInfo, 1 },
+	{ 0x0009, TrapGetCatInfo, 0 },
+	{ 0x000A, TrapSetCatInfo, 0 },
+	{ 0x000B, TrapSetVInfo,   0 },
+	{ 0x0030, TrapGetVolParms,0 },
+	{ 0, NULL, 0 }
+};
+
+static short DispatchFromTable(TrapEntry *table, short key,
+	char *pb, Globals *g, short isHFS, short trapWord)
+{
+	TrapEntry *e;
+	OSErr err;
+
+	for (e = table; e->handler != NULL; e++) {
+		if (e->trapNum != key) continue;
+
+		/* Ownership check */
+		if (e->refBased) {
+			if (!IsOurFCB(*(short *)(pb + pb_ioRefNum)))
+				return 1;
+		} else {
+			/* GetVolInfo and SetVol do their own ownership checks
+			   internally and return kPassThrough if not ours */
+		}
+
+		err = e->handler(pb, g, isHFS);
+		if (err == kPassThrough) {
+			log_trap(g->regBase, trapWord, pb,
+				LOG_PASSTHRU, 0, isHFS ? LOG_F_HFS : 0);
+			return 1;
+		}
+		*(short *)(pb + pb_ioResult) = err;
+		log_trap(g->regBase, trapWord, pb,
+			err ? LOG_ERROR : LOG_HANDLED, err,
+			(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
+		return 0;
+	}
+	return 1;  /* not in table — pass through */
+}
+
 short DispatchFlat(char *pb, short trapWord)
 {
-	Globals *g;
-	OSErr err;
-	short refNum;
-	short vRefNum;
-	unsigned long nameAddr;
 	short trapNum = trapWord & 0xFF;
-	short isHFS = (trapWord & 0x0200) != 0;
+	short isHFS   = (trapWord & 0x0200) != 0;
+	Globals *g;
+	short result;
 
 	SetUpA4();
 	g = get_globals();
 	if (g == NULL || g->ejected) { RestoreA4(); return 1; }
 
-	vRefNum  = *(short *)(pb + pb_ioVRefNum);
-	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-
-	/* Traps keyed on ioRefNum (open file) */
-	switch (trapNum) {
-		case 0x01: /* _Close */
-			refNum = *(short *)(pb + pb_ioRefNum);
-			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			err = DoClose(pb, g->regBase);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x02: /* _Read */
-			refNum = *(short *)(pb + pb_ioRefNum);
-			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			err = DoRead(pb, g->regBase);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x03: /* _Write */
-			refNum = *(short *)(pb + pb_ioRefNum);
-			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			err = DoWrite(pb, g->regBase);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x11: /* _GetEOF */
-			refNum = *(short *)(pb + pb_ioRefNum);
-			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			err = DoGetEOF(pb);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x12: /* _SetEOF */
-			refNum = *(short *)(pb + pb_ioRefNum);
-			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			{
-				long newEOF = *(long *)(pb + pb_ioMisc);
-				Ptr fcb = GetFCB(refNum);
-				if (fcb != NULL)
-					*(long *)(fcb + kFCBEOF) = newEOF;
+	/* For non-refBased traps, check volume ownership before dispatch.
+	   GetVolInfo and SetVol handle ownership internally. */
+	{
+		TrapEntry *e;
+		for (e = sFlatTraps; e->handler != NULL; e++) {
+			if (e->trapNum != trapNum) continue;
+			if (!e->refBased && trapNum != 0x07 && trapNum != 0x15) {
+				if (!IsOurVolume(*(short *)(pb + pb_ioVRefNum))) {
+					log_trap(g->regBase, trapWord, pb,
+						LOG_PASSTHRU, 0, isHFS ? LOG_F_HFS : 0);
+					RestoreA4(); return 1;
+				}
 			}
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, trapWord, pb,
-				LOG_HANDLED, 0,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x18: /* _GetFPos */
-			refNum = *(short *)(pb + pb_ioRefNum);
-			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			err = DoGetFPos(pb);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x44: /* _SetFPos */
-			refNum = *(short *)(pb + pb_ioRefNum);
-			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			err = DoSetFPos(pb);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x45: /* _FlushFile */
-			refNum = *(short *)(pb + pb_ioRefNum);
-			if (!IsOurFCB(refNum)) { RestoreA4(); return 1; }
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, trapWord, pb,
-				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
-			RestoreA4(); return 0;
-	}
-
-	/* _GetVolInfo: The ROM returns extFSErr (-58) for VCBs with
-	   non-zero vcbFSID.  We must intercept ALL GetVolInfo calls
-	   that will resolve to our volume:
-	     - vidx > 0: indexed walk, handle if Nth VCB is ours
-	     - vidx == 0: lookup by vRefNum/drive number/name */
-	if (trapNum == 0x07) {
-		short vidx = *(short *)(pb + pb_ioVolIndex);
-		if (vidx > 0) {
-			Ptr vcb = *(Ptr *)(kVCBQHdr + 2); /* qHead */
-			short i;
-			for (i = 1; i < vidx && vcb != NULL; i++)
-				vcb = *(Ptr *)vcb; /* follow qLink */
-			if (vcb != NULL && vcb == g->vcb) {
-				err = DoGetVolInfo(pb, g, isHFS);
-				*(short *)(pb + pb_ioResult) = err;
-				RestoreA4(); return 0;
-			}
-			/* Not ours at this index — pass through to ROM */
-			RestoreA4(); return 1;
-		}
-		/* vidx == 0: ROM matches by vRefNum OR drive number.
-		   SFGetFile passes drive number in ioVRefNum. */
-		if (vRefNum == kOurDriveNum || IsOurVolume(vRefNum)) {
-			err = DoGetVolInfo(pb, g, isHFS);
-			*(short *)(pb + pb_ioResult) = err;
-			RestoreA4(); return 0;
+			break;
 		}
 	}
 
-	/* Traps keyed on ioVRefNum */
-	if (!IsOurVolume(vRefNum)) {
-		/* _SetVol: check if it targets our volume by name */
-		if (trapNum == 0x15 && nameAddr != 0) {
-			/* Compare with our volume name "Shared" */
-			unsigned char *p = (unsigned char *)nameAddr;
-			if (p[0] == 6 && p[1] == 'S' && p[2] == 'h'
-				&& p[3] == 'a' && p[4] == 'r'
-				&& p[5] == 'e' && p[6] == 'd')
-			{
-				*(Ptr *)kDefVCBPtr = g->vcb;
-				*(short *)(pb + pb_ioResult) = 0;
-				log_trap(g->regBase, trapWord, pb,
-					LOG_HANDLED, 0, LOG_F_PBMOD);
-				RestoreA4(); return 0;
-			}
-		}
-		log_trap(g->regBase, trapWord, pb,
-			LOG_PASSTHRU, 0, isHFS ? LOG_F_HFS : 0);
-		RestoreA4(); return 1;
-	}
-
-	switch (trapNum) {
-		case 0x00: /* _Open */
-		{
-			err = DoOpen(pb, g->regBase, g->vcb, isHFS);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-		}
-
-		case 0x14: /* _GetVol */
-		{
-			/* If default volume is ours, return our info */
-			unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-			if (nmAddr != 0) {
-				unsigned char *p = (unsigned char *)nmAddr;
-				p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
-				p[4]='r'; p[5]='e'; p[6]='d';
-			}
-			*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, trapWord, pb,
-				LOG_HANDLED, 0,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-		}
-
-		case 0x15: /* _SetVol */
-			*(Ptr *)kDefVCBPtr = g->vcb;
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, trapWord, pb,
-				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
-			RestoreA4(); return 0;
-
-		case 0x07: /* _GetVolInfo */
-		{
-			err = DoGetVolInfo(pb, g, isHFS);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-		}
-
-		case 0x08: /* _Create */
-			err = DoCreate(pb, g->regBase, isHFS);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x09: /* _Delete */
-			err = DoDelete(pb, g->regBase, isHFS);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x0A: /* _OpenRF */
-			err = DoOpenRF(pb, g->regBase, g->vcb, isHFS);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x0B: /* _Rename */
-		{
-			unsigned long newNameAddr = *(unsigned long *)(pb + pb_ioMisc);
-			long dirID;
-
-			if (nameAddr == 0 || newNameAddr == 0) {
-				*(short *)(pb + pb_ioResult) = -50;
-				log_trap(g->regBase, trapWord, pb,
-					LOG_ERROR, -50, isHFS ? LOG_F_HFS : 0);
-				RestoreA4(); return 0;
-			}
-
-			dirID = ResolveFlatDir(vRefNum, *(long *)(pb + pb_ioDirID), isHFS, g->regBase);
-
-			reg_set(g->regBase, 0, (unsigned long)dirID);
-			reg_set(g->regBase, 1, nameAddr);
-			reg_set(g->regBase, 2, newNameAddr);
-			reg_command(g->regBase, 0x0217); /* ExtFSRename */
-
-			if (reg_result(g->regBase) != 0) {
-				err = -(short)reg_result(g->regBase);
-				*(short *)(pb + pb_ioResult) = err;
-				log_trap(g->regBase, trapWord, pb,
-					LOG_ERROR, err, isHFS ? LOG_F_HFS : 0);
-				RestoreA4(); return 0;
-			}
-
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, trapWord, pb,
-				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
-			RestoreA4(); return 0;
-		}
-
-		case 0x0C: /* _GetFileInfo */
-		{
-			err = DoGetFileInfo(pb, g->regBase, isHFS);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-		}
-
-		case 0x0D: /* _SetFileInfo */
-			err = DoSetFileInfo(pb, g->regBase, isHFS);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, trapWord, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				(isHFS ? LOG_F_HFS : 0) | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case 0x0E: /* _UnmountVol */
-		{
-			if (g->dqe != NULL) {
-				Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
-				g->dqe = NULL;
-			}
-			Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
-			g->ejected = 1;
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, trapWord, pb,
-				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
-			RestoreA4(); return 0;
-		}
-
-		case 0x10: /* _Allocate */
-			/* Just return noErr — we don't pre-allocate disk space */
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, trapWord, pb,
-				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
-			RestoreA4(); return 0;
-
-		case 0x13: /* _FlushVol */
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, trapWord, pb,
-				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
-			RestoreA4(); return 0;
-
-		case 0x17: /* _Eject */
-		{
-			if (g->dqe != NULL) {
-				Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
-				g->dqe = NULL;
-			}
-			Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
-			g->ejected = 1;
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, trapWord, pb,
-				LOG_HANDLED, 0, isHFS ? LOG_F_HFS : 0);
-			RestoreA4(); return 0;
-		}
-	}
-
-	log_trap(g->regBase, trapWord, pb,
-		LOG_PASSTHRU, 0, isHFS ? LOG_F_HFS : 0);
-	RestoreA4(); return 1;
+	result = DispatchFromTable(sFlatTraps, trapNum, pb, g, isHFS, trapWord);
+	RestoreA4();
+	return result;
 }
 
-/*
-	DispatchHFS: called from the _HFSDispatch stub.
-	pb = ParamBlockRec, selector = HFS call selector.
-	Returns: 0 if handled, non-zero to pass through.
-*/
 short DispatchHFS(char *pb, short selector)
 {
 	Globals *g;
-	OSErr err;
-	short vRefNum;
-	unsigned long nameAddr;
+	short result;
 
 	SetUpA4();
 	g = get_globals();
 	if (g == NULL || g->ejected) { RestoreA4(); return 1; }
 
-	vRefNum  = *(short *)(pb + pb_ioVRefNum);
-	nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-
-	if (!IsOurVolume(vRefNum)) {
-		log_trap(g->regBase, selector, pb,
-			LOG_PASSTHRU, 0, LOG_F_HFS);
-		RestoreA4(); return 1;
-	}
-
-	switch (selector) {
-		case kGetCatInfo:
-		{
-			err = DoGetCatInfo(pb, g->regBase);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, selector, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				LOG_F_HFS | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-		}
-
-		case kSetCatInfo:
-		{
-			unsigned long cnid;
-
-			/* Directories: persist DInfo + DXInfo */
-			if (*(unsigned char *)(pb + pb_ioFlAttrib) & 0x10) {
-				cnid = *(unsigned long *)(pb + pb_ioDrDirID);
-				if (cnid != 0) {
-					short j;
-					/* Copy DInfo (16) + DXInfo (16) into transfer buffer */
-					for (j = 0; j < 16; j++)
-						s_dirInfoBuf[j] = *(char *)(pb + pb_ioDrUsrWds + j);
-					for (j = 0; j < 16; j++)
-						s_dirInfoBuf[16 + j] = *(char *)(pb + 84 + j);
-					reg_set(g->regBase, 0, cnid);
-					reg_set(g->regBase, 1, (unsigned long)s_dirInfoBuf);
-					reg_command(g->regBase, 0x021A); /* ExtFSSetDirInfo */
+	/* For non-refBased traps, check volume ownership */
+	{
+		TrapEntry *e;
+		for (e = sHFSTraps; e->handler != NULL; e++) {
+			if (e->trapNum != selector) continue;
+			if (!e->refBased) {
+				if (!IsOurVolume(*(short *)(pb + pb_ioVRefNum))) {
+					log_trap(g->regBase, selector, pb,
+						LOG_PASSTHRU, 0, LOG_F_HFS);
+					RestoreA4(); return 1;
 				}
-				*(short *)(pb + pb_ioResult) = 0;
-				log_trap(g->regBase, selector, pb,
-					LOG_HANDLED, 0, LOG_F_HFS);
-				RestoreA4(); return 0;
 			}
-
-			/* Resolve CNID: try ioFlNum first (populated by prior
-			   GetCatInfo), fall back to name lookup (covers the
-			   Create→SetCatInfo path where ioFlNum is stale). */
-			cnid = 0;
-			if (nameAddr != 0) {
-				long dirID = ResolveDir(vRefNum,
-					*(long *)(pb + pb_ioDirID), g->regBase);
-				reg_set(g->regBase, 0, (unsigned long)dirID);
-				reg_set(g->regBase, 1, nameAddr);
-				reg_command(g->regBase, 0x0209); /* ObjByName */
-				cnid = reg_get(g->regBase, 0);
-			}
-			if (cnid == 0) {
-				*(short *)(pb + pb_ioResult) = -43;
-				log_trap(g->regBase, selector, pb,
-					LOG_ERROR, -43, LOG_F_HFS);
-				RestoreA4(); return 0;
-			}
-
-			{
-				unsigned long type    = *(unsigned long *)(pb + pb_ioFlFndrInfo);
-				unsigned long creator = *(unsigned long *)(pb + pb_ioFlFndrInfo + 4);
-				reg_set(g->regBase, 0, cnid);
-				reg_set(g->regBase, 1, type);
-				reg_set(g->regBase, 2, creator);
-				reg_set(g->regBase, 3, (unsigned long)(unsigned short)*(short *)(pb + pb_ioFlFndrInfo + 8));
-				reg_command(g->regBase, 0x0213); /* ExtFSSetFileInfo */
-			}
-
-			if (reg_result(g->regBase) != 0) {
-				err = -(short)reg_result(g->regBase);
-				*(short *)(pb + pb_ioResult) = err;
-				log_trap(g->regBase, selector, pb,
-					LOG_ERROR, err, LOG_F_HFS);
-				RestoreA4(); return 0;
-			}
-
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, selector, pb,
-				LOG_HANDLED, 0, LOG_F_HFS | LOG_F_PBMOD);
-			RestoreA4(); return 0;
+			break;
 		}
-
-		case kCatMove:
-		{
-			long srcDirID = *(long *)(pb + pb_ioDirID);
-			long dstDirID = *(long *)(pb + 36);  /* ioNewDirID */
-
-			if (nameAddr == 0) {
-				*(short *)(pb + pb_ioResult) = -50;
-				log_trap(g->regBase, selector, pb,
-					LOG_ERROR, -50, LOG_F_HFS);
-				RestoreA4(); return 0;
-			}
-
-			if (srcDirID == 0)
-				srcDirID = ResolveDir(vRefNum, 0, g->regBase);
-			if (dstDirID == 0)
-				dstDirID = ResolveDir(vRefNum, 0, g->regBase);
-
-			reg_set(g->regBase, 0, (unsigned long)srcDirID);
-			reg_set(g->regBase, 1, nameAddr);
-			reg_set(g->regBase, 2, (unsigned long)dstDirID);
-			reg_command(g->regBase, 0x0216); /* ExtFSCatMove */
-
-			if (reg_result(g->regBase) != 0) {
-				err = -(short)reg_result(g->regBase);
-				*(short *)(pb + pb_ioResult) = err;
-				log_trap(g->regBase, selector, pb,
-					LOG_ERROR, err, LOG_F_HFS);
-				RestoreA4(); return 0;
-			}
-
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, selector, pb,
-				LOG_HANDLED, 0, LOG_F_HFS);
-			RestoreA4(); return 0;
-		}
-
-		case kDirCreate:
-		{
-			long dirID = *(long *)(pb + pb_ioDirID);
-			unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-
-			if (nmAddr == 0) {
-				*(short *)(pb + pb_ioResult) = -50;
-				log_trap(g->regBase, selector, pb,
-					LOG_ERROR, -50, LOG_F_HFS);
-				RestoreA4(); return 0;
-			}
-
-			if (dirID == 0)
-				dirID = ResolveDir(vRefNum, 0, g->regBase);
-
-			reg_set(g->regBase, 0, (unsigned long)dirID);
-			reg_set(g->regBase, 1, nmAddr);
-			reg_command(g->regBase, 0x0215); /* ExtFSCreateDir */
-			if (reg_result(g->regBase) != 0) {
-				err = -(short)reg_result(g->regBase);
-				*(short *)(pb + pb_ioResult) = err;
-				log_trap(g->regBase, selector, pb,
-					LOG_ERROR, err, LOG_F_HFS);
-				RestoreA4(); return 0;
-			}
-			*(long *)(pb + pb_ioDirID) = (long)reg_get(g->regBase, 0);
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, selector, pb,
-				LOG_HANDLED, 0, LOG_F_HFS | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-		}
-
-		case kSetVInfo:
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, selector, pb,
-				LOG_HANDLED, 0, LOG_F_HFS);
-			RestoreA4(); return 0;
-
-		case kOpenWD:
-			err = DoOpenWD(pb, g->regBase);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, selector, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				LOG_F_HFS | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case kCloseWD:
-			err = DoCloseWD(pb, g->regBase);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, selector, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err, LOG_F_HFS);
-			RestoreA4(); return 0;
-
-		case kGetWDInfo:
-			err = DoGetWDInfo(pb, g->regBase);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, selector, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				LOG_F_HFS | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-
-		case kGetVolParms:
-		{
-			err = DoGetVolParms(pb, g->regBase);
-			*(short *)(pb + pb_ioResult) = err;
-			log_trap(g->regBase, selector, pb,
-				err ? LOG_ERROR : LOG_HANDLED, err,
-				LOG_F_HFS | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-		}
-
-		case kGetFCBInfo:
-		{
-			short refNum = *(short *)(pb + pb_ioRefNum);
-			short fcbIdx = *(short *)(pb + pb_ioFCBIndx);
-			unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-			Ptr fcb;
-
-			/* Only handle direct lookup by refNum (index=0) */
-			if (fcbIdx != 0) {
-				*(short *)(pb + pb_ioResult) = -50;
-				log_trap(g->regBase, selector, pb,
-					LOG_ERROR, -50, LOG_F_HFS);
-				RestoreA4(); return 0;
-			}
-
-			fcb = GetFCB(refNum);
-			if (fcb == NULL || *(long *)(fcb + kFCBFlNum) == 0) {
-				*(short *)(pb + pb_ioResult) = -51;
-				log_trap(g->regBase, selector, pb,
-					LOG_ERROR, -51, LOG_F_HFS);
-				RestoreA4(); return 0;
-			}
-
-			/* Copy filename from FCB to caller's ioNamePtr */
-			if (nmAddr != 0) {
-				unsigned char *src = (unsigned char *)(fcb + kFCBCName);
-				unsigned char len = src[0];
-				short j;
-				if (len > 31) len = 31;
-				*(unsigned char *)nmAddr = len;
-				for (j = 0; j < len; j++)
-					((char *)nmAddr)[1+j] = src[1+j];
-			}
-
-			/* Fill FCBPBRec output fields */
-			*(short *)(pb + pb_ioRefNum) = refNum;
-			*(long  *)(pb + pb_ioFCBFlNm) = *(long *)(fcb + kFCBFlNum);
-			*(short *)(pb + pb_ioFCBFlags) = (short)((unsigned short)(*(unsigned char *)(fcb + kFCBFlags)) << 8
-				| (unsigned char)(*(unsigned char *)(fcb + kFCBTypByt)));
-			*(short *)(pb + pb_ioFCBStBlk) = 0;
-			*(long  *)(pb + pb_ioFCBEOF) = *(long *)(fcb + kFCBEOF);
-			*(long  *)(pb + pb_ioFCBPLen) = *(long *)(fcb + kFCBPLen);
-			*(long  *)(pb + pb_ioFCBCrPs) = *(long *)(fcb + kFCBCrPs);
-			*(short *)(pb + pb_ioFCBVRefNum) = kOurVRefNum;
-			*(long  *)(pb + pb_ioFCBClpSiz) = 0;
-			*(long  *)(pb + pb_ioFCBParID) = *(long *)(fcb + kFCBDirID);
-
-			*(short *)(pb + pb_ioResult) = 0;
-			log_trap(g->regBase, selector, pb,
-				LOG_HANDLED, 0, LOG_F_HFS | LOG_F_PBMOD);
-			RestoreA4(); return 0;
-		}
-
-		default:
-			*(short *)(pb + pb_ioResult) = -50;
-			log_trap(g->regBase, selector, pb,
-				LOG_ERROR, -50, LOG_F_HFS);
-			RestoreA4(); return 0;
 	}
+
+	result = DispatchFromTable(sHFSTraps, selector, pb, g, 1, selector);
+	if (result != 0) {
+		/* Unknown HFS selector: return paramErr */
+		*(short *)(pb + pb_ioResult) = kParamErr;
+		log_trap(g->regBase, selector, pb,
+			LOG_ERROR, kParamErr, LOG_F_HFS);
+		result = 0;
+	}
+	RestoreA4();
+	return result;
 }
 
 /* ================================================================ */
