@@ -976,6 +976,195 @@ static OSErr TrapRename(char *pb, Globals *g, short isHFS)
 	return host_err(g->regBase);
 }
 
+static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
+{
+	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	Ptr v = g->vcb;
+	unsigned long fileCount, totalBytes;
+	short vidx = *(short *)(pb + pb_ioVolIndex);
+
+	/* Indexed VCB walk: only handle if Nth VCB is ours */
+	if (vidx > 0) {
+		Ptr vcb = *(Ptr *)(kVCBQHdr + 2); /* qHead */
+		short i;
+		for (i = 1; i < vidx && vcb != NULL; i++)
+			vcb = *(Ptr *)vcb;
+		if (vcb == NULL || vcb != g->vcb)
+			return 1; /* not ours — sentinel for pass-through */
+	} else if (vidx == 0) {
+		short vRefNum = *(short *)(pb + pb_ioVRefNum);
+		if (vRefNum != kOurDriveNum && !IsOurVolume(vRefNum))
+			return 1; /* not ours */
+	}
+
+	/* Query host for fresh counts */
+	reg_command(g->regBase, kCmdGetVol);
+	fileCount  = reg_get(g->regBase, 0);
+	totalBytes = reg_get(g->regBase, 1);
+
+	if (nameAddr != 0) {
+		unsigned char *p = (unsigned char *)nameAddr;
+		p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
+		p[4]='r'; p[5]='e'; p[6]='d';
+	}
+
+	*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
+	*(long  *)(pb + 30) = *(long *)(v + 10);     /* ioVCrDate */
+	*(long  *)(pb + 34) = *(long *)(v + 14);     /* ioVLsMod */
+	*(short *)(pb + 38) = 0;                     /* ioVAtrb */
+	*(short *)(pb + 40) = (short)fileCount;      /* ioVNmFls */
+	*(short *)(pb + 42) = 0;                     /* ioVBitMap */
+	*(short *)(pb + 44) = 0;                     /* ioVAllocPtr */
+	*(short *)(pb + pb_ioVNmAlBlks) = kTotalAllocBlks;
+	*(long  *)(pb + pb_ioVAlBlkSiz) = kAllocBlkSize;
+	*(long  *)(pb + pb_ioVClpSiz) = kAllocBlkSize;
+	*(short *)(pb + 56) = 0;                     /* ioAlBlSt */
+	*(long  *)(pb + 58) = fileCount + 16;        /* ioVNxtCNID */
+	{
+		long usedBlks = (long)((totalBytes + kAllocBlkSize - 1)
+			/ kAllocBlkSize);
+		long freeBlks = kTotalAllocBlks - usedBlks;
+		if (freeBlks < 0) freeBlks = 0;
+		*(short *)(pb + pb_ioVFrBlk) = (short)freeBlks;
+	}
+
+	if (isHFS) {
+		*(short *)(pb + 64) = 0x4244;                /* ioVSigWord */
+		*(short *)(pb + 66) = kOurDriveNum;          /* ioVDrvInfo */
+		*(short *)(pb + 68) = kOurDrvrRefNum;        /* ioVDRefNum */
+		*(short *)(pb + 70) = 0x5344;                /* ioVFSID */
+		*(long  *)(pb + 72) = 0;                     /* ioVBkUp */
+		*(short *)(pb + 76) = 0;                     /* ioVSeqNum */
+		*(long  *)(pb + 78) = 0;                     /* ioVWrCnt */
+		*(long  *)(pb + 82) = fileCount;             /* ioVFilCnt */
+		*(long  *)(pb + 86) = 1;                     /* ioVDirCnt */
+		mem_zero(pb + 90, 32);                       /* ioVFndrInfo */
+	}
+	return kNoErr;
+}
+
+static OSErr TrapGetVol(char *pb, Globals *g, short isHFS)
+{
+	unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	if (nmAddr != 0) {
+		unsigned char *p = (unsigned char *)nmAddr;
+		p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
+		p[4]='r'; p[5]='e'; p[6]='d';
+	}
+	*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
+	return kNoErr;
+}
+
+static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
+{
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+
+	/* Check by name if vRefNum doesn't match */
+	if (!IsOurVolume(vRefNum)) {
+		if (nameAddr != 0) {
+			unsigned char *p = (unsigned char *)nameAddr;
+			if (p[0] == 6 && p[1] == 'S' && p[2] == 'h'
+				&& p[3] == 'a' && p[4] == 'r'
+				&& p[5] == 'e' && p[6] == 'd')
+			{
+				*(Ptr *)kDefVCBPtr = g->vcb;
+				return kNoErr;
+			}
+		}
+		return 1; /* not ours — sentinel for pass-through */
+	}
+
+	*(Ptr *)kDefVCBPtr = g->vcb;
+	return kNoErr;
+}
+
+static OSErr TrapUnmountVol(char *pb, Globals *g, short isHFS)
+{
+	if (g->dqe != NULL) {
+		Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
+		g->dqe = NULL;
+	}
+	Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
+	g->ejected = 1;
+	return kNoErr;
+}
+
+static OSErr TrapEject(char *pb, Globals *g, short isHFS)
+{
+	if (g->dqe != NULL) {
+		Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
+		g->dqe = NULL;
+	}
+	Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
+	g->ejected = 1;
+	return kNoErr;
+}
+
+static OSErr TrapFlushVol(char *pb, Globals *g, short isHFS)
+{
+	return kNoErr;
+}
+
+static OSErr TrapOpenWD(char *pb, Globals *g, short isHFS)
+{
+	long dirID = *(long *)(pb + pb_ioWDDirID);
+
+	reg_set(g->regBase, 0, (unsigned long)kOurVRefNum);
+	reg_set(g->regBase, 1, (unsigned long)dirID);
+	reg_command(g->regBase, kCmdOpenWD);
+	if (reg_result(g->regBase) != 0) return kFnfErr;
+
+	{
+		unsigned long wdRef = reg_get(g->regBase, 0);
+		*(short *)(pb + pb_ioVRefNum) = (short)(-(long)wdRef - 32000);
+	}
+	return kNoErr;
+}
+
+static OSErr TrapCloseWD(char *pb, Globals *g, short isHFS)
+{
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
+
+	reg_set(g->regBase, 0, wdRef);
+	reg_command(g->regBase, kCmdCloseWD);
+	return kNoErr;
+}
+
+static OSErr TrapGetWDInfo(char *pb, Globals *g, short isHFS)
+{
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	short wdIndex = *(short *)(pb + pb_ioWDIndex);
+	unsigned long dirID;
+
+	/* Only handle direct lookup (ioWDIndex == 0) */
+	if (wdIndex != 0) return kNsvErr;
+
+	if (vRefNum == kOurVRefNum || vRefNum == kOurDriveNum) {
+		dirID = kRootDirID;
+	} else {
+		unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
+		reg_set(g->regBase, 0, wdRef);
+		reg_command(g->regBase, kCmdGetWDInfo);
+		if (reg_result(g->regBase) != 0) return kNsvErr;
+		dirID = reg_get(g->regBase, 1);
+	}
+
+	*(short *)(pb + pb_ioWDVRefNum) = kOurVRefNum;
+	*(long *)(pb + pb_ioWDDirID) = dirID;
+	*(long *)(pb + pb_ioWDProcID) = 0;
+	{
+		unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+		if (nameAddr != 0) {
+			unsigned char *p = (unsigned char *)nameAddr;
+			p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
+			p[4]='r'; p[5]='e'; p[6]='d';
+		}
+	}
+	return kNoErr;
+}
+
 /* ================================================================ */
 /*                    File Manager handlers                         */
 /* ================================================================ */
