@@ -56,6 +56,13 @@ static constexpr uint16_t kExtFSResolveAndOpen = 0x223;
 static constexpr uint16_t kExtFSGetCatInfoResolved = 0x224;
 static constexpr uint16_t kExtFSFileOpByName = 0x225;
 
+/* FileOpByName sub-opcodes */
+static constexpr uint32_t kFileOpCreate = 0;
+static constexpr uint32_t kFileOpDelete = 1;
+static constexpr uint32_t kFileOpRename = 2;
+static constexpr uint32_t kFileOpSetFileInfo = 3;
+static constexpr uint32_t kFileOpSetCatInfo = 4;
+
 /* ── HostVolume instance ──────────────────────────── */
 
 static storage::HostVolume s_volume;
@@ -848,9 +855,99 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		break;
 
 		case kExtFSFileOpByName:
-			/* Stubs — filled in subsequent phases */
-			regResult = 0xFFFF;
-			break;
+		{
+			int16_t vRefNum = static_cast<int16_t>(regParam[0]);
+			uint32_t rawDirID = regParam[1];
+			uint32_t nameAddr = regParam[2];
+			uint32_t opcode = regParam[3];
+
+			uint32_t dirID = s_volume.resolveDir(vRefNum, rawDirID);
+			std::string name = readPascalString(nameAddr);
+
+			dbg_printf("[ExtFS] FileOpByName op=%u dir=%u name=\"%s\"\n", opcode, dirID,
+					   name.c_str());
+
+			switch (opcode)
+			{
+				case kFileOpCreate:
+				{
+					storage::FMErr err;
+					uint32_t cnid = s_volume.createFile(dirID, name, err);
+					if (cnid == 0)
+					{
+						regResult = fmErrToReg(err);
+						break;
+					}
+					regParam[0] = cnid;
+					regResult = 0;
+				}
+				break;
+
+				case kFileOpDelete:
+				{
+					auto err = s_volume.remove(dirID, name);
+					regResult = fmErrToReg(err);
+				}
+				break;
+
+				case kFileOpRename:
+				{
+					std::string newName = readPascalString(regParam[4]);
+					auto err = s_volume.rename(dirID, name, newName);
+					regResult = fmErrToReg(err);
+				}
+				break;
+
+				case kFileOpSetFileInfo:
+				{
+					auto *e = s_volume.findByName(dirID, name);
+					if (!e)
+					{
+						regResult = fmErrToReg(storage::FMErr::kFnfErr);
+						break;
+					}
+					uint32_t type = regParam[4];
+					uint32_t creator = regParam[5];
+					uint16_t flags = static_cast<uint16_t>(regParam[6]);
+					auto err = s_volume.setFileInfo(e->cnid, type, creator, flags);
+					regResult = fmErrToReg(err);
+				}
+				break;
+
+				case kFileOpSetCatInfo:
+				{
+					auto *e = s_volume.findByName(dirID, name);
+					if (!e)
+					{
+						regResult = fmErrToReg(storage::FMErr::kFnfErr);
+						break;
+					}
+					if (e->isDirectory)
+					{
+						uint32_t guestBuf = regParam[4];
+						uint8_t buf[32];
+						for (int i = 0; i < 32; i++)
+							buf[i] = get_vm_byte(guestBuf + i);
+						auto err = s_volume.setDirInfo(e->cnid, buf);
+						regResult = fmErrToReg(err);
+					}
+					else
+					{
+						uint32_t type = regParam[4];
+						uint32_t creator = regParam[5];
+						uint16_t flags = static_cast<uint16_t>(regParam[6]);
+						auto err = s_volume.setFileInfo(e->cnid, type, creator, flags);
+						regResult = fmErrToReg(err);
+					}
+				}
+				break;
+
+				default:
+					regResult = fmErrToReg(storage::FMErr::kParamErr);
+					break;
+			}
+		}
+		break;
 
 		default:
 			regResult = 0xFFFF;
@@ -868,6 +965,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSCatMove:
 		case kExtFSRename:
 		case kExtFSSetFileInfo:
+		case kExtFSFileOpByName:
 			if (!s_volume.validateCatalog())
 				dbg_printf("[ExtFS] *** CATALOG VALIDATION FAILED after cmd=0x%03x ***\n", cmd);
 			break;
