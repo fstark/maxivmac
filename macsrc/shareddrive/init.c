@@ -395,6 +395,55 @@ static void dbg_hexdump(char *regBase, char *label,
 static char s_nameBuf[64];
 static char s_dirInfoBuf[32];  /* DInfo (16) + DXInfo (16) transfer buffer */
 
+/* ---- Helpers ---- */
+
+static void pstr_copy(char *dst, char *src)
+{
+	short i, len = (unsigned char)src[0];
+	for (i = 0; i <= len; i++) dst[i] = src[i];
+}
+
+static void pstr_copy_max(char *dst, char *src, short maxLen)
+{
+	short len = (unsigned char)src[0];
+	if (len > maxLen) len = maxLen;
+	dst[0] = len;
+	{ short i; for (i = 0; i < len; i++) dst[1+i] = src[1+i]; }
+}
+
+static void mem_zero(char *dst, short len)
+{
+	short i; for (i = 0; i < len; i++) dst[i] = 0;
+}
+
+static void mem_copy(char *dst, char *src, short len)
+{
+	short i; for (i = 0; i < len; i++) dst[i] = src[i];
+}
+
+static OSErr host_err(char *base)
+{
+	unsigned short r = reg_result(base);
+	return (r == 0) ? kNoErr : -(short)r;
+}
+
+/* ---- Parameter extraction ---- */
+
+typedef struct {
+	short    vRefNum;
+	long     dirID;
+	unsigned long nameAddr;
+} TrapLocation;
+
+static TrapLocation ExtractLocation(char *pb, short isHFS)
+{
+	TrapLocation loc;
+	loc.vRefNum  = *(short *)(pb + pb_ioVRefNum);
+	loc.nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	loc.dirID = isHFS ? *(long *)(pb + 48) : 0;
+	return loc;
+}
+
 /* ---- FCB management ---- */
 
 static short AllocFCB(Ptr vcb, unsigned long cnid,
