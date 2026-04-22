@@ -832,6 +832,21 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		break;
 
 		case kExtFSGetCatInfoResolved:
+		{
+			int16_t vRefNum = static_cast<int16_t>(regParam[0]);
+			uint32_t rawDirID = regParam[1];
+			int32_t index = static_cast<int32_t>(regParam[2]);
+			uint32_t nameAddr = regParam[3];
+			uint32_t nameBuf = regParam[4];
+
+			uint32_t dirID = s_volume.resolveDir(vRefNum, rawDirID);
+			dbg_printf("[ExtFS] GetCatInfoResolved vref=%d dir=%u→%u idx=%d\n", vRefNum, rawDirID,
+					   dirID, index);
+
+			doCatInfoFull(dirID, index, nameAddr, nameBuf, regParam, regResult);
+		}
+		break;
+
 		case kExtFSFileOpByName:
 			/* Stubs — filled in subsequent phases */
 			regResult = 0xFFFF;
