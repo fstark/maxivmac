@@ -938,6 +938,44 @@ static OSErr TrapSetCatInfo(char *pb, Globals *g, short isHFS)
 	return host_err(g->regBase);
 }
 
+static OSErr TrapCreate(char *pb, Globals *g, short isHFS)
+{
+	TrapLocation loc = ExtractLocation(pb, isHFS);
+	if (loc.nameAddr == 0) return kParamErr;
+	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
+	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
+	reg_set(g->regBase, 2, loc.nameAddr);
+	reg_set(g->regBase, 3, kFileOpCreate);
+	reg_command(g->regBase, kCmdFileOpByName);
+	return host_err(g->regBase);
+}
+
+static OSErr TrapDelete(char *pb, Globals *g, short isHFS)
+{
+	TrapLocation loc = ExtractLocation(pb, isHFS);
+	if (loc.nameAddr == 0) return kParamErr;
+	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
+	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
+	reg_set(g->regBase, 2, loc.nameAddr);
+	reg_set(g->regBase, 3, kFileOpDelete);
+	reg_command(g->regBase, kCmdFileOpByName);
+	return host_err(g->regBase);
+}
+
+static OSErr TrapRename(char *pb, Globals *g, short isHFS)
+{
+	TrapLocation loc = ExtractLocation(pb, isHFS);
+	unsigned long newNameAddr = *(unsigned long *)(pb + pb_ioMisc);
+	if (loc.nameAddr == 0 || newNameAddr == 0) return kParamErr;
+	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
+	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
+	reg_set(g->regBase, 2, loc.nameAddr);
+	reg_set(g->regBase, 3, kFileOpRename);
+	reg_set(g->regBase, 4, newNameAddr);
+	reg_command(g->regBase, kCmdFileOpByName);
+	return host_err(g->regBase);
+}
+
 /* ================================================================ */
 /*                    File Manager handlers                         */
 /* ================================================================ */
