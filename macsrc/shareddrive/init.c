@@ -515,6 +515,186 @@ static Boolean IsOurVolume(short vRefNum)
 }
 
 /* ================================================================ */
+/*                 New trap handlers (Phase 2)                      */
+/* ================================================================ */
+
+static OSErr TrapClose(char *pb, Globals *g, short isHFS)
+{
+	short refNum = *(short *)(pb + pb_ioRefNum);
+	Ptr fcb = GetFCB(refNum);
+	if (fcb == NULL) return kFnfErr;
+	reg_set(g->regBase, 0, *(unsigned long *)(fcb + kFCBHostHandle));
+	reg_command(g->regBase, kCmdClose);
+	FreeFCB(refNum);
+	return kNoErr;
+}
+
+static OSErr TrapRead(char *pb, Globals *g, short isHFS)
+{
+	short refNum = *(short *)(pb + pb_ioRefNum);
+	unsigned long buffer = *(unsigned long *)(pb + pb_ioBuffer);
+	long reqCount = *(long *)(pb + pb_ioReqCount);
+	short posMode = *(short *)(pb + pb_ioPosMode);
+	long posOffset = *(long *)(pb + pb_ioPosOffset);
+	Ptr fcb;
+	long mark, eof, handle;
+	unsigned long actual;
+
+	fcb = GetFCB(refNum);
+	if (fcb == NULL) return kFnfErr;
+
+	mark   = *(long *)(fcb + kFCBCrPs);
+	eof    = *(long *)(fcb + kFCBEOF);
+	handle = *(long *)(fcb + kFCBHostHandle);
+
+	switch (posMode & 0x03) {
+		case 1: mark = posOffset; break;
+		case 2: mark = eof + posOffset; break;
+		case 3: mark += posOffset; break;
+	}
+	if (mark < 0) mark = 0;
+	if (mark > eof) mark = eof;
+
+	if (reqCount <= 0) {
+		*(long *)(pb + pb_ioActCount)  = 0;
+		*(long *)(pb + pb_ioPosOffset) = mark;
+		*(long *)(fcb + kFCBCrPs) = mark;
+		return kNoErr;
+	}
+	if (mark + reqCount > eof)
+		reqCount = eof - mark;
+
+	reg_set(g->regBase, 0, handle);
+	reg_set(g->regBase, 1, (unsigned long)mark);
+	reg_set(g->regBase, 2, (unsigned long)reqCount);
+	reg_set(g->regBase, 3, buffer);
+	reg_command(g->regBase, kCmdRead);
+	actual = reg_get(g->regBase, 0);
+
+	mark += actual;
+	*(long *)(fcb + kFCBCrPs) = mark;
+	*(long *)(pb + pb_ioActCount) = actual;
+	*(long *)(pb + pb_ioPosOffset) = mark;
+	return (actual < (unsigned long)reqCount) ? kEofErr : kNoErr;
+}
+
+static OSErr TrapWrite(char *pb, Globals *g, short isHFS)
+{
+	short refNum = *(short *)(pb + pb_ioRefNum);
+	unsigned long buffer = *(unsigned long *)(pb + pb_ioBuffer);
+	long reqCount = *(long *)(pb + pb_ioReqCount);
+	short posMode = *(short *)(pb + pb_ioPosMode);
+	long posOffset = *(long *)(pb + pb_ioPosOffset);
+	Ptr fcb;
+	long mark, eof, handle;
+	unsigned long actual;
+
+	fcb = GetFCB(refNum);
+	if (fcb == NULL) return kFnfErr;
+
+	mark = *(long *)(fcb + kFCBCrPs);
+	eof  = *(long *)(fcb + kFCBEOF);
+	handle = *(long *)(fcb + kFCBHostHandle);
+
+	switch (posMode & 0x03) {
+		case 1: mark = posOffset; break;
+		case 2: mark = eof + posOffset; break;
+		case 3: mark += posOffset; break;
+	}
+	if (mark < 0) mark = 0;
+
+	if (reqCount <= 0) {
+		*(long *)(pb + pb_ioActCount) = 0;
+		*(long *)(pb + pb_ioPosOffset) = mark;
+		return kNoErr;
+	}
+
+	reg_set(g->regBase, 0, handle);
+	reg_set(g->regBase, 1, (unsigned long)mark);
+	reg_set(g->regBase, 2, (unsigned long)reqCount);
+	reg_set(g->regBase, 3, buffer);
+	reg_command(g->regBase, kCmdWrite);
+	actual = reg_get(g->regBase, 0);
+
+	mark += actual;
+	if (mark > eof) {
+		eof = mark;
+		*(long *)(fcb + kFCBEOF) = eof;
+		*(long *)(fcb + kFCBPLen) = eof;
+	}
+	*(long *)(fcb + kFCBCrPs) = mark;
+	*(long *)(pb + pb_ioActCount) = actual;
+	*(long *)(pb + pb_ioPosOffset) = mark;
+	return (actual < (unsigned long)reqCount) ? kIoErr : kNoErr;
+}
+
+static OSErr TrapGetEOF(char *pb, Globals *g, short isHFS)
+{
+	Ptr fcb = GetFCB(*(short *)(pb + pb_ioRefNum));
+	if (fcb == NULL) return kFnfErr;
+	*(long *)(pb + pb_ioMisc) = *(long *)(fcb + kFCBEOF);
+	return kNoErr;
+}
+
+static OSErr TrapSetEOF(char *pb, Globals *g, short isHFS)
+{
+	short refNum = *(short *)(pb + pb_ioRefNum);
+	long newEOF = *(long *)(pb + pb_ioMisc);
+	Ptr fcb = GetFCB(refNum);
+	if (fcb == NULL) return kFnfErr;
+
+	reg_set(g->regBase, 0, *(unsigned long *)(fcb + kFCBHostHandle));
+	reg_set(g->regBase, 1, (unsigned long)newEOF);
+	reg_command(g->regBase, kCmdSetEOF);
+
+	*(long *)(fcb + kFCBEOF) = newEOF;
+	*(long *)(fcb + kFCBPLen) = newEOF;
+	return kNoErr;
+}
+
+static OSErr TrapGetFPos(char *pb, Globals *g, short isHFS)
+{
+	Ptr fcb = GetFCB(*(short *)(pb + pb_ioRefNum));
+	if (fcb == NULL) return kFnfErr;
+	*(long *)(pb + pb_ioPosOffset) = *(long *)(fcb + kFCBCrPs);
+	*(long *)(pb + pb_ioReqCount)  = 0;
+	*(long *)(pb + pb_ioActCount)  = 0;
+	return kNoErr;
+}
+
+static OSErr TrapSetFPos(char *pb, Globals *g, short isHFS)
+{
+	short posMode = *(short *)(pb + pb_ioPosMode);
+	long posOffset = *(long *)(pb + pb_ioPosOffset);
+	Ptr fcb = GetFCB(*(short *)(pb + pb_ioRefNum));
+	long mark, eof;
+	if (fcb == NULL) return kFnfErr;
+
+	mark = *(long *)(fcb + kFCBCrPs);
+	eof  = *(long *)(fcb + kFCBEOF);
+	switch (posMode & 0x03) {
+		case 1: mark = posOffset; break;
+		case 2: mark = eof + posOffset; break;
+		case 3: mark += posOffset; break;
+	}
+	if (mark < 0) mark = 0;
+	if (mark > eof) mark = eof;
+	*(long *)(fcb + kFCBCrPs) = mark;
+	*(long *)(pb + pb_ioPosOffset) = mark;
+	return kNoErr;
+}
+
+static OSErr TrapFlushFile(char *pb, Globals *g, short isHFS)
+{
+	return kNoErr;
+}
+
+static OSErr TrapAllocate(char *pb, Globals *g, short isHFS)
+{
+	return kNoErr;
+}
+
+/* ================================================================ */
 /*                    File Manager handlers                         */
 /* ================================================================ */
 
