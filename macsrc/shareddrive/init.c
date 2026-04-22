@@ -694,6 +694,72 @@ static OSErr TrapAllocate(char *pb, Globals *g, short isHFS)
 	return kNoErr;
 }
 
+static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
+{
+	TrapLocation loc = ExtractLocation(pb, isHFS);
+	if (loc.nameAddr == 0) return kParamErr;
+
+	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
+	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
+	reg_set(g->regBase, 2, loc.nameAddr);
+	reg_set(g->regBase, 3, 0);  /* data fork */
+	reg_command(g->regBase, kCmdResolveAndOpen);
+	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
+
+	{
+		unsigned long handle = reg_get(g->regBase, 0);
+		long size            = (long)reg_get(g->regBase, 1);
+		unsigned long cnid   = reg_get(g->regBase, 2);
+		short refNum = AllocFCB(g->vcb, cnid, size, 0x01);
+		if (refNum == 0) {
+			reg_set(g->regBase, 0, handle);
+			reg_command(g->regBase, kCmdClose);
+			return kTmfoErr;
+		}
+		{
+			Ptr fcb = GetFCB(refNum);
+			*(long *)(fcb + kFCBHostHandle) = handle;
+			*(long *)(fcb + kFCBDirID) = (long)reg_get(g->regBase, 3);
+			pstr_copy_max(fcb + kFCBCName, (char *)loc.nameAddr, 31);
+		}
+		*(short *)(pb + pb_ioRefNum) = refNum;
+	}
+	return kNoErr;
+}
+
+static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
+{
+	TrapLocation loc = ExtractLocation(pb, isHFS);
+	if (loc.nameAddr == 0) return kParamErr;
+
+	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
+	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
+	reg_set(g->regBase, 2, loc.nameAddr);
+	reg_set(g->regBase, 3, 1);  /* resource fork */
+	reg_command(g->regBase, kCmdResolveAndOpen);
+	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
+
+	{
+		unsigned long handle = reg_get(g->regBase, 0);
+		long size            = (long)reg_get(g->regBase, 1);
+		unsigned long cnid   = reg_get(g->regBase, 2);
+		short refNum = AllocFCB(g->vcb, cnid, size, 0x03);
+		if (refNum == 0) {
+			reg_set(g->regBase, 0, handle);
+			reg_command(g->regBase, kCmdClose);
+			return kTmfoErr;
+		}
+		{
+			Ptr fcb = GetFCB(refNum);
+			*(long *)(fcb + kFCBHostHandle) = handle;
+			*(long *)(fcb + kFCBDirID) = (long)reg_get(g->regBase, 3);
+			pstr_copy_max(fcb + kFCBCName, (char *)loc.nameAddr, 31);
+		}
+		*(short *)(pb + pb_ioRefNum) = refNum;
+	}
+	return kNoErr;
+}
+
 /* ================================================================ */
 /*                    File Manager handlers                         */
 /* ================================================================ */
