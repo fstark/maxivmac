@@ -157,6 +157,11 @@ static void doCatInfoFull(uint32_t dirID, int32_t index, uint32_t nameAddr, uint
 			return;
 		}
 		e = s_volume.nthChild(dirID, index);
+		if (!e)
+		{
+			regResult = fmErrToReg(storage::FMErr::kFnfErr);
+			return;
+		}
 	}
 	else if (index == 0 && nameAddr != 0)
 	{

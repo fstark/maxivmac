@@ -548,7 +548,7 @@ static constexpr int kDSK_QuitOnEject = 3; /* obsolete */
 
 static uint16_t s_paramAddrHi;
 
-/* --- New register block state (offsets 16–31, byte $20–$3F) --- */
+/* --- New register block state (offsets 16–63, byte $20–$7F) --- */
 
 static uint16_t s_regResult;
 static uint32_t s_regParam[12]; /* p0–p11 */
@@ -621,7 +621,7 @@ static uint32_t regBlockAccess(uint32_t data, bool writeMem, uint32_t regOff)
 /*
 	Main extension dispatch.  Called when the guest writes the
 	parameter-block address to the extension I/O ports (offsets 0–15),
-	or accesses the new register block (offsets 16–31).
+	or accesses the new register block (offsets 16–63).
 	Routes to the handler for the extension ID stored in
 	the parameter block.
 */
@@ -1616,7 +1616,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 			}
 			else
 			{
-				uint32_t wordOff = (addr >> 1) & 0x1F;
+				uint32_t wordOff = (addr >> 1) & 0x3F;
 				if (!writeMem && wordOff < 16)
 				{
 					REPORT_ABNORMAL_ID(AbnormalID::kMACH_Sony_read, "access Sony read");

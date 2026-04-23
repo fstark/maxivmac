@@ -89,7 +89,7 @@ struct MachineConfig
 
 	// Extension / NuBus space
 	uint32_t extnBlockBase = 0x50F0C000; // Mac II/IIx default
-	uint8_t extnLn2Spc = 6;				 // 64 bytes (legacy + register blocks)
+	uint8_t extnLn2Spc = 7;				 // 128 bytes (legacy + register blocks)
 
 	// Derived feature flags (set by model factory)
 	bool emVIA1 = true;

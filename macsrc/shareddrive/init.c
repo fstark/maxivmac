@@ -237,8 +237,8 @@ typedef struct {
 	long     volFileCount;
 	long     volTotalBytes;
 	long     savedA4;        /* THINK C code resource A4 */
-	long     defaultDirID;   /* directory set by PBHSetVol (0 = root) */
-	short    defaultWDRefNum; /* WD refnum from last SetVol, or kOurVRefNum */
+	short    rootWDRefNum;   /* permanent WD for root dir, created at init */
+	short    defaultWDRefNum; /* WD refnum from last SetVol */
 	short    ejected;        /* nonzero after _Eject */
 } Globals;
 
@@ -444,20 +444,27 @@ static TrapLocation ExtractLocation(char *pb, short isHFS, Globals *g)
 	loc.nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	if (isHFS) {
 		loc.dirID = *(long *)(pb + 48);
-		/* On real HFS the volume vRefNum (e.g. -1) is itself a WD for
-		   the root dir, so Open(vRefNum, dirID=0) resolves properly.
-		   Our raw volume ref kOurVRefNum is NOT a WD, so when an app
-		   passes it with dirID=0 we fall back to the current default
-		   directory — matching what the real HFS would do via WD. */
-		if (loc.dirID == 0 && loc.vRefNum == kOurVRefNum
-				&& g->defaultDirID != 0) {
-			loc.dirID = g->defaultDirID;
-		}
-	} else if (loc.vRefNum == 0 && g->defaultDirID != 0) {
-		loc.dirID = g->defaultDirID;
 	} else {
 		loc.dirID = 0;
 	}
+	/* vRefNum 0 means "default volume".  Substitute the current default
+	   WD refnum so the host resolveDir() can decode the directory from
+	   the WD table.  Flat (non-HFS) calls never carry a dirID, so this
+	   is the only way to convey directory context for them. */
+	if (loc.vRefNum == 0)
+		loc.vRefNum = g->defaultWDRefNum;
+	/* Apps (THINK C) get ioWDVRefNum from GetWDInfo, which per Inside
+	   Macintosh is always the true volume reference number (-32000).
+	   On real HFS the volume ref happens to also be a WD refnum for
+	   root, so Open(volRef, dirID=0) resolves through the WD table.
+	   Ours doesn't.  When an app passes the raw volume ref or the
+	   root WD with dirID=0, redirect to defaultWDRefNum which carries
+	   the current subdirectory context via the WD table. */
+	if (loc.dirID == 0
+			&& (loc.vRefNum == kOurVRefNum
+				|| loc.vRefNum == g->rootWDRefNum)
+			&& g->defaultWDRefNum != g->rootWDRefNum)
+		loc.vRefNum = g->defaultWDRefNum;
 	return loc;
 }
 
@@ -1074,8 +1081,20 @@ static OSErr TrapGetVol(char *pb, Globals *g, short isHFS)
 	*(short *)(pb + pb_ioVRefNum) = g->defaultWDRefNum;
 	if (isHFS) {
 		*(short *)(pb + 32) = kOurVRefNum;      /* ioWDVRefNum: real volume ref */
-		*(long  *)(pb + 48) = g->defaultDirID;   /* ioWDDirID */
-		*(long  *)(pb + 28) = 0;                 /* ioWDProcID */
+		*(long  *)(pb + 28) = 0;                /* ioWDProcID */
+		/* ioWDDirID: resolve defaultWDRefNum to its directory */
+		if (g->defaultWDRefNum != g->rootWDRefNum) {
+			unsigned long wdRef = (unsigned long)
+				(-(long)g->defaultWDRefNum - 32000);
+			reg_set(g->regBase, 0, wdRef);
+			reg_command(g->regBase, kCmdGetWDInfo);
+			if (reg_result(g->regBase) == 0)
+				*(long *)(pb + 48) = (long)reg_get(g->regBase, 1);
+			else
+				*(long *)(pb + 48) = kRootDirID;
+		} else {
+			*(long *)(pb + 48) = kRootDirID;    /* ioWDDirID */
+		}
 	}
 	return kNoErr;
 }
@@ -1094,46 +1113,18 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 				&& p[5] == 'e' && p[6] == 'd')
 			{
 				*(Ptr *)kDefVCBPtr = g->vcb;
-				g->defaultDirID = kRootDirID;
-				g->defaultWDRefNum = kOurVRefNum;
+				g->defaultWDRefNum = g->rootWDRefNum;
 				return kNoErr;
 			}
 		}
 		return 1; /* not ours — sentinel for pass-through */
 	}
 
-	/* Track default directory for subsequent flat calls (vRefNum=0).
-	   PBHSetVol ($A215) carries the target dirID at offset 48. */
-	if (isHFS) {
-		long dirID = *(long *)(pb + 48);
-		if (dirID == 0 && vRefNum < kOurVRefNum && vRefNum > -32100) {
-			/* HFS SetVol with WD refnum but no explicit dirID —
-			   resolve the WD to its directory. */
-			unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
-			reg_set(g->regBase, 0, wdRef);
-			reg_command(g->regBase, kCmdGetWDInfo);
-			if (reg_result(g->regBase) == 0)
-				dirID = (long)reg_get(g->regBase, 1);
-		}
-		g->defaultDirID = (dirID != 0) ? dirID : kRootDirID;
-	} else if (vRefNum < kOurVRefNum && vRefNum > -32100) {
-		/* Flat SetVol with a WD refnum — resolve to its dirID */
-		unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
-		reg_set(g->regBase, 0, wdRef);
-		reg_command(g->regBase, kCmdGetWDInfo);
-		if (reg_result(g->regBase) == 0)
-			g->defaultDirID = (long)reg_get(g->regBase, 1);
-		else
-			g->defaultDirID = kRootDirID;
-	} else {
-		g->defaultDirID = kRootDirID;
-	}
-
-	/* Store the WD refnum so GetVol returns it (apps use it for Open) */
+	/* Store the caller's WD refnum (or rootWDRefNum for raw vol ref) */
 	if (vRefNum < kOurVRefNum && vRefNum > -32100)
-		g->defaultWDRefNum = vRefNum;  /* WD refnum */
+		g->defaultWDRefNum = vRefNum;
 	else
-		g->defaultWDRefNum = kOurVRefNum;  /* raw volume refnum */
+		g->defaultWDRefNum = g->rootWDRefNum;
 
 	*(Ptr *)kDefVCBPtr = g->vcb;
 	return kNoErr;
@@ -1752,10 +1743,20 @@ void main(void)
 		goto bail;
 	}
 	g->regBase = regBase;
-	g->defaultDirID = kRootDirID;
-	g->defaultWDRefNum = kOurVRefNum;
 	g->volFileCount = reg_get(regBase, 0);
 	g->volTotalBytes = reg_get(regBase, 1);
+	/* Create permanent root WD — mirrors real HFS boot-volume root WD.
+	   This ensures -32000 (kOurVRefNum) never leaks to applications;
+	   every vRefNum they see is a WD refnum resolvable through the
+	   host WD table. */
+	reg_set(regBase, 0, (unsigned long)kOurVRefNum);
+	reg_set(regBase, 1, (unsigned long)kRootDirID);
+	reg_command(regBase, kCmdOpenWD);
+	{
+		unsigned long wdRef = reg_get(regBase, 0);
+		g->rootWDRefNum = (short)(-(long)wdRef - 32000);
+	}
+	g->defaultWDRefNum = g->rootWDRefNum;
 
 	/* Save A4 for code resource data access from stubs */
 	{
