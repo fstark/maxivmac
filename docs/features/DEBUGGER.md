@@ -29,6 +29,22 @@ The emulator does not advance until the user issues `run` or `step`.
 
 Without `--debugger`, the emulator runs normally — zero overhead.
 
+### Startup Scripts
+
+```
+maxivmac --debugger --dbg-script=shared.dbg disk.hfs
+maxivmac --debugserver --dbg-script=debug_create.dbg disk.hfs
+```
+
+`--dbg-script=FILE` loads FILE and executes every line as a debugger
+command before the first interactive prompt.  The flag is repeatable;
+multiple scripts are processed in order.
+
+Script parsing rules:
+- Lines starting with `#` are comments.
+- Empty / whitespace-only lines are skipped.
+- `commands … end` blocks work normally.
+
 ---
 
 ## Execution Model
@@ -410,6 +426,7 @@ CInfoPBRec                union    108
 | `log [N]` | Show last N guest console log lines (default 20) |
 | `log grep <pattern>` | Show guest log lines matching pattern |
 | `backtrace` / `bt` | Show stack frames (heuristic: scan for LINK/RTS patterns) |
+| `source <path>` | Execute debugger commands from a `.dbg` file |
 | `help [cmd]` | Show help (see below) |
 | `quit` | Exit emulator |
 
@@ -613,9 +630,8 @@ individual commands and parses the responses programmatically.
   text protocol suited to the single-threaded emulator.
 - **GUI** — command-line only; a future ImGui panel may wrap this.
 - **Multi-threading** — the 68K is single-core; no thread awareness.
-- **Script files** — ~~no `source` command to load scripts from files~~
-  Now supported via `maxivmac debug --script=FILE` and semicolons in
-  one-shot mode.
+- **Script files** — supported via `--dbg-script=FILE`,
+  the interactive `source` command, and `maxivmac debug --script=FILE`.
 
 ---
 
