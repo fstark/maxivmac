@@ -179,7 +179,7 @@ uint16_t TrapDefs::maskTrapWord(uint16_t tw)
 	if (tw & 0x0800)
 		return 0xA800 | (tw & 0x03FF); /* Toolbox: keep bits 0-9 + bit 11 */
 	else
-		return 0xA000 | (tw & 0x01FF); /* OS: keep bits 0-8 */
+		return 0xA000 | (tw & 0x03FF); /* OS: keep bits 0-9 */
 }
 
 bool TrapDefs::parseHeaderLine(const std::string &line, TrapDef &out)
