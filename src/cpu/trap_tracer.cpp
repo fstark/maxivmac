@@ -64,12 +64,18 @@ void TrapTracer::setMaxDepth(int depth)
 
 void TrapTracer::addTrap(uint16_t trapWord)
 {
-	allowed_.set(TrapDefs::maskTrapWord(trapWord));
+	uint16_t key = TrapDefs::maskTrapWord(trapWord);
+	allowed_.set(key);
+	/* OS trap without bit 9?  Also enable the bit-9 variant so that
+	   e.g. +GetVolInfo matches both $A007 and $A207. */
+	if (!(key & 0x0800) && !(key & 0x0200)) allowed_.set(key | 0x0200);
 }
 
 void TrapTracer::removeTrap(uint16_t trapWord)
 {
-	allowed_.reset(TrapDefs::maskTrapWord(trapWord));
+	uint16_t key = TrapDefs::maskTrapWord(trapWord);
+	allowed_.reset(key);
+	if (!(key & 0x0800) && !(key & 0x0200)) allowed_.reset(key | 0x0200);
 }
 
 void TrapTracer::addAllTraps()

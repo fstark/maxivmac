@@ -1009,8 +1009,8 @@ TEST_CASE("TrapDefs synthetic key name lookup")
 	TrapDefs defs;
 	defs.load(path);
 
-	/* masked A260 = A060 (OS trap: keep bits 0-8) */
-	uint32_t key = (0xA060u << 16) | 0x0009u;
+	/* masked A260 = A260 (OS trap: keep bits 0-9) */
+	uint32_t key = (0xA260u << 16) | 0x0009u;
 	CHECK(defs.nameOfSubtrap(key) == "PBGetCatInfo");
 	CHECK(defs.nameOfSubtrap(0x00000000).empty());
 }

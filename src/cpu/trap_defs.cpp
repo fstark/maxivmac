@@ -454,6 +454,15 @@ const TrapDef *TrapDefs::find(uint16_t trapWord) const
 	uint16_t key = maskTrapWord(trapWord);
 	auto it = defs_.find(key);
 	if (it != defs_.end()) return &it->second;
+
+	/* Fallback: OS trap with bit 9 set but no dedicated entry?
+	   Try again with bit 9 cleared (e.g. $A207 → $A007 GetVolInfo). */
+	if (!(key & 0x0800) && (key & 0x0200))
+	{
+		uint16_t base = key & ~0x0200;
+		it = defs_.find(base);
+		if (it != defs_.end()) return &it->second;
+	}
 	return nullptr;
 }
 
