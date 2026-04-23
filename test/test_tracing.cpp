@@ -423,6 +423,7 @@ TEST_CASE("Tracer toolbox output reads past input params")
 	CaptureIO io;
 	tracer.setIO(&io);
 	tracer.enable(true);
+	tracer.addAllTraps();
 
 	/* Enter the trap — pushes a frame */
 	tracer.enter(0xA9A0);
@@ -482,6 +483,7 @@ TEST_CASE("Tracer OS trap output uses registers not stack")
 	CaptureIO io;
 	tracer.setIO(&io);
 	tracer.enable(true);
+	tracer.addAllTraps();
 
 	tracer.enter(0xA122);
 	io.captured.clear();
@@ -1039,7 +1041,7 @@ TEST_CASE("TrapDefs load actual traps.def has dispatch subtraps")
 {
 	ensureTypeRegistryInit();
 	TrapDefs defs;
-	int n = defs.load("../../assets/traps.def");
+	int n = defs.load("assets/traps.def");
 	REQUIRE(n > 0);
 
 	/* HFSDispatch should have subtraps */
