@@ -47,8 +47,10 @@ A02A HUnlock os
   out err:OSErr.D0
 
 # NewPtrClear ($A31E) = NewPtr ($A11E) + CLEAR bit (bit 9).
-# OS trap flag bits (CLEAR=9, SYS=10) are masked off during lookup,
-# so $A31E automatically maps to the NewPtr definition above.
+# OS trap masking now preserves bit 9, so $A31E and $A11E are
+# distinct keys.  No separate entry is defined for NewPtrClear
+# since Inside Mac does not give it a distinct name.
+# Bit 10 (SYS heap) is still masked off.
 
 A02E BlockMove os
   in  src:Ptr.A0  dst:Ptr.A1  count:long.D0
