@@ -237,6 +237,8 @@ typedef struct {
 	long     volFileCount;
 	long     volTotalBytes;
 	long     savedA4;        /* THINK C code resource A4 */
+	long     defaultDirID;   /* directory set by PBHSetVol (0 = root) */
+	short    defaultWDRefNum; /* WD refnum from last SetVol, or kOurVRefNum */
 	short    ejected;        /* nonzero after _Eject */
 } Globals;
 
@@ -435,12 +437,27 @@ typedef struct {
 	unsigned long nameAddr;
 } TrapLocation;
 
-static TrapLocation ExtractLocation(char *pb, short isHFS)
+static TrapLocation ExtractLocation(char *pb, short isHFS, Globals *g)
 {
 	TrapLocation loc;
 	loc.vRefNum  = *(short *)(pb + pb_ioVRefNum);
 	loc.nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	loc.dirID = isHFS ? *(long *)(pb + 48) : 0;
+	if (isHFS) {
+		loc.dirID = *(long *)(pb + 48);
+		/* On real HFS the volume vRefNum (e.g. -1) is itself a WD for
+		   the root dir, so Open(vRefNum, dirID=0) resolves properly.
+		   Our raw volume ref kOurVRefNum is NOT a WD, so when an app
+		   passes it with dirID=0 we fall back to the current default
+		   directory — matching what the real HFS would do via WD. */
+		if (loc.dirID == 0 && loc.vRefNum == kOurVRefNum
+				&& g->defaultDirID != 0) {
+			loc.dirID = g->defaultDirID;
+		}
+	} else if (loc.vRefNum == 0 && g->defaultDirID != 0) {
+		loc.dirID = g->defaultDirID;
+	} else {
+		loc.dirID = 0;
+	}
 	return loc;
 }
 
@@ -696,7 +713,7 @@ static OSErr TrapAllocate(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS);
+	TrapLocation loc = ExtractLocation(pb, isHFS, g);
 	if (loc.nameAddr == 0) return kParamErr;
 
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
@@ -729,7 +746,7 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS);
+	TrapLocation loc = ExtractLocation(pb, isHFS, g);
 	if (loc.nameAddr == 0) return kParamErr;
 
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
@@ -762,7 +779,7 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapGetFileInfo(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS);
+	TrapLocation loc = ExtractLocation(pb, isHFS, g);
 	if (loc.nameAddr == 0) return kParamErr;
 
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
@@ -808,7 +825,7 @@ static OSErr TrapGetFileInfo(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapSetFileInfo(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS);
+	TrapLocation loc = ExtractLocation(pb, isHFS, g);
 	if (loc.nameAddr == 0) return kParamErr;
 
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
@@ -940,7 +957,7 @@ static OSErr TrapSetCatInfo(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapCreate(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS);
+	TrapLocation loc = ExtractLocation(pb, isHFS, g);
 	if (loc.nameAddr == 0) return kParamErr;
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
 	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
@@ -952,7 +969,7 @@ static OSErr TrapCreate(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapDelete(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS);
+	TrapLocation loc = ExtractLocation(pb, isHFS, g);
 	if (loc.nameAddr == 0) return kParamErr;
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
 	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
@@ -964,7 +981,7 @@ static OSErr TrapDelete(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapRename(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS);
+	TrapLocation loc = ExtractLocation(pb, isHFS, g);
 	unsigned long newNameAddr = *(unsigned long *)(pb + pb_ioMisc);
 	if (loc.nameAddr == 0 || newNameAddr == 0) return kParamErr;
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
@@ -1008,7 +1025,10 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 		p[4]='r'; p[5]='e'; p[6]='d';
 	}
 
-	*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
+	/* Return the WD refnum (not raw volume ref) so apps that use the
+	   returned ioVRefNum for subsequent Open calls carry directory context.
+	   On a real HFS volume, GetVolInfo preserves WD refnums in ioVRefNum. */
+	*(short *)(pb + pb_ioVRefNum) = g->defaultWDRefNum;
 	*(long  *)(pb + 30) = *(long *)(v + 10);     /* ioVCrDate */
 	*(long  *)(pb + 34) = *(long *)(v + 14);     /* ioVLsMod */
 	*(short *)(pb + 38) = 0;                     /* ioVAtrb */
@@ -1051,7 +1071,12 @@ static OSErr TrapGetVol(char *pb, Globals *g, short isHFS)
 		p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
 		p[4]='r'; p[5]='e'; p[6]='d';
 	}
-	*(short *)(pb + pb_ioVRefNum) = kOurVRefNum;
+	*(short *)(pb + pb_ioVRefNum) = g->defaultWDRefNum;
+	if (isHFS) {
+		*(short *)(pb + 32) = kOurVRefNum;      /* ioWDVRefNum: real volume ref */
+		*(long  *)(pb + 48) = g->defaultDirID;   /* ioWDDirID */
+		*(long  *)(pb + 28) = 0;                 /* ioWDProcID */
+	}
 	return kNoErr;
 }
 
@@ -1069,11 +1094,46 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 				&& p[5] == 'e' && p[6] == 'd')
 			{
 				*(Ptr *)kDefVCBPtr = g->vcb;
+				g->defaultDirID = kRootDirID;
+				g->defaultWDRefNum = kOurVRefNum;
 				return kNoErr;
 			}
 		}
 		return 1; /* not ours — sentinel for pass-through */
 	}
+
+	/* Track default directory for subsequent flat calls (vRefNum=0).
+	   PBHSetVol ($A215) carries the target dirID at offset 48. */
+	if (isHFS) {
+		long dirID = *(long *)(pb + 48);
+		if (dirID == 0 && vRefNum < kOurVRefNum && vRefNum > -32100) {
+			/* HFS SetVol with WD refnum but no explicit dirID —
+			   resolve the WD to its directory. */
+			unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
+			reg_set(g->regBase, 0, wdRef);
+			reg_command(g->regBase, kCmdGetWDInfo);
+			if (reg_result(g->regBase) == 0)
+				dirID = (long)reg_get(g->regBase, 1);
+		}
+		g->defaultDirID = (dirID != 0) ? dirID : kRootDirID;
+	} else if (vRefNum < kOurVRefNum && vRefNum > -32100) {
+		/* Flat SetVol with a WD refnum — resolve to its dirID */
+		unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
+		reg_set(g->regBase, 0, wdRef);
+		reg_command(g->regBase, kCmdGetWDInfo);
+		if (reg_result(g->regBase) == 0)
+			g->defaultDirID = (long)reg_get(g->regBase, 1);
+		else
+			g->defaultDirID = kRootDirID;
+	} else {
+		g->defaultDirID = kRootDirID;
+	}
+
+	/* Store the WD refnum so GetVol returns it (apps use it for Open) */
+	if (vRefNum < kOurVRefNum && vRefNum > -32100)
+		g->defaultWDRefNum = vRefNum;  /* WD refnum */
+	else
+		g->defaultWDRefNum = kOurVRefNum;  /* raw volume refnum */
 
 	*(Ptr *)kDefVCBPtr = g->vcb;
 	return kNoErr;
@@ -1274,45 +1334,62 @@ typedef struct {
 	short       refBased;  /* 1=check IsOurFCB, 0=check IsOurVolume */
 } TrapEntry;
 
-static TrapEntry sFlatTraps[] = {
-	{ 0x00, TrapOpen,        0 },
-	{ 0x01, TrapClose,       1 },
-	{ 0x02, TrapRead,        1 },
-	{ 0x03, TrapWrite,       1 },
-	{ 0x07, TrapGetVolInfo,  0 },
-	{ 0x08, TrapCreate,      0 },
-	{ 0x09, TrapDelete,      0 },
-	{ 0x0A, TrapOpenRF,      0 },
-	{ 0x0B, TrapRename,      0 },
-	{ 0x0C, TrapGetFileInfo, 0 },
-	{ 0x0D, TrapSetFileInfo, 0 },
-	{ 0x0E, TrapUnmountVol,  0 },
-	{ 0x10, TrapAllocate,    0 },
-	{ 0x11, TrapGetEOF,      1 },
-	{ 0x12, TrapSetEOF,      1 },
-	{ 0x13, TrapFlushVol,    0 },
-	{ 0x14, TrapGetVol,      0 },
-	{ 0x15, TrapSetVol,      0 },
-	{ 0x17, TrapEject,       0 },
-	{ 0x18, TrapGetFPos,     1 },
-	{ 0x44, TrapSetFPos,     1 },
-	{ 0x45, TrapFlushFile,   1 },
-	{ 0, NULL, 0 }
-};
+#define kMaxFlatTraps 23
+#define kMaxHFSTraps  11
 
-static TrapEntry sHFSTraps[] = {
-	{ 0x0001, TrapOpenWD,     0 },
-	{ 0x0002, TrapCloseWD,    0 },
-	{ 0x0005, TrapCatMove,    0 },
-	{ 0x0006, TrapDirCreate,  0 },
-	{ 0x0007, TrapGetWDInfo,  0 },
-	{ 0x0008, TrapGetFCBInfo, 1 },
-	{ 0x0009, TrapGetCatInfo, 0 },
-	{ 0x000A, TrapSetCatInfo, 0 },
-	{ 0x000B, TrapSetVInfo,   0 },
-	{ 0x0030, TrapGetVolParms,0 },
-	{ 0, NULL, 0 }
-};
+static TrapEntry sFlatTraps[kMaxFlatTraps];
+static TrapEntry sHFSTraps[kMaxHFSTraps];
+
+static void AddEntry(TrapEntry *table, short *idx, short maxN,
+	short trapNum, TrapHandler handler, short refBased)
+{
+	if (*idx < maxN - 1) {
+		table[*idx].trapNum  = trapNum;
+		table[*idx].handler  = handler;
+		table[*idx].refBased = refBased;
+		(*idx)++;
+		/* Keep sentinel zeroed (arrays are already cleared) */
+	}
+}
+
+static void InitTrapTables(void)
+{
+	short fi = 0, hi = 0;
+
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x00, TrapOpen,        0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x01, TrapClose,       1);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x02, TrapRead,        1);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x03, TrapWrite,       1);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x07, TrapGetVolInfo,  0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x08, TrapCreate,      0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x09, TrapDelete,      0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x0A, TrapOpenRF,      0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x0B, TrapRename,      0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x0C, TrapGetFileInfo, 0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x0D, TrapSetFileInfo, 0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x0E, TrapUnmountVol,  0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x10, TrapAllocate,    0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x11, TrapGetEOF,      1);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x12, TrapSetEOF,      1);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x13, TrapFlushVol,    0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x14, TrapGetVol,      0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x15, TrapSetVol,      0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x17, TrapEject,       0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x18, TrapGetFPos,     1);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x44, TrapSetFPos,     1);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x45, TrapFlushFile,   1);
+
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0001, TrapOpenWD,     0);
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0002, TrapCloseWD,    0);
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0005, TrapCatMove,    0);
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0006, TrapDirCreate,  0);
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0007, TrapGetWDInfo,  0);
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0008, TrapGetFCBInfo, 1);
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0009, TrapGetCatInfo, 0);
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x000A, TrapSetCatInfo, 0);
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x000B, TrapSetVInfo,   0);
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0030, TrapGetVolParms,0);
+}
 
 static short DispatchFromTable(TrapEntry *table, short key,
 	char *pb, Globals *g, short isHFS, short trapWord)
@@ -1675,6 +1752,8 @@ void main(void)
 		goto bail;
 	}
 	g->regBase = regBase;
+	g->defaultDirID = kRootDirID;
+	g->defaultWDRefNum = kOurVRefNum;
 	g->volFileCount = reg_get(regBase, 0);
 	g->volTotalBytes = reg_get(regBase, 1);
 
@@ -1767,6 +1846,9 @@ void main(void)
 			dbg_log(regBase, "SharedDrive: DQE added to drive queue");
 		}
 	}
+
+	/* Build dispatch tables (can't use static init in THINK C code resources) */
+	InitTrapTables();
 
 	/* Install trap patches */
 	InstallHFSPatch(regBase);
