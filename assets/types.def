@@ -84,6 +84,20 @@ struct IOParam {
     46 slong    ioPosOffset
 }
 
+struct HIOParam {
+    0  ParamBlockHeader header
+    24 sword    ioRefNum
+    26 sbyte    ioVersNum
+    27 sbyte    ioPermssn
+    28 Ptr      ioMisc
+    32 Ptr      ioBuffer
+    36 long     ioReqCount
+    40 long     ioActCount
+    44 sword    ioPosMode
+    46 slong    ioPosOffset
+    48 long     ioDirID
+}
+
 struct FileParam {
     0  ParamBlockHeader header
     24 sword    ioFRefNum
