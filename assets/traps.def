@@ -199,7 +199,7 @@ A00A OpenRF os
 A00C GetFileInfo os
   in  pb:^FileParam.A0
   out err:OSErr.D0
-  show-in  pb ioNamePtr ioVRefNum ioFDirIndex
+  show-in  pb ioNamePtr ioVRefNum ioFDirIndex ioFlNum
   show-out pb ioResult ioNamePtr ioFlAttrib ioFlFndrInfo ioFlNum ioFlLgLen ioFlRLgLen ioFlCrDat ioFlMdDat
 
 A00D SetFileInfo os

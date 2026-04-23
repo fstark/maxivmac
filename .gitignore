@@ -30,3 +30,5 @@ macdocs/ref/mac-rom
 shared/
 dbglog.txt
 verbose.txt
+*-win.txt
+*-fail.txt

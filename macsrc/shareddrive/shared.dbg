@@ -16,3 +16,10 @@ continue
 
 
 # A1AD
+
+
+trace traps Open Close Read Write GetVolInfo Create Delete OpenRF Rename GetFileInfo SetFileInfo UnmountVol Allocate GetEOF SetEOF FlushVol GetVol SetVol Eject GetFPos SetFPos FlushFile PBOpenWD PBCloseWD PBCatMove PBDirCreate PBGetWDInfo PBGetFCBInfo PBGetCatInfo PBSetCatInfo PBSetVInfo PBGetVolParms
+break Alert
+
+
+
