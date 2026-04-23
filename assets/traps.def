@@ -225,6 +225,64 @@ A014 GetVol os
   out err:OSErr.D0
   show-out pb ioResult ioNamePtr ioVRefNum
 
+# ── HFS File Manager variants (bit 9 set) ──────────────
+# These are the H-prefixed variants documented in Inside Macintosh.
+# They use HParamBlockRec (larger than ParamBlockRec) and include
+# ioDirID for hierarchical path resolution.
+
+A200 HOpen os
+  in  pb:^HIOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioDirID ioPermssn
+  show-out pb ioResult ioRefNum
+
+A208 HCreate os
+  in  pb:^HFileInfo.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioDirID
+  show-out pb ioResult
+
+A209 HDelete os
+  in  pb:^HFileInfo.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioDirID
+  show-out pb ioResult
+
+A20A HOpenRF os
+  in  pb:^HIOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioDirID ioPermssn
+  show-out pb ioResult ioRefNum
+
+A20B HRename os
+  in  pb:^HIOParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioDirID ioMisc
+  show-out pb ioResult
+
+A20C HGetFileInfo os
+  in  pb:^HFileInfo.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioFDirIndex ioDirID
+  show-out pb ioResult ioNamePtr ioFlAttrib ioFlFndrInfo ioFlNum ioFlLgLen ioFlRLgLen ioFlCrDat ioFlMdDat ioDirID ioFlParID
+
+A20D HSetFileInfo os
+  in  pb:^HFileInfo.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioDirID ioFlFndrInfo
+  show-out pb ioResult
+
+A214 HGetVol os
+  in  pb:^WDParam.A0
+  out err:OSErr.D0
+  show-out pb ioResult ioNamePtr ioVRefNum ioWDProcID ioWDVRefNum ioWDDirID
+
+A215 HSetVol os
+  in  pb:^WDParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioWDDirID
+  show-out pb ioResult
+
 A260 HFSDispatch os dispatch=word.D0
   in  selector:word.D0 pb:Ptr.A0
   out err:OSErr.D0
