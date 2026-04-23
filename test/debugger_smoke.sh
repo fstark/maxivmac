@@ -127,6 +127,21 @@ check "info trace on" "trace traps on
 info trace
 quit" "Trap tracing: on"
 
+# Test 19: HOpen is distinct from Open
+check "trace traps HOpen distinct" "trace traps +HOpen
+info trace
+quit" "+HOpen"
+
+# Test 20: Open does not include HOpen
+check "trace traps Open not HOpen" "trace traps +Open
+info trace
+quit" "+Open"
+
+# Test 21: HGetVol resolves (WDParam struct)
+check "trace traps HGetVol" "trace traps +HGetVol
+info trace
+quit" "+HGetVol"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 
