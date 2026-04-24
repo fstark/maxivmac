@@ -38,6 +38,7 @@ enum class FMErr : int16_t
 	kDirNFErr = -120, // directory not found
 	kFBsyErr = -47,	  // file busy (dir not empty)
 	kWPrErr = -44,	  // volume locked (optional, future)
+	kOpWrErr = -49,	  // file already open with write permission
 };
 
 /* ── Catalog entry ────────────────────────────────── */
@@ -212,7 +213,8 @@ public:
 
 	// Open a fork and return a handle (or 0 on error).  outSize receives
 	// the fork's current byte count (MacRoman size for TEXT data forks).
-	uint32_t openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, FMErr &errOut);
+	uint32_t openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, FMErr &errOut,
+					  uint8_t permission = 0);
 
 	// Read up to buf.size() bytes at offset.  outRead = bytes actually read.
 	FMErr readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> buf, uint32_t &outRead);
@@ -273,6 +275,7 @@ private:
 		uint32_t cnid = 0;
 		ForkType fork = ForkType::Data;
 		FILE *fp = nullptr;
+		bool hasWrite = false;
 	};
 	std::unordered_map<uint32_t, OpenFork> openForks_; // handle → OpenFork
 	uint32_t nextHandle_ = 1;						   // monotonic handle allocator

@@ -511,6 +511,61 @@ TEST_CASE("HostVolume: setFileInfo updates isText")
 
 /* ── Phase 5: data fork I/O ───────────────────────── */
 
+TEST_CASE("HostVolume: open conflict — exclusive vs existing")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "conflict.bin", err);
+	uint32_t size = 0;
+
+	// Open with default permission (0 = fsCurPerm → write)
+	uint32_t h1 = vol.openFork(cnid, storage::ForkType::Data, size, err, 0);
+	CHECK(h1 > 0);
+
+	// Exclusive open (3) should fail — existing path present
+	uint32_t h2 = vol.openFork(cnid, storage::ForkType::Data, size, err, 3);
+	CHECK(h2 == 0);
+	CHECK(err == storage::FMErr::kOpWrErr);
+
+	// Default open (0) should fail — existing has write
+	h2 = vol.openFork(cnid, storage::ForkType::Data, size, err, 0);
+	CHECK(h2 == 0);
+	CHECK(err == storage::FMErr::kOpWrErr);
+
+	// Read-only open (1) should succeed — no conflict with read
+	h2 = vol.openFork(cnid, storage::ForkType::Data, size, err, 1);
+	CHECK(h2 > 0);
+	vol.closeFork(h2);
+
+	vol.closeFork(h1);
+
+	// After close, default open should succeed
+	h1 = vol.openFork(cnid, storage::ForkType::Data, size, err, 0);
+	CHECK(h1 > 0);
+	vol.closeFork(h1);
+}
+
+TEST_CASE("HostVolume: multiple read-only opens succeed")
+{
+	TempDir td;
+	storage::HostVolume vol;
+	vol.mount(td.path);
+
+	storage::FMErr err;
+	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "multi.bin", err);
+	uint32_t size = 0;
+
+	uint32_t h1 = vol.openFork(cnid, storage::ForkType::Data, size, err, 1);
+	CHECK(h1 > 0);
+	uint32_t h2 = vol.openFork(cnid, storage::ForkType::Data, size, err, 1);
+	CHECK(h2 > 0);
+	vol.closeFork(h1);
+	vol.closeFork(h2);
+}
+
 TEST_CASE("HostVolume: open/close data fork")
 {
 	TempDir td;

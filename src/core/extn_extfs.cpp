@@ -94,6 +94,8 @@ static uint16_t fmErrToReg(storage::FMErr err)
 			return 47;
 		case storage::FMErr::kWPrErr:
 			return 44;
+		case storage::FMErr::kOpWrErr:
+			return 49;
 	}
 	return 43;
 }
@@ -396,9 +398,10 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t cnid = regParam[0];
 			auto forkType =
 				(regParam[1] == 1) ? storage::ForkType::Resource : storage::ForkType::Data;
+			uint8_t permission = static_cast<uint8_t>(regParam[2]);
 			uint32_t size = 0;
 			storage::FMErr err;
-			uint32_t handle = s_volume.openFork(cnid, forkType, size, err);
+			uint32_t handle = s_volume.openFork(cnid, forkType, size, err, permission);
 			if (handle == 0)
 			{
 				regResult = fmErrToReg(err);
@@ -743,6 +746,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			std::string name = readPascalString(regParam[1]);
 			auto forkType =
 				(regParam[2] == 1) ? storage::ForkType::Resource : storage::ForkType::Data;
+			uint8_t permission = static_cast<uint8_t>(regParam[3]);
 
 			dbg_printf("[ExtFS] OpenByName dir=%u name=\"%s\" fork=%u\n", dirID, name.c_str(),
 					   regParam[2]);
@@ -756,7 +760,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 			uint32_t size = 0;
 			storage::FMErr err;
-			uint32_t handle = s_volume.openFork(e->cnid, forkType, size, err);
+			uint32_t handle = s_volume.openFork(e->cnid, forkType, size, err, permission);
 			if (handle == 0)
 			{
 				regResult = fmErrToReg(err);
@@ -816,6 +820,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			std::string name = readPascalString(regParam[2]);
 			auto forkType =
 				(regParam[3] == 1) ? storage::ForkType::Resource : storage::ForkType::Data;
+			uint8_t permission = static_cast<uint8_t>(regParam[4]);
 
 			uint32_t dirID = s_volume.resolveDir(vRefNum, rawDirID);
 			dbg_printf("[ExtFS] ResolveAndOpen vref=%d dir=%u→%u name=\"%s\"\n", vRefNum, rawDirID,
@@ -830,7 +835,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 			uint32_t size = 0;
 			storage::FMErr err;
-			uint32_t handle = s_volume.openFork(e->cnid, forkType, size, err);
+			uint32_t handle = s_volume.openFork(e->cnid, forkType, size, err, permission);
 			if (handle == 0)
 			{
 				regResult = fmErrToReg(err);

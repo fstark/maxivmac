@@ -554,47 +554,6 @@ static Boolean IsOurVolume(short vRefNum)
 	return false;
 }
 
-/*
- * CheckOpenConflict — scan FCBs for conflicting open of same file.
- *
- * Returns kNoErr if no conflict, kOpWrErr if the new open would
- * conflict with an existing access path.
- *
- * Rules (IM IV):
- * - If new open requests exclusive (fsRdWrPerm=3), any existing
- *   path is a conflict.
- * - If any existing path has write permission, a new write or
- *   default-permission open returns opWrErr.
- */
-static OSErr CheckOpenConflict(unsigned long cnid,
-	unsigned char requestedPerm)
-{
-	Ptr fcbBuf = *(Ptr *)kFCBSPtr;
-	short fcbLen, i;
-	if (fcbBuf == NULL) return kNoErr;
-	fcbLen = *(short *)fcbBuf;
-	for (i = 2; i < fcbLen; i += kFCBLen) {
-		Ptr fcb = fcbBuf + i;
-		if (*(unsigned long *)(fcb + kFCBFlNum) != cnid)
-			continue;
-		/* An access path already exists for this file. */
-		{
-			unsigned char existingFlags = *(unsigned char *)(fcb + kFCBFlags);
-			short existingWrite = existingFlags & 0x01;
-
-			/* New exclusive open conflicts with any existing path */
-			if (requestedPerm == kFsRdWrPerm)
-				return kOpWrErr;
-
-			/* New write/default open conflicts with existing write path */
-			if ((requestedPerm == kFsCurPerm || requestedPerm == kFsWrPerm)
-				&& existingWrite)
-				return kOpWrErr;
-		}
-	}
-	return kNoErr;
-}
-
 /* ================================================================ */
 /*                 New trap handlers (Phase 2)                      */
 /* ================================================================ */
@@ -623,10 +582,6 @@ static OSErr TrapRead(char *pb, Globals *g, short isHFS)
 
 	fcb = GetFCB(refNum);
 	if (fcb == NULL) return kRfNumErr;
-
-	/* Check write permission */
-	if ((*(unsigned char *)(fcb + kFCBFlags) & 0x01) == 0)
-		return kWrPermErr;
 
 	mark   = *(long *)(fcb + kFCBCrPs);
 	eof    = *(long *)(fcb + kFCBEOF);
@@ -819,12 +774,14 @@ static OSErr TrapAllocate(char *pb, Globals *g, short isHFS)
 static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 {
 	TrapLocation loc = ExtractLocation(pb, isHFS, g);
+	unsigned char perm = *(unsigned char *)(pb + pb_ioPermssn);
 	if (loc.nameAddr == 0) return kParamErr;
 
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
 	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
 	reg_set(g->regBase, 2, loc.nameAddr);
 	reg_set(g->regBase, 3, 0);  /* data fork */
+	reg_set(g->regBase, 4, (unsigned long)perm);
 	reg_command(g->regBase, kCmdResolveAndOpen);
 	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
 
@@ -832,23 +789,13 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 		unsigned long handle = reg_get(g->regBase, 0);
 		long size            = (long)reg_get(g->regBase, 1);
 		unsigned long cnid   = reg_get(g->regBase, 2);
-		unsigned char perm   = *(unsigned char *)(pb + pb_ioPermssn);
 		unsigned char flags;
-		OSErr conflict;
 
 		/* Map permission to FCB flags */
 		if (perm == kFsRdPerm)
 			flags = 0x00;          /* read only */
 		else
 			flags = 0x01;          /* fcbWriteMask */
-
-		/* Check for conflicting access paths */
-		conflict = CheckOpenConflict(cnid, perm);
-		if (conflict != kNoErr) {
-			reg_set(g->regBase, 0, handle);
-			reg_command(g->regBase, kCmdClose);
-			return conflict;
-		}
 
 		{
 			short refNum = AllocFCB(g->vcb, cnid, size, flags);
@@ -878,12 +825,14 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 {
 	TrapLocation loc = ExtractLocation(pb, isHFS, g);
+	unsigned char perm = *(unsigned char *)(pb + pb_ioPermssn);
 	if (loc.nameAddr == 0) return kParamErr;
 
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
 	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
 	reg_set(g->regBase, 2, loc.nameAddr);
 	reg_set(g->regBase, 3, 1);  /* resource fork */
+	reg_set(g->regBase, 4, (unsigned long)perm);
 	reg_command(g->regBase, kCmdResolveAndOpen);
 	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
 
@@ -891,23 +840,13 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 		unsigned long handle = reg_get(g->regBase, 0);
 		long size            = (long)reg_get(g->regBase, 1);
 		unsigned long cnid   = reg_get(g->regBase, 2);
-		unsigned char perm   = *(unsigned char *)(pb + pb_ioPermssn);
 		unsigned char flags;
-		OSErr conflict;
 
 		/* Map permission to FCB flags (resource fork bit = 0x02) */
 		if (perm == kFsRdPerm)
 			flags = 0x02;          /* resource fork, read only */
 		else
 			flags = 0x03;          /* resource fork + write */
-
-		/* Check for conflicting access paths */
-		conflict = CheckOpenConflict(cnid, perm);
-		if (conflict != kNoErr) {
-			reg_set(g->regBase, 0, handle);
-			reg_command(g->regBase, kCmdClose);
-			return conflict;
-		}
 
 		{
 			short refNum = AllocFCB(g->vcb, cnid, size, flags);

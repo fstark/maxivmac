@@ -407,7 +407,8 @@ FMErr HostVolume::setDirInfo(uint32_t cnid, const uint8_t buf[32])
 
 /* ── Fork I/O ─────────────────────────────────────── */
 
-uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, FMErr &errOut)
+uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, FMErr &errOut,
+							  uint8_t permission)
 {
 	const CatalogEntry *e = findByCNID(cnid);
 	if (!e || e->isDirectory)
@@ -416,6 +417,29 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, F
 		return 0;
 	}
 
+	/* ── Conflict check (IM IV rules) ─────────────────
+	   permission 0 = fsCurPerm (default/write)
+	   permission 1 = fsRdPerm  (read only)
+	   permission 2 = fsWrPerm  (write)
+	   permission 3 = fsRdWrPerm (exclusive read/write) */
+	for (auto &[_, of] : openForks_)
+	{
+		if (of.cnid != cnid) continue;
+		/* Exclusive open conflicts with any existing path */
+		if (permission == 3)
+		{
+			errOut = FMErr::kOpWrErr;
+			return 0;
+		}
+		/* Write or default open conflicts with existing write path */
+		if ((permission == 0 || permission == 2) && of.hasWrite)
+		{
+			errOut = FMErr::kOpWrErr;
+			return 0;
+		}
+	}
+
+	bool wantWrite = (permission != 1);
 	uint32_t handle = nextHandle_++;
 
 	if (fork == ForkType::Data)
@@ -440,12 +464,12 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, F
 			fseek(fp, 0, SEEK_SET);
 		}
 
-		openForks_[handle] = {cnid, ForkType::Data, fp};
+		openForks_[handle] = {cnid, ForkType::Data, fp, wantWrite};
 	}
 	else
 	{
 		/* Resource fork: no FILE*, handled by AppleDouble library */
-		openForks_[handle] = {cnid, ForkType::Resource, nullptr};
+		openForks_[handle] = {cnid, ForkType::Resource, nullptr, wantWrite};
 		outSize = appledouble::ResourceForkSize(e->hostPath);
 	}
 
