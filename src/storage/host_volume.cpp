@@ -82,6 +82,49 @@ const CatalogEntry *HostVolume::findByName(uint32_t parentDirID, std::string_vie
 	return nullptr;
 }
 
+const CatalogEntry *HostVolume::findByPath(uint32_t startDirID, std::string_view hfsPath) const
+{
+	/* No colon → plain name lookup in the given directory */
+	auto firstColon = hfsPath.find(':');
+	if (firstColon == std::string_view::npos) return findByName(startDirID, hfsPath);
+
+	uint32_t dir;
+	std::string_view rem;
+
+	if (hfsPath.front() == ':')
+	{
+		/* Relative path ":foo:bar" — walk from startDirID */
+		dir = startDirID;
+		rem = hfsPath.substr(1);
+	}
+	else
+	{
+		/* Absolute path "VolName:foo:bar" — skip the volume name, start at root */
+		dir = kRootDirID;
+		rem = hfsPath.substr(firstColon + 1);
+	}
+
+	while (!rem.empty())
+	{
+		auto sep = rem.find(':');
+		std::string_view component = (sep == std::string_view::npos) ? rem : rem.substr(0, sep);
+		bool last = (sep == std::string_view::npos);
+
+		if (!component.empty())
+		{
+			const CatalogEntry *e = findByName(dir, component);
+			if (!e) return nullptr;
+			if (last) return e;
+			if (!e->isDirectory) return nullptr;
+			dir = e->cnid;
+		}
+
+		if (last) break;
+		rem = rem.substr(sep + 1);
+	}
+	return nullptr;
+}
+
 const CatalogEntry *HostVolume::nthChild(uint32_t parentDirID, int index) const
 {
 	int count = 0;

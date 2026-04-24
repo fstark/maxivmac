@@ -143,6 +143,13 @@ public:
 	// Find a child of parentDirID with the given Mac name (case-insensitive).
 	const CatalogEntry *findByName(uint32_t parentDirID, std::string_view macName) const;
 
+	// Find a catalog entry by an HFS path string (e.g. "Volume:dir:file").
+	// If the path contains no colon, behaves identically to findByName(startDirID, path).
+	// A leading colon makes the path relative to startDirID.
+	// Otherwise the first component is the volume name (skipped) and walking
+	// begins from the root directory.
+	const CatalogEntry *findByPath(uint32_t startDirID, std::string_view hfsPath) const;
+
 	// Return the nth child (0-based) of a directory.  Used for catalog iteration.
 	const CatalogEntry *nthChild(uint32_t parentDirID, int index) const;
 

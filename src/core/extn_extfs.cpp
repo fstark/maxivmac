@@ -777,7 +777,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t dirID = s_volume.resolveDir(vRefNum, rawDirID);
 			dbg_printf("[ExtFS] GetFileInfoByName dir=%u name=\"%s\"\n", dirID, name.c_str());
 
-			auto *e = s_volume.findByName(dirID, name);
+			auto *e = s_volume.findByPath(dirID, name);
 			if (!e)
 			{
 				regResult = fmErrToReg(storage::FMErr::kFnfErr);
@@ -819,7 +819,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			dbg_printf("[ExtFS] ResolveAndOpen vref=%d dir=%u→%u name=\"%s\"\n", vRefNum, rawDirID,
 					   dirID, name.c_str());
 
-			auto *e = s_volume.findByName(dirID, name);
+			auto *e = s_volume.findByPath(dirID, name);
 			if (!e)
 			{
 				regResult = fmErrToReg(storage::FMErr::kFnfErr);

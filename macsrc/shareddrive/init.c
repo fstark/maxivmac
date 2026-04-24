@@ -1120,11 +1120,31 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 		return 1; /* not ours — sentinel for pass-through */
 	}
 
-	/* Store the caller's WD refnum (or rootWDRefNum for raw vol ref) */
-	if (vRefNum < kOurVRefNum && vRefNum > -32100)
+	/* Store the caller's WD refnum (or rootWDRefNum for raw vol ref).
+	   HSetVol with the raw volume ref (-32000) carries the target
+	   directory in ioWDDirID (pb+48) — open a WD for it so that
+	   subsequent flat Open/Create calls with vRefNum=0 land there. */
+	if (vRefNum < kOurVRefNum && vRefNum > -32100) {
+		/* Caller passed an explicit WD refnum — use it directly */
 		g->defaultWDRefNum = vRefNum;
-	else
+	} else if (isHFS) {
+		long dirID = *(long *)(pb + pb_ioWDDirID);
+		if (dirID != 0 && dirID != (long)kRootDirID) {
+			reg_set(g->regBase, 0, (unsigned long)kOurVRefNum);
+			reg_set(g->regBase, 1, (unsigned long)dirID);
+			reg_command(g->regBase, kCmdOpenWD);
+			if (reg_result(g->regBase) == 0) {
+				unsigned long wdRef = reg_get(g->regBase, 0);
+				g->defaultWDRefNum = (short)(-(long)wdRef - 32000);
+			} else {
+				g->defaultWDRefNum = g->rootWDRefNum;
+			}
+		} else {
+			g->defaultWDRefNum = g->rootWDRefNum;
+		}
+	} else {
 		g->defaultWDRefNum = g->rootWDRefNum;
+	}
 
 	*(Ptr *)kDefVCBPtr = g->vcb;
 	return kNoErr;
