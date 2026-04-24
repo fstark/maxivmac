@@ -550,7 +550,7 @@ static OSErr TrapClose(char *pb, Globals *g, short isHFS)
 {
 	short refNum = *(short *)(pb + pb_ioRefNum);
 	Ptr fcb = GetFCB(refNum);
-	if (fcb == NULL) return kFnfErr;
+	if (fcb == NULL) return kRfNumErr;
 	reg_set(g->regBase, 0, *(unsigned long *)(fcb + kFCBHostHandle));
 	reg_command(g->regBase, kCmdClose);
 	FreeFCB(refNum);
@@ -569,7 +569,7 @@ static OSErr TrapRead(char *pb, Globals *g, short isHFS)
 	unsigned long actual;
 
 	fcb = GetFCB(refNum);
-	if (fcb == NULL) return kFnfErr;
+	if (fcb == NULL) return kRfNumErr;
 
 	mark   = *(long *)(fcb + kFCBCrPs);
 	eof    = *(long *)(fcb + kFCBEOF);
@@ -618,7 +618,7 @@ static OSErr TrapWrite(char *pb, Globals *g, short isHFS)
 	unsigned long actual;
 
 	fcb = GetFCB(refNum);
-	if (fcb == NULL) return kFnfErr;
+	if (fcb == NULL) return kRfNumErr;
 
 	mark = *(long *)(fcb + kFCBCrPs);
 	eof  = *(long *)(fcb + kFCBEOF);
@@ -659,7 +659,7 @@ static OSErr TrapWrite(char *pb, Globals *g, short isHFS)
 static OSErr TrapGetEOF(char *pb, Globals *g, short isHFS)
 {
 	Ptr fcb = GetFCB(*(short *)(pb + pb_ioRefNum));
-	if (fcb == NULL) return kFnfErr;
+	if (fcb == NULL) return kRfNumErr;
 	*(long *)(pb + pb_ioMisc) = *(long *)(fcb + kFCBEOF);
 	return kNoErr;
 }
@@ -669,7 +669,7 @@ static OSErr TrapSetEOF(char *pb, Globals *g, short isHFS)
 	short refNum = *(short *)(pb + pb_ioRefNum);
 	long newEOF = *(long *)(pb + pb_ioMisc);
 	Ptr fcb = GetFCB(refNum);
-	if (fcb == NULL) return kFnfErr;
+	if (fcb == NULL) return kRfNumErr;
 
 	reg_set(g->regBase, 0, *(unsigned long *)(fcb + kFCBHostHandle));
 	reg_set(g->regBase, 1, (unsigned long)newEOF);
@@ -683,7 +683,7 @@ static OSErr TrapSetEOF(char *pb, Globals *g, short isHFS)
 static OSErr TrapGetFPos(char *pb, Globals *g, short isHFS)
 {
 	Ptr fcb = GetFCB(*(short *)(pb + pb_ioRefNum));
-	if (fcb == NULL) return kFnfErr;
+	if (fcb == NULL) return kRfNumErr;
 	*(long *)(pb + pb_ioPosOffset) = *(long *)(fcb + kFCBCrPs);
 	*(long *)(pb + pb_ioReqCount)  = 0;
 	*(long *)(pb + pb_ioActCount)  = 0;
@@ -696,7 +696,7 @@ static OSErr TrapSetFPos(char *pb, Globals *g, short isHFS)
 	long posOffset = *(long *)(pb + pb_ioPosOffset);
 	Ptr fcb = GetFCB(*(short *)(pb + pb_ioRefNum));
 	long mark, eof;
-	if (fcb == NULL) return kFnfErr;
+	if (fcb == NULL) return kRfNumErr;
 
 	mark = *(long *)(fcb + kFCBCrPs);
 	eof  = *(long *)(fcb + kFCBEOF);
