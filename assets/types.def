@@ -118,6 +118,43 @@ struct FileParam {
     76 long     ioFlMdDat
 }
 
+struct HVolumeParam {
+    0  ParamBlockHeader header
+    24 sword    ioFRefNum
+    26 sbyte    filler1
+    27 sbyte    filler2
+    28 sword    ioVolIndex
+    30 long     ioVCrDate
+    34 long     ioVLsMod
+    38 sword    ioVAtrb
+    40 sword    ioVNmFls
+    42 word     ioVBitMap
+    44 word     ioAllocPtr
+    46 word     ioVNmAlBlks
+    48 long     ioVAlBlkSiz
+    52 long     ioVClpSiz
+    56 word     ioAlBlSt
+    58 long     ioVNxtCNID
+    62 word     ioVFrBlk
+    64 sword    ioVSigWord
+    66 sword    ioVDrvInfo
+    68 sword    ioVDRefNum
+    70 sword    ioVFSID
+    72 long     ioVBkUp
+    76 sword    ioVSeqNum
+    78 long     ioVWrCnt
+    82 long     ioVFilCnt
+    86 long     ioVDirCnt
+    90 long     ioVFndrInfo0
+    94 long     ioVFndrInfo1
+    98 long     ioVFndrInfo2
+    102 long    ioVFndrInfo3
+    106 long    ioVFndrInfo4
+    110 long    ioVFndrInfo5
+    114 long    ioVFndrInfo6
+    118 long    ioVFndrInfo7
+}
+
 struct VolumeParam {
     0  ParamBlockHeader header
     24 sword    ioFRefNum

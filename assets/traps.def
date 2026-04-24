@@ -231,6 +231,15 @@ A014 GetVol os
 # These are the H-prefixed variants documented in Inside Macintosh.
 # They use HParamBlockRec (larger than ParamBlockRec) and include
 # ioDirID for hierarchical path resolution.
+#
+# GetVolInfo with bit 9 returns the extended HVolumeParam block
+# (Inside Mac IV) with HFS-specific volume info fields.
+
+A207 GetVolInfo os
+  in  pb:^HVolumeParam.A0
+  out err:OSErr.D0
+  show-in  pb ioNamePtr ioVRefNum ioVolIndex
+  show-out pb ioResult ioNamePtr ioVRefNum ioVCrDate ioVLsMod ioVAtrb ioVNmFls ioVNmAlBlks ioVAlBlkSiz ioVFrBlk ioVSigWord ioVDrvInfo ioVDRefNum ioVFSID ioVBkUp ioVWrCnt ioVFilCnt ioVDirCnt
 
 A200 HOpen os
   in  pb:^HIOParam.A0

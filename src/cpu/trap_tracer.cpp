@@ -66,16 +66,28 @@ void TrapTracer::addTrap(uint16_t trapWord)
 {
 	uint16_t key = TrapDefs::maskTrapWord(trapWord);
 	allowed_.set(key);
-	/* OS trap without bit 9?  Also enable the bit-9 variant so that
-	   e.g. +GetVolInfo matches both $A007 and $A207. */
-	if (!(key & 0x0800) && !(key & 0x0200)) allowed_.set(key | 0x0200);
+	/* OS trap: pair base ↔ bit-9 variant so that +GetVolInfo matches
+	   both $A007 and $A207 regardless of which entry was resolved. */
+	if (!(key & 0x0800))
+	{
+		if (!(key & 0x0200))
+			allowed_.set(key | 0x0200);
+		else
+			allowed_.set(key & ~0x0200);
+	}
 }
 
 void TrapTracer::removeTrap(uint16_t trapWord)
 {
 	uint16_t key = TrapDefs::maskTrapWord(trapWord);
 	allowed_.reset(key);
-	if (!(key & 0x0800) && !(key & 0x0200)) allowed_.reset(key | 0x0200);
+	if (!(key & 0x0800))
+	{
+		if (!(key & 0x0200))
+			allowed_.reset(key | 0x0200);
+		else
+			allowed_.reset(key & ~0x0200);
+	}
 }
 
 void TrapTracer::addAllTraps()
