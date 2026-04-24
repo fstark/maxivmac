@@ -508,7 +508,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t dirID = s_volume.wdToDirID(wdRef);
 			if (dirID != 0)
 			{
-				regParam[0] = 0;
+				regParam[0] = s_volume.wdToProcID(wdRef);
 				regParam[1] = dirID;
 				regResult = 0;
 			}
@@ -522,9 +522,10 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSOpenWD:
 		{
 			uint32_t dirID = regParam[1];
-			uint32_t wdRef = s_volume.openWD(dirID);
+			uint32_t procID = regParam[2];
+			uint32_t wdRef = s_volume.openWD(dirID, procID);
 			regParam[0] = wdRef;
-			dbg_printf("[ExtFS] OpenWD dir=%u → wd=%u\n", dirID, wdRef);
+			dbg_printf("[ExtFS] OpenWD dir=%u proc=%u → wd=%u\n", dirID, procID, wdRef);
 			regResult = 0;
 		}
 		break;

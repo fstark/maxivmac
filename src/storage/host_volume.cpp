@@ -593,17 +593,23 @@ void HostVolume::closeFork(uint32_t handle)
 
 /* ── Working directories ──────────────────────────── */
 
-uint32_t HostVolume::openWD(uint32_t dirID)
+uint32_t HostVolume::openWD(uint32_t dirID, uint32_t procID)
 {
 	uint32_t wdRef = nextWD_++;
-	wdTable_[wdRef] = dirID;
+	wdTable_[wdRef] = {dirID, procID};
 	return wdRef;
 }
 
 uint32_t HostVolume::wdToDirID(uint32_t wdRef) const
 {
 	auto it = wdTable_.find(wdRef);
-	return (it != wdTable_.end()) ? it->second : 0;
+	return (it != wdTable_.end()) ? it->second.dirID : 0;
+}
+
+uint32_t HostVolume::wdToProcID(uint32_t wdRef) const
+{
+	auto it = wdTable_.find(wdRef);
+	return (it != wdTable_.end()) ? it->second.procID : 0;
 }
 
 void HostVolume::closeWD(uint32_t wdRef)

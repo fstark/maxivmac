@@ -235,8 +235,9 @@ public:
 		ref that maps back to a dirID via wdToDirID().
 	*/
 
-	uint32_t openWD(uint32_t dirID);
+	uint32_t openWD(uint32_t dirID, uint32_t procID = 0);
 	uint32_t wdToDirID(uint32_t wdRef) const;
+	uint32_t wdToProcID(uint32_t wdRef) const;
 	void closeWD(uint32_t wdRef);
 
 	/* ── Catalog consistency ──────────────────────── */
@@ -276,7 +277,12 @@ private:
 	std::unordered_map<uint32_t, OpenFork> openForks_; // handle → OpenFork
 	uint32_t nextHandle_ = 1;						   // monotonic handle allocator
 
-	std::unordered_map<uint32_t, uint32_t> wdTable_; // wdRef → dirID
+	struct WDEntry
+	{
+		uint32_t dirID = 0;
+		uint32_t procID = 0;
+	};
+	std::unordered_map<uint32_t, WDEntry> wdTable_; // wdRef → WDEntry
 	uint32_t nextWD_ = 1;
 
 	mutable TextStats textStats_; // mutable: updated by const-ish read paths

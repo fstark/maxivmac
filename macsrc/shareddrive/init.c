@@ -1290,6 +1290,7 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 		if (dirID != 0 && dirID != (long)kRootDirID) {
 			reg_set(g->regBase, 0, (unsigned long)kOurVRefNum);
 			reg_set(g->regBase, 1, (unsigned long)dirID);
+			reg_set(g->regBase, 2, 0);  /* procID = 0 for system WDs */
 			reg_command(g->regBase, kCmdOpenWD);
 			if (reg_result(g->regBase) == 0) {
 				unsigned long wdRef = reg_get(g->regBase, 0);
@@ -1338,9 +1339,11 @@ static OSErr TrapFlushVol(char *pb, Globals *g, short isHFS)
 static OSErr TrapOpenWD(char *pb, Globals *g, short isHFS)
 {
 	long dirID = *(long *)(pb + pb_ioWDDirID);
+	long procID = *(long *)(pb + pb_ioWDProcID);
 
 	reg_set(g->regBase, 0, (unsigned long)kOurVRefNum);
 	reg_set(g->regBase, 1, (unsigned long)dirID);
+	reg_set(g->regBase, 2, (unsigned long)procID);
 	reg_command(g->regBase, kCmdOpenWD);
 	if (reg_result(g->regBase) != 0) return kFnfErr;
 
@@ -1372,17 +1375,18 @@ static OSErr TrapGetWDInfo(char *pb, Globals *g, short isHFS)
 
 	if (vRefNum == kOurVRefNum || vRefNum == kOurDriveNum) {
 		dirID = kRootDirID;
+		*(long *)(pb + pb_ioWDProcID) = 0;
 	} else {
 		unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
 		reg_set(g->regBase, 0, wdRef);
 		reg_command(g->regBase, kCmdGetWDInfo);
 		if (reg_result(g->regBase) != 0) return kNsvErr;
+		*(long *)(pb + pb_ioWDProcID) = (long)reg_get(g->regBase, 0);
 		dirID = reg_get(g->regBase, 1);
 	}
 
 	*(short *)(pb + pb_ioWDVRefNum) = kOurVRefNum;
 	*(long *)(pb + pb_ioWDDirID) = dirID;
-	*(long *)(pb + pb_ioWDProcID) = 0;
 	{
 		unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 		if (nameAddr != 0) {
@@ -1929,6 +1933,7 @@ void main(void)
 	   host WD table. */
 	reg_set(regBase, 0, (unsigned long)kOurVRefNum);
 	reg_set(regBase, 1, (unsigned long)kRootDirID);
+	reg_set(regBase, 2, 0);  /* procID = 0 for root WD */
 	reg_command(regBase, kCmdOpenWD);
 	{
 		unsigned long wdRef = reg_get(regBase, 0);
