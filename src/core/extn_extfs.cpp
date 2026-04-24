@@ -221,6 +221,8 @@ static void doCatInfoFull(uint32_t dirID, int32_t index, uint32_t nameAddr, uint
 	regParam[7] = e->crDate;
 	regParam[8] = e->modDate;
 	regParam[9] = e->finderFlags;
+	regParam[10] = e->fdLocation;
+	regParam[11] = e->fdFldr;
 	if (nameBuf) writePascalString(nameBuf, e->macName);
 	regResult = 0;
 }
@@ -647,10 +649,12 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t type = regParam[1];
 			uint32_t creator = regParam[2];
 			uint16_t flags = static_cast<uint16_t>(regParam[3]);
+			uint32_t location = regParam[4];
+			uint16_t folder = static_cast<uint16_t>(regParam[5]);
 			dbg_printf("[ExtFS] setFileInfo cnid=%u type='%.4s' creator='%.4s' flags=0x%04x\n",
 					   cnid, reinterpret_cast<const char *>(&type),
 					   reinterpret_cast<const char *>(&creator), flags);
-			auto err = s_volume.setFileInfo(cnid, type, creator, flags);
+			auto err = s_volume.setFileInfo(cnid, type, creator, flags, location, folder);
 			regResult = fmErrToReg(err);
 		}
 		break;
@@ -799,6 +803,8 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			regParam[6] = e->modDate;
 			regParam[7] = e->finderFlags;
 			regParam[8] = e->parentDirID;
+			regParam[9] = e->fdLocation;
+			regParam[10] = e->fdFldr;
 			regResult = 0;
 		}
 		break;
@@ -921,7 +927,10 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 					uint32_t type = regParam[4];
 					uint32_t creator = regParam[5];
 					uint16_t flags = static_cast<uint16_t>(regParam[6]);
-					auto err = s_volume.setFileInfo(e->cnid, type, creator, flags);
+					uint32_t location = regParam[7];
+					uint16_t folder = static_cast<uint16_t>(regParam[8]);
+					auto err =
+						s_volume.setFileInfo(e->cnid, type, creator, flags, location, folder);
 					regResult = fmErrToReg(err);
 				}
 				break;
@@ -948,7 +957,10 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 						uint32_t type = regParam[4];
 						uint32_t creator = regParam[5];
 						uint16_t flags = static_cast<uint16_t>(regParam[6]);
-						auto err = s_volume.setFileInfo(e->cnid, type, creator, flags);
+						uint32_t location = regParam[7];
+						uint16_t folder = static_cast<uint16_t>(regParam[8]);
+						auto err =
+							s_volume.setFileInfo(e->cnid, type, creator, flags, location, folder);
 						regResult = fmErrToReg(err);
 					}
 				}

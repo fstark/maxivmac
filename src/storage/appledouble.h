@@ -40,6 +40,8 @@ struct FinderInfo
 	uint32_t type = 0;
 	uint32_t creator = 0;
 	uint16_t flags = 0;
+	uint32_t location = 0;
+	uint16_t folder = 0;
 
 	bool operator==(const FinderInfo &) const = default;
 };

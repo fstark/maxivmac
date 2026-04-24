@@ -73,6 +73,8 @@ struct CatalogEntry
 	uint32_t type = 0;	  // Finder file type    (e.g. 'TEXT', 'APPL')
 	uint32_t creator = 0; // Finder creator code  (e.g. 'ttxt', 'MSWD')
 	uint16_t finderFlags = 0;
+	uint32_t fdLocation = 0;   // Finder fdLocation (Point, encoded as uint32)
+	uint16_t fdFldr = 0;	   // Finder fdFldr (window ID)
 	uint32_t dataForkSize = 0; // Mac-visible size (MacRoman for TEXT)
 	uint32_t rsrcForkSize = 0; // from AppleDouble sidecar
 	uint32_t crDate = 0;	   // creation date, Mac epoch (seconds since 1904)
@@ -190,7 +192,8 @@ public:
 	// Update Finder type/creator/flags.  Writes through to the
 	// AppleDouble sidecar.  Toggles isText and recalculates dataForkSize
 	// if the type changes to/from 'TEXT'.
-	FMErr setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags);
+	FMErr setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags,
+					  uint32_t location = 0, uint16_t folder = 0);
 
 	// Get directory Finder info (DInfo + DXInfo, 32 bytes).
 	// Returns false if cnid is not a directory.

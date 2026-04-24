@@ -371,15 +371,18 @@ FMErr HostVolume::rename(uint32_t dirID, std::string_view oldMacName, std::strin
 
 /* ── Metadata ─────────────────────────────────────── */
 
-FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags)
+FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags,
+							  uint32_t location, uint16_t folder)
 {
 	CatalogEntry *e = mutableFindByCNID(cnid);
 	if (!e) return FMErr::kFnfErr;
 
-	appledouble::SetFinderInfo(e->hostPath, {type, creator, flags});
+	appledouble::SetFinderInfo(e->hostPath, {type, creator, flags, location, folder});
 	e->type = type;
 	e->creator = creator;
 	e->finderFlags = flags;
+	e->fdLocation = location;
+	e->fdFldr = folder;
 
 	bool wasText = e->isText;
 	e->isText = (type == appledouble::FourCC("TEXT"));
@@ -705,6 +708,8 @@ void HostVolume::scanDirectory(const std::filesystem::path &hostDir, uint32_t pa
 			ce.type = info.finder.type;
 			ce.creator = info.finder.creator;
 			ce.finderFlags = info.finder.flags;
+			ce.fdLocation = info.finder.location;
+			ce.fdFldr = info.finder.folder;
 			ce.dataForkSize = info.dataForkSize;
 			ce.rsrcForkSize = info.rsrcForkSize;
 			ce.crDate = info.crDate;

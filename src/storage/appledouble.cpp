@@ -221,6 +221,11 @@ FinderInfo FinderInfoFromBlob(const std::vector<uint8_t> &blob)
 	info.type = ReadBE32(blob.data());
 	info.creator = ReadBE32(blob.data() + 4);
 	info.flags = ReadBE16(blob.data() + 8);
+	if (blob.size() >= 16)
+	{
+		info.location = ReadBE32(blob.data() + 10);
+		info.folder = ReadBE16(blob.data() + 14);
+	}
 	return info;
 }
 
@@ -230,6 +235,8 @@ std::vector<uint8_t> BlobFromFinderInfo(const FinderInfo &info)
 	WriteBE32(blob.data(), info.type);
 	WriteBE32(blob.data() + 4, info.creator);
 	WriteBE16(blob.data() + 8, info.flags);
+	WriteBE32(blob.data() + 10, info.location);
+	WriteBE16(blob.data() + 14, info.folder);
 	return blob;
 }
 

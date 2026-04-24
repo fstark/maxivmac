@@ -31,8 +31,8 @@ These findings are intentionally not addressed.  Each has a rationale.
 |---------|----------|-----------|
 | FreeFCB leaves stale data (P3 #1) | MINOR | All critical fields overwritten by AllocFCB. No regression risk. |
 | vcbFilCnt/vcbDirCnt in VCB zero (P4 #2) | MINOR | Most tools use PBHGetVInfo which returns correct values. Direct VCB access is rare. |
-| fdLocation zeroed (P10 #1) | MINOR | Cosmetic — Finder auto-arranges at (0,0). Acceptable for virtual volume. |
-| fdLocation/fdFldr not persisted on Set (P10 #2) | MINOR | Would require host-side protocol extension. Out of scope for bug-fix pass. |
+| fdLocation zeroed (P10 #1) | MINOR | Fixed — fdLocation/fdFldr now persisted via host protocol and AppleDouble. |
+| fdLocation/fdFldr not persisted on Set (P10 #2) | MINOR | Fixed — guest passes fdLocation/fdFldr via registers 7-8 on Set, host stores in CatalogEntry and AppleDouble sidecar. |
 | Newline mode not implemented (P7 #5) | MINOR | Rare in File Manager usage. Significant effort for low payoff. |
 | WD limit of 99 (P9 #1) | MINOR | Sufficient for practical usage. Deep hierarchies are unrealistic. |
 | DQE failure degrades silently (P11 #6) | MINOR | Fallback is acceptable — volume still accessible by name. |

@@ -893,13 +893,16 @@ static OSErr TrapGetFileInfo(char *pb, Globals *g, short isHFS)
 		unsigned long crDate  = reg_get(g->regBase, 5);
 		unsigned long modDate = reg_get(g->regBase, 6);
 		unsigned long fFlags  = reg_get(g->regBase, 7);
+		unsigned long parentID = reg_get(g->regBase, 8);
+		unsigned long fdLoc   = reg_get(g->regBase, 9);
+		unsigned long fdFldr  = reg_get(g->regBase, 10);
 
 		*(unsigned char *)(pb + pb_ioFlAttrib)       = 0;
 		*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
 		*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
 		*(short *)(pb + pb_ioFlFndrInfo + 8)         = (short)fFlags;
-		*(long  *)(pb + pb_ioFlFndrInfo + 10)        = 0;
-		*(short *)(pb + pb_ioFlFndrInfo + 14)        = 0;
+		*(long  *)(pb + pb_ioFlFndrInfo + 10)        = (long)fdLoc;
+		*(short *)(pb + pb_ioFlFndrInfo + 14)        = (short)fdFldr;
 		*(long  *)(pb + pb_ioFlNum)   = cnid;
 		*(short *)(pb + pb_ioFlStBlk) = 0;
 		*(long  *)(pb + pb_ioFlLgLen) = size;
@@ -912,7 +915,7 @@ static OSErr TrapGetFileInfo(char *pb, Globals *g, short isHFS)
 		if (isHFS) {
 			*(long *)(pb + pb_ioFlBkDat) = 0;
 			mem_zero(pb + pb_ioFlXFndrInfo, 16);
-			*(long *)(pb + pb_ioFlParID) = (long)reg_get(g->regBase, 8);
+			*(long *)(pb + pb_ioFlParID) = (long)parentID;
 			*(long *)(pb + pb_ioFlClpSiz) = 0;
 		}
 	}
@@ -932,6 +935,9 @@ static OSErr TrapSetFileInfo(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 5, *(unsigned long *)(pb + pb_ioFlFndrInfo + 4));
 	reg_set(g->regBase, 6, (unsigned long)(unsigned short)
 		*(short *)(pb + pb_ioFlFndrInfo + 8));
+	reg_set(g->regBase, 7, *(unsigned long *)(pb + pb_ioFlFndrInfo + 10));
+	reg_set(g->regBase, 8, (unsigned long)(unsigned short)
+		*(short *)(pb + pb_ioFlFndrInfo + 14));
 	reg_command(g->regBase, kCmdFileOpByName);
 	return host_err(g->regBase);
 }
@@ -963,6 +969,8 @@ static OSErr TrapGetCatInfo(char *pb, Globals *g, short isHFS)
 		unsigned long crDate  = reg_get(g->regBase, 7);
 		unsigned long modDate = reg_get(g->regBase, 8);
 		unsigned long fFlags  = reg_get(g->regBase, 9);
+		unsigned long fdLoc   = reg_get(g->regBase, 10);
+		unsigned long fdFldr  = reg_get(g->regBase, 11);
 
 		/* Copy name to caller's buffer */
 		if (nameAddr != 0)
@@ -997,8 +1005,8 @@ static OSErr TrapGetCatInfo(char *pb, Globals *g, short isHFS)
 			*(unsigned long *)(pb + pb_ioFlFndrInfo)     = type;
 			*(unsigned long *)(pb + pb_ioFlFndrInfo + 4) = creator;
 			*(short *)(pb + pb_ioFlFndrInfo + 8)         = (short)fFlags;
-			*(long  *)(pb + pb_ioFlFndrInfo + 10)        = 0;
-			*(short *)(pb + pb_ioFlFndrInfo + 14)        = 0;
+			*(long  *)(pb + pb_ioFlFndrInfo + 10)        = (long)fdLoc;
+			*(short *)(pb + pb_ioFlFndrInfo + 14)        = (short)fdFldr;
 			*(long  *)(pb + pb_ioFlNum)    = cnid;
 			*(short *)(pb + pb_ioFlStBlk)  = 0;
 			*(long  *)(pb + pb_ioFlLgLen)  = dataSz;
@@ -1047,6 +1055,9 @@ static OSErr TrapSetCatInfo(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 5, *(unsigned long *)(pb + pb_ioFlFndrInfo + 4));
 	reg_set(g->regBase, 6, (unsigned long)(unsigned short)
 		*(short *)(pb + pb_ioFlFndrInfo + 8));
+	reg_set(g->regBase, 7, *(unsigned long *)(pb + pb_ioFlFndrInfo + 10));
+	reg_set(g->regBase, 8, (unsigned long)(unsigned short)
+		*(short *)(pb + pb_ioFlFndrInfo + 14));
 	reg_command(g->regBase, kCmdFileOpByName);
 	return host_err(g->regBase);
 }
