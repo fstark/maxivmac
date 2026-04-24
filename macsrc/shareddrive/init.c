@@ -588,7 +588,13 @@ static OSErr TrapRead(char *pb, Globals *g, short isHFS)
 	}
 	if (mark > eof) mark = eof;
 
-	if (reqCount <= 0) {
+	if (reqCount < 0) {
+		*(long *)(pb + pb_ioActCount)  = 0;
+		*(long *)(pb + pb_ioPosOffset) = mark;
+		*(long *)(fcb + kFCBCrPs) = mark;
+		return kParamErr;
+	}
+	if (reqCount == 0) {
 		*(long *)(pb + pb_ioActCount)  = 0;
 		*(long *)(pb + pb_ioPosOffset) = mark;
 		*(long *)(fcb + kFCBCrPs) = mark;
@@ -649,7 +655,12 @@ static OSErr TrapWrite(char *pb, Globals *g, short isHFS)
 		return kPosErr;
 	}
 
-	if (reqCount <= 0) {
+	if (reqCount < 0) {
+		*(long *)(pb + pb_ioActCount) = 0;
+		*(long *)(pb + pb_ioPosOffset) = mark;
+		return kParamErr;
+	}
+	if (reqCount == 0) {
 		*(long *)(pb + pb_ioActCount) = 0;
 		*(long *)(pb + pb_ioPosOffset) = mark;
 		return kNoErr;
