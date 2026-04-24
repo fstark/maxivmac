@@ -580,7 +580,12 @@ static OSErr TrapRead(char *pb, Globals *g, short isHFS)
 		case 2: mark = eof + posOffset; break;
 		case 3: mark += posOffset; break;
 	}
-	if (mark < 0) mark = 0;
+	if (mark < 0) {
+		*(long *)(pb + pb_ioActCount)  = 0;
+		*(long *)(pb + pb_ioPosOffset) = 0;
+		*(long *)(fcb + kFCBCrPs) = 0;
+		return kPosErr;
+	}
 	if (mark > eof) mark = eof;
 
 	if (reqCount <= 0) {
@@ -589,21 +594,30 @@ static OSErr TrapRead(char *pb, Globals *g, short isHFS)
 		*(long *)(fcb + kFCBCrPs) = mark;
 		return kNoErr;
 	}
-	if (mark + reqCount > eof)
-		reqCount = eof - mark;
+	{
+		short hitEof = 0;
+		if (mark + reqCount > eof) {
+			reqCount = eof - mark;
+			hitEof = 1;
+		}
 
-	reg_set(g->regBase, 0, handle);
-	reg_set(g->regBase, 1, (unsigned long)mark);
-	reg_set(g->regBase, 2, (unsigned long)reqCount);
-	reg_set(g->regBase, 3, buffer);
-	reg_command(g->regBase, kCmdRead);
-	actual = reg_get(g->regBase, 0);
+		reg_set(g->regBase, 0, handle);
+		reg_set(g->regBase, 1, (unsigned long)mark);
+		reg_set(g->regBase, 2, (unsigned long)reqCount);
+		reg_set(g->regBase, 3, buffer);
+		reg_command(g->regBase, kCmdRead);
+		actual = reg_get(g->regBase, 0);
 
-	mark += actual;
-	*(long *)(fcb + kFCBCrPs) = mark;
-	*(long *)(pb + pb_ioActCount) = actual;
-	*(long *)(pb + pb_ioPosOffset) = mark;
-	return (actual < (unsigned long)reqCount) ? kEofErr : kNoErr;
+		mark += actual;
+		*(long *)(fcb + kFCBCrPs) = mark;
+		*(long *)(pb + pb_ioActCount) = actual;
+		*(long *)(pb + pb_ioPosOffset) = mark;
+		if (actual < (unsigned long)reqCount)
+			return kEofErr;
+		if (hitEof)
+			return kEofErr;
+		return kNoErr;
+	}
 }
 
 static OSErr TrapWrite(char *pb, Globals *g, short isHFS)
@@ -629,7 +643,11 @@ static OSErr TrapWrite(char *pb, Globals *g, short isHFS)
 		case 2: mark = eof + posOffset; break;
 		case 3: mark += posOffset; break;
 	}
-	if (mark < 0) mark = 0;
+	if (mark < 0) {
+		*(long *)(pb + pb_ioActCount) = 0;
+		*(long *)(pb + pb_ioPosOffset) = 0;
+		return kPosErr;
+	}
 
 	if (reqCount <= 0) {
 		*(long *)(pb + pb_ioActCount) = 0;
@@ -705,8 +723,16 @@ static OSErr TrapSetFPos(char *pb, Globals *g, short isHFS)
 		case 2: mark = eof + posOffset; break;
 		case 3: mark += posOffset; break;
 	}
-	if (mark < 0) mark = 0;
-	if (mark > eof) mark = eof;
+	if (mark < 0) {
+		*(long *)(fcb + kFCBCrPs) = 0;
+		*(long *)(pb + pb_ioPosOffset) = 0;
+		return kPosErr;
+	}
+	if (mark > eof) {
+		*(long *)(fcb + kFCBCrPs) = eof;
+		*(long *)(pb + pb_ioPosOffset) = eof;
+		return kEofErr;
+	}
 	*(long *)(fcb + kFCBCrPs) = mark;
 	*(long *)(pb + pb_ioPosOffset) = mark;
 	return kNoErr;
