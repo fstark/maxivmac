@@ -156,8 +156,8 @@ public:
 	// Count immediate children of a directory.
 	int childCount(uint32_t parentDirID) const;
 
-	// Aggregate file count and total data-fork bytes for the whole volume.
-	void volumeStats(uint32_t &outFiles, uint32_t &outBytes) const;
+	// Aggregate file count, directory count, and total data-fork bytes.
+	void volumeStats(uint32_t &outFiles, uint32_t &outDirs, uint32_t &outBytes) const;
 
 	/* ── File/directory creation ──────────────────── */
 

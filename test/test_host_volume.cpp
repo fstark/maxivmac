@@ -972,9 +972,10 @@ TEST_CASE("HostVolume: volumeStats")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	uint32_t files = 0, bytes = 0;
-	vol.volumeStats(files, bytes);
+	uint32_t files = 0, dirs = 0, bytes = 0;
+	vol.volumeStats(files, dirs, bytes);
 	CHECK(files == 3);
+	CHECK(dirs == 0);
 	CHECK(bytes == 100);
 }
 
@@ -984,9 +985,10 @@ TEST_CASE("HostVolume: volumeStats empty")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	uint32_t files = 0, bytes = 0;
-	vol.volumeStats(files, bytes);
+	uint32_t files = 0, dirs = 0, bytes = 0;
+	vol.volumeStats(files, dirs, bytes);
 	CHECK(files == 0);
+	CHECK(dirs == 0);
 	CHECK(bytes == 0);
 }
 TEST_CASE("HostVolume: validateCatalog passes on clean mount")

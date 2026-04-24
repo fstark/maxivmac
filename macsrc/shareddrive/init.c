@@ -59,6 +59,9 @@
 #define kAllocBlkSize   32768L   /* 32 KB allocation blocks */
 #define kTotalAllocBlks 32000    /* 32000 * 32KB ≈ 1 GB */
 
+/* VCB field offsets (from Inside Macintosh IV) */
+#define kVcbNxtCNID     38       /* LONGINT — next unused CNID */
+
 /* Low-memory globals */
 #define kSonyVarsPtr    0x0134
 #define kCheckVal       0x841339E2UL
@@ -862,6 +865,12 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 			}
 			*(short *)(pb + pb_ioRefNum) = refNum;
 		}
+		/* Keep vcbNxtCNID current */
+		{
+			long nextCNID = *(long *)(g->vcb + kVcbNxtCNID);
+			if ((long)cnid >= nextCNID)
+				*(long *)(g->vcb + kVcbNxtCNID) = (long)(cnid + 1);
+		}
 	}
 	return kNoErr;
 }
@@ -914,6 +923,12 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 				pstr_copy_max(fcb + kFCBCName, (char *)loc.nameAddr, 31);
 			}
 			*(short *)(pb + pb_ioRefNum) = refNum;
+		}
+		/* Keep vcbNxtCNID current */
+		{
+			long nextCNID = *(long *)(g->vcb + kVcbNxtCNID);
+			if ((long)cnid >= nextCNID)
+				*(long *)(g->vcb + kVcbNxtCNID) = (long)(cnid + 1);
 		}
 	}
 	return kNoErr;
@@ -1100,13 +1115,20 @@ static OSErr TrapSetCatInfo(char *pb, Globals *g, short isHFS)
 static OSErr TrapCreate(char *pb, Globals *g, short isHFS)
 {
 	TrapLocation loc = ExtractLocation(pb, isHFS, g);
+	OSErr err;
 	if (loc.nameAddr == 0) return kParamErr;
 	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
 	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
 	reg_set(g->regBase, 2, loc.nameAddr);
 	reg_set(g->regBase, 3, kFileOpCreate);
 	reg_command(g->regBase, kCmdFileOpByName);
-	return host_err(g->regBase);
+	err = host_err(g->regBase);
+	if (err == kNoErr) {
+		/* Host assigned a new CNID — bump vcbNxtCNID */
+		long nextCNID = *(long *)(g->vcb + kVcbNxtCNID);
+		*(long *)(g->vcb + kVcbNxtCNID) = nextCNID + 1;
+	}
+	return err;
 }
 
 static OSErr TrapDelete(char *pb, Globals *g, short isHFS)
@@ -1139,7 +1161,7 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 	Ptr v = g->vcb;
-	unsigned long fileCount, totalBytes;
+	unsigned long fileCount, dirCount, totalBytes;
 	short vidx = *(short *)(pb + pb_ioVolIndex);
 
 	/* Indexed VCB walk: only handle if Nth VCB is ours */
@@ -1160,6 +1182,7 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 	reg_command(g->regBase, kCmdGetVol);
 	fileCount  = reg_get(g->regBase, 0);
 	totalBytes = reg_get(g->regBase, 1);
+	dirCount   = reg_get(g->regBase, 2);
 
 	if (nameAddr != 0) {
 		unsigned char *p = (unsigned char *)nameAddr;
@@ -1199,7 +1222,7 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 		*(short *)(pb + 76) = 0;                     /* ioVSeqNum */
 		*(long  *)(pb + 78) = 0;                     /* ioVWrCnt */
 		*(long  *)(pb + 82) = fileCount;             /* ioVFilCnt */
-		*(long  *)(pb + 86) = 1;                     /* ioVDirCnt */
+		*(long  *)(pb + 86) = dirCount;              /* ioVDirCnt */
 		mem_zero(pb + 90, 32);                       /* ioVFndrInfo */
 	}
 	return kNoErr;

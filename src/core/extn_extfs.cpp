@@ -242,12 +242,13 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		case kExtFSGetVol:
 		{
-			uint32_t files, bytes;
-			s_volume.volumeStats(files, bytes);
+			uint32_t files, dirs, bytes;
+			s_volume.volumeStats(files, dirs, bytes);
 			regParam[0] = files;
 			regParam[1] = bytes;
+			regParam[2] = dirs;
 			regResult = 0;
-			dbg_printf("[ExtFS] GetVol → %u files, %u bytes\n", files, bytes);
+			dbg_printf("[ExtFS] GetVol → %u files, %u dirs, %u bytes\n", files, dirs, bytes);
 		}
 		break;
 

@@ -147,13 +147,18 @@ int HostVolume::childCount(uint32_t parentDirID) const
 	return count;
 }
 
-void HostVolume::volumeStats(uint32_t &outFiles, uint32_t &outBytes) const
+void HostVolume::volumeStats(uint32_t &outFiles, uint32_t &outDirs, uint32_t &outBytes) const
 {
 	outFiles = 0;
+	outDirs = 0;
 	outBytes = 0;
 	for (const auto &e : catalog_)
 	{
-		if (!e.isDirectory)
+		if (e.isDirectory)
+		{
+			outDirs++;
+		}
+		else
 		{
 			outFiles++;
 			outBytes += e.dataForkSize;
