@@ -197,10 +197,14 @@
 #define kNoErr       0
 #define kIoErr     (-36)
 #define kEofErr    (-39)
+#define kPosErr    (-40)
 #define kTmfoErr   (-42)
 #define kFnfErr    (-43)
 #define kWPrErr    (-44)
+#define kOpWrErr   (-49)
 #define kParamErr  (-50)
+#define kRfNumErr  (-51)
+#define kWrPermErr (-61)
 #define kNsvErr    (-35)
 
 /* Host register-block command numbers (coarse, Phase 1) */
