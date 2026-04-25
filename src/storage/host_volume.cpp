@@ -375,7 +375,7 @@ FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, ui
 							  uint32_t location, uint16_t folder)
 {
 	CatalogEntry *e = mutableFindByCNID(cnid);
-	if (!e) return FMErr::kFnfErr;
+	if (!e || e->isDirectory) return FMErr::kFnfErr;
 
 	appledouble::SetFinderInfo(e->hostPath, {type, creator, flags, location, folder});
 	e->type = type;
