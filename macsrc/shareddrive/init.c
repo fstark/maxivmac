@@ -242,6 +242,7 @@
 #define kPB_GetFileInfo        0x0231
 #define kPB_Open               0x0232
 #define kPB_OpenRF             0x0233
+#define kPB_SetDefaultVRefNum  0x0245
 
 /* FileOpByName sub-opcodes */
 #define kFileOpCreate      0
@@ -782,6 +783,7 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 	unsigned char perm = *(unsigned char *)(pb + pb_ioPermssn);
 
 	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_Open);
 	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
 
@@ -828,6 +830,7 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 	unsigned char perm = *(unsigned char *)(pb + pb_ioPermssn);
 
 	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_OpenRF);
 	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
 
@@ -872,6 +875,7 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 static OSErr TrapGetFileInfo(char *pb, Globals *g, short isHFS)
 {
 	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_GetFileInfo);
 	return host_err(g->regBase);
 }
@@ -899,6 +903,7 @@ static OSErr TrapSetFileInfo(char *pb, Globals *g, short isHFS)
 static OSErr TrapGetCatInfo(char *pb, Globals *g, short isHFS)
 {
 	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_GetCatInfo);
 	return host_err(g->regBase);
 }
@@ -1120,6 +1125,8 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 	}
 
 	*(Ptr *)kDefVCBPtr = g->vcb;
+	reg_set(g->regBase, 0, (unsigned long)(unsigned short)g->defaultWDRefNum);
+	reg_command(g->regBase, kPB_SetDefaultVRefNum);
 	return kNoErr;
 }
 

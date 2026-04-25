@@ -265,13 +265,14 @@ struct PBRef
 [[maybe_unused]] static constexpr uint16_t kPB_OpenWD = 0x242;
 [[maybe_unused]] static constexpr uint16_t kPB_CloseWD = 0x243;
 [[maybe_unused]] static constexpr uint16_t kPB_GetWDInfo = 0x244;
+[[maybe_unused]] static constexpr uint16_t kPB_SetDefaultVRefNum = 0x245;
 
 /* ── PB resolve helper ───────────────────────────── */
 
-[[maybe_unused]] static uint32_t pbResolveDir(PBRef pb)
+[[maybe_unused]] static uint32_t pbResolveDir(PBRef pb, bool isHFS)
 {
 	int16_t vRefNum = pb[ioVRefNum];
-	uint32_t dirID = pb[ioDrDirID];
+	uint32_t dirID = isHFS ? static_cast<uint32_t>(pb[ioDrDirID]) : 0;
 	return s_volume.resolveDir(vRefNum, dirID);
 }
 
@@ -307,7 +308,7 @@ static void pbWriteFInfo(uint32_t pbAddr, const storage::CatalogEntry *e)
 	detail::pbWrite<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 14, e->fdFldr);
 }
 
-static void pbWriteFileFields(PBRef pb, const storage::CatalogEntry *e)
+static void pbWriteFileFields(PBRef pb, const storage::CatalogEntry *e, bool isHFS = true)
 {
 	pb[ioFlAttrib] = uint8_t(0);
 	pbWriteFInfo(pb.addr, e);
@@ -320,6 +321,7 @@ static void pbWriteFileFields(PBRef pb, const storage::CatalogEntry *e)
 	pb[ioFlRPyLen] = e->rsrcForkSize;
 	pb[ioFlCrDat] = e->crDate;
 	pb[ioFlMdDat] = e->modDate;
+	if (!isHFS) return; /* flat FileParam ends at ioFlMdDat (offset 80) */
 	pb[ioFlBkDat] = uint32_t(0);
 	/* Zero FXInfo (16 bytes at offset 84) */
 	for (int i = 0; i < 16; i++)
@@ -376,9 +378,9 @@ static void pbWriteRootDir(PBRef pb, uint32_t nameAddr)
 	if (nameAddr) writePascalString(nameAddr, "Shared");
 }
 
-static uint16_t PbGetCatInfo(PBRef pb)
+static uint16_t PbGetCatInfo(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb);
+	uint32_t dirID = pbResolveDir(pb, isHFS);
 	int16_t index = pb[ioFDirIndex];
 	uint32_t nameAddr = pb[ioNamePtr];
 
@@ -435,49 +437,25 @@ static uint16_t PbGetCatInfo(PBRef pb)
 	return 0;
 }
 
-static uint16_t PbGetFileInfo(PBRef pb)
+static uint16_t PbGetFileInfo(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb);
+	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
 	if (nameAddr == 0) return 50; /* paramErr */
 
 	std::string name = readPascalString(nameAddr);
 	dbg_printf("[ExtFS] PbGetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
-	if (dirID == kRootDirID || dirID == kRootParentID)
-	{
-		/* Root doesn't have file info, but return dummy for compatibility */
-		uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
-		pb[ioFlAttrib] = uint8_t(0);
-		for (int i = 0; i < 16; i++)
-			put_vm_byte(pb.addr + kOff_ioFlFndrInfo + i, 0);
-		pb[ioFlNum] = kRootDirID;
-		pb[ioFlStBlk] = int16_t(0);
-		pb[ioFlLgLen] = uint32_t(0);
-		pb[ioFlPyLen] = uint32_t(0);
-		pb[ioFlRStBlk] = int16_t(0);
-		pb[ioFlRLgLen] = uint32_t(0);
-		pb[ioFlRPyLen] = uint32_t(0);
-		pb[ioFlCrDat] = now;
-		pb[ioFlMdDat] = now;
-		pb[ioFlBkDat] = uint32_t(0);
-		for (int i = 0; i < 16; i++)
-			put_vm_byte(pb.addr + kOff_ioFlXFndrInfo + i, 0);
-		pb[ioFlParID] = kRootParentID;
-		pb[ioFlClpSiz] = uint32_t(0);
-		return 0;
-	}
-
 	auto *e = s_volume.findByPath(dirID, name);
 	if (!e) return 43; /* fnfErr */
 
-	pbWriteFileFields(pb, e);
+	pbWriteFileFields(pb, e, isHFS);
 	return 0;
 }
 
-static uint16_t PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType forkType)
+static uint16_t PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType forkType, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb);
+	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
 	uint8_t perm = pb[ioPermssn];
 
@@ -502,14 +480,14 @@ static uint16_t PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType fork
 	return 0;
 }
 
-static uint16_t PbOpen(PBRef pb, uint32_t regParam[])
+static uint16_t PbOpen(PBRef pb, uint32_t regParam[], bool isHFS)
 {
-	return PbOpenFork(pb, regParam, storage::ForkType::Data);
+	return PbOpenFork(pb, regParam, storage::ForkType::Data, isHFS);
 }
 
-static uint16_t PbOpenRF(PBRef pb, uint32_t regParam[])
+static uint16_t PbOpenRF(PBRef pb, uint32_t regParam[], bool isHFS)
 {
-	return PbOpenFork(pb, regParam, storage::ForkType::Resource);
+	return PbOpenFork(pb, regParam, storage::ForkType::Resource, isHFS);
 }
 
 /* ── GetCatInfoFull helper ─────────────────────────── */
@@ -1374,16 +1352,17 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			/* ── PB-based commands ────────────────────────── */
 
 		case kPB_GetCatInfo:
-			regResult = PbGetCatInfo(PBRef{regParam[0]});
+			regResult = PbGetCatInfo(PBRef{regParam[0]}, regParam[1] != 0);
 			break;
 		case kPB_GetFileInfo:
-			regResult = PbGetFileInfo(PBRef{regParam[0]});
+			regResult = PbGetFileInfo(PBRef{regParam[0]}, regParam[1] != 0);
 			break;
 		case kPB_Open:
-			regResult = PbOpen(PBRef{regParam[0]}, regParam);
+			regResult = PbOpen(PBRef{regParam[0]}, regParam, regParam[1] != 0);
 			break;
 		case kPB_OpenRF:
-			regResult = PbOpenRF(PBRef{regParam[0]}, regParam);
+			regResult = PbOpenRF(PBRef{regParam[0]}, regParam, regParam[1] != 0,
+								 static_cast<int16_t>(regParam[2]));
 			break;
 
 		default:

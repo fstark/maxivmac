@@ -245,6 +245,11 @@ public:
 	uint32_t wdToProcID(uint32_t wdRef) const;
 	void closeWD(uint32_t wdRef);
 
+	/* Store the guest's current default volume/WD refnum (set by _SetVol).
+	   resolveDir() substitutes this when vRefNum=0. */
+	void setDefaultVRefNum(int16_t vRefNum);
+	int16_t defaultVRefNum() const { return defaultVRefNum_; }
+
 	/* ── Catalog consistency ──────────────────────── */
 
 	// Verify every catalog entry: host path exists, isDirectory matches
@@ -290,6 +295,7 @@ private:
 	};
 	std::unordered_map<uint32_t, WDEntry> wdTable_; // wdRef → WDEntry
 	uint32_t nextWD_ = 1;
+	int16_t defaultVRefNum_ = kGuestVRefNum; // current default from _SetVol
 
 	mutable TextStats textStats_; // mutable: updated by const-ish read paths
 

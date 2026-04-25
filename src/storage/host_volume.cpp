@@ -644,12 +644,19 @@ void HostVolume::closeWD(uint32_t wdRef)
 	wdTable_.erase(wdRef);
 }
 
+void HostVolume::setDefaultVRefNum(int16_t vRefNum)
+{
+	defaultVRefNum_ = vRefNum;
+}
+
 /* ── Directory resolution ─────────────────────────── */
 
 uint32_t HostVolume::resolveDir(int16_t vRefNum, uint32_t rawDirID) const
 {
 	if (rawDirID != 0) return rawDirID;
-	if (vRefNum == kGuestVRefNum || vRefNum == kGuestDriveNum || vRefNum == 0) return kRootDirID;
+	/* vRefNum 0 = "default volume" — substitute the stored default */
+	if (vRefNum == 0) vRefNum = defaultVRefNum_;
+	if (vRefNum == kGuestVRefNum || vRefNum == kGuestDriveNum) return kRootDirID;
 	/* Decode WD refnum: guest encodes as -(wdRef + 32000) */
 	auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
 	uint32_t dirID = wdToDirID(wdRef);
