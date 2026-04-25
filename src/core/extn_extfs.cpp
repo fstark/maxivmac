@@ -571,6 +571,69 @@ static uint16_t PbCatMove(PBRef pb, bool isHFS)
 	return fmErrToReg(err);
 }
 
+/* ── Phase 5: metadata handlers ───────────────────── */
+
+static uint16_t PbSetFileInfo(PBRef pb, bool isHFS)
+{
+	uint32_t dirID = pbResolveDir(pb, isHFS);
+	uint32_t nameAddr = pb[ioNamePtr];
+	if (nameAddr == 0) return 50; /* paramErr */
+
+	std::string name = readPascalString(nameAddr);
+	dbg_printf("[ExtFS] PbSetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
+
+	auto *e = s_volume.findByPath(dirID, name);
+	if (!e) return fmErrToReg(storage::FMErr::kFnfErr);
+
+	/* Read FInfo (16 bytes) directly from the PB at offset 32 */
+	uint32_t pbAddr = pb.addr;
+	uint32_t type = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo);
+	uint32_t creator = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 4);
+	uint16_t flags = detail::pbRead<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 8);
+	uint32_t location = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 10);
+	uint16_t folder = detail::pbRead<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 14);
+
+	auto err = s_volume.setFileInfo(e->cnid, type, creator, flags, location, folder);
+	return fmErrToReg(err);
+}
+
+static uint16_t PbSetCatInfo(PBRef pb, bool isHFS)
+{
+	uint32_t dirID = pbResolveDir(pb, isHFS);
+	uint32_t nameAddr = pb[ioNamePtr];
+	if (nameAddr == 0) return 50; /* paramErr */
+
+	std::string name = readPascalString(nameAddr);
+	dbg_printf("[ExtFS] PbSetCatInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
+
+	auto *e = s_volume.findByPath(dirID, name);
+	if (!e) return fmErrToReg(storage::FMErr::kFnfErr);
+
+	uint32_t pbAddr = pb.addr;
+	if (e->isDirectory)
+	{
+		/* Read DInfo (16) + DXInfo (16) from PB offsets 32 and 84 */
+		uint8_t buf[32];
+		for (int i = 0; i < 16; i++)
+			buf[i] = get_vm_byte(pbAddr + kOff_ioDrUsrWds + i);
+		for (int i = 0; i < 16; i++)
+			buf[16 + i] = get_vm_byte(pbAddr + kOff_ioDrFndrInfo + i);
+		auto err = s_volume.setDirInfo(e->cnid, buf);
+		return fmErrToReg(err);
+	}
+	else
+	{
+		/* Read FInfo from PB offset 32 */
+		uint32_t type = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo);
+		uint32_t creator = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 4);
+		uint16_t flags = detail::pbRead<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 8);
+		uint32_t location = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 10);
+		uint16_t folder = detail::pbRead<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 14);
+		auto err = s_volume.setFileInfo(e->cnid, type, creator, flags, location, folder);
+		return fmErrToReg(err);
+	}
+}
+
 /* ── GetCatInfoFull helper ─────────────────────────── */
 
 static void doCatInfoFull(uint32_t dirID, int32_t index, uint32_t nameAddr, uint32_t nameBuf,
@@ -1459,6 +1522,12 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kPB_CatMove:
 			regResult = PbCatMove(PBRef{regParam[0]}, regParam[1] != 0);
 			break;
+		case kPB_SetFileInfo:
+			regResult = PbSetFileInfo(PBRef{regParam[0]}, regParam[1] != 0);
+			break;
+		case kPB_SetCatInfo:
+			regResult = PbSetCatInfo(PBRef{regParam[0]}, regParam[1] != 0);
+			break;
 
 		case kPB_SetDefaultVRefNum:
 			s_volume.setDefaultVRefNum(static_cast<int16_t>(regParam[0]));
@@ -1487,6 +1556,8 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kPB_Rename:
 		case kPB_DirCreate:
 		case kPB_CatMove:
+		case kPB_SetFileInfo:
+		case kPB_SetCatInfo:
 			if (!s_volume.validateCatalog())
 				dbg_printf("[ExtFS] *** CATALOG VALIDATION FAILED after cmd=0x%03x ***\n", cmd);
 			break;

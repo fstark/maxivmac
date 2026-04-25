@@ -247,6 +247,8 @@
 #define kPB_Rename             0x023A
 #define kPB_DirCreate          0x023D
 #define kPB_CatMove            0x023E
+#define kPB_SetFileInfo        0x023B
+#define kPB_SetCatInfo         0x023C
 #define kPB_SetDefaultVRefNum  0x0245
 
 /* FileOpByName sub-opcodes */
@@ -887,21 +889,9 @@ static OSErr TrapGetFileInfo(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapSetFileInfo(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS, g);
-	if (loc.nameAddr == 0) return kParamErr;
-
-	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
-	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
-	reg_set(g->regBase, 2, loc.nameAddr);
-	reg_set(g->regBase, 3, kFileOpSetFileInfo);
-	reg_set(g->regBase, 4, *(unsigned long *)(pb + pb_ioFlFndrInfo));
-	reg_set(g->regBase, 5, *(unsigned long *)(pb + pb_ioFlFndrInfo + 4));
-	reg_set(g->regBase, 6, (unsigned long)(unsigned short)
-		*(short *)(pb + pb_ioFlFndrInfo + 8));
-	reg_set(g->regBase, 7, *(unsigned long *)(pb + pb_ioFlFndrInfo + 10));
-	reg_set(g->regBase, 8, (unsigned long)(unsigned short)
-		*(short *)(pb + pb_ioFlFndrInfo + 14));
-	reg_command(g->regBase, kCmdFileOpByName);
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
+	reg_command(g->regBase, kPB_SetFileInfo);
 	return host_err(g->regBase);
 }
 
@@ -915,24 +905,9 @@ static OSErr TrapGetCatInfo(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapSetCatInfo(char *pb, Globals *g, short isHFS)
 {
-	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	short vRefNum = *(short *)(pb + pb_ioVRefNum);
-	long dirID = *(long *)(pb + pb_ioDirID);
-
-	if (nameAddr == 0) return kParamErr;
-
-	/* FInfo/DInfo (16 bytes at offset 32) + FXInfo/DXInfo (16 bytes at
-	   offset 84) sit at the same PB offsets for files and directories.
-	   Pass all 32 bytes to host; it decides how to interpret them. */
-	mem_copy(s_dirInfoBuf, pb + pb_ioFlFndrInfo, 16);
-	mem_copy(s_dirInfoBuf + 16, pb + pb_ioFlXFndrInfo, 16);
-
-	reg_set(g->regBase, 0, (unsigned long)(short)vRefNum);
-	reg_set(g->regBase, 1, (unsigned long)dirID);
-	reg_set(g->regBase, 2, nameAddr);
-	reg_set(g->regBase, 3, kFileOpSetCatInfo);
-	reg_set(g->regBase, 4, (unsigned long)s_dirInfoBuf);
-	reg_command(g->regBase, kCmdFileOpByName);
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
+	reg_command(g->regBase, kPB_SetCatInfo);
 	return host_err(g->regBase);
 }
 
