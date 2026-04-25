@@ -475,6 +475,43 @@ static uint16_t PbGetFileInfo(PBRef pb)
 	return 0;
 }
 
+static uint16_t PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType forkType)
+{
+	uint32_t dirID = pbResolveDir(pb);
+	uint32_t nameAddr = pb[ioNamePtr];
+	uint8_t perm = pb[ioPermssn];
+
+	if (nameAddr == 0) return 50; /* paramErr */
+
+	std::string name = readPascalString(nameAddr);
+	dbg_printf("[ExtFS] PbOpen%s dir=%u name=\"%s\"\n",
+			   forkType == storage::ForkType::Resource ? "RF" : "", dirID, name.c_str());
+
+	auto *e = s_volume.findByPath(dirID, name);
+	if (!e) return fmErrToReg(storage::FMErr::kFnfErr);
+
+	uint32_t size = 0;
+	storage::FMErr err;
+	uint32_t handle = s_volume.openFork(e->cnid, forkType, size, err, perm);
+	if (handle == 0) return fmErrToReg(err);
+
+	regParam[0] = handle;
+	regParam[1] = size;
+	regParam[2] = e->cnid;
+	regParam[3] = e->parentDirID;
+	return 0;
+}
+
+static uint16_t PbOpen(PBRef pb, uint32_t regParam[])
+{
+	return PbOpenFork(pb, regParam, storage::ForkType::Data);
+}
+
+static uint16_t PbOpenRF(PBRef pb, uint32_t regParam[])
+{
+	return PbOpenFork(pb, regParam, storage::ForkType::Resource);
+}
+
 /* ── GetCatInfoFull helper ─────────────────────────── */
 
 static void doCatInfoFull(uint32_t dirID, int32_t index, uint32_t nameAddr, uint32_t nameBuf,
@@ -1341,6 +1378,12 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			break;
 		case kPB_GetFileInfo:
 			regResult = PbGetFileInfo(PBRef{regParam[0]});
+			break;
+		case kPB_Open:
+			regResult = PbOpen(PBRef{regParam[0]}, regParam);
+			break;
+		case kPB_OpenRF:
+			regResult = PbOpenRF(PBRef{regParam[0]}, regParam);
 			break;
 
 		default:

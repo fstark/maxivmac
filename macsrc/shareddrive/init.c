@@ -240,6 +240,8 @@
 /* PB-based command codes */
 #define kPB_GetCatInfo         0x0230
 #define kPB_GetFileInfo        0x0231
+#define kPB_Open               0x0232
+#define kPB_OpenRF             0x0233
 
 /* FileOpByName sub-opcodes */
 #define kFileOpCreate      0
@@ -777,16 +779,10 @@ static OSErr TrapAllocate(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS, g);
 	unsigned char perm = *(unsigned char *)(pb + pb_ioPermssn);
-	if (loc.nameAddr == 0) return kParamErr;
 
-	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
-	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
-	reg_set(g->regBase, 2, loc.nameAddr);
-	reg_set(g->regBase, 3, 0);  /* data fork */
-	reg_set(g->regBase, 4, (unsigned long)perm);
-	reg_command(g->regBase, kCmdResolveAndOpen);
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_command(g->regBase, kPB_Open);
 	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
 
 	{
@@ -810,9 +806,10 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 			}
 			{
 				Ptr fcb = GetFCB(refNum);
+				unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 				*(long *)(fcb + kFCBHostHandle) = handle;
 				*(long *)(fcb + kFCBDirID) = (long)reg_get(g->regBase, 3);
-				pstr_copy_max(fcb + kFCBCName, (char *)loc.nameAddr, 31);
+				pstr_copy_max(fcb + kFCBCName, (char *)nameAddr, 31);
 			}
 			*(short *)(pb + pb_ioRefNum) = refNum;
 		}
@@ -828,16 +825,10 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS, g);
 	unsigned char perm = *(unsigned char *)(pb + pb_ioPermssn);
-	if (loc.nameAddr == 0) return kParamErr;
 
-	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
-	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
-	reg_set(g->regBase, 2, loc.nameAddr);
-	reg_set(g->regBase, 3, 1);  /* resource fork */
-	reg_set(g->regBase, 4, (unsigned long)perm);
-	reg_command(g->regBase, kCmdResolveAndOpen);
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_command(g->regBase, kPB_OpenRF);
 	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
 
 	{
@@ -861,9 +852,10 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 			}
 			{
 				Ptr fcb = GetFCB(refNum);
+				unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 				*(long *)(fcb + kFCBHostHandle) = handle;
 				*(long *)(fcb + kFCBDirID) = (long)reg_get(g->regBase, 3);
-				pstr_copy_max(fcb + kFCBCName, (char *)loc.nameAddr, 31);
+				pstr_copy_max(fcb + kFCBCName, (char *)nameAddr, 31);
 			}
 			*(short *)(pb + pb_ioRefNum) = refNum;
 		}
