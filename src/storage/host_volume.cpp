@@ -656,7 +656,16 @@ uint32_t HostVolume::resolveDir(int16_t vRefNum, uint32_t rawDirID) const
 	if (rawDirID != 0) return rawDirID;
 	/* vRefNum 0 = "default volume" — substitute the stored default */
 	if (vRefNum == 0) vRefNum = defaultVRefNum_;
-	if (vRefNum == kGuestVRefNum || vRefNum == kGuestDriveNum) return kRootDirID;
+	/* Raw volume ref or drive number with dirID=0: if the user has
+	   a non-root default WD, substitute it so that apps passing the
+	   volume ref without a dirID land in the current directory. */
+	if (vRefNum == kGuestVRefNum || vRefNum == kGuestDriveNum)
+	{
+		if (defaultVRefNum_ != kGuestVRefNum && defaultVRefNum_ != kGuestDriveNum)
+			vRefNum = defaultVRefNum_;
+		else
+			return kRootDirID;
+	}
 	/* Decode WD refnum: guest encodes as -(wdRef + 32000) */
 	auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
 	uint32_t dirID = wdToDirID(wdRef);

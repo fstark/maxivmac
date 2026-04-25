@@ -242,6 +242,11 @@
 #define kPB_GetFileInfo        0x0231
 #define kPB_Open               0x0232
 #define kPB_OpenRF             0x0233
+#define kPB_Create             0x0238
+#define kPB_Delete             0x0239
+#define kPB_Rename             0x023A
+#define kPB_DirCreate          0x023D
+#define kPB_CatMove            0x023E
 #define kPB_SetDefaultVRefNum  0x0245
 
 /* FileOpByName sub-opcodes */
@@ -933,46 +938,32 @@ static OSErr TrapSetCatInfo(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapCreate(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS, g);
-	OSErr err;
-	if (loc.nameAddr == 0) return kParamErr;
-	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
-	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
-	reg_set(g->regBase, 2, loc.nameAddr);
-	reg_set(g->regBase, 3, kFileOpCreate);
-	reg_command(g->regBase, kCmdFileOpByName);
-	err = host_err(g->regBase);
-	if (err == kNoErr) {
-		/* Host assigned a new CNID — bump vcbNxtCNID */
-		long nextCNID = *(long *)(g->vcb + kVcbNxtCNID);
-		*(long *)(g->vcb + kVcbNxtCNID) = nextCNID + 1;
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
+	reg_command(g->regBase, kPB_Create);
+	{
+		OSErr err = host_err(g->regBase);
+		if (err == kNoErr) {
+			long nextCNID = *(long *)(g->vcb + kVcbNxtCNID);
+			*(long *)(g->vcb + kVcbNxtCNID) = nextCNID + 1;
+		}
+		return err;
 	}
-	return err;
 }
 
 static OSErr TrapDelete(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS, g);
-	if (loc.nameAddr == 0) return kParamErr;
-	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
-	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
-	reg_set(g->regBase, 2, loc.nameAddr);
-	reg_set(g->regBase, 3, kFileOpDelete);
-	reg_command(g->regBase, kCmdFileOpByName);
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
+	reg_command(g->regBase, kPB_Delete);
 	return host_err(g->regBase);
 }
 
 static OSErr TrapRename(char *pb, Globals *g, short isHFS)
 {
-	TrapLocation loc = ExtractLocation(pb, isHFS, g);
-	unsigned long newNameAddr = *(unsigned long *)(pb + pb_ioMisc);
-	if (loc.nameAddr == 0 || newNameAddr == 0) return kParamErr;
-	reg_set(g->regBase, 0, (unsigned long)loc.vRefNum);
-	reg_set(g->regBase, 1, (unsigned long)loc.dirID);
-	reg_set(g->regBase, 2, loc.nameAddr);
-	reg_set(g->regBase, 3, kFileOpRename);
-	reg_set(g->regBase, 4, newNameAddr);
-	reg_command(g->regBase, kCmdFileOpByName);
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
+	reg_command(g->regBase, kPB_Rename);
 	return host_err(g->regBase);
 }
 
@@ -1276,33 +1267,17 @@ static OSErr TrapGetFCBInfo(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapDirCreate(char *pb, Globals *g, short isHFS)
 {
-	long dirID = *(long *)(pb + pb_ioDirID);
-	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	short vRefNum;
-
-	if (nameAddr == 0) return kParamErr;
-
-	vRefNum = *(short *)(pb + pb_ioVRefNum);
-	reg_set(g->regBase, 0, (unsigned long)dirID);
-	reg_set(g->regBase, 1, nameAddr);
-	reg_command(g->regBase, kCmdCreateDir);
-	if (reg_result(g->regBase) != 0)
-		return host_err(g->regBase);
-	*(long *)(pb + pb_ioDirID) = (long)reg_get(g->regBase, 0);
-	return kNoErr;
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
+	reg_command(g->regBase, kPB_DirCreate);
+	return host_err(g->regBase);
 }
 
 static OSErr TrapCatMove(char *pb, Globals *g, short isHFS)
 {
-	long srcDirID = *(long *)(pb + pb_ioDirID);
-	long dstDirID = *(long *)(pb + 36);  /* ioNewDirID */
-	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	if (nameAddr == 0) return kParamErr;
-
-	reg_set(g->regBase, 0, (unsigned long)srcDirID);
-	reg_set(g->regBase, 1, nameAddr);
-	reg_set(g->regBase, 2, (unsigned long)dstDirID);
-	reg_command(g->regBase, kCmdCatMove);
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
+	reg_command(g->regBase, kPB_CatMove);
 	return host_err(g->regBase);
 }
 

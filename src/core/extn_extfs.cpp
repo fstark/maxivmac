@@ -490,6 +490,87 @@ static uint16_t PbOpenRF(PBRef pb, uint32_t regParam[], bool isHFS)
 	return PbOpenFork(pb, regParam, storage::ForkType::Resource, isHFS);
 }
 
+/* ── Phase 4: mutation handlers ───────────────────── */
+
+static uint16_t PbCreate(PBRef pb, bool isHFS)
+{
+	uint32_t dirID = pbResolveDir(pb, isHFS);
+	uint32_t nameAddr = pb[ioNamePtr];
+	if (nameAddr == 0) return 50; /* paramErr */
+
+	std::string name = readPascalString(nameAddr);
+	dbg_printf("[ExtFS] PbCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
+
+	storage::FMErr err;
+	uint32_t cnid = s_volume.createFile(dirID, name, err);
+	if (cnid == 0) return fmErrToReg(err);
+
+	dbg_printf("[ExtFS]   → cnid=%u\n", cnid);
+	return 0;
+}
+
+static uint16_t PbDelete(PBRef pb, bool isHFS)
+{
+	uint32_t dirID = pbResolveDir(pb, isHFS);
+	uint32_t nameAddr = pb[ioNamePtr];
+	if (nameAddr == 0) return 50; /* paramErr */
+
+	std::string name = readPascalString(nameAddr);
+	dbg_printf("[ExtFS] PbDelete dir=%u name=\"%s\"\n", dirID, name.c_str());
+
+	auto err = s_volume.remove(dirID, name);
+	return fmErrToReg(err);
+}
+
+static uint16_t PbRename(PBRef pb, bool isHFS)
+{
+	uint32_t dirID = pbResolveDir(pb, isHFS);
+	uint32_t nameAddr = pb[ioNamePtr];
+	uint32_t newNameAddr = pb[ioMisc];
+	if (nameAddr == 0 || newNameAddr == 0) return 50; /* paramErr */
+
+	std::string oldName = readPascalString(nameAddr);
+	std::string newName = readPascalString(newNameAddr);
+	dbg_printf("[ExtFS] PbRename dir=%u old=\"%s\" new=\"%s\"\n", dirID, oldName.c_str(),
+			   newName.c_str());
+
+	auto err = s_volume.rename(dirID, oldName, newName);
+	return fmErrToReg(err);
+}
+
+static uint16_t PbDirCreate(PBRef pb, bool isHFS)
+{
+	uint32_t dirID = pbResolveDir(pb, isHFS);
+	uint32_t nameAddr = pb[ioNamePtr];
+	if (nameAddr == 0) return 50; /* paramErr */
+
+	std::string name = readPascalString(nameAddr);
+	dbg_printf("[ExtFS] PbDirCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
+
+	storage::FMErr err;
+	uint32_t cnid = s_volume.createDir(dirID, name, err);
+	if (cnid == 0) return fmErrToReg(err);
+
+	pb[ioDrDirID] = cnid;
+	dbg_printf("[ExtFS]   → cnid=%u\n", cnid);
+	return 0;
+}
+
+static uint16_t PbCatMove(PBRef pb, bool isHFS)
+{
+	uint32_t dirID = pbResolveDir(pb, isHFS);
+	uint32_t nameAddr = pb[ioNamePtr];
+	if (nameAddr == 0) return 50; /* paramErr */
+
+	uint32_t dstDirID = pb[ioNewDirID];
+	std::string name = readPascalString(nameAddr);
+	dbg_printf("[ExtFS] PbCatMove srcDir=%u name=\"%s\" dstDir=%u\n", dirID, name.c_str(),
+			   dstDirID);
+
+	auto err = s_volume.move(dirID, name, dstDirID);
+	return fmErrToReg(err);
+}
+
 /* ── GetCatInfoFull helper ─────────────────────────── */
 
 static void doCatInfoFull(uint32_t dirID, int32_t index, uint32_t nameAddr, uint32_t nameBuf,
@@ -1361,8 +1442,27 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			regResult = PbOpen(PBRef{regParam[0]}, regParam, regParam[1] != 0);
 			break;
 		case kPB_OpenRF:
-			regResult = PbOpenRF(PBRef{regParam[0]}, regParam, regParam[1] != 0,
-								 static_cast<int16_t>(regParam[2]));
+			regResult = PbOpenRF(PBRef{regParam[0]}, regParam, regParam[1] != 0);
+			break;
+		case kPB_Create:
+			regResult = PbCreate(PBRef{regParam[0]}, regParam[1] != 0);
+			break;
+		case kPB_Delete:
+			regResult = PbDelete(PBRef{regParam[0]}, regParam[1] != 0);
+			break;
+		case kPB_Rename:
+			regResult = PbRename(PBRef{regParam[0]}, regParam[1] != 0);
+			break;
+		case kPB_DirCreate:
+			regResult = PbDirCreate(PBRef{regParam[0]}, regParam[1] != 0);
+			break;
+		case kPB_CatMove:
+			regResult = PbCatMove(PBRef{regParam[0]}, regParam[1] != 0);
+			break;
+
+		case kPB_SetDefaultVRefNum:
+			s_volume.setDefaultVRefNum(static_cast<int16_t>(regParam[0]));
+			regResult = 0;
 			break;
 
 		default:
@@ -1382,6 +1482,11 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSRename:
 		case kExtFSSetFileInfo:
 		case kExtFSFileOpByName:
+		case kPB_Create:
+		case kPB_Delete:
+		case kPB_Rename:
+		case kPB_DirCreate:
+		case kPB_CatMove:
 			if (!s_volume.validateCatalog())
 				dbg_printf("[ExtFS] *** CATALOG VALIDATION FAILED after cmd=0x%03x ***\n", cmd);
 			break;
