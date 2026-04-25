@@ -7,27 +7,30 @@
 	via the register-block extension interface.
 
 	Register interface at extnBlockBase + $20:
+	  Legacy register-based commands (handle-based I/O + infrastructure):
 	  $200 ExtFSVersion   -> p0 = version (0 if no shared/ dir)
-	  $201 ExtFSGetVol    -> p0 = file count, p1 = total bytes
-	  $202 ExtFSGetCatInfo p0=dirID, p1=index, p2=nameBuf
-	  $203 ExtFSGetCatInfoByName p0=parentDirID, p1=namePtr, p2=nameBuf
-	  $204 ExtFSOpen      p0=CNID, p1=fork -> p0=handle, p1=fileSize
+	  $201 ExtFSGetVol    -> p0 = file count, p1 = total bytes, p2 = dir count
 	  $205 ExtFSRead      p0=handle, p1=offset, p2=count, p3=bufAddr
 	  $206 ExtFSClose     p0=handle
-	  $207 ExtFSGetFileInfo p0=CNID -> p0=type, p1=creator, p2=crDate, p3=modDate
-	  $208 ExtFSReadDir   p0=dirID -> p0=count
-	  $209 ExtFSObjByName p0=parentDirID, p1=namePtr -> p0=CNID
-	  $20A ExtFSGetWDInfo p0=wdRefNum -> p0=vRefNum, p1=dirID
-	  $20B ExtFSOpenWD    p0=vRefNum, p1=dirID -> p0=wdRefNum
-	  $20C ExtFSCloseWD   p0=wdRefNum
+	  $20A ExtFSGetWDInfo p0=wdRefNum -> p0=procID, p1=dirID
+	  $20B ExtFSOpenWD    p0=vRefNum, p1=dirID, p2=procID -> p0=wdRefNum
 	  $20D ExtFSDbgLog    p0=fmt string addr, p1-p6=args
-	  $210 ExtFSCreateFile p0=parentDirID, p1=namePtr -> p0=CNID
+	  $20E ExtFSGuestVars p0=ptr, p1=0=get/1=set
+	  $20F ExtFSLogTrap   p0=trapWord, p1=pb, p2=action, p3=err, p4=flags
 	  $211 ExtFSWrite     p0=handle, p1=offset, p2=count, p3=bufAddr
-	  $212 ExtFSDeleteFile p0=parentDirID, p1=namePtr
-	  $213 ExtFSSetFileInfo p0=CNID, p1=type, p2=creator, p3=flags
 	  $214 ExtFSFatal     p0=fmt string addr, p1-p6=args  (shuts down emulator)
-	  $219 ExtFSGetDirInfo p0=CNID, p1=bufAddr -> 32 bytes DInfo+DXInfo
-	  $21A ExtFSSetDirInfo p0=CNID, p1=bufAddr (32 bytes DInfo+DXInfo)
+	  $218 ExtFSSetEOF    p0=handle, p1=newSize
+
+	  PB-passing commands (p0=PB guest addr, p1=isHFS flag):
+	  $230 PB_GetCatInfo      $231 PB_GetFileInfo
+	  $232 PB_Open             $233 PB_OpenRF
+	  $238 PB_Create           $239 PB_Delete
+	  $23A PB_Rename           $23B PB_SetFileInfo
+	  $23C PB_SetCatInfo       $23D PB_DirCreate
+	  $23E PB_CatMove
+	  $242 PB_OpenWD (p0=PB)   $243 PB_CloseWD (p0=PB)
+	  $244 PB_GetWDInfo (p0=PB)
+	  $245 PB_SetDefaultVRefNum p0=vRefNum (notification from SetVol)
 
 	Trap patching approach:
 	  Each patched trap gets a small dynamically-generated 68k code
@@ -220,22 +223,13 @@
 #define kNsvErr    (-35)
 
 /* Host register-block command numbers (coarse, Phase 1) */
-#define kCmdResolveAndOpen     0x0223
-#define kCmdGetCatInfoResolved 0x0224
-#define kCmdGetFileInfoByName  0x0222
-#define kCmdFileOpByName       0x0225
 #define kCmdClose              0x0206
 #define kCmdRead               0x0205
 #define kCmdWrite              0x0211
 #define kCmdSetEOF             0x0218
 #define kCmdGetVol             0x0201
 #define kCmdOpenWD             0x020B
-#define kCmdCloseWD            0x020C
 #define kCmdGetWDInfo          0x020A
-#define kCmdCreateDir          0x0215
-#define kCmdCatMove            0x0216
-#define kCmdGetDirInfo         0x0219
-#define kCmdSetDirInfo         0x021A
 
 /* PB-based command codes */
 #define kPB_GetCatInfo         0x0230
@@ -254,12 +248,6 @@
 #define kPB_GetWDInfo          0x0244
 #define kPB_SetDefaultVRefNum  0x0245
 
-/* FileOpByName sub-opcodes */
-#define kFileOpCreate      0
-#define kFileOpDelete      1
-#define kFileOpRename      2
-#define kFileOpSetFileInfo 3
-#define kFileOpSetCatInfo  4
 
 /* ---- Globals ---- */
 
@@ -427,8 +415,6 @@ static void dbg_hexdump(char *regBase, char *label,
 
 /* ---- Name buffer ---- */
 
-static char s_nameBuf[64];
-static char s_dirInfoBuf[32];  /* DInfo (16) + DXInfo (16) transfer buffer */
 
 /* ---- Helpers ---- */
 
@@ -464,42 +450,6 @@ static OSErr host_err(char *base)
 
 /* ---- Parameter extraction ---- */
 
-typedef struct {
-	short    vRefNum;
-	long     dirID;
-	unsigned long nameAddr;
-} TrapLocation;
-
-static TrapLocation ExtractLocation(char *pb, short isHFS, Globals *g)
-{
-	TrapLocation loc;
-	loc.vRefNum  = *(short *)(pb + pb_ioVRefNum);
-	loc.nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	if (isHFS) {
-		loc.dirID = *(long *)(pb + 48);
-	} else {
-		loc.dirID = 0;
-	}
-	/* vRefNum 0 means "default volume".  Substitute the current default
-	   WD refnum so the host resolveDir() can decode the directory from
-	   the WD table.  Flat (non-HFS) calls never carry a dirID, so this
-	   is the only way to convey directory context for them. */
-	if (loc.vRefNum == 0)
-		loc.vRefNum = g->defaultWDRefNum;
-	/* Apps (THINK C) get ioWDVRefNum from GetWDInfo, which per Inside
-	   Macintosh is always the true volume reference number (-32000).
-	   On real HFS the volume ref happens to also be a WD refnum for
-	   root, so Open(volRef, dirID=0) resolves through the WD table.
-	   Ours doesn't.  When an app passes the raw volume ref or the
-	   root WD with dirID=0, redirect to defaultWDRefNum which carries
-	   the current subdirectory context via the WD table. */
-	if (loc.dirID == 0
-			&& (loc.vRefNum == kOurVRefNum
-				|| loc.vRefNum == g->rootWDRefNum)
-			&& g->defaultWDRefNum != g->rootWDRefNum)
-		loc.vRefNum = g->defaultWDRefNum;
-	return loc;
-}
 
 /* ---- FCB management ---- */
 
