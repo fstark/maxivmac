@@ -1031,33 +1031,19 @@ static OSErr TrapSetCatInfo(char *pb, Globals *g, short isHFS)
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
 	long dirID = *(long *)(pb + pb_ioDirID);
 
-	if (*(unsigned char *)(pb + pb_ioFlAttrib) & 0x10) {
-		/* Directory: persist DInfo + DXInfo directly */
-		unsigned long cnid = *(unsigned long *)(pb + pb_ioDrDirID);
-		if (cnid != 0) {
-			mem_copy(s_dirInfoBuf, pb + pb_ioDrUsrWds, 16);
-			mem_copy(s_dirInfoBuf + 16, pb + pb_ioDrFndrInfo, 16);
-			reg_set(g->regBase, 0, cnid);
-			reg_set(g->regBase, 1, (unsigned long)s_dirInfoBuf);
-			reg_command(g->regBase, kCmdSetDirInfo);
-		}
-		return kNoErr;
-	}
-
-	/* File: use FileOpByName with SetCatInfo opcode */
 	if (nameAddr == 0) return kParamErr;
+
+	/* FInfo/DInfo (16 bytes at offset 32) + FXInfo/DXInfo (16 bytes at
+	   offset 84) sit at the same PB offsets for files and directories.
+	   Pass all 32 bytes to host; it decides how to interpret them. */
+	mem_copy(s_dirInfoBuf, pb + pb_ioFlFndrInfo, 16);
+	mem_copy(s_dirInfoBuf + 16, pb + pb_ioFlXFndrInfo, 16);
 
 	reg_set(g->regBase, 0, (unsigned long)(short)vRefNum);
 	reg_set(g->regBase, 1, (unsigned long)dirID);
 	reg_set(g->regBase, 2, nameAddr);
 	reg_set(g->regBase, 3, kFileOpSetCatInfo);
-	reg_set(g->regBase, 4, *(unsigned long *)(pb + pb_ioFlFndrInfo));
-	reg_set(g->regBase, 5, *(unsigned long *)(pb + pb_ioFlFndrInfo + 4));
-	reg_set(g->regBase, 6, (unsigned long)(unsigned short)
-		*(short *)(pb + pb_ioFlFndrInfo + 8));
-	reg_set(g->regBase, 7, *(unsigned long *)(pb + pb_ioFlFndrInfo + 10));
-	reg_set(g->regBase, 8, (unsigned long)(unsigned short)
-		*(short *)(pb + pb_ioFlFndrInfo + 14));
+	reg_set(g->regBase, 4, (unsigned long)s_dirInfoBuf);
 	reg_command(g->regBase, kCmdFileOpByName);
 	return host_err(g->regBase);
 }

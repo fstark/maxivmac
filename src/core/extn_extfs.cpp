@@ -943,22 +943,28 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 						regResult = fmErrToReg(storage::FMErr::kFnfErr);
 						break;
 					}
+					/* Guest always passes a pointer to 32 bytes:
+					   FInfo/DInfo (16) + FXInfo/DXInfo (16). */
+					uint32_t guestBuf = regParam[4];
+					uint8_t buf[32];
+					for (int i = 0; i < 32; i++)
+						buf[i] = get_vm_byte(guestBuf + i);
 					if (e->isDirectory)
 					{
-						uint32_t guestBuf = regParam[4];
-						uint8_t buf[32];
-						for (int i = 0; i < 32; i++)
-							buf[i] = get_vm_byte(guestBuf + i);
 						auto err = s_volume.setDirInfo(e->cnid, buf);
 						regResult = fmErrToReg(err);
 					}
 					else
 					{
-						uint32_t type = regParam[4];
-						uint32_t creator = regParam[5];
-						uint16_t flags = static_cast<uint16_t>(regParam[6]);
-						uint32_t location = regParam[7];
-						uint16_t folder = static_cast<uint16_t>(regParam[8]);
+						/* Decompose FInfo: type(4) creator(4) flags(2) location(4) folder(2) */
+						uint32_t type = (uint32_t(buf[0]) << 24) | (uint32_t(buf[1]) << 16) |
+										(uint32_t(buf[2]) << 8) | buf[3];
+						uint32_t creator = (uint32_t(buf[4]) << 24) | (uint32_t(buf[5]) << 16) |
+										   (uint32_t(buf[6]) << 8) | buf[7];
+						uint16_t flags = (uint16_t(buf[8]) << 8) | buf[9];
+						uint32_t location = (uint32_t(buf[10]) << 24) | (uint32_t(buf[11]) << 16) |
+											(uint32_t(buf[12]) << 8) | buf[13];
+						uint16_t folder = (uint16_t(buf[14]) << 8) | buf[15];
 						auto err =
 							s_volume.setFileInfo(e->cnid, type, creator, flags, location, folder);
 						regResult = fmErrToReg(err);
