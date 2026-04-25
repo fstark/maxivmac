@@ -295,6 +295,186 @@ static std::string readPascalString(uint32_t addr)
 	return s;
 }
 
+/* ── PB-based standalone handlers ─────────────────── */
+
+static void pbWriteFInfo(uint32_t pbAddr, const storage::CatalogEntry *e)
+{
+	/* FInfo: type(4) creator(4) flags(2) location(4) folder(2) = 16 bytes */
+	detail::pbWrite<uint32_t>(pbAddr + kOff_ioFlFndrInfo, e->type);
+	detail::pbWrite<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 4, e->creator);
+	detail::pbWrite<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 8, e->finderFlags);
+	detail::pbWrite<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 10, e->fdLocation);
+	detail::pbWrite<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 14, e->fdFldr);
+}
+
+static void pbWriteFileFields(PBRef pb, const storage::CatalogEntry *e)
+{
+	pb[ioFlAttrib] = uint8_t(0);
+	pbWriteFInfo(pb.addr, e);
+	pb[ioFlNum] = e->cnid;
+	pb[ioFlStBlk] = int16_t(0);
+	pb[ioFlLgLen] = e->dataForkSize;
+	pb[ioFlPyLen] = e->dataForkSize;
+	pb[ioFlRStBlk] = int16_t(0);
+	pb[ioFlRLgLen] = e->rsrcForkSize;
+	pb[ioFlRPyLen] = e->rsrcForkSize;
+	pb[ioFlCrDat] = e->crDate;
+	pb[ioFlMdDat] = e->modDate;
+	pb[ioFlBkDat] = uint32_t(0);
+	/* Zero FXInfo (16 bytes at offset 84) */
+	for (int i = 0; i < 16; i++)
+		put_vm_byte(pb.addr + kOff_ioFlXFndrInfo + i, 0);
+	pb[ioFlParID] = e->parentDirID;
+	pb[ioFlClpSiz] = uint32_t(0);
+}
+
+static void pbWriteDirFields(PBRef pb, const storage::CatalogEntry *e)
+{
+	pb[ioFlAttrib] = uint8_t(0x10);
+	put_vm_byte(pb.addr + 31, 0); /* ioACUser */
+
+	/* DInfo + DXInfo (32 bytes total) */
+	uint8_t dirBuf[32] = {};
+	if (s_volume.getDirInfo(e->cnid, dirBuf))
+	{
+		for (int i = 0; i < 16; i++)
+			put_vm_byte(pb.addr + kOff_ioDrUsrWds + i, dirBuf[i]);
+		for (int i = 0; i < 16; i++)
+			put_vm_byte(pb.addr + kOff_ioDrFndrInfo + i, dirBuf[16 + i]);
+	}
+	else
+	{
+		for (int i = 0; i < 16; i++)
+			put_vm_byte(pb.addr + kOff_ioDrUsrWds + i, 0);
+		for (int i = 0; i < 16; i++)
+			put_vm_byte(pb.addr + kOff_ioDrFndrInfo + i, 0);
+	}
+
+	pb[ioDrNmFls] = int16_t(s_volume.childCount(e->cnid));
+	pb[ioDrDirID] = e->cnid;
+	pb[ioDrParID] = e->parentDirID;
+	pb[ioDrCrDat] = e->crDate;
+	pb[ioDrMdDat] = e->modDate;
+	pb[ioDrBkDat] = uint32_t(0);
+}
+
+static void pbWriteRootDir(PBRef pb, uint32_t nameAddr)
+{
+	uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
+	pb[ioFlAttrib] = uint8_t(0x10);
+	put_vm_byte(pb.addr + 31, 0); /* ioACUser */
+	for (int i = 0; i < 16; i++)
+		put_vm_byte(pb.addr + kOff_ioDrUsrWds + i, 0);
+	for (int i = 0; i < 16; i++)
+		put_vm_byte(pb.addr + kOff_ioDrFndrInfo + i, 0);
+	pb[ioDrNmFls] = int16_t(s_volume.childCount(kRootDirID));
+	pb[ioDrDirID] = kRootDirID;
+	pb[ioDrParID] = kRootParentID;
+	pb[ioDrCrDat] = now;
+	pb[ioDrMdDat] = now;
+	pb[ioDrBkDat] = uint32_t(0);
+	if (nameAddr) writePascalString(nameAddr, "Shared");
+}
+
+static uint16_t PbGetCatInfo(PBRef pb)
+{
+	uint32_t dirID = pbResolveDir(pb);
+	int16_t index = pb[ioFDirIndex];
+	uint32_t nameAddr = pb[ioNamePtr];
+
+	dbg_printf("[ExtFS] PbGetCatInfo dir=%u idx=%d\n", dirID, index);
+
+	const storage::CatalogEntry *e = nullptr;
+
+	if (index > 0)
+	{
+		/* Indexed enumeration */
+		if (dirID == kRootParentID)
+		{
+			if (index == 1)
+			{
+				pbWriteRootDir(pb, nameAddr);
+				return 0;
+			}
+			return 43; /* fnfErr */
+		}
+		e = s_volume.nthChild(dirID, index);
+		if (!e) return 43; /* fnfErr — end of enumeration */
+	}
+	else if (index == 0 && nameAddr != 0)
+	{
+		/* By-name lookup */
+		std::string name = readPascalString(nameAddr);
+		if (!name.empty())
+			e = s_volume.findByPath(dirID, name);
+		else
+			e = s_volume.findByCNID(dirID);
+	}
+	else
+	{
+		/* index <= 0 or no name: info about dirID itself */
+		e = s_volume.findByCNID(dirID);
+	}
+
+	/* Synthesize root if needed */
+	if (!e && (dirID == kRootDirID || dirID == kRootParentID))
+	{
+		pbWriteRootDir(pb, nameAddr);
+		return 0;
+	}
+
+	if (!e) return 43; /* fnfErr */
+
+	if (nameAddr) writePascalString(nameAddr, e->macName);
+
+	if (e->isDirectory)
+		pbWriteDirFields(pb, e);
+	else
+		pbWriteFileFields(pb, e);
+
+	return 0;
+}
+
+static uint16_t PbGetFileInfo(PBRef pb)
+{
+	uint32_t dirID = pbResolveDir(pb);
+	uint32_t nameAddr = pb[ioNamePtr];
+	if (nameAddr == 0) return 50; /* paramErr */
+
+	std::string name = readPascalString(nameAddr);
+	dbg_printf("[ExtFS] PbGetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
+
+	if (dirID == kRootDirID || dirID == kRootParentID)
+	{
+		/* Root doesn't have file info, but return dummy for compatibility */
+		uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
+		pb[ioFlAttrib] = uint8_t(0);
+		for (int i = 0; i < 16; i++)
+			put_vm_byte(pb.addr + kOff_ioFlFndrInfo + i, 0);
+		pb[ioFlNum] = kRootDirID;
+		pb[ioFlStBlk] = int16_t(0);
+		pb[ioFlLgLen] = uint32_t(0);
+		pb[ioFlPyLen] = uint32_t(0);
+		pb[ioFlRStBlk] = int16_t(0);
+		pb[ioFlRLgLen] = uint32_t(0);
+		pb[ioFlRPyLen] = uint32_t(0);
+		pb[ioFlCrDat] = now;
+		pb[ioFlMdDat] = now;
+		pb[ioFlBkDat] = uint32_t(0);
+		for (int i = 0; i < 16; i++)
+			put_vm_byte(pb.addr + kOff_ioFlXFndrInfo + i, 0);
+		pb[ioFlParID] = kRootParentID;
+		pb[ioFlClpSiz] = uint32_t(0);
+		return 0;
+	}
+
+	auto *e = s_volume.findByPath(dirID, name);
+	if (!e) return 43; /* fnfErr */
+
+	pbWriteFileFields(pb, e);
+	return 0;
+}
+
 /* ── GetCatInfoFull helper ─────────────────────────── */
 
 static void doCatInfoFull(uint32_t dirID, int32_t index, uint32_t nameAddr, uint32_t nameBuf,
@@ -1153,6 +1333,15 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			}
 		}
 		break;
+
+			/* ── PB-based commands ────────────────────────── */
+
+		case kPB_GetCatInfo:
+			regResult = PbGetCatInfo(PBRef{regParam[0]});
+			break;
+		case kPB_GetFileInfo:
+			regResult = PbGetFileInfo(PBRef{regParam[0]});
+			break;
 
 		default:
 			regResult = 0xFFFF;
