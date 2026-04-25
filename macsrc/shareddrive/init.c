@@ -444,8 +444,7 @@ static void mem_copy(char *dst, char *src, short len)
 
 static OSErr host_err(char *base)
 {
-	unsigned short r = reg_result(base);
-	return (r == 0) ? kNoErr : -(short)r;
+	return (short)reg_result(base);
 }
 
 /* ---- Parameter extraction ---- */

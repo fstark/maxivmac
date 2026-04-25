@@ -1,3 +1,11 @@
+/*
+	ExtFS dispatch — host-side handler for the SharedDrive file system extension.
+
+	The guest INIT patches File Manager traps and forwards operations here
+	via a register-based RPC mechanism.  Catalog operations pass the guest
+	PB (parameter block) pointer directly; I/O and utility commands use
+	register slots.  PB field layouts follow Inside Macintosh IV ch. 25.
+*/
 #include "core/extn_extfs.h"
 #include "core/extn_clip.h"
 #include "core/extfs_log.h"
@@ -8,6 +16,7 @@
 #include "platform/platform.h"
 #include "storage/host_volume.h"
 
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -29,10 +38,10 @@ static constexpr uint16_t kExtFSOpenWD = 0x20B;
 static constexpr uint16_t kExtFSCloseWD = 0x20C;
 static constexpr uint16_t kExtFSDbgLog = 0x20D;
 static constexpr uint16_t kExtFSGuestVars = 0x20E;
-static constexpr uint16_t kExtFSFatal = 0x0214;
-static constexpr uint16_t kExtFSWrite = 0x211;
-static constexpr uint16_t kExtFSSetEOF = 0x218;
 static constexpr uint16_t kExtFSLogTrap = 0x20F;
+static constexpr uint16_t kExtFSWrite = 0x211;
+static constexpr uint16_t kExtFSFatal = 0x214;
+static constexpr uint16_t kExtFSSetEOF = 0x218;
 
 /* ── HostVolume instance ──────────────────────────── */
 
@@ -43,35 +52,25 @@ static constexpr uint32_t kRootDirID = storage::HostVolume::kRootDirID;
 static constexpr int16_t kGuestVRefNum = storage::HostVolume::kGuestVRefNum;
 static constexpr int16_t kGuestDriveNum = storage::HostVolume::kGuestDriveNum;
 
-/* ── Error translation ────────────────────────────── */
+/* ── Mac OS result codes ──────────────────────────── */
+/*
+	Most error codes are defined in storage/host_volume.h and used
+	directly — no translation layer needed.  kNsvErr is dispatch-only
+	(no HostVolume operation returns it).
+*/
+using storage::kDirNFErr;
+using storage::kDupFNErr;
+using storage::kFBsyErr;
+using storage::kFnfErr;
+using storage::kIoErr;
+using storage::kNoErr;
+using storage::kOpWrErr;
+using storage::kParamErr;
+using storage::kRfNumErr;
+using storage::kWPrErr;
+using storage::OSErr;
 
-static uint16_t fmErrToReg(storage::FMErr err)
-{
-	switch (err)
-	{
-		case storage::FMErr::kNoErr:
-			return 0;
-		case storage::FMErr::kFnfErr:
-			return 43;
-		case storage::FMErr::kDupFNErr:
-			return 48;
-		case storage::FMErr::kParamErr:
-			return 50;
-		case storage::FMErr::kRfNumErr:
-			return 51;
-		case storage::FMErr::kIoErr:
-			return 36;
-		case storage::FMErr::kDirNFErr:
-			return 120;
-		case storage::FMErr::kFBsyErr:
-			return 47;
-		case storage::FMErr::kWPrErr:
-			return 44;
-		case storage::FMErr::kOpWrErr:
-			return 49;
-	}
-	return 43;
-}
+static constexpr OSErr kNsvErr = -35; /* no such volume (dispatch-only) */
 
 /* ── Type-safe PB access ─────────────────────────── */
 
@@ -79,6 +78,8 @@ template <typename T> struct PBField
 {
 	uint32_t offset;
 };
+
+using Blob16 = std::array<uint8_t, 16>;
 
 namespace detail
 {
@@ -139,15 +140,34 @@ template <> inline void pbWrite<int32_t>(uint32_t a, int32_t v)
 {
 	pbWrite<uint32_t>(a, static_cast<uint32_t>(v));
 }
+template <> inline Blob16 pbRead<Blob16>(uint32_t a)
+{
+	Blob16 b;
+	for (int i = 0; i < 16; i++)
+		b[i] = get_vm_byte(a + i);
+	return b;
+}
+template <> inline void pbWrite<Blob16>(uint32_t a, Blob16 v)
+{
+	for (int i = 0; i < 16; i++)
+		put_vm_byte(a + i, v[i]);
+}
 } // namespace detail
 
 template <typename T> struct PBProxy
 {
 	uint32_t addr;
 	operator T() const { return detail::pbRead<T>(addr); }
-	PBProxy &operator=(T v)
+	template <typename U> PBProxy &operator=(U v)
 	{
-		detail::pbWrite<T>(addr, v);
+		if constexpr (sizeof(U) > sizeof(T))
+		{
+			if (static_cast<U>(static_cast<T>(v)) != v)
+				dbg_printf("[ExtFS] *** PB truncation: %lld → %lld (field at +%u) ***\n",
+						   static_cast<long long>(v), static_cast<long long>(static_cast<T>(v)),
+						   addr);
+		}
+		detail::pbWrite<T>(addr, static_cast<T>(v));
 		return *this;
 	}
 };
@@ -161,14 +181,14 @@ struct PBRef
 /* ── PB field definitions (Inside Macintosh IV) ──── */
 
 /* Shared header */
-[[maybe_unused]] constexpr PBField<int16_t> ioResult{16};
-[[maybe_unused]] constexpr PBField<uint32_t> ioNamePtr{18};
-[[maybe_unused]] constexpr PBField<int16_t> ioVRefNum{22};
-[[maybe_unused]] constexpr PBField<int16_t> ioRefNum{24};
-[[maybe_unused]] constexpr PBField<uint8_t> ioPermssn{27};
-[[maybe_unused]] constexpr PBField<uint32_t> ioMisc{28};
+constexpr PBField<uint32_t> ioNamePtr{18};
+constexpr PBField<int16_t> ioVRefNum{22};
+[[maybe_unused]] constexpr PBField<int16_t> ioRefNum{24}; /* guest maps to FCB */
+constexpr PBField<uint8_t> ioPermssn{27};
+constexpr PBField<uint32_t> ioMisc{28};
 
-/* ioParam variant */
+/* ioParam variant — Read/Write/SetEOF use the register path;
+   these fields are handled entirely by the guest (see TrapRead). */
 [[maybe_unused]] constexpr PBField<uint32_t> ioBuffer{32};
 [[maybe_unused]] constexpr PBField<uint32_t> ioReqCount{36};
 [[maybe_unused]] constexpr PBField<uint32_t> ioActCount{40};
@@ -176,40 +196,48 @@ struct PBRef
 [[maybe_unused]] constexpr PBField<int32_t> ioPosOffset{46};
 
 /* fileParam / CInfoPBRec hFileInfo variant */
-[[maybe_unused]] constexpr PBField<int16_t> ioFDirIndex{28};
-[[maybe_unused]] constexpr PBField<uint8_t> ioFlAttrib{30};
-[[maybe_unused]] constexpr uint32_t kOff_ioFlFndrInfo = 32;
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlNum{48};
-[[maybe_unused]] constexpr PBField<int16_t> ioFlStBlk{52};
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlLgLen{54};
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlPyLen{58};
-[[maybe_unused]] constexpr PBField<int16_t> ioFlRStBlk{62};
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlRLgLen{64};
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlRPyLen{68};
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlCrDat{72};
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlMdDat{76};
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlBkDat{80};
-[[maybe_unused]] constexpr uint32_t kOff_ioFlXFndrInfo = 84;
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlParID{100};
-[[maybe_unused]] constexpr PBField<uint32_t> ioFlClpSiz{104};
+constexpr PBField<int16_t> ioFDirIndex{28};
+constexpr PBField<uint8_t> ioFlAttrib{30};
+constexpr PBField<uint8_t> ioACUser{31};
+static constexpr uint8_t kFlAttribDir = 0x10; /* IM IV-155: bit 4 = directory */
+/* FInfo sub-fields (IM IV-101): type(4) creator(4) flags(2) location(4) folder(2) */
+constexpr PBField<uint32_t> ioFlFndrType{32};
+constexpr PBField<uint32_t> ioFlFndrCreator{36};
+constexpr PBField<uint16_t> ioFlFndrFlags{40};
+constexpr PBField<uint32_t> ioFlFndrLocation{42};
+constexpr PBField<uint16_t> ioFlFndrFolder{46};
+constexpr PBField<uint32_t> ioFlNum{48};
+constexpr PBField<int16_t> ioFlStBlk{52};
+constexpr PBField<uint32_t> ioFlLgLen{54};
+constexpr PBField<uint32_t> ioFlPyLen{58};
+constexpr PBField<int16_t> ioFlRStBlk{62};
+constexpr PBField<uint32_t> ioFlRLgLen{64};
+constexpr PBField<uint32_t> ioFlRPyLen{68};
+constexpr PBField<uint32_t> ioFlCrDat{72};
+constexpr PBField<uint32_t> ioFlMdDat{76};
+constexpr PBField<uint32_t> ioFlBkDat{80};
+constexpr PBField<Blob16> ioFlXFndrInfo{84};
+constexpr PBField<uint32_t> ioFlParID{100};
+constexpr PBField<uint32_t> ioFlClpSiz{104};
 
 /* CInfoPBRec dirInfo variant */
-[[maybe_unused]] constexpr uint32_t kOff_ioDrUsrWds = 32;
-[[maybe_unused]] constexpr PBField<uint32_t> ioDrDirID{48};
-[[maybe_unused]] constexpr PBField<int16_t> ioDrNmFls{52};
-[[maybe_unused]] constexpr PBField<uint32_t> ioDrCrDat{72};
-[[maybe_unused]] constexpr PBField<uint32_t> ioDrMdDat{76};
-[[maybe_unused]] constexpr PBField<uint32_t> ioDrBkDat{80};
-[[maybe_unused]] constexpr uint32_t kOff_ioDrFndrInfo = 84;
-[[maybe_unused]] constexpr PBField<uint32_t> ioDrParID{100};
+constexpr PBField<Blob16> ioDrUsrWds{32};
+constexpr PBField<uint32_t> ioDrDirID{48};
+constexpr PBField<int16_t> ioDrNmFls{52};
+constexpr PBField<uint32_t> ioDrCrDat{72};
+constexpr PBField<uint32_t> ioDrMdDat{76};
+constexpr PBField<uint32_t> ioDrBkDat{80};
+constexpr PBField<Blob16> ioDrFndrInfo{84};
+constexpr PBField<uint32_t> ioDrParID{100};
 
 /* WDParam variant */
-[[maybe_unused]] constexpr PBField<int16_t> ioWDIndex{26};
-[[maybe_unused]] constexpr PBField<uint32_t> ioWDProcID{28};
-[[maybe_unused]] constexpr PBField<int16_t> ioWDVRefNum{32};
-[[maybe_unused]] constexpr PBField<uint32_t> ioWDDirID{48};
+constexpr PBField<int16_t> ioWDIndex{26};
+constexpr PBField<uint32_t> ioWDProcID{28};
+constexpr PBField<int16_t> ioWDVRefNum{32};
+constexpr PBField<uint32_t> ioWDDirID{48};
 
-/* volumeParam variant */
+/* volumeParam variant — GetVolInfo is handled guest-side;
+   the host only provides raw stats via the register path. */
 [[maybe_unused]] constexpr PBField<int16_t> ioVolIndex{28};
 [[maybe_unused]] constexpr PBField<int16_t> ioVNmAlBlks{46};
 [[maybe_unused]] constexpr PBField<uint32_t> ioVAlBlkSiz{48};
@@ -217,32 +245,29 @@ struct PBRef
 [[maybe_unused]] constexpr PBField<int16_t> ioVFrBlk{62};
 
 /* CatMove */
-[[maybe_unused]] constexpr PBField<uint32_t> ioNewDirID{36};
+constexpr PBField<uint32_t> ioNewDirID{36};
 
 /* ── PB-based command codes ──────────────────────── */
 
-[[maybe_unused]] static constexpr uint16_t kPB_GetCatInfo = 0x230;
-[[maybe_unused]] static constexpr uint16_t kPB_GetFileInfo = 0x231;
-[[maybe_unused]] static constexpr uint16_t kPB_Open = 0x232;
-[[maybe_unused]] static constexpr uint16_t kPB_OpenRF = 0x233;
-[[maybe_unused]] static constexpr uint16_t kPB_Create = 0x238;
-[[maybe_unused]] static constexpr uint16_t kPB_Delete = 0x239;
-[[maybe_unused]] static constexpr uint16_t kPB_Rename = 0x23A;
-[[maybe_unused]] static constexpr uint16_t kPB_SetFileInfo = 0x23B;
-[[maybe_unused]] static constexpr uint16_t kPB_SetCatInfo = 0x23C;
-[[maybe_unused]] static constexpr uint16_t kPB_DirCreate = 0x23D;
-[[maybe_unused]] static constexpr uint16_t kPB_CatMove = 0x23E;
-[[maybe_unused]] static constexpr uint16_t kPB_GetVolInfo = 0x23F;
-[[maybe_unused]] static constexpr uint16_t kPB_GetVol = 0x240;
-[[maybe_unused]] static constexpr uint16_t kPB_SetVol = 0x241;
-[[maybe_unused]] static constexpr uint16_t kPB_OpenWD = 0x242;
-[[maybe_unused]] static constexpr uint16_t kPB_CloseWD = 0x243;
-[[maybe_unused]] static constexpr uint16_t kPB_GetWDInfo = 0x244;
-[[maybe_unused]] static constexpr uint16_t kPB_SetDefaultVRefNum = 0x245;
+static constexpr uint16_t kPB_GetCatInfo = 0x230;
+static constexpr uint16_t kPB_GetFileInfo = 0x231;
+static constexpr uint16_t kPB_Open = 0x232;
+static constexpr uint16_t kPB_OpenRF = 0x233;
+static constexpr uint16_t kPB_Create = 0x238;
+static constexpr uint16_t kPB_Delete = 0x239;
+static constexpr uint16_t kPB_Rename = 0x23A;
+static constexpr uint16_t kPB_SetFileInfo = 0x23B;
+static constexpr uint16_t kPB_SetCatInfo = 0x23C;
+static constexpr uint16_t kPB_DirCreate = 0x23D;
+static constexpr uint16_t kPB_CatMove = 0x23E;
+static constexpr uint16_t kPB_OpenWD = 0x242;
+static constexpr uint16_t kPB_CloseWD = 0x243;
+static constexpr uint16_t kPB_GetWDInfo = 0x244;
+static constexpr uint16_t kPB_SetDefaultVRefNum = 0x245;
 
 /* ── PB resolve helper ───────────────────────────── */
 
-[[maybe_unused]] static uint32_t pbResolveDir(PBRef pb, bool isHFS)
+static uint32_t pbResolveDir(PBRef pb, bool isHFS)
 {
 	int16_t vRefNum = pb[ioVRefNum];
 	uint32_t dirID = isHFS ? static_cast<uint32_t>(pb[ioDrDirID]) : 0;
@@ -271,87 +296,105 @@ static std::string readPascalString(uint32_t addr)
 
 /* ── PB-based standalone handlers ─────────────────── */
 
-static void pbWriteFInfo(uint32_t pbAddr, const storage::CatalogEntry *e)
+struct FInfo
 {
-	/* FInfo: type(4) creator(4) flags(2) location(4) folder(2) = 16 bytes */
-	detail::pbWrite<uint32_t>(pbAddr + kOff_ioFlFndrInfo, e->type);
-	detail::pbWrite<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 4, e->creator);
-	detail::pbWrite<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 8, e->finderFlags);
-	detail::pbWrite<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 10, e->fdLocation);
-	detail::pbWrite<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 14, e->fdFldr);
+	uint32_t type;
+	uint32_t creator;
+	uint16_t flags;
+	uint32_t location;
+	uint16_t folder;
+};
+
+/* Write a CatalogEntry's Finder info into the FInfo area of a PB (IM IV-101). */
+static void pbWriteFInfo(PBRef pb, const storage::CatalogEntry *e)
+{
+	pb[ioFlFndrType] = e->type;
+	pb[ioFlFndrCreator] = e->creator;
+	pb[ioFlFndrFlags] = e->finderFlags;
+	pb[ioFlFndrLocation] = e->fdLocation;
+	pb[ioFlFndrFolder] = e->fdFldr;
 }
 
+/* Read FInfo fields from a PB — inverse of pbWriteFInfo. */
+static FInfo pbReadFInfo(PBRef pb)
+{
+	return {
+		pb[ioFlFndrType],	  pb[ioFlFndrCreator], pb[ioFlFndrFlags],
+		pb[ioFlFndrLocation], pb[ioFlFndrFolder],
+	};
+}
+
+/*
+	Fill the file-variant fields of a CInfoPBRec / FileParam from a
+	CatalogEntry.  When isHFS is false, stops at offset 80 (flat PB
+	layout per IM IV-96); otherwise writes the extended HFS fields
+	including FXInfo and ioFlParID (IM IV-155).
+*/
 static void pbWriteFileFields(PBRef pb, const storage::CatalogEntry *e, bool isHFS = true)
 {
-	pb[ioFlAttrib] = uint8_t(0);
-	pbWriteFInfo(pb.addr, e);
+	pb[ioFlAttrib] = 0;
+	pbWriteFInfo(pb, e);
 	pb[ioFlNum] = e->cnid;
-	pb[ioFlStBlk] = int16_t(0);
+	pb[ioFlStBlk] = 0;
 	pb[ioFlLgLen] = e->dataForkSize;
 	pb[ioFlPyLen] = e->dataForkSize;
-	pb[ioFlRStBlk] = int16_t(0);
+	pb[ioFlRStBlk] = 0;
 	pb[ioFlRLgLen] = e->rsrcForkSize;
 	pb[ioFlRPyLen] = e->rsrcForkSize;
 	pb[ioFlCrDat] = e->crDate;
 	pb[ioFlMdDat] = e->modDate;
 	if (!isHFS) return; /* flat FileParam ends at ioFlMdDat (offset 80) */
-	pb[ioFlBkDat] = uint32_t(0);
-	/* Zero FXInfo (16 bytes at offset 84) */
-	for (int i = 0; i < 16; i++)
-		put_vm_byte(pb.addr + kOff_ioFlXFndrInfo + i, 0);
+	pb[ioFlBkDat] = 0;
+	pb[ioFlXFndrInfo] = Blob16{};
 	pb[ioFlParID] = e->parentDirID;
-	pb[ioFlClpSiz] = uint32_t(0);
+	pb[ioFlClpSiz] = 0;
 }
 
+/* Fill the directory-variant fields of a CInfoPBRec (IM IV-155). */
 static void pbWriteDirFields(PBRef pb, const storage::CatalogEntry *e)
 {
-	pb[ioFlAttrib] = uint8_t(0x10);
-	put_vm_byte(pb.addr + 31, 0); /* ioACUser */
+	pb[ioFlAttrib] = kFlAttribDir;
+	pb[ioACUser] = 0;
 
-	/* DInfo + DXInfo (32 bytes total) */
-	uint8_t dirBuf[32] = {};
-	if (s_volume.getDirInfo(e->cnid, dirBuf))
-	{
-		for (int i = 0; i < 16; i++)
-			put_vm_byte(pb.addr + kOff_ioDrUsrWds + i, dirBuf[i]);
-		for (int i = 0; i < 16; i++)
-			put_vm_byte(pb.addr + kOff_ioDrFndrInfo + i, dirBuf[16 + i]);
-	}
-	else
-	{
-		for (int i = 0; i < 16; i++)
-			put_vm_byte(pb.addr + kOff_ioDrUsrWds + i, 0);
-		for (int i = 0; i < 16; i++)
-			put_vm_byte(pb.addr + kOff_ioDrFndrInfo + i, 0);
-	}
+	/* DInfo + DXInfo — zero-initialized, filled if entry exists */
+	Blob16 dinfo{}, dxinfo{};
+	s_volume.getDirInfo(e->cnid, dinfo, dxinfo);
+	pb[ioDrUsrWds] = dinfo;
+	pb[ioDrFndrInfo] = dxinfo;
 
-	pb[ioDrNmFls] = int16_t(s_volume.childCount(e->cnid));
+	pb[ioDrNmFls] = s_volume.childCount(e->cnid);
 	pb[ioDrDirID] = e->cnid;
 	pb[ioDrParID] = e->parentDirID;
 	pb[ioDrCrDat] = e->crDate;
 	pb[ioDrMdDat] = e->modDate;
-	pb[ioDrBkDat] = uint32_t(0);
+	pb[ioDrBkDat] = 0;
 }
 
+/* Synthesize a CInfoPBRec for the volume root (dirID 2). */
 static void pbWriteRootDir(PBRef pb, uint32_t nameAddr)
 {
 	uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
-	pb[ioFlAttrib] = uint8_t(0x10);
-	put_vm_byte(pb.addr + 31, 0); /* ioACUser */
-	for (int i = 0; i < 16; i++)
-		put_vm_byte(pb.addr + kOff_ioDrUsrWds + i, 0);
-	for (int i = 0; i < 16; i++)
-		put_vm_byte(pb.addr + kOff_ioDrFndrInfo + i, 0);
-	pb[ioDrNmFls] = int16_t(s_volume.childCount(kRootDirID));
+	pb[ioFlAttrib] = kFlAttribDir;
+	pb[ioACUser] = 0;
+	pb[ioDrUsrWds] = Blob16{};
+	pb[ioDrFndrInfo] = Blob16{};
+	pb[ioDrNmFls] = s_volume.childCount(kRootDirID);
 	pb[ioDrDirID] = kRootDirID;
 	pb[ioDrParID] = kRootParentID;
 	pb[ioDrCrDat] = now;
 	pb[ioDrMdDat] = now;
-	pb[ioDrBkDat] = uint32_t(0);
+	pb[ioDrBkDat] = 0;
 	if (nameAddr) writePascalString(nameAddr, "Shared");
 }
 
-static uint16_t PbGetCatInfo(PBRef pb, bool isHFS)
+/*
+	PBGetCatInfo (IM IV-155).  Three modes:
+	  ioFDirIndex > 0  — indexed enumeration of directory contents
+	  ioFDirIndex == 0  — by-name lookup (or by-dirID if name is empty)
+	  ioFDirIndex < 0  — info about the directory identified by ioDrDirID
+	Returns file or directory fields depending on the entry found.
+*/
+static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	int16_t index = pb[ioFDirIndex];
@@ -371,10 +414,10 @@ static uint16_t PbGetCatInfo(PBRef pb, bool isHFS)
 				pbWriteRootDir(pb, nameAddr);
 				return 0;
 			}
-			return 43; /* fnfErr */
+			return kFnfErr;
 		}
 		e = s_volume.nthChild(dirID, index);
-		if (!e) return 43; /* fnfErr — end of enumeration */
+		if (!e) return kFnfErr;
 	}
 	else if (index == 0 && nameAddr != 0)
 	{
@@ -398,7 +441,7 @@ static uint16_t PbGetCatInfo(PBRef pb, bool isHFS)
 		return 0;
 	}
 
-	if (!e) return 43; /* fnfErr */
+	if (!e) return kFnfErr;
 
 	if (nameAddr) writePascalString(nameAddr, e->macName);
 
@@ -410,41 +453,48 @@ static uint16_t PbGetCatInfo(PBRef pb, bool isHFS)
 	return 0;
 }
 
-static uint16_t PbGetFileInfo(PBRef pb, bool isHFS)
+/* PBGetFInfo / PBHGetFInfo (IM IV-97 / IV-148).  By-name file lookup only. */
+static OSErr PbGetFileInfo(PBRef pb, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
-	if (nameAddr == 0) return 50; /* paramErr */
+	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	dbg_printf("[ExtFS] PbGetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	auto *e = s_volume.findByPath(dirID, name);
-	if (!e) return 43; /* fnfErr */
+	if (!e) return kFnfErr;
 
 	pbWriteFileFields(pb, e, isHFS);
 	return 0;
 }
 
-static uint16_t PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType forkType, bool isHFS)
+/*
+	Shared implementation for PBOpen / PBOpenRF (IM IV-92 / IV-108).
+	Resolves the file by name, opens the requested fork, and returns the
+	fork handle + size + CNID + parent via regParam[] for the guest to
+	populate its FCB.
+*/
+static OSErr PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType forkType, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
 	uint8_t perm = pb[ioPermssn];
 
-	if (nameAddr == 0) return 50; /* paramErr */
+	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	dbg_printf("[ExtFS] PbOpen%s dir=%u name=\"%s\"\n",
 			   forkType == storage::ForkType::Resource ? "RF" : "", dirID, name.c_str());
 
 	auto *e = s_volume.findByPath(dirID, name);
-	if (!e) return fmErrToReg(storage::FMErr::kFnfErr);
+	if (!e) return kFnfErr;
 
 	uint32_t size = 0;
-	storage::FMErr err;
+	OSErr err;
 	uint32_t handle = s_volume.openFork(e->cnid, forkType, size, err, perm);
-	if (handle == 0) return fmErrToReg(err);
+	if (handle == 0) return err;
 
 	regParam[0] = handle;
 	regParam[1] = size;
@@ -453,54 +503,55 @@ static uint16_t PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType fork
 	return 0;
 }
 
-static uint16_t PbOpen(PBRef pb, uint32_t regParam[], bool isHFS)
+static OSErr PbOpen(PBRef pb, uint32_t regParam[], bool isHFS)
 {
 	return PbOpenFork(pb, regParam, storage::ForkType::Data, isHFS);
 }
 
-static uint16_t PbOpenRF(PBRef pb, uint32_t regParam[], bool isHFS)
+static OSErr PbOpenRF(PBRef pb, uint32_t regParam[], bool isHFS)
 {
 	return PbOpenFork(pb, regParam, storage::ForkType::Resource, isHFS);
 }
 
-/* ── Phase 4: mutation handlers ───────────────────── */
-
-static uint16_t PbCreate(PBRef pb, bool isHFS)
+/* PBCreate / PBHCreate (IM IV-90).  Create an empty file. */
+static OSErr PbCreate(PBRef pb, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
-	if (nameAddr == 0) return 50; /* paramErr */
+	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	dbg_printf("[ExtFS] PbCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
 
-	storage::FMErr err;
+	OSErr err;
 	uint32_t cnid = s_volume.createFile(dirID, name, err);
-	if (cnid == 0) return fmErrToReg(err);
+	if (cnid == 0) return err;
 
 	dbg_printf("[ExtFS]   → cnid=%u\n", cnid);
 	return 0;
 }
 
-static uint16_t PbDelete(PBRef pb, bool isHFS)
+/* PBDelete / PBHDelete (IM IV-91).  Remove a file or empty directory. */
+static OSErr PbDelete(PBRef pb, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
-	if (nameAddr == 0) return 50; /* paramErr */
+	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	dbg_printf("[ExtFS] PbDelete dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	auto err = s_volume.remove(dirID, name);
-	return fmErrToReg(err);
+	return err;
 }
 
-static uint16_t PbRename(PBRef pb, bool isHFS)
+/* PBRename / PBHRename (IM IV-95).  New name comes from ioMisc. */
+static OSErr PbRename(PBRef pb, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
 	uint32_t newNameAddr = pb[ioMisc];
-	if (nameAddr == 0 || newNameAddr == 0) return 50; /* paramErr */
+	if (nameAddr == 0 || newNameAddr == 0) return kParamErr;
 
 	std::string oldName = readPascalString(nameAddr);
 	std::string newName = readPascalString(newNameAddr);
@@ -508,32 +559,34 @@ static uint16_t PbRename(PBRef pb, bool isHFS)
 			   newName.c_str());
 
 	auto err = s_volume.rename(dirID, oldName, newName);
-	return fmErrToReg(err);
+	return err;
 }
 
-static uint16_t PbDirCreate(PBRef pb, bool isHFS)
+/* PBDirCreate (IM IV-153).  Returns new dirID in ioDrDirID. */
+static OSErr PbDirCreate(PBRef pb, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
-	if (nameAddr == 0) return 50; /* paramErr */
+	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	dbg_printf("[ExtFS] PbDirCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
 
-	storage::FMErr err;
+	OSErr err;
 	uint32_t cnid = s_volume.createDir(dirID, name, err);
-	if (cnid == 0) return fmErrToReg(err);
+	if (cnid == 0) return err;
 
 	pb[ioDrDirID] = cnid;
 	dbg_printf("[ExtFS]   → cnid=%u\n", cnid);
 	return 0;
 }
 
-static uint16_t PbCatMove(PBRef pb, bool isHFS)
+/* PBCatMove (IM IV-157).  Move a file or directory to ioNewDirID. */
+static OSErr PbCatMove(PBRef pb, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
-	if (nameAddr == 0) return 50; /* paramErr */
+	if (nameAddr == 0) return kParamErr;
 
 	uint32_t dstDirID = pb[ioNewDirID];
 	std::string name = readPascalString(nameAddr);
@@ -541,75 +594,62 @@ static uint16_t PbCatMove(PBRef pb, bool isHFS)
 			   dstDirID);
 
 	auto err = s_volume.move(dirID, name, dstDirID);
-	return fmErrToReg(err);
+	return err;
 }
 
-/* ── Phase 5: metadata handlers ───────────────────── */
-
-static uint16_t PbSetFileInfo(PBRef pb, bool isHFS)
+/* PBSetFInfo / PBHSetFInfo (IM IV-100 / IV-150).  Write FInfo from the PB. */
+static OSErr PbSetFileInfo(PBRef pb, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
-	if (nameAddr == 0) return 50; /* paramErr */
+	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	dbg_printf("[ExtFS] PbSetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	auto *e = s_volume.findByPath(dirID, name);
-	if (!e) return fmErrToReg(storage::FMErr::kFnfErr);
+	if (!e) return kFnfErr;
 
-	/* Read FInfo (16 bytes) directly from the PB at offset 32 */
-	uint32_t pbAddr = pb.addr;
-	uint32_t type = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo);
-	uint32_t creator = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 4);
-	uint16_t flags = detail::pbRead<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 8);
-	uint32_t location = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 10);
-	uint16_t folder = detail::pbRead<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 14);
-
-	auto err = s_volume.setFileInfo(e->cnid, type, creator, flags, location, folder);
-	return fmErrToReg(err);
+	auto fi = pbReadFInfo(pb);
+	auto err = s_volume.setFileInfo(e->cnid, fi.type, fi.creator, fi.flags, fi.location, fi.folder);
+	return err;
 }
 
-static uint16_t PbSetCatInfo(PBRef pb, bool isHFS)
+/*
+	PBSetCatInfo (IM IV-156).  Sets Finder info for either a file (FInfo)
+	or a directory (DInfo + DXInfo).  The entry type determines which
+	PB fields are read.
+*/
+static OSErr PbSetCatInfo(PBRef pb, bool isHFS)
 {
 	uint32_t dirID = pbResolveDir(pb, isHFS);
 	uint32_t nameAddr = pb[ioNamePtr];
-	if (nameAddr == 0) return 50; /* paramErr */
+	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	dbg_printf("[ExtFS] PbSetCatInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	auto *e = s_volume.findByPath(dirID, name);
-	if (!e) return fmErrToReg(storage::FMErr::kFnfErr);
+	if (!e) return kFnfErr;
 
-	uint32_t pbAddr = pb.addr;
 	if (e->isDirectory)
 	{
-		/* Read DInfo (16) + DXInfo (16) from PB offsets 32 and 84 */
-		uint8_t buf[32];
-		for (int i = 0; i < 16; i++)
-			buf[i] = get_vm_byte(pbAddr + kOff_ioDrUsrWds + i);
-		for (int i = 0; i < 16; i++)
-			buf[16 + i] = get_vm_byte(pbAddr + kOff_ioDrFndrInfo + i);
-		auto err = s_volume.setDirInfo(e->cnid, buf);
-		return fmErrToReg(err);
+		Blob16 dinfo = pb[ioDrUsrWds];
+		Blob16 dxinfo = pb[ioDrFndrInfo];
+		auto err = s_volume.setDirInfo(e->cnid, dinfo, dxinfo);
+		return err;
 	}
 	else
 	{
-		/* Read FInfo from PB offset 32 */
-		uint32_t type = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo);
-		uint32_t creator = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 4);
-		uint16_t flags = detail::pbRead<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 8);
-		uint32_t location = detail::pbRead<uint32_t>(pbAddr + kOff_ioFlFndrInfo + 10);
-		uint16_t folder = detail::pbRead<uint16_t>(pbAddr + kOff_ioFlFndrInfo + 14);
-		auto err = s_volume.setFileInfo(e->cnid, type, creator, flags, location, folder);
-		return fmErrToReg(err);
+		auto fi = pbReadFInfo(pb);
+		auto err =
+			s_volume.setFileInfo(e->cnid, fi.type, fi.creator, fi.flags, fi.location, fi.folder);
+		return err;
 	}
 }
 
-/* ── Phase 6: WD handlers ─────────────────────────── */
-
-static uint16_t PbOpenWD(PBRef pb)
+/* PBOpenWD (IM IV-159).  Allocate a WD refnum for ioWDDirID. */
+static OSErr PbOpenWD(PBRef pb)
 {
 	uint32_t dirID = pb[ioWDDirID];
 	uint32_t procID = pb[ioWDProcID];
@@ -620,7 +660,8 @@ static uint16_t PbOpenWD(PBRef pb)
 	return 0;
 }
 
-static uint16_t PbCloseWD(PBRef pb)
+/* PBCloseWD (IM IV-160).  Release a WD refnum. */
+static OSErr PbCloseWD(PBRef pb)
 {
 	int16_t vRefNum = pb[ioVRefNum];
 	auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
@@ -630,7 +671,12 @@ static uint16_t PbCloseWD(PBRef pb)
 	return 0;
 }
 
-static uint16_t PbGetWDInfo(PBRef pb)
+/*
+	PBGetWDInfo (IM IV-161).  Return the dirID and procID for a WD refnum.
+	Only supports direct lookup (ioWDIndex == 0); indexed enumeration of
+	all WDs is not implemented.
+*/
+static OSErr PbGetWDInfo(PBRef pb)
 {
 	int16_t vRefNum = pb[ioVRefNum];
 	int16_t wdIndex = pb[ioWDIndex];
@@ -638,18 +684,18 @@ static uint16_t PbGetWDInfo(PBRef pb)
 	dbg_printf("[ExtFS] PbGetWDInfo vRefNum=%d wdIndex=%d\n", vRefNum, wdIndex);
 
 	/* Only handle direct lookup (ioWDIndex == 0) */
-	if (wdIndex != 0) return 35; /* nsvErr */
+	if (wdIndex != 0) return kNsvErr;
 
 	if (vRefNum == kGuestVRefNum || vRefNum == kGuestDriveNum)
 	{
-		pb[ioWDProcID] = uint32_t(0);
-		pb[ioWDDirID] = uint32_t(kRootDirID);
+		pb[ioWDProcID] = 0;
+		pb[ioWDDirID] = kRootDirID;
 	}
 	else
 	{
 		auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
 		uint32_t dirID = s_volume.wdToDirID(wdRef);
-		if (dirID == 0) return 35; /* nsvErr */
+		if (dirID == 0) return kNsvErr;
 		pb[ioWDProcID] = s_volume.wdToProcID(wdRef);
 		pb[ioWDDirID] = dirID;
 	}
@@ -665,16 +711,16 @@ static uint16_t PbGetWDInfo(PBRef pb)
 
 /* ── Register-based handlers ──────────────────────── */
 
+/* Mount the shared volume (if needed) and return 1 if mounted. */
 static void RegVersion(uint32_t regParam[], uint16_t &regResult)
 {
 	if (!s_volume.isMounted()) s_volume.mount("shared");
 	regParam[0] = s_volume.isMounted() ? 1 : 0;
 	regResult = 0;
-	dbglog_writeCStr((char *)"ExtFS: version query → ");
-	dbglog_writeNum(regParam[0]);
-	dbglog_writeCStr((char *)"\n");
+	dbg_printf("[ExtFS] version query → %u\n", regParam[0]);
 }
 
+/* Return volume statistics: file count, dir count, total bytes. */
 static void RegGetVol(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t files, dirs, bytes;
@@ -686,6 +732,7 @@ static void RegGetVol(uint32_t regParam[], uint16_t &regResult)
 	dbg_printf("[ExtFS] GetVol → %u files, %u dirs, %u bytes\n", files, dirs, bytes);
 }
 
+/* Read bytes from an open fork into guest RAM. */
 static void RegRead(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t handle = regParam[0];
@@ -698,9 +745,9 @@ static void RegRead(uint32_t regParam[], uint16_t &regResult)
 	std::vector<uint8_t> buf(count);
 	uint32_t got = 0;
 	auto err = s_volume.readFork(handle, offset, buf, got);
-	if (err != storage::FMErr::kNoErr)
+	if (err != kNoErr)
 	{
-		regResult = fmErrToReg(err);
+		regResult = err;
 		return;
 	}
 
@@ -711,6 +758,7 @@ static void RegRead(uint32_t regParam[], uint16_t &regResult)
 	regResult = 0;
 }
 
+/* Close an open fork handle. */
 static void RegClose(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t handle = regParam[0];
@@ -719,6 +767,7 @@ static void RegClose(uint32_t regParam[], uint16_t &regResult)
 	regResult = 0;
 }
 
+/* Look up the dirID and procID for a WD refnum (register path). */
 static void RegGetWDInfo(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t wdRef = regParam[0];
@@ -732,10 +781,11 @@ static void RegGetWDInfo(uint32_t regParam[], uint16_t &regResult)
 	}
 	else
 	{
-		regResult = 43;
+		regResult = kFnfErr;
 	}
 }
 
+/* Allocate a WD refnum for a directory (register path). */
 static void RegOpenWD(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t dirID = regParam[1];
@@ -746,6 +796,7 @@ static void RegOpenWD(uint32_t regParam[], uint16_t &regResult)
 	regResult = 0;
 }
 
+/* Release a WD refnum (register path). */
 static void RegCloseWD(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t wdRef = regParam[0];
@@ -754,6 +805,7 @@ static void RegCloseWD(uint32_t regParam[], uint16_t &regResult)
 	regResult = 0;
 }
 
+/* Format and display a debug log line from the guest. */
 static void RegDbgLog(uint32_t regParam[], uint16_t &regResult)
 {
 	std::string line = guestFormatLog(regParam[0], regParam);
@@ -761,6 +813,7 @@ static void RegDbgLog(uint32_t regParam[], uint16_t &regResult)
 	regResult = 0;
 }
 
+/* Record a trap call from the guest for the trap-trace log. */
 static void RegLogTrap(uint32_t regParam[], uint16_t &regResult)
 {
 	extfsLogTrap(static_cast<uint16_t>(regParam[0]), regParam[1],
@@ -769,6 +822,7 @@ static void RegLogTrap(uint32_t regParam[], uint16_t &regResult)
 	regResult = 0;
 }
 
+/* Get/set the guest-side Globals pointer (used by the debugger). */
 static void RegGuestVars(uint32_t regParam[], uint16_t &regResult)
 {
 	static uint32_t s_guestVarsPtr = 0;
@@ -777,6 +831,7 @@ static void RegGuestVars(uint32_t regParam[], uint16_t &regResult)
 	regResult = 0;
 }
 
+/* Guest fatal error — log, dump disasm, break into debugger or exit. */
 static void RegFatal(uint32_t regParam[], uint16_t &regResult)
 {
 	std::string msg = guestFormatLog(regParam[0], regParam);
@@ -793,6 +848,7 @@ static void RegFatal(uint32_t regParam[], uint16_t &regResult)
 	std::exit(EXIT_FAILURE);
 }
 
+/* Write bytes from guest RAM into an open fork. */
 static void RegWrite(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t handle = regParam[0];
@@ -808,9 +864,9 @@ static void RegWrite(uint32_t regParam[], uint16_t &regResult)
 
 	uint32_t written = 0;
 	auto err = s_volume.writeFork(handle, offset, data, written);
-	if (err != storage::FMErr::kNoErr)
+	if (err != kNoErr)
 	{
-		regResult = fmErrToReg(err);
+		regResult = err;
 		return;
 	}
 	regParam[0] = written;
@@ -818,17 +874,23 @@ static void RegWrite(uint32_t regParam[], uint16_t &regResult)
 	regResult = 0;
 }
 
+/* Set the logical end-of-file for an open fork. */
 static void RegSetEOF(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t handle = regParam[0];
 	uint32_t newSize = regParam[1];
 	dbg_printf("[ExtFS] SetEOF h=%u size=%u\n", handle, newSize);
 	auto err = s_volume.setEOF(handle, newSize);
-	regResult = fmErrToReg(err);
+	regResult = err;
 }
 
 /* ── Dispatch ─────────────────────────────────────── */
 
+/*
+	Main entry point — called by the extension mechanism when the guest
+	issues a SharedDrive RPC.  Routes each command code to its handler,
+	then runs catalog validation after any mutating operation.
+*/
 void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 {
 	switch (cmd)

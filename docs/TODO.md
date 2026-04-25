@@ -1,3 +1,31 @@
+* Remove Developer Mode UI completely
+
+* Fix keyboard (Command-Q / Ctrl...)
+
+* Group guest/host comm logically
+  [config + version]
+  [raw device emulation]
+  [clipboard]
+  [shared drive]
+
+* Rewrite the sony driver with our mecanism
+
+* Add a mac side file transfer app???
+
+* Hhost->guest commands? (lauch app, shutdown)
+
+* Host->guest copy files? explore directories? unix fuse filesystem with init-baked running emulator?
+
+* Shared drive "watch for changes"
+
+* Multiple shared drives
+
+* Control panel?
+
+* Fix on-screen SDL interface
+
+
+
 * WTF with the window changed code?
 
 * Clipboard sync: apps with private scraps (e.g. THINK C) only see

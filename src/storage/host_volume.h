@@ -13,6 +13,7 @@
 
 #include "storage/appledouble.h"
 
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
@@ -25,21 +26,24 @@
 namespace storage
 {
 
-/* ── Error codes (match Mac OS File Manager) ──────── */
+/* ── Mac OS result codes (IM II-308, IV-226) ──────── */
+/*
+	Standard OSErr values — negative, per Inside Macintosh convention.
+	Used throughout the storage layer and returned directly to the guest.
+*/
+using OSErr = int16_t;
 
-enum class FMErr : int16_t
-{
-	kNoErr = 0,
-	kFnfErr = -43,	  // file not found
-	kDupFNErr = -48,  // duplicate filename
-	kParamErr = -50,  // bad parameter
-	kRfNumErr = -51,  // bad file reference number
-	kIoErr = -36,	  // I/O error
-	kDirNFErr = -120, // directory not found
-	kFBsyErr = -47,	  // file busy (dir not empty)
-	kWPrErr = -44,	  // volume locked (optional, future)
-	kOpWrErr = -49,	  // file already open with write permission
-};
+inline constexpr OSErr kNoErr = 0;
+inline constexpr OSErr kNsvErr = -35;	 /* no such volume */
+inline constexpr OSErr kIoErr = -36;	 /* I/O error */
+inline constexpr OSErr kFnfErr = -43;	 /* file not found */
+inline constexpr OSErr kWPrErr = -44;	 /* volume is write-protected */
+inline constexpr OSErr kFBsyErr = -47;	 /* file busy (dir not empty) */
+inline constexpr OSErr kDupFNErr = -48;	 /* duplicate filename */
+inline constexpr OSErr kOpWrErr = -49;	 /* file already open for write */
+inline constexpr OSErr kParamErr = -50;	 /* parameter error */
+inline constexpr OSErr kRfNumErr = -51;	 /* bad refnum */
+inline constexpr OSErr kDirNFErr = -120; /* directory not found */
 
 /* ── Catalog entry ────────────────────────────────── */
 
@@ -167,41 +171,43 @@ public:
 	// Create an empty file in parentDirID.  Allocates a new CNID and
 	// creates the file on the host filesystem.  Returns the CNID, or 0
 	// on error (errOut set to kDupFNErr, kDirNFErr, etc.).
-	uint32_t createFile(uint32_t parentDirID, std::string_view macName, FMErr &errOut);
+	uint32_t createFile(uint32_t parentDirID, std::string_view macName, OSErr &errOut);
 
 	// Create a subdirectory.  Same return/error contract as createFile().
-	uint32_t createDir(uint32_t parentDirID, std::string_view macName, FMErr &errOut);
+	uint32_t createDir(uint32_t parentDirID, std::string_view macName, OSErr &errOut);
 
 	/* ── Deletion ─────────────────────────────────── */
 
 	// Delete a file or empty directory.  Also removes its AppleDouble
 	// sidecar.  Returns kFBsyErr for non-empty directories.
-	FMErr remove(uint32_t parentDirID, std::string_view macName);
+	OSErr remove(uint32_t parentDirID, std::string_view macName);
 
 	/* ── Move / rename ────────────────────────────── */
 
 	// Move a file or directory to a different parent.  Updates host paths
 	// for the entry and all descendants.  Renames the sidecar too.
-	FMErr move(uint32_t srcDirID, std::string_view macName, uint32_t dstDirID);
+	OSErr move(uint32_t srcDirID, std::string_view macName, uint32_t dstDirID);
 
 	// Rename a file or directory within its current parent.
-	FMErr rename(uint32_t dirID, std::string_view oldMacName, std::string_view newMacName);
+	OSErr rename(uint32_t dirID, std::string_view oldMacName, std::string_view newMacName);
 
 	/* ── Metadata ─────────────────────────────────── */
 
 	// Update Finder type/creator/flags.  Writes through to the
 	// AppleDouble sidecar.  Toggles isText and recalculates dataForkSize
 	// if the type changes to/from 'TEXT'.
-	FMErr setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags,
+	OSErr setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags,
 					  uint32_t location = 0, uint16_t folder = 0);
 
-	// Get directory Finder info (DInfo + DXInfo, 32 bytes).
+	// Get directory Finder info (DInfo + DXInfo, 16 bytes each).
 	// Returns false if cnid is not a directory.
-	bool getDirInfo(uint32_t cnid, uint8_t outBuf[32]) const;
+	bool getDirInfo(uint32_t cnid, std::array<uint8_t, 16> &dinfo,
+					std::array<uint8_t, 16> &dxinfo) const;
 
-	// Set directory Finder info (DInfo + DXInfo, 32 bytes).
+	// Set directory Finder info (DInfo + DXInfo, 16 bytes each).
 	// Persists to AppleDouble sidecar.
-	FMErr setDirInfo(uint32_t cnid, const uint8_t buf[32]);
+	OSErr setDirInfo(uint32_t cnid, const std::array<uint8_t, 16> &dinfo,
+					 const std::array<uint8_t, 16> &dxinfo);
 
 	/* ── Fork I/O ─────────────────────────────────── */
 	/*
@@ -216,18 +222,18 @@ public:
 
 	// Open a fork and return a handle (or 0 on error).  outSize receives
 	// the fork's current byte count (MacRoman size for TEXT data forks).
-	uint32_t openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, FMErr &errOut,
+	uint32_t openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, OSErr &errOut,
 					  uint8_t permission = 0);
 
 	// Read up to buf.size() bytes at offset.  outRead = bytes actually read.
-	FMErr readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> buf, uint32_t &outRead);
+	OSErr readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> buf, uint32_t &outRead);
 
 	// Write data at offset.  outWritten = bytes actually written.
-	FMErr writeFork(uint32_t handle, uint32_t offset, std::span<const uint8_t> data,
+	OSErr writeFork(uint32_t handle, uint32_t offset, std::span<const uint8_t> data,
 					uint32_t &outWritten);
 
 	// Truncate or extend the fork to newSize bytes.
-	FMErr setEOF(uint32_t handle, uint32_t newSize);
+	OSErr setEOF(uint32_t handle, uint32_t newSize);
 
 	// Close the fork handle and release resources.
 	void closeFork(uint32_t handle);

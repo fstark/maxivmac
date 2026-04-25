@@ -193,9 +193,9 @@ TEST_CASE("HostVolume: createFile basic")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "newfile.txt", err);
-	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(err == storage::kNoErr);
 	CHECK(cnid > 0);
 	CHECK(fs::exists(td.path / "newfile.txt"));
 	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "newfile.txt") != nullptr);
@@ -207,12 +207,12 @@ TEST_CASE("HostVolume: createFile duplicate")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, "dup.txt", err);
-	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(err == storage::kNoErr);
 
 	uint32_t cnid2 = vol.createFile(storage::HostVolume::kRootDirID, "dup.txt", err);
-	CHECK(err == storage::FMErr::kDupFNErr);
+	CHECK(err == storage::kDupFNErr);
 	CHECK(cnid2 == 0);
 }
 
@@ -222,9 +222,9 @@ TEST_CASE("HostVolume: createFile escaped name")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, ":special", err);
-	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(err == storage::kNoErr);
 	CHECK(fs::exists(td.path / "^3Aspecial"));
 }
 
@@ -234,9 +234,9 @@ TEST_CASE("HostVolume: createFile bad parent")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(9999, "file.txt", err);
-	CHECK(err == storage::FMErr::kDirNFErr);
+	CHECK(err == storage::kDirNFErr);
 	CHECK(cnid == 0);
 }
 
@@ -246,9 +246,9 @@ TEST_CASE("HostVolume: createDir basic")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createDir(storage::HostVolume::kRootDirID, "newdir", err);
-	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(err == storage::kNoErr);
 	CHECK(cnid > 0);
 	CHECK(fs::is_directory(td.path / "newdir"));
 
@@ -263,12 +263,12 @@ TEST_CASE("HostVolume: remove file")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, "gone.txt", err);
-	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(err == storage::kNoErr);
 
 	auto result = vol.remove(storage::HostVolume::kRootDirID, "gone.txt");
-	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(result == storage::kNoErr);
 	CHECK_FALSE(fs::exists(td.path / "gone.txt"));
 	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "gone.txt") == nullptr);
 }
@@ -279,14 +279,14 @@ TEST_CASE("HostVolume: remove file with sidecar")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, "withsc", err);
 	appledouble::SetFinderInfo(td.path / "withsc",
 							   {appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0});
 	CHECK(fs::exists(td.path / "._withsc"));
 
 	auto result = vol.remove(storage::HostVolume::kRootDirID, "withsc");
-	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(result == storage::kNoErr);
 	CHECK_FALSE(fs::exists(td.path / "withsc"));
 	CHECK_FALSE(fs::exists(td.path / "._withsc"));
 }
@@ -297,12 +297,12 @@ TEST_CASE("HostVolume: remove non-empty directory")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t dirCnid = vol.createDir(storage::HostVolume::kRootDirID, "notempty", err);
 	vol.createFile(dirCnid, "child.txt", err);
 
 	auto result = vol.remove(storage::HostVolume::kRootDirID, "notempty");
-	CHECK(result == storage::FMErr::kFBsyErr);
+	CHECK(result == storage::kFBsyErr);
 }
 
 TEST_CASE("HostVolume: remove empty directory")
@@ -311,11 +311,11 @@ TEST_CASE("HostVolume: remove empty directory")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	vol.createDir(storage::HostVolume::kRootDirID, "emptydir", err);
 
 	auto result = vol.remove(storage::HostVolume::kRootDirID, "emptydir");
-	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(result == storage::kNoErr);
 	CHECK_FALSE(fs::exists(td.path / "emptydir"));
 }
 
@@ -326,7 +326,7 @@ TEST_CASE("HostVolume: remove non-existent")
 	vol.mount(td.path);
 
 	auto result = vol.remove(storage::HostVolume::kRootDirID, "nope");
-	CHECK(result == storage::FMErr::kFnfErr);
+	CHECK(result == storage::kFnfErr);
 }
 
 /* ── Phase 4: move/rename + metadata ──────────────── */
@@ -337,13 +337,13 @@ TEST_CASE("HostVolume: move file between dirs")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t dirA = vol.createDir(storage::HostVolume::kRootDirID, "dirA", err);
 	uint32_t dirB = vol.createDir(storage::HostVolume::kRootDirID, "dirB", err);
 	vol.createFile(dirA, "moveme.txt", err);
 
 	auto result = vol.move(dirA, "moveme.txt", dirB);
-	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(result == storage::kNoErr);
 
 	CHECK(vol.findByName(dirA, "moveme.txt") == nullptr);
 	auto *e = vol.findByName(dirB, "moveme.txt");
@@ -359,7 +359,7 @@ TEST_CASE("HostVolume: move file with sidecar")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t dirA = vol.createDir(storage::HostVolume::kRootDirID, "srcdir", err);
 	uint32_t dirB = vol.createDir(storage::HostVolume::kRootDirID, "dstdir", err);
 	vol.createFile(dirA, "withsc", err);
@@ -367,7 +367,7 @@ TEST_CASE("HostVolume: move file with sidecar")
 							   {appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0});
 
 	auto result = vol.move(dirA, "withsc", dirB);
-	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(result == storage::kNoErr);
 	CHECK(fs::exists(td.path / "dstdir" / "withsc"));
 	CHECK(fs::exists(td.path / "dstdir" / "._withsc"));
 	CHECK_FALSE(fs::exists(td.path / "srcdir" / "withsc"));
@@ -379,13 +379,13 @@ TEST_CASE("HostVolume: move directory with children")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t sub = vol.createDir(storage::HostVolume::kRootDirID, "sub", err);
 	vol.createFile(sub, "child.txt", err);
 	uint32_t dest = vol.createDir(storage::HostVolume::kRootDirID, "dest", err);
 
 	auto result = vol.move(storage::HostVolume::kRootDirID, "sub", dest);
-	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(result == storage::kNoErr);
 
 	auto *child = vol.findByName(sub, "child.txt");
 	REQUIRE(child != nullptr);
@@ -400,7 +400,7 @@ TEST_CASE("HostVolume: move non-existent")
 
 	auto result =
 		vol.move(storage::HostVolume::kRootDirID, "nope", storage::HostVolume::kRootDirID);
-	CHECK(result == storage::FMErr::kFnfErr);
+	CHECK(result == storage::kFnfErr);
 }
 
 TEST_CASE("HostVolume: rename file")
@@ -409,11 +409,11 @@ TEST_CASE("HostVolume: rename file")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, "old.txt", err);
 
 	auto result = vol.rename(storage::HostVolume::kRootDirID, "old.txt", "new.txt");
-	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(result == storage::kNoErr);
 
 	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "old.txt") == nullptr);
 	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "new.txt");
@@ -429,12 +429,12 @@ TEST_CASE("HostVolume: rename directory updates descendant paths")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t dir = vol.createDir(storage::HostVolume::kRootDirID, "olddir", err);
 	vol.createFile(dir, "child.txt", err);
 
 	auto result = vol.rename(storage::HostVolume::kRootDirID, "olddir", "newdir");
-	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(result == storage::kNoErr);
 
 	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "olddir") == nullptr);
 	auto *d = vol.findByName(storage::HostVolume::kRootDirID, "newdir");
@@ -453,12 +453,12 @@ TEST_CASE("HostVolume: rename duplicate name")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, "fileA", err);
 	vol.createFile(storage::HostVolume::kRootDirID, "fileB", err);
 
 	auto result = vol.rename(storage::HostVolume::kRootDirID, "fileA", "fileB");
-	CHECK(result == storage::FMErr::kDupFNErr);
+	CHECK(result == storage::kDupFNErr);
 	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "fileA") != nullptr);
 }
 
@@ -469,7 +469,7 @@ TEST_CASE("HostVolume: rename non-existent")
 	vol.mount(td.path);
 
 	auto result = vol.rename(storage::HostVolume::kRootDirID, "nope", "whatever");
-	CHECK(result == storage::FMErr::kFnfErr);
+	CHECK(result == storage::kFnfErr);
 }
 
 TEST_CASE("HostVolume: setFileInfo basic")
@@ -478,11 +478,11 @@ TEST_CASE("HostVolume: setFileInfo basic")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "meta", err);
 
 	auto result = vol.setFileInfo(cnid, appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0);
-	CHECK(result == storage::FMErr::kNoErr);
+	CHECK(result == storage::kNoErr);
 
 	auto *e = vol.findByCNID(cnid);
 	REQUIRE(e != nullptr);
@@ -497,7 +497,7 @@ TEST_CASE("HostVolume: setFileInfo updates isText")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "generic", err);
 
 	auto *e = vol.findByCNID(cnid);
@@ -517,7 +517,7 @@ TEST_CASE("HostVolume: open conflict — exclusive vs existing")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "conflict.bin", err);
 	uint32_t size = 0;
 
@@ -528,12 +528,12 @@ TEST_CASE("HostVolume: open conflict — exclusive vs existing")
 	// Exclusive open (3) should fail — existing path present
 	uint32_t h2 = vol.openFork(cnid, storage::ForkType::Data, size, err, 3);
 	CHECK(h2 == 0);
-	CHECK(err == storage::FMErr::kOpWrErr);
+	CHECK(err == storage::kOpWrErr);
 
 	// Default open (0) should fail — existing has write
 	h2 = vol.openFork(cnid, storage::ForkType::Data, size, err, 0);
 	CHECK(h2 == 0);
-	CHECK(err == storage::FMErr::kOpWrErr);
+	CHECK(err == storage::kOpWrErr);
 
 	// Read-only open (1) should succeed — no conflict with read
 	h2 = vol.openFork(cnid, storage::ForkType::Data, size, err, 1);
@@ -554,7 +554,7 @@ TEST_CASE("HostVolume: multiple read-only opens succeed")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "multi.bin", err);
 	uint32_t size = 0;
 
@@ -572,11 +572,11 @@ TEST_CASE("HostVolume: open/close data fork")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "data.bin", err);
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(cnid, storage::ForkType::Data, size, err);
-	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(err == storage::kNoErr);
 	CHECK(handle > 0);
 	CHECK(size == 0);
 	vol.closeFork(handle);
@@ -588,7 +588,7 @@ TEST_CASE("HostVolume: write then read data fork")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "rw.bin", err);
 
 	uint32_t size = 0;
@@ -617,7 +617,7 @@ TEST_CASE("HostVolume: read at offset")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "off.bin", err);
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(cnid, storage::ForkType::Data, size, err);
@@ -642,7 +642,7 @@ TEST_CASE("HostVolume: write updates catalog size")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "sz.bin", err);
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(cnid, storage::ForkType::Data, size, err);
@@ -662,10 +662,10 @@ TEST_CASE("HostVolume: open non-existent CNID")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(9999, storage::ForkType::Data, size, err);
-	CHECK(err == storage::FMErr::kFnfErr);
+	CHECK(err == storage::kFnfErr);
 	CHECK(handle == 0);
 }
 
@@ -678,7 +678,7 @@ TEST_CASE("HostVolume: read with bad handle")
 	std::vector<uint8_t> buf(10);
 	uint32_t got = 0;
 	auto err = vol.readFork(9999, 0, buf, got);
-	CHECK(err == storage::FMErr::kRfNumErr);
+	CHECK(err == storage::kRfNumErr);
 	CHECK(got == 0);
 }
 
@@ -688,7 +688,7 @@ TEST_CASE("HostVolume: write updates modDate")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "dated.bin", err);
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(cnid, storage::ForkType::Data, size, err);
@@ -713,11 +713,11 @@ TEST_CASE("HostVolume: open resource fork (no sidecar)")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "norsrc.bin", err);
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
-	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(err == storage::kNoErr);
 	CHECK(handle > 0);
 	CHECK(size == 0);
 	vol.closeFork(handle);
@@ -729,7 +729,7 @@ TEST_CASE("HostVolume: write then read resource fork")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "rsrc.bin", err);
 	uint32_t size = 0;
 
@@ -757,7 +757,7 @@ TEST_CASE("HostVolume: resource fork write creates sidecar")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, "sctest", err);
 	CHECK_FALSE(fs::exists(td.path / "._sctest"));
 
@@ -779,7 +779,7 @@ TEST_CASE("HostVolume: resource fork at offset")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "rsrcoff.bin", err);
 	uint32_t size = 0;
 
@@ -817,7 +817,7 @@ TEST_CASE("HostVolume: resource fork updates rsrcForkSize")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "rsrcsz.bin", err);
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(cnid, storage::ForkType::Resource, size, err);
@@ -847,7 +847,7 @@ TEST_CASE("HostVolume: TEXT file read converts UTF-8")
 	CHECK(e->isText);
 	CHECK(e->dataForkSize == 4); /* Mac Roman size */
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(e->cnid, storage::ForkType::Data, size, err);
 	CHECK(size == 4);
@@ -875,7 +875,7 @@ TEST_CASE("HostVolume: TEXT file read at offset")
 	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "off.txt");
 	REQUIRE(e != nullptr);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(e->cnid, storage::ForkType::Data, size, err);
 
@@ -894,7 +894,7 @@ TEST_CASE("HostVolume: TEXT file write converts to UTF-8")
 	storage::HostVolume vol;
 	vol.mount(td.path);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "write.txt", err);
 	vol.setFileInfo(cnid, appledouble::FourCC("TEXT"), appledouble::FourCC("ttxt"), 0);
 
@@ -925,7 +925,7 @@ TEST_CASE("HostVolume: TEXT conversion stats")
 	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "stats.txt");
 	REQUIRE(e != nullptr);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t size = 0;
 
 	for (int i = 0; i < 3; ++i)
@@ -952,7 +952,7 @@ TEST_CASE("HostVolume: reset text stats")
 
 	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "rs.txt");
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(e->cnid, storage::ForkType::Data, size, err);
 	std::vector<uint8_t> buf(1);
@@ -1070,10 +1070,10 @@ TEST_CASE("HostVolume: validateCatalog passes after createFile in subdir")
 	auto *sub = vol.findByName(storage::HostVolume::kRootDirID, "subdir");
 	REQUIRE(sub != nullptr);
 
-	storage::FMErr err;
+	storage::OSErr err;
 	uint32_t cnid = vol.createFile(sub->cnid, "newfile.bin", err);
 	CHECK(cnid != 0);
-	CHECK(err == storage::FMErr::kNoErr);
+	CHECK(err == storage::kNoErr);
 	CHECK(vol.validateCatalog());
 }
 

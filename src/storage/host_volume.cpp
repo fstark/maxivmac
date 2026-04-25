@@ -168,18 +168,18 @@ void HostVolume::volumeStats(uint32_t &outFiles, uint32_t &outDirs, uint32_t &ou
 
 /* ── File/directory creation ──────────────────────── */
 
-uint32_t HostVolume::createFile(uint32_t parentDirID, std::string_view macName, FMErr &errOut)
+uint32_t HostVolume::createFile(uint32_t parentDirID, std::string_view macName, OSErr &errOut)
 {
 	if (findByName(parentDirID, macName))
 	{
-		errOut = FMErr::kDupFNErr;
+		errOut = kDupFNErr;
 		return 0;
 	}
 
 	std::string parentPath = resolveParentPath(parentDirID);
 	if (parentPath.empty())
 	{
-		errOut = FMErr::kDirNFErr;
+		errOut = kDirNFErr;
 		return 0;
 	}
 
@@ -189,7 +189,7 @@ uint32_t HostVolume::createFile(uint32_t parentDirID, std::string_view macName, 
 	FILE *fp = fopen(hostPath.c_str(), "wb");
 	if (!fp)
 	{
-		errOut = FMErr::kIoErr;
+		errOut = kIoErr;
 		return 0;
 	}
 	fclose(fp);
@@ -205,22 +205,22 @@ uint32_t HostVolume::createFile(uint32_t parentDirID, std::string_view macName, 
 	ce.modDate = ce.crDate;
 	catalog_.push_back(std::move(ce));
 
-	errOut = FMErr::kNoErr;
+	errOut = kNoErr;
 	return catalog_.back().cnid;
 }
 
-uint32_t HostVolume::createDir(uint32_t parentDirID, std::string_view macName, FMErr &errOut)
+uint32_t HostVolume::createDir(uint32_t parentDirID, std::string_view macName, OSErr &errOut)
 {
 	if (findByName(parentDirID, macName))
 	{
-		errOut = FMErr::kDupFNErr;
+		errOut = kDupFNErr;
 		return 0;
 	}
 
 	std::string parentPath = resolveParentPath(parentDirID);
 	if (parentPath.empty())
 	{
-		errOut = FMErr::kDirNFErr;
+		errOut = kDirNFErr;
 		return 0;
 	}
 
@@ -230,7 +230,7 @@ uint32_t HostVolume::createDir(uint32_t parentDirID, std::string_view macName, F
 	std::error_code ec;
 	if (!fs::create_directory(hostPath, ec))
 	{
-		errOut = FMErr::kIoErr;
+		errOut = kIoErr;
 		return 0;
 	}
 
@@ -244,20 +244,20 @@ uint32_t HostVolume::createDir(uint32_t parentDirID, std::string_view macName, F
 	ce.modDate = ce.crDate;
 	catalog_.push_back(std::move(ce));
 
-	errOut = FMErr::kNoErr;
+	errOut = kNoErr;
 	return catalog_.back().cnid;
 }
 
 /* ── Deletion ─────────────────────────────────────── */
 
-FMErr HostVolume::remove(uint32_t parentDirID, std::string_view macName)
+OSErr HostVolume::remove(uint32_t parentDirID, std::string_view macName)
 {
 	const CatalogEntry *e = findByName(parentDirID, macName);
-	if (!e) return FMErr::kFnfErr;
+	if (!e) return kFnfErr;
 
 	if (e->isDirectory)
 	{
-		if (childCount(e->cnid) > 0) return FMErr::kFBsyErr;
+		if (childCount(e->cnid) > 0) return kFBsyErr;
 		std::error_code ec;
 		fs::remove(e->hostPath, ec);
 	}
@@ -275,18 +275,18 @@ FMErr HostVolume::remove(uint32_t parentDirID, std::string_view macName)
 			break;
 		}
 	}
-	return FMErr::kNoErr;
+	return kNoErr;
 }
 
 /* ── Move / rename ────────────────────────────────── */
 
-FMErr HostVolume::move(uint32_t srcDirID, std::string_view macName, uint32_t dstDirID)
+OSErr HostVolume::move(uint32_t srcDirID, std::string_view macName, uint32_t dstDirID)
 {
 	const CatalogEntry *e = findByName(srcDirID, macName);
-	if (!e) return FMErr::kFnfErr;
+	if (!e) return kFnfErr;
 
 	std::string dstPath = resolveParentPath(dstDirID);
-	if (dstPath.empty()) return FMErr::kFnfErr;
+	if (dstPath.empty()) return kFnfErr;
 
 	std::string newHostPath = dstPath + "/" + fs::path(e->hostPath).filename().string();
 
@@ -294,11 +294,11 @@ FMErr HostVolume::move(uint32_t srcDirID, std::string_view macName, uint32_t dst
 	{
 		std::error_code ec;
 		fs::rename(e->hostPath, newHostPath, ec);
-		if (ec) return FMErr::kIoErr;
+		if (ec) return kIoErr;
 	}
 	else
 	{
-		if (!appledouble::RenameWithSidecar(e->hostPath, newHostPath)) return FMErr::kIoErr;
+		if (!appledouble::RenameWithSidecar(e->hostPath, newHostPath)) return kIoErr;
 	}
 
 	uint32_t cnid = e->cnid;
@@ -319,20 +319,20 @@ FMErr HostVolume::move(uint32_t srcDirID, std::string_view macName, uint32_t dst
 			entry.hostPath = newHostPath + entry.hostPath.substr(oldHostPath.size());
 		}
 	}
-	return FMErr::kNoErr;
+	return kNoErr;
 }
 
-FMErr HostVolume::rename(uint32_t dirID, std::string_view oldMacName, std::string_view newMacName)
+OSErr HostVolume::rename(uint32_t dirID, std::string_view oldMacName, std::string_view newMacName)
 {
-	if (newMacName.empty() || newMacName.size() > 31) return FMErr::kParamErr;
+	if (newMacName.empty() || newMacName.size() > 31) return kParamErr;
 
 	const CatalogEntry *e = findByName(dirID, oldMacName);
-	if (!e) return FMErr::kFnfErr;
+	if (!e) return kFnfErr;
 
-	if (findByName(dirID, newMacName)) return FMErr::kDupFNErr;
+	if (findByName(dirID, newMacName)) return kDupFNErr;
 
 	std::string parentPath = resolveParentPath(dirID);
-	if (parentPath.empty()) return FMErr::kDirNFErr;
+	if (parentPath.empty()) return kDirNFErr;
 
 	std::string newHostName = appledouble::HostNameFromMac(newMacName);
 	std::string newHostPath = parentPath + "/" + newHostName;
@@ -341,11 +341,11 @@ FMErr HostVolume::rename(uint32_t dirID, std::string_view oldMacName, std::strin
 	{
 		std::error_code ec;
 		fs::rename(e->hostPath, newHostPath, ec);
-		if (ec) return FMErr::kIoErr;
+		if (ec) return kIoErr;
 	}
 	else
 	{
-		if (!appledouble::RenameWithSidecar(e->hostPath, newHostPath)) return FMErr::kIoErr;
+		if (!appledouble::RenameWithSidecar(e->hostPath, newHostPath)) return kIoErr;
 	}
 
 	uint32_t cnid = e->cnid;
@@ -366,16 +366,16 @@ FMErr HostVolume::rename(uint32_t dirID, std::string_view oldMacName, std::strin
 			entry.hostPath = newHostPath + entry.hostPath.substr(oldHostPath.size());
 		}
 	}
-	return FMErr::kNoErr;
+	return kNoErr;
 }
 
 /* ── Metadata ─────────────────────────────────────── */
 
-FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags,
+OSErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, uint16_t flags,
 							  uint32_t location, uint16_t folder)
 {
 	CatalogEntry *e = mutableFindByCNID(cnid);
-	if (!e || e->isDirectory) return FMErr::kFnfErr;
+	if (!e || e->isDirectory) return kFnfErr;
 
 	appledouble::SetFinderInfo(e->hostPath, {type, creator, flags, location, folder});
 	e->type = type;
@@ -388,35 +388,39 @@ FMErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, ui
 	e->isText = (type == appledouble::FourCC("TEXT"));
 	if (e->isText != wasText) invalidateTextSize(*e);
 
-	return FMErr::kNoErr;
+	return kNoErr;
 }
 
-bool HostVolume::getDirInfo(uint32_t cnid, uint8_t outBuf[32]) const
+bool HostVolume::getDirInfo(uint32_t cnid, std::array<uint8_t, 16> &dinfo,
+							std::array<uint8_t, 16> &dxinfo) const
 {
 	const CatalogEntry *e = findByCNID(cnid);
 	if (!e || !e->isDirectory) return false;
-	std::memcpy(outBuf, e->dirFinderInfo, 32);
+	std::memcpy(dinfo.data(), e->dirFinderInfo, 16);
+	std::memcpy(dxinfo.data(), e->dirFinderInfo + 16, 16);
 	return true;
 }
 
-FMErr HostVolume::setDirInfo(uint32_t cnid, const uint8_t buf[32])
+OSErr HostVolume::setDirInfo(uint32_t cnid, const std::array<uint8_t, 16> &dinfo,
+							 const std::array<uint8_t, 16> &dxinfo)
 {
 	CatalogEntry *e = mutableFindByCNID(cnid);
-	if (!e || !e->isDirectory) return FMErr::kFnfErr;
-	std::memcpy(e->dirFinderInfo, buf, 32);
-	appledouble::SetDirFinderInfo(e->hostPath, buf, 32);
-	return FMErr::kNoErr;
+	if (!e || !e->isDirectory) return kFnfErr;
+	std::memcpy(e->dirFinderInfo, dinfo.data(), 16);
+	std::memcpy(e->dirFinderInfo + 16, dxinfo.data(), 16);
+	appledouble::SetDirFinderInfo(e->hostPath, e->dirFinderInfo, 32);
+	return kNoErr;
 }
 
 /* ── Fork I/O ─────────────────────────────────────── */
 
-uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, FMErr &errOut,
+uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, OSErr &errOut,
 							  uint8_t permission)
 {
 	const CatalogEntry *e = findByCNID(cnid);
 	if (!e || e->isDirectory)
 	{
-		errOut = FMErr::kFnfErr;
+		errOut = kFnfErr;
 		return 0;
 	}
 
@@ -431,13 +435,13 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, F
 		/* Exclusive open conflicts with any existing path */
 		if (permission == 3)
 		{
-			errOut = FMErr::kOpWrErr;
+			errOut = kOpWrErr;
 			return 0;
 		}
 		/* Write or default open conflicts with existing write path */
 		if ((permission == 0 || permission == 2) && of.hasWrite)
 		{
-			errOut = FMErr::kOpWrErr;
+			errOut = kOpWrErr;
 			return 0;
 		}
 	}
@@ -452,7 +456,7 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, F
 		if (!fp) fp = fopen(e->hostPath.c_str(), "w+b");
 		if (!fp)
 		{
-			errOut = FMErr::kIoErr;
+			errOut = kIoErr;
 			return 0;
 		}
 
@@ -476,18 +480,18 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, F
 		outSize = appledouble::ResourceForkSize(e->hostPath);
 	}
 
-	errOut = FMErr::kNoErr;
+	errOut = kNoErr;
 	return handle;
 }
 
-FMErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> buf,
+OSErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> buf,
 						   uint32_t &outRead)
 {
 	auto it = openForks_.find(handle);
 	if (it == openForks_.end())
 	{
 		outRead = 0;
-		return FMErr::kRfNumErr;
+		return kRfNumErr;
 	}
 
 	const OpenFork &of = it->second;
@@ -495,7 +499,7 @@ FMErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> 
 	if (!e)
 	{
 		outRead = 0;
-		return FMErr::kFnfErr;
+		return kFnfErr;
 	}
 
 	if (of.fork == ForkType::Resource)
@@ -505,7 +509,7 @@ FMErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> 
 		uint32_t toRead = static_cast<uint32_t>(data.size());
 		std::memcpy(buf.data(), data.data(), toRead);
 		outRead = toRead;
-		return FMErr::kNoErr;
+		return kNoErr;
 	}
 
 	if (e->isText)
@@ -522,7 +526,7 @@ FMErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> 
 		uint32_t toRead = std::min(static_cast<uint32_t>(buf.size()), available);
 		std::memcpy(buf.data(), converted.data() + offset, toRead);
 		outRead = toRead;
-		return FMErr::kNoErr;
+		return kNoErr;
 	}
 
 	/* Non-TEXT data fork */
@@ -530,17 +534,17 @@ FMErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> 
 	fseek(fp, static_cast<long>(offset), SEEK_SET);
 	size_t got = fread(buf.data(), 1, buf.size(), fp);
 	outRead = static_cast<uint32_t>(got);
-	return FMErr::kNoErr;
+	return kNoErr;
 }
 
-FMErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const uint8_t> data,
+OSErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const uint8_t> data,
 							uint32_t &outWritten)
 {
 	auto it = openForks_.find(handle);
 	if (it == openForks_.end())
 	{
 		outWritten = 0;
-		return FMErr::kRfNumErr;
+		return kRfNumErr;
 	}
 
 	const OpenFork &of = it->second;
@@ -548,7 +552,7 @@ FMErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 	if (!e)
 	{
 		outWritten = 0;
-		return FMErr::kFnfErr;
+		return kFnfErr;
 	}
 
 	if (of.fork == ForkType::Resource)
@@ -557,7 +561,7 @@ FMErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 		e->rsrcForkSize = appledouble::ResourceForkSize(e->hostPath);
 		e->modDate = currentMacDate();
 		outWritten = static_cast<uint32_t>(data.size());
-		return FMErr::kNoErr;
+		return kNoErr;
 	}
 
 	if (e->isText)
@@ -569,7 +573,7 @@ FMErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 		outWritten = static_cast<uint32_t>(data.size());
 		e->dataForkSize = appledouble::MacRomanSizeFromUTF8File(e->hostPath);
 		e->modDate = currentMacDate();
-		return FMErr::kNoErr;
+		return kNoErr;
 	}
 
 	/* Non-TEXT data fork */
@@ -582,17 +586,17 @@ FMErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 	e->dataForkSize = static_cast<uint32_t>(ftell(fp));
 	e->modDate = currentMacDate();
 	outWritten = static_cast<uint32_t>(wrote);
-	return FMErr::kNoErr;
+	return kNoErr;
 }
 
-FMErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
+OSErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
 {
 	auto it = openForks_.find(handle);
-	if (it == openForks_.end()) return FMErr::kRfNumErr;
+	if (it == openForks_.end()) return kRfNumErr;
 
 	const OpenFork &of = it->second;
 	CatalogEntry *e = mutableFindByCNID(of.cnid);
-	if (!e) return FMErr::kFnfErr;
+	if (!e) return kFnfErr;
 
 	if (of.fork == ForkType::Resource)
 	{
@@ -607,7 +611,7 @@ FMErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
 		e->dataForkSize = newSize;
 	}
 	e->modDate = currentMacDate();
-	return FMErr::kNoErr;
+	return kNoErr;
 }
 
 void HostVolume::closeFork(uint32_t handle)
