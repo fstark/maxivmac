@@ -100,6 +100,181 @@ static uint16_t fmErrToReg(storage::FMErr err)
 	return 43;
 }
 
+/* ── Type-safe PB access ─────────────────────────── */
+
+template <typename T> struct PBField
+{
+	uint32_t offset;
+};
+
+namespace detail
+{
+template <typename T> T pbRead(uint32_t addr);
+template <typename T> void pbWrite(uint32_t addr, T v);
+
+template <> inline uint8_t pbRead<uint8_t>(uint32_t a)
+{
+	return get_vm_byte(a);
+}
+template <> inline int8_t pbRead<int8_t>(uint32_t a)
+{
+	return static_cast<int8_t>(get_vm_byte(a));
+}
+template <> inline uint16_t pbRead<uint16_t>(uint32_t a)
+{
+	return uint16_t(get_vm_byte(a)) << 8 | get_vm_byte(a + 1);
+}
+template <> inline int16_t pbRead<int16_t>(uint32_t a)
+{
+	return static_cast<int16_t>(pbRead<uint16_t>(a));
+}
+template <> inline uint32_t pbRead<uint32_t>(uint32_t a)
+{
+	return uint32_t(get_vm_byte(a)) << 24 | uint32_t(get_vm_byte(a + 1)) << 16 |
+		   uint32_t(get_vm_byte(a + 2)) << 8 | get_vm_byte(a + 3);
+}
+template <> inline int32_t pbRead<int32_t>(uint32_t a)
+{
+	return static_cast<int32_t>(pbRead<uint32_t>(a));
+}
+
+template <> inline void pbWrite<uint8_t>(uint32_t a, uint8_t v)
+{
+	put_vm_byte(a, v);
+}
+template <> inline void pbWrite<int8_t>(uint32_t a, int8_t v)
+{
+	put_vm_byte(a, static_cast<uint8_t>(v));
+}
+template <> inline void pbWrite<uint16_t>(uint32_t a, uint16_t v)
+{
+	put_vm_byte(a, (v >> 8) & 0xFF);
+	put_vm_byte(a + 1, v & 0xFF);
+}
+template <> inline void pbWrite<int16_t>(uint32_t a, int16_t v)
+{
+	pbWrite<uint16_t>(a, static_cast<uint16_t>(v));
+}
+template <> inline void pbWrite<uint32_t>(uint32_t a, uint32_t v)
+{
+	put_vm_byte(a, (v >> 24) & 0xFF);
+	put_vm_byte(a + 1, (v >> 16) & 0xFF);
+	put_vm_byte(a + 2, (v >> 8) & 0xFF);
+	put_vm_byte(a + 3, v & 0xFF);
+}
+template <> inline void pbWrite<int32_t>(uint32_t a, int32_t v)
+{
+	pbWrite<uint32_t>(a, static_cast<uint32_t>(v));
+}
+} // namespace detail
+
+template <typename T> struct PBProxy
+{
+	uint32_t addr;
+	operator T() const { return detail::pbRead<T>(addr); }
+	PBProxy &operator=(T v)
+	{
+		detail::pbWrite<T>(addr, v);
+		return *this;
+	}
+};
+
+struct PBRef
+{
+	uint32_t addr;
+	template <typename T> PBProxy<T> operator[](PBField<T> f) const { return {addr + f.offset}; }
+};
+
+/* ── PB field definitions (Inside Macintosh IV) ──── */
+
+/* Shared header */
+[[maybe_unused]] constexpr PBField<int16_t> ioResult{16};
+[[maybe_unused]] constexpr PBField<uint32_t> ioNamePtr{18};
+[[maybe_unused]] constexpr PBField<int16_t> ioVRefNum{22};
+[[maybe_unused]] constexpr PBField<int16_t> ioRefNum{24};
+[[maybe_unused]] constexpr PBField<uint8_t> ioPermssn{27};
+[[maybe_unused]] constexpr PBField<uint32_t> ioMisc{28};
+
+/* ioParam variant */
+[[maybe_unused]] constexpr PBField<uint32_t> ioBuffer{32};
+[[maybe_unused]] constexpr PBField<uint32_t> ioReqCount{36};
+[[maybe_unused]] constexpr PBField<uint32_t> ioActCount{40};
+[[maybe_unused]] constexpr PBField<int16_t> ioPosMode{44};
+[[maybe_unused]] constexpr PBField<int32_t> ioPosOffset{46};
+
+/* fileParam / CInfoPBRec hFileInfo variant */
+[[maybe_unused]] constexpr PBField<int16_t> ioFDirIndex{28};
+[[maybe_unused]] constexpr PBField<uint8_t> ioFlAttrib{30};
+[[maybe_unused]] constexpr uint32_t kOff_ioFlFndrInfo = 32;
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlNum{48};
+[[maybe_unused]] constexpr PBField<int16_t> ioFlStBlk{52};
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlLgLen{54};
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlPyLen{58};
+[[maybe_unused]] constexpr PBField<int16_t> ioFlRStBlk{62};
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlRLgLen{64};
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlRPyLen{68};
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlCrDat{72};
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlMdDat{76};
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlBkDat{80};
+[[maybe_unused]] constexpr uint32_t kOff_ioFlXFndrInfo = 84;
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlParID{100};
+[[maybe_unused]] constexpr PBField<uint32_t> ioFlClpSiz{104};
+
+/* CInfoPBRec dirInfo variant */
+[[maybe_unused]] constexpr uint32_t kOff_ioDrUsrWds = 32;
+[[maybe_unused]] constexpr PBField<uint32_t> ioDrDirID{48};
+[[maybe_unused]] constexpr PBField<int16_t> ioDrNmFls{52};
+[[maybe_unused]] constexpr PBField<uint32_t> ioDrCrDat{72};
+[[maybe_unused]] constexpr PBField<uint32_t> ioDrMdDat{76};
+[[maybe_unused]] constexpr PBField<uint32_t> ioDrBkDat{80};
+[[maybe_unused]] constexpr uint32_t kOff_ioDrFndrInfo = 84;
+[[maybe_unused]] constexpr PBField<uint32_t> ioDrParID{100};
+
+/* WDParam variant */
+[[maybe_unused]] constexpr PBField<int16_t> ioWDIndex{26};
+[[maybe_unused]] constexpr PBField<uint32_t> ioWDProcID{28};
+[[maybe_unused]] constexpr PBField<int16_t> ioWDVRefNum{32};
+[[maybe_unused]] constexpr PBField<uint32_t> ioWDDirID{48};
+
+/* volumeParam variant */
+[[maybe_unused]] constexpr PBField<int16_t> ioVolIndex{28};
+[[maybe_unused]] constexpr PBField<int16_t> ioVNmAlBlks{46};
+[[maybe_unused]] constexpr PBField<uint32_t> ioVAlBlkSiz{48};
+[[maybe_unused]] constexpr PBField<uint32_t> ioVClpSiz{52};
+[[maybe_unused]] constexpr PBField<int16_t> ioVFrBlk{62};
+
+/* CatMove */
+[[maybe_unused]] constexpr PBField<uint32_t> ioNewDirID{36};
+
+/* ── PB-based command codes ──────────────────────── */
+
+[[maybe_unused]] static constexpr uint16_t kPB_GetCatInfo = 0x230;
+[[maybe_unused]] static constexpr uint16_t kPB_GetFileInfo = 0x231;
+[[maybe_unused]] static constexpr uint16_t kPB_Open = 0x232;
+[[maybe_unused]] static constexpr uint16_t kPB_OpenRF = 0x233;
+[[maybe_unused]] static constexpr uint16_t kPB_Create = 0x238;
+[[maybe_unused]] static constexpr uint16_t kPB_Delete = 0x239;
+[[maybe_unused]] static constexpr uint16_t kPB_Rename = 0x23A;
+[[maybe_unused]] static constexpr uint16_t kPB_SetFileInfo = 0x23B;
+[[maybe_unused]] static constexpr uint16_t kPB_SetCatInfo = 0x23C;
+[[maybe_unused]] static constexpr uint16_t kPB_DirCreate = 0x23D;
+[[maybe_unused]] static constexpr uint16_t kPB_CatMove = 0x23E;
+[[maybe_unused]] static constexpr uint16_t kPB_GetVolInfo = 0x23F;
+[[maybe_unused]] static constexpr uint16_t kPB_GetVol = 0x240;
+[[maybe_unused]] static constexpr uint16_t kPB_SetVol = 0x241;
+[[maybe_unused]] static constexpr uint16_t kPB_OpenWD = 0x242;
+[[maybe_unused]] static constexpr uint16_t kPB_CloseWD = 0x243;
+[[maybe_unused]] static constexpr uint16_t kPB_GetWDInfo = 0x244;
+
+/* ── PB resolve helper ───────────────────────────── */
+
+[[maybe_unused]] static uint32_t pbResolveDir(PBRef pb)
+{
+	int16_t vRefNum = pb[ioVRefNum];
+	uint32_t dirID = pb[ioDrDirID];
+	return s_volume.resolveDir(vRefNum, dirID);
+}
+
 /* ── Guest RAM helpers ────────────────────────────── */
 
 static void writePascalString(uint32_t addr, const std::string &s)
