@@ -69,6 +69,8 @@ static storage::HostVolume s_volume;
 
 static constexpr uint32_t kRootParentID = storage::HostVolume::kRootParentID;
 static constexpr uint32_t kRootDirID = storage::HostVolume::kRootDirID;
+static constexpr int16_t kGuestVRefNum = storage::HostVolume::kGuestVRefNum;
+static constexpr int16_t kGuestDriveNum = storage::HostVolume::kGuestDriveNum;
 
 /* ── Error translation ────────────────────────────── */
 
@@ -632,6 +634,62 @@ static uint16_t PbSetCatInfo(PBRef pb, bool isHFS)
 		auto err = s_volume.setFileInfo(e->cnid, type, creator, flags, location, folder);
 		return fmErrToReg(err);
 	}
+}
+
+/* ── Phase 6: WD handlers ─────────────────────────── */
+
+static uint16_t PbOpenWD(PBRef pb)
+{
+	uint32_t dirID = pb[ioWDDirID];
+	uint32_t procID = pb[ioWDProcID];
+	dbg_printf("[ExtFS] PbOpenWD dir=%u proc=%u\n", dirID, procID);
+
+	uint32_t wdRef = s_volume.openWD(dirID, procID);
+	pb[ioVRefNum] = static_cast<int16_t>(-(static_cast<int32_t>(wdRef) + 32000));
+	return 0;
+}
+
+static uint16_t PbCloseWD(PBRef pb)
+{
+	int16_t vRefNum = pb[ioVRefNum];
+	auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
+	dbg_printf("[ExtFS] PbCloseWD vRefNum=%d wdRef=%u\n", vRefNum, wdRef);
+
+	s_volume.closeWD(wdRef);
+	return 0;
+}
+
+static uint16_t PbGetWDInfo(PBRef pb)
+{
+	int16_t vRefNum = pb[ioVRefNum];
+	int16_t wdIndex = pb[ioWDIndex];
+
+	dbg_printf("[ExtFS] PbGetWDInfo vRefNum=%d wdIndex=%d\n", vRefNum, wdIndex);
+
+	/* Only handle direct lookup (ioWDIndex == 0) */
+	if (wdIndex != 0) return 35; /* nsvErr */
+
+	if (vRefNum == kGuestVRefNum || vRefNum == kGuestDriveNum)
+	{
+		pb[ioWDProcID] = uint32_t(0);
+		pb[ioWDDirID] = uint32_t(kRootDirID);
+	}
+	else
+	{
+		auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
+		uint32_t dirID = s_volume.wdToDirID(wdRef);
+		if (dirID == 0) return 35; /* nsvErr */
+		pb[ioWDProcID] = s_volume.wdToProcID(wdRef);
+		pb[ioWDDirID] = dirID;
+	}
+
+	pb[ioWDVRefNum] = static_cast<int16_t>(kGuestVRefNum);
+
+	/* Write volume name "Shared" to ioNamePtr if set */
+	uint32_t nameAddr = pb[ioNamePtr];
+	if (nameAddr != 0) writePascalString(nameAddr, "Shared");
+
+	return 0;
 }
 
 /* ── GetCatInfoFull helper ─────────────────────────── */
@@ -1527,6 +1585,15 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			break;
 		case kPB_SetCatInfo:
 			regResult = PbSetCatInfo(PBRef{regParam[0]}, regParam[1] != 0);
+			break;
+		case kPB_OpenWD:
+			regResult = PbOpenWD(PBRef{regParam[0]});
+			break;
+		case kPB_CloseWD:
+			regResult = PbCloseWD(PBRef{regParam[0]});
+			break;
+		case kPB_GetWDInfo:
+			regResult = PbGetWDInfo(PBRef{regParam[0]});
 			break;
 
 		case kPB_SetDefaultVRefNum:

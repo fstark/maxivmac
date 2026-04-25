@@ -249,6 +249,9 @@
 #define kPB_CatMove            0x023E
 #define kPB_SetFileInfo        0x023B
 #define kPB_SetCatInfo         0x023C
+#define kPB_OpenWD             0x0242
+#define kPB_CloseWD            0x0243
+#define kPB_GetWDInfo          0x0244
 #define kPB_SetDefaultVRefNum  0x0245
 
 /* FileOpByName sub-opcodes */
@@ -1125,64 +1128,23 @@ static OSErr TrapFlushVol(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapOpenWD(char *pb, Globals *g, short isHFS)
 {
-	long dirID = *(long *)(pb + pb_ioWDDirID);
-	long procID = *(long *)(pb + pb_ioWDProcID);
-
-	reg_set(g->regBase, 0, (unsigned long)kOurVRefNum);
-	reg_set(g->regBase, 1, (unsigned long)dirID);
-	reg_set(g->regBase, 2, (unsigned long)procID);
-	reg_command(g->regBase, kCmdOpenWD);
-	if (reg_result(g->regBase) != 0) return kFnfErr;
-
-	{
-		unsigned long wdRef = reg_get(g->regBase, 0);
-		*(short *)(pb + pb_ioVRefNum) = (short)(-(long)wdRef - 32000);
-	}
-	return kNoErr;
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_command(g->regBase, kPB_OpenWD);
+	return host_err(g->regBase);
 }
 
 static OSErr TrapCloseWD(char *pb, Globals *g, short isHFS)
 {
-	short vRefNum = *(short *)(pb + pb_ioVRefNum);
-	unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
-
-	reg_set(g->regBase, 0, wdRef);
-	reg_command(g->regBase, kCmdCloseWD);
-	return kNoErr;
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_command(g->regBase, kPB_CloseWD);
+	return host_err(g->regBase);
 }
 
 static OSErr TrapGetWDInfo(char *pb, Globals *g, short isHFS)
 {
-	short vRefNum = *(short *)(pb + pb_ioVRefNum);
-	short wdIndex = *(short *)(pb + pb_ioWDIndex);
-	unsigned long dirID;
-
-	/* Only handle direct lookup (ioWDIndex == 0) */
-	if (wdIndex != 0) return kNsvErr;
-
-	if (vRefNum == kOurVRefNum || vRefNum == kOurDriveNum) {
-		dirID = kRootDirID;
-		*(long *)(pb + pb_ioWDProcID) = 0;
-	} else {
-		unsigned long wdRef = (unsigned long)(-(long)vRefNum - 32000);
-		reg_set(g->regBase, 0, wdRef);
-		reg_command(g->regBase, kCmdGetWDInfo);
-		if (reg_result(g->regBase) != 0) return kNsvErr;
-		*(long *)(pb + pb_ioWDProcID) = (long)reg_get(g->regBase, 0);
-		dirID = reg_get(g->regBase, 1);
-	}
-
-	*(short *)(pb + pb_ioWDVRefNum) = kOurVRefNum;
-	*(long *)(pb + pb_ioWDDirID) = dirID;
-	{
-		unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-		if (nameAddr != 0) {
-			unsigned char *p = (unsigned char *)nameAddr;
-			p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
-			p[4]='r'; p[5]='e'; p[6]='d';
-		}
-	}
-	return kNoErr;
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_command(g->regBase, kPB_GetWDInfo);
+	return host_err(g->regBase);
 }
 
 static OSErr TrapGetVolParms(char *pb, Globals *g, short isHFS)
