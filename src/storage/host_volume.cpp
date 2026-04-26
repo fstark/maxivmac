@@ -431,8 +431,8 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, O
 	   permission 3 = fsRdWrPerm (exclusive read/write) */
 	for (auto &[_, of] : openForks_)
 	{
-		if (of.cnid != cnid) continue;
-		/* Exclusive open conflicts with any existing path */
+		if (of.cnid != cnid || of.fork != fork) continue;
+		/* Exclusive open conflicts with any existing open of the same fork */
 		if (permission == 3)
 		{
 			errOut = kOpWrErr;
