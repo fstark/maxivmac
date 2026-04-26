@@ -108,17 +108,18 @@ TEST_CASE("SidecarPathFor basic")
    Phase 2 — Filename Escaping
    ══════════════════════════════════════════════════════ */
 
-TEST_CASE("HostNameFromMac escapes POSIX-invalid characters")
+TEST_CASE("HostNameFromMac escapes structurally-invalid characters")
 {
-	CHECK(HostNameFromMac("My:File") == "My^3AFile");
-	CHECK(HostNameFromMac("A/B") == "A^2FB");
-	CHECK(HostNameFromMac("A^B") == "A^5EB");
-	CHECK(HostNameFromMac("a\"b") == "a^22b");
-	CHECK(HostNameFromMac("a*b") == "a^2Ab");
-	CHECK(HostNameFromMac("a<b>c") == "a^3Cb^3Ec");
-	CHECK(HostNameFromMac("a?b") == "a^3Fb");
-	CHECK(HostNameFromMac("a\\b") == "a^5Cb");
-	CHECK(HostNameFromMac("a|b") == "a^7Cb");
+	CHECK(HostNameFromMac("My:File") == "My\x1B" "3AFile");
+	CHECK(HostNameFromMac("A/B") == "A\x1B" "2FB");
+	/* Only / : and ESC are escaped; others pass through */
+	CHECK(HostNameFromMac("A^B") == "A^B");
+	CHECK(HostNameFromMac("a\"b") == "a\"b");
+	CHECK(HostNameFromMac("a*b") == "a*b");
+	CHECK(HostNameFromMac("a<b>c") == "a<b>c");
+	CHECK(HostNameFromMac("a?b") == "a?b");
+	CHECK(HostNameFromMac("a\\b") == "a\\b");
+	CHECK(HostNameFromMac("a|b") == "a|b");
 }
 
 TEST_CASE("HostNameFromMac no-op on clean names")
@@ -127,10 +128,10 @@ TEST_CASE("HostNameFromMac no-op on clean names")
 	CHECK(HostNameFromMac("") == "");
 }
 
-TEST_CASE("MacNameFromHost decodes ^XX sequences")
+TEST_CASE("MacNameFromHost decodes ESC-XX sequences")
 {
-	CHECK(MacNameFromHost("My^3AFile") == "My:File");
-	CHECK(MacNameFromHost("A^5EB") == "A^B");
+	CHECK(MacNameFromHost("My\x1B" "3AFile") == "My:File");
+	CHECK(MacNameFromHost("A\x1B" "1BFile") == std::string("A\x1B" "File"));
 }
 
 TEST_CASE("Filename escaping round-trips")
@@ -147,10 +148,15 @@ TEST_CASE("Filename escaping round-trips")
 	}
 }
 
-TEST_CASE("MacNameFromHost handles trailing caret gracefully")
+TEST_CASE("MacNameFromHost handles trailing ESC gracefully")
 {
-	CHECK(MacNameFromHost("abc^") == "abc^");
-	CHECK(MacNameFromHost("abc^2") == "abc^2");
+	CHECK(MacNameFromHost("abc\x1B") == std::string("abc\x1B"));
+	CHECK(MacNameFromHost("abc\x1B" "2") == std::string("abc\x1B" "2"));
+}
+
+TEST_CASE("MacNameFromHost rejects unmappable UTF-8")
+{
+	CHECK_FALSE(MacNameFromHost("\xe4\xb8\xad").has_value()); /* CJK character */
 }
 
 TEST_CASE("IsSidecar")

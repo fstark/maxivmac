@@ -703,15 +703,19 @@ void HostVolume::scanDirectory(const std::filesystem::path &hostDir, uint32_t pa
 		if (name.empty() || name[0] == '.') continue;
 		if (appledouble::IsSidecar(name)) continue;
 
-		std::string macName = appledouble::MacNameFromHost(name);
-		if (macName.size() > 31) macName = macName.substr(0, 31);
-		if (macName.empty()) continue;
+		auto macName = appledouble::MacNameFromHost(name);
+		if (!macName)
+		{
+			fprintf(stderr, "[ExtFS] skipping '%s': not representable in MacRoman\n", name.c_str());
+			continue;
+		}
+		if (macName->size() > 31) *macName = macName->substr(0, 31);
 
 		CatalogEntry ce{};
 		ce.cnid = nextCNID_++;
 		ce.parentDirID = parentDirID;
 		ce.hostPath = entry.path().string();
-		ce.macName = macName;
+		ce.macName = std::move(*macName);
 
 		if (entry.is_directory(ec))
 		{

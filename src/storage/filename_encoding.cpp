@@ -1,6 +1,7 @@
 #include "storage/appledouble.h"
+#include "storage/macroman.h"
 
-#include <cctype>
+#include <cstdio>
 
 namespace appledouble
 {
@@ -8,29 +9,15 @@ namespace appledouble
 namespace
 {
 
-// Characters that must be escaped for POSIX filesystems:
-// " * / : < > ? \ ^ |
+constexpr char kEsc = '\x1B';
+constexpr char kHexDigits[] = "0123456789ABCDEF";
+
+/* Characters that are structurally illegal in POSIX filenames,
+   plus our escape character and the Mac path separator (:). */
 bool NeedsEscape(uint8_t c)
 {
-	switch (c)
-	{
-		case 0x22: // "
-		case 0x2A: // *
-		case 0x2F: // /
-		case 0x3A: // :
-		case 0x3C: // <
-		case 0x3E: // >
-		case 0x3F: // ?
-		case 0x5C: // backslash
-		case 0x5E: // ^
-		case 0x7C: // |
-			return true;
-		default:
-			return false;
-	}
+	return c == '/' || c == ':' || c == static_cast<uint8_t>(kEsc);
 }
-
-constexpr char kHexDigits[] = "0123456789ABCDEF";
 
 int HexVal(char c)
 {
@@ -42,18 +29,24 @@ int HexVal(char c)
 
 } // anonymous namespace
 
+/* Mac filename (MacRoman bytes) → host filename (UTF-8, escaped).
+   Steps: escape / : ESC, then convert MacRoman→UTF-8. */
 std::string HostNameFromMac(std::string_view macName)
 {
 	std::string result;
-	result.reserve(macName.size());
+	result.reserve(macName.size() * 2);
 	for (auto c : macName)
 	{
 		auto b = static_cast<uint8_t>(c);
 		if (NeedsEscape(b))
 		{
-			result += '^';
+			result += kEsc;
 			result += kHexDigits[(b >> 4) & 0xF];
 			result += kHexDigits[b & 0xF];
+		}
+		else if (b >= 0x80)
+		{
+			AppendUTF8(result, kMacRomanToUnicode[b - 0x80]);
 		}
 		else
 		{
@@ -63,24 +56,48 @@ std::string HostNameFromMac(std::string_view macName)
 	return result;
 }
 
-std::string MacNameFromHost(std::string_view hostName)
+/* Host filename (UTF-8, possibly escaped) → Mac filename (MacRoman bytes).
+   Returns empty string if any character is not representable in MacRoman. */
+std::optional<std::string> MacNameFromHost(std::string_view hostName)
 {
-	std::string result;
-	result.reserve(hostName.size());
+	/* First, convert to a plain UTF-8 string, unescaping ESC sequences */
+	std::string utf8;
+	utf8.reserve(hostName.size());
 	for (size_t i = 0; i < hostName.size(); ++i)
 	{
-		if (hostName[i] == '^' && i + 2 < hostName.size())
+		if (hostName[i] == kEsc && i + 2 < hostName.size())
 		{
 			int hi = HexVal(hostName[i + 1]);
 			int lo = HexVal(hostName[i + 2]);
 			if (hi >= 0 && lo >= 0)
 			{
-				result += static_cast<char>((hi << 4) | lo);
+				/* Escaped byte is already a raw MacRoman byte;
+				   emit it directly as MacRoman, skip UTF-8→MacRoman. */
+				utf8 += static_cast<char>(0x01); /* placeholder sentinel */
+				utf8 += static_cast<char>((hi << 4) | lo);
 				i += 2;
 				continue;
 			}
 		}
-		result += hostName[i];
+		utf8 += hostName[i];
+	}
+
+	/* Now decode UTF-8 → MacRoman, honouring sentinels */
+	std::string result;
+	result.reserve(utf8.size());
+	for (size_t i = 0; i < utf8.size();)
+	{
+		if (utf8[i] == 0x01 && i + 1 < utf8.size())
+		{
+			result += utf8[i + 1]; /* raw MacRoman byte from escape */
+			i += 2;
+			continue;
+		}
+
+		uint32_t cp = DecodeUTF8(utf8, i);
+		auto mr = MacRomanFromCodePoint(cp);
+		if (!mr.valid) return std::nullopt;
+		result += static_cast<char>(mr.byte);
 	}
 	return result;
 }

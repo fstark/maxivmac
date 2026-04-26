@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -111,7 +112,7 @@ std::string UTF8FromMacRoman(std::span<const uint8_t> macRoman);
 /* ── Filename escaping ────────────────────────────── */
 
 std::string HostNameFromMac(std::string_view macName);
-std::string MacNameFromHost(std::string_view hostName);
+std::optional<std::string> MacNameFromHost(std::string_view hostName);
 
 /* ── Directory enumeration ────────────────────────── */
 

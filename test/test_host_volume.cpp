@@ -112,7 +112,7 @@ TEST_CASE("HostVolume: hidden files skipped")
 TEST_CASE("HostVolume: filename decoding")
 {
 	TempDir td;
-	writeFile(td.path / "^3Acolon", "data");
+	writeFile(td.path / "\x1B" "3Acolon", "data");
 
 	storage::HostVolume vol;
 	CHECK(vol.mount(td.path));
@@ -225,7 +225,7 @@ TEST_CASE("HostVolume: createFile escaped name")
 	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, ":special", err);
 	CHECK(err == storage::kNoErr);
-	CHECK(fs::exists(td.path / "^3Aspecial"));
+	CHECK(fs::exists(td.path / "\x1B" "3Aspecial"));
 }
 
 TEST_CASE("HostVolume: createFile bad parent")
