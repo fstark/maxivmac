@@ -51,6 +51,7 @@ static constexpr uint16_t kExtFSGetVolName = 0x21A;
 /* ── DriveManager instance ─────────────────────────── */
 
 static storage::DriveManager s_drives;
+static int s_defaultSlot = 0; /* slot used when guest sends vRefNum=0 */
 
 static constexpr uint32_t kRootParentID = storage::HostVolume::kRootParentID;
 static constexpr uint32_t kRootDirID = storage::HostVolume::kRootDirID;
@@ -272,17 +273,16 @@ static constexpr uint16_t kPB_SetDefaultVRefNum = 0x245;
 /* ── Volume resolution helpers ────────────────────── */
 
 // Resolve a PB's ioVRefNum to a HostVolume*.
-// For vRefNum 0 (default volume), uses slot 0's default.
+// For vRefNum 0 (default volume), uses the slot last set via SetDefaultVRefNum.
 // Returns nullptr + sets errOut = kNsvErr if the volume is not ours.
 static storage::HostVolume *volumeFromPB(PBRef pb, bool /*isHFS*/, storage::OSErr &errOut)
 {
 	int16_t vRefNum = pb[ioVRefNum];
 
-	// vRefNum 0 means "default volume" — use slot 0 initially.
-	// HostVolume::resolveDir handles the full WD/default logic.
+	// vRefNum 0 means "default volume" — use the tracked default slot.
 	if (vRefNum == 0)
 	{
-		auto *vol = s_drives.volume(0);
+		auto *vol = s_drives.volume(s_defaultSlot);
 		if (!vol)
 		{
 			errOut = storage::kNsvErr;
@@ -1198,8 +1198,13 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			break;
 		case kPB_SetDefaultVRefNum:
 		{
-			auto *vol = s_drives.volume(0);
-			if (vol) vol->setDefaultVRefNum(static_cast<int16_t>(regParam[0]));
+			int16_t vRef = static_cast<int16_t>(regParam[0]);
+			int slot = s_drives.slotFromVRefNum(vRef);
+			if (slot >= 0)
+				s_defaultSlot = slot;
+			else if (auto *vol = s_drives.volume(s_defaultSlot))
+				vol->setDefaultVRefNum(vRef);
+			DIAG(ExtFS, "SetDefaultVRefNum vRef=%d → slot %d\n", vRef, s_defaultSlot);
 			regResult = 0;
 			break;
 		}

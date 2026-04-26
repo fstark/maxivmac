@@ -568,6 +568,31 @@ static Boolean IsOurVolume(short vRefNum)
 	return false;
 }
 
+/* Resolve a vRefNum to one of our VCB pointers.
+   Handles raw vRefNums (-32000..-32007), drive numbers (8..15),
+   and vRefNum 0 (default volume via DefVCBPtr). Returns NULL if
+   the vRefNum doesn't match any of our volumes. */
+static Ptr FindVCB(short vRefNum, Globals *g)
+{
+	short i;
+	/* vRefNum 0 → DefVCBPtr */
+	if (vRefNum == 0) {
+		Ptr def = *(Ptr *)kDefVCBPtr;
+		for (i = 0; i < g->driveCount; i++)
+			if (g->vcb[i] == def) return def;
+		return NULL;
+	}
+	/* Direct match against each slot's vRefNum and driveNum */
+	for (i = 0; i < g->driveCount; i++) {
+		if (g->vcb[i] != NULL) {
+			short vr = *(short *)(g->vcb[i] + 78);
+			short dn = *(short *)(g->vcb[i] + 72);
+			if (vRefNum == vr || vRefNum == dn) return g->vcb[i];
+		}
+	}
+	return NULL;
+}
+
 /* ================================================================ */
 /*                 New trap handlers (Phase 2)                      */
 /* ================================================================ */
@@ -798,6 +823,8 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 		unsigned long handle = reg_get(g->regBase, 0);
 		long size            = (long)reg_get(g->regBase, 1);
 		unsigned long cnid   = reg_get(g->regBase, 2);
+		short slot           = (short)(handle >> 28);
+		Ptr vcb              = g->vcb[slot];
 		unsigned char flags;
 
 		/* Map permission to FCB flags */
@@ -807,7 +834,7 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 			flags = 0x01;          /* fcbWriteMask */
 
 		{
-			short refNum = AllocFCB(g->vcb[0], cnid, size, flags);
+			short refNum = AllocFCB(vcb, cnid, size, flags);
 			if (refNum == 0) {
 				reg_set(g->regBase, 0, handle);
 				reg_command(g->regBase, kCmdClose);
@@ -824,9 +851,9 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 		}
 		/* Keep vcbNxtCNID current */
 		{
-			long nextCNID = *(long *)(g->vcb[0] + kVcbNxtCNID);
+			long nextCNID = *(long *)(vcb + kVcbNxtCNID);
 			if ((long)cnid >= nextCNID)
-				*(long *)(g->vcb[0] + kVcbNxtCNID) = (long)(cnid + 1);
+				*(long *)(vcb + kVcbNxtCNID) = (long)(cnid + 1);
 		}
 	}
 	return kNoErr;
@@ -845,6 +872,8 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 		unsigned long handle = reg_get(g->regBase, 0);
 		long size            = (long)reg_get(g->regBase, 1);
 		unsigned long cnid   = reg_get(g->regBase, 2);
+		short slot           = (short)(handle >> 28);
+		Ptr vcb              = g->vcb[slot];
 		unsigned char flags;
 
 		/* Map permission to FCB flags (resource fork bit = 0x02) */
@@ -854,7 +883,7 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 			flags = 0x03;          /* resource fork + write */
 
 		{
-			short refNum = AllocFCB(g->vcb[0], cnid, size, flags);
+			short refNum = AllocFCB(vcb, cnid, size, flags);
 			if (refNum == 0) {
 				reg_set(g->regBase, 0, handle);
 				reg_command(g->regBase, kCmdClose);
@@ -871,9 +900,9 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 		}
 		/* Keep vcbNxtCNID current */
 		{
-			long nextCNID = *(long *)(g->vcb[0] + kVcbNxtCNID);
+			long nextCNID = *(long *)(vcb + kVcbNxtCNID);
 			if ((long)cnid >= nextCNID)
-				*(long *)(g->vcb[0] + kVcbNxtCNID) = (long)(cnid + 1);
+				*(long *)(vcb + kVcbNxtCNID) = (long)(cnid + 1);
 		}
 	}
 	return kNoErr;
@@ -919,8 +948,11 @@ static OSErr TrapCreate(char *pb, Globals *g, short isHFS)
 	{
 		OSErr err = host_err(g->regBase);
 		if (err == kNoErr) {
-			long nextCNID = *(long *)(g->vcb[0] + kVcbNxtCNID);
-			*(long *)(g->vcb[0] + kVcbNxtCNID) = nextCNID + 1;
+			Ptr vcb = FindVCB(*(short *)(pb + pb_ioVRefNum), g);
+			if (vcb != NULL) {
+				long nextCNID = *(long *)(vcb + kVcbNxtCNID);
+				*(long *)(vcb + kVcbNxtCNID) = nextCNID + 1;
+			}
 		}
 		return err;
 	}
@@ -966,20 +998,13 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 		/* Find which VCB matches this vRefNum */
 		v = g->vcb[0]; /* default to slot 0 */
 		{
-			short i;
-			for (i = 0; i < g->driveCount; i++) {
-				if (g->vcb[i] != NULL) {
-					short vr = *(short *)(g->vcb[i] + 78);
-					short dn = *(short *)(g->vcb[i] + 72);
-					if (vRefNum == vr || vRefNum == dn) {
-						v = g->vcb[i];
-						break;
-					}
-				}
-			}
+			Ptr fv = FindVCB(vRefNum, g);
+			if (fv != NULL) v = fv;
 		}
 	} else {
-		v = g->vcb[0];
+		/* vidx < 0: return info about the default volume */
+		v = FindVCB(0, g);
+		if (v == NULL) v = g->vcb[0];
 	}
 	if (v == NULL) return 1;
 	driveNum = *(short *)(v + 72);
@@ -1042,8 +1067,10 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 static OSErr TrapGetVol(char *pb, Globals *g, short isHFS)
 {
 	unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	if (nmAddr != 0 && g->vcb[0] != NULL) {
-		unsigned char *src = (unsigned char *)(g->vcb[0] + 44);
+	Ptr defVCB = FindVCB(0, g);
+	if (defVCB == NULL) defVCB = g->vcb[0];
+	if (nmAddr != 0 && defVCB != NULL) {
+		unsigned char *src = (unsigned char *)(defVCB + 44);
 		unsigned char *dst = (unsigned char *)nmAddr;
 		short len = src[0];
 		short j;
@@ -1076,6 +1103,7 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 {
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
+	short slot = -1;
 
 	/* Check by name — compare against all our VCB names */
 	if (!IsOurVolume(vRefNum)) {
@@ -1086,9 +1114,8 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 				if (g->vcb[i] != NULL) {
 					unsigned char *vn = (unsigned char *)(g->vcb[i] + 44);
 					if (pstr_equal(p, vn)) {
-						*(Ptr *)kDefVCBPtr = g->vcb[i];
-						g->defaultWDRefNum = g->rootWDRefNum;
-						return kNoErr;
+						slot = i;
+						goto found;
 					}
 				}
 			}
@@ -1096,36 +1123,55 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 		return 1; /* not ours — sentinel for pass-through */
 	}
 
-	/* Store the caller's WD refnum (or rootWDRefNum for raw vol ref).
-	   HSetVol with the raw volume ref (-32000) carries the target
-	   directory in ioWDDirID (pb+48) — open a WD for it so that
-	   subsequent flat Open/Create calls with vRefNum=0 land there. */
-	if (vRefNum < kOurVRefNum && vRefNum > -32100) {
-		/* Caller passed an explicit WD refnum — use it directly */
-		g->defaultWDRefNum = vRefNum;
-	} else if (isHFS) {
-		long dirID = *(long *)(pb + pb_ioWDDirID);
-		if (dirID != 0 && dirID != (long)kRootDirID) {
-			reg_set(g->regBase, 0, (unsigned long)kOurVRefNum);
-			reg_set(g->regBase, 1, (unsigned long)dirID);
-			reg_set(g->regBase, 2, 0);  /* procID = 0 for system WDs */
-			reg_command(g->regBase, kCmdOpenWD);
-			if (reg_result(g->regBase) == 0) {
-				unsigned long wdRef = reg_get(g->regBase, 0);
-				g->defaultWDRefNum = (short)(-(long)wdRef - 32000);
+	/* Resolve vRefNum to a slot index */
+	{
+		short v = -(short)kBaseVRefNum;
+		short i;
+		for (i = 0; i < g->driveCount; i++) {
+			short sv = -(short)(kBaseVRefNum + i);
+			short sd = (short)(kBaseDriveNum + i);
+			if (vRefNum == sv || vRefNum == sd) {
+				slot = i;
+				break;
+			}
+		}
+		if (slot < 0) slot = 0; /* fallback */
+	}
+
+found:
+	/* Store the caller's WD refnum (or root WD for raw vol ref).
+	   HSetVol with the raw volume ref carries the target directory
+	   in ioWDDirID — open a WD for it so that subsequent flat
+	   Open/Create calls with vRefNum=0 land there. */
+	{
+		short rawVRef = -(short)(kBaseVRefNum + slot);
+		if (vRefNum < rawVRef) {
+			/* Caller passed an explicit WD refnum — use it directly */
+			g->defaultWDRefNum = vRefNum;
+		} else if (isHFS) {
+			long dirID = *(long *)(pb + pb_ioWDDirID);
+			if (dirID != 0 && dirID != (long)kRootDirID) {
+				reg_set(g->regBase, 0, (unsigned long)(unsigned short)rawVRef);
+				reg_set(g->regBase, 1, (unsigned long)dirID);
+				reg_set(g->regBase, 2, 0);
+				reg_command(g->regBase, kCmdOpenWD);
+				if (reg_result(g->regBase) == 0) {
+					unsigned long wdRef = reg_get(g->regBase, 0);
+					g->defaultWDRefNum = (short)(-(long)wdRef - 32000);
+				} else {
+					g->defaultWDRefNum = g->rootWDRefNum;
+				}
 			} else {
 				g->defaultWDRefNum = g->rootWDRefNum;
 			}
 		} else {
 			g->defaultWDRefNum = g->rootWDRefNum;
 		}
-	} else {
-		g->defaultWDRefNum = g->rootWDRefNum;
-	}
 
-	*(Ptr *)kDefVCBPtr = g->vcb[0];
-	reg_set(g->regBase, 0, (unsigned long)(unsigned short)g->defaultWDRefNum);
-	reg_command(g->regBase, kPB_SetDefaultVRefNum);
+		*(Ptr *)kDefVCBPtr = g->vcb[slot];
+		reg_set(g->regBase, 0, (unsigned long)(unsigned short)rawVRef);
+		reg_command(g->regBase, kPB_SetDefaultVRefNum);
+	}
 	return kNoErr;
 }
 
