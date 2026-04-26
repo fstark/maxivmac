@@ -566,12 +566,15 @@ OSErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 
 	if (e->isText)
 	{
-		auto utf8 = appledouble::UTF8FromMacRoman(data);
+		auto existing = appledouble::MacRomanFromUTF8File(e->hostPath);
+		if (offset + data.size() > existing.size()) existing.resize(offset + data.size());
+		std::memcpy(existing.data() + offset, data.data(), data.size());
+		auto utf8 = appledouble::UTF8FromMacRoman(existing);
 		std::ofstream out(e->hostPath, std::ios::binary | std::ios::trunc);
 		out.write(utf8.data(), static_cast<std::streamsize>(utf8.size()));
 		out.close();
 		outWritten = static_cast<uint32_t>(data.size());
-		e->dataForkSize = appledouble::MacRomanSizeFromUTF8File(e->hostPath);
+		e->dataForkSize = static_cast<uint32_t>(existing.size());
 		e->modDate = currentMacDate();
 		return kNoErr;
 	}
