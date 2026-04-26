@@ -235,7 +235,7 @@ void extfsLogTrap(uint16_t trapWord, uint32_t pbAddr, uint16_t action, int16_t e
 	}
 
 	if (action == kActionPassThrough)
-		DIAG(SD, "%s\n", line.c_str());
+		DIAG(PassThru, "%s\n", line.c_str());
 	else
 		guestConsoleAppend(line);
 }

@@ -12,31 +12,25 @@
 namespace
 {
 
-struct SubsystemInfo
-{
-	const char *name; /* used in CLI/debugger commands */
-	const char *tag;  /* prefix in log output          */
+/* Single source of truth: the tag. CLI name = lowercase(tag). */
+constexpr const char *kTags[] = {
+	"EXTFS", "GUEST", "PASSTHRU", "SER", "NET", "SLIP", "VID",
 };
 
-constexpr SubsystemInfo kInfo[] = {
-	{"extfs", "[ExtFS]"}, {"guest", "[GUEST]"}, {"sd", "[SD]"},		{"catalog", "[Catalog]"},
-	{"ser", "[SER]"},	  {"net", "[NET]"},		{"slip", "[SLIP]"}, {"vid", "[VID]"},
-};
-
-static_assert(sizeof(kInfo) / sizeof(kInfo[0]) == static_cast<size_t>(DiagSubsystem::kCount));
+static_assert(sizeof(kTags) / sizeof(kTags[0]) == static_cast<size_t>(DiagSubsystem::kCount));
 
 } // namespace
 
 const char *DiagConfig::tag(DiagSubsystem s)
 {
-	return kInfo[static_cast<size_t>(s)].tag;
+	return kTags[static_cast<size_t>(s)];
 }
 
 bool DiagConfig::fromName(const char *name, DiagSubsystem &out)
 {
 	for (size_t i = 0; i < static_cast<size_t>(DiagSubsystem::kCount); ++i)
 	{
-		if (strcasecmp(name, kInfo[i].name) == 0)
+		if (strcasecmp(name, kTags[i]) == 0)
 		{
 			out = static_cast<DiagSubsystem>(i);
 			return true;
@@ -61,5 +55,5 @@ void DiagPrintf(DiagSubsystem s, const char *fmt, ...)
 	std::vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 
-	dbg_printf("%s %s", DiagConfig::tag(s), buf);
+	dbg_printf("[%s] %s", DiagConfig::tag(s), buf);
 }

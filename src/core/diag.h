@@ -16,14 +16,13 @@
 /* Subsystem IDs — add new entries before kCount. */
 enum class DiagSubsystem : uint8_t
 {
-	ExtFS,	 /* [ExtFS]   host-side shared drive operations   */
-	Guest,	 /* [GUEST]   guest-initiated trap log reports    */
-	SD,		 /* [SD]      pass-through trap reports           */
-	Catalog, /* [Catalog] catalog validation                  */
-	SER,	 /* [SER]     serial port (SCC)                   */
-	NET,	 /* [NET]     networking (SLIRP)                  */
-	SLIP,	 /* [SLIP]    Serial Line IP                      */
-	VID,	 /* [VID]     video                               */
+	ExtFS,	  /* [EXTFS]    host-side shared drive operations   */
+	Guest,	  /* [GUEST]    guest-initiated trap log reports     */
+	PassThru, /* [PASSTHRU] pass-through trap reports           */
+	SER,	  /* [SER]      serial port (SCC)                   */
+	NET,	  /* [NET]      networking (SLIRP)                  */
+	SLIP,	  /* [SLIP]     Serial Line IP                      */
+	VID,	  /* [VID]      video                               */
 	kCount
 };
 

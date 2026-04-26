@@ -787,7 +787,7 @@ bool HostVolume::validateCatalog() const
 		bool exists = fs::exists(e.hostPath, ec);
 		if (!exists)
 		{
-			DIAG(Catalog, "MISSING: cnid=%u parent=%u \"%s\" -> %s\n", e.cnid, e.parentDirID,
+			DIAG(ExtFS, "MISSING: cnid=%u parent=%u \"%s\" -> %s\n", e.cnid, e.parentDirID,
 				 e.macName.c_str(), e.hostPath.c_str());
 			ok = false;
 			continue;
@@ -797,7 +797,7 @@ bool HostVolume::validateCatalog() const
 		bool isDir = fs::is_directory(e.hostPath, ec);
 		if (isDir != e.isDirectory)
 		{
-			DIAG(Catalog, "TYPE MISMATCH: cnid=%u \"%s\" catalog=%s disk=%s\n", e.cnid,
+			DIAG(ExtFS, "TYPE MISMATCH: cnid=%u \"%s\" catalog=%s disk=%s\n", e.cnid,
 				 e.macName.c_str(), e.isDirectory ? "dir" : "file", isDir ? "dir" : "file");
 			ok = false;
 		}
