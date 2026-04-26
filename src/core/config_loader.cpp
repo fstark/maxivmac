@@ -220,6 +220,7 @@ void PrintUsage(const char *progname)
 			"  --serial-a=MODE  Modem port backend: loopback, file:tx=PATH[,rx=PATH], pty, slip\n"
 			"  --serial-b=MODE  Printer port backend (same modes as --serial-a)\n"
 			"  --slip-redir=SPEC  Port forward: tcp:hostport:guestip:guestport\n"
+			"  --drive=PATH     Mount host directory as shared drive (repeatable)\n"
 			"  -h, --help       Show this help\n"
 			"\n"
 			"ROM auto-detection searches: ./<MODEL>.ROM, <romdir>/<MODEL>.ROM, roms/<MODEL>.ROM\n"
@@ -413,6 +414,11 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 			lc.slipRedirs.push_back(arg + 13);
 			continue;
 		}
+		if (strncmp(arg, "--drive=", 8) == 0)
+		{
+			lc.drivePaths.push_back(arg + 8);
+			continue;
+		}
 
 		// --key value (separate token) style
 		if (strcmp(arg, "--model") == 0 && i + 1 < argc)
@@ -485,6 +491,11 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strcmp(arg, "--log-count") == 0 && i + 1 < argc)
 		{
 			lc.logCount = (uint32_t)strtoul(argv[++i], nullptr, 10);
+			continue;
+		}
+		if (strcmp(arg, "--drive") == 0 && i + 1 < argc)
+		{
+			lc.drivePaths.push_back(argv[++i]);
 			continue;
 		}
 

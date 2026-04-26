@@ -49,6 +49,9 @@ struct LaunchConfig
 	// Networking (SLIP)
 	std::vector<std::string> slipRedirs; // --slip-redir=tcp:hostport:guestip:guestport
 
+	// Shared drives
+	std::vector<std::string> drivePaths; // --drive <path> (repeatable)
+
 	// Debugger
 	bool debugger = false;
 	std::string debugServerPath;		 // empty = not enabled, "auto" = default path

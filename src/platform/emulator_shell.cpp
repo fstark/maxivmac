@@ -20,6 +20,8 @@
 #include "platform/common/tick_timer.h"
 #include "platform/screen_convert.h"
 #include "platform/platform.h"
+#include "core/extn_extfs.h"
+#include "core/diag.h"
 #include "devices/video.h"
 #include "devices/scc.h"
 #include "devices/serial_factory.h"
@@ -274,6 +276,16 @@ bool EmulatorShell::initMachine()
 	for (const auto &diskPath : lc.diskPaths)
 	{
 		(void)Sony_Insert1(const_cast<char *>(diskPath.c_str()), false);
+	}
+
+	/* Mount shared drive directories from command line */
+	for (const auto &dp : lc.drivePaths)
+	{
+		int slot = ExtFSMountDrive(dp);
+		if (slot < 0)
+			DIAG(ExtFS, "failed to mount drive: %s\n", dp.c_str());
+		else
+			DIAG(ExtFS, "mounted drive slot %d: %s\n", slot, dp.c_str());
 	}
 
 	if (!ProgramMain()) return false;
