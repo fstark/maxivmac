@@ -51,9 +51,19 @@
 
 /* ---- constants ---- */
 
-#define kOurVRefNum     (-32000)
-#define kOurDriveNum    8
+#define kBaseVRefNum     32000
+#define kBaseDriveNum    8
+#define kMaxDrives       8
+#define kOurVRefNum      (-(kBaseVRefNum))
+#define kOurDriveNum     (kBaseDriveNum)
 #define kOurDrvrRefNum  (-64)
+
+/* Runtime mount polling commands */
+#define kExtFSPollMount  0x0219
+#define kExtFSGetVolName 0x021A
+
+/* jGNEFilter low-memory global */
+#define kJGNEFilter      0x029A
 #define kRootDirID      2
 
 /* Virtual volume geometry — report ~1 GB capacity so copy operations
@@ -253,14 +263,17 @@
 
 typedef struct {
 	char    *regBase;
-	Ptr      vcb;
-	Ptr      dqe;            /* drive queue element block (4 flag bytes + DrvQEl) */
+	Ptr      vcb[kMaxDrives];
+	Ptr      dqe[kMaxDrives]; /* drive queue element blocks (4 flag bytes + DrvQEl) */
+	short    driveCount;
 	long     volFileCount;
 	long     volTotalBytes;
 	long     savedA4;        /* THINK C code resource A4 */
 	short    rootWDRefNum;   /* permanent WD for root dir, created at init */
 	short    defaultWDRefNum; /* WD refnum from last SetVol */
 	short    ejected;        /* nonzero after _Eject */
+	long     oldFilter;      /* previous jGNEFilter */
+	long     lastPollTick;   /* TickCount at last poll */
 } Globals;
 
 /* ---- Extension discovery ---- */
@@ -442,6 +455,15 @@ static void mem_copy(char *dst, char *src, short len)
 	short i; for (i = 0; i < len; i++) dst[i] = src[i];
 }
 
+static Boolean pstr_equal(unsigned char *a, unsigned char *b)
+{
+	short i, len = a[0];
+	if (b[0] != len) return false;
+	for (i = 1; i <= len; i++)
+		if (a[i] != b[i]) return false;
+	return true;
+}
+
 static OSErr host_err(char *base)
 {
 	return (short)reg_result(base);
@@ -490,6 +512,14 @@ static Ptr GetFCB(short refNum)
 	return fcbBuf + refNum;
 }
 
+static Boolean IsOurVCB(Ptr vcb, Globals *g)
+{
+	short i;
+	for (i = 0; i < g->driveCount; i++)
+		if (g->vcb[i] == vcb) return true;
+	return false;
+}
+
 static Boolean IsOurFCB(short refNum)
 {
 	Globals *g = get_globals();
@@ -497,24 +527,30 @@ static Boolean IsOurFCB(short refNum)
 	if (g == NULL) return false;
 	fcb = GetFCB(refNum);
 	if (fcb == NULL) return false;
-	return (*(long *)(fcb + kFCBVPtr) == (long)(g->vcb));
+	return IsOurVCB(*(Ptr *)(fcb + kFCBVPtr), g);
 }
 
 static Boolean IsOurVolume(short vRefNum)
 {
-	if (vRefNum == kOurVRefNum) return true;
-	if (vRefNum == kOurDriveNum) return true;
-	/* WD refnums we issue are encoded as -(wdRef+32000).
-	   The host assigns wdRef starting from 1, so valid
-	   encoded values are -32001, -32002, ...
-	   Real File Manager WDCBs use small negative numbers (>= -32767)
-	   that won't overlap with our range below -32000. */
-	if (vRefNum < kOurVRefNum && vRefNum > -32100) return true;
-	/* vRefNum 0 means "default volume". Check if the default VCB
-	   is ours by reading the DefVCBPtr low-memory global. */
+	/* Direct vRefNum match: -32000 .. -32007 */
+	if (vRefNum <= -(short)kBaseVRefNum
+		&& vRefNum > -(short)(kBaseVRefNum + kMaxDrives))
+		return true;
+
+	/* Drive number match: 8 .. 15 */
+	if (vRefNum >= kBaseDriveNum
+		&& vRefNum < kBaseDriveNum + kMaxDrives)
+		return true;
+
+	/* WD refnums: -(kBaseVRefNum + slot*100 + localWD) */
+	if (vRefNum < -(short)kBaseVRefNum
+		&& vRefNum > -(short)(kBaseVRefNum + kMaxDrives * 100))
+		return true;
+
+	/* vRefNum 0 means "default volume" — check DefVCBPtr */
 	if (vRefNum == 0) {
 		Globals *g = get_globals();
-		if (g != NULL && *(Ptr *)kDefVCBPtr == g->vcb)
+		if (g != NULL && IsOurVCB(*(Ptr *)kDefVCBPtr, g))
 			return true;
 	}
 	return false;
@@ -759,7 +795,7 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 			flags = 0x01;          /* fcbWriteMask */
 
 		{
-			short refNum = AllocFCB(g->vcb, cnid, size, flags);
+			short refNum = AllocFCB(g->vcb[0], cnid, size, flags);
 			if (refNum == 0) {
 				reg_set(g->regBase, 0, handle);
 				reg_command(g->regBase, kCmdClose);
@@ -776,9 +812,9 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 		}
 		/* Keep vcbNxtCNID current */
 		{
-			long nextCNID = *(long *)(g->vcb + kVcbNxtCNID);
+			long nextCNID = *(long *)(g->vcb[0] + kVcbNxtCNID);
 			if ((long)cnid >= nextCNID)
-				*(long *)(g->vcb + kVcbNxtCNID) = (long)(cnid + 1);
+				*(long *)(g->vcb[0] + kVcbNxtCNID) = (long)(cnid + 1);
 		}
 	}
 	return kNoErr;
@@ -806,7 +842,7 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 			flags = 0x03;          /* resource fork + write */
 
 		{
-			short refNum = AllocFCB(g->vcb, cnid, size, flags);
+			short refNum = AllocFCB(g->vcb[0], cnid, size, flags);
 			if (refNum == 0) {
 				reg_set(g->regBase, 0, handle);
 				reg_command(g->regBase, kCmdClose);
@@ -823,9 +859,9 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 		}
 		/* Keep vcbNxtCNID current */
 		{
-			long nextCNID = *(long *)(g->vcb + kVcbNxtCNID);
+			long nextCNID = *(long *)(g->vcb[0] + kVcbNxtCNID);
 			if ((long)cnid >= nextCNID)
-				*(long *)(g->vcb + kVcbNxtCNID) = (long)(cnid + 1);
+				*(long *)(g->vcb[0] + kVcbNxtCNID) = (long)(cnid + 1);
 		}
 	}
 	return kNoErr;
@@ -871,8 +907,8 @@ static OSErr TrapCreate(char *pb, Globals *g, short isHFS)
 	{
 		OSErr err = host_err(g->regBase);
 		if (err == kNoErr) {
-			long nextCNID = *(long *)(g->vcb + kVcbNxtCNID);
-			*(long *)(g->vcb + kVcbNxtCNID) = nextCNID + 1;
+			long nextCNID = *(long *)(g->vcb[0] + kVcbNxtCNID);
+			*(long *)(g->vcb[0] + kVcbNxtCNID) = nextCNID + 1;
 		}
 		return err;
 	}
@@ -897,9 +933,10 @@ static OSErr TrapRename(char *pb, Globals *g, short isHFS)
 static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 {
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	Ptr v = g->vcb;
+	Ptr v;
 	unsigned long fileCount, dirCount, totalBytes;
 	short vidx = *(short *)(pb + pb_ioVolIndex);
+	short driveNum;
 
 	/* Indexed VCB walk: only handle if Nth VCB is ours */
 	if (vidx > 0) {
@@ -907,13 +944,33 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 		short i;
 		for (i = 1; i < vidx && vcb != NULL; i++)
 			vcb = *(Ptr *)vcb;
-		if (vcb == NULL || vcb != g->vcb)
+		if (vcb == NULL || !IsOurVCB(vcb, g))
 			return 1; /* not ours — sentinel for pass-through */
+		v = vcb;
 	} else if (vidx == 0) {
 		short vRefNum = *(short *)(pb + pb_ioVRefNum);
-		if (vRefNum != kOurDriveNum && !IsOurVolume(vRefNum))
+		if (!IsOurVolume(vRefNum))
 			return 1; /* not ours */
+		/* Find which VCB matches this vRefNum */
+		v = g->vcb[0]; /* default to slot 0 */
+		{
+			short i;
+			for (i = 0; i < g->driveCount; i++) {
+				if (g->vcb[i] != NULL) {
+					short vr = *(short *)(g->vcb[i] + 78);
+					short dn = *(short *)(g->vcb[i] + 72);
+					if (vRefNum == vr || vRefNum == dn) {
+						v = g->vcb[i];
+						break;
+					}
+				}
+			}
+		}
+	} else {
+		v = g->vcb[0];
 	}
+	if (v == NULL) return 1;
+	driveNum = *(short *)(v + 72);
 
 	/* Query host for fresh counts */
 	reg_command(g->regBase, kCmdGetVol);
@@ -921,10 +978,15 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 	totalBytes = reg_get(g->regBase, 1);
 	dirCount   = reg_get(g->regBase, 2);
 
+	/* Copy volume name from VCB */
 	if (nameAddr != 0) {
-		unsigned char *p = (unsigned char *)nameAddr;
-		p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
-		p[4]='r'; p[5]='e'; p[6]='d';
+		unsigned char *src = (unsigned char *)(v + 44);
+		unsigned char *dst = (unsigned char *)nameAddr;
+		short len = src[0];
+		short j;
+		if (len > 27) len = 27;
+		dst[0] = len;
+		for (j = 1; j <= len; j++) dst[j] = src[j];
 	}
 
 	/* Return the WD refnum (not raw volume ref) so apps that use the
@@ -952,7 +1014,7 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 
 	if (isHFS) {
 		*(short *)(pb + 64) = 0x4244;                /* ioVSigWord */
-		*(short *)(pb + 66) = kOurDriveNum;          /* ioVDrvInfo */
+		*(short *)(pb + 66) = driveNum;              /* ioVDrvInfo */
 		*(short *)(pb + 68) = kOurDrvrRefNum;        /* ioVDRefNum */
 		*(short *)(pb + 70) = 0x5344;                /* ioVFSID */
 		*(long  *)(pb + 72) = 0;                     /* ioVBkUp */
@@ -968,10 +1030,14 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 static OSErr TrapGetVol(char *pb, Globals *g, short isHFS)
 {
 	unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	if (nmAddr != 0) {
-		unsigned char *p = (unsigned char *)nmAddr;
-		p[0]=6; p[1]='S'; p[2]='h'; p[3]='a';
-		p[4]='r'; p[5]='e'; p[6]='d';
+	if (nmAddr != 0 && g->vcb[0] != NULL) {
+		unsigned char *src = (unsigned char *)(g->vcb[0] + 44);
+		unsigned char *dst = (unsigned char *)nmAddr;
+		short len = src[0];
+		short j;
+		if (len > 27) len = 27;
+		dst[0] = len;
+		for (j = 1; j <= len; j++) dst[j] = src[j];
 	}
 	*(short *)(pb + pb_ioVRefNum) = g->defaultWDRefNum;
 	if (isHFS) {
@@ -999,17 +1065,20 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
 	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
 
-	/* Check by name if vRefNum doesn't match */
+	/* Check by name — compare against all our VCB names */
 	if (!IsOurVolume(vRefNum)) {
 		if (nameAddr != 0) {
 			unsigned char *p = (unsigned char *)nameAddr;
-			if (p[0] == 6 && p[1] == 'S' && p[2] == 'h'
-				&& p[3] == 'a' && p[4] == 'r'
-				&& p[5] == 'e' && p[6] == 'd')
-			{
-				*(Ptr *)kDefVCBPtr = g->vcb;
-				g->defaultWDRefNum = g->rootWDRefNum;
-				return kNoErr;
+			short i;
+			for (i = 0; i < g->driveCount; i++) {
+				if (g->vcb[i] != NULL) {
+					unsigned char *vn = (unsigned char *)(g->vcb[i] + 44);
+					if (pstr_equal(p, vn)) {
+						*(Ptr *)kDefVCBPtr = g->vcb[i];
+						g->defaultWDRefNum = g->rootWDRefNum;
+						return kNoErr;
+					}
+				}
 			}
 		}
 		return 1; /* not ours — sentinel for pass-through */
@@ -1042,7 +1111,7 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 		g->defaultWDRefNum = g->rootWDRefNum;
 	}
 
-	*(Ptr *)kDefVCBPtr = g->vcb;
+	*(Ptr *)kDefVCBPtr = g->vcb[0];
 	reg_set(g->regBase, 0, (unsigned long)(unsigned short)g->defaultWDRefNum);
 	reg_command(g->regBase, kPB_SetDefaultVRefNum);
 	return kNoErr;
@@ -1050,22 +1119,30 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapUnmountVol(char *pb, Globals *g, short isHFS)
 {
-	if (g->dqe != NULL) {
-		Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
-		g->dqe = NULL;
+	short i;
+	for (i = 0; i < g->driveCount; i++) {
+		if (g->dqe[i] != NULL) {
+			Dequeue((QElemPtr)(g->dqe[i] + 4), (QHdrPtr)kDrvQHdr);
+			g->dqe[i] = NULL;
+		}
+		if (g->vcb[i] != NULL)
+			Dequeue((QElemPtr)g->vcb[i], (QHdrPtr)kVCBQHdr);
 	}
-	Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
 	g->ejected = 1;
 	return kNoErr;
 }
 
 static OSErr TrapEject(char *pb, Globals *g, short isHFS)
 {
-	if (g->dqe != NULL) {
-		Dequeue((QElemPtr)(g->dqe + 4), (QHdrPtr)kDrvQHdr);
-		g->dqe = NULL;
+	short i;
+	for (i = 0; i < g->driveCount; i++) {
+		if (g->dqe[i] != NULL) {
+			Dequeue((QElemPtr)(g->dqe[i] + 4), (QHdrPtr)kDrvQHdr);
+			g->dqe[i] = NULL;
+		}
+		if (g->vcb[i] != NULL)
+			Dequeue((QElemPtr)g->vcb[i], (QHdrPtr)kVCBQHdr);
 	}
-	Dequeue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
 	g->ejected = 1;
 	return kNoErr;
 }
@@ -1145,7 +1222,19 @@ static OSErr TrapGetFCBInfo(char *pb, Globals *g, short isHFS)
 	*(long  *)(pb + pb_ioFCBEOF) = *(long *)(fcb + kFCBEOF);
 	*(long  *)(pb + pb_ioFCBPLen) = *(long *)(fcb + kFCBPLen);
 	*(long  *)(pb + pb_ioFCBCrPs) = *(long *)(fcb + kFCBCrPs);
-	*(short *)(pb + pb_ioFCBVRefNum) = kOurVRefNum;
+	/* Derive vRefNum from the FCB's VCB pointer */
+	{
+		Ptr fcbVCB = *(Ptr *)(fcb + kFCBVPtr);
+		short vr = kOurVRefNum; /* default */
+		short i;
+		for (i = 0; i < g->driveCount; i++) {
+			if (g->vcb[i] == fcbVCB) {
+				vr = -(kBaseVRefNum + i);
+				break;
+			}
+		}
+		*(short *)(pb + pb_ioFCBVRefNum) = vr;
+	}
 	*(long  *)(pb + pb_ioFCBClpSiz) = 0;
 	*(long  *)(pb + pb_ioFCBParID) = *(long *)(fcb + kFCBDirID);
 	return kNoErr;
@@ -1567,16 +1656,138 @@ static void InstallHFSPatch(char *regBase)
 }
 
 /* ================================================================ */
+/*                Runtime mount helper and jGNEFilter               */
+/* ================================================================ */
+
+/*
+	Allocate a VCB and DQE for a newly-mounted drive discovered
+	via kExtFSPollMount.  Called both from the jGNEFilter and from
+	the INIT boot loop.
+*/
+static void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
+{
+	Ptr v;
+	unsigned long now;
+	unsigned char nameBuf[32];
+
+	if (slot < 0 || slot >= kMaxDrives) return;
+
+	/* Get volume name from host */
+	reg_set(g->regBase, 0, (unsigned long)slot);
+	reg_set(g->regBase, 1, (unsigned long)nameBuf);
+	reg_command(g->regBase, kExtFSGetVolName);
+
+	v = NewPtrSysClear(178);
+	if (v == NULL) return;
+	g->vcb[slot] = v;
+
+	GetDateTime(&now);
+	*(short *)(v + 4)   = 1;             /* qType = fsQType */
+	*(short *)(v + 8)   = 0x4244;        /* vcbSigWord = HFS */
+	*(long  *)(v + 10)  = now;           /* vcbCrDate */
+	*(long  *)(v + 14)  = now;           /* vcbLsMod */
+	*(short *)(v + 18)  = 0;             /* vcbAtrb: writable */
+	*(short *)(v + 26)  = kTotalAllocBlks;
+	*(long  *)(v + 28)  = kAllocBlkSize;
+	*(long  *)(v + 32)  = kAllocBlkSize;
+	*(long  *)(v + 38)  = 16;            /* vcbNxtCNID */
+	*(short *)(v + 42)  = kTotalAllocBlks; /* vcbFreeBks: all free for new */
+	/* Copy volume name from host (Pascal string in nameBuf) */
+	{
+		short len = (unsigned char)nameBuf[0];
+		short j;
+		if (len > 27) len = 27;
+		v[44] = len;
+		for (j = 1; j <= len; j++) v[44 + j] = nameBuf[j];
+	}
+	*(short *)(v + 72)  = driveNum;
+	*(short *)(v + 74)  = kOurDrvrRefNum;
+	*(short *)(v + 76)  = 0x5344;        /* vcbFSID = 'SD' */
+	*(short *)(v + 78)  = vRefNum;
+
+	Enqueue((QElemPtr)v, (QHdrPtr)kVCBQHdr);
+
+	/* Allocate DQE */
+	{
+		Ptr dqe = NewPtrSysClear(20);
+		if (dqe != NULL) {
+			*(long *)dqe = 0x00080000L;        /* flags: non-ejectable */
+			*(short *)(dqe + 8)  = 1;          /* qType */
+			*(short *)(dqe + 14) = 0;          /* dQFSID */
+			{
+				long sectors = (long)kTotalAllocBlks * (kAllocBlkSize / 512);
+				*(short *)(dqe + 16) = (short)(sectors & 0xFFFF);
+				*(short *)(dqe + 18) = (short)((sectors >> 16) & 0xFFFF);
+			}
+			AddDrive(kOurDrvrRefNum, driveNum, (DrvQElPtr)(dqe + 4));
+			g->dqe[slot] = dqe;
+		}
+	}
+
+	if (slot >= g->driveCount)
+		g->driveCount = slot + 1;
+
+	dbg_log2(g->regBase, "SharedDrive: mounted slot %ld drv=%ld",
+		(long)slot, (long)driveNum);
+}
+
+/*
+	jGNEFilter — polled once per second to detect runtime mounts
+	from the host (e.g. debugger 'drive mount' or drag-and-drop).
+	Model after clipsync's FilterEntry.
+*/
+void FilterEntry(void)
+{
+	long oldFilter;
+
+	asm { MOVEM.L D0-D2/A0-A2, -(SP) }
+	SetUpA4();
+
+	{
+		Globals *g = get_globals();
+		if (g != NULL && TickCount() - g->lastPollTick >= 60) {
+			g->lastPollTick = TickCount();
+
+			reg_command(g->regBase, kExtFSPollMount);
+			{
+				unsigned long slot = reg_get(g->regBase, 0);
+				if (slot != 0xFFFFFFFFUL) {
+					short s = (short)slot;
+					short vRefNum = (short)reg_get(g->regBase, 1);
+					short driveNum = (short)reg_get(g->regBase, 2);
+					MountNewDrive(g, s, vRefNum, driveNum);
+					PostEvent(diskEvt, driveNum);
+				}
+			}
+		}
+		oldFilter = (g != NULL) ? g->oldFilter : 0;
+	}
+
+	RestoreA4();
+	asm { MOVEM.L (SP)+, D0-D2/A0-A2 }
+
+	/* Chain to previous filter */
+	if (oldFilter != 0) {
+		asm {
+			MOVE.L  oldFilter, A0
+			UNLK    A6
+			JMP     (A0)
+		}
+	}
+}
+
+/* ================================================================ */
 /*                         INIT entry point                         */
 /* ================================================================ */
 
 void main(void)
 {
 	char *regBase;
-	unsigned long version;
+	unsigned long driveCount;
 	Globals *g;
 	Handle self;
 	Ptr myINITPtr;
+	short i;
 
 	asm { move.l a0, myINITPtr }
 	RememberA0();
@@ -1588,16 +1799,17 @@ void main(void)
 	dbg_log1(regBase, "SharedDrive INIT: regBase=%lx",
 		(unsigned long)regBase);
 
-	/* Check version */
+	/* Check version — now returns mounted drive count */
 	reg_command(regBase, 0x0200);
-	version = reg_get(regBase, 0);
-	if (version < 1) {
-		dbg_log(regBase, "SharedDrive: no shared/ or version 0");
+	driveCount = reg_get(regBase, 0);
+	if (driveCount < 1) {
+		dbg_log(regBase, "SharedDrive: no drives mounted (count=0)");
 		goto bail;
 	}
-	dbg_log1(regBase, "SharedDrive INIT: version=%ld", version);
+	if (driveCount > kMaxDrives) driveCount = kMaxDrives;
+	dbg_log1(regBase, "SharedDrive INIT: driveCount=%ld", driveCount);
 
-	/* Get volume stats */
+	/* Get volume stats (from first drive, for VCB fill) */
 	reg_command(regBase, 0x0201);
 
 	/* Allocate globals */
@@ -1607,21 +1819,9 @@ void main(void)
 		goto bail;
 	}
 	g->regBase = regBase;
+	g->driveCount = (short)driveCount;
 	g->volFileCount = reg_get(regBase, 0);
 	g->volTotalBytes = reg_get(regBase, 1);
-	/* Create permanent root WD — mirrors real HFS boot-volume root WD.
-	   This ensures -32000 (kOurVRefNum) never leaks to applications;
-	   every vRefNum they see is a WD refnum resolvable through the
-	   host WD table. */
-	reg_set(regBase, 0, (unsigned long)kOurVRefNum);
-	reg_set(regBase, 1, (unsigned long)kRootDirID);
-	reg_set(regBase, 2, 0);  /* procID = 0 for root WD */
-	reg_command(regBase, kCmdOpenWD);
-	{
-		unsigned long wdRef = reg_get(regBase, 0);
-		g->rootWDRefNum = (short)(-(long)wdRef - 32000);
-	}
-	g->defaultWDRefNum = g->rootWDRefNum;
 
 	/* Save A4 for code resource data access from stubs */
 	{
@@ -1634,9 +1834,6 @@ void main(void)
 
 	set_globals(regBase, g);
 
-	dbg_log2(regBase, "SharedDrive: %ld files, %ld bytes",
-		g->volFileCount, g->volTotalBytes);
-
 	/* Keep our code resource in memory */
 	self = GetResource('INIT', 315);
 	if (self != NULL) {
@@ -1645,73 +1842,26 @@ void main(void)
 		HNoPurge(self);
 	}
 
-	/* Allocate and fill VCB */
-	g->vcb = NewPtrSysClear(178);
-	if (g->vcb == NULL) {
-		dbg_log(regBase, "SharedDrive: VCB alloc failed");
-		goto bail;
+	/* Allocate VCBs and DQEs for each mounted drive */
+	for (i = 0; i < (short)driveCount; i++) {
+		short vRefNum = -(kBaseVRefNum + i);
+		short driveNum = kBaseDriveNum + i;
+		MountNewDrive(g, i, vRefNum, driveNum);
 	}
+
+	/* Create permanent root WD for slot 0 */
+	reg_set(regBase, 0, (unsigned long)kOurVRefNum);
+	reg_set(regBase, 1, (unsigned long)kRootDirID);
+	reg_set(regBase, 2, 0);  /* procID = 0 for root WD */
+	reg_command(regBase, kCmdOpenWD);
 	{
-		Ptr v = g->vcb;
-		unsigned long now;
-		GetDateTime(&now);
-
-		/* VCB field offsets from Inside Macintosh IV-155 */
-		*(short *)(v + 4)   = 1;             /* qType = fsQType */
-		*(short *)(v + 8)   = 0x4244;        /* vcbSigWord = HFS */
-		*(long  *)(v + 10)  = now;           /* vcbCrDate */
-		*(long  *)(v + 14)  = now;           /* vcbLsMod */
-		*(short *)(v + 18)  = 0;             /* vcbAtrb: writable */
-		*(short *)(v + 20)  = (short)g->volFileCount; /* vcbNmFls */
-		*(short *)(v + 26)  = kTotalAllocBlks; /* vcbNmAlBlks */
-		*(long  *)(v + 28)  = kAllocBlkSize; /* vcbAlBlkSiz */
-		*(long  *)(v + 32)  = kAllocBlkSize; /* vcbClpSiz */
-		*(long  *)(v + 38)  = 16;            /* vcbNxtCNID */
-		{
-			long used = (long)((g->volTotalBytes + kAllocBlkSize - 1)
-				/ kAllocBlkSize);
-			long free = kTotalAllocBlks - used;
-			if (free < 0) free = 0;
-			*(short *)(v + 42) = (short)free;  /* vcbFreeBks */
-		}
-
-		/* vcbVN at offset 44: Pascal string, 1 len + 27 chars */
-		v[44] = 6;
-		v[45]='S'; v[46]='h'; v[47]='a';
-		v[48]='r'; v[49]='e'; v[50]='d';
-
-		*(short *)(v + 72)  = kOurDriveNum;  /* vcbDrvNum */
-		*(short *)(v + 74)  = kOurDrvrRefNum;/* vcbDRefNum */
-		*(short *)(v + 76)  = 0x5344;        /* vcbFSID = 'SD' (ext FS) */
-		*(short *)(v + 78)  = kOurVRefNum;   /* vcbVRefNum */
+		unsigned long wdRef = reg_get(regBase, 0);
+		g->rootWDRefNum = (short)(-(long)wdRef - 32000);
 	}
-	Enqueue((QElemPtr)g->vcb, (QHdrPtr)kVCBQHdr);
-	dbg_log1(regBase, "SharedDrive: VCB at %lx", (long)g->vcb);
+	g->defaultWDRefNum = g->rootWDRefNum;
 
-	/* Add drive queue element so SFGetFile Drive button finds us.
-	   Layout: 4 flag bytes + DrvQEl (16 bytes) = 20 bytes.
-	   Flag bytes per TN#36: $00080000 = non-ejectable disk in place.
-	   AddDrive fills in dQDrive and dQRefNum from its parameters. */
-	{
-		Ptr dqe = NewPtrSysClear(20);
-		if (dqe != NULL) {
-			*(long *)dqe = 0x00080000L;        /* flags: non-ejectable */
-			*(short *)(dqe + 8)  = 1;          /* qType = 1 (use dQDrvSz2) */
-			*(short *)(dqe + 14) = 0;          /* dQFSID = 0 (native HFS) */
-			/* Drive size in 512-byte sectors:
-			   32000 * 32768 / 512 = 2,048,000 sectors */
-			{
-				long sectors = (long)kTotalAllocBlks
-					* (kAllocBlkSize / 512);
-				*(short *)(dqe + 16) = (short)(sectors & 0xFFFF);
-				*(short *)(dqe + 18) = (short)((sectors >> 16) & 0xFFFF);
-			}
-			AddDrive(kOurDrvrRefNum, kOurDriveNum,
-				(DrvQElPtr)(dqe + 4));
-			g->dqe = dqe;
-			dbg_log(regBase, "SharedDrive: DQE added to drive queue");
-		}
-	}
+	dbg_log2(regBase, "SharedDrive: %ld files, %ld bytes",
+		g->volFileCount, g->volTotalBytes);
 
 	/* Build dispatch tables (can't use static init in THINK C code resources) */
 	InitTrapTables();
@@ -1745,12 +1895,12 @@ void main(void)
 
 	dbg_log(regBase, "SharedDrive: traps patched");
 
-	/*
-	 * Don't PostEvent — it would trigger _MountVol which would
-	 * try to read boot blocks from drive 8 (no real disk).
-	 * The VCB and DQE are already in their queues so the Finder
-	 * and Standard File will discover the volume at startup.
-	 */
+	/* Install jGNEFilter for runtime mount polling */
+	g->oldFilter = *(long *)kJGNEFilter;
+	g->lastPollTick = 0;
+	*(long *)kJGNEFilter = (long)FilterEntry;
+	dbg_log(regBase, "SharedDrive: jGNEFilter installed");
+
 	dbg_log(regBase, "SharedDrive INIT: done!");
 
 bail:
