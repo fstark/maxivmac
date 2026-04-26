@@ -807,6 +807,7 @@ static void RegCloseWD(uint32_t regParam[], uint16_t &regResult)
 static void RegDbgLog(uint32_t regParam[], uint16_t &regResult)
 {
 	std::string line = guestFormatLog(regParam[0], regParam);
+	DIAG(ExtFS, "GUEST: %s\n", line.c_str());
 	guestConsoleAppend(line);
 	regResult = 0;
 }
@@ -833,6 +834,7 @@ static void RegGuestVars(uint32_t regParam[], uint16_t &regResult)
 static void RegFatal(uint32_t regParam[], uint16_t &regResult)
 {
 	std::string msg = guestFormatLog(regParam[0], regParam);
+	DIAG(ExtFS, "GUEST FATAL: %s\n", msg.c_str());
 	guestConsoleAppend("FATAL: " + msg);
 	fprintf(stderr, "\n[GUEST FATAL] (insn #%u) %s\n", (unsigned)g_instructionCount, msg.c_str());
 	DumpRecentDisasm();

@@ -234,8 +234,6 @@ void extfsLogTrap(uint16_t trapWord, uint32_t pbAddr, uint16_t action, int16_t e
 		}
 	}
 
-	if (action == kActionPassThrough)
-		DIAG(PassThru, "%s\n", line.c_str());
-	else
-		guestConsoleAppend(line);
+	DIAG(ExtFS, "%s\n", line.c_str());
+	if (action != kActionPassThrough) guestConsoleAppend(line);
 }

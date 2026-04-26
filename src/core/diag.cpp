@@ -14,7 +14,7 @@ namespace
 
 /* Single source of truth: the tag. CLI name = lowercase(tag). */
 constexpr const char *kTags[] = {
-	"EXTFS", "GUEST", "PASSTHRU", "SER", "NET", "SLIP", "VID",
+	"EXTFS", "CLIP", "SER", "NET", "SLIP", "VID",
 };
 
 static_assert(sizeof(kTags) / sizeof(kTags[0]) == static_cast<size_t>(DiagSubsystem::kCount));

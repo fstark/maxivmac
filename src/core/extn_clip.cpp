@@ -48,7 +48,6 @@ void ExtnDbgConsoleClear()
 
 void guestConsoleAppend(const std::string &line)
 {
-	DIAG(Guest, "%s\n", line.c_str());
 	s_consoleLines.push_back(line);
 	while (s_consoleLines.size() > kMaxConsoleLines)
 	{
@@ -276,6 +275,7 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kClipDbgLog:
 		{
 			std::string line = guestFormatLog(regParam[0], regParam);
+			DIAG(CLIP, "%s\n", line.c_str());
 			guestConsoleAppend(line);
 			regResult = 0;
 		}
