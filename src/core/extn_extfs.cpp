@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <utility>
 
 /* Guest RAM access */
 extern uint8_t get_vm_byte(uint32_t addr);
@@ -45,9 +46,9 @@ static constexpr uint16_t kExtFSWrite = 0x211;
 static constexpr uint16_t kExtFSFatal = 0x214;
 static constexpr uint16_t kExtFSSetEOF = 0x218;
 
-/* ── HostVolume instance ──────────────────────────── */
+/* ── DriveManager instance ─────────────────────────── */
 
-static storage::HostVolume s_volume;
+static storage::DriveManager s_drives;
 
 static constexpr uint32_t kRootParentID = storage::HostVolume::kRootParentID;
 static constexpr uint32_t kRootDirID = storage::HostVolume::kRootDirID;
@@ -266,13 +267,83 @@ static constexpr uint16_t kPB_CloseWD = 0x243;
 static constexpr uint16_t kPB_GetWDInfo = 0x244;
 static constexpr uint16_t kPB_SetDefaultVRefNum = 0x245;
 
-/* ── PB resolve helper ───────────────────────────── */
+/* ── Volume resolution helpers ────────────────────── */
 
-static uint32_t pbResolveDir(PBRef pb, bool isHFS)
+// Resolve a PB's ioVRefNum to a HostVolume*.
+// For vRefNum 0 (default volume), uses slot 0's default.
+// Returns nullptr + sets errOut = kNsvErr if the volume is not ours.
+static storage::HostVolume *volumeFromPB(PBRef pb, bool /*isHFS*/, storage::OSErr &errOut)
+{
+	int16_t vRefNum = pb[ioVRefNum];
+
+	// vRefNum 0 means "default volume" — use slot 0 initially.
+	// HostVolume::resolveDir handles the full WD/default logic.
+	if (vRefNum == 0)
+	{
+		auto *vol = s_drives.volume(0);
+		if (!vol)
+		{
+			errOut = storage::kNsvErr;
+			return nullptr;
+		}
+		errOut = storage::kNoErr;
+		return vol;
+	}
+
+	// Direct vRefNum or driveNum — try all slots.
+	int slot = s_drives.slotFromVRefNum(vRefNum);
+	if (slot >= 0)
+	{
+		errOut = storage::kNoErr;
+		return s_drives.volume(slot);
+	}
+
+	// DriveNum?
+	if (vRefNum >= storage::kBaseDriveNum && vRefNum < storage::kBaseDriveNum + storage::kMaxDrives)
+	{
+		auto *vol = s_drives.volumeByDriveNum(vRefNum);
+		if (vol)
+		{
+			errOut = storage::kNoErr;
+			return vol;
+		}
+	}
+
+	// WD refnum (negative, in extended range)?
+	// WD refnums are -(32000 + wdRef) per slot.  Try each mounted volume:
+	// The HostVolume::resolveDir call will sort it out.
+	if (vRefNum < -static_cast<int16_t>(storage::kBaseVRefNum))
+	{
+		// Walk all volumes and try to resolve this WD
+		storage::HostVolume *found = nullptr;
+		s_drives.forEach(
+			[&](int, storage::HostVolume &vol)
+			{
+				if (!found && vol.resolveDir(vRefNum, 0) != 0) found = &vol;
+			});
+		if (found)
+		{
+			errOut = storage::kNoErr;
+			return found;
+		}
+	}
+
+	errOut = storage::kNsvErr;
+	return nullptr;
+}
+
+// Resolve a handle to (HostVolume*, localHandle).
+static std::pair<storage::HostVolume *, uint32_t> volumeFromHandle(uint32_t handle)
+{
+	return s_drives.resolveHandle(handle);
+}
+
+// Resolve the directory from a PB given a specific volume.
+static uint32_t pbResolveDir(PBRef pb, bool isHFS, storage::HostVolume &vol)
 {
 	int16_t vRefNum = pb[ioVRefNum];
 	uint32_t dirID = isHFS ? static_cast<uint32_t>(pb[ioDrDirID]) : 0;
-	return s_volume.resolveDir(vRefNum, dirID);
+	return vol.resolveDir(vRefNum, dirID);
 }
 
 /* ── Guest RAM helpers ────────────────────────────── */
@@ -352,18 +423,18 @@ static void pbWriteFileFields(PBRef pb, const storage::CatalogEntry *e, bool isH
 }
 
 /* Fill the directory-variant fields of a CInfoPBRec (IM IV-155). */
-static void pbWriteDirFields(PBRef pb, const storage::CatalogEntry *e)
+static void pbWriteDirFields(PBRef pb, const storage::CatalogEntry *e, storage::HostVolume &vol)
 {
 	pb[ioFlAttrib] = kFlAttribDir;
 	pb[ioACUser] = 0;
 
 	/* DInfo + DXInfo — zero-initialized, filled if entry exists */
 	Blob16 dinfo{}, dxinfo{};
-	s_volume.getDirInfo(e->cnid, dinfo, dxinfo);
+	vol.getDirInfo(e->cnid, dinfo, dxinfo);
 	pb[ioDrUsrWds] = dinfo;
 	pb[ioDrFndrInfo] = dxinfo;
 
-	pb[ioDrNmFls] = s_volume.childCount(e->cnid);
+	pb[ioDrNmFls] = vol.childCount(e->cnid);
 	pb[ioDrDirID] = e->cnid;
 	pb[ioDrParID] = e->parentDirID;
 	pb[ioDrCrDat] = e->crDate;
@@ -372,20 +443,21 @@ static void pbWriteDirFields(PBRef pb, const storage::CatalogEntry *e)
 }
 
 /* Synthesize a CInfoPBRec for the volume root (dirID 2). */
-static void pbWriteRootDir(PBRef pb, uint32_t nameAddr)
+static void pbWriteRootDir(PBRef pb, uint32_t nameAddr, storage::HostVolume &vol,
+						   std::string_view volName)
 {
 	uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
 	pb[ioFlAttrib] = kFlAttribDir;
 	pb[ioACUser] = 0;
 	pb[ioDrUsrWds] = Blob16{};
 	pb[ioDrFndrInfo] = Blob16{};
-	pb[ioDrNmFls] = s_volume.childCount(kRootDirID);
+	pb[ioDrNmFls] = vol.childCount(kRootDirID);
 	pb[ioDrDirID] = kRootDirID;
 	pb[ioDrParID] = kRootParentID;
 	pb[ioDrCrDat] = now;
 	pb[ioDrMdDat] = now;
 	pb[ioDrBkDat] = 0;
-	if (nameAddr) writePascalString(nameAddr, "Shared");
+	if (nameAddr) writePascalString(nameAddr, std::string(volName));
 }
 
 /*
@@ -397,7 +469,12 @@ static void pbWriteRootDir(PBRef pb, uint32_t nameAddr)
 */
 static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+	int slot = vol->slot();
+
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	int16_t index = pb[ioFDirIndex];
 	uint32_t nameAddr = pb[ioNamePtr];
 
@@ -412,12 +489,12 @@ static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 		{
 			if (index == 1)
 			{
-				pbWriteRootDir(pb, nameAddr);
+				pbWriteRootDir(pb, nameAddr, *vol, s_drives.volumeName(slot));
 				return 0;
 			}
 			return kFnfErr;
 		}
-		e = s_volume.nthChild(dirID, index);
+		e = vol->nthChild(dirID, index);
 		if (!e) return kFnfErr;
 	}
 	else if (index == 0 && nameAddr != 0)
@@ -425,20 +502,20 @@ static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 		/* By-name lookup */
 		std::string name = readPascalString(nameAddr);
 		if (!name.empty())
-			e = s_volume.findByPath(dirID, name);
+			e = vol->findByPath(dirID, name);
 		else
-			e = s_volume.findByCNID(dirID);
+			e = vol->findByCNID(dirID);
 	}
 	else
 	{
 		/* index <= 0 or no name: info about dirID itself */
-		e = s_volume.findByCNID(dirID);
+		e = vol->findByCNID(dirID);
 	}
 
 	/* Synthesize root if needed */
 	if (!e && (dirID == kRootDirID || dirID == kRootParentID))
 	{
-		pbWriteRootDir(pb, nameAddr);
+		pbWriteRootDir(pb, nameAddr, *vol, s_drives.volumeName(slot));
 		return 0;
 	}
 
@@ -447,7 +524,7 @@ static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 	if (nameAddr) writePascalString(nameAddr, e->macName);
 
 	if (e->isDirectory)
-		pbWriteDirFields(pb, e);
+		pbWriteDirFields(pb, e, *vol);
 	else
 		pbWriteFileFields(pb, e);
 
@@ -457,14 +534,18 @@ static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 /* PBGetFInfo / PBHGetFInfo (IM IV-97 / IV-148).  By-name file lookup only. */
 static OSErr PbGetFileInfo(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	uint32_t nameAddr = pb[ioNamePtr];
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	DIAG(ExtFS, "PbGetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
-	auto *e = s_volume.findByPath(dirID, name);
+	auto *e = vol->findByPath(dirID, name);
 	if (!e) return kFnfErr;
 
 	pbWriteFileFields(pb, e, isHFS);
@@ -479,7 +560,11 @@ static OSErr PbGetFileInfo(PBRef pb, bool isHFS)
 */
 static OSErr PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType forkType, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	uint32_t nameAddr = pb[ioNamePtr];
 	uint8_t perm = pb[ioPermssn];
 
@@ -489,15 +574,15 @@ static OSErr PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType forkTyp
 	DIAG(ExtFS, "PbOpen%s dir=%u name=\"%s\"\n",
 		 forkType == storage::ForkType::Resource ? "RF" : "", dirID, name.c_str());
 
-	auto *e = s_volume.findByPath(dirID, name);
+	auto *e = vol->findByPath(dirID, name);
 	if (!e) return kFnfErr;
 
 	uint32_t size = 0;
 	OSErr err;
-	uint32_t handle = s_volume.openFork(e->cnid, forkType, size, err, perm);
-	if (handle == 0) return err;
+	uint32_t localHandle = vol->openFork(e->cnid, forkType, size, err, perm);
+	if (localHandle == 0) return err;
 
-	regParam[0] = handle;
+	regParam[0] = storage::EncodeHandle(vol->slot(), localHandle);
 	regParam[1] = size;
 	regParam[2] = e->cnid;
 	regParam[3] = e->parentDirID;
@@ -517,7 +602,10 @@ static OSErr PbOpenRF(PBRef pb, uint32_t regParam[], bool isHFS)
 /* PBCreate / PBHCreate (IM IV-90).  Create an empty file. */
 static OSErr PbCreate(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	uint32_t nameAddr = pb[ioNamePtr];
 	if (nameAddr == 0) return kParamErr;
 
@@ -525,7 +613,7 @@ static OSErr PbCreate(PBRef pb, bool isHFS)
 	DIAG(ExtFS, "PbCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	OSErr err;
-	uint32_t cnid = s_volume.createFile(dirID, name, err);
+	uint32_t cnid = vol->createFile(dirID, name, err);
 	if (cnid == 0) return err;
 
 	DIAG(ExtFS, "  → cnid=%u\n", cnid);
@@ -535,21 +623,27 @@ static OSErr PbCreate(PBRef pb, bool isHFS)
 /* PBDelete / PBHDelete (IM IV-91).  Remove a file or empty directory. */
 static OSErr PbDelete(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	uint32_t nameAddr = pb[ioNamePtr];
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	DIAG(ExtFS, "PbDelete dir=%u name=\"%s\"\n", dirID, name.c_str());
 
-	auto err = s_volume.remove(dirID, name);
+	auto err = vol->remove(dirID, name);
 	return err;
 }
 
 /* PBRename / PBHRename (IM IV-95).  New name comes from ioMisc. */
 static OSErr PbRename(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	uint32_t nameAddr = pb[ioNamePtr];
 	uint32_t newNameAddr = pb[ioMisc];
 	if (nameAddr == 0 || newNameAddr == 0) return kParamErr;
@@ -558,14 +652,17 @@ static OSErr PbRename(PBRef pb, bool isHFS)
 	std::string newName = readPascalString(newNameAddr);
 	DIAG(ExtFS, "PbRename dir=%u old=\"%s\" new=\"%s\"\n", dirID, oldName.c_str(), newName.c_str());
 
-	auto err = s_volume.rename(dirID, oldName, newName);
+	auto err = vol->rename(dirID, oldName, newName);
 	return err;
 }
 
 /* PBDirCreate (IM IV-153).  Returns new dirID in ioDrDirID. */
 static OSErr PbDirCreate(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	uint32_t nameAddr = pb[ioNamePtr];
 	if (nameAddr == 0) return kParamErr;
 
@@ -573,7 +670,7 @@ static OSErr PbDirCreate(PBRef pb, bool isHFS)
 	DIAG(ExtFS, "PbDirCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	OSErr err;
-	uint32_t cnid = s_volume.createDir(dirID, name, err);
+	uint32_t cnid = vol->createDir(dirID, name, err);
 	if (cnid == 0) return err;
 
 	pb[ioDrDirID] = cnid;
@@ -584,7 +681,10 @@ static OSErr PbDirCreate(PBRef pb, bool isHFS)
 /* PBCatMove (IM IV-157).  Move a file or directory to ioNewDirID. */
 static OSErr PbCatMove(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	uint32_t nameAddr = pb[ioNamePtr];
 	if (nameAddr == 0) return kParamErr;
 
@@ -592,25 +692,28 @@ static OSErr PbCatMove(PBRef pb, bool isHFS)
 	std::string name = readPascalString(nameAddr);
 	DIAG(ExtFS, "PbCatMove srcDir=%u name=\"%s\" dstDir=%u\n", dirID, name.c_str(), dstDirID);
 
-	auto err = s_volume.move(dirID, name, dstDirID);
+	auto err = vol->move(dirID, name, dstDirID);
 	return err;
 }
 
 /* PBSetFInfo / PBHSetFInfo (IM IV-100 / IV-150).  Write FInfo from the PB. */
 static OSErr PbSetFileInfo(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	uint32_t nameAddr = pb[ioNamePtr];
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	DIAG(ExtFS, "PbSetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
-	auto *e = s_volume.findByPath(dirID, name);
+	auto *e = vol->findByPath(dirID, name);
 	if (!e) return kFnfErr;
 
 	auto fi = pbReadFInfo(pb);
-	auto err = s_volume.setFileInfo(e->cnid, fi.type, fi.creator, fi.flags, fi.location, fi.folder);
+	auto err = vol->setFileInfo(e->cnid, fi.type, fi.creator, fi.flags, fi.location, fi.folder);
 	return err;
 }
 
@@ -621,28 +724,30 @@ static OSErr PbSetFileInfo(PBRef pb, bool isHFS)
 */
 static OSErr PbSetCatInfo(PBRef pb, bool isHFS)
 {
-	uint32_t dirID = pbResolveDir(pb, isHFS);
+	OSErr verr;
+	auto *vol = volumeFromPB(pb, isHFS, verr);
+	if (!vol) return verr;
+	uint32_t dirID = pbResolveDir(pb, isHFS, *vol);
 	uint32_t nameAddr = pb[ioNamePtr];
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
 	DIAG(ExtFS, "PbSetCatInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
-	auto *e = s_volume.findByPath(dirID, name);
+	auto *e = vol->findByPath(dirID, name);
 	if (!e) return kFnfErr;
 
 	if (e->isDirectory)
 	{
 		Blob16 dinfo = pb[ioDrUsrWds];
 		Blob16 dxinfo = pb[ioDrFndrInfo];
-		auto err = s_volume.setDirInfo(e->cnid, dinfo, dxinfo);
+		auto err = vol->setDirInfo(e->cnid, dinfo, dxinfo);
 		return err;
 	}
 	else
 	{
 		auto fi = pbReadFInfo(pb);
-		auto err =
-			s_volume.setFileInfo(e->cnid, fi.type, fi.creator, fi.flags, fi.location, fi.folder);
+		auto err = vol->setFileInfo(e->cnid, fi.type, fi.creator, fi.flags, fi.location, fi.folder);
 		return err;
 	}
 }
@@ -650,11 +755,15 @@ static OSErr PbSetCatInfo(PBRef pb, bool isHFS)
 /* PBOpenWD (IM IV-159).  Allocate a WD refnum for ioWDDirID. */
 static OSErr PbOpenWD(PBRef pb)
 {
+	// WDs are scoped to slot 0 for now.
+	auto *vol = s_drives.volume(0);
+	if (!vol) return kNsvErr;
+
 	uint32_t dirID = pb[ioWDDirID];
 	uint32_t procID = pb[ioWDProcID];
 	DIAG(ExtFS, "PbOpenWD dir=%u proc=%u\n", dirID, procID);
 
-	uint32_t wdRef = s_volume.openWD(dirID, procID);
+	uint32_t wdRef = vol->openWD(dirID, procID);
 	pb[ioVRefNum] = static_cast<int16_t>(-(static_cast<int32_t>(wdRef) + 32000));
 	return 0;
 }
@@ -662,11 +771,14 @@ static OSErr PbOpenWD(PBRef pb)
 /* PBCloseWD (IM IV-160).  Release a WD refnum. */
 static OSErr PbCloseWD(PBRef pb)
 {
+	auto *vol = s_drives.volume(0);
+	if (!vol) return kNsvErr;
+
 	int16_t vRefNum = pb[ioVRefNum];
 	auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
 	DIAG(ExtFS, "PbCloseWD vRefNum=%d wdRef=%u\n", vRefNum, wdRef);
 
-	s_volume.closeWD(wdRef);
+	vol->closeWD(wdRef);
 	return 0;
 }
 
@@ -685,45 +797,60 @@ static OSErr PbGetWDInfo(PBRef pb)
 	/* Only handle direct lookup (ioWDIndex == 0) */
 	if (wdIndex != 0) return kNsvErr;
 
-	if (vRefNum == kGuestVRefNum || vRefNum == kGuestDriveNum)
+	// Check if it's a direct vRefNum for any of our volumes
+	int slot = s_drives.slotFromVRefNum(vRefNum);
+	if (slot >= 0 || vRefNum == kGuestDriveNum)
 	{
 		pb[ioWDProcID] = 0;
 		pb[ioWDDirID] = kRootDirID;
 	}
 	else
 	{
+		// Try to resolve WD across all volumes (use slot 0 for now)
+		auto *vol = s_drives.volume(0);
+		if (!vol) return kNsvErr;
 		auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
-		uint32_t dirID = s_volume.wdToDirID(wdRef);
+		uint32_t dirID = vol->wdToDirID(wdRef);
 		if (dirID == 0) return kNsvErr;
-		pb[ioWDProcID] = s_volume.wdToProcID(wdRef);
+		pb[ioWDProcID] = vol->wdToProcID(wdRef);
 		pb[ioWDDirID] = dirID;
 	}
 
 	pb[ioWDVRefNum] = static_cast<int16_t>(kGuestVRefNum);
 
-	/* Write volume name "Shared" to ioNamePtr if set */
+	/* Write volume name to ioNamePtr if set */
 	uint32_t nameAddr = pb[ioNamePtr];
-	if (nameAddr != 0) writePascalString(nameAddr, "Shared");
+	if (nameAddr != 0)
+	{
+		auto name = s_drives.volumeName(0);
+		writePascalString(nameAddr, name.empty() ? std::string("Shared") : std::string(name));
+	}
 
 	return 0;
 }
 
 /* ── Register-based handlers ──────────────────────── */
 
-/* Mount the shared volume (if needed) and return 1 if mounted. */
+/* Return the number of mounted drives. */
 static void RegVersion(uint32_t regParam[], uint16_t &regResult)
 {
-	if (!s_volume.isMounted()) s_volume.mount("shared");
-	regParam[0] = s_volume.isMounted() ? 1 : 0;
+	regParam[0] = static_cast<uint32_t>(s_drives.mountedCount());
 	regResult = 0;
-	DIAG(ExtFS, "version query → %u\n", regParam[0]);
+	DIAG(ExtFS, "version query → %u drives\n", regParam[0]);
 }
 
-/* Return volume statistics: file count, dir count, total bytes. */
+/* Return volume statistics for slot 0 (legacy: file count, dir count, total bytes). */
 static void RegGetVol(uint32_t regParam[], uint16_t &regResult)
 {
+	auto *vol = s_drives.volume(0);
+	if (!vol)
+	{
+		regParam[0] = regParam[1] = regParam[2] = 0;
+		regResult = 0;
+		return;
+	}
 	uint32_t files, dirs, bytes;
-	s_volume.volumeStats(files, dirs, bytes);
+	vol->volumeStats(files, dirs, bytes);
 	regParam[0] = files;
 	regParam[1] = bytes;
 	regParam[2] = dirs;
@@ -739,11 +866,18 @@ static void RegRead(uint32_t regParam[], uint16_t &regResult)
 	uint32_t count = regParam[2];
 	uint32_t guestBuf = regParam[3];
 
-	DIAG(ExtFS, "Read h=%u off=%u cnt=%u\n", handle, offset, count);
+	auto [vol, local] = volumeFromHandle(handle);
+	if (!vol)
+	{
+		regResult = storage::kRfNumErr;
+		return;
+	}
+
+	DIAG(ExtFS, "Read h=%u(s%d l%u) off=%u cnt=%u\n", handle, vol->slot(), local, offset, count);
 
 	std::vector<uint8_t> buf(count);
 	uint32_t got = 0;
-	auto err = s_volume.readFork(handle, offset, buf, got);
+	auto err = vol->readFork(local, offset, buf, got);
 	if (err != kNoErr)
 	{
 		regResult = err;
@@ -761,20 +895,32 @@ static void RegRead(uint32_t regParam[], uint16_t &regResult)
 static void RegClose(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t handle = regParam[0];
-	DIAG(ExtFS, "Close h=%u\n", handle);
-	s_volume.closeFork(handle);
+	auto [vol, local] = volumeFromHandle(handle);
+	if (!vol)
+	{
+		regResult = storage::kRfNumErr;
+		return;
+	}
+	DIAG(ExtFS, "Close h=%u(s%d l%u)\n", handle, vol->slot(), local);
+	vol->closeFork(local);
 	regResult = 0;
 }
 
 /* Look up the dirID and procID for a WD refnum (register path). */
 static void RegGetWDInfo(uint32_t regParam[], uint16_t &regResult)
 {
+	auto *vol = s_drives.volume(0);
+	if (!vol)
+	{
+		regResult = kFnfErr;
+		return;
+	}
 	uint32_t wdRef = regParam[0];
 	DIAG(ExtFS, "GetWDInfo wd=%u\n", wdRef);
-	uint32_t dirID = s_volume.wdToDirID(wdRef);
+	uint32_t dirID = vol->wdToDirID(wdRef);
 	if (dirID != 0)
 	{
-		regParam[0] = s_volume.wdToProcID(wdRef);
+		regParam[0] = vol->wdToProcID(wdRef);
 		regParam[1] = dirID;
 		regResult = 0;
 	}
@@ -787,9 +933,15 @@ static void RegGetWDInfo(uint32_t regParam[], uint16_t &regResult)
 /* Allocate a WD refnum for a directory (register path). */
 static void RegOpenWD(uint32_t regParam[], uint16_t &regResult)
 {
+	auto *vol = s_drives.volume(0);
+	if (!vol)
+	{
+		regResult = kNsvErr;
+		return;
+	}
 	uint32_t dirID = regParam[1];
 	uint32_t procID = regParam[2];
-	uint32_t wdRef = s_volume.openWD(dirID, procID);
+	uint32_t wdRef = vol->openWD(dirID, procID);
 	regParam[0] = wdRef;
 	DIAG(ExtFS, "OpenWD dir=%u proc=%u → wd=%u\n", dirID, procID, wdRef);
 	regResult = 0;
@@ -798,9 +950,15 @@ static void RegOpenWD(uint32_t regParam[], uint16_t &regResult)
 /* Release a WD refnum (register path). */
 static void RegCloseWD(uint32_t regParam[], uint16_t &regResult)
 {
+	auto *vol = s_drives.volume(0);
+	if (!vol)
+	{
+		regResult = kNsvErr;
+		return;
+	}
 	uint32_t wdRef = regParam[0];
 	DIAG(ExtFS, "CloseWD wd=%u\n", wdRef);
-	s_volume.closeWD(wdRef);
+	vol->closeWD(wdRef);
 	regResult = 0;
 }
 
@@ -857,14 +1015,21 @@ static void RegWrite(uint32_t regParam[], uint16_t &regResult)
 	uint32_t count = regParam[2];
 	uint32_t guestBuf = regParam[3];
 
-	DIAG(ExtFS, "Write h=%u off=%u cnt=%u\n", handle, offset, count);
+	auto [vol, local] = volumeFromHandle(handle);
+	if (!vol)
+	{
+		regResult = storage::kRfNumErr;
+		return;
+	}
+
+	DIAG(ExtFS, "Write h=%u(s%d l%u) off=%u cnt=%u\n", handle, vol->slot(), local, offset, count);
 
 	std::vector<uint8_t> data(count);
 	for (uint32_t i = 0; i < count; i++)
 		data[i] = get_vm_byte(guestBuf + i);
 
 	uint32_t written = 0;
-	auto err = s_volume.writeFork(handle, offset, data, written);
+	auto err = vol->writeFork(local, offset, data, written);
 	if (err != kNoErr)
 	{
 		regResult = err;
@@ -880,8 +1045,14 @@ static void RegSetEOF(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t handle = regParam[0];
 	uint32_t newSize = regParam[1];
-	DIAG(ExtFS, "SetEOF h=%u size=%u\n", handle, newSize);
-	auto err = s_volume.setEOF(handle, newSize);
+	auto [vol, local] = volumeFromHandle(handle);
+	if (!vol)
+	{
+		regResult = storage::kRfNumErr;
+		return;
+	}
+	DIAG(ExtFS, "SetEOF h=%u(s%d l%u) size=%u\n", handle, vol->slot(), local, newSize);
+	auto err = vol->setEOF(local, newSize);
 	regResult = err;
 }
 
@@ -981,9 +1152,12 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			regResult = PbGetWDInfo(PBRef{regParam[0]});
 			break;
 		case kPB_SetDefaultVRefNum:
-			s_volume.setDefaultVRefNum(static_cast<int16_t>(regParam[0]));
+		{
+			auto *vol = s_drives.volume(0);
+			if (vol) vol->setDefaultVRefNum(static_cast<int16_t>(regParam[0]));
 			regResult = 0;
 			break;
+		}
 
 		default:
 			regResult = 0xFFFF;
@@ -1002,10 +1176,28 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kPB_CatMove:
 		case kPB_SetFileInfo:
 		case kPB_SetCatInfo:
-			if (!s_volume.validateCatalog())
-				DIAG(ExtFS, "*** CATALOG VALIDATION FAILED after cmd=0x%03x ***\n", cmd);
+			s_drives.forEach(
+				[&](int, storage::HostVolume &vol)
+				{
+					if (!vol.validateCatalog())
+						DIAG(ExtFS,
+							 "*** CATALOG VALIDATION FAILED (slot %d) after cmd=0x%03x ***\n",
+							 vol.slot(), cmd);
+				});
 			break;
 		default:
 			break;
 	}
+}
+
+/* ── Public mount/unmount API ─────────────────────── */
+
+int ExtFSMountDrive(const std::filesystem::path &hostDir)
+{
+	return s_drives.mount(hostDir);
+}
+
+bool ExtFSUnmountDrive(int slot)
+{
+	return s_drives.unmount(slot);
 }
