@@ -12,6 +12,7 @@
 #pragma once
 
 #include "storage/appledouble.h"
+#include "storage/drive_manager.h"
 
 #include <array>
 #include <cstdint>
@@ -129,11 +130,16 @@ public:
 	static constexpr uint32_t kRootParentID = 1; // HFS convention: root's parent
 	static constexpr uint32_t kRootDirID = 2;	 // HFS convention: root directory
 
-	/* Guest-side volume identifiers.  The INIT uses these when
-	   building the VCB and drive queue entry.  They must match
-	   the #defines in macsrc/shareddrive/init.c. */
-	static constexpr int16_t kGuestVRefNum = -32000;
-	static constexpr int16_t kGuestDriveNum = 8;
+	/* Per-instance volume identity.  setSlot() is called by
+	   DriveManager after construction to assign the slot index,
+	   which determines vRefNum and driveNum. */
+	void setSlot(int slot);
+	int slot() const;
+	int16_t guestVRefNum() const;  // -(kBaseVRefNum + slot_)
+	int16_t guestDriveNum() const; // kBaseDriveNum + slot_
+
+	// Close all open fork handles (used during unmount).
+	void closeAllForks();
 
 	/* Resolve a guest (vRefNum, dirID) pair to a catalog dirID.
 	   If rawDirID is non-zero, returns it directly.
@@ -301,7 +307,8 @@ private:
 	};
 	std::unordered_map<uint32_t, WDEntry> wdTable_; // wdRef → WDEntry
 	uint32_t nextWD_ = 1;
-	int16_t defaultVRefNum_ = kGuestVRefNum; // current default from _SetVol
+	int slot_ = 0;
+	int16_t defaultVRefNum_ = -static_cast<int16_t>(kBaseVRefNum); // current default from _SetVol
 
 	mutable TextStats textStats_; // mutable: updated by const-ish read paths
 

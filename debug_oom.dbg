@@ -1,0 +1,6 @@
+# Diagnose out-of-memory on volume open
+# Trace WD operations, volume operations, and memory allocation
+trace traps OpenWD CloseWD GetWDInfo GetVol SetVol GetVolInfo HFSDispatch Open OpenRF NewPtr NewHandle MemError Alert StopAlert
+break StopAlert
+break Alert
+continue

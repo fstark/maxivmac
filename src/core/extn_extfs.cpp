@@ -16,6 +16,7 @@
 #include "core/machine.h"
 #include "platform/platform.h"
 #include "storage/host_volume.h"
+#include "storage/drive_manager.h"
 
 #include <array>
 #include <cstdint>
@@ -50,8 +51,8 @@ static storage::HostVolume s_volume;
 
 static constexpr uint32_t kRootParentID = storage::HostVolume::kRootParentID;
 static constexpr uint32_t kRootDirID = storage::HostVolume::kRootDirID;
-static constexpr int16_t kGuestVRefNum = storage::HostVolume::kGuestVRefNum;
-static constexpr int16_t kGuestDriveNum = storage::HostVolume::kGuestDriveNum;
+static constexpr int16_t kGuestVRefNum = -static_cast<int16_t>(storage::kBaseVRefNum);
+static constexpr int16_t kGuestDriveNum = storage::kBaseDriveNum;
 
 /* ── Mac OS result codes ──────────────────────────── */
 /*

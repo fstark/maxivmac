@@ -53,6 +53,42 @@ bool HostVolume::isMounted() const
 	return mounted_;
 }
 
+/* ── Slot identity ────────────────────────────────── */
+
+void HostVolume::setSlot(int slot)
+{
+	slot_ = slot;
+	defaultVRefNum_ = guestVRefNum();
+}
+
+int HostVolume::slot() const
+{
+	return slot_;
+}
+
+int16_t HostVolume::guestVRefNum() const
+{
+	return static_cast<int16_t>(-(kBaseVRefNum + slot_));
+}
+
+int16_t HostVolume::guestDriveNum() const
+{
+	return static_cast<int16_t>(kBaseDriveNum + slot_);
+}
+
+void HostVolume::closeAllForks()
+{
+	for (auto &[handle, of] : openForks_)
+	{
+		if (of.fp)
+		{
+			std::fclose(of.fp);
+			of.fp = nullptr;
+		}
+	}
+	openForks_.clear();
+}
+
 /* ── Catalog queries ──────────────────────────────── */
 
 const CatalogEntry *HostVolume::findByCNID(uint32_t cnid) const
@@ -667,9 +703,9 @@ uint32_t HostVolume::resolveDir(int16_t vRefNum, uint32_t rawDirID) const
 	/* Raw volume ref or drive number with dirID=0: if the user has
 	   a non-root default WD, substitute it so that apps passing the
 	   volume ref without a dirID land in the current directory. */
-	if (vRefNum == kGuestVRefNum || vRefNum == kGuestDriveNum)
+	if (vRefNum == guestVRefNum() || vRefNum == guestDriveNum())
 	{
-		if (defaultVRefNum_ != kGuestVRefNum && defaultVRefNum_ != kGuestDriveNum)
+		if (defaultVRefNum_ != guestVRefNum() && defaultVRefNum_ != guestDriveNum())
 			vRefNum = defaultVRefNum_;
 		else
 			return kRootDirID;

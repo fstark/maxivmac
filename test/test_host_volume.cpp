@@ -1160,3 +1160,37 @@ TEST_CASE("HostVolume: resolveDir with WD open close cycle")
 
 	vol.closeWD(wd);
 }
+
+TEST_CASE("HostVolume: slot identity")
+{
+	storage::HostVolume vol;
+	vol.setSlot(3);
+	CHECK(vol.slot() == 3);
+	CHECK(vol.guestVRefNum() == -32003);
+	CHECK(vol.guestDriveNum() == 11);
+}
+
+TEST_CASE("HostVolume: slot zero matches legacy constants")
+{
+	storage::HostVolume vol;
+	vol.setSlot(0);
+	CHECK(vol.guestVRefNum() == -32000);
+	CHECK(vol.guestDriveNum() == 8);
+}
+
+TEST_CASE("HostVolume: closeAllForks")
+{
+	TempDir td;
+	writeFile(td.path / "test.txt", "hello");
+	storage::HostVolume vol;
+	vol.mount(td.path);
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "test.txt");
+	REQUIRE(e != nullptr);
+	uint32_t size = 0;
+	storage::OSErr err;
+	uint32_t h = vol.openFork(e->cnid, storage::ForkType::Data, size, err);
+	CHECK(h != 0);
+	vol.closeAllForks();
+	// After closeAllForks, the handle map should be empty — closing again is a no-op
+	vol.closeFork(h);
+}
