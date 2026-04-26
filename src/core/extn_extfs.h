@@ -17,3 +17,7 @@ int ExtFSMountDrive(const std::filesystem::path &hostDir);
 // Unmount a shared drive by slot.  Closes all open forks.
 // Returns false if the slot was already empty.
 bool ExtFSUnmountDrive(int slot);
+
+// Print all mounted shared drives to a callback.
+// Callback: void(const char *line)
+void ExtFSDriveList(void (*printFn)(void *ctx, const char *line), void *ctx);

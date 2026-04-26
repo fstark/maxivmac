@@ -54,6 +54,7 @@ void CmdBacktrace(Debugger &dbg, const std::vector<Token> &args);
 void CmdHelp(Debugger &dbg, const std::vector<Token> &args);
 void CmdQuit(Debugger &dbg, const std::vector<Token> &args);
 void CmdSource(Debugger &dbg, const std::vector<Token> &args);
+void CmdDrive(Debugger &dbg, const std::vector<Token> &args);
 
 /* ── Command table ──────────────────────────────────── */
 
@@ -124,6 +125,10 @@ static CmdEntry s_commands[] = {
 	{"source", "so", CmdSource, "Execute commands from a file",
 	 "source <path>\n  Read and execute debugger commands from a file.\n"},
 	{"quit", "q", CmdQuit, "Quit emulator", "quit\n  Exit the emulator immediately.\n"},
+	{"drive", "", CmdDrive, "Mount/unmount shared drives",
+	 "drive mount <path>\n  Mount a host directory as a new shared drive.\n"
+	 "drive unmount <slot>\n  Unmount and release shared drive by slot number.\n"
+	 "drive list\n  Show all mounted shared drives.\n"},
 };
 
 static constexpr int kNumCommands = sizeof(s_commands) / sizeof(s_commands[0]);

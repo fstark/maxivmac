@@ -84,6 +84,7 @@ set(MINIVMAC_SOURCES
     src/debugger/cmd_diag.cpp
     src/debugger/cmd_info.cpp
     src/debugger/cmd_help.cpp
+    src/debugger/cmd_drive.cpp
     src/debugger/symbols.cpp
     src/debugger/expr.cpp
 
