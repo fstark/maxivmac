@@ -21,6 +21,24 @@
 namespace storage
 {
 
+/* ── Handle encoding ──────────────────────────────── */
+
+// Encode a slot index into the upper 4 bits of a file handle.
+inline constexpr uint32_t EncodeHandle(int slot, uint32_t localHandle)
+{
+	return (static_cast<uint32_t>(slot) << 28) | (localHandle & 0x0FFF'FFFF);
+}
+
+inline constexpr int SlotFromHandle(uint32_t handle)
+{
+	return static_cast<int>(handle >> 28);
+}
+
+inline constexpr uint32_t LocalHandle(uint32_t handle)
+{
+	return handle & 0x0FFF'FFFF;
+}
+
 class DriveManager
 {
 public:
@@ -68,6 +86,13 @@ public:
 	// Check whether a new drive has been mounted and is pending
 	// guest discovery.  Returns the slot index, or -1 if none.
 	int popPendingMount();
+
+	// Open a fork on a specific slot, encoding the slot in the handle.
+	uint32_t openFork(int slot, uint32_t cnid, ForkType fork, uint32_t &outSize, OSErr &errOut,
+					  uint8_t perm = 0);
+
+	// Decode a handle into (HostVolume*, localHandle).
+	std::pair<HostVolume *, uint32_t> resolveHandle(uint32_t handle);
 
 	// Queue a drive for later guest discovery.
 	void queuePendingMount(int slot);

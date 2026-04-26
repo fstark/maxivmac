@@ -139,6 +139,30 @@ int DriveManager::openForkCount(int slot) const
 	return v ? v->openForkCount() : 0;
 }
 
+/* ── Fork handle encoding ─────────────────────────── */
+
+uint32_t DriveManager::openFork(int slot, uint32_t cnid, ForkType fork, uint32_t &outSize,
+								OSErr &errOut, uint8_t perm)
+{
+	auto *vol = volume(slot);
+	if (!vol)
+	{
+		errOut = kNsvErr;
+		return 0;
+	}
+	uint32_t local = vol->openFork(cnid, fork, outSize, errOut, perm);
+	if (local == 0) return 0;
+	return EncodeHandle(slot, local);
+}
+
+std::pair<HostVolume *, uint32_t> DriveManager::resolveHandle(uint32_t handle)
+{
+	int slot = SlotFromHandle(handle);
+	uint32_t local = LocalHandle(handle);
+	auto *vol = volume(slot);
+	return {vol, local};
+}
+
 /* ── Pending mount queue ──────────────────────────── */
 
 int DriveManager::popPendingMount()

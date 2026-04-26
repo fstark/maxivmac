@@ -142,3 +142,12 @@ TEST_CASE("DriveManager: PendingQueue")
 	CHECK(dm.popPendingMount() == s1);
 	CHECK(dm.popPendingMount() == -1);
 }
+
+TEST_CASE("DriveManager: HandleEncoding")
+{
+	CHECK(storage::SlotFromHandle(storage::EncodeHandle(3, 42)) == 3);
+	CHECK(storage::LocalHandle(storage::EncodeHandle(3, 42)) == 42);
+	CHECK(storage::EncodeHandle(0, 1) == 1); // slot 0 is pass-through
+	CHECK(storage::SlotFromHandle(0x70000005) == 7);
+	CHECK(storage::LocalHandle(0x70000005) == 5);
+}
