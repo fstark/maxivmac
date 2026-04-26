@@ -45,6 +45,8 @@ static constexpr uint16_t kExtFSLogTrap = 0x20F;
 static constexpr uint16_t kExtFSWrite = 0x211;
 static constexpr uint16_t kExtFSFatal = 0x214;
 static constexpr uint16_t kExtFSSetEOF = 0x218;
+static constexpr uint16_t kExtFSPollMount = 0x219;
+static constexpr uint16_t kExtFSGetVolName = 0x21A;
 
 /* ── DriveManager instance ─────────────────────────── */
 
@@ -1056,6 +1058,40 @@ static void RegSetEOF(uint32_t regParam[], uint16_t &regResult)
 	regResult = err;
 }
 
+/* Guest polls for newly mounted drives.  Returns slot info or 0xFFFFFFFF. */
+static void RegPollMount(uint32_t regParam[], uint16_t &regResult)
+{
+	int slot = s_drives.popPendingMount();
+	if (slot < 0)
+	{
+		regParam[0] = 0xFFFFFFFF;
+		regResult = 0;
+		return;
+	}
+	auto *vol = s_drives.volume(slot);
+	regParam[0] = static_cast<uint32_t>(slot);
+	regParam[1] = static_cast<uint32_t>(vol->guestVRefNum());
+	regParam[2] = static_cast<uint32_t>(vol->guestDriveNum());
+	DIAG(ExtFS, "PollMount → slot %d vRef=%d drv=%d\n", slot, vol->guestVRefNum(),
+		 vol->guestDriveNum());
+	regResult = 0;
+}
+
+/* Return the Mac-visible volume name for a slot (Pascal string to guest buffer). */
+static void RegGetVolName(uint32_t regParam[], uint16_t &regResult)
+{
+	int slot = static_cast<int>(regParam[0]);
+	uint32_t guestBuf = regParam[1];
+	auto name = s_drives.volumeName(slot);
+	if (name.empty())
+	{
+		regResult = storage::kNsvErr;
+		return;
+	}
+	if (guestBuf != 0) writePascalString(guestBuf, std::string(name));
+	regResult = 0;
+}
+
 /* ── Dispatch ─────────────────────────────────────── */
 
 /*
@@ -1106,6 +1142,12 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			break;
 		case kExtFSSetEOF:
 			RegSetEOF(regParam, regResult);
+			break;
+		case kExtFSPollMount:
+			RegPollMount(regParam, regResult);
+			break;
+		case kExtFSGetVolName:
+			RegGetVolName(regParam, regResult);
 			break;
 
 		/* PB-based commands */
