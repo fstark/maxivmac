@@ -29,5 +29,3 @@ trace traps +OpenResFile +CloseResFile +CreateResFile +UseResFile +CurResFile +U
 
 #break Alert
 
-
-
