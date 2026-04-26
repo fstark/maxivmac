@@ -23,6 +23,8 @@
 #include "core/extn_extfs.h"
 #include "core/diag.h"
 #include "devices/video.h"
+
+#include <filesystem>
 #include "devices/scc.h"
 #include "devices/serial_factory.h"
 #include "platform/sdl_sound.h"
@@ -458,7 +460,10 @@ void EmulatorShell::dispatchEvent(const PlatformEvent &evt)
 		case PlatformEvent::Type::FileDrop:
 			if (evt.filePath)
 			{
-				(void)Sony_Insert1a_impl(const_cast<char *>(evt.filePath), false);
+				if (std::filesystem::is_directory(evt.filePath))
+					ExtFSMountDrive(evt.filePath);
+				else
+					(void)Sony_Insert1a_impl(const_cast<char *>(evt.filePath), false);
 			}
 			break;
 		default:
