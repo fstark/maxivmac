@@ -524,10 +524,22 @@ static Boolean IsOurFCB(short refNum)
 {
 	Globals *g = get_globals();
 	Ptr fcb;
+	Ptr fcbVCB;
 	if (g == NULL) return false;
 	fcb = GetFCB(refNum);
-	if (fcb == NULL) return false;
-	return IsOurVCB(*(Ptr *)(fcb + kFCBVPtr), g);
+	if (fcb == NULL) {
+		dbg_log1(g->regBase, "IsOurFCB(%ld): fcb==NULL", (long)refNum);
+		return false;
+	}
+	fcbVCB = *(Ptr *)(fcb + kFCBVPtr);
+	if (!IsOurVCB(fcbVCB, g)) {
+		dbg_log2(g->regBase, "IsOurFCB(%ld): VCBPtr=%lx NOT ours",
+			(long)refNum, (long)fcbVCB);
+		dbg_log2(g->regBase, "  g->vcb[0]=%lx driveCount=%ld",
+			(long)g->vcb[0], (long)g->driveCount);
+		return false;
+	}
+	return true;
 }
 
 static Boolean IsOurVolume(short vRefNum)
@@ -1346,8 +1358,11 @@ static short DispatchFromTable(TrapEntry *table, short key,
 
 		/* Ownership check */
 		if (e->refBased) {
-			if (!IsOurFCB(*(short *)(pb + pb_ioRefNum)))
+			if (!IsOurFCB(*(short *)(pb + pb_ioRefNum))) {
+				log_trap(g->regBase, trapWord, pb,
+					LOG_PASSTHRU, 0, isHFS ? LOG_F_HFS : 0);
 				return 1;
+			}
 		} else {
 			/* GetVolInfo and SetVol do their own ownership checks
 			   internally and return kPassThrough if not ours */
@@ -1672,6 +1687,9 @@ static void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
 
 	if (slot < 0 || slot >= kMaxDrives) return;
 
+	/* Guard against double-mount: if this slot already has a VCB, skip */
+	if (g->vcb[slot] != NULL) return;
+
 	/* Get volume name from host */
 	reg_set(g->regBase, 0, (unsigned long)slot);
 	reg_set(g->regBase, 1, (unsigned long)nameBuf);
@@ -1783,11 +1801,9 @@ void FilterEntry(void)
 void main(void)
 {
 	char *regBase;
-	unsigned long driveCount;
 	Globals *g;
 	Handle self;
 	Ptr myINITPtr;
-	short i;
 
 	asm { move.l a0, myINITPtr }
 	RememberA0();
@@ -1799,15 +1815,13 @@ void main(void)
 	dbg_log1(regBase, "SharedDrive INIT: regBase=%lx",
 		(unsigned long)regBase);
 
-	/* Check version — now returns mounted drive count */
+	/* Check protocol version — non-zero means host is alive */
 	reg_command(regBase, 0x0200);
-	driveCount = reg_get(regBase, 0);
-	if (driveCount < 1) {
-		dbg_log(regBase, "SharedDrive: no drives mounted (count=0)");
+	if (reg_get(regBase, 0) == 0) {
+		dbg_log(regBase, "SharedDrive: host not ready (version=0)");
 		goto bail;
 	}
-	if (driveCount > kMaxDrives) driveCount = kMaxDrives;
-	dbg_log1(regBase, "SharedDrive INIT: driveCount=%ld", driveCount);
+	dbg_log1(regBase, "SharedDrive INIT: version=%ld", reg_get(regBase, 0));
 
 	/* Get volume stats (from first drive, for VCB fill) */
 	reg_command(regBase, 0x0201);
@@ -1819,7 +1833,7 @@ void main(void)
 		goto bail;
 	}
 	g->regBase = regBase;
-	g->driveCount = (short)driveCount;
+	g->driveCount = 0;
 	g->volFileCount = reg_get(regBase, 0);
 	g->volTotalBytes = reg_get(regBase, 1);
 
@@ -1842,11 +1856,26 @@ void main(void)
 		HNoPurge(self);
 	}
 
-	/* Allocate VCBs and DQEs for each mounted drive */
-	for (i = 0; i < (short)driveCount; i++) {
-		short vRefNum = -(kBaseVRefNum + i);
-		short driveNum = kBaseDriveNum + i;
-		MountNewDrive(g, i, vRefNum, driveNum);
+	/* Drain the pending-mount queue — single delivery path for all drives,
+	   both at boot and at runtime (via jGNEFilter).  The host queues each
+	   drive mounted before the INIT runs; we pull them all now. */
+	{
+		unsigned long slot;
+		reg_command(regBase, kExtFSPollMount);
+		slot = reg_get(regBase, 0);
+		while (slot != 0xFFFFFFFFUL) {
+			short s = (short)slot;
+			short vRefNum = (short)reg_get(regBase, 1);
+			short driveNum = (short)reg_get(regBase, 2);
+			MountNewDrive(g, s, vRefNum, driveNum);
+			reg_command(regBase, kExtFSPollMount);
+			slot = reg_get(regBase, 0);
+		}
+	}
+
+	if (g->driveCount < 1) {
+		dbg_log(regBase, "SharedDrive: no drives in queue");
+		goto bail;
 	}
 
 	/* Create permanent root WD for slot 0 */

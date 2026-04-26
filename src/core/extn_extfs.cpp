@@ -836,9 +836,12 @@ static OSErr PbGetWDInfo(PBRef pb)
 /* Return the number of mounted drives. */
 static void RegVersion(uint32_t regParam[], uint16_t &regResult)
 {
-	regParam[0] = static_cast<uint32_t>(s_drives.mountedCount());
+	/* Protocol version — the guest checks this to decide whether to proceed.
+	   Zero means no shared drive support; non-zero means "alive".
+	   All drive delivery happens via PollMount; the version is not a count. */
+	regParam[0] = (s_drives.mountedCount() > 0) ? 2u : 0u;
 	regResult = 0;
-	DIAG(ExtFS, "version query → %u drives\n", regParam[0]);
+	DIAG(ExtFS, "version query → %u\n", regParam[0]);
 }
 
 /* Return volume statistics for slot 0 (legacy: file count, dir count, total bytes). */
