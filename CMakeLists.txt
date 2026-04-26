@@ -57,6 +57,7 @@ set(MINIVMAC_SOURCES
     src/storage/filename_encoding.cpp
     src/storage/text_convert.cpp
     src/storage/host_volume.cpp
+    src/storage/drive_manager.cpp
 
     # Language / type system
     src/lang/type_registry.cpp
@@ -286,9 +287,11 @@ add_executable(tests
     src/storage/filename_encoding.cpp
     src/storage/text_convert.cpp
     src/storage/host_volume.cpp
+    src/storage/drive_manager.cpp
     src/core/diag.cpp
     src/lang/type_registry.cpp
     src/lang/global_registry.cpp
+    test/test_drive_manager.cpp
     test/test_types.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")

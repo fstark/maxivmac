@@ -12,7 +12,7 @@
 #pragma once
 
 #include "storage/appledouble.h"
-#include "storage/drive_manager.h"
+#include "storage/drive_constants.h"
 
 #include <array>
 #include <cstdint>
@@ -140,6 +140,12 @@ public:
 
 	// Close all open fork handles (used during unmount).
 	void closeAllForks();
+
+	// Host directory backing this volume.
+	const std::filesystem::path &rootPath() const { return rootPath_; }
+
+	// Number of currently open fork handles.
+	int openForkCount() const { return static_cast<int>(openForks_.size()); }
 
 	/* Resolve a guest (vRefNum, dirID) pair to a catalog dirID.
 	   If rawDirID is non-zero, returns it directly.
