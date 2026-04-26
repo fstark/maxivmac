@@ -206,6 +206,7 @@ void PrintUsage(const char *progname)
 			"  --headless       Run without GUI (for testing/automation)\n"
 			"  --silent         Disable audio output\n"
 			"  --trace-traps    Enable hierarchical A-line trap tracing to stderr\n"
+			"  --diag=LIST      Enable diagnostic traces (comma-separated: extfs,guest,sd,...)\n"
 			"  --debugger       Start with debugger prompt (paused at first instruction)\n"
 			"  --dbg-script=FILE  Execute .dbg script at debugger startup (repeatable)\n"
 			"  --debugserver[=PATH] Start debug server on Unix socket\n"
@@ -264,6 +265,11 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strcmp(arg, "--trace-traps") == 0)
 		{
 			lc.traceTraps = true;
+			continue;
+		}
+		if (strncmp(arg, "--diag=", 7) == 0)
+		{
+			lc.diagSubsystems = arg + 7;
 			continue;
 		}
 		if (strcmp(arg, "--debugger") == 0)

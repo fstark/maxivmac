@@ -41,15 +41,9 @@ static std::unique_ptr<SerialBackend> s_serialBackend[2];
 #define SCC_dolog 0
 #define SCC_TrackMore 0
 
-/* Serial backend byte-level tracing.  Set to 1 to see TX/RX/poll on stderr. */
-#define SER_dolog 0
+#include "core/diag.h"
 
-#if SER_dolog
-#include <cstdio>
-#define SER_LOG(fmt, ...) std::fprintf(stderr, "[SER] " fmt "\n", ##__VA_ARGS__)
-#else
-#define SER_LOG(fmt, ...) ((void)0)
-#endif
+#define SER_LOG(fmt, ...) DIAG(SER, fmt "\n", ##__VA_ARGS__)
 
 #if EmLocalTalk
 

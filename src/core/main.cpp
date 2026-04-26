@@ -23,6 +23,7 @@
 
 
 #include "core/main.h"
+#include "core/diag.h"
 #include "core/config_loader.h"
 #include "core/machine_obj.h"
 #include "core/machine_config.h"
@@ -674,6 +675,33 @@ bool ProgramMain()
 	{
 		g_tracer.addAllTraps();
 		g_tracer.enable(true);
+	}
+
+	/* Apply --diag= subsystem flags */
+	if (!s_launchConfig.diagSubsystems.empty())
+	{
+		if (s_launchConfig.diagSubsystems == "all")
+		{
+			Diag().setAll(true);
+		}
+		else
+		{
+			/* Parse comma-separated list */
+			std::string list = s_launchConfig.diagSubsystems;
+			size_t pos = 0;
+			while (pos < list.size())
+			{
+				size_t comma = list.find(',', pos);
+				if (comma == std::string::npos) comma = list.size();
+				std::string name = list.substr(pos, comma - pos);
+				DiagSubsystem s;
+				if (DiagConfig::fromName(name.c_str(), s))
+					Diag().set(s, true);
+				else
+					fprintf(stderr, "Warning: unknown diag subsystem '%s'\n", name.c_str());
+				pos = comma + 1;
+			}
+		}
 	}
 
 	/* Execute startup debug scripts (after registries so trap names resolve) */

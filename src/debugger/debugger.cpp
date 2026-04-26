@@ -49,6 +49,7 @@ void CmdDisas(Debugger &dbg, const std::vector<Token> &args);
 void CmdTrace(Debugger &dbg, const std::vector<Token> &args);
 void CmdInfo(Debugger &dbg, const std::vector<Token> &args);
 void CmdLog(Debugger &dbg, const std::vector<Token> &args);
+void CmdDiag(Debugger &dbg, const std::vector<Token> &args);
 void CmdBacktrace(Debugger &dbg, const std::vector<Token> &args);
 void CmdHelp(Debugger &dbg, const std::vector<Token> &args);
 void CmdQuit(Debugger &dbg, const std::vector<Token> &args);
@@ -105,6 +106,9 @@ static CmdEntry s_commands[] = {
 	 "  Default range: 64 bytes from start.\n"},
 	{"trace", "", CmdTrace, "Control tracing",
 	 "trace <traps|insn|io> <on|off|names...>\n  Enable/disable trace output.\n"},
+	{"diag", "", CmdDiag, "Control diagnostic traces",
+	 "diag [<subsystem> <on|off>]\n  Toggle subsystem traces. 'diag' lists all.\n"
+	 "  diag all on/off — toggle everything.\n"},
 	{"info", "i", CmdInfo, "Show info about debugger state",
 	 "info <break|reg|traps|globals|symbol|insn>\n  Show various debugger information.\n"},
 	{"log", "", CmdLog, "Show guest log / log to file",

@@ -10,15 +10,10 @@
 #include <vector>
 
 /* -----------------------------------------------------------------------
-   LOG — SLP subsystem (SLIP framing)
+   LOG — SLIP subsystem (SLIP framing)
    ----------------------------------------------------------------------- */
-#define SLP_dolog 0
-
-#if SLP_dolog
-#define SLP_LOG(fmt, ...) std::fprintf(stderr, "[SLP] " fmt "\n", ##__VA_ARGS__)
-#else
-#define SLP_LOG(fmt, ...) ((void)0)
-#endif
+#include "core/diag.h"
+#define SLP_LOG(fmt, ...) DIAG(SLIP, fmt "\n", ##__VA_ARGS__)
 
 namespace slip
 {

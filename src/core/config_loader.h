@@ -53,6 +53,7 @@ struct LaunchConfig
 	bool debugger = false;
 	std::string debugServerPath;		 // empty = not enabled, "auto" = default path
 	std::vector<std::string> dbgScripts; // --dbg-script=FILE (repeatable)
+	std::string diagSubsystems;			 // --diag=extfs,guest,...
 };
 
 // Parse command-line arguments into a LaunchConfig.

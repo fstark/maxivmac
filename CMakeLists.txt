@@ -49,6 +49,7 @@ set(MINIVMAC_SOURCES
     src/core/extn_clip.cpp
     src/core/extn_extfs.cpp
     src/core/extfs_log.cpp
+    src/core/diag.cpp
     src/core/state_recorder.cpp
 
     # Storage
@@ -79,6 +80,7 @@ set(MINIVMAC_SOURCES
     src/debugger/cmd_break.cpp
     src/debugger/cmd_memory.cpp
     src/debugger/cmd_trace.cpp
+    src/debugger/cmd_diag.cpp
     src/debugger/cmd_info.cpp
     src/debugger/cmd_help.cpp
     src/debugger/symbols.cpp
@@ -284,6 +286,7 @@ add_executable(tests
     src/storage/filename_encoding.cpp
     src/storage/text_convert.cpp
     src/storage/host_volume.cpp
+    src/core/diag.cpp
     src/lang/type_registry.cpp
     src/lang/global_registry.cpp
     test/test_types.cpp

@@ -8,6 +8,8 @@
 
 #include <cstdint>
 #include <cstring>
+#include <cstdarg>
+#include <cstdio>
 
 /* ── Guest memory stub ────────────────────────────────── */
 
@@ -79,4 +81,14 @@ extern "C++"
 		return 0;
 	}
 	void MacRoman2UniCodeData(unsigned char *, unsigned int, char *) {}
+}
+
+/* ── Debug output stub ────────────────────────────────── */
+
+void dbg_printf(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	std::vfprintf(stderr, fmt, ap);
+	va_end(ap);
 }

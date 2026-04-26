@@ -17,13 +17,8 @@
 /* -----------------------------------------------------------------------
    LOG — NET subsystem (libslirp lifecycle)
    ----------------------------------------------------------------------- */
-#define NET_dolog 0
-
-#if NET_dolog
-#define NET_LOG(fmt, ...) std::fprintf(stderr, "[NET] " fmt "\n", ##__VA_ARGS__)
-#else
-#define NET_LOG(fmt, ...) ((void)0)
-#endif
+#include "core/diag.h"
+#define NET_LOG(fmt, ...) DIAG(NET, fmt "\n", ##__VA_ARGS__)
 
 /* -----------------------------------------------------------------------
    libslirp C callbacks

@@ -30,13 +30,9 @@
 	REPORT_ABNORMAL_ID unused 0x0A08 - 0x0AFF
 */
 
-#define VID_dolog 0
+#include "core/diag.h"
 
-#if VID_dolog
-#define VID_LOG(fmt, ...) std::fprintf(stderr, "[VID] " fmt "\n", ##__VA_ARGS__)
-#else
-#define VID_LOG(fmt, ...) ((void)0)
-#endif
+#define VID_LOG(fmt, ...) DIAG(VID, fmt "\n", ##__VA_ARGS__)
 
 /* Maximum number of modes (depth 0..5) */
 #define kMaxModes 6
@@ -357,7 +353,6 @@ bool VideoDevice::init()
 	if (s_preferredDepth < 0) s_preferredDepth = bootDepth;
 	if (s_preferredDisplayModeID < 0) s_preferredDisplayModeID = (int)bootRes->displayModeID;
 
-#if VID_dolog
 	dbglog_writelnNum("VideoDevice::init bootResMaxDepth", bootResMaxDepth);
 	dbglog_writelnNum("  bootRes width", bootRes->width);
 	dbglog_writelnNum("  bootRes height", bootRes->height);
@@ -365,7 +360,6 @@ bool VideoDevice::init()
 	dbglog_writelnNum("  numResolutions", s_numResolutions);
 	dbglog_writelnNum("  vidROMSize", cfg.vidROMSize);
 	dbglog_writelnNum("  vidMemSize", cfg.vidMemSize);
-#endif
 	VID_LOG("init: boot=%ux%u bootDepth=%d bootResMaxDepth=%d vidMem=%u numRes=%d", bootRes->width,
 			bootRes->height, bootDepth, bootResMaxDepth, cfg.vidMemSize, s_numResolutions);
 	for (int ri = 0; ri < s_numResolutions; ri++)
@@ -485,10 +479,8 @@ bool VideoDevice::init()
 
 	/* --- Pad + trailer --- */
 	uint32_t usedSoFar = (uint32_t)w.pos() + 20;
-#if VID_dolog
 	dbglog_writelnNum("  ROM used bytes", (long)usedSoFar);
 	dbglog_writelnNum("  ROM resolutions", s_numResolutions);
-#endif
 	if (usedSoFar > cfg.vidROMSize)
 	{
 		REPORT_ABNORMAL_ID(AbnormalID::kVIDEO_vidROMSize_too_small, "vidROMSize too small");
@@ -773,30 +765,21 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 	switch (get_vm_word(p + EXTN_DAT_COMMND))
 	{
 		case kCmndVersion:
-#if VID_dolog
 			dbglog_WriteNote("Video_Access kCmndVersion");
-#endif
 			put_vm_word(p + EXTN_DAT_VERSION, 1);
 			result = tMacErr::noErr;
 			break;
 		case kCmndVideoGetIntEnbl:
-#if VID_dolog
 			dbglog_WriteNote("Video_Access kCmndVideoGetIntEnbl");
-#endif
 			put_vm_word(p + 8, VID_VBL_INT_UNENBL ? 0 : 1);
 			result = tMacErr::noErr;
 			break;
 		case kCmndVideoSetIntEnbl:
-#if VID_dolog
 			dbglog_WriteNote("Video_Access kCmndVideoSetIntEnbl");
-#endif
 			g_wires.set(Wire_VBLintunenbl, (0 == get_vm_word(p + 8)) ? 1 : 0);
 			result = tMacErr::noErr;
 			break;
 		case kCmndVideoClearInt:
-#if VID_dolog && 0 /* frequent */
-			dbglog_WriteNote("Video_Access kCmndVideoClearInt");
-#endif
 			g_wires.set(Wire_VBLinterrupt, 1);
 			result = tMacErr::noErr;
 			break;
@@ -810,10 +793,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 			switch (csCode)
 			{
 				case 0: /* VidReset */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, VidReset");
 					dbglog_writelnNum("  returning mode", Vid_GetMode());
-#endif
 					VID_LOG("VidReset → mode=0x%02X", Vid_GetMode());
 					put_vm_word(csParam + VDPageInfo_csMode, Vid_GetMode());
 					put_vm_word(csParam + VDPageInfo_csPage, 0);
@@ -821,17 +802,13 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					result = tMacErr::noErr;
 					break;
 				case 1: /* KillIO */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, KillIO");
-#endif
 					result = tMacErr::noErr;
 					break;
 				case 2: /* SetVidMode */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, "
 									 "SetVidMode");
 					dbglog_writelnNum("  requested mode", get_vm_word(csParam + VDPageInfo_csMode));
-#endif
 					if (0 != get_vm_word(csParam + VDPageInfo_csPage))
 					{
 						REPORT_ABNORMAL_ID(AbnormalID::kVIDEO_SetVidMode_not_page_0,
@@ -846,10 +823,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 3: /* SetEntries */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, "
 									 "SetEntries");
-#endif
 					{
 						int cs = clutSizeForDepth(s_currentDepth);
 						if (s_currentDepth > 0 && s_currentDepth < 4)
@@ -933,25 +908,19 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 4: /* SetGamma */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, SetGamma");
-#endif
 					result = tMacErr::noErr;
 					break;
 				case 5: /* GrayScreen */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, "
 									 "GrayScreen");
-#endif
 					{
 						FillScreenWithGrayPattern();
 						result = tMacErr::noErr;
 					}
 					break;
 				case 6: /* SetGray */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, SetGray");
-#endif
 					{
 						uint8_t csMode = get_vm_byte(csParam + VDPageInfo_csMode);
 
@@ -960,10 +929,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 9: /* SetDefaultMode */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, "
 									 "SetDefaultMode");
-#endif
 					{
 						uint16_t mode = get_vm_word(csParam + VDSwitchInfo_csMode);
 						int depth = mode - 0x80;
@@ -972,19 +939,15 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 10: /* SwitchMode (Display Manager 2.0) */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, "
 									 "SwitchMode");
-#endif
 					{
 						uint16_t mode = get_vm_word(csParam + VDSwitchInfo_csMode);
 						uint32_t modeID = get_vm_long(csParam + VDSwitchInfo_csData);
 						uint16_t page = get_vm_word(csParam + VDSwitchInfo_csPage);
-#if VID_dolog
 						dbglog_writelnNum("  mode", mode);
 						dbglog_writelnNum("  displayModeID", modeID);
 						dbglog_writelnNum("  page", page);
-#endif
 						VID_LOG("SwitchMode mode=0x%02X modeID=%u page=%u", mode, modeID, page);
 						/* Write current base addr in case we fail */
 						put_vm_long(csParam + VDSwitchInfo_csBaseAddr, VID_BASE_ADDR);
@@ -1071,10 +1034,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 16: /* SavePreferredConfiguration */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoControl, "
 									 "SavePreferredConfiguration");
-#endif
 					{
 						uint16_t mode = get_vm_word(csParam + VDSwitchInfo_csMode);
 						uint32_t modeID = get_vm_long(csParam + VDSwitchInfo_csData);
@@ -1103,36 +1064,28 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 			switch (csCode)
 			{
 				case 2: /* GetMode */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, GetMode");
-#endif
 					put_vm_word(csParam + VDPageInfo_csMode, Vid_GetMode());
 					put_vm_word(csParam + VDPageInfo_csPage, 0);
 					put_vm_long(csParam + VDPageInfo_csBaseAddr, VID_BASE_ADDR);
 					result = tMacErr::noErr;
 					break;
 				case 3: /* GetEntries */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetEntries");
-#endif
 					{
 						REPORT_ABNORMAL_ID(AbnormalID::kVIDEO_GetEntries_not_implemented,
 										   "GetEntries not implemented");
 					}
 					break;
 				case 4: /* GetPages */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, GetPages");
-#endif
 					put_vm_word(csParam + VDPageInfo_csPage, 1);
 					result = tMacErr::noErr;
 					break;
 				case 5: /* GetPageAddr */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus,"
 									 " GetPageAddr");
-#endif
 					{
 						uint16_t csPage = get_vm_word(csParam + VDPageInfo_csPage);
 						if (0 != csPage)
@@ -1150,25 +1103,19 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 6: /* GetGray */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, GetGray");
-#endif
 					put_vm_word(csParam + VDPageInfo_csMode, s_useGrayTones ? 0x0100 : 0);
 					result = tMacErr::noErr;
 					break;
 				case 8: /* GetGamma */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetGamma");
-#endif
 					/* stub — log if requested */
 					result = tMacErr::statusErr;
 					break;
 				case 9: /* GetDefaultMode */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetDefaultMode");
-#endif
 					{
 						int defDepth = (s_preferredDepth >= 0) ? s_preferredDepth : s_currentDepth;
 						put_vm_word(csParam + VDSwitchInfo_csMode, 0x80 + defDepth);
@@ -1176,10 +1123,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 10: /* GetCurrentMode */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetCurrentMode");
-#endif
 					put_vm_word(csParam + VDSwitchInfo_csMode, 0x80 + s_currentDepth);
 					put_vm_long(csParam + VDSwitchInfo_csData, s_currentDisplayModeID);
 					put_vm_word(csParam + VDSwitchInfo_csPage, 0);
@@ -1189,10 +1134,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					result = tMacErr::noErr;
 					break;
 				case 12: /* GetConnection */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetConnection");
-#endif
 					put_vm_word(csParam + VDConnectInfo_csDisplayType, 6); /* kVGAConnect */
 					put_vm_byte(csParam + VDConnectInfo_csConnectTaggedType, 0);
 					put_vm_byte(csParam + VDConnectInfo_csConnectTaggedData, 0);
@@ -1204,10 +1147,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					result = tMacErr::noErr;
 					break;
 				case 13: /* GetModeTiming */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetModeTiming");
-#endif
 					{
 						/* VDTimingInfo: csTimingMode at +0 contains
 						   the displayModeID.  We need to confirm it
@@ -1239,18 +1180,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 14: /* GetModeBaseAddress */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetModeBaseAddress");
-#endif
 					put_vm_long(csParam + VDPageInfo_csBaseAddr, VID_BASE_ADDR);
 					result = tMacErr::noErr;
 					break;
 				case 16: /* GetPreferredConfiguration */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetPreferredConfiguration");
-#endif
 					{
 						int defDepth = (s_preferredDepth >= 0) ? s_preferredDepth : s_currentDepth;
 						uint32_t prefMode = (s_preferredDisplayModeID >= 0)
@@ -1262,10 +1199,8 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 17: /* GetNextResolution */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetNextResolution");
-#endif
 					{
 						uint32_t prevID = get_vm_long(csParam + VDResInfo_csPreviousDisplayModeID);
 						const ResolutionEntry *next = nextResolution(prevID);
@@ -1300,18 +1235,14 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 					}
 					break;
 				case 18: /* GetVideoParameters */
-#if VID_dolog
 					dbglog_WriteNote("Video_Access kCmndVideoStatus, "
 									 "GetVideoParameters");
-#endif
 					{
 						uint32_t displayModeID = get_vm_long(csParam + VDVidParams_csDisplayModeID);
 						uint16_t depthMode = get_vm_word(csParam + VDVidParams_csDepthMode);
 						uint32_t vpPtr = get_vm_long(csParam + VDVidParams_csVPBlockPtr);
-#if VID_dolog
 						dbglog_writelnNum("  displayModeID", displayModeID);
 						dbglog_writelnNum("  depthMode", depthMode);
-#endif
 						int depth = depthMode - 0x80;
 						const ResolutionEntry *res = findResolution(displayModeID);
 						int resMaxDepth =

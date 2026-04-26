@@ -8,6 +8,7 @@
 
 #include "core/extfs_log.h"
 #include "core/extn_clip.h" /* guestConsoleAppend */
+#include "core/diag.h"
 #include "debugger/debugger.h"
 #include "cpu/trap_defs.h"
 #include "lang/type_registry.h"
@@ -234,7 +235,7 @@ void extfsLogTrap(uint16_t trapWord, uint32_t pbAddr, uint16_t action, int16_t e
 	}
 
 	if (action == kActionPassThrough)
-		dbg_printf("[SD] %s\n", line.c_str());
+		DIAG(SD, "%s\n", line.c_str());
 	else
 		guestConsoleAppend(line);
 }

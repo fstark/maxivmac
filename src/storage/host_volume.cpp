@@ -1,4 +1,5 @@
 #include "storage/host_volume.h"
+#include "core/diag.h"
 
 #include <algorithm>
 #include <chrono>
@@ -706,7 +707,7 @@ void HostVolume::scanDirectory(const std::filesystem::path &hostDir, uint32_t pa
 		auto macName = appledouble::MacNameFromHost(name);
 		if (!macName)
 		{
-			fprintf(stderr, "[ExtFS] skipping '%s': not representable in MacRoman\n", name.c_str());
+			DIAG(ExtFS, "skipping '%s': not representable in MacRoman\n", name.c_str());
 			continue;
 		}
 		if (macName->size() > 31) *macName = macName->substr(0, 31);
@@ -786,8 +787,8 @@ bool HostVolume::validateCatalog() const
 		bool exists = fs::exists(e.hostPath, ec);
 		if (!exists)
 		{
-			fprintf(stderr, "[ValidateCatalog] MISSING: cnid=%u parent=%u \"%s\" -> %s\n", e.cnid,
-					e.parentDirID, e.macName.c_str(), e.hostPath.c_str());
+			DIAG(Catalog, "MISSING: cnid=%u parent=%u \"%s\" -> %s\n", e.cnid, e.parentDirID,
+				 e.macName.c_str(), e.hostPath.c_str());
 			ok = false;
 			continue;
 		}
@@ -796,9 +797,8 @@ bool HostVolume::validateCatalog() const
 		bool isDir = fs::is_directory(e.hostPath, ec);
 		if (isDir != e.isDirectory)
 		{
-			fprintf(stderr, "[ValidateCatalog] TYPE MISMATCH: cnid=%u \"%s\" catalog=%s disk=%s\n",
-					e.cnid, e.macName.c_str(), e.isDirectory ? "dir" : "file",
-					isDir ? "dir" : "file");
+			DIAG(Catalog, "TYPE MISMATCH: cnid=%u \"%s\" catalog=%s disk=%s\n", e.cnid,
+				 e.macName.c_str(), e.isDirectory ? "dir" : "file", isDir ? "dir" : "file");
 			ok = false;
 		}
 

@@ -9,6 +9,7 @@
 #include "core/extn_extfs.h"
 #include "core/extn_clip.h"
 #include "core/extfs_log.h"
+#include "core/diag.h"
 #include "debugger/debugger.h"
 #include "cpu/trap_counter.h"
 #include "cpu/disasm.h"
@@ -163,9 +164,8 @@ template <typename T> struct PBProxy
 		if constexpr (sizeof(U) > sizeof(T))
 		{
 			if (static_cast<U>(static_cast<T>(v)) != v)
-				dbg_printf("[ExtFS] *** PB truncation: %lld → %lld (field at +%u) ***\n",
-						   static_cast<long long>(v), static_cast<long long>(static_cast<T>(v)),
-						   addr);
+				DIAG(ExtFS, "*** PB truncation: %lld → %lld (field at +%u) ***\n",
+					 static_cast<long long>(v), static_cast<long long>(static_cast<T>(v)), addr);
 		}
 		detail::pbWrite<T>(addr, static_cast<T>(v));
 		return *this;
@@ -400,7 +400,7 @@ static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 	int16_t index = pb[ioFDirIndex];
 	uint32_t nameAddr = pb[ioNamePtr];
 
-	dbg_printf("[ExtFS] PbGetCatInfo dir=%u idx=%d\n", dirID, index);
+	DIAG(ExtFS, "PbGetCatInfo dir=%u idx=%d\n", dirID, index);
 
 	const storage::CatalogEntry *e = nullptr;
 
@@ -461,7 +461,7 @@ static OSErr PbGetFileInfo(PBRef pb, bool isHFS)
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
-	dbg_printf("[ExtFS] PbGetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
+	DIAG(ExtFS, "PbGetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	auto *e = s_volume.findByPath(dirID, name);
 	if (!e) return kFnfErr;
@@ -485,8 +485,8 @@ static OSErr PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType forkTyp
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
-	dbg_printf("[ExtFS] PbOpen%s dir=%u name=\"%s\"\n",
-			   forkType == storage::ForkType::Resource ? "RF" : "", dirID, name.c_str());
+	DIAG(ExtFS, "PbOpen%s dir=%u name=\"%s\"\n",
+		 forkType == storage::ForkType::Resource ? "RF" : "", dirID, name.c_str());
 
 	auto *e = s_volume.findByPath(dirID, name);
 	if (!e) return kFnfErr;
@@ -521,13 +521,13 @@ static OSErr PbCreate(PBRef pb, bool isHFS)
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
-	dbg_printf("[ExtFS] PbCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
+	DIAG(ExtFS, "PbCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	OSErr err;
 	uint32_t cnid = s_volume.createFile(dirID, name, err);
 	if (cnid == 0) return err;
 
-	dbg_printf("[ExtFS]   → cnid=%u\n", cnid);
+	DIAG(ExtFS, "  → cnid=%u\n", cnid);
 	return 0;
 }
 
@@ -539,7 +539,7 @@ static OSErr PbDelete(PBRef pb, bool isHFS)
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
-	dbg_printf("[ExtFS] PbDelete dir=%u name=\"%s\"\n", dirID, name.c_str());
+	DIAG(ExtFS, "PbDelete dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	auto err = s_volume.remove(dirID, name);
 	return err;
@@ -555,8 +555,7 @@ static OSErr PbRename(PBRef pb, bool isHFS)
 
 	std::string oldName = readPascalString(nameAddr);
 	std::string newName = readPascalString(newNameAddr);
-	dbg_printf("[ExtFS] PbRename dir=%u old=\"%s\" new=\"%s\"\n", dirID, oldName.c_str(),
-			   newName.c_str());
+	DIAG(ExtFS, "PbRename dir=%u old=\"%s\" new=\"%s\"\n", dirID, oldName.c_str(), newName.c_str());
 
 	auto err = s_volume.rename(dirID, oldName, newName);
 	return err;
@@ -570,14 +569,14 @@ static OSErr PbDirCreate(PBRef pb, bool isHFS)
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
-	dbg_printf("[ExtFS] PbDirCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
+	DIAG(ExtFS, "PbDirCreate dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	OSErr err;
 	uint32_t cnid = s_volume.createDir(dirID, name, err);
 	if (cnid == 0) return err;
 
 	pb[ioDrDirID] = cnid;
-	dbg_printf("[ExtFS]   → cnid=%u\n", cnid);
+	DIAG(ExtFS, "  → cnid=%u\n", cnid);
 	return 0;
 }
 
@@ -590,8 +589,7 @@ static OSErr PbCatMove(PBRef pb, bool isHFS)
 
 	uint32_t dstDirID = pb[ioNewDirID];
 	std::string name = readPascalString(nameAddr);
-	dbg_printf("[ExtFS] PbCatMove srcDir=%u name=\"%s\" dstDir=%u\n", dirID, name.c_str(),
-			   dstDirID);
+	DIAG(ExtFS, "PbCatMove srcDir=%u name=\"%s\" dstDir=%u\n", dirID, name.c_str(), dstDirID);
 
 	auto err = s_volume.move(dirID, name, dstDirID);
 	return err;
@@ -605,7 +603,7 @@ static OSErr PbSetFileInfo(PBRef pb, bool isHFS)
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
-	dbg_printf("[ExtFS] PbSetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
+	DIAG(ExtFS, "PbSetFileInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	auto *e = s_volume.findByPath(dirID, name);
 	if (!e) return kFnfErr;
@@ -627,7 +625,7 @@ static OSErr PbSetCatInfo(PBRef pb, bool isHFS)
 	if (nameAddr == 0) return kParamErr;
 
 	std::string name = readPascalString(nameAddr);
-	dbg_printf("[ExtFS] PbSetCatInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
+	DIAG(ExtFS, "PbSetCatInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	auto *e = s_volume.findByPath(dirID, name);
 	if (!e) return kFnfErr;
@@ -653,7 +651,7 @@ static OSErr PbOpenWD(PBRef pb)
 {
 	uint32_t dirID = pb[ioWDDirID];
 	uint32_t procID = pb[ioWDProcID];
-	dbg_printf("[ExtFS] PbOpenWD dir=%u proc=%u\n", dirID, procID);
+	DIAG(ExtFS, "PbOpenWD dir=%u proc=%u\n", dirID, procID);
 
 	uint32_t wdRef = s_volume.openWD(dirID, procID);
 	pb[ioVRefNum] = static_cast<int16_t>(-(static_cast<int32_t>(wdRef) + 32000));
@@ -665,7 +663,7 @@ static OSErr PbCloseWD(PBRef pb)
 {
 	int16_t vRefNum = pb[ioVRefNum];
 	auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
-	dbg_printf("[ExtFS] PbCloseWD vRefNum=%d wdRef=%u\n", vRefNum, wdRef);
+	DIAG(ExtFS, "PbCloseWD vRefNum=%d wdRef=%u\n", vRefNum, wdRef);
 
 	s_volume.closeWD(wdRef);
 	return 0;
@@ -681,7 +679,7 @@ static OSErr PbGetWDInfo(PBRef pb)
 	int16_t vRefNum = pb[ioVRefNum];
 	int16_t wdIndex = pb[ioWDIndex];
 
-	dbg_printf("[ExtFS] PbGetWDInfo vRefNum=%d wdIndex=%d\n", vRefNum, wdIndex);
+	DIAG(ExtFS, "PbGetWDInfo vRefNum=%d wdIndex=%d\n", vRefNum, wdIndex);
 
 	/* Only handle direct lookup (ioWDIndex == 0) */
 	if (wdIndex != 0) return kNsvErr;
@@ -717,7 +715,7 @@ static void RegVersion(uint32_t regParam[], uint16_t &regResult)
 	if (!s_volume.isMounted()) s_volume.mount("shared");
 	regParam[0] = s_volume.isMounted() ? 1 : 0;
 	regResult = 0;
-	dbg_printf("[ExtFS] version query → %u\n", regParam[0]);
+	DIAG(ExtFS, "version query → %u\n", regParam[0]);
 }
 
 /* Return volume statistics: file count, dir count, total bytes. */
@@ -729,7 +727,7 @@ static void RegGetVol(uint32_t regParam[], uint16_t &regResult)
 	regParam[1] = bytes;
 	regParam[2] = dirs;
 	regResult = 0;
-	dbg_printf("[ExtFS] GetVol → %u files, %u dirs, %u bytes\n", files, dirs, bytes);
+	DIAG(ExtFS, "GetVol → %u files, %u dirs, %u bytes\n", files, dirs, bytes);
 }
 
 /* Read bytes from an open fork into guest RAM. */
@@ -740,7 +738,7 @@ static void RegRead(uint32_t regParam[], uint16_t &regResult)
 	uint32_t count = regParam[2];
 	uint32_t guestBuf = regParam[3];
 
-	dbg_printf("[ExtFS] Read h=%u off=%u cnt=%u\n", handle, offset, count);
+	DIAG(ExtFS, "Read h=%u off=%u cnt=%u\n", handle, offset, count);
 
 	std::vector<uint8_t> buf(count);
 	uint32_t got = 0;
@@ -754,7 +752,7 @@ static void RegRead(uint32_t regParam[], uint16_t &regResult)
 	for (uint32_t i = 0; i < got; i++)
 		put_vm_byte(guestBuf + i, buf[i]);
 	regParam[0] = got;
-	dbg_printf("[ExtFS]   → read %u bytes\n", got);
+	DIAG(ExtFS, "  → read %u bytes\n", got);
 	regResult = 0;
 }
 
@@ -762,7 +760,7 @@ static void RegRead(uint32_t regParam[], uint16_t &regResult)
 static void RegClose(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t handle = regParam[0];
-	dbg_printf("[ExtFS] Close h=%u\n", handle);
+	DIAG(ExtFS, "Close h=%u\n", handle);
 	s_volume.closeFork(handle);
 	regResult = 0;
 }
@@ -771,7 +769,7 @@ static void RegClose(uint32_t regParam[], uint16_t &regResult)
 static void RegGetWDInfo(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t wdRef = regParam[0];
-	dbg_printf("[ExtFS] GetWDInfo wd=%u\n", wdRef);
+	DIAG(ExtFS, "GetWDInfo wd=%u\n", wdRef);
 	uint32_t dirID = s_volume.wdToDirID(wdRef);
 	if (dirID != 0)
 	{
@@ -792,7 +790,7 @@ static void RegOpenWD(uint32_t regParam[], uint16_t &regResult)
 	uint32_t procID = regParam[2];
 	uint32_t wdRef = s_volume.openWD(dirID, procID);
 	regParam[0] = wdRef;
-	dbg_printf("[ExtFS] OpenWD dir=%u proc=%u → wd=%u\n", dirID, procID, wdRef);
+	DIAG(ExtFS, "OpenWD dir=%u proc=%u → wd=%u\n", dirID, procID, wdRef);
 	regResult = 0;
 }
 
@@ -800,7 +798,7 @@ static void RegOpenWD(uint32_t regParam[], uint16_t &regResult)
 static void RegCloseWD(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t wdRef = regParam[0];
-	dbg_printf("[ExtFS] CloseWD wd=%u\n", wdRef);
+	DIAG(ExtFS, "CloseWD wd=%u\n", wdRef);
 	s_volume.closeWD(wdRef);
 	regResult = 0;
 }
@@ -856,7 +854,7 @@ static void RegWrite(uint32_t regParam[], uint16_t &regResult)
 	uint32_t count = regParam[2];
 	uint32_t guestBuf = regParam[3];
 
-	dbg_printf("[ExtFS] Write h=%u off=%u cnt=%u\n", handle, offset, count);
+	DIAG(ExtFS, "Write h=%u off=%u cnt=%u\n", handle, offset, count);
 
 	std::vector<uint8_t> data(count);
 	for (uint32_t i = 0; i < count; i++)
@@ -870,7 +868,7 @@ static void RegWrite(uint32_t regParam[], uint16_t &regResult)
 		return;
 	}
 	regParam[0] = written;
-	dbg_printf("[ExtFS]   → wrote %u bytes\n", written);
+	DIAG(ExtFS, "  → wrote %u bytes\n", written);
 	regResult = 0;
 }
 
@@ -879,7 +877,7 @@ static void RegSetEOF(uint32_t regParam[], uint16_t &regResult)
 {
 	uint32_t handle = regParam[0];
 	uint32_t newSize = regParam[1];
-	dbg_printf("[ExtFS] SetEOF h=%u size=%u\n", handle, newSize);
+	DIAG(ExtFS, "SetEOF h=%u size=%u\n", handle, newSize);
 	auto err = s_volume.setEOF(handle, newSize);
 	regResult = err;
 }
@@ -1002,7 +1000,7 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kPB_SetFileInfo:
 		case kPB_SetCatInfo:
 			if (!s_volume.validateCatalog())
-				dbg_printf("[ExtFS] *** CATALOG VALIDATION FAILED after cmd=0x%03x ***\n", cmd);
+				DIAG(ExtFS, "*** CATALOG VALIDATION FAILED after cmd=0x%03x ***\n", cmd);
 			break;
 		default:
 			break;
