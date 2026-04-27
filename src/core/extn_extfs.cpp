@@ -76,7 +76,9 @@ using storage::kRfNumErr;
 using storage::kWPrErr;
 using storage::OSErr;
 
-static constexpr OSErr kNsvErr = -35; /* no such volume (dispatch-only) */
+static constexpr OSErr kNsvErr = -35;		 /* no such volume (dispatch-only) */
+static constexpr OSErr kNotOursErr = -9999;	 /* volume is not ours — internal sentinel */
+static constexpr uint16_t kNotOurs = 0xFFFE; /* returned to guest: "not our volume" */
 
 /* ── Type-safe PB access ─────────────────────────── */
 
@@ -283,7 +285,7 @@ static constexpr uint16_t kPB_SetDefaultVRefNum = 0x245;
 
 // Resolve a PB's ioVRefNum to a HostVolume*.
 // For vRefNum 0 (default volume), uses the slot last set via SetDefaultVRefNum.
-// Returns nullptr + sets errOut = kNsvErr if the volume is not ours.
+// Returns nullptr + sets errOut = kNotOursErr if the volume is not ours.
 static storage::HostVolume *volumeFromPB(PBRef pb, bool /*isHFS*/, storage::OSErr &errOut)
 {
 	int16_t vRefNum = pb[ioVRefNum];
@@ -294,7 +296,7 @@ static storage::HostVolume *volumeFromPB(PBRef pb, bool /*isHFS*/, storage::OSEr
 		auto *vol = s_drives.volume(s_defaultSlot);
 		if (!vol)
 		{
-			errOut = storage::kNsvErr;
+			errOut = kNotOursErr;
 			return nullptr;
 		}
 		errOut = storage::kNoErr;
@@ -339,7 +341,7 @@ static storage::HostVolume *volumeFromPB(PBRef pb, bool /*isHFS*/, storage::OSEr
 		}
 	}
 
-	errOut = storage::kNsvErr;
+	errOut = kNotOursErr;
 	return nullptr;
 }
 
@@ -355,6 +357,13 @@ static uint32_t pbResolveDir(PBRef pb, bool isHFS, storage::HostVolume &vol)
 	int16_t vRefNum = pb[ioVRefNum];
 	uint32_t dirID = isHFS ? static_cast<uint32_t>(pb[ioDrDirID]) : 0;
 	return vol.resolveDir(vRefNum, dirID);
+}
+
+// Translate an OSErr into a dispatch result, mapping kNotOursErr → kNotOurs.
+static uint16_t translateResult(OSErr err)
+{
+	if (err == kNotOursErr) return kNotOurs;
+	return static_cast<uint16_t>(err);
 }
 
 /* ── Guest RAM helpers ────────────────────────────── */
@@ -1170,46 +1179,46 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 		/* PB-based commands */
 		case kPB_GetCatInfo:
-			regResult = PbGetCatInfo(PBRef{regParam[0]}, regParam[1] != 0);
+			regResult = translateResult(PbGetCatInfo(PBRef{regParam[0]}, regParam[1] != 0));
 			break;
 		case kPB_GetFileInfo:
-			regResult = PbGetFileInfo(PBRef{regParam[0]}, regParam[1] != 0);
+			regResult = translateResult(PbGetFileInfo(PBRef{regParam[0]}, regParam[1] != 0));
 			break;
 		case kPB_Open:
-			regResult = PbOpen(PBRef{regParam[0]}, regParam, regParam[1] != 0);
+			regResult = translateResult(PbOpen(PBRef{regParam[0]}, regParam, regParam[1] != 0));
 			break;
 		case kPB_OpenRF:
-			regResult = PbOpenRF(PBRef{regParam[0]}, regParam, regParam[1] != 0);
+			regResult = translateResult(PbOpenRF(PBRef{regParam[0]}, regParam, regParam[1] != 0));
 			break;
 		case kPB_Create:
-			regResult = PbCreate(PBRef{regParam[0]}, regParam[1] != 0);
+			regResult = translateResult(PbCreate(PBRef{regParam[0]}, regParam[1] != 0));
 			break;
 		case kPB_Delete:
-			regResult = PbDelete(PBRef{regParam[0]}, regParam[1] != 0);
+			regResult = translateResult(PbDelete(PBRef{regParam[0]}, regParam[1] != 0));
 			break;
 		case kPB_Rename:
-			regResult = PbRename(PBRef{regParam[0]}, regParam[1] != 0);
+			regResult = translateResult(PbRename(PBRef{regParam[0]}, regParam[1] != 0));
 			break;
 		case kPB_DirCreate:
-			regResult = PbDirCreate(PBRef{regParam[0]}, regParam[1] != 0);
+			regResult = translateResult(PbDirCreate(PBRef{regParam[0]}, regParam[1] != 0));
 			break;
 		case kPB_CatMove:
-			regResult = PbCatMove(PBRef{regParam[0]}, regParam[1] != 0);
+			regResult = translateResult(PbCatMove(PBRef{regParam[0]}, regParam[1] != 0));
 			break;
 		case kPB_SetFileInfo:
-			regResult = PbSetFileInfo(PBRef{regParam[0]}, regParam[1] != 0);
+			regResult = translateResult(PbSetFileInfo(PBRef{regParam[0]}, regParam[1] != 0));
 			break;
 		case kPB_SetCatInfo:
-			regResult = PbSetCatInfo(PBRef{regParam[0]}, regParam[1] != 0);
+			regResult = translateResult(PbSetCatInfo(PBRef{regParam[0]}, regParam[1] != 0));
 			break;
 		case kPB_OpenWD:
-			regResult = PbOpenWD(PBRef{regParam[0]});
+			regResult = translateResult(PbOpenWD(PBRef{regParam[0]}));
 			break;
 		case kPB_CloseWD:
-			regResult = PbCloseWD(PBRef{regParam[0]});
+			regResult = translateResult(PbCloseWD(PBRef{regParam[0]}));
 			break;
 		case kPB_GetWDInfo:
-			regResult = PbGetWDInfo(PBRef{regParam[0]});
+			regResult = translateResult(PbGetWDInfo(PBRef{regParam[0]}));
 			break;
 		case kPB_SetDefaultVRefNum:
 		{
