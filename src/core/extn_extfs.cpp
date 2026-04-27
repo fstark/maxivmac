@@ -181,6 +181,15 @@ struct PBRef
 {
 	uint32_t addr;
 	template <typename T> PBProxy<T> operator[](PBField<T> f) const { return {addr + f.offset}; }
+
+	/* Zero bytes in the PB.  Real HFS ROM code writes every output byte;
+	   clearing prevents stale PB data from confusing callers (e.g. the
+	   Finder reading residual ioACUser bits as access-denied flags). */
+	void zero(int startOffset, int count) const
+	{
+		for (int i = 0; i < count; ++i)
+			put_vm_byte(addr + startOffset + i, 0);
+	}
 };
 
 /* ── PB field definitions (Inside Macintosh IV) ──── */
@@ -406,7 +415,9 @@ static FInfo pbReadFInfo(PBRef pb)
 */
 static void pbWriteFileFields(PBRef pb, const storage::CatalogEntry *e, bool isHFS = true)
 {
+	pb.zero(24, 4); /* ioFRefNum(2) + ioFVersNum(1) + filler1(1) */
 	pb[ioFlAttrib] = 0;
+	pb[ioACUser] = 0; /* filler2 for files — must be zero */
 	pbWriteFInfo(pb, e);
 	pb[ioFlNum] = e->cnid;
 	pb[ioFlStBlk] = 0;
@@ -427,6 +438,7 @@ static void pbWriteFileFields(PBRef pb, const storage::CatalogEntry *e, bool isH
 /* Fill the directory-variant fields of a CInfoPBRec (IM IV-155). */
 static void pbWriteDirFields(PBRef pb, const storage::CatalogEntry *e, storage::HostVolume &vol)
 {
+	pb.zero(24, 4); /* ioFRefNum(2) + ioFVersNum(1) + filler1(1) */
 	pb[ioFlAttrib] = kFlAttribDir;
 	pb[ioACUser] = 0;
 
@@ -438,6 +450,7 @@ static void pbWriteDirFields(PBRef pb, const storage::CatalogEntry *e, storage::
 
 	pb[ioDrNmFls] = vol.childCount(e->cnid);
 	pb[ioDrDirID] = e->cnid;
+	pb.zero(54, 18); /* filler3 — 9 reserved int16s */
 	pb[ioDrParID] = e->parentDirID;
 	pb[ioDrCrDat] = e->crDate;
 	pb[ioDrMdDat] = e->modDate;
@@ -449,12 +462,14 @@ static void pbWriteRootDir(PBRef pb, uint32_t nameAddr, storage::HostVolume &vol
 						   std::string_view volName)
 {
 	uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
+	pb.zero(24, 4); /* ioFRefNum(2) + ioFVersNum(1) + filler1(1) */
 	pb[ioFlAttrib] = kFlAttribDir;
 	pb[ioACUser] = 0;
 	pb[ioDrUsrWds] = Blob16{};
 	pb[ioDrFndrInfo] = Blob16{};
 	pb[ioDrNmFls] = vol.childCount(kRootDirID);
 	pb[ioDrDirID] = kRootDirID;
+	pb.zero(54, 18); /* filler3 */
 	pb[ioDrParID] = kRootParentID;
 	pb[ioDrCrDat] = now;
 	pb[ioDrMdDat] = now;
