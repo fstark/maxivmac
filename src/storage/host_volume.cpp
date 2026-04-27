@@ -32,8 +32,6 @@ bool HostVolume::mount(const std::filesystem::path &hostDir)
 	nextCNID_ = 16;
 	openForks_.clear();
 	nextHandle_ = 1;
-	wdTable_.clear();
-	nextWD_ = 1;
 	textStats_ = {};
 
 	static bool s_typesLoaded = false;
@@ -58,7 +56,6 @@ bool HostVolume::isMounted() const
 void HostVolume::setSlot(int slot)
 {
 	slot_ = slot;
-	defaultVRefNum_ = guestVRefNum();
 }
 
 int HostVolume::slot() const
@@ -660,60 +657,6 @@ void HostVolume::closeFork(uint32_t handle)
 	if (it == openForks_.end()) return;
 	if (it->second.fp) fclose(it->second.fp);
 	openForks_.erase(it);
-}
-
-/* ── Working directories ──────────────────────────── */
-
-uint32_t HostVolume::openWD(uint32_t dirID, uint32_t procID)
-{
-	uint32_t wdRef = nextWD_++;
-	wdTable_[wdRef] = {dirID, procID};
-	return wdRef;
-}
-
-uint32_t HostVolume::wdToDirID(uint32_t wdRef) const
-{
-	auto it = wdTable_.find(wdRef);
-	return (it != wdTable_.end()) ? it->second.dirID : 0;
-}
-
-uint32_t HostVolume::wdToProcID(uint32_t wdRef) const
-{
-	auto it = wdTable_.find(wdRef);
-	return (it != wdTable_.end()) ? it->second.procID : 0;
-}
-
-void HostVolume::closeWD(uint32_t wdRef)
-{
-	wdTable_.erase(wdRef);
-}
-
-void HostVolume::setDefaultVRefNum(int16_t vRefNum)
-{
-	defaultVRefNum_ = vRefNum;
-}
-
-/* ── Directory resolution ─────────────────────────── */
-
-uint32_t HostVolume::resolveDir(int16_t vRefNum, uint32_t rawDirID) const
-{
-	if (rawDirID != 0) return rawDirID;
-	/* vRefNum 0 = "default volume" — substitute the stored default */
-	if (vRefNum == 0) vRefNum = defaultVRefNum_;
-	/* Raw volume ref or drive number with dirID=0: if the user has
-	   a non-root default WD, substitute it so that apps passing the
-	   volume ref without a dirID land in the current directory. */
-	if (vRefNum == guestVRefNum() || vRefNum == guestDriveNum())
-	{
-		if (defaultVRefNum_ != guestVRefNum() && defaultVRefNum_ != guestDriveNum())
-			vRefNum = defaultVRefNum_;
-		else
-			return kRootDirID;
-	}
-	/* Decode WD refnum: guest encodes as -(wdRef + 32000) */
-	auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
-	uint32_t dirID = wdToDirID(wdRef);
-	return dirID != 0 ? dirID : kRootDirID;
 }
 
 /* ── TEXT conversion stats ────────────────────────── */

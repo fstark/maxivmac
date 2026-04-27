@@ -984,42 +984,7 @@ TEST_CASE("HostVolume: TEXT file dataForkSize in catalog")
 	CHECK(e->dataForkSize == 6);
 }
 
-/* ── Phase 8: working dirs + volumeStats ──────────── */
-
-TEST_CASE("HostVolume: openWD / wdToDirID round-trip")
-{
-	TempDir td;
-	storage::HostVolume vol;
-	vol.mount(td.path);
-
-	uint32_t wdRef = vol.openWD(42);
-	CHECK(wdRef > 0);
-	CHECK(vol.wdToDirID(wdRef) == 42);
-}
-
-TEST_CASE("HostVolume: closeWD")
-{
-	TempDir td;
-	storage::HostVolume vol;
-	vol.mount(td.path);
-
-	uint32_t wdRef = vol.openWD(42);
-	vol.closeWD(wdRef);
-	CHECK(vol.wdToDirID(wdRef) == 0);
-}
-
-TEST_CASE("HostVolume: multiple WDs")
-{
-	TempDir td;
-	storage::HostVolume vol;
-	vol.mount(td.path);
-
-	uint32_t wd1 = vol.openWD(10);
-	uint32_t wd2 = vol.openWD(20);
-	CHECK(wd1 != wd2);
-	CHECK(vol.wdToDirID(wd1) == 10);
-	CHECK(vol.wdToDirID(wd2) == 20);
-}
+/* ── Phase 8: volumeStats ─────────────────────────── */
 
 TEST_CASE("HostVolume: volumeStats")
 {
@@ -1079,88 +1044,6 @@ TEST_CASE("HostVolume: validateCatalog passes after createFile in subdir")
 	CHECK(cnid != 0);
 	CHECK(err == storage::kNoErr);
 	CHECK(vol.validateCatalog());
-}
-
-/* ── Phase 9: resolveDir ─────────────────────────── */
-
-TEST_CASE("HostVolume: resolveDir explicit dirID wins")
-{
-	TempDir td;
-	storage::HostVolume vol;
-	vol.mount(td.path);
-
-	CHECK(vol.resolveDir(-32000, 17) == 17);
-	CHECK(vol.resolveDir(0, 42) == 42);
-}
-
-TEST_CASE("HostVolume: resolveDir vRefNum to root")
-{
-	TempDir td;
-	storage::HostVolume vol;
-	vol.mount(td.path);
-
-	CHECK(vol.resolveDir(-32000, 0) == storage::HostVolume::kRootDirID);
-	CHECK(vol.resolveDir(8, 0) == storage::HostVolume::kRootDirID);
-	CHECK(vol.resolveDir(0, 0) == storage::HostVolume::kRootDirID);
-}
-
-TEST_CASE("HostVolume: resolveDir WD decode")
-{
-	TempDir td;
-	fs::create_directory(td.path / "Sub");
-	storage::HostVolume vol;
-	vol.mount(td.path);
-
-	auto *sub = vol.findByName(storage::HostVolume::kRootDirID, "Sub");
-	REQUIRE(sub != nullptr);
-
-	uint32_t wd = vol.openWD(sub->cnid);
-	int16_t encodedVRef = static_cast<int16_t>(-(static_cast<int32_t>(wd)) - 32000);
-	CHECK(vol.resolveDir(encodedVRef, 0) == sub->cnid);
-
-	vol.closeWD(wd);
-}
-
-TEST_CASE("HostVolume: resolveDir unknown WD falls back to root")
-{
-	TempDir td;
-	storage::HostVolume vol;
-	vol.mount(td.path);
-
-	int16_t badVRef = static_cast<int16_t>(-32099);
-	CHECK(vol.resolveDir(badVRef, 0) == storage::HostVolume::kRootDirID);
-}
-
-/* ── Phase 10: resolveDir with WD open/close cycle ── */
-
-TEST_CASE("HostVolume: resolveDir with WD open close cycle")
-{
-	TempDir td;
-	fs::create_directory(td.path / "A");
-	fs::create_directory(td.path / "A" / "B");
-	writeFile(td.path / "A" / "B" / "hello.txt", "hello");
-
-	storage::HostVolume vol;
-	vol.mount(td.path);
-
-	auto *a = vol.findByName(storage::HostVolume::kRootDirID, "A");
-	REQUIRE(a != nullptr);
-	auto *b = vol.findByName(a->cnid, "B");
-	REQUIRE(b != nullptr);
-
-	uint32_t wd = vol.openWD(b->cnid);
-	int16_t encoded = static_cast<int16_t>(-(static_cast<int32_t>(wd)) - 32000);
-
-	/* resolveDir with the encoded WD should find B */
-	CHECK(vol.resolveDir(encoded, 0) == b->cnid);
-
-	/* findByName in that resolved dir should find the file */
-	auto resolved = vol.resolveDir(encoded, 0);
-	auto *f = vol.findByName(resolved, "hello.txt");
-	CHECK(f != nullptr);
-	CHECK(f->dataForkSize > 0);
-
-	vol.closeWD(wd);
 }
 
 TEST_CASE("HostVolume: slot identity")

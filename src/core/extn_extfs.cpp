@@ -51,11 +51,9 @@ static constexpr uint16_t kExtFSGetVolName = 0x21A;
 /* ── DriveManager instance ─────────────────────────── */
 
 static storage::DriveManager s_drives;
-static int s_defaultSlot = 0; /* slot used when guest sends vRefNum=0 */
 
 static constexpr uint32_t kRootParentID = storage::HostVolume::kRootParentID;
 static constexpr uint32_t kRootDirID = storage::HostVolume::kRootDirID;
-static constexpr int16_t kGuestVRefNum = -static_cast<int16_t>(storage::kBaseVRefNum);
 static constexpr int16_t kGuestDriveNum = storage::kBaseDriveNum;
 
 /* ── Mac OS result codes ──────────────────────────── */
@@ -76,7 +74,6 @@ using storage::kRfNumErr;
 using storage::kWPrErr;
 using storage::OSErr;
 
-static constexpr OSErr kNsvErr = -35;		 /* no such volume (dispatch-only) */
 static constexpr OSErr kNotOursErr = -9999;	 /* volume is not ours — internal sentinel */
 static constexpr uint16_t kNotOurs = 0xFFFE; /* returned to guest: "not our volume" */
 
@@ -292,20 +289,20 @@ static storage::HostVolume *volumeFromPB(PBRef pb, bool /*isHFS*/, storage::OSEr
 {
 	int16_t vRefNum = pb[ioVRefNum];
 
-	// vRefNum 0 means "default volume" — use the tracked default slot.
+	// vRefNum 0 means "default volume".
 	if (vRefNum == 0)
 	{
-		auto *vol = s_drives.volume(s_defaultSlot);
-		if (!vol)
+		int defSlot = -1;
+		if (s_drives.isDefaultOurs(defSlot))
 		{
-			errOut = kNotOursErr;
-			return nullptr;
+			errOut = storage::kNoErr;
+			return s_drives.volume(defSlot);
 		}
-		errOut = storage::kNoErr;
-		return vol;
+		errOut = kNotOursErr;
+		return nullptr;
 	}
 
-	// Direct vRefNum or driveNum — try all slots.
+	// Direct vRefNum — try slot lookup.
 	int slot = s_drives.slotFromVRefNum(vRefNum);
 	if (slot >= 0)
 	{
@@ -324,23 +321,13 @@ static storage::HostVolume *volumeFromPB(PBRef pb, bool /*isHFS*/, storage::OSEr
 		}
 	}
 
-	// WD refnum (negative, in extended range)?
-	// WD refnums are -(32000 + wdRef) per slot.  Try each mounted volume:
-	// The HostVolume::resolveDir call will sort it out.
-	if (vRefNum < -static_cast<int16_t>(storage::kBaseVRefNum))
+	// WD refnum?  Use DriveManager's global WD table.
+	auto wdRef = storage::DecodeGuestWDRef(vRefNum);
+	int wdSlot = s_drives.wdToSlot(wdRef);
+	if (wdSlot >= 0)
 	{
-		// Walk all volumes and try to resolve this WD
-		storage::HostVolume *found = nullptr;
-		s_drives.forEach(
-			[&](int, storage::HostVolume &vol)
-			{
-				if (!found && vol.resolveDir(vRefNum, 0) != 0) found = &vol;
-			});
-		if (found)
-		{
-			errOut = storage::kNoErr;
-			return found;
-		}
+		errOut = storage::kNoErr;
+		return s_drives.volume(wdSlot);
 	}
 
 	errOut = kNotOursErr;
@@ -353,12 +340,14 @@ static std::pair<storage::HostVolume *, uint32_t> volumeFromHandle(uint32_t hand
 	return s_drives.resolveHandle(handle);
 }
 
-// Resolve the directory from a PB given a specific volume.
-static uint32_t pbResolveDir(PBRef pb, bool isHFS, storage::HostVolume &vol)
+// Resolve the directory from a PB using DriveManager's global resolveDir.
+static uint32_t pbResolveDir(PBRef pb, bool isHFS, storage::HostVolume & /*vol*/)
 {
 	int16_t vRefNum = pb[ioVRefNum];
 	uint32_t dirID = isHFS ? static_cast<uint32_t>(pb[ioDrDirID]) : 0;
-	return vol.resolveDir(vRefNum, dirID);
+	int outSlot = -1;
+	uint32_t resolved = s_drives.resolveDir(vRefNum, dirID, outSlot);
+	return resolved != 0 ? resolved : kRootDirID;
 }
 
 // Translate an OSErr into a dispatch result, mapping kNotOursErr → kNotOurs.
@@ -783,30 +772,36 @@ static OSErr PbSetCatInfo(PBRef pb, bool isHFS)
 /* PBOpenWD (IM IV-159).  Allocate a WD refnum for ioWDDirID. */
 static OSErr PbOpenWD(PBRef pb)
 {
-	// WDs are scoped to slot 0 for now.
-	auto *vol = s_drives.volume(0);
-	if (!vol) return kNsvErr;
-
+	int16_t vRefNum = pb[ioVRefNum];
 	uint32_t dirID = pb[ioWDDirID];
 	uint32_t procID = pb[ioWDProcID];
-	DIAG(ExtFS, "PbOpenWD dir=%u proc=%u\n", dirID, procID);
 
-	uint32_t wdRef = vol->openWD(dirID, procID);
-	pb[ioVRefNum] = static_cast<int16_t>(-(static_cast<int32_t>(wdRef) + 32000));
+	// Determine which slot this vRefNum belongs to.
+	int slot = s_drives.slotFromVRefNum(vRefNum);
+	if (slot < 0)
+	{
+		// Try WD refnum.
+		auto wdRef = storage::DecodeGuestWDRef(vRefNum);
+		slot = s_drives.wdToSlot(wdRef);
+	}
+	if (slot < 0) return kNotOursErr;
+
+	DIAG(ExtFS, "PbOpenWD dir=%u proc=%u slot=%d\n", dirID, procID, slot);
+
+	uint32_t wdRef = s_drives.openWD(slot, dirID, procID);
+	pb[ioVRefNum] = storage::EncodeGuestWDRef(wdRef);
 	return 0;
 }
 
 /* PBCloseWD (IM IV-160).  Release a WD refnum. */
 static OSErr PbCloseWD(PBRef pb)
 {
-	auto *vol = s_drives.volume(0);
-	if (!vol) return kNsvErr;
-
 	int16_t vRefNum = pb[ioVRefNum];
-	auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
+	auto wdRef = storage::DecodeGuestWDRef(vRefNum);
 	DIAG(ExtFS, "PbCloseWD vRefNum=%d wdRef=%u\n", vRefNum, wdRef);
 
-	vol->closeWD(wdRef);
+	if (!s_drives.isOurWD(wdRef)) return kNotOursErr;
+	s_drives.closeWD(wdRef);
 	return 0;
 }
 
@@ -822,35 +817,31 @@ static OSErr PbGetWDInfo(PBRef pb)
 
 	DIAG(ExtFS, "PbGetWDInfo vRefNum=%d wdIndex=%d\n", vRefNum, wdIndex);
 
-	/* Only handle direct lookup (ioWDIndex == 0) */
-	if (wdIndex != 0) return kNsvErr;
+	if (wdIndex != 0) return kNotOursErr;
 
-	// Check if it's a direct vRefNum for any of our volumes
+	// Check if it's a direct vRefNum for any of our volumes.
 	int slot = s_drives.slotFromVRefNum(vRefNum);
 	if (slot >= 0 || vRefNum == kGuestDriveNum)
 	{
+		if (slot < 0) slot = 0; // driveNum 8 = slot 0
 		pb[ioWDProcID] = 0;
 		pb[ioWDDirID] = kRootDirID;
 	}
 	else
 	{
-		// Try to resolve WD across all volumes (use slot 0 for now)
-		auto *vol = s_drives.volume(0);
-		if (!vol) return kNsvErr;
-		auto wdRef = static_cast<uint32_t>(-(static_cast<int32_t>(vRefNum)) - 32000);
-		uint32_t dirID = vol->wdToDirID(wdRef);
-		if (dirID == 0) return kNsvErr;
-		pb[ioWDProcID] = vol->wdToProcID(wdRef);
-		pb[ioWDDirID] = dirID;
+		auto wdRef = storage::DecodeGuestWDRef(vRefNum);
+		if (!s_drives.isOurWD(wdRef)) return kNotOursErr;
+		pb[ioWDProcID] = s_drives.wdToProcID(wdRef);
+		pb[ioWDDirID] = s_drives.wdToDirID(wdRef);
+		slot = s_drives.wdToSlot(wdRef);
 	}
 
-	pb[ioWDVRefNum] = static_cast<int16_t>(kGuestVRefNum);
+	pb[ioWDVRefNum] = static_cast<int16_t>(-(static_cast<int16_t>(storage::kBaseVRefNum) + slot));
 
-	/* Write volume name to ioNamePtr if set */
 	uint32_t nameAddr = pb[ioNamePtr];
 	if (nameAddr != 0)
 	{
-		auto name = s_drives.volumeName(0);
+		auto name = s_drives.volumeName(slot);
 		writePascalString(nameAddr, name.empty() ? std::string("Shared") : std::string(name));
 	}
 
@@ -1045,18 +1036,12 @@ static void RegClose(uint32_t regParam[], uint16_t &regResult)
 /* Look up the dirID and procID for a WD refnum (register path). */
 static void RegGetWDInfo(uint32_t regParam[], uint16_t &regResult)
 {
-	auto *vol = s_drives.volume(0);
-	if (!vol)
-	{
-		regResult = kFnfErr;
-		return;
-	}
 	uint32_t wdRef = regParam[0];
 	DIAG(ExtFS, "GetWDInfo wd=%u\n", wdRef);
-	uint32_t dirID = vol->wdToDirID(wdRef);
+	uint32_t dirID = s_drives.wdToDirID(wdRef);
 	if (dirID != 0)
 	{
-		regParam[0] = vol->wdToProcID(wdRef);
+		regParam[0] = s_drives.wdToProcID(wdRef);
 		regParam[1] = dirID;
 		regResult = 0;
 	}
@@ -1069,15 +1054,10 @@ static void RegGetWDInfo(uint32_t regParam[], uint16_t &regResult)
 /* Allocate a WD refnum for a directory (register path). */
 static void RegOpenWD(uint32_t regParam[], uint16_t &regResult)
 {
-	auto *vol = s_drives.volume(0);
-	if (!vol)
-	{
-		regResult = kNsvErr;
-		return;
-	}
 	uint32_t dirID = regParam[1];
 	uint32_t procID = regParam[2];
-	uint32_t wdRef = vol->openWD(dirID, procID);
+	// Register path always uses slot 0 (legacy).
+	uint32_t wdRef = s_drives.openWD(0, dirID, procID);
 	regParam[0] = wdRef;
 	DIAG(ExtFS, "OpenWD dir=%u proc=%u → wd=%u\n", dirID, procID, wdRef);
 	regResult = 0;
@@ -1086,15 +1066,9 @@ static void RegOpenWD(uint32_t regParam[], uint16_t &regResult)
 /* Release a WD refnum (register path). */
 static void RegCloseWD(uint32_t regParam[], uint16_t &regResult)
 {
-	auto *vol = s_drives.volume(0);
-	if (!vol)
-	{
-		regResult = kNsvErr;
-		return;
-	}
 	uint32_t wdRef = regParam[0];
 	DIAG(ExtFS, "CloseWD wd=%u\n", wdRef);
-	vol->closeWD(wdRef);
+	s_drives.closeWD(wdRef);
 	regResult = 0;
 }
 
@@ -1338,10 +1312,17 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			int16_t vRef = static_cast<int16_t>(regParam[0]);
 			int slot = s_drives.slotFromVRefNum(vRef);
 			if (slot >= 0)
-				s_defaultSlot = slot;
-			else if (auto *vol = s_drives.volume(s_defaultSlot))
-				vol->setDefaultVRefNum(vRef);
-			DIAG(ExtFS, "SetDefaultVRefNum vRef=%d → slot %d\n", vRef, s_defaultSlot);
+			{
+				// Direct volume ref — set root WD as default.
+				s_drives.setDefaultWD(s_drives.rootWD(slot));
+			}
+			else
+			{
+				// Try WD refnum.
+				auto wdRef = storage::DecodeGuestWDRef(vRef);
+				if (s_drives.isOurWD(wdRef)) s_drives.setDefaultWD(wdRef);
+			}
+			DIAG(ExtFS, "SetDefaultVRefNum vRef=%d\n", vRef);
 			regResult = 0;
 			break;
 		}

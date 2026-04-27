@@ -147,13 +147,6 @@ public:
 	// Number of currently open fork handles.
 	int openForkCount() const { return static_cast<int>(openForks_.size()); }
 
-	/* Resolve a guest (vRefNum, dirID) pair to a catalog dirID.
-	   If rawDirID is non-zero, returns it directly.
-	   Otherwise decodes vRefNum: our volume / drive → root,
-	   WD refnum → wdToDirID lookup, 0 → root.
-	   See SHAREDRIVE_DESIGN.md §3.4. */
-	uint32_t resolveDir(int16_t vRefNum, uint32_t rawDirID) const;
-
 	/* ── Catalog queries ──────────────────────────── */
 
 	// Look up a catalog entry by its CNID.  Returns nullptr if not found.
@@ -250,24 +243,6 @@ public:
 	// Close the fork handle and release resources.
 	void closeFork(uint32_t handle);
 
-	/* ── Working directories ──────────────────────── */
-	/*
-		Classic Mac "working directory" references — lightweight aliases
-		for directory CNIDs.  Some old Mac apps and System calls use WD
-		refs instead of raw dirIDs.  Each openWD() returns a new opaque
-		ref that maps back to a dirID via wdToDirID().
-	*/
-
-	uint32_t openWD(uint32_t dirID, uint32_t procID = 0);
-	uint32_t wdToDirID(uint32_t wdRef) const;
-	uint32_t wdToProcID(uint32_t wdRef) const;
-	void closeWD(uint32_t wdRef);
-
-	/* Store the guest's current default volume/WD refnum (set by _SetVol).
-	   resolveDir() substitutes this when vRefNum=0. */
-	void setDefaultVRefNum(int16_t vRefNum);
-	int16_t defaultVRefNum() const { return defaultVRefNum_; }
-
 	/* ── Catalog consistency ──────────────────────── */
 
 	// Verify every catalog entry: host path exists, isDirectory matches
@@ -306,15 +281,6 @@ private:
 	};
 	std::unordered_map<uint32_t, OpenFork> openForks_; // handle → OpenFork
 	uint32_t nextHandle_ = 1;						   // monotonic handle allocator
-
-	struct WDEntry
-	{
-		uint32_t dirID = 0;
-		uint32_t procID = 0;
-	};
-	std::unordered_map<uint32_t, WDEntry> wdTable_; // wdRef → WDEntry
-	uint32_t nextWD_ = 1;
-	int16_t defaultVRefNum_ = -static_cast<int16_t>(kBaseVRefNum); // overwritten by setSlot()
 
 	mutable TextStats textStats_; // mutable: updated by const-ish read paths
 
