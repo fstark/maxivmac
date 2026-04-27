@@ -119,6 +119,17 @@ public:
 	// Root WD for a slot (created automatically on mount).
 	uint32_t rootWD(int slot) const;
 
+	// Read DefVCBPtr from guest RAM, check if it points to one of
+	// our VCBs.  Returns true and sets outSlot if ours.
+	bool isDefaultOurs(int &outSlot) const;
+
+	// Resolve (vRefNum, rawDirID) → actual dirID + slot.
+	// Returns 0 if the vRefNum doesn't match any of our volumes.
+	uint32_t resolveDir(int16_t vRefNum, uint32_t rawDirID, int &outSlot) const;
+
+	// Volume name lookup by case-insensitive name comparison.
+	int slotFromName(std::string_view name) const;
+
 private:
 	struct Slot
 	{

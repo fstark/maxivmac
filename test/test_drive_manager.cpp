@@ -230,3 +230,83 @@ TEST_CASE("DriveManager: WD default set on first mount")
 	// First mount should set defaultWD to rootWD of slot 0.
 	CHECK(dm.defaultWD() == dm.rootWD(0));
 }
+
+/* ── Encode/Decode WD ref tests ──────────────────── */
+
+TEST_CASE("DriveManager: EncodeDecodeGuestWDRef round-trip")
+{
+	for (uint32_t wdRef = 1; wdRef <= 10; ++wdRef)
+	{
+		int16_t encoded = storage::EncodeGuestWDRef(wdRef);
+		uint32_t decoded = storage::DecodeGuestWDRef(encoded);
+		CHECK(decoded == wdRef);
+	}
+}
+
+/* ── resolveDir tests (non-DefVCBPtr paths) ──────── */
+
+TEST_CASE("DriveManager: resolveDir explicit dirID")
+{
+	TempDir td("dm_rd_explicit");
+	storage::DriveManager dm;
+	dm.mount(td.path);
+
+	int slot = -1;
+	// vRefNum = -32000 (our slot 0), dirID = 17 → returns 17, slot = 0.
+	uint32_t dir = dm.resolveDir(-32000, 17, slot);
+	CHECK(dir == 17);
+	CHECK(slot == 0);
+}
+
+TEST_CASE("DriveManager: resolveDir WD refnum")
+{
+	TempDir td("dm_rd_wd");
+	storage::DriveManager dm;
+	dm.mount(td.path);
+
+	uint32_t wd = dm.openWD(0, 42);
+	int16_t guestVRef = storage::EncodeGuestWDRef(wd);
+
+	int slot = -1;
+	uint32_t dir = dm.resolveDir(guestVRef, 0, slot);
+	CHECK(dir == 42);
+	CHECK(slot == 0);
+}
+
+TEST_CASE("DriveManager: resolveDir unknown WD")
+{
+	TempDir td("dm_rd_unkn");
+	storage::DriveManager dm;
+	dm.mount(td.path);
+
+	// A WD refnum that was never opened — encoded as guest vRefNum.
+	int16_t badVRef = storage::EncodeGuestWDRef(9999);
+
+	int slot = -1;
+	uint32_t dir = dm.resolveDir(badVRef, 0, slot);
+	CHECK(dir == 0);
+	CHECK(slot == -1);
+}
+
+TEST_CASE("DriveManager: resolveDir drive number")
+{
+	TempDir td("dm_rd_drv");
+	storage::DriveManager dm;
+	dm.mount(td.path);
+
+	int slot = -1;
+	uint32_t dir = dm.resolveDir(8, 0, slot); // driveNum 8 = slot 0
+	CHECK(dir == storage::HostVolume::kRootDirID);
+	CHECK(slot == 0);
+}
+
+TEST_CASE("DriveManager: slotFromName")
+{
+	TempDir td("dm_name");
+	storage::DriveManager dm;
+	dm.mount(td.path);
+
+	auto name = dm.volumeName(0);
+	CHECK(dm.slotFromName(name) == 0);
+	CHECK(dm.slotFromName("nonexistent") == -1);
+}

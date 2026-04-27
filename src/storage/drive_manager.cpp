@@ -5,6 +5,11 @@
 #include "core/diag.h"
 
 #include <algorithm>
+#include <cctype>
+
+/* Guest RAM access — needed for isDefaultOurs(). */
+extern uint16_t get_vm_word(uint32_t addr);
+extern uint32_t get_vm_long(uint32_t addr);
 
 namespace storage
 {
@@ -260,6 +265,112 @@ uint32_t DriveManager::rootWD(int slot) const
 {
 	if (slot < 0 || slot >= kMaxDrives) return 0;
 	return rootWD_[slot];
+}
+
+/* ── Default volume detection ─────────────────────── */
+
+bool DriveManager::isDefaultOurs(int &outSlot) const
+{
+	uint32_t vcbPtr = get_vm_long(0x0352); // DefVCBPtr
+	if (vcbPtr == 0)
+	{
+		outSlot = -1;
+		return false;
+	}
+	auto vRef = static_cast<int16_t>(get_vm_word(vcbPtr + 78)); // vcbVRefNum
+	outSlot = slotFromVRefNum(vRef);
+	return outSlot >= 0;
+}
+
+/* ── Directory resolution ─────────────────────────── */
+
+uint32_t DriveManager::resolveDir(int16_t vRefNum, uint32_t rawDirID, int &outSlot) const
+{
+	// Explicit dirID always wins.
+	if (rawDirID != 0)
+	{
+		// Determine slot from vRefNum.
+		if (vRefNum == 0)
+		{
+			if (!isDefaultOurs(outSlot)) return 0;
+		}
+		else
+		{
+			outSlot = slotFromVRefNum(vRefNum);
+			if (outSlot < 0)
+			{
+				// Try drive number.
+				int dnSlot = vRefNum - kBaseDriveNum;
+				if (dnSlot >= 0 && dnSlot < kMaxDrives && slots_[dnSlot].vol.has_value())
+					outSlot = dnSlot;
+				else
+				{
+					// Try WD refnum.
+					auto wdRef = DecodeGuestWDRef(vRefNum);
+					outSlot = wdToSlot(wdRef);
+				}
+			}
+		}
+		return (outSlot >= 0) ? rawDirID : 0;
+	}
+
+	// rawDirID == 0: derive directory from vRefNum.
+	if (vRefNum == 0)
+	{
+		// Default volume.
+		if (!isDefaultOurs(outSlot)) return 0;
+		uint32_t dirID = wdToDirID(defaultWD_);
+		return dirID != 0 ? dirID : HostVolume::kRootDirID;
+	}
+
+	// Direct volume ref?
+	outSlot = slotFromVRefNum(vRefNum);
+	if (outSlot >= 0) return HostVolume::kRootDirID;
+
+	// Drive number?
+	int dnSlot = vRefNum - kBaseDriveNum;
+	if (dnSlot >= 0 && dnSlot < kMaxDrives && slots_[dnSlot].vol.has_value())
+	{
+		outSlot = dnSlot;
+		return HostVolume::kRootDirID;
+	}
+
+	// WD refnum?
+	auto wdRef = DecodeGuestWDRef(vRefNum);
+	int wdSlot = wdToSlot(wdRef);
+	if (wdSlot >= 0)
+	{
+		outSlot = wdSlot;
+		return wdToDirID(wdRef);
+	}
+
+	// Unknown.
+	outSlot = -1;
+	return 0;
+}
+
+/* ── Name lookup ──────────────────────────────────── */
+
+int DriveManager::slotFromName(std::string_view name) const
+{
+	for (int i = 0; i < kMaxDrives; ++i)
+	{
+		if (!slots_[i].vol.has_value()) continue;
+		auto &vn = slots_[i].volumeName;
+		if (vn.size() != name.size()) continue;
+		bool match = true;
+		for (size_t j = 0; j < vn.size(); ++j)
+		{
+			if (std::tolower(static_cast<unsigned char>(vn[j])) !=
+				std::tolower(static_cast<unsigned char>(name[j])))
+			{
+				match = false;
+				break;
+			}
+		}
+		if (match) return i;
+	}
+	return -1;
 }
 
 } // namespace storage
