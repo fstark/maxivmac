@@ -1433,13 +1433,6 @@ short DispatchHFS(char *pb, short selector)
 	}
 
 	result = DispatchFromTable(sHFSTraps, selector, pb, g, 1, selector);
-	if (result != 0)
-	{
-		/* Unknown HFS selector: return paramErr */
-		*(short *)(pb + pb_ioResult) = kParamErr;
-		log_trap(g->regBase, selector, pb, LOG_ERROR, kParamErr, LOG_F_HFS);
-		result = 0;
-	}
 	RestoreA4();
 	return result;
 }
