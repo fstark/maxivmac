@@ -52,47 +52,7 @@ static bool ParseAddr(const Token &tok, uint32_t &addr)
 	return false;
 }
 
-/* ── Format spec parser for x command ──────────────── */
-
-struct FmtSpec
-{
-	int count = 1;
-	char size = 'w';   /* b, w, l */
-	char format = 'x'; /* x, d, s, i */
-};
-
-static FmtSpec ParseFmtSpec(const std::string &spec)
-{
-	FmtSpec f;
-	int pos = 0;
-	int len = static_cast<int>(spec.size());
-
-	/* Leading digits = count */
-	if (pos < len && spec[pos] >= '0' && spec[pos] <= '9')
-	{
-		f.count = 0;
-		while (pos < len && spec[pos] >= '0' && spec[pos] <= '9')
-		{
-			f.count = f.count * 10 + (spec[pos] - '0');
-			++pos;
-		}
-	}
-
-	/* Size letter */
-	if (pos < len && (spec[pos] == 'b' || spec[pos] == 'w' || spec[pos] == 'l'))
-	{
-		f.size = spec[pos++];
-	}
-
-	/* Format letter */
-	if (pos < len && (spec[pos] == 'x' || spec[pos] == 'd' || spec[pos] == 's' ||
-					  spec[pos] == 'i' || spec[pos] == 't'))
-	{
-		f.format = spec[pos++];
-	}
-
-	return f;
-}
+/* ParseFmtSpec lives in cmd_parser.cpp (declared in cmd_parser.h) */
 
 void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 {
@@ -106,30 +66,32 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 		++argIdx;
 		/* Reassemble format spec from tokens until we hit something
 		   that looks like an address */
+		auto isFmtChar = [](char c)
+		{
+			return c == 'b' || c == 'w' || c == 'l' || c == 'x' || c == 'd' || c == 's' ||
+				   c == 'i' || c == 't';
+		};
+		auto allFmtChars = [&](const std::string &s)
+		{
+			for (char c : s)
+				if (!isFmtChar(c)) return false;
+			return !s.empty();
+		};
 		std::string fmtStr;
 		while (argIdx < static_cast<int>(args.size()))
 		{
 			auto &tok = args[argIdx];
 			if (tok.kind == Token::Kind::End) break;
-			/* Stop at $ (hex addr), ( (paren expr), or a number that starts
-			   with $ or 0x. Also stop at a word that looks like a register. */
+			/* Leading count (digits) — only valid at the start */
 			if (tok.kind == Token::Kind::Number && fmtStr.empty())
 			{
 				fmtStr += tok.text;
 				++argIdx;
 				continue;
 			}
-			if (tok.kind == Token::Kind::Word && fmtStr.size() > 0 && tok.text.size() == 1 &&
-				(tok.text[0] == 'b' || tok.text[0] == 'w' || tok.text[0] == 'l' ||
-				 tok.text[0] == 'x' || tok.text[0] == 'd' || tok.text[0] == 's' ||
-				 tok.text[0] == 'i' || tok.text[0] == 't'))
-			{
-				fmtStr += tok.text;
-				++argIdx;
-				continue;
-			}
-			/* First token after / that's a single format char */
-			if (tok.kind == Token::Kind::Word && fmtStr.empty() && tok.text.size() <= 3)
+			/* Word token whose characters are all valid format letters
+			   (e.g. "wx", "b", "ld") — accept whether count preceded or not */
+			if (tok.kind == Token::Kind::Word && allFmtChars(tok.text))
 			{
 				fmtStr += tok.text;
 				++argIdx;

@@ -237,3 +237,38 @@ const CmdEntry *DispatchCommand(std::string_view input, const CmdEntry *table, i
 					static_cast<int>(input.size()), input.data());
 	return nullptr;
 }
+
+/* ── Format spec parser for x command ──────────────── */
+
+FmtSpec ParseFmtSpec(const std::string &spec)
+{
+	FmtSpec f;
+	int pos = 0;
+	int len = static_cast<int>(spec.size());
+
+	/* Leading digits = count */
+	if (pos < len && spec[pos] >= '0' && spec[pos] <= '9')
+	{
+		f.count = 0;
+		while (pos < len && spec[pos] >= '0' && spec[pos] <= '9')
+		{
+			f.count = f.count * 10 + (spec[pos] - '0');
+			++pos;
+		}
+	}
+
+	/* Size letter */
+	if (pos < len && (spec[pos] == 'b' || spec[pos] == 'w' || spec[pos] == 'l'))
+	{
+		f.size = spec[pos++];
+	}
+
+	/* Format letter */
+	if (pos < len && (spec[pos] == 'x' || spec[pos] == 'd' || spec[pos] == 's' ||
+					  spec[pos] == 'i' || spec[pos] == 't'))
+	{
+		f.format = spec[pos++];
+	}
+
+	return f;
+}

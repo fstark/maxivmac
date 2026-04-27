@@ -415,3 +415,174 @@ TEST_CASE("dispatch unknown")
 	auto *cmd = DispatchCommand("xyz", table, 1);
 	CHECK(cmd == nullptr);
 }
+
+/* ════════════════════════════════════════════════════════
+   ParseFmtSpec tests (x command format string)
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("ParseFmtSpec defaults")
+{
+	auto f = ParseFmtSpec("");
+	CHECK(f.count == 1);
+	CHECK(f.size == 'w');
+	CHECK(f.format == 'x');
+}
+
+TEST_CASE("ParseFmtSpec count only")
+{
+	auto f = ParseFmtSpec("4");
+	CHECK(f.count == 4);
+	CHECK(f.size == 'w');
+	CHECK(f.format == 'x');
+}
+
+TEST_CASE("ParseFmtSpec size only")
+{
+	auto f = ParseFmtSpec("b");
+	CHECK(f.count == 1);
+	CHECK(f.size == 'b');
+	CHECK(f.format == 'x');
+}
+
+TEST_CASE("ParseFmtSpec format only")
+{
+	/* 'x' is ambiguous (could be format), but parser checks size first.
+	   'd' is unambiguously a format char. */
+	auto f = ParseFmtSpec("d");
+	CHECK(f.count == 1);
+	CHECK(f.size == 'w');
+	CHECK(f.format == 'd');
+}
+
+TEST_CASE("ParseFmtSpec count + size")
+{
+	auto f = ParseFmtSpec("4b");
+	CHECK(f.count == 4);
+	CHECK(f.size == 'b');
+	CHECK(f.format == 'x');
+}
+
+TEST_CASE("ParseFmtSpec count + size + format")
+{
+	auto f = ParseFmtSpec("2wx");
+	CHECK(f.count == 2);
+	CHECK(f.size == 'w');
+	CHECK(f.format == 'x');
+}
+
+TEST_CASE("ParseFmtSpec size + format")
+{
+	auto f = ParseFmtSpec("ld");
+	CHECK(f.count == 1);
+	CHECK(f.size == 'l');
+	CHECK(f.format == 'd');
+}
+
+TEST_CASE("ParseFmtSpec count + format (no size)")
+{
+	auto f = ParseFmtSpec("3d");
+	CHECK(f.count == 3);
+	CHECK(f.size == 'w');
+	CHECK(f.format == 'd');
+}
+
+TEST_CASE("ParseFmtSpec large count")
+{
+	auto f = ParseFmtSpec("16bx");
+	CHECK(f.count == 16);
+	CHECK(f.size == 'b');
+	CHECK(f.format == 'x');
+}
+
+TEST_CASE("ParseFmtSpec instruction format")
+{
+	auto f = ParseFmtSpec("10i");
+	CHECK(f.count == 10);
+	CHECK(f.format == 'i');
+}
+
+/* ── Tokenizer + FmtSpec reassembly simulation ──────── */
+
+/* Helper: simulate the format reassembly logic from CmdExamine.
+   Tokenizes "/<fmt> <addr>" and returns the reassembled fmt string. */
+static std::string ReassembleFmt(std::string_view input)
+{
+	auto args = Tokenize(input);
+	int argIdx = 0;
+
+	/* Skip leading / */
+	if (!args.empty() && args[0].kind == Token::Kind::Operator && args[0].text == "/") ++argIdx;
+
+	auto isFmtChar = [](char c)
+	{
+		return c == 'b' || c == 'w' || c == 'l' || c == 'x' || c == 'd' || c == 's' || c == 'i' ||
+			   c == 't';
+	};
+	auto allFmtChars = [&](const std::string &s)
+	{
+		for (char c : s)
+			if (!isFmtChar(c)) return false;
+		return !s.empty();
+	};
+
+	std::string fmtStr;
+	while (argIdx < static_cast<int>(args.size()))
+	{
+		auto &tok = args[argIdx];
+		if (tok.kind == Token::Kind::End) break;
+		if (tok.kind == Token::Kind::Number && fmtStr.empty())
+		{
+			fmtStr += tok.text;
+			++argIdx;
+			continue;
+		}
+		if (tok.kind == Token::Kind::Word && allFmtChars(tok.text))
+		{
+			fmtStr += tok.text;
+			++argIdx;
+			continue;
+		}
+		break;
+	}
+	return fmtStr;
+}
+
+TEST_CASE("reassemble x/wx")
+{
+	CHECK(ReassembleFmt("/wx $082C") == "wx");
+}
+
+TEST_CASE("reassemble x/2wx — the reported bug")
+{
+	CHECK(ReassembleFmt("/2wx $082C") == "2wx");
+}
+
+TEST_CASE("reassemble x/4b")
+{
+	CHECK(ReassembleFmt("/4b $400000") == "4b");
+}
+
+TEST_CASE("reassemble x/2bx")
+{
+	CHECK(ReassembleFmt("/2bx $08CE") == "2bx");
+}
+
+TEST_CASE("reassemble x/10i")
+{
+	CHECK(ReassembleFmt("/10i pc") == "10i");
+}
+
+TEST_CASE("reassemble bare format x/x")
+{
+	CHECK(ReassembleFmt("/x $1000") == "x");
+}
+
+TEST_CASE("reassemble stops at address token")
+{
+	/* After format chars, a $ hex address should not be consumed */
+	auto fmt = ReassembleFmt("/2wx $082C");
+	auto parsed = ParseFmtSpec(fmt);
+	CHECK(parsed.count == 2);
+	CHECK(parsed.size == 'w');
+	CHECK(parsed.format == 'x');
+}

@@ -45,3 +45,14 @@ class DbgIO; // forward
 // Returns nullptr if no match or ambiguous (error printed via io).
 const CmdEntry *DispatchCommand(std::string_view input, const CmdEntry *table, int tableSize,
 								DbgIO *io = nullptr);
+
+/* ── Format spec for the x (examine) command ───────── */
+
+struct FmtSpec
+{
+	int count = 1;
+	char size = 'w';   /* b, w, l */
+	char format = 'x'; /* x, d, s, i, t */
+};
+
+FmtSpec ParseFmtSpec(const std::string &spec);
