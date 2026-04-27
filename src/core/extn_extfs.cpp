@@ -281,7 +281,7 @@ static constexpr uint16_t kPB_CloseWD = 0x243;
 static constexpr uint16_t kPB_GetWDInfo = 0x244;
 static constexpr uint16_t kPB_SetDefaultVRefNum = 0x245;
 static constexpr uint16_t kPB_SetVol = 0x0246;
-[[maybe_unused]] static constexpr uint16_t kPB_GetVol = 0x0247;
+static constexpr uint16_t kPB_GetVol = 0x0247;
 
 /* ── Volume resolution helpers ────────────────────── */
 
@@ -921,6 +921,47 @@ static void PbSetVol(uint32_t regParam[], uint16_t &regResult)
 	regResult = 0;
 }
 
+/* PBGetVol / PBHGetVol — host-authoritative current directory query. */
+static void PbGetVol(uint32_t regParam[], uint16_t &regResult)
+{
+	PBRef pb{regParam[0]};
+	bool isHFS = regParam[1] != 0;
+
+	int defSlot = -1;
+	if (!s_drives.isDefaultOurs(defSlot))
+	{
+		regResult = kNotOurs;
+		return;
+	}
+
+	auto *vol = s_drives.volume(defSlot);
+	if (!vol)
+	{
+		regResult = kNotOurs;
+		return;
+	}
+
+	uint32_t defWD = s_drives.defaultWD();
+	pb[ioVRefNum] = storage::EncodeGuestWDRef(defWD);
+
+	uint32_t nameAddr = pb[ioNamePtr];
+	if (nameAddr != 0)
+	{
+		auto name = s_drives.volumeName(defSlot);
+		writePascalString(nameAddr, name.empty() ? std::string("Shared") : std::string(name));
+	}
+
+	if (isHFS)
+	{
+		pb[ioWDVRefNum] = storage::EncodeGuestWDRef(s_drives.rootWD(defSlot));
+		pb[ioWDProcID] = 0u;
+		uint32_t dirID = s_drives.wdToDirID(defWD);
+		pb[ioWDDirID] = dirID != 0 ? dirID : kRootDirID;
+	}
+
+	regResult = 0;
+}
+
 /* ── Register-based handlers ──────────────────────── */
 
 /* Return the number of mounted drives. */
@@ -1288,6 +1329,9 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			break;
 		case kPB_SetVol:
 			PbSetVol(regParam, regResult);
+			break;
+		case kPB_GetVol:
+			PbGetVol(regParam, regResult);
 			break;
 		case kPB_SetDefaultVRefNum:
 		{
