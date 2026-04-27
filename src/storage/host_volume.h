@@ -313,8 +313,7 @@ private:
 	};
 	std::unordered_map<uint32_t, WDEntry> wdTable_; // wdRef → WDEntry
 	uint32_t nextWD_ = 1;
-	int slot_ = 0;
-	int16_t defaultVRefNum_ = -static_cast<int16_t>(kBaseVRefNum); // current default from _SetVol
+	int16_t defaultVRefNum_ = kGuestVRefNum; // current default from _SetVol
 
 	mutable TextStats textStats_; // mutable: updated by const-ish read paths
 

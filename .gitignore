@@ -28,7 +28,10 @@ coverage.html
 753.hfs
 macdocs/ref/mac-rom
 shared/
+shared2/
 dbglog.txt
 verbose.txt
 *-win.txt
 *-fail.txt
+macsrc/shareddrive/tracing.txt
+debug_mouse.dbg

@@ -577,15 +577,16 @@ static short sOurWDCount = 0;
 
 static void TrackWD(short wdRefNum)
 {
-	if (sOurWDCount < kMaxOurWDs)
-		sOurWDs[sOurWDCount++] = wdRefNum;
+	if (sOurWDCount < kMaxOurWDs) sOurWDs[sOurWDCount++] = wdRefNum;
 }
 
 static void UntrackWD(short wdRefNum)
 {
 	short i;
-	for (i = 0; i < sOurWDCount; i++) {
-		if (sOurWDs[i] == wdRefNum) {
+	for (i = 0; i < sOurWDCount; i++)
+	{
+		if (sOurWDs[i] == wdRefNum)
+		{
 			sOurWDs[i] = sOurWDs[--sOurWDCount];
 			return;
 		}
@@ -1329,8 +1330,7 @@ static OSErr TrapOpenWD(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_command(g->regBase, kPB_OpenWD);
 	err = host_err(g->regBase);
-	if (err == kNoErr)
-		TrackWD(*(short *)(pb + pb_ioVRefNum));
+	if (err == kNoErr) TrackWD(*(short *)(pb + pb_ioVRefNum));
 	return err;
 }
 
