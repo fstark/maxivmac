@@ -291,6 +291,7 @@ public:
 private:
 	std::filesystem::path rootPath_; // host directory backing this volume
 	bool mounted_ = false;
+	int slot_ = 0;						// assigned by DriveManager::mount() via setSlot()
 	std::vector<CatalogEntry> catalog_; // flat list; searched linearly by CNID or name
 	uint32_t nextCNID_ = 16;			// monotonic counter; 1-2 are reserved for root
 
@@ -313,7 +314,7 @@ private:
 	};
 	std::unordered_map<uint32_t, WDEntry> wdTable_; // wdRef → WDEntry
 	uint32_t nextWD_ = 1;
-	int16_t defaultVRefNum_ = kGuestVRefNum; // current default from _SetVol
+	int16_t defaultVRefNum_ = -static_cast<int16_t>(kBaseVRefNum); // overwritten by setSlot()
 
 	mutable TextStats textStats_; // mutable: updated by const-ish read paths
 
