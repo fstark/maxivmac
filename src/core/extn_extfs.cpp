@@ -280,6 +280,8 @@ static constexpr uint16_t kPB_OpenWD = 0x242;
 static constexpr uint16_t kPB_CloseWD = 0x243;
 static constexpr uint16_t kPB_GetWDInfo = 0x244;
 static constexpr uint16_t kPB_SetDefaultVRefNum = 0x245;
+static constexpr uint16_t kPB_SetVol = 0x0246;
+[[maybe_unused]] static constexpr uint16_t kPB_GetVol = 0x0247;
 
 /* ── Volume resolution helpers ────────────────────── */
 
@@ -855,6 +857,70 @@ static OSErr PbGetWDInfo(PBRef pb)
 	return 0;
 }
 
+/* PBSetVol / PBHSetVol — host-authoritative default directory. */
+static void PbSetVol(uint32_t regParam[], uint16_t &regResult)
+{
+	PBRef pb{regParam[0]};
+	bool isHFS = regParam[1] != 0;
+
+	int16_t vRefNum = pb[ioVRefNum];
+	uint32_t nameAddr = pb[ioNamePtr];
+
+	int slot = -1;
+	if (vRefNum == 0 && nameAddr != 0)
+	{
+		std::string name = readPascalString(nameAddr);
+		slot = s_drives.slotFromName(name);
+	}
+	else
+	{
+		slot = s_drives.slotFromVRefNum(vRefNum);
+		if (slot < 0)
+		{
+			auto wdRef = storage::DecodeGuestWDRef(vRefNum);
+			int wdSlot = s_drives.wdToSlot(wdRef);
+			if (wdSlot >= 0) slot = wdSlot;
+		}
+	}
+
+	if (slot < 0)
+	{
+		regResult = kNotOurs;
+		return;
+	}
+
+	uint32_t wdRef;
+	if (isHFS)
+	{
+		uint32_t dirID = static_cast<uint32_t>(pb[ioDrDirID]);
+		if (dirID != 0 && dirID != kRootDirID)
+		{
+			wdRef = s_drives.openWD(slot, dirID, 0);
+		}
+		else if (vRefNum != 0)
+		{
+			auto decoded = storage::DecodeGuestWDRef(vRefNum);
+			if (s_drives.isOurWD(decoded))
+				wdRef = decoded;
+			else
+				wdRef = s_drives.rootWD(slot);
+		}
+		else
+		{
+			wdRef = s_drives.rootWD(slot);
+		}
+	}
+	else
+	{
+		wdRef = s_drives.rootWD(slot);
+	}
+
+	s_drives.setDefaultWD(wdRef);
+
+	regParam[0] = static_cast<uint32_t>(slot);
+	regResult = 0;
+}
+
 /* ── Register-based handlers ──────────────────────── */
 
 /* Return the number of mounted drives. */
@@ -1219,6 +1285,9 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			break;
 		case kPB_GetWDInfo:
 			regResult = translateResult(PbGetWDInfo(PBRef{regParam[0]}));
+			break;
+		case kPB_SetVol:
+			PbSetVol(regParam, regResult);
 			break;
 		case kPB_SetDefaultVRefNum:
 		{
