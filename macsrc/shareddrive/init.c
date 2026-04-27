@@ -239,8 +239,6 @@
 #define kCmdWrite 0x0211
 #define kCmdSetEOF 0x0218
 #define kCmdGetVol 0x0201
-#define kCmdOpenWD 0x020B
-#define kCmdGetWDInfo 0x020A
 
 /* PB-based command codes */
 #define kPB_GetCatInfo 0x0230
@@ -257,7 +255,11 @@
 #define kPB_OpenWD 0x0242
 #define kPB_CloseWD 0x0243
 #define kPB_GetWDInfo 0x0244
-#define kPB_SetDefaultVRefNum 0x0245
+#define kPB_SetVol 0x0246
+#define kPB_GetVol 0x0247
+
+/* Host returns this when the volume is not ours — guest passes through to ROM */
+#define kNotOurs 0xFFFE
 
 
 /* ---- Globals ---- */
@@ -271,8 +273,6 @@ typedef struct
 	long volFileCount;
 	long volTotalBytes;
 	long savedA4;		   /* THINK C code resource A4 */
-	short rootWDRefNum;	   /* permanent WD for root dir, created at init */
-	short defaultWDRefNum; /* WD refnum from last SetVol */
 	short ejected;		   /* nonzero after _Eject */
 	long oldFilter;		   /* previous jGNEFilter */
 	long lastPollTick;	   /* TickCount at last poll */
@@ -496,6 +496,15 @@ static OSErr host_err(char *base)
 	return (short)reg_result(base);
 }
 
+/* Like host_err but returns kPassThrough (1) when the host says
+   kNotOurs — used by non-refBased PB handlers so that the dispatch
+   loop passes the call through to ROM. */
+static OSErr host_err_passthrough(char *base)
+{
+	if ((unsigned short)reg_result(base) == kNotOurs) return kPassThrough;
+	return (short)reg_result(base);
+}
+
 /* ---- Parameter extraction ---- */
 
 
@@ -568,53 +577,6 @@ static Boolean IsOurFCB(short refNum)
 		return false;
 	}
 	return true;
-}
-
-/* ---- WD refnum tracking ---- */
-#define kMaxOurWDs 40
-static short sOurWDs[kMaxOurWDs];
-static short sOurWDCount = 0;
-
-static void TrackWD(short wdRefNum)
-{
-	if (sOurWDCount < kMaxOurWDs) sOurWDs[sOurWDCount++] = wdRefNum;
-}
-
-static void UntrackWD(short wdRefNum)
-{
-	short i;
-	for (i = 0; i < sOurWDCount; i++)
-	{
-		if (sOurWDs[i] == wdRefNum)
-		{
-			sOurWDs[i] = sOurWDs[--sOurWDCount];
-			return;
-		}
-	}
-}
-
-static Boolean IsOurVolume(short vRefNum)
-{
-	short i;
-
-	/* Direct vRefNum match: -32000 .. -32007 */
-	if (vRefNum <= -(short)kBaseVRefNum && vRefNum > -(short)(kBaseVRefNum + kMaxDrives))
-		return true;
-
-	/* Drive number match: 8 .. 15 */
-	if (vRefNum >= kBaseDriveNum && vRefNum < kBaseDriveNum + kMaxDrives) return true;
-
-	/* WD refnum we allocated */
-	for (i = 0; i < sOurWDCount; i++)
-		if (sOurWDs[i] == vRefNum) return true;
-
-	/* vRefNum 0 means "default volume" — check DefVCBPtr */
-	if (vRefNum == 0)
-	{
-		Globals *g = get_globals();
-		if (g != NULL && IsOurVCB(*(Ptr *)kDefVCBPtr, g)) return true;
-	}
-	return false;
 }
 
 /* Resolve a vRefNum to one of our VCB pointers.
@@ -898,6 +860,7 @@ static OSErr TrapOpen(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_Open);
+	if ((unsigned short)reg_result(g->regBase) == kNotOurs) return kPassThrough;
 	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
 
 	{
@@ -947,6 +910,7 @@ static OSErr TrapOpenRF(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_OpenRF);
+	if ((unsigned short)reg_result(g->regBase) == kNotOurs) return kPassThrough;
 	if (reg_result(g->regBase) != 0) return host_err(g->regBase);
 
 	{
@@ -994,7 +958,7 @@ static OSErr TrapGetFileInfo(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_GetFileInfo);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapSetFileInfo(char *pb, Globals *g, short isHFS)
@@ -1002,7 +966,7 @@ static OSErr TrapSetFileInfo(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_SetFileInfo);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapGetCatInfo(char *pb, Globals *g, short isHFS)
@@ -1010,7 +974,7 @@ static OSErr TrapGetCatInfo(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_GetCatInfo);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapSetCatInfo(char *pb, Globals *g, short isHFS)
@@ -1018,7 +982,7 @@ static OSErr TrapSetCatInfo(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_SetCatInfo);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapCreate(char *pb, Globals *g, short isHFS)
@@ -1026,6 +990,7 @@ static OSErr TrapCreate(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_Create);
+	if ((unsigned short)reg_result(g->regBase) == kNotOurs) return kPassThrough;
 	{
 		OSErr err = host_err(g->regBase);
 		if (err == kNoErr)
@@ -1046,7 +1011,7 @@ static OSErr TrapDelete(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_Delete);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapRename(char *pb, Globals *g, short isHFS)
@@ -1054,7 +1019,7 @@ static OSErr TrapRename(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_Rename);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
@@ -1072,27 +1037,22 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 		short i;
 		for (i = 1; i < vidx && vcb != NULL; i++)
 			vcb = *(Ptr *)vcb;
-		if (vcb == NULL || !IsOurVCB(vcb, g)) return 1; /* not ours — sentinel for pass-through */
+		if (vcb == NULL || !IsOurVCB(vcb, g)) return 1; /* not ours — pass through */
 		v = vcb;
 	}
 	else if (vidx == 0)
 	{
 		short vRefNum = *(short *)(pb + pb_ioVRefNum);
-		if (!IsOurVolume(vRefNum)) return 1; /* not ours */
-		/* Find which VCB matches this vRefNum */
-		v = g->vcb[0]; /* default to slot 0 */
-		{
-			Ptr fv = FindVCB(vRefNum, g);
-			if (fv != NULL) v = fv;
-		}
+		/* Check direct vRefNum/driveNum match */
+		v = FindVCB(vRefNum, g);
+		if (v == NULL) return 1; /* not ours */
 	}
 	else
 	{
 		/* vidx < 0: return info about the default volume */
 		v = FindVCB(0, g);
-		if (v == NULL) v = g->vcb[0];
+		if (v == NULL) return 1; /* not ours */
 	}
-	if (v == NULL) return 1;
 	driveNum = *(short *)(v + 72);
 
 	/* Query host for fresh counts */
@@ -1114,10 +1074,11 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 			dst[j] = src[j];
 	}
 
-	/* Return the WD refnum (not raw volume ref) so apps that use the
-	   returned ioVRefNum for subsequent Open calls carry directory context.
-	   On a real HFS volume, GetVolInfo preserves WD refnums in ioVRefNum. */
-	*(short *)(pb + pb_ioVRefNum) = g->defaultWDRefNum;
+	/* Return the volume's raw vRefNum from its VCB.  Real HFS preserves
+	   the caller's WD refnum in ioVRefNum but for indexed calls (vidx>0)
+	   returns the raw volume ref.  Using the VCB value is correct and
+	   doesn't depend on guest-side WD tracking. */
+	*(short *)(pb + pb_ioVRefNum) = *(short *)(v + 78);
 	*(long *)(pb + 30) = *(long *)(v + 10); /* ioVCrDate */
 	*(long *)(pb + 34) = *(long *)(v + 14); /* ioVLsMod */
 	*(short *)(pb + 38) = 0;				/* ioVAtrb */
@@ -1154,135 +1115,28 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapGetVol(char *pb, Globals *g, short isHFS)
 {
-	unsigned long nmAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	Ptr defVCB = FindVCB(0, g);
-	if (defVCB == NULL) defVCB = g->vcb[0];
-	if (nmAddr != 0 && defVCB != NULL)
-	{
-		unsigned char *src = (unsigned char *)(defVCB + 44);
-		unsigned char *dst = (unsigned char *)nmAddr;
-		short len = src[0];
-		short j;
-		if (len > 27) len = 27;
-		dst[0] = len;
-		for (j = 1; j <= len; j++)
-			dst[j] = src[j];
-	}
-	*(short *)(pb + pb_ioVRefNum) = g->defaultWDRefNum;
-	if (isHFS)
-	{
-		*(short *)(pb + 32) = kOurVRefNum; /* ioWDVRefNum: real volume ref */
-		*(long *)(pb + 28) = 0;			   /* ioWDProcID */
-		/* ioWDDirID: resolve defaultWDRefNum to its directory */
-		if (g->defaultWDRefNum != g->rootWDRefNum)
-		{
-			unsigned long wdRef = (unsigned long)(-(long)g->defaultWDRefNum - 32000);
-			reg_set(g->regBase, 0, wdRef);
-			reg_command(g->regBase, kCmdGetWDInfo);
-			if (reg_result(g->regBase) == 0)
-				*(long *)(pb + 48) = (long)reg_get(g->regBase, 1);
-			else
-				*(long *)(pb + 48) = kRootDirID;
-		}
-		else
-		{
-			*(long *)(pb + 48) = kRootDirID; /* ioWDDirID */
-		}
-	}
-	return kNoErr;
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
+	reg_command(g->regBase, kPB_GetVol);
+
+	if ((unsigned short)reg_result(g->regBase) == kNotOurs) return 1;
+	return host_err(g->regBase);
 }
 
 static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 {
-	short vRefNum = *(short *)(pb + pb_ioVRefNum);
-	unsigned long nameAddr = *(unsigned long *)(pb + pb_ioNamePtr);
-	short slot = -1;
+	reg_set(g->regBase, 0, (unsigned long)pb);
+	reg_set(g->regBase, 1, (unsigned long)isHFS);
+	reg_command(g->regBase, kPB_SetVol);
 
-	/* Check by name — compare against all our VCB names */
-	if (!IsOurVolume(vRefNum))
+	if ((unsigned short)reg_result(g->regBase) == kNotOurs) return 1;
+	if (reg_result(g->regBase) != 0)
+		return (short)reg_result(g->regBase);
+
 	{
-		if (nameAddr != 0)
-		{
-			unsigned char *p = (unsigned char *)nameAddr;
-			short i;
-			for (i = 0; i < g->driveCount; i++)
-			{
-				if (g->vcb[i] != NULL)
-				{
-					unsigned char *vn = (unsigned char *)(g->vcb[i] + 44);
-					if (pstr_equal(p, vn))
-					{
-						slot = i;
-						goto found;
-					}
-				}
-			}
-		}
-		return 1; /* not ours — sentinel for pass-through */
-	}
-
-	/* Resolve vRefNum to a slot index */
-	{
-		short v = -(short)kBaseVRefNum;
-		short i;
-		for (i = 0; i < g->driveCount; i++)
-		{
-			short sv = -(short)(kBaseVRefNum + i);
-			short sd = (short)(kBaseDriveNum + i);
-			if (vRefNum == sv || vRefNum == sd)
-			{
-				slot = i;
-				break;
-			}
-		}
-		if (slot < 0) slot = 0; /* fallback */
-	}
-
-found:
-	/* Store the caller's WD refnum (or root WD for raw vol ref).
-	   HSetVol with the raw volume ref carries the target directory
-	   in ioWDDirID — open a WD for it so that subsequent flat
-	   Open/Create calls with vRefNum=0 land there. */
-	{
-		short rawVRef = -(short)(kBaseVRefNum + slot);
-		if (vRefNum < rawVRef)
-		{
-			/* Caller passed an explicit WD refnum — use it directly */
-			g->defaultWDRefNum = vRefNum;
-		}
-		else if (isHFS)
-		{
-			long dirID = *(long *)(pb + pb_ioWDDirID);
-			if (dirID != 0 && dirID != (long)kRootDirID)
-			{
-				reg_set(g->regBase, 0, (unsigned long)(unsigned short)rawVRef);
-				reg_set(g->regBase, 1, (unsigned long)dirID);
-				reg_set(g->regBase, 2, 0);
-				reg_command(g->regBase, kCmdOpenWD);
-				if (reg_result(g->regBase) == 0)
-				{
-					unsigned long wdRef = reg_get(g->regBase, 0);
-					g->defaultWDRefNum = (short)(-(long)wdRef - 32000);
-					TrackWD(g->defaultWDRefNum);
-				}
-				else
-				{
-					g->defaultWDRefNum = g->rootWDRefNum;
-				}
-			}
-			else
-			{
-				g->defaultWDRefNum = g->rootWDRefNum;
-			}
-		}
-		else
-		{
-			g->defaultWDRefNum = g->rootWDRefNum;
-		}
-
-		*(Ptr *)kDefVCBPtr = g->vcb[slot];
-		reg_set(g->regBase, 0, (unsigned long)(unsigned short)g->defaultWDRefNum);
-		reg_command(g->regBase, kPB_SetDefaultVRefNum);
+		short slot = (short)reg_get(g->regBase, 0);
+		if (slot >= 0 && slot < kMaxDrives && g->vcb[slot] != NULL)
+			*(Ptr *)kDefVCBPtr = g->vcb[slot];
 	}
 	return kNoErr;
 }
@@ -1326,27 +1180,23 @@ static OSErr TrapFlushVol(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapOpenWD(char *pb, Globals *g, short isHFS)
 {
-	OSErr err;
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_command(g->regBase, kPB_OpenWD);
-	err = host_err(g->regBase);
-	if (err == kNoErr) TrackWD(*(short *)(pb + pb_ioVRefNum));
-	return err;
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapCloseWD(char *pb, Globals *g, short isHFS)
 {
-	UntrackWD(*(short *)(pb + pb_ioVRefNum));
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_command(g->regBase, kPB_CloseWD);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapGetWDInfo(char *pb, Globals *g, short isHFS)
 {
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_command(g->regBase, kPB_GetWDInfo);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapGetVolParms(char *pb, Globals *g, short isHFS)
@@ -1420,7 +1270,7 @@ static OSErr TrapDirCreate(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_DirCreate);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapCatMove(char *pb, Globals *g, short isHFS)
@@ -1428,7 +1278,7 @@ static OSErr TrapCatMove(char *pb, Globals *g, short isHFS)
 	reg_set(g->regBase, 0, (unsigned long)pb);
 	reg_set(g->regBase, 1, (unsigned long)isHFS);
 	reg_command(g->regBase, kPB_CatMove);
-	return host_err(g->regBase);
+	return host_err_passthrough(g->regBase);
 }
 
 static OSErr TrapSetVInfo(char *pb, Globals *g, short isHFS)
@@ -1451,7 +1301,7 @@ typedef struct
 {
 	short trapNum;
 	TrapHandler handler;
-	short refBased; /* 1=check IsOurFCB, 0=check IsOurVolume */
+	short refBased; /* 1=check IsOurFCB, 0=host-first dispatch */
 } TrapEntry;
 
 #define kMaxFlatTraps 23
@@ -1531,11 +1381,9 @@ static short DispatchFromTable(TrapEntry *table, short key, char *pb, Globals *g
 				return 1;
 			}
 		}
-		else
-		{
-			/* GetVolInfo and SetVol do their own ownership checks
-			   internally and return kPassThrough if not ours */
-		}
+		/* Non-refBased traps handle ownership internally:
+		   host-first handlers return kNotOurs → kPassThrough,
+		   VCB-based handlers (GetVolInfo) check VCB pointers. */
 
 		err = e->handler(pb, g, isHFS);
 		if (err == kPassThrough)
@@ -1566,26 +1414,6 @@ short DispatchFlat(char *pb, short trapWord)
 		return 1;
 	}
 
-	/* For non-refBased traps, check volume ownership before dispatch.
-	   GetVolInfo and SetVol handle ownership internally. */
-	{
-		TrapEntry *e;
-		for (e = sFlatTraps; e->handler != NULL; e++)
-		{
-			if (e->trapNum != trapNum) continue;
-			if (!e->refBased && trapNum != 0x07 && trapNum != 0x15)
-			{
-				if (!IsOurVolume(*(short *)(pb + pb_ioVRefNum)))
-				{
-					log_trap(g->regBase, trapWord, pb, LOG_PASSTHRU, 0, isHFS ? LOG_F_HFS : 0);
-					RestoreA4();
-					return 1;
-				}
-			}
-			break;
-		}
-	}
-
 	result = DispatchFromTable(sFlatTraps, trapNum, pb, g, isHFS, trapWord);
 	RestoreA4();
 	return result;
@@ -1602,25 +1430,6 @@ short DispatchHFS(char *pb, short selector)
 	{
 		RestoreA4();
 		return 1;
-	}
-
-	/* For non-refBased traps, check volume ownership */
-	{
-		TrapEntry *e;
-		for (e = sHFSTraps; e->handler != NULL; e++)
-		{
-			if (e->trapNum != selector) continue;
-			if (!e->refBased)
-			{
-				if (!IsOurVolume(*(short *)(pb + pb_ioVRefNum)))
-				{
-					log_trap(g->regBase, selector, pb, LOG_PASSTHRU, 0, LOG_F_HFS);
-					RestoreA4();
-					return 1;
-				}
-			}
-			break;
-		}
 	}
 
 	result = DispatchFromTable(sHFSTraps, selector, pb, g, 1, selector);
@@ -2079,18 +1888,6 @@ void main(void)
 		dbg_log(regBase, "SharedDrive: no drives in queue");
 		goto bail;
 	}
-
-	/* Create permanent root WD for slot 0 */
-	reg_set(regBase, 0, (unsigned long)kOurVRefNum);
-	reg_set(regBase, 1, (unsigned long)kRootDirID);
-	reg_set(regBase, 2, 0); /* procID = 0 for root WD */
-	reg_command(regBase, kCmdOpenWD);
-	{
-		unsigned long wdRef = reg_get(regBase, 0);
-		g->rootWDRefNum = (short)(-(long)wdRef - 32000);
-		TrackWD(g->rootWDRefNum);
-	}
-	g->defaultWDRefNum = g->rootWDRefNum;
 
 	dbg_log2(regBase, "SharedDrive: %ld files, %ld bytes", g->volFileCount, g->volTotalBytes);
 

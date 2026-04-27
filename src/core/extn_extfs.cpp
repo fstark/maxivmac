@@ -36,9 +36,6 @@ static constexpr uint16_t kExtFSVersion = 0x200;
 static constexpr uint16_t kExtFSGetVol = 0x201;
 static constexpr uint16_t kExtFSRead = 0x205;
 static constexpr uint16_t kExtFSClose = 0x206;
-static constexpr uint16_t kExtFSGetWDInfo = 0x20A;
-static constexpr uint16_t kExtFSOpenWD = 0x20B;
-static constexpr uint16_t kExtFSCloseWD = 0x20C;
 static constexpr uint16_t kExtFSDbgLog = 0x20D;
 static constexpr uint16_t kExtFSGuestVars = 0x20E;
 static constexpr uint16_t kExtFSLogTrap = 0x20F;
@@ -276,7 +273,6 @@ static constexpr uint16_t kPB_CatMove = 0x23E;
 static constexpr uint16_t kPB_OpenWD = 0x242;
 static constexpr uint16_t kPB_CloseWD = 0x243;
 static constexpr uint16_t kPB_GetWDInfo = 0x244;
-static constexpr uint16_t kPB_SetDefaultVRefNum = 0x245;
 static constexpr uint16_t kPB_SetVol = 0x0246;
 static constexpr uint16_t kPB_GetVol = 0x0247;
 
@@ -1034,44 +1030,6 @@ static void RegClose(uint32_t regParam[], uint16_t &regResult)
 }
 
 /* Look up the dirID and procID for a WD refnum (register path). */
-static void RegGetWDInfo(uint32_t regParam[], uint16_t &regResult)
-{
-	uint32_t wdRef = regParam[0];
-	DIAG(ExtFS, "GetWDInfo wd=%u\n", wdRef);
-	uint32_t dirID = s_drives.wdToDirID(wdRef);
-	if (dirID != 0)
-	{
-		regParam[0] = s_drives.wdToProcID(wdRef);
-		regParam[1] = dirID;
-		regResult = 0;
-	}
-	else
-	{
-		regResult = kFnfErr;
-	}
-}
-
-/* Allocate a WD refnum for a directory (register path). */
-static void RegOpenWD(uint32_t regParam[], uint16_t &regResult)
-{
-	uint32_t dirID = regParam[1];
-	uint32_t procID = regParam[2];
-	// Register path always uses slot 0 (legacy).
-	uint32_t wdRef = s_drives.openWD(0, dirID, procID);
-	regParam[0] = wdRef;
-	DIAG(ExtFS, "OpenWD dir=%u proc=%u → wd=%u\n", dirID, procID, wdRef);
-	regResult = 0;
-}
-
-/* Release a WD refnum (register path). */
-static void RegCloseWD(uint32_t regParam[], uint16_t &regResult)
-{
-	uint32_t wdRef = regParam[0];
-	DIAG(ExtFS, "CloseWD wd=%u\n", wdRef);
-	s_drives.closeWD(wdRef);
-	regResult = 0;
-}
-
 /* Format and display a debug log line from the guest. */
 static void RegDbgLog(uint32_t regParam[], uint16_t &regResult)
 {
@@ -1224,15 +1182,6 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSClose:
 			RegClose(regParam, regResult);
 			break;
-		case kExtFSGetWDInfo:
-			RegGetWDInfo(regParam, regResult);
-			break;
-		case kExtFSOpenWD:
-			RegOpenWD(regParam, regResult);
-			break;
-		case kExtFSCloseWD:
-			RegCloseWD(regParam, regResult);
-			break;
 		case kExtFSDbgLog:
 			RegDbgLog(regParam, regResult);
 			break;
@@ -1307,25 +1256,6 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kPB_GetVol:
 			PbGetVol(regParam, regResult);
 			break;
-		case kPB_SetDefaultVRefNum:
-		{
-			int16_t vRef = static_cast<int16_t>(regParam[0]);
-			int slot = s_drives.slotFromVRefNum(vRef);
-			if (slot >= 0)
-			{
-				// Direct volume ref — set root WD as default.
-				s_drives.setDefaultWD(s_drives.rootWD(slot));
-			}
-			else
-			{
-				// Try WD refnum.
-				auto wdRef = storage::DecodeGuestWDRef(vRef);
-				if (s_drives.isOurWD(wdRef)) s_drives.setDefaultWD(wdRef);
-			}
-			DIAG(ExtFS, "SetDefaultVRefNum vRef=%d\n", vRef);
-			regResult = 0;
-			break;
-		}
 
 		default:
 			regResult = 0xFFFF;
