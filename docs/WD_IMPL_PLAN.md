@@ -2,17 +2,19 @@
 
 Design: [WD_DESIGN.md](WD_DESIGN.md)
 
+Phases 1–6 completed 27 Apr 2026.  Commits 21d06d5..e140511.
+
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Move WD table from HostVolume to DriveManager | |
-| 2 | Add `isDefaultOurs()` and new `resolveDir()` on DriveManager | |
-| 3 | Add `kNotOurs` return path to existing PB handlers | |
-| 4 | Add `kPB_SetVol` host handler | |
-| 5 | Add `kPB_GetVol` host handler | |
-| 6 | Remove old WD state from HostVolume | |
-| 7 | Guest INIT: strip WD state and switch to host-first dispatch | |
-| 8 | Remove dead host code | |
-| 9 | End-to-end validation | |
+| 1 | Move WD table from HostVolume to DriveManager | ✅ Done |
+| 2 | Add `isDefaultOurs()` and new `resolveDir()` on DriveManager | ✅ Done |
+| 3 | Add `kNotOurs` return path to existing PB handlers | ✅ Done |
+| 4 | Add `kPB_SetVol` host handler | ✅ Done |
+| 5 | Add `kPB_GetVol` host handler | ✅ Done |
+| 6 | Remove old WD state from HostVolume | ✅ Done |
+| 7 | Guest INIT: strip WD state and switch to host-first dispatch | Deferred: Fred builds in THINK C |
+| 8 | Remove dead host code | Deferred: depends on Phase 7 |
+| 9 | End-to-end validation | Deferred: depends on Phase 7 |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
 Test gate:  `cd bld/macos && ctest --output-on-failure`
