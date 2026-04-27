@@ -43,6 +43,10 @@ int DriveManager::mount(const std::filesystem::path &hostDir)
 	if (baseName.empty()) baseName = "Shared";
 	s.volumeName = deduplicateName(baseName);
 
+	// Create a permanent root WD for this slot.
+	rootWD_[slot] = openWD(slot, HostVolume::kRootDirID, 0);
+	if (mountedCount() == 1) setDefaultWD(rootWD_[slot]);
+
 	queuePendingMount(slot);
 
 	DIAG(ExtFS, "DriveManager: mounted slot %d \"%s\" → %s\n", slot, s.volumeName.c_str(),
@@ -203,6 +207,59 @@ std::string DriveManager::deduplicateName(std::string_view baseName) const
 
 	// Should not happen with 8 max drives.
 	return name;
+}
+
+/* ── Working directories ──────────────────────────── */
+
+uint32_t DriveManager::openWD(int slot, uint32_t dirID, uint32_t procID)
+{
+	uint32_t wdRef = nextWD_++;
+	wdTable_[wdRef] = {slot, dirID, procID};
+	return wdRef;
+}
+
+uint32_t DriveManager::wdToDirID(uint32_t wdRef) const
+{
+	auto it = wdTable_.find(wdRef);
+	return (it != wdTable_.end()) ? it->second.dirID : 0;
+}
+
+uint32_t DriveManager::wdToProcID(uint32_t wdRef) const
+{
+	auto it = wdTable_.find(wdRef);
+	return (it != wdTable_.end()) ? it->second.procID : 0;
+}
+
+int DriveManager::wdToSlot(uint32_t wdRef) const
+{
+	auto it = wdTable_.find(wdRef);
+	return (it != wdTable_.end()) ? it->second.slot : -1;
+}
+
+void DriveManager::closeWD(uint32_t wdRef)
+{
+	wdTable_.erase(wdRef);
+}
+
+bool DriveManager::isOurWD(uint32_t wdRef) const
+{
+	return wdTable_.contains(wdRef);
+}
+
+void DriveManager::setDefaultWD(uint32_t wdRef)
+{
+	defaultWD_ = wdRef;
+}
+
+uint32_t DriveManager::defaultWD() const
+{
+	return defaultWD_;
+}
+
+uint32_t DriveManager::rootWD(int slot) const
+{
+	if (slot < 0 || slot >= kMaxDrives) return 0;
+	return rootWD_[slot];
 }
 
 } // namespace storage

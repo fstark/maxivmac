@@ -97,6 +97,28 @@ public:
 	// Queue a drive for later guest discovery.
 	void queuePendingMount(int slot);
 
+	/* ── Working directories (global, cross-volume) ── */
+
+	struct WDEntry
+	{
+		int slot = -1;
+		uint32_t dirID = 0;
+		uint32_t procID = 0;
+	};
+
+	uint32_t openWD(int slot, uint32_t dirID, uint32_t procID = 0);
+	uint32_t wdToDirID(uint32_t wdRef) const;
+	uint32_t wdToProcID(uint32_t wdRef) const;
+	int wdToSlot(uint32_t wdRef) const;
+	void closeWD(uint32_t wdRef);
+	bool isOurWD(uint32_t wdRef) const;
+
+	void setDefaultWD(uint32_t wdRef);
+	uint32_t defaultWD() const;
+
+	// Root WD for a slot (created automatically on mount).
+	uint32_t rootWD(int slot) const;
+
 private:
 	struct Slot
 	{
@@ -105,6 +127,11 @@ private:
 	};
 	std::array<Slot, kMaxDrives> slots_;
 	std::vector<int> pendingMounts_;
+
+	std::unordered_map<uint32_t, WDEntry> wdTable_;
+	uint32_t nextWD_ = 1;
+	uint32_t defaultWD_ = 0;
+	std::array<uint32_t, kMaxDrives> rootWD_{};
 
 	std::string deduplicateName(std::string_view baseName) const;
 };

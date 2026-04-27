@@ -112,7 +112,9 @@ TEST_CASE("HostVolume: hidden files skipped")
 TEST_CASE("HostVolume: filename decoding")
 {
 	TempDir td;
-	writeFile(td.path / "\x1B" "3Acolon", "data");
+	writeFile(td.path / "\x1B"
+						"3Acolon",
+			  "data");
 
 	storage::HostVolume vol;
 	CHECK(vol.mount(td.path));
@@ -225,7 +227,8 @@ TEST_CASE("HostVolume: createFile escaped name")
 	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, ":special", err);
 	CHECK(err == storage::kNoErr);
-	CHECK(fs::exists(td.path / "\x1B" "3Aspecial"));
+	CHECK(fs::exists(td.path / "\x1B"
+							   "3Aspecial"));
 }
 
 TEST_CASE("HostVolume: createFile bad parent")
@@ -481,7 +484,8 @@ TEST_CASE("HostVolume: setFileInfo basic")
 	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "meta", err);
 
-	auto result = vol.setFileInfo(cnid, appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0);
+	auto result =
+		vol.setFileInfo(cnid, appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0);
 	CHECK(result == storage::kNoErr);
 
 	auto *e = vol.findByCNID(cnid);
@@ -1111,8 +1115,7 @@ TEST_CASE("HostVolume: resolveDir WD decode")
 	REQUIRE(sub != nullptr);
 
 	uint32_t wd = vol.openWD(sub->cnid);
-	int16_t encodedVRef =
-		static_cast<int16_t>(-(static_cast<int32_t>(wd)) - 32000);
+	int16_t encodedVRef = static_cast<int16_t>(-(static_cast<int32_t>(wd)) - 32000);
 	CHECK(vol.resolveDir(encodedVRef, 0) == sub->cnid);
 
 	vol.closeWD(wd);
@@ -1146,8 +1149,7 @@ TEST_CASE("HostVolume: resolveDir with WD open close cycle")
 	REQUIRE(b != nullptr);
 
 	uint32_t wd = vol.openWD(b->cnid);
-	int16_t encoded =
-		static_cast<int16_t>(-(static_cast<int32_t>(wd)) - 32000);
+	int16_t encoded = static_cast<int16_t>(-(static_cast<int32_t>(wd)) - 32000);
 
 	/* resolveDir with the encoded WD should find B */
 	CHECK(vol.resolveDir(encoded, 0) == b->cnid);

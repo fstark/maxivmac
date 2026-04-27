@@ -151,3 +151,82 @@ TEST_CASE("DriveManager: HandleEncoding")
 	CHECK(storage::SlotFromHandle(0x70000005) == 7);
 	CHECK(storage::LocalHandle(0x70000005) == 5);
 }
+
+/* ── WD table tests ──────────────────────────────── */
+
+TEST_CASE("DriveManager: WD open/close")
+{
+	TempDir td("dm_wd1");
+	storage::DriveManager dm;
+	dm.mount(td.path);
+
+	uint32_t wd = dm.openWD(0, 42, 7);
+	CHECK(wd > 0);
+	CHECK(dm.wdToDirID(wd) == 42);
+	CHECK(dm.wdToProcID(wd) == 7);
+	CHECK(dm.wdToSlot(wd) == 0);
+
+	dm.closeWD(wd);
+	CHECK(dm.wdToDirID(wd) == 0);
+	CHECK(dm.wdToSlot(wd) == -1);
+}
+
+TEST_CASE("DriveManager: WD monotonic")
+{
+	TempDir td("dm_wd_mono");
+	storage::DriveManager dm;
+	dm.mount(td.path);
+
+	// Root WD was already created by mount, so the next ones continue the sequence.
+	uint32_t wd1 = dm.openWD(0, 10);
+	uint32_t wd2 = dm.openWD(0, 20);
+	uint32_t wd3 = dm.openWD(0, 30);
+	CHECK(wd2 == wd1 + 1);
+	CHECK(wd3 == wd2 + 1);
+}
+
+TEST_CASE("DriveManager: WD default")
+{
+	storage::DriveManager dm;
+	TempDir td("dm_wd_def");
+	dm.mount(td.path);
+
+	uint32_t wd = dm.openWD(0, 99);
+	dm.setDefaultWD(wd);
+	CHECK(dm.defaultWD() == wd);
+}
+
+TEST_CASE("DriveManager: WD root auto-created")
+{
+	TempDir td("dm_wd_root");
+	storage::DriveManager dm;
+	int slot = dm.mount(td.path);
+	REQUIRE(slot == 0);
+
+	uint32_t rwd = dm.rootWD(0);
+	CHECK(rwd > 0);
+	CHECK(dm.wdToDirID(rwd) == storage::HostVolume::kRootDirID);
+	CHECK(dm.wdToSlot(rwd) == 0);
+}
+
+TEST_CASE("DriveManager: WD isOurWD")
+{
+	TempDir td("dm_wd_ours");
+	storage::DriveManager dm;
+	dm.mount(td.path);
+
+	uint32_t wd = dm.openWD(0, 42);
+	CHECK(dm.isOurWD(wd));
+	dm.closeWD(wd);
+	CHECK_FALSE(dm.isOurWD(wd));
+}
+
+TEST_CASE("DriveManager: WD default set on first mount")
+{
+	TempDir td("dm_wd_defmount");
+	storage::DriveManager dm;
+	dm.mount(td.path);
+
+	// First mount should set defaultWD to rootWD of slot 0.
+	CHECK(dm.defaultWD() == dm.rootWD(0));
+}

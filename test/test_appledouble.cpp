@@ -110,8 +110,10 @@ TEST_CASE("SidecarPathFor basic")
 
 TEST_CASE("HostNameFromMac escapes structurally-invalid characters")
 {
-	CHECK(HostNameFromMac("My:File") == "My\x1B" "3AFile");
-	CHECK(HostNameFromMac("A/B") == "A\x1B" "2FB");
+	CHECK(HostNameFromMac("My:File") == "My\x1B"
+										"3AFile");
+	CHECK(HostNameFromMac("A/B") == "A\x1B"
+									"2FB");
 	/* Only / : and ESC are escaped; others pass through */
 	CHECK(HostNameFromMac("A^B") == "A^B");
 	CHECK(HostNameFromMac("a\"b") == "a\"b");
@@ -130,8 +132,11 @@ TEST_CASE("HostNameFromMac no-op on clean names")
 
 TEST_CASE("MacNameFromHost decodes ESC-XX sequences")
 {
-	CHECK(MacNameFromHost("My\x1B" "3AFile") == "My:File");
-	CHECK(MacNameFromHost("A\x1B" "1BFile") == std::string("A\x1B" "File"));
+	CHECK(MacNameFromHost("My\x1B"
+						  "3AFile") == "My:File");
+	CHECK(MacNameFromHost("A\x1B"
+						  "1BFile") == std::string("A\x1B"
+												   "File"));
 }
 
 TEST_CASE("Filename escaping round-trips")
@@ -151,7 +156,9 @@ TEST_CASE("Filename escaping round-trips")
 TEST_CASE("MacNameFromHost handles trailing ESC gracefully")
 {
 	CHECK(MacNameFromHost("abc\x1B") == std::string("abc\x1B"));
-	CHECK(MacNameFromHost("abc\x1B" "2") == std::string("abc\x1B" "2"));
+	CHECK(MacNameFromHost("abc\x1B"
+						  "2") == std::string("abc\x1B"
+											  "2"));
 }
 
 TEST_CASE("MacNameFromHost rejects unmappable UTF-8")
