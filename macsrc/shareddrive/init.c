@@ -261,6 +261,11 @@
 /* Host returns this when the volume is not ours — guest passes through to ROM */
 #define kNotOurs 0xFFFE
 
+/* Pass-through sentinel: returned by handlers that discover the
+   call is not for our volume.  The dispatch loop treats this as
+   "not handled — fall through to ROM". */
+#define kPassThrough 1
+
 
 /* ---- Globals ---- */
 
@@ -1289,11 +1294,6 @@ static OSErr TrapSetVInfo(char *pb, Globals *g, short isHFS)
 /* ================================================================ */
 /*              Central dispatchers (called from stubs)             */
 /* ================================================================ */
-
-/* Pass-through sentinel: returned by handlers that discover the
-   call is not for our volume, after internal ownership checks
-   (e.g. TrapGetVolInfo's indexed walk, TrapSetVol's name match). */
-#define kPassThrough 1
 
 typedef OSErr (*TrapHandler)(char *pb, Globals *g, short isHFS);
 
