@@ -66,6 +66,9 @@ public:
 	};
 	std::vector<TypeInfo> typeNames() const;
 
+	/* Return all leaf field names for a struct type (for validation). */
+	std::vector<std::string> fieldNames(std::string_view typeName) const;
+
 private:
 	struct FieldDef;
 	struct StructDef;
@@ -75,6 +78,8 @@ private:
 	const TypeEntry *findType(std::string_view name) const;
 	void readStruct(const StructDef &sd, uint32_t baseAddr, uint32_t origBase,
 					std::string_view prefix, std::vector<FieldValue> &out) const;
+	void collectFieldNames(const StructDef &sd, std::string_view prefix,
+						   std::vector<std::string> &out) const;
 	std::string formatPrimitive(std::string_view typeName, uint32_t addr) const;
 	uint16_t computeSize(const TypeEntry &te) const;
 

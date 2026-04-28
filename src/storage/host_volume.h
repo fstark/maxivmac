@@ -104,6 +104,15 @@ enum class ForkType
 	Resource
 };
 
+/* ── Sidecar sync mode ────────────────────────────── */
+
+// Controls what metadata is persisted to AppleDouble sidecar files.
+// Future modes may limit syncing to type/creator only, etc.
+enum class SidecarMode
+{
+	Full // sync all Finder info (type, creator, flags, location, folder)
+};
+
 /* ── HostVolume ───────────────────────────────────── */
 
 /*
@@ -269,6 +278,8 @@ private:
 	int slot_ = 0;						// assigned by DriveManager::mount() via setSlot()
 	std::vector<CatalogEntry> catalog_; // flat list; searched linearly by CNID or name
 	uint32_t nextCNID_ = 16;			// monotonic counter; 1-2 are reserved for root
+	[[maybe_unused]] SidecarMode sidecarMode_ = SidecarMode::Full;
+	appledouble::TypeMap typeMap_; // per-volume extension→type mapping
 
 	// Per-open-fork state.  Data forks hold a FILE*; resource forks
 	// have fp == nullptr (I/O goes through AppleDouble helpers).

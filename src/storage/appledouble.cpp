@@ -18,15 +18,6 @@ namespace appledouble
 namespace
 {
 
-struct TypeMapping
-{
-	std::string ext; // lowercased, e.g. ".txt"
-	uint32_t type;
-	uint32_t creator;
-};
-
-std::vector<TypeMapping> s_typeMappings;
-
 constexpr FinderInfo kUnknownFinder = {FourCC("????"), FourCC("????"), 0};
 
 uint32_t FourCCFromString(std::string_view s)
@@ -48,16 +39,17 @@ std::string ToLower(std::string_view sv)
 
 } // anonymous namespace
 
-int LoadTypeMappings(const std::filesystem::path &defPath)
+/* ── TypeMap ──────────────────────────────────────── */
+
+int TypeMap::load(const std::filesystem::path &defPath)
 {
 	std::ifstream file(defPath);
 	if (!file.is_open()) return -1;
 
-	s_typeMappings.clear();
+	mappings_.clear();
 	std::string line;
 	while (std::getline(file, line))
 	{
-		// Skip comments and blank lines
 		if (line.empty()) continue;
 		auto first = line.find_first_not_of(" \t");
 		if (first == std::string::npos) continue;
@@ -67,21 +59,37 @@ int LoadTypeMappings(const std::filesystem::path &defPath)
 		std::string ext, typeStr, creatorStr;
 		if (!(iss >> ext >> typeStr >> creatorStr)) continue;
 
-		s_typeMappings.push_back(
+		mappings_.push_back(
 			{ToLower(ext), FourCCFromString(typeStr), FourCCFromString(creatorStr)});
 	}
-	return static_cast<int>(s_typeMappings.size());
+	return static_cast<int>(mappings_.size());
 }
 
-FinderInfo FinderInfoFromExtension(std::string_view extension)
+FinderInfo TypeMap::lookup(std::string_view extension) const
 {
-	if (s_typeMappings.empty()) return kUnknownFinder;
+	if (mappings_.empty()) return kUnknownFinder;
 	auto lower = ToLower(extension);
-	for (const auto &m : s_typeMappings)
+	for (const auto &m : mappings_)
 	{
 		if (m.ext == lower) return {m.type, m.creator, 0};
 	}
 	return kUnknownFinder;
+}
+
+TypeMap &DefaultTypeMap()
+{
+	static TypeMap s_default;
+	return s_default;
+}
+
+int LoadTypeMappings(const std::filesystem::path &defPath)
+{
+	return DefaultTypeMap().load(defPath);
+}
+
+FinderInfo FinderInfoFromExtension(std::string_view extension)
+{
+	return DefaultTypeMap().lookup(extension);
 }
 
 /* ════════════════════════════════════════════════════
@@ -246,20 +254,26 @@ std::vector<uint8_t> BlobFromFinderInfo(const FinderInfo &info)
    Finder Info Access
    ════════════════════════════════════════════════════ */
 
-FinderInfo GetFinderInfo(const std::filesystem::path &hostPath)
+FinderInfo GetFinderInfo(const std::filesystem::path &hostPath, const TypeMap &typeMap)
 {
 	auto sc = detail::ParseSidecar(SidecarPathFor(hostPath));
 	if (sc.valid && sc.HasFinderInfo())
 	{
 		return detail::FinderInfoFromBlob(sc.finderInfoData);
 	}
-	return FinderInfoFromExtension(hostPath.extension().string());
+	return typeMap.lookup(hostPath.extension().string());
 }
 
-void SetFinderInfo(const std::filesystem::path &hostPath, const FinderInfo &info)
+FinderInfo GetFinderInfo(const std::filesystem::path &hostPath)
+{
+	return GetFinderInfo(hostPath, DefaultTypeMap());
+}
+
+void SetFinderInfo(const std::filesystem::path &hostPath, const FinderInfo &info,
+				   const TypeMap &typeMap)
 {
 	auto ext = hostPath.extension().string();
-	auto defaultInfo = FinderInfoFromExtension(ext);
+	auto defaultInfo = typeMap.lookup(ext);
 	auto sidecarPath = SidecarPathFor(hostPath);
 	auto sc = detail::ParseSidecar(sidecarPath);
 
@@ -289,6 +303,11 @@ void SetFinderInfo(const std::filesystem::path &hostPath, const FinderInfo &info
 		}
 		detail::WriteSidecar(sidecarPath, info, rsrc);
 	}
+}
+
+void SetFinderInfo(const std::filesystem::path &hostPath, const FinderInfo &info)
+{
+	SetFinderInfo(hostPath, info, DefaultTypeMap());
 }
 
 /* ════════════════════════════════════════════════════
@@ -418,7 +437,8 @@ void WriteResourceFork(const std::filesystem::path &hostPath, uint32_t offset,
 	detail::WriteSidecar(sidecarPath, finder, std::make_optional(std::move(fork)));
 }
 
-void SetResourceForkSize(const std::filesystem::path &hostPath, uint32_t newSize)
+void SetResourceForkSize(const std::filesystem::path &hostPath, uint32_t newSize,
+						 const TypeMap &typeMap)
 {
 	auto sidecarPath = SidecarPathFor(hostPath);
 	auto sc = detail::ParseSidecar(sidecarPath);
@@ -443,7 +463,7 @@ void SetResourceForkSize(const std::filesystem::path &hostPath, uint32_t newSize
 		{
 			// Keep sidecar with Finder info only
 			auto ext = hostPath.extension().string();
-			auto defaultInfo = FinderInfoFromExtension(ext);
+			auto defaultInfo = typeMap.lookup(ext);
 			if (*finder == defaultInfo)
 			{
 				// Finder info is default and no rsrc fork → delete
@@ -464,6 +484,11 @@ void SetResourceForkSize(const std::filesystem::path &hostPath, uint32_t newSize
 	{
 		detail::WriteSidecar(sidecarPath, finder, std::make_optional(std::move(fork)));
 	}
+}
+
+void SetResourceForkSize(const std::filesystem::path &hostPath, uint32_t newSize)
+{
+	SetResourceForkSize(hostPath, newSize, DefaultTypeMap());
 }
 
 /* ════════════════════════════════════════════════════
@@ -490,10 +515,10 @@ void SetModDate(const std::filesystem::path &hostPath, uint32_t macDate)
    Composite Query
    ════════════════════════════════════════════════════ */
 
-FileInfo GetFileInfo(const std::filesystem::path &hostPath)
+FileInfo GetFileInfo(const std::filesystem::path &hostPath, const TypeMap &typeMap)
 {
 	FileInfo info;
-	info.finder = GetFinderInfo(hostPath);
+	info.finder = GetFinderInfo(hostPath, typeMap);
 	info.rsrcForkSize = ResourceForkSize(hostPath);
 	info.isText = (info.finder.type == FourCC("TEXT"));
 
@@ -511,6 +536,11 @@ FileInfo GetFileInfo(const std::filesystem::path &hostPath)
 	}
 
 	return info;
+}
+
+FileInfo GetFileInfo(const std::filesystem::path &hostPath)
+{
+	return GetFileInfo(hostPath, DefaultTypeMap());
 }
 
 /* ════════════════════════════════════════════════════

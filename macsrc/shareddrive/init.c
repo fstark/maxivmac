@@ -277,10 +277,10 @@ typedef struct
 	short driveCount;
 	long volFileCount;
 	long volTotalBytes;
-	long savedA4;		   /* THINK C code resource A4 */
-	short ejected;		   /* nonzero after _Eject */
-	long oldFilter;		   /* previous jGNEFilter */
-	long lastPollTick;	   /* TickCount at last poll */
+	long savedA4;	   /* THINK C code resource A4 */
+	short ejected;	   /* nonzero after _Eject */
+	long oldFilter;	   /* previous jGNEFilter */
+	long lastPollTick; /* TickCount at last poll */
 } Globals;
 
 /* ---- Extension discovery ---- */
@@ -1135,8 +1135,7 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 	reg_command(g->regBase, kPB_SetVol);
 
 	if ((unsigned short)reg_result(g->regBase) == kNotOurs) return 1;
-	if (reg_result(g->regBase) != 0)
-		return (short)reg_result(g->regBase);
+	if (reg_result(g->regBase) != 0) return (short)reg_result(g->regBase);
 
 	{
 		short slot = (short)reg_get(g->regBase, 0);

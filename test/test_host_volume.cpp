@@ -1079,3 +1079,38 @@ TEST_CASE("HostVolume: closeAllForks")
 	// After closeAllForks, the handle map should be empty — closing again is a no-op
 	vol.closeFork(h);
 }
+
+TEST_CASE("HostVolume: per-volume typemap from .maxivmac/typemap.def")
+{
+	TempDir td;
+	// Create .maxivmac/typemap.def with a custom mapping
+	fs::create_directories(td.path / ".maxivmac");
+	{
+		std::ofstream f(td.path / ".maxivmac" / "typemap.def");
+		f << ".txt  TEXT CWIE\n"; // override: creator=CWIE instead of ttxt
+	}
+	writeFile(td.path / "hello.txt", "hello");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	// File should pick up the per-volume mapping
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "hello.txt");
+	REQUIRE(e != nullptr);
+	CHECK(e->type == appledouble::FourCC("TEXT"));
+	CHECK(e->creator == appledouble::FourCC("CWIE"));
+}
+
+TEST_CASE("HostVolume: missing .maxivmac falls back to global typemap")
+{
+	TempDir td;
+	writeFile(td.path / "hello.txt", "hello");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "hello.txt");
+	REQUIRE(e != nullptr);
+	CHECK(e->type == appledouble::FourCC("TEXT"));
+	CHECK(e->creator == appledouble::FourCC("ttxt")); // global default
+}

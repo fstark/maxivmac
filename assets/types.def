@@ -95,6 +95,19 @@ struct HIOParam {
     40 long     ioActCount
     44 sword    ioPosMode
     46 slong    ioPosOffset
+}
+
+# Synthetic: PBHOpen/PBHOpenRF/PBHRename use fields from both the ioParam
+# arm (ioPermssn at 27) and the fileParam arm (ioDirID at 48) of the
+# HParamBlockRec union.  No single Mac struct captures this.
+# TODO: support qualified union arm fields in show-in/show-out
+#       (e.g. "fileParam.ioDirID") so we can use the real union type.
+struct HOpenParam {
+    0  ParamBlockHeader header
+    24 sword    ioRefNum
+    26 sbyte    ioVersNum
+    27 sbyte    ioPermssn
+    28 Ptr      ioMisc
     48 long     ioDirID
 }
 

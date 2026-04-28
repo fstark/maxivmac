@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstring>
 #include <format>
+#include <set>
 
 /* -- globals ------------------------------------------- */
 
@@ -384,6 +385,35 @@ std::string TrapTracer::formatStructDumpFor(std::string_view structName, std::st
 		}
 		keep.push_back(&f);
 	}
+
+	/* Warn (once) about requested fields that weren't found in the struct */
+	if (filter && !filter->fields.empty())
+	{
+		static std::set<std::string> warned;
+		for (auto &want : filter->fields)
+		{
+			bool found = false;
+			for (auto &f : fields)
+			{
+				std::string_view leaf = f.name;
+				auto dot = leaf.rfind('.');
+				if (dot != std::string_view::npos) leaf = leaf.substr(dot + 1);
+				if (leaf == want)
+				{
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+			{
+				std::string key = std::string(structName) + "." + want;
+				if (warned.insert(key).second)
+					fprintf(stderr, "trap_tracer: show field '%s' not found in struct '%.*s'\n",
+							want.c_str(), int(structName.size()), structName.data());
+			}
+		}
+	}
+
 	if (keep.empty()) return {};
 
 	/* Measure the longest prefixed name for column alignment */

@@ -544,7 +544,11 @@ static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 	return 0;
 }
 
-/* PBGetFInfo / PBHGetFInfo (IM IV-97 / IV-148).  By-name file lookup only. */
+/* PBGetFInfo / PBHGetFInfo (IM IV-97 / IV-148).  By-name file lookup only.
+   Note: the real ROM's GetFileInfo clears HFSReq regardless of the H bit
+   in the trap word, so it only writes the fileParam fields (offsets 30–79).
+   CInfoPBRec-extended fields (ioFlBkDat, ioFlXFndrInfo, ioFlParID,
+   ioFlClpSiz at offsets 80–107) are only written by PBGetCatInfo. */
 static OSErr PbGetFileInfo(PBRef pb, bool isHFS)
 {
 	OSErr verr;
@@ -561,7 +565,7 @@ static OSErr PbGetFileInfo(PBRef pb, bool isHFS)
 	auto *e = vol->findByPath(dirID, name);
 	if (!e) return kFnfErr;
 
-	pbWriteFileFields(pb, e, isHFS);
+	pbWriteFileFields(pb, e, false); /* fileParam only — no CInfoPBRec extensions */
 	return 0;
 }
 

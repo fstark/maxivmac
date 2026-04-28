@@ -590,6 +590,27 @@ std::vector<TypeRegistry::TypeInfo> TypeRegistry::typeNames() const
 	return out;
 }
 
+std::vector<std::string> TypeRegistry::fieldNames(std::string_view typeName) const
+{
+	const auto *te = findType(typeName);
+	if (!te) return {};
+	std::vector<std::string> out;
+	if (te->isUnion)
+	{
+		/* Collect field names from all union arms */
+		for (auto &[tag, armTypeName] : te->unionDef.arms)
+		{
+			const auto *armTE = findType(armTypeName);
+			if (armTE && !armTE->isUnion) collectFieldNames(armTE->structDef, "", out);
+		}
+	}
+	else
+	{
+		collectFieldNames(te->structDef, "", out);
+	}
+	return out;
+}
+
 const TypeRegistry::TypeEntry *TypeRegistry::findType(std::string_view name) const
 {
 	for (auto &te : types_)
@@ -641,6 +662,26 @@ void TypeRegistry::readStruct(const StructDef &sd, uint32_t baseAddr, uint32_t o
 					readStruct(inner->structDef, fieldAddr, origBase, name + ".", out);
 				}
 			}
+		}
+	}
+}
+
+void TypeRegistry::collectFieldNames(const StructDef &sd, std::string_view prefix,
+									 std::vector<std::string> &out) const
+{
+	for (auto &field : sd.fields)
+	{
+		std::string name(prefix);
+		name += field.fieldName;
+
+		if (FindPrimitive(field.typeName))
+		{
+			out.push_back(name);
+		}
+		else
+		{
+			const auto *inner = findType(field.typeName);
+			if (inner && !inner->isUnion) collectFieldNames(inner->structDef, name + ".", out);
 		}
 	}
 }

@@ -325,7 +325,18 @@ uint32_t DriveManager::resolveDir(int16_t vRefNum, uint32_t rawDirID, int &outSl
 
 	// Direct volume ref?
 	outSlot = slotFromVRefNum(vRefNum);
-	if (outSlot >= 0) return HostVolume::kRootDirID;
+	if (outSlot >= 0)
+	{
+		// dirID=0 means "default directory".  If the default WD belongs
+		// to this volume, use its directory; otherwise fall back to root.
+		int defSlot = wdToSlot(defaultWD_);
+		if (defSlot == outSlot)
+		{
+			uint32_t defDir = wdToDirID(defaultWD_);
+			return defDir != 0 ? defDir : HostVolume::kRootDirID;
+		}
+		return HostVolume::kRootDirID;
+	}
 
 	// Drive number?
 	int dnSlot = vRefNum - kBaseDriveNum;

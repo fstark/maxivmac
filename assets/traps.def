@@ -242,7 +242,7 @@ A207 GetVolInfo os
   show-out pb ioResult ioNamePtr ioVRefNum ioVCrDate ioVLsMod ioVAtrb ioVNmFls ioVNmAlBlks ioVAlBlkSiz ioVFrBlk ioVSigWord ioVDrvInfo ioVDRefNum ioVFSID ioVBkUp ioVWrCnt ioVFilCnt ioVDirCnt
 
 A200 HOpen os
-  in  pb:^HIOParam.A0
+  in  pb:^HOpenParam.A0
   out err:OSErr.D0
   show-in  pb ioNamePtr ioVRefNum ioDirID ioPermssn
   show-out pb ioResult ioRefNum
@@ -260,13 +260,13 @@ A209 HDelete os
   show-out pb ioResult
 
 A20A HOpenRF os
-  in  pb:^HIOParam.A0
+  in  pb:^HOpenParam.A0
   out err:OSErr.D0
   show-in  pb ioNamePtr ioVRefNum ioDirID ioPermssn
   show-out pb ioResult ioRefNum
 
 A20B HRename os
-  in  pb:^HIOParam.A0
+  in  pb:^HOpenParam.A0
   out err:OSErr.D0
   show-in  pb ioNamePtr ioVRefNum ioDirID ioMisc
   show-out pb ioResult
@@ -325,7 +325,7 @@ A260 HFSDispatch os dispatch=word.D0
   subtrap 0x08 PBGetFCBInfo
     in  pb:^FCBPBRec.A0
     out err:OSErr.D0
-    show-in  pb ioRefNum ioFCBIndx
+    show-in  pb ioFRefNum ioFCBIndx
     show-out pb ioResult ioNamePtr ioFCBFlNm ioFCBFlags ioFCBEOF ioFCBVRefNum ioFCBParID
   subtrap 0x09 PBGetCatInfo
     in  pb:^CInfoPBRec.A0

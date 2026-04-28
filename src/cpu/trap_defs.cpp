@@ -278,6 +278,49 @@ void TrapDefs::parseParamLine(const std::string &line, TrapDef &out)
 			}
 			filter.fields.push_back(field);
 		}
+		/* Validate field names against the struct type at load time */
+		const ParamDef *targetParam = nullptr;
+		auto &paramList = (dir == "show-in") ? out.paramsIn : out.paramsOut;
+		for (auto &pd : paramList)
+			if (pd.name == filter.paramName)
+			{
+				targetParam = &pd;
+				break;
+			}
+		if (targetParam && targetParam->isStructPtr)
+		{
+			auto &tr = g_typeRegistry();
+			if (tr.has(targetParam->typeName))
+			{
+				auto allFields = tr.fieldNames(targetParam->typeName);
+				for (auto &want : filter.fields)
+				{
+					bool found = false;
+					for (auto &fn : allFields)
+					{
+						std::string_view leaf = fn;
+						auto dot = leaf.rfind('.');
+						if (dot != std::string_view::npos) leaf = leaf.substr(dot + 1);
+						if (leaf == want)
+						{
+							found = true;
+							break;
+						}
+						/* Match composite struct prefixes (e.g. "ioFlFndrInfo"
+						   matches "ioFlFndrInfo.fdType") */
+						std::string wantDot = want + ".";
+						if (fn.starts_with(wantDot))
+						{
+							found = true;
+							break;
+						}
+					}
+					if (!found)
+						fprintf(stderr, "trap_defs: %s field '%s' not found in struct '%s'\n",
+								direction.c_str(), want.c_str(), targetParam->typeName.c_str());
+				}
+			}
+		}
 		if (dir == "show-in")
 			out.showIn.push_back(std::move(filter));
 		else
