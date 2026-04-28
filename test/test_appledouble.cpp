@@ -1,6 +1,7 @@
 #include <doctest/doctest.h>
 #include "storage/appledouble.h"
 #include "storage/appledouble_internal.h"
+#include "util/macroman.h"
 
 #include <algorithm>
 #include <cstring>
@@ -94,6 +95,39 @@ TEST_CASE("LoadTypeMappings loads actual assets/typemap.def")
 	CHECK(count >= 19);
 	auto fi = FinderInfoFromExtension(".txt");
 	CHECK(fi.type == FourCC("TEXT"));
+}
+
+TEST_CASE("TypeMap standalone instance")
+{
+	auto p = std::filesystem::temp_directory_path() / "test_typemap2.def";
+	{
+		std::ofstream f(p);
+		f << ".c    TEXT CWIE\n"
+		  << ".pas  TEXT CWIE\n";
+	}
+	TypeMap tm;
+	CHECK(tm.load(p) == 2);
+
+	auto fi = tm.lookup(".c");
+	CHECK(fi.type == FourCC("TEXT"));
+	CHECK(fi.creator == FourCC("CWIE"));
+
+	// Unknown extension returns ????
+	fi = tm.lookup(".xyz");
+	CHECK(fi.type == FourCC("????"));
+
+	// Does not affect the global mapping
+	auto global = FinderInfoFromExtension(".c");
+	CHECK(global.creator == FourCC("KAHL")); // from assets/typemap.def
+
+	std::filesystem::remove(p);
+}
+
+TEST_CASE("TypeMap load from missing file returns -1")
+{
+	TypeMap tm;
+	CHECK(tm.load("/nonexistent/typemap.def") == -1);
+	CHECK(tm.empty());
 }
 
 TEST_CASE("SidecarPathFor basic")

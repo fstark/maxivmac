@@ -1,12 +1,11 @@
 /* MacRoman ↔ Unicode conversion primitives.
-   Internal header shared by text_convert.cpp and filename_encoding.cpp. */
+   Shared header used by clipboard, disk I/O, storage layer, and UI. */
 #pragma once
 
 #include <cstdint>
+#include <span>
 #include <string>
-
-namespace appledouble
-{
+#include <string_view>
 
 /* MacRoman byte (0x80..0xFF) → Unicode code point */
 inline constexpr uint32_t kMacRomanToUnicode[128] = {
@@ -73,7 +72,7 @@ inline MacRomanResult MacRomanFromCodePoint(uint32_t cp)
 
 /* Decode one UTF-8 code point from data starting at pos.
    Advances pos past the consumed bytes.  Returns U+FFFD for invalid sequences. */
-inline uint32_t DecodeUTF8(const std::string &data, size_t &pos)
+inline uint32_t DecodeUTF8(std::string_view data, size_t &pos)
 {
 	uint8_t c = static_cast<uint8_t>(data[pos]);
 	if (c < 0x80)
@@ -119,4 +118,10 @@ inline uint32_t DecodeUTF8(const std::string &data, size_t &pos)
 	return cp;
 }
 
-} // namespace appledouble
+/* ── String-level conversions ─────────────────────── */
+
+/* MacRoman bytes → UTF-8 string. */
+std::string UTF8FromMacRoman(std::span<const uint8_t> macRoman);
+
+/* UTF-8 string → MacRoman bytes.  Unmappable code points become '?'. */
+std::string MacRomanFromUTF8(std::string_view utf8);

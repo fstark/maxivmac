@@ -52,6 +52,9 @@ set(MINIVMAC_SOURCES
     src/core/diag.cpp
     src/core/state_recorder.cpp
 
+    # Utility
+    src/util/macroman.cpp
+
     # Storage
     src/storage/appledouble.cpp
     src/storage/filename_encoding.cpp
@@ -114,7 +117,6 @@ set(MINIVMAC_SOURCES
     src/platform/common/osglu_common.cpp
     src/platform/common/param_buffers.cpp
     src/platform/common/keyboard_map.cpp
-    src/platform/common/mac_roman.cpp
     src/platform/common/path_utils.cpp
     src/platform/common/dbglog_platform.cpp
     src/platform/common/tick_timer.cpp
@@ -292,6 +294,7 @@ add_executable(tests
     src/core/diag.cpp
     src/lang/type_registry.cpp
     src/lang/global_registry.cpp
+    src/util/macroman.cpp
     test/test_drive_manager.cpp
     test/test_types.cpp
 )

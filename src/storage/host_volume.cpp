@@ -1,5 +1,6 @@
 #include "storage/host_volume.h"
 #include "core/diag.h"
+#include "util/macroman.h"
 
 #include <algorithm>
 #include <chrono>
@@ -34,12 +35,17 @@ bool HostVolume::mount(const std::filesystem::path &hostDir)
 	nextHandle_ = 1;
 	textStats_ = {};
 
+	/* Load the global default mapping (once per process) */
 	static bool s_typesLoaded = false;
 	if (!s_typesLoaded)
 	{
 		appledouble::LoadTypeMappings("assets/typemap.def");
 		s_typesLoaded = true;
 	}
+
+	/* Per-volume mapping from .maxivmac/typemap.def, else global default */
+	auto volumeMap = hostDir / ".maxivmac" / "typemap.def";
+	if (typeMap_.load(volumeMap) < 0) typeMap_ = appledouble::DefaultTypeMap();
 
 	scanDirectory(hostDir, kRootDirID);
 	mounted_ = true;
@@ -411,7 +417,7 @@ OSErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, ui
 	CatalogEntry *e = mutableFindByCNID(cnid);
 	if (!e || e->isDirectory) return kFnfErr;
 
-	appledouble::SetFinderInfo(e->hostPath, {type, creator, flags, location, folder});
+	appledouble::SetFinderInfo(e->hostPath, {type, creator, flags, location, folder}, typeMap_);
 	e->type = type;
 	e->creator = creator;
 	e->finderFlags = flags;
@@ -603,7 +609,7 @@ OSErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 		auto existing = appledouble::MacRomanFromUTF8File(e->hostPath);
 		if (offset + data.size() > existing.size()) existing.resize(offset + data.size());
 		std::memcpy(existing.data() + offset, data.data(), data.size());
-		auto utf8 = appledouble::UTF8FromMacRoman(existing);
+		auto utf8 = ::UTF8FromMacRoman(existing);
 		std::ofstream out(e->hostPath, std::ios::binary | std::ios::trunc);
 		out.write(utf8.data(), static_cast<std::streamsize>(utf8.size()));
 		out.close();
@@ -637,7 +643,7 @@ OSErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
 
 	if (of.fork == ForkType::Resource)
 	{
-		appledouble::SetResourceForkSize(e->hostPath, newSize);
+		appledouble::SetResourceForkSize(e->hostPath, newSize, typeMap_);
 		e->rsrcForkSize = newSize;
 	}
 	else if (of.fp)
@@ -710,7 +716,7 @@ void HostVolume::scanDirectory(const std::filesystem::path &hostDir, uint32_t pa
 		}
 		else if (entry.is_regular_file(ec))
 		{
-			auto info = appledouble::GetFileInfo(entry.path());
+			auto info = appledouble::GetFileInfo(entry.path(), typeMap_);
 			ce.isDirectory = false;
 			ce.type = info.finder.type;
 			ce.creator = info.finder.creator;

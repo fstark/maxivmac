@@ -1,5 +1,5 @@
 #include "storage/appledouble.h"
-#include "storage/macroman.h"
+#include "util/macroman.h"
 
 #include <fstream>
 #include <vector>
@@ -45,24 +45,6 @@ uint32_t MacRomanSizeFromUTF8File(const std::filesystem::path &hostPath)
 		++count;
 	}
 	return count;
-}
-
-std::string UTF8FromMacRoman(std::span<const uint8_t> macRoman)
-{
-	std::string result;
-	result.reserve(macRoman.size() * 2); // overestimate
-	for (uint8_t b : macRoman)
-	{
-		if (b < 0x80)
-		{
-			result += static_cast<char>(b);
-		}
-		else
-		{
-			AppendUTF8(result, kMacRomanToUnicode[b - 0x80]);
-		}
-	}
-	return result;
 }
 
 } // namespace appledouble

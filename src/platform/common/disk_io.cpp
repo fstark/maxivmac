@@ -1,6 +1,8 @@
 #include "platform/common/disk_io.h"
+#include "util/macroman.h"
 
 #include <cstdio>
+#include <cstring>
 
 FILE *g_drives[NumDrives];	   /* open disk image files */
 char *g_driveNames[NumDrives]; /* paths of open disk images */
@@ -143,21 +145,16 @@ tMacErr vSonyGetName(DriveIndex driveNo, PbufIndex *r)
 		name = path;
 	}
 
-	uint32_t L;
-	tMacErr err = UniCodeStrLength(name, &L);
-	if (tMacErr::noErr != err)
-	{
-		return err;
-	}
+	std::string mr = MacRomanFromUTF8(name);
 
 	PbufIndex t;
-	err = PbufNew(L, &t);
+	tMacErr err = PbufNew(static_cast<uint32_t>(mr.size()), &t);
 	if (tMacErr::noErr != err)
 	{
 		return err;
 	}
 
-	UniCodeStr2MacRoman(name, static_cast<char *>(g_pbufDat[t]));
+	std::memcpy(g_pbufDat[t], mr.data(), mr.size());
 	*r = t;
 	return tMacErr::noErr;
 }

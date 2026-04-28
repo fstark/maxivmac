@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "platform/common/mac_roman.h"
+#include "util/macroman.h"
 
 /* ── RegistersTool ─────────────────────────────────── */
 
@@ -401,9 +401,7 @@ void TrapsTool::draw()
 static std::string macRomanToDisplay(const uint8_t *data, uint32_t len, uint32_t maxChars)
 {
 	uint32_t n = (len < maxChars) ? len : maxChars;
-	uint32_t sz = MacRoman2UniCodeSize(const_cast<uint8_t *>(data), n);
-	std::string out(sz, '\0');
-	MacRoman2UniCodeData(const_cast<uint8_t *>(data), n, const_cast<char *>(out.data()));
+	std::string out = UTF8FromMacRoman({data, n});
 	/* CR (0x0D) -> newline for display */
 	for (auto &c : out)
 	{

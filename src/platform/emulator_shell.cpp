@@ -12,7 +12,6 @@
 #include "platform/common/osglu_common.h"
 #include "platform/common/param_buffers.h"
 #include "platform/common/keyboard_map.h"
-#include "platform/common/mac_roman.h"
 #include "platform/common/path_utils.h"
 #include "platform/common/dbglog_platform.h"
 #include "platform/common/disk_io.h"

@@ -10,7 +10,7 @@
 #include "platform/lomem_globals.h"
 #include "lang/global_registry.h"
 #include "core/machine.h"
-#include "platform/common/mac_roman.h"
+#include "util/macroman.h"
 
 #include <imgui.h>
 #include <cstdio>
@@ -205,12 +205,8 @@ static void formatGlobalValue(const GlobalDef &gd, char *buf, int bufSize)
 		uint8_t raw[32];
 		for (int i = 0; i < len; i++)
 			raw[i] = rd8(a + 1 + i);
-		uint32_t uLen = MacRoman2UniCodeSize(raw, len);
-		if (static_cast<int>(uLen) + 3 > bufSize) uLen = bufSize - 3;
-		buf[0] = '"';
-		MacRoman2UniCodeData(raw, len, buf + 1);
-		buf[1 + uLen] = '"';
-		buf[2 + uLen] = '\0';
+		std::string u = UTF8FromMacRoman({raw, len});
+		snprintf(buf, bufSize, "\"%s\"", u.c_str());
 	}
 	else if (baseType == "Rect")
 	{

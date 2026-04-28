@@ -61,7 +61,38 @@ struct FileInfo
 
 /* ── Type/creator mapping ─────────────────────────── */
 
+// Per-volume extension → type/creator table.  Each HostVolume owns one,
+// loaded from .maxivmac/typemap.def if present, else from the global default.
+class TypeMap
+{
+public:
+	// Load mappings from a .def file.  Returns entry count, or -1 on error.
+	int load(const std::filesystem::path &defPath);
+
+	// Look up Finder type/creator for a file extension (e.g. ".txt").
+	// Returns {????,????} if no mapping found.
+	FinderInfo lookup(std::string_view extension) const;
+
+	bool empty() const { return mappings_.empty(); }
+
+private:
+	struct Entry
+	{
+		std::string ext; // lowercased, e.g. ".txt"
+		uint32_t type;
+		uint32_t creator;
+	};
+	std::vector<Entry> mappings_;
+};
+
+// Global default mapping — used by the convenience free functions below
+// and as fallback when a volume has no .maxivmac/typemap.def.
+TypeMap &DefaultTypeMap();
+
+// Load the global default mapping table.
 int LoadTypeMappings(const std::filesystem::path &defPath);
+
+// Look up using the global default mapping.
 FinderInfo FinderInfoFromExtension(std::string_view extension);
 
 /* ── Sidecar path ─────────────────────────────────── */
@@ -71,7 +102,10 @@ std::filesystem::path SidecarPathFor(const std::filesystem::path &hostPath);
 /* ── Finder info access ───────────────────────────── */
 
 FinderInfo GetFinderInfo(const std::filesystem::path &hostPath);
+FinderInfo GetFinderInfo(const std::filesystem::path &hostPath, const TypeMap &typeMap);
 void SetFinderInfo(const std::filesystem::path &hostPath, const FinderInfo &info);
+void SetFinderInfo(const std::filesystem::path &hostPath, const FinderInfo &info,
+				   const TypeMap &typeMap);
 
 /* ── Directory Finder info (DInfo+DXInfo, raw 32 bytes) ─── */
 
@@ -93,10 +127,13 @@ void WriteResourceFork(const std::filesystem::path &hostPath, uint32_t offset,
 					   std::span<const uint8_t> data);
 
 void SetResourceForkSize(const std::filesystem::path &hostPath, uint32_t newSize);
+void SetResourceForkSize(const std::filesystem::path &hostPath, uint32_t newSize,
+						 const TypeMap &typeMap);
 
 /* ── Composite query ──────────────────────────────── */
 
 FileInfo GetFileInfo(const std::filesystem::path &hostPath);
+FileInfo GetFileInfo(const std::filesystem::path &hostPath, const TypeMap &typeMap);
 
 /* ── Date handling ────────────────────────────────── */
 
@@ -107,7 +144,6 @@ void SetModDate(const std::filesystem::path &hostPath, uint32_t macDate);
 
 std::vector<uint8_t> MacRomanFromUTF8File(const std::filesystem::path &hostPath);
 uint32_t MacRomanSizeFromUTF8File(const std::filesystem::path &hostPath);
-std::string UTF8FromMacRoman(std::span<const uint8_t> macRoman);
 
 /* ── Filename escaping ────────────────────────────── */
 

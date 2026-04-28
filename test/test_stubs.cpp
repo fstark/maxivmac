@@ -72,17 +72,6 @@ void test_set_pc(uint32_t pc)
 	s_pc = pc;
 }
 
-/* ── MacRoman stubs (lomem_globals.cpp) ───────────────── */
-
-extern "C++"
-{
-	unsigned int MacRoman2UniCodeSize(unsigned char *, unsigned int)
-	{
-		return 0;
-	}
-	void MacRoman2UniCodeData(unsigned char *, unsigned int, char *) {}
-}
-
 /* ── Debug output stub ────────────────────────────────── */
 
 void dbg_printf(const char *fmt, ...)
