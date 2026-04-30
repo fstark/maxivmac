@@ -90,7 +90,7 @@ std::vector<Token> Tokenize(std::string_view line)
 		{
 			char c2 = line[pos + 1];
 			if ((c == '=' && c2 == '=') || (c == '!' && c2 == '=') || (c == '<' && c2 == '=') ||
-				(c == '>' && c2 == '=') || (c == '&' && c2 == '&'))
+				(c == '>' && c2 == '=') || (c == '&' && c2 == '&') || (c == '-' && c2 == '-'))
 			{
 				Token t;
 				t.kind = Token::Kind::Operator;

@@ -142,20 +142,16 @@ static void InfoGlobals(Debugger &dbg, const std::vector<Token> &args)
 	std::string prefixStr;
 	std::string sectionFilter;
 
-	/* Parse args: info globals [prefix] [--section NAME]
-	   The tokenizer splits -- into two Operator('-') tokens, so we
-	   detect -,-,section as the flag. */
+	/* Parse args: info globals [prefix] [--section NAME] */
 	for (size_t i = 1; i < args.size(); ++i)
 	{
 		if (args[i].kind == Token::Kind::End) break;
-		/* Detect --section: Operator('-') Operator('-') Word('section') */
-		if (args[i].kind == Token::Kind::Operator && args[i].text == "-" && i + 2 < args.size() &&
-			args[i + 1].kind == Token::Kind::Operator && args[i + 1].text == "-" &&
-			args[i + 2].kind == Token::Kind::Word && args[i + 2].text == "section" &&
-			i + 3 < args.size() && args[i + 3].kind != Token::Kind::End)
+		if (args[i].kind == Token::Kind::Operator && args[i].text == "--" && i + 1 < args.size() &&
+			args[i + 1].kind == Token::Kind::Word && args[i + 1].text == "section" &&
+			i + 2 < args.size() && args[i + 2].kind != Token::Kind::End)
 		{
-			sectionFilter = args[i + 3].text;
-			i += 3; /* skip -, -, section, NAME */
+			sectionFilter = args[i + 2].text;
+			i += 2; /* skip section, NAME */
 			continue;
 		}
 		if (args[i].kind == Token::Kind::Word && prefixStr.empty())
