@@ -110,6 +110,8 @@ private:
 	bool emuViewportHovered_ = false;
 	TextureFilter textureFilter_ = TextureFilter::Linear;
 	ScalingMode scalingMode_ = ScalingMode::Integer;
+	bool snapping_ = false;
+	int currentScale_ = 2;
 
 	/* UI state */
 	UIState uiState_ = UIState::ModelSelector;

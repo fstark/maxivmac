@@ -136,6 +136,29 @@ void ImGuiBackend::runLoop()
 				continue;
 			}
 
+			/* Integer-snap resize logic */
+			if (event.type == SDL_EVENT_WINDOW_RESIZED && !snapping_)
+			{
+				if (uiState_ == UIState::Windowed && scalingMode_ == ScalingMode::Integer)
+				{
+					int newW = event.window.data1;
+					int newH = event.window.data2;
+					int scaleX = std::max(1, newW / emuTexW_);
+					int scaleY = std::max(1, newH / emuTexH_);
+					int scale = std::min(scaleX, scaleY);
+					int snapW = emuTexW_ * scale;
+					int snapH = emuTexH_ * scale;
+					if (snapW != newW || snapH != newH)
+					{
+						snapping_ = true;
+						SDL_SetWindowSize(window_, snapW, snapH);
+						snapping_ = false;
+					}
+					currentScale_ = scale;
+				}
+				continue;
+			}
+
 			if (!imGuiConsumedEvent(event))
 			{
 				/* When overlay is visible, don't forward to emulator */
@@ -575,7 +598,18 @@ void ImGuiBackend::setScalingMode(ScalingMode m)
 {
 	if (scalingMode_ == m) return;
 	scalingMode_ = m;
-	// Phase 2 adds snap-on-switch logic here
+	if (m == ScalingMode::Integer && uiState_ == UIState::Windowed)
+	{
+		int w, h;
+		SDL_GetWindowSize(window_, &w, &h);
+		int scaleX = std::max(1, w / emuTexW_);
+		int scaleY = std::max(1, h / emuTexH_);
+		int scale = std::min(scaleX, scaleY);
+		snapping_ = true;
+		SDL_SetWindowSize(window_, emuTexW_ * scale, emuTexH_ * scale);
+		snapping_ = false;
+		currentScale_ = scale;
+	}
 }
 
 void ImGuiBackend::uploadFramebuffer()
