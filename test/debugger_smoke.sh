@@ -142,6 +142,34 @@ check "trace traps HGetVol" "trace traps +HGetVol
 info trace
 quit" "+HGetVol"
 
+# Test 22: info via
+check "info via" "info via
+quit" "VIA1:"
+
+# Test 23: info scrap (may be uninitialized at boot, but command must not crash)
+check "info scrap" "info scrap
+quit" "ScrapState"
+
+# Test 24: info globals --section
+check "info globals --section" "info globals --section MemoryMgr
+quit" "MemTop"
+
+# Test 25: info console (buffer may be empty at boot)
+check "info console" "info console
+quit" "console"
+
+# Test 26: help mentions info via
+check "help mentions via" "help
+quit" "info via"
+
+# Test 27: help mentions info scrap
+check "help mentions scrap" "help
+quit" "info scrap"
+
+# Test 28: help mentions info console
+check "help mentions console" "help
+quit" "info console"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 
