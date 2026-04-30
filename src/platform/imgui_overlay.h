@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 class EmulatorShell;
 class ImGuiBackend;
 enum class UIState;
@@ -20,8 +22,12 @@ public:
 			  UIState &requestedState);
 
 private:
-	void drawMachineTab(EmulatorShell *shell);
-	void drawDisplayTab(UIState currentState, ImGuiBackend *backend, UIState &requestedState);
-	void drawSpeedTab();
-	void drawAdvancedTab();
+	void drawPrimaryControls(UIState currentState, EmulatorShell *shell, ImGuiBackend *backend,
+							 UIState &requestedState);
+	void drawAdvancedControls(ImGuiBackend *backend);
+	void drawAbout();
+
+	/* Flash feedback */
+	const char *flashMsg_ = nullptr;
+	uint64_t flashExpiry_ = 0;
 };
