@@ -931,7 +931,7 @@ https://github.com/nothings/stb or check if already present in
 Add `src/platform/stb_impl.cpp` to `MINIVMAC_SOURCES` in
 `CMakeLists.txt`.  Add include path `libs/stb` if needed.
 
-### 9.2 — Platform clipboard image helper
+### 9.2 — Clipboard image helper (SDL3, all platforms)
 
 File: `src/platform/clipboard_image.h` (new)
 
@@ -940,58 +940,48 @@ File: `src/platform/clipboard_image.h` (new)
 #include <cstdint>
 #include <cstddef>
 
-// Copy PNG data to the system clipboard. Platform-specific.
+// Copy PNG data to the system clipboard via SDL3.
 void HostClipSetImage(const uint8_t *pngData, size_t len);
 ```
 
-File: `src/platform/clipboard_image_macos.mm` (new, macOS)
+File: `src/platform/clipboard_image.cpp` (new)
 
-```objc
-#include "platform/clipboard_image.h"
-#import <AppKit/AppKit.h>
-
-void HostClipSetImage(const uint8_t *pngData, size_t len)
-{
-    @autoreleasepool {
-        NSData *data = [NSData dataWithBytes:pngData length:len];
-        NSPasteboard *pb = [NSPasteboard generalPasteboard];
-        [pb clearContents];
-        [pb setData:data forType:NSPasteboardTypePNG];
-    }
-}
-```
-
-File: `src/platform/clipboard_image_sdl.cpp` (new, Linux/Windows
-fallback using SDL3 clipboard data API)
+SDL3's `SDL_SetClipboardData()` handles platform differences
+internally (NSPasteboard on macOS, Win32 clipboard on Windows,
+X11/Wayland on Linux).  No Obj-C++ or platform `#ifdef`s needed.
 
 ```cpp
 #include "platform/clipboard_image.h"
 #include <SDL3/SDL.h>
+#include <vector>
+#include <cstring>
+
+static std::vector<uint8_t> s_clipBuffer;
 
 static const void *clipDataCallback(void *userdata, const char *mime,
                                     size_t *size)
 {
-    auto *buf = static_cast<std::vector<uint8_t> *>(userdata);
-    if (strcmp(mime, "image/png") == 0)
+    (void)userdata;
+    if (std::strcmp(mime, "image/png") == 0)
     {
-        *size = buf->size();
-        return buf->data();
+        *size = s_clipBuffer.size();
+        return s_clipBuffer.data();
     }
     *size = 0;
     return nullptr;
 }
 
-static std::vector<uint8_t> s_clipBuffer;
-
 void HostClipSetImage(const uint8_t *pngData, size_t len)
 {
     s_clipBuffer.assign(pngData, pngData + len);
-    static const char *mimes[] = {"image/png", nullptr};
-    SDL_SetClipboardData(clipDataCallback, nullptr, &s_clipBuffer, mimes, 1);
+    static const char *mimes[] = {"image/png"};
+    SDL_SetClipboardData(clipDataCallback, nullptr, nullptr, mimes, 1);
 }
 ```
 
-CMake: use `if(APPLE)` to select `.mm`, else the SDL fallback.
+Add `src/platform/clipboard_image.cpp` to `MINIVMAC_SOURCES` in
+`CMakeLists.txt`.  No additional framework linking required — SDL3
+already links AppKit internally on macOS.
 
 ### 9.3 — Implement `captureScreenshot()`
 
@@ -1261,9 +1251,8 @@ cmake --build --preset macos && ./bld/macos/tests && cd test && ./verify.sh
 | File                                | Purpose                          |
 |-------------------------------------|----------------------------------|
 | `src/platform/ui_math.h`           | Pure snap/viewport computation   |
-| `src/platform/clipboard_image.h`   | Cross-platform clipboard image   |
-| `src/platform/clipboard_image_macos.mm` | macOS NSPasteboard impl     |
-| `src/platform/clipboard_image_sdl.cpp`  | SDL3 fallback impl           |
+| `src/platform/clipboard_image.h`   | Clipboard image API              |
+| `src/platform/clipboard_image.cpp` | SDL3 clipboard implementation    |
 | `src/platform/stb_impl.cpp`        | stb_image_write implementation   |
 | `libs/stb/stb_image_write.h`       | PNG encoder (if not present)     |
 | `test/test_ui.cpp`                  | Unit tests for UI math/logic     |

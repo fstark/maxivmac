@@ -236,20 +236,17 @@ Button exists, body is a TODO comment.
    The pixel order needs a BGRA→RGBA swizzle pass before encoding
    (stb expects RGBA).  A tight loop over `w*h` pixels with byte
    swap is sufficient.
-3. Copy PNG data to clipboard:
-   - **macOS**: Use `NSPasteboard` with `NSPasteboardTypePNG`.  SDL3
-     does not yet expose image clipboard.  Write a small Obj-C++
-     helper (`clipboard_image_macos.mm`).
-   - **Linux**: `xclip -selection clipboard -t image/png` via
-     `SDL_SetClipboardData()` (SDL 3.2+).
-   - **Windows**: `CF_DIB` format via Win32 — or SDL if available.
+3. Copy PNG data to clipboard using `SDL_SetClipboardData()`
+   (SDL 3.0+), which handles platform differences internally
+   (NSPasteboard on macOS, Win32 on Windows, X11/Wayland on Linux).
+   No Obj-C++ or platform-specific code required.
 
    Encapsulate behind:
    ```cpp
    void HostClipSetImage(const uint8_t* pngData, size_t len);
    ```
-   Platform-specific implementations selected at build time (CMake
-   per-platform source lists).
+   Single implementation in `clipboard_image.cpp` using
+   `SDL_SetClipboardData` with MIME type `"image/png"`.
 
 4. Overlay feedback: flash "Copied!" text for ~1 second after
    capture.
@@ -527,5 +524,5 @@ Suggested sequence (each phase is independently shippable):
 | `src/platform/imgui_overlay.cpp`| Full rewrite of panel layout                  |
 | `src/platform/emulator_shell.h` | ScalingMode storage, speed preset index       |
 | `src/platform/emulator_shell.cpp`| Speed preset logic, paused indicator         |
-| `src/platform/clipboard_image_macos.mm` | New: NSPasteboard PNG clipboard   |
-| `CMakeLists.txt`              | Add .mm file for macOS, stb_image_write       |
+| `src/platform/clipboard_image.cpp`  | New: SDL3 clipboard image (all platforms) |
+| `CMakeLists.txt`              | Add clipboard_image.cpp, stb_image_write  |
