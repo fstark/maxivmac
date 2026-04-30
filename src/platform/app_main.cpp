@@ -7,7 +7,6 @@
 
 #include "platform/imgui_backend.h"
 #include "platform/headless_backend.h"
-#include "platform/imgui_debug_windows.h"
 #include "platform/emulator_shell.h"
 #include "core/main.h"
 
@@ -44,7 +43,6 @@ int main(int argc, char **argv)
 			ProgramCleanup();
 			return 1;
 		}
-		RegisterDebugTools(imguiBackend.getToolRegistry());
 		imguiBackend.setUIState(UIState::Windowed);
 	}
 	else

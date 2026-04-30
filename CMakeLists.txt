@@ -132,11 +132,8 @@ set(MINIVMAC_SOURCES
 
     # Platform — ImGui backend
     src/platform/imgui_backend.cpp
-    src/platform/imgui_debug_windows.cpp
     src/platform/imgui_model_selector.cpp
     src/platform/imgui_overlay.cpp
-    src/platform/imgui_tool_registry.cpp
-    src/platform/imgui_lomem_tool.cpp
     src/platform/lomem_globals.cpp
 
     # Platform — Headless backend

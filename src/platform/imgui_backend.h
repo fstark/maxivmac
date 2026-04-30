@@ -12,7 +12,6 @@
 #include "platform/platform_backend.h"
 #include "platform/imgui_model_selector.h"
 #include "platform/imgui_overlay.h"
-#include "platform/imgui_tool_registry.h"
 #include <SDL3/SDL.h>
 
 typedef unsigned int GLuint;
@@ -23,7 +22,6 @@ enum class UIState
 	ModelSelector, // Pre-boot: user picks a model + config
 	Windowed,	   // Running emulation in a window (no chrome)
 	Fullscreen,	   // Running emulation fullscreen
-	Developer,	   // Running emulation + dockable debug tools
 };
 
 /* GL texture filter for the emulator viewport. */
@@ -77,14 +75,10 @@ public:
 	UIState getUIState() const { return uiState_; }
 	void enterWindowed();
 	void enterFullscreen();
-	void enterDeveloper();
 
 	/* Pre-boot window: create a window suitable for the model selector
 	   (no emulation texture, no emulator shell dependency). */
 	bool createSelectorWindow();
-
-	/* Tool registry for developer mode */
-	ToolRegistry &getToolRegistry() { return toolRegistry_; }
 
 	/* GL texture filter */
 	void setTextureFilter(TextureFilter f);
@@ -114,18 +108,16 @@ private:
 	/* Overlay */
 	ControlOverlay overlay_;
 
-	/* Saved window geometry for returning from fullscreen/developer */
+	/* Saved window geometry for returning from fullscreen */
 	int savedWinX_ = 0, savedWinY_ = 0;
 	int savedWinW_ = 0, savedWinH_ = 0;
 
 	PlatformEvent translateSdlEvent(SDL_Event &event);
 	bool imGuiConsumedEvent(const SDL_Event &event) const;
 	void uploadFramebuffer();
-	void drawMenuBar();
 	void drawEmulatorViewport();
 	void drawViewportWindowed();
 	void drawViewportFullscreen();
-	void drawViewportDeveloper();
 	void displayEmulatorImage(float w, float h);
 
 	/* Model selector (pre-boot) */
@@ -133,13 +125,9 @@ private:
 	void drawModelSelector();
 	void bootFromSelector(const LaunchConfig &config);
 
-	/* Tool registry for developer mode */
-	ToolRegistry toolRegistry_;
-
 	/* Per-state draw dispatchers */
 	void drawWindowedState();
 	void drawFullscreenState();
-	void drawDeveloperState();
 };
 
 #endif /* IMGUI_BACKEND_H */

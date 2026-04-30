@@ -12,7 +12,6 @@
 #include "platform/sdl_keyboard.h"
 #include "platform/sdl_sound.h"
 #include "platform/platform.h"
-#include "platform/imgui_debug_windows.h"
 #include "core/main.h"
 
 /* Forward declarations to avoid pulling in the full osglu_common.h
@@ -188,7 +187,6 @@ void ImGuiBackend::runLoop()
 
 			case UIState::Windowed:
 			case UIState::Fullscreen:
-			case UIState::Developer:
 				drawWindowedState();
 				break;
 		}
@@ -236,9 +234,6 @@ void ImGuiBackend::drawWindowedState()
 	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
 
-	/* Only show menu bar in Developer state */
-	if (uiState_ == UIState::Developer) drawMenuBar();
-
 	drawEmulatorViewport();
 
 	/* Control overlay (Ctrl key held) */
@@ -256,18 +251,12 @@ void ImGuiBackend::drawWindowedState()
 				case UIState::Fullscreen:
 					enterFullscreen();
 					break;
-				case UIState::Developer:
-					enterDeveloper();
-					break;
 				default:
 					break;
 			}
 			overlayVisible_ = false;
 		}
 	}
-
-	/* Debug tools only in Developer mode */
-	if (uiState_ == UIState::Developer) toolRegistry_.drawAllVisible();
 
 	ImGui::Render();
 
@@ -287,15 +276,6 @@ void ImGuiBackend::drawWindowedState()
 void ImGuiBackend::drawFullscreenState()
 {
 	/* Placeholder — will be implemented in Phase 4 */
-	drawWindowedState();
-}
-
-void ImGuiBackend::drawDeveloperState()
-{
-	/* Developer mode: same emulation as windowed but with larger
-	   window, menu bar, and visible debug panels.
-	   (Full DockSpace requires imgui docking branch — using floating
-		windows for now, which still provides a good developer UX.) */
 	drawWindowedState();
 }
 
@@ -340,9 +320,6 @@ void ImGuiBackend::bootFromSelector(const LaunchConfig &config)
 		return;
 	}
 
-	/* Register debug tools now that the machine is initialized */
-	RegisterDebugTools(toolRegistry_);
-
 	uiState_ = UIState::Windowed;
 }
 
@@ -373,27 +350,6 @@ void ImGuiBackend::enterFullscreen()
 	}
 	if (shell_) shell_->setFullscreenHint(true);
 	uiState_ = UIState::Fullscreen;
-}
-
-void ImGuiBackend::enterDeveloper()
-{
-	if (uiState_ != UIState::Developer)
-	{
-		SDL_GetWindowPosition(window_, &savedWinX_, &savedWinY_);
-		SDL_GetWindowSize(window_, &savedWinW_, &savedWinH_);
-		/* Expand to a larger window for developer tools */
-		PlatformDisplayBounds bounds;
-		int devW = 1400, devH = 900;
-		if (getDisplayBounds(&bounds))
-		{
-			devW = (int)(bounds.w * 0.8f);
-			devH = (int)(bounds.h * 0.8f);
-		}
-		SDL_SetWindowSize(window_, devW, devH);
-		SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-	}
-	if (shell_) shell_->setFullscreenHint(false);
-	uiState_ = UIState::Developer;
 }
 
 /* ── Selector window (pre-boot) ──────────────────────── */
@@ -456,10 +412,9 @@ bool ImGuiBackend::imGuiConsumedEvent(const SDL_Event &event) const
 		case SDL_EVENT_MOUSE_BUTTON_UP:
 		case SDL_EVENT_MOUSE_WHEEL:
 			/* Forward to the emulator only when the emulator viewport
-			   is the topmost hovered window (from the previous frame).
-			   In Windowed/Fullscreen the viewport fills the window so
-			   this is ~always true; in Developer mode, debug tool
-			   windows on top correctly block the hover. */
+			   is hovered (from the previous frame).  In Windowed the
+			   viewport fills the window, so this is always true.
+			   The overlay is the only UI that can appear on top. */
 			return !emuViewportHovered_;
 		default:
 			return false;
@@ -631,30 +586,6 @@ void ImGuiBackend::uploadFramebuffer()
 
 /* ── ImGui drawing ───────────────────────────────────── */
 
-void ImGuiBackend::drawMenuBar()
-{
-	if (ImGui::BeginMainMenuBar())
-	{
-		if (ImGui::BeginMenu("File"))
-		{
-			if (ImGui::MenuItem("Quit", "Ctrl+Q")) g_requestMacOff = true;
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("Machine"))
-		{
-			if (ImGui::MenuItem("Windowed")) enterWindowed();
-			if (ImGui::MenuItem("Fullscreen")) enterFullscreen();
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("Debug"))
-		{
-			toolRegistry_.drawToolMenu();
-			ImGui::EndMenu();
-		}
-		ImGui::EndMainMenuBar();
-	}
-}
-
 void ImGuiBackend::displayEmulatorImage(float w, float h)
 {
 	ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -731,20 +662,6 @@ void ImGuiBackend::drawViewportFullscreen()
 	ImGui::PopStyleColor();
 }
 
-void ImGuiBackend::drawViewportDeveloper()
-{
-	ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse |
-							 ImGuiWindowFlags_AlwaysAutoResize |
-							 ImGuiWindowFlags_NoBringToFrontOnFocus;
-	emuViewportHovered_ = false;
-	if (ImGui::Begin("Macintosh", nullptr, flags))
-	{
-		emuViewportHovered_ = ImGui::IsWindowHovered();
-		displayEmulatorImage(emuTexW_, emuTexH_);
-	}
-	ImGui::End();
-}
-
 void ImGuiBackend::drawEmulatorViewport()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -754,9 +671,6 @@ void ImGuiBackend::drawEmulatorViewport()
 	{
 		case UIState::Fullscreen:
 			drawViewportFullscreen();
-			break;
-		case UIState::Developer:
-			drawViewportDeveloper();
 			break;
 		default:
 			drawViewportWindowed();
@@ -770,20 +684,8 @@ void ImGuiBackend::drawEmulatorViewport()
 
 bool ImGuiBackend::createWindow(const char *title, int width, int height, bool fullscreen)
 {
-	/* In Windowed mode the window should be exactly the emulator's
-	   screen size so it feels like the original Mac.  In Developer
-	   mode we add extra space for debug panels. */
-	int winW, winH;
-	if (uiState_ == UIState::Developer)
-	{
-		winW = width + 200;
-		winH = height + 200;
-	}
-	else
-	{
-		winW = width;
-		winH = height;
-	}
+	int winW = width;
+	int winH = height;
 
 	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 	if (fullscreen) flags |= SDL_WINDOW_FULLSCREEN;
@@ -992,9 +894,8 @@ void ImGuiBackend::onResolutionChanged(uint16_t newW, uint16_t newH)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, newW, newH, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
 				 nullptr);
 
-	/* Resize SDL window only in Windowed mode.  Fullscreen and
-	   Developer modes handle the new resolution automatically
-	   via aspect-ratio scaling / ImGui auto-resize. */
+	/* Resize SDL window only in Windowed mode.  Fullscreen handles
+	   the new resolution automatically via aspect-ratio scaling. */
 	if (uiState_ == UIState::Windowed)
 	{
 		int scale = (shell_ && shell_->useMagnify()) ? shell_->windowScale() : 1;

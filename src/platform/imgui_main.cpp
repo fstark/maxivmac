@@ -8,7 +8,6 @@
 
 #include "platform/imgui_backend.h"
 #include "platform/emulator_shell.h"
-#include "platform/imgui_debug_windows.h"
 #include "core/main.h"
 
 int main(int argc, char **argv)
@@ -29,7 +28,6 @@ int main(int argc, char **argv)
 			ProgramCleanup();
 			return 1;
 		}
-		RegisterDebugTools(backend.getToolRegistry());
 		backend.setUIState(UIState::Windowed);
 	}
 	else

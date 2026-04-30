@@ -71,8 +71,7 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell *shell, ImGuiBacke
 			}
 			if (ImGui::BeginTabItem("Advanced"))
 			{
-				drawAdvancedTab(currentState, requestedState);
-				if (requestedState != currentState) stateChanged = true;
+				drawAdvancedTab();
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
@@ -235,23 +234,8 @@ void ControlOverlay::drawSpeedTab()
 
 /* ── Advanced tab ────────────────────────────────────── */
 
-void ControlOverlay::drawAdvancedTab(UIState currentState, UIState &requestedState)
+void ControlOverlay::drawAdvancedTab()
 {
-	ImGui::Spacing();
-
-	bool isDeveloper = (currentState == UIState::Developer);
-	if (ImGui::Button(isDeveloper ? "Exit Developer Mode" : "Developer Mode", ImVec2(200, 36)))
-	{
-		requestedState = isDeveloper ? UIState::Windowed : UIState::Developer;
-	}
-	if (!isDeveloper)
-	{
-		ImGui::SameLine();
-		ImGui::TextDisabled("Debug tools");
-	}
-
-	ImGui::Spacing();
-	ImGui::Separator();
 	ImGui::Spacing();
 
 	ImGui::Text("maxivmac");

@@ -23,5 +23,5 @@ private:
 	void drawMachineTab(EmulatorShell *shell);
 	void drawDisplayTab(UIState currentState, ImGuiBackend *backend, UIState &requestedState);
 	void drawSpeedTab();
-	void drawAdvancedTab(UIState currentState, UIState &requestedState);
+	void drawAdvancedTab();
 };
