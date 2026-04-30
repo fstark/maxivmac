@@ -793,13 +793,18 @@ bool EmulatorShell::createMainWindow()
 {
 	int NewWindowX;
 	int NewWindowY;
-	int NewWindowHeight = g_screenHeight;
-	int NewWindowWidth = g_screenWidth;
+	int NewWindowHeight = g_screenHeight * 2;
+	int NewWindowWidth = g_screenWidth * 2;
 
-	if (useMagnify_)
+	/* If 2× doesn't fit, use 1× */
+	PlatformDisplayBounds bounds;
+	if (backend_->getDisplayBounds(&bounds))
 	{
-		NewWindowHeight *= windowScale_;
-		NewWindowWidth *= windowScale_;
+		if (NewWindowWidth > bounds.w || NewWindowHeight > bounds.h)
+		{
+			NewWindowWidth = g_screenWidth;
+			NewWindowHeight = g_screenHeight;
+		}
 	}
 
 	if (useFullScreen_)
@@ -809,7 +814,7 @@ bool EmulatorShell::createMainWindow()
 	}
 	else
 	{
-		int WinIndx = useMagnify_ ? kMagStateMagnifgy : kMagStateNormal;
+		int WinIndx = kMagStateNormal;
 
 		if (!havePositionWins_[WinIndx])
 		{
@@ -837,48 +842,13 @@ bool EmulatorShell::createMainWindow()
 		int wr, hr;
 		backend_->getWindowSize(&wr, &hr);
 
-		g_viewHSize = wr;
-		g_viewVSize = hr;
-		if (useMagnify_)
-		{
-			g_viewHSize /= windowScale_;
-			g_viewVSize /= windowScale_;
-		}
-		if (g_viewHSize >= g_screenWidth)
-		{
-			g_viewHStart = 0;
-			g_viewHSize = g_screenWidth;
-		}
-		else
-		{
-			g_viewHSize &= ~1;
-		}
-		if (g_viewVSize >= g_screenHeight)
-		{
-			g_viewVStart = 0;
-			g_viewVSize = g_screenHeight;
-		}
-		else
-		{
-			g_viewVSize &= ~1;
-		}
+		g_viewHSize = g_screenWidth;
+		g_viewVSize = g_screenHeight;
+		g_viewHStart = 0;
+		g_viewVStart = 0;
 
-		if (wr > NewWindowWidth)
-		{
-			hOffset_ = (wr - NewWindowWidth) / 2;
-		}
-		else
-		{
-			hOffset_ = 0;
-		}
-		if (hr > NewWindowHeight)
-		{
-			vOffset_ = (hr - NewWindowHeight) / 2;
-		}
-		else
-		{
-			vOffset_ = 0;
-		}
+		hOffset_ = 0;
+		vOffset_ = 0;
 	}
 
 	return true;

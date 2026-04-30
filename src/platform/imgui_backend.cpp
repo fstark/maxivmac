@@ -571,6 +571,13 @@ void ImGuiBackend::setTextureFilter(TextureFilter f)
 	}
 }
 
+void ImGuiBackend::setScalingMode(ScalingMode m)
+{
+	if (scalingMode_ == m) return;
+	scalingMode_ = m;
+	// Phase 2 adds snap-on-switch logic here
+}
+
 void ImGuiBackend::uploadFramebuffer()
 {
 	if (!shell_ || !shell_->isFramebufferDirty()) return;
@@ -687,7 +694,7 @@ bool ImGuiBackend::createWindow(const char *title, int width, int height, bool f
 	int winW = width;
 	int winH = height;
 
-	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE;
 	if (fullscreen) flags |= SDL_WINDOW_FULLSCREEN;
 
 	window_ = SDL_CreateWindow(title, winW, winH, flags);
@@ -898,7 +905,12 @@ void ImGuiBackend::onResolutionChanged(uint16_t newW, uint16_t newH)
 	   the new resolution automatically via aspect-ratio scaling. */
 	if (uiState_ == UIState::Windowed)
 	{
-		int scale = (shell_ && shell_->useMagnify()) ? shell_->windowScale() : 1;
+		int scale = 2;
+		PlatformDisplayBounds bounds;
+		if (getDisplayBounds(&bounds))
+		{
+			if (newW * 2 > bounds.w || newH * 2 > bounds.h) scale = 1;
+		}
 		SDL_SetWindowSize(window_, newW * scale, newH * scale);
 	}
 }

@@ -24,6 +24,13 @@ enum class UIState
 	Fullscreen,	   // Running emulation fullscreen
 };
 
+/* Scaling mode for the emulator viewport. */
+enum class ScalingMode : uint8_t
+{
+	Integer,
+	Stretched
+};
+
 /* GL texture filter for the emulator viewport. */
 enum class TextureFilter
 {
@@ -84,6 +91,10 @@ public:
 	void setTextureFilter(TextureFilter f);
 	TextureFilter textureFilter() const { return textureFilter_; }
 
+	/* Scaling mode */
+	ScalingMode scalingMode() const { return scalingMode_; }
+	void setScalingMode(ScalingMode m);
+
 private:
 	EmulatorShell *shell_ = nullptr;
 	SDL_Window *window_ = nullptr;
@@ -98,6 +109,7 @@ private:
 	bool relativeMouseMode_ = false;
 	bool emuViewportHovered_ = false;
 	TextureFilter textureFilter_ = TextureFilter::Linear;
+	ScalingMode scalingMode_ = ScalingMode::Integer;
 
 	/* UI state */
 	UIState uiState_ = UIState::ModelSelector;

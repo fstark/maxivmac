@@ -13,7 +13,6 @@
 extern bool g_requestMacOff;
 extern bool g_requestInsertDisk;
 extern uint8_t g_requestIthDisk;
-extern bool g_wantMagnify;
 extern bool g_wantFullScreen;
 extern bool g_speedStopped;
 extern bool g_runInBackground;
@@ -147,20 +146,19 @@ void ControlOverlay::drawDisplayTab(UIState currentState, ImGuiBackend *backend,
 									UIState &requestedState)
 {
 	ImGui::Spacing();
-	ImGui::Text("Zoom");
-	ImGui::SameLine(80);
 
-	/* Zoom: maps to g_wantMagnify. For now, simple 1x/2x toggle
-	   since the backend uses windowScale_. */
-	bool magnified = g_wantMagnify;
-	if (ImGui::RadioButton("1x", !magnified))
+	/* Scaling mode toggle */
+	ImGui::Text("Scaling");
+	ImGui::SameLine(80);
+	bool isInteger = (backend->scalingMode() == ScalingMode::Integer);
+	if (ImGui::RadioButton("Integer", isInteger))
 	{
-		g_wantMagnify = false;
+		backend->setScalingMode(ScalingMode::Integer);
 	}
 	ImGui::SameLine();
-	if (ImGui::RadioButton("2x", magnified))
+	if (ImGui::RadioButton("Stretched", !isInteger))
 	{
-		g_wantMagnify = true;
+		backend->setScalingMode(ScalingMode::Stretched);
 	}
 
 	ImGui::Spacing();
