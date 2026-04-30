@@ -34,12 +34,12 @@ static ExprContext MakeLiveContext()
 [[maybe_unused]]
 static bool ParseAddr(const Token &tok, uint32_t &addr)
 {
-	if (tok.kind == Token::Kind::Number)
+	if (tok.isNumber())
 	{
 		addr = tok.numValue;
 		return true;
 	}
-	if (tok.kind == Token::Kind::Word)
+	if (tok.isWord())
 	{
 		uint16_t tw;
 		if (SymbolsResolve(tok.text, addr, tw)) return true;
@@ -61,7 +61,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 	int argIdx = 0;
 
 	/* Check for /FMT — may be split across multiple tokens (e.g. / 4 b) */
-	if (!args.empty() && args[0].kind == Token::Kind::Operator && args[0].text == "/")
+	if (!args.empty() && args[0].isOperator("/"))
 	{
 		++argIdx;
 		/* Reassemble format spec from tokens until we hit something
@@ -81,9 +81,9 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 		while (argIdx < static_cast<int>(args.size()))
 		{
 			auto &tok = args[argIdx];
-			if (tok.kind == Token::Kind::End) break;
+			if (tok.isEnd()) break;
 			/* Leading count (digits) — only valid at the start */
-			if (tok.kind == Token::Kind::Number && fmtStr.empty())
+			if (tok.isNumber() && fmtStr.empty())
 			{
 				fmtStr += tok.text;
 				++argIdx;
@@ -91,7 +91,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 			}
 			/* Word token whose characters are all valid format letters
 			   (e.g. "wx", "b", "ld") — accept whether count preceded or not */
-			if (tok.kind == Token::Kind::Word && allFmtChars(tok.text))
+			if (tok.isWord() && allFmtChars(tok.text))
 			{
 				fmtStr += tok.text;
 				++argIdx;
@@ -102,7 +102,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 		if (!fmtStr.empty()) fmt = ParseFmtSpec(fmtStr);
 	}
 
-	if (argIdx >= static_cast<int>(args.size()) || args[argIdx].kind == Token::Kind::End)
+	if (argIdx >= static_cast<int>(args.size()) || args[argIdx].isEnd())
 	{
 		dbg.io().write("Usage: x[/FMT] <addr>\n");
 		return;
@@ -130,7 +130,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 		std::string exprStr;
 		for (int i = argIdx; i < static_cast<int>(args.size()); ++i)
 		{
-			if (args[i].kind == Token::Kind::End) break;
+			if (args[i].isEnd()) break;
 			if (!exprStr.empty()) exprStr += ' ';
 			exprStr += args[i].text;
 		}
@@ -181,8 +181,8 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 
 		for (int i = argIdx; i < static_cast<int>(args.size()); ++i)
 		{
-			if (args[i].kind == Token::Kind::End) break;
-			if (args[i].kind == Token::Kind::Word)
+			if (args[i].isEnd()) break;
+			if (args[i].isWord())
 			{
 				if (typeName.empty())
 					typeName = args[i].text;
@@ -249,7 +249,7 @@ void CmdExamine(Debugger &dbg, const std::vector<Token> &args)
 void CmdPrint(Debugger &dbg, const std::vector<Token> &args)
 {
 
-	if (args.empty() || args[0].kind == Token::Kind::End)
+	if (args.empty() || args[0].isEnd())
 	{
 		dbg.io().write("Usage: print <expr>\n");
 		return;
@@ -259,7 +259,7 @@ void CmdPrint(Debugger &dbg, const std::vector<Token> &args)
 	std::string exprStr;
 	for (auto &tok : args)
 	{
-		if (tok.kind == Token::Kind::End) break;
+		if (tok.isEnd()) break;
 		if (!exprStr.empty()) exprStr += ' ';
 		exprStr += tok.text;
 	}
@@ -290,7 +290,7 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 	int eqIdx = -1;
 	for (int i = 0; i < static_cast<int>(args.size()); ++i)
 	{
-		if (args[i].kind == Token::Kind::Operator && args[i].text == "=")
+		if (args[i].isOperator("="))
 		{
 			eqIdx = i;
 			break;
@@ -306,7 +306,7 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 	std::string valStr;
 	for (int i = eqIdx + 1; i < static_cast<int>(args.size()); ++i)
 	{
-		if (args[i].kind == Token::Kind::End) break;
+		if (args[i].isEnd()) break;
 		if (!valStr.empty()) valStr += ' ';
 		valStr += args[i].text;
 	}
@@ -320,14 +320,14 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 	}
 
 	/* Target is memory: *addr or *addr.w or *addr.l */
-	if (args[0].kind == Token::Kind::Operator && args[0].text == "*")
+	if (args[0].isOperator("*"))
 	{
 		/* Parse address from tokens between * and = */
 		std::string addrStr;
 		int sizeBytes = 1; /* default byte */
 		for (int i = 1; i < eqIdx; ++i)
 		{
-			if (args[i].kind == Token::Kind::End) break;
+			if (args[i].isEnd()) break;
 			/* Check for .w .l suffix */
 			if (args[i].text == ".w")
 			{
@@ -362,7 +362,7 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 	}
 
 	/* Target is a register */
-	if (args[0].kind == Token::Kind::Word)
+	if (args[0].isWord())
 	{
 		auto &name = args[0].text;
 		/* Register writes need direct access to the CPU state.
@@ -387,14 +387,14 @@ void CmdFind(Debugger &dbg, const std::vector<Token> &args)
 	}
 
 	uint32_t start = 0, end = 0;
-	if (args[0].kind == Token::Kind::Number)
+	if (args[0].isNumber())
 		start = args[0].numValue;
 	else
 	{
 		dbg.io().write("Expected start address\n");
 		return;
 	}
-	if (args[1].kind == Token::Kind::Number)
+	if (args[1].isNumber())
 		end = args[1].numValue;
 	else
 	{
@@ -407,7 +407,7 @@ void CmdFind(Debugger &dbg, const std::vector<Token> &args)
 
 	for (int i = 2; i < static_cast<int>(args.size()); ++i)
 	{
-		if (args[i].kind == Token::Kind::End) break;
+		if (args[i].isEnd()) break;
 		auto &text = args[i].text;
 
 		/* Check for quoted string */
@@ -494,7 +494,7 @@ void CmdFind(Debugger &dbg, const std::vector<Token> &args)
 
 void CmdDisas(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind == Token::Kind::End)
+	if (args.empty() || args[0].isEnd())
 	{
 		dbg.io().write("Usage: disas <start> [<end> | +<len>]\n");
 		return;
@@ -511,7 +511,7 @@ void CmdDisas(Debugger &dbg, const std::vector<Token> &args)
 	}
 
 	uint32_t end = start + 64; /* default: 64 bytes */
-	if (args.size() >= 2 && args[1].kind != Token::Kind::End)
+	if (args.size() >= 2 && !args[1].isEnd())
 	{
 		if (!args[1].text.empty() && args[1].text[0] == '+')
 		{

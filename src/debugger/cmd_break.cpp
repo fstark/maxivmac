@@ -23,15 +23,15 @@ static bool ParseValCond(DbgIO &io, const std::vector<Token> &args, int startIdx
 	/* Look for "if" "val" <op> <value> */
 	int i = startIdx;
 	auto end = static_cast<int>(args.size());
-	while (i < end && args[i].kind != Token::Kind::End)
+	while (i < end && !args[i].isEnd())
 	{
-		if (args[i].kind == Token::Kind::Word && args[i].text == "if")
+		if (args[i].isWord("if"))
 		{
 			++i;
-			if (i < end && args[i].kind == Token::Kind::Word && args[i].text == "val")
+			if (i < end && args[i].isWord("val"))
 			{
 				++i;
-				if (i < end && args[i].kind == Token::Kind::Operator)
+				if (i < end && args[i].isOperator())
 				{
 					auto &op = args[i].text;
 					if (op == "==")
@@ -54,7 +54,7 @@ static bool ParseValCond(DbgIO &io, const std::vector<Token> &args, int startIdx
 						return false;
 					}
 					++i;
-					if (i < end && args[i].kind == Token::Kind::Number)
+					if (i < end && args[i].isNumber())
 					{
 						valCondValue = args[i].numValue;
 						hasValCond = true;
@@ -74,7 +74,7 @@ static bool ParseValCond(DbgIO &io, const std::vector<Token> &args, int startIdx
 
 void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind == Token::Kind::End)
+	if (args.empty() || args[0].isEnd())
 	{
 		dbg.io().write("Usage: break <location> [if <cond>]\n");
 		dbg.io().write("       break #<insn>   Break at instruction number\n");
@@ -82,18 +82,17 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 	}
 
 	/* break #N or break #-N — instruction-count breakpoint */
-	if (args[0].kind == Token::Kind::Operator && args[0].text == "#" && args.size() >= 2)
+	if (args[0].isOperator("#") && args.size() >= 2)
 	{
 		bool negative = false;
 		size_t numIdx = 1;
 
-		if (args[1].kind == Token::Kind::Operator && args[1].text == "-" && args.size() >= 3 &&
-			args[2].kind == Token::Kind::Number)
+		if (args[1].isOperator("-") && args.size() >= 3 && args[2].isNumber())
 		{
 			negative = true;
 			numIdx = 2;
 		}
-		else if (args[1].kind != Token::Kind::Number)
+		else if (!args[1].isNumber())
 		{
 			dbg.io().write("Usage: break #<N> or break #-<N>\n");
 			return;
@@ -121,11 +120,11 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 	uint16_t trapWord = 0;
 	uint16_t subtrapSelector = 0;
 
-	if (args[0].kind == Token::Kind::Number)
+	if (args[0].isNumber())
 	{
 		addr = args[0].numValue;
 	}
-	else if (args[0].kind == Token::Kind::Word)
+	else if (args[0].isWord())
 	{
 		if (!SymbolsResolve(args[0].text, addr, trapWord, subtrapSelector))
 		{
@@ -143,12 +142,12 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 	std::string condition;
 	for (size_t i = 1; i < args.size(); ++i)
 	{
-		if (args[i].kind == Token::Kind::Word && args[i].text == "if")
+		if (args[i].isWord("if"))
 		{
 			/* Capture everything after "if" as the condition */
 			for (size_t j = i + 1; j < args.size(); ++j)
 			{
-				if (args[j].kind == Token::Kind::End) break;
+				if (args[j].isEnd()) break;
 				if (!condition.empty()) condition += ' ';
 				condition += args[j].text;
 			}
@@ -183,7 +182,7 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 
 static void DoWatch(Debugger &dbg, const std::vector<Token> &args, char mode)
 {
-	if (args.empty() || args[0].kind == Token::Kind::End)
+	if (args.empty() || args[0].isEnd())
 	{
 		dbg.io().write("Usage: %cwatch <addr> [len] [if val <op> <value>]\n",
 					   mode == 'R' ? 'r' : (mode == 'A' ? 'a' : ' '));
@@ -194,11 +193,11 @@ static void DoWatch(Debugger &dbg, const std::vector<Token> &args, char mode)
 	uint32_t len = 1;
 	int nextArg = 1;
 
-	if (args[0].kind == Token::Kind::Number)
+	if (args[0].isNumber())
 	{
 		addr = args[0].numValue;
 	}
-	else if (args[0].kind == Token::Kind::Word)
+	else if (args[0].isWord())
 	{
 		uint16_t tw;
 		if (!SymbolsResolve(args[0].text, addr, tw))
@@ -212,7 +211,7 @@ static void DoWatch(Debugger &dbg, const std::vector<Token> &args, char mode)
 	}
 
 	/* Optional explicit length */
-	if (nextArg < static_cast<int>(args.size()) && args[nextArg].kind == Token::Kind::Number)
+	if (nextArg < static_cast<int>(args.size()) && args[nextArg].isNumber())
 	{
 		len = args[nextArg].numValue;
 		++nextArg;
@@ -251,7 +250,7 @@ void CmdAwatch(Debugger &dbg, const std::vector<Token> &args)
 
 void CmdDelete(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind == Token::Kind::End)
+	if (args.empty() || args[0].isEnd())
 	{
 		/* Delete all */
 		int count = 0;
@@ -269,7 +268,7 @@ void CmdDelete(Debugger &dbg, const std::vector<Token> &args)
 		return;
 	}
 
-	if (args[0].kind == Token::Kind::Number)
+	if (args[0].isNumber())
 	{
 		if (dbg.deleteById(args[0].numValue))
 			dbg.io().write("Deleted %u\n", args[0].numValue);
@@ -280,7 +279,7 @@ void CmdDelete(Debugger &dbg, const std::vector<Token> &args)
 
 void CmdDisable(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind != Token::Kind::Number)
+	if (args.empty() || !args[0].isNumber())
 	{
 		dbg.io().write("Usage: disable <id>\n");
 		return;
@@ -293,7 +292,7 @@ void CmdDisable(Debugger &dbg, const std::vector<Token> &args)
 
 void CmdEnable(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind != Token::Kind::Number)
+	if (args.empty() || !args[0].isNumber())
 	{
 		dbg.io().write("Usage: enable <id>\n");
 		return;
@@ -306,7 +305,7 @@ void CmdEnable(Debugger &dbg, const std::vector<Token> &args)
 
 void CmdCommands(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind != Token::Kind::Number)
+	if (args.empty() || !args[0].isNumber())
 	{
 		dbg.io().write("Usage: commands <id>\n");
 		return;
@@ -342,8 +341,7 @@ void CmdCommands(Debugger &dbg, const std::vector<Token> &args)
 
 void CmdIgnore(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.size() < 2 || args[0].kind != Token::Kind::Number ||
-		args[1].kind != Token::Kind::Number)
+	if (args.size() < 2 || !args[0].isNumber() || !args[1].isNumber())
 	{
 		dbg.io().write("Usage: ignore <breakpoint-id> <count>\n");
 		return;

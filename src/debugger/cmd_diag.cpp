@@ -9,7 +9,7 @@
 
 void CmdDiag(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind == Token::Kind::End)
+	if (args.empty() || args[0].isEnd())
 	{
 		/* No arguments: list all subsystems and their state */
 		for (size_t i = 0; i < DiagConfig::count(); ++i)
@@ -24,7 +24,7 @@ void CmdDiag(Debugger &dbg, const std::vector<Token> &args)
 
 	if (target == "all")
 	{
-		if (args.size() < 2 || args[1].kind == Token::Kind::End)
+		if (args.size() < 2 || args[1].isEnd())
 		{
 			dbg.io().write("Usage: diag all <on|off>\n");
 			return;
@@ -47,7 +47,7 @@ void CmdDiag(Debugger &dbg, const std::vector<Token> &args)
 		return;
 	}
 
-	if (args.size() < 2 || args[1].kind == Token::Kind::End)
+	if (args.size() < 2 || args[1].isEnd())
 	{
 		dbg.io().write("%s is %s\n", DiagConfig::tag(s), Diag().isEnabled(s) ? "on" : "off");
 		return;

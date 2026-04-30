@@ -20,6 +20,13 @@ struct Token
 	Kind kind;
 	std::string text;
 	uint32_t numValue; // valid when kind == Number
+
+	bool isWord() const { return kind == Kind::Word; }
+	bool isWord(std::string_view s) const { return kind == Kind::Word && text == s; }
+	bool isNumber() const { return kind == Kind::Number; }
+	bool isOperator() const { return kind == Kind::Operator; }
+	bool isOperator(std::string_view s) const { return kind == Kind::Operator && text == s; }
+	bool isEnd() const { return kind == Kind::End; }
 };
 
 // Tokenize a command line into tokens.

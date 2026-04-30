@@ -577,7 +577,7 @@ void Debugger::executeCommands(const std::vector<std::string> &cmds)
 			continue;
 
 		auto tokens = Tokenize(line);
-		if (tokens.empty() || tokens[0].kind == Token::Kind::End) continue;
+		if (tokens.empty() || tokens[0].isEnd()) continue;
 
 		auto *entry = DispatchCommand(tokens[0].text, s_commands, kNumCommands, impl_->io.get());
 		if (entry)
@@ -692,7 +692,7 @@ void Debugger::commandLoop()
 		}
 
 		auto tokens = Tokenize(line);
-		if (tokens.empty() || tokens[0].kind == Token::Kind::End) continue;
+		if (tokens.empty() || tokens[0].isEnd()) continue;
 
 		auto *entry = DispatchCommand(tokens[0].text, s_commands, kNumCommands, impl_->io.get());
 		if (entry)

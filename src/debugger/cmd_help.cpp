@@ -11,7 +11,7 @@
 
 void CmdHelp(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (!args.empty() && args[0].kind == Token::Kind::Word)
+	if (!args.empty() && args[0].isWord())
 	{
 		/* Detailed help for a specific command */
 		auto *table = dbg.commandTable();

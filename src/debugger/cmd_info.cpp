@@ -120,7 +120,7 @@ static void InfoTraps(Debugger &dbg, const std::vector<Token> &args)
 {
 	std::string_view prefix;
 	std::string prefixStr;
-	if (args.size() > 1 && args[1].kind == Token::Kind::Word)
+	if (args.size() > 1 && args[1].isWord())
 	{
 		prefixStr = args[1].text;
 		prefix = prefixStr;
@@ -145,16 +145,15 @@ static void InfoGlobals(Debugger &dbg, const std::vector<Token> &args)
 	/* Parse args: info globals [prefix] [--section NAME] */
 	for (size_t i = 1; i < args.size(); ++i)
 	{
-		if (args[i].kind == Token::Kind::End) break;
-		if (args[i].kind == Token::Kind::Operator && args[i].text == "--" && i + 1 < args.size() &&
-			args[i + 1].kind == Token::Kind::Word && args[i + 1].text == "section" &&
-			i + 2 < args.size() && args[i + 2].kind != Token::Kind::End)
+		if (args[i].isEnd()) break;
+		if (args[i].isOperator("--") && i + 1 < args.size() && args[i + 1].isWord("section") &&
+			i + 2 < args.size() && !args[i + 2].isEnd())
 		{
 			sectionFilter = args[i + 2].text;
 			i += 2; /* skip section, NAME */
 			continue;
 		}
-		if (args[i].kind == Token::Kind::Word && prefixStr.empty())
+		if (args[i].isWord() && prefixStr.empty())
 		{
 			prefixStr = args[i].text;
 			prefix = prefixStr;
@@ -195,14 +194,14 @@ static void InfoGlobals(Debugger &dbg, const std::vector<Token> &args)
 
 static void InfoSymbol(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.size() < 2 || args[1].kind == Token::Kind::End)
+	if (args.size() < 2 || args[1].isEnd())
 	{
 		dbg.io().write("Usage: info symbol <addr>\n");
 		return;
 	}
 
 	uint32_t addr = 0;
-	if (args[1].kind == Token::Kind::Number)
+	if (args[1].isNumber())
 		addr = args[1].numValue;
 	else
 	{
@@ -331,7 +330,7 @@ static void InfoScrap(Debugger &dbg)
 static void InfoConsole(Debugger &dbg, const std::vector<Token> &args)
 {
 	/* info console clear — clear the buffer */
-	if (args.size() > 1 && args[1].kind == Token::Kind::Word && args[1].text == "clear")
+	if (args.size() > 1 && args[1].isWord("clear"))
 	{
 		ExtnDbgConsoleClear();
 		dbg.io().write("Console cleared.\n");
@@ -354,7 +353,7 @@ static void InfoTypes(Debugger &dbg, const std::vector<Token> &args)
 {
 	std::string_view prefix;
 	std::string prefixStr;
-	if (args.size() > 1 && args[1].kind == Token::Kind::Word)
+	if (args.size() > 1 && args[1].isWord())
 	{
 
 		prefixStr = args[1].text;
@@ -424,7 +423,7 @@ static void InfoTrace(Debugger &dbg)
 
 void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind == Token::Kind::End)
+	if (args.empty() || args[0].isEnd())
 	{
 		dbg.io().write("Usage: info <break|reg|trace|traps|globals|types|symbol|insn>\n");
 		return;
@@ -515,9 +514,9 @@ void CmdBacktrace(Debugger &dbg, const std::vector<Token> &)
 void CmdLog(Debugger &dbg, const std::vector<Token> &args)
 {
 	/* log file <path> — start logging to file */
-	if (!args.empty() && args[0].kind == Token::Kind::Word && args[0].text == "file")
+	if (!args.empty() && args[0].isWord("file"))
 	{
-		if (args.size() < 2 || args[1].kind == Token::Kind::End)
+		if (args.size() < 2 || args[1].isEnd())
 		{
 			if (dbg.io().hasLogFile())
 				dbg.io().write("logging to %s\n", dbg.io().logFilePath().c_str());
@@ -525,7 +524,7 @@ void CmdLog(Debugger &dbg, const std::vector<Token> &args)
 				dbg.io().write("no log file active\n");
 			return;
 		}
-		if (args[1].kind == Token::Kind::Word && args[1].text == "off")
+		if (args[1].isWord("off"))
 		{
 			dbg.io().closeLogFile();
 			dbg.io().write("log file closed\n");
@@ -548,8 +547,7 @@ void CmdLog(Debugger &dbg, const std::vector<Token> &args)
 	}
 
 	/* log grep <pattern> */
-	if (!args.empty() && args[0].kind == Token::Kind::Word && args[0].text == "grep" &&
-		args.size() >= 2 && args[1].kind != Token::Kind::End)
+	if (!args.empty() && args[0].isWord("grep") && args.size() >= 2 && !args[1].isEnd())
 	{
 		std::string_view pattern = args[1].text;
 		int count = 0;
@@ -567,8 +565,7 @@ void CmdLog(Debugger &dbg, const std::vector<Token> &args)
 
 	/* log [N] — show last N lines (default 20) */
 	int count = 20;
-	if (!args.empty() && args[0].kind == Token::Kind::Number)
-		count = static_cast<int>(args[0].numValue);
+	if (!args.empty() && args[0].isNumber()) count = static_cast<int>(args[0].numValue);
 
 	size_t start = (lines.size() > static_cast<size_t>(count)) ? (lines.size() - count) : 0;
 	for (size_t i = start; i < lines.size(); ++i)

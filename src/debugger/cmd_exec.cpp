@@ -27,7 +27,7 @@ void CmdContinue(Debugger &dbg, const std::vector<Token> &)
 void CmdStep(Debugger &dbg, const std::vector<Token> &args)
 {
 	uint32_t n = 1;
-	if (!args.empty() && args[0].kind == Token::Kind::Number) n = args[0].numValue;
+	if (!args.empty() && args[0].isNumber()) n = args[0].numValue;
 	if (n == 0) n = 1;
 	dbg.setStepping(n);
 }
@@ -40,7 +40,7 @@ void CmdStepi(Debugger &dbg, const std::vector<Token> &args)
 void CmdNext(Debugger &dbg, const std::vector<Token> &args)
 {
 	uint32_t n = 1;
-	if (!args.empty() && args[0].kind == Token::Kind::Number) n = args[0].numValue;
+	if (!args.empty() && args[0].isNumber()) n = args[0].numValue;
 	if (n == 0) n = 1;
 
 	/* Read opcode at current PC */
@@ -75,14 +75,14 @@ void CmdFinish(Debugger &dbg, const std::vector<Token> &)
 
 void CmdUntil(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind == Token::Kind::End)
+	if (args.empty() || args[0].isEnd())
 	{
 		dbg.io().write("Usage: until <addr>\n");
 		return;
 	}
 
 	uint32_t addr = 0;
-	if (args[0].kind == Token::Kind::Number)
+	if (args[0].isNumber())
 	{
 		addr = args[0].numValue;
 	}
@@ -103,7 +103,7 @@ void CmdUntil(Debugger &dbg, const std::vector<Token> &args)
 
 void CmdSource(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.empty() || args[0].kind == Token::Kind::End)
+	if (args.empty() || args[0].isEnd())
 	{
 		dbg.io().write("Usage: source <path>\n");
 		return;

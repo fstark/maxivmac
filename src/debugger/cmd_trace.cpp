@@ -11,7 +11,7 @@
 
 void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
 {
-	if (args.size() < 2 || args[0].kind == Token::Kind::End || args[1].kind == Token::Kind::End)
+	if (args.size() < 2 || args[0].isEnd() || args[1].isEnd())
 	{
 		dbg.io().write("Usage: trace <traps|insn|io> <on|off|names...>\n");
 		return;
@@ -38,9 +38,8 @@ void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
 		{
 			/* Detect incremental mode: any +/- prefix means add/remove */
 			bool incremental = false;
-			for (size_t i = 1; i < args.size() && args[i].kind != Token::Kind::End; ++i)
-				if (args[i].kind == Token::Kind::Operator &&
-					(args[i].text == "+" || args[i].text == "-"))
+			for (size_t i = 1; i < args.size() && !args[i].isEnd(); ++i)
+				if (args[i].isOperator() && (args[i].text == "+" || args[i].text == "-"))
 				{
 					incremental = true;
 					break;
@@ -48,14 +47,13 @@ void CmdTrace(Debugger &dbg, const std::vector<Token> &args)
 
 			if (!incremental) dbg.removeAllTraps();
 
-			for (size_t i = 1; i < args.size() && args[i].kind != Token::Kind::End; ++i)
+			for (size_t i = 1; i < args.size() && !args[i].isEnd(); ++i)
 			{
 				bool adding = true;
-				if (args[i].kind == Token::Kind::Operator &&
-					(args[i].text == "+" || args[i].text == "-"))
+				if (args[i].isOperator() && (args[i].text == "+" || args[i].text == "-"))
 				{
 					adding = (args[i].text == "+");
-					if (++i >= args.size() || args[i].kind == Token::Kind::End)
+					if (++i >= args.size() || args[i].isEnd())
 					{
 						dbg.io().write("  missing trap name after '%c'\n", adding ? '+' : '-');
 						break;
