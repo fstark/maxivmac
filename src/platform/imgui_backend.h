@@ -31,6 +31,21 @@ enum class ScalingMode : uint8_t
 	Stretched
 };
 
+/* Actions that can be triggered by shortcuts or overlay buttons. */
+enum class UIAction : uint8_t
+{
+	None,
+	ToggleFullscreen,
+	ToggleScaling,
+	Screenshot,
+	SpeedUp,
+	SpeedDown,
+	SpeedReset,
+	TogglePaused,
+	InsertDisk,
+	Reboot,
+};
+
 /* GL texture filter for the emulator viewport. */
 enum class TextureFilter
 {
@@ -95,6 +110,9 @@ public:
 	ScalingMode scalingMode() const { return scalingMode_; }
 	void setScalingMode(ScalingMode m);
 
+	/* Action dispatch (used by overlay and shortcuts) */
+	void executeAction(UIAction action);
+
 private:
 	EmulatorShell *shell_ = nullptr;
 	SDL_Window *window_ = nullptr;
@@ -151,6 +169,12 @@ private:
 	/* Per-state draw dispatchers */
 	void drawWindowedState();
 	void drawFullscreenState();
+
+	/* Actions / shortcuts */
+	void adjustSpeed(int delta);
+	void setSpeed(int idx);
+	void captureScreenshot();
+	void openFileDialog();
 };
 
 #endif /* IMGUI_BACKEND_H */

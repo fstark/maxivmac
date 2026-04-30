@@ -18,6 +18,7 @@
    include chain (which depends on emulator config macros). */
 extern void InitKeyCodes();
 extern bool g_requestMacOff;
+extern bool g_speedStopped;
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -34,6 +35,32 @@ extern bool g_requestMacOff;
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <array>
+
+/* ── Shortcut table ──────────────────────────────────── */
+
+struct ShortcutEntry
+{
+	SDL_Scancode scancode;
+	UIAction action;
+};
+
+static constexpr std::array kShortcuts = {
+	ShortcutEntry{SDL_SCANCODE_F, UIAction::ToggleFullscreen},
+	ShortcutEntry{SDL_SCANCODE_M, UIAction::ToggleScaling},
+	ShortcutEntry{SDL_SCANCODE_S, UIAction::Screenshot},
+	ShortcutEntry{SDL_SCANCODE_RIGHT, UIAction::SpeedUp},
+	ShortcutEntry{SDL_SCANCODE_LEFT, UIAction::SpeedDown},
+	ShortcutEntry{SDL_SCANCODE_0, UIAction::SpeedReset},
+	ShortcutEntry{SDL_SCANCODE_P, UIAction::TogglePaused},
+	ShortcutEntry{SDL_SCANCODE_I, UIAction::InsertDisk},
+	ShortcutEntry{SDL_SCANCODE_R, UIAction::Reboot},
+};
+
+/* ── Speed presets ───────────────────────────────────── */
+
+static constexpr uint8_t kSpeedPresets[] = {1, 2, 4, 8, 16, 32, 0};
+static constexpr int kSpeedPresetCount = 7;
 
 /* ── init / shutdown ─────────────────────────────────── */
 
@@ -166,6 +193,26 @@ void ImGuiBackend::runLoop()
 				event.button.button == SDL_BUTTON_RIGHT)
 			{
 				continue;
+			}
+
+			/* Shortcut dispatch while overlay is visible */
+			if (overlayMode_ != OverlayMode::Hidden && event.type == SDL_EVENT_KEY_DOWN &&
+				!event.key.repeat)
+			{
+				UIAction action = UIAction::None;
+				for (const auto &s : kShortcuts)
+				{
+					if (event.key.scancode == s.scancode)
+					{
+						action = s.action;
+						break;
+					}
+				}
+				if (action != UIAction::None)
+				{
+					executeAction(action);
+					continue;
+				}
 			}
 
 			/* Integer-snap resize logic */
@@ -642,6 +689,82 @@ void ImGuiBackend::setScalingMode(ScalingMode m)
 		snapping_ = false;
 		currentScale_ = scale;
 	}
+}
+
+/* ── Action dispatch ─────────────────────────────────── */
+
+void ImGuiBackend::executeAction(UIAction action)
+{
+	switch (action)
+	{
+		case UIAction::ToggleFullscreen:
+			if (uiState_ == UIState::Fullscreen)
+				enterWindowed();
+			else
+				enterFullscreen();
+			overlayMode_ = OverlayMode::Hidden;
+			break;
+		case UIAction::ToggleScaling:
+			setScalingMode(scalingMode_ == ScalingMode::Integer ? ScalingMode::Stretched
+																: ScalingMode::Integer);
+			break;
+		case UIAction::Screenshot:
+			captureScreenshot();
+			break;
+		case UIAction::SpeedUp:
+			adjustSpeed(+1);
+			break;
+		case UIAction::SpeedDown:
+			adjustSpeed(-1);
+			break;
+		case UIAction::SpeedReset:
+			setSpeed(0);
+			break;
+		case UIAction::TogglePaused:
+			g_speedStopped = !g_speedStopped;
+			break;
+		case UIAction::InsertDisk:
+			openFileDialog();
+			overlayMode_ = OverlayMode::Hidden;
+			break;
+		case UIAction::Reboot:
+			g_wantMacReset = true;
+			overlayMode_ = OverlayMode::Hidden;
+			break;
+		default:
+			break;
+	}
+}
+
+void ImGuiBackend::adjustSpeed(int delta)
+{
+	int idx = 0;
+	for (int i = 0; i < kSpeedPresetCount; ++i)
+	{
+		if (kSpeedPresets[i] == g_speedValue)
+		{
+			idx = i;
+			break;
+		}
+	}
+	idx = std::clamp(idx + delta, 0, kSpeedPresetCount - 1);
+	g_speedValue = kSpeedPresets[idx];
+}
+
+void ImGuiBackend::setSpeed(int idx)
+{
+	idx = std::clamp(idx, 0, kSpeedPresetCount - 1);
+	g_speedValue = kSpeedPresets[idx];
+}
+
+void ImGuiBackend::captureScreenshot()
+{
+	/* Implemented in Phase 9 */
+}
+
+void ImGuiBackend::openFileDialog()
+{
+	/* Implemented in Phase 8 */
 }
 
 void ImGuiBackend::uploadFramebuffer()
