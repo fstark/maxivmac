@@ -562,6 +562,7 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event &event)
 			pEvt.type = PlatformEvent::Type::FocusGained;
 			break;
 		case SDL_EVENT_WINDOW_FOCUS_LOST:
+			SDL_CaptureMouse(false);
 			pEvt.type = PlatformEvent::Type::FocusLost;
 			break;
 		case SDL_EVENT_WINDOW_MOUSE_ENTER:
@@ -569,6 +570,7 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event &event)
 			break;
 		case SDL_EVENT_WINDOW_MOUSE_LEAVE:
 			pEvt.type = PlatformEvent::Type::MouseLeave;
+			showCursor();
 			break;
 		case SDL_EVENT_WINDOW_RESIZED:
 			pEvt.type = PlatformEvent::Type::WindowResized;
@@ -605,6 +607,7 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event &event)
 			break;
 		}
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			SDL_CaptureMouse(true);
 			if (relativeMouseMode_)
 			{
 				pEvt.type = PlatformEvent::Type::MouseButtonDown;
@@ -616,6 +619,7 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event &event)
 			}
 			break;
 		case SDL_EVENT_MOUSE_BUTTON_UP:
+			SDL_CaptureMouse(false);
 			if (relativeMouseMode_)
 			{
 				pEvt.type = PlatformEvent::Type::MouseButtonUp;
@@ -1089,11 +1093,19 @@ void ImGuiBackend::clearScreen()
 
 void ImGuiBackend::showCursor()
 {
-	SDL_ShowCursor();
+	if (cursorHidden_)
+	{
+		SDL_ShowCursor();
+		cursorHidden_ = false;
+	}
 }
 void ImGuiBackend::hideCursor()
 {
-	SDL_HideCursor();
+	if (!cursorHidden_)
+	{
+		SDL_HideCursor();
+		cursorHidden_ = true;
+	}
 }
 
 void ImGuiBackend::setMouseGrab(bool grab)

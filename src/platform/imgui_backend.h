@@ -129,6 +129,7 @@ private:
 	float emuViewH_ = 0;
 	bool relativeMouseMode_ = false;
 	bool emuViewportHovered_ = false;
+	bool cursorHidden_ = false;
 	TextureFilter textureFilter_ = TextureFilter::Linear;
 	ScalingMode scalingMode_ = ScalingMode::Integer;
 	bool snapping_ = false;
