@@ -556,7 +556,8 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event &event)
 	switch (event.type)
 	{
 		case SDL_EVENT_QUIT:
-			pEvt.type = PlatformEvent::Type::Quit;
+			/* Do not quit — only Power Off button terminates.
+			   This prevents Cmd+Q from killing the emulator. */
 			break;
 		case SDL_EVENT_WINDOW_FOCUS_GAINED:
 			pEvt.type = PlatformEvent::Type::FocusGained;
