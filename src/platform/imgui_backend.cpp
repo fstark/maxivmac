@@ -98,6 +98,13 @@ void ImGuiBackend::runLoop()
 
 	while (!wantQuit())
 	{
+		/* PeekPending → Peek timer transition */
+		if (overlayMode_ == OverlayMode::PeekPending &&
+			(SDL_GetTicks() - ctrlDownTick_) >= kPeekThresholdMs)
+		{
+			overlayMode_ = OverlayMode::Peek;
+		}
+
 		/* 1. Poll SDL events — feed to ImGui first */
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
@@ -111,28 +118,53 @@ void ImGuiBackend::runLoop()
 				continue;
 			}
 
-			/* Intercept Ctrl key for overlay toggle.
-			   Toggle on key-down; ignore key-up.  Using hold-to-show
-			   doesn't work on macOS because Ctrl+Click is mapped to
-			   right-click, preventing button presses in the overlay. */
+			/* --- Ctrl key for overlay state machine --- */
 			if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat &&
 				(event.key.scancode == SDL_SCANCODE_LCTRL ||
 				 event.key.scancode == SDL_SCANCODE_RCTRL))
 			{
-				overlayVisible_ = !overlayVisible_;
-				if (overlayVisible_) shell_->forceShowCursor();
+				switch (overlayMode_)
+				{
+					case OverlayMode::Hidden:
+						overlayMode_ = OverlayMode::PeekPending;
+						ctrlDownTick_ = SDL_GetTicks();
+						shell_->forceShowCursor();
+						break;
+					case OverlayMode::Sticky:
+						overlayMode_ = OverlayMode::Hidden;
+						break;
+					default:
+						break;
+				}
 				continue;
 			}
 			if (event.type == SDL_EVENT_KEY_UP && (event.key.scancode == SDL_SCANCODE_LCTRL ||
 												   event.key.scancode == SDL_SCANCODE_RCTRL))
 			{
-				continue; /* swallow release, overlay stays */
+				switch (overlayMode_)
+				{
+					case OverlayMode::PeekPending:
+						overlayMode_ = OverlayMode::Sticky; // tap → sticky
+						break;
+					case OverlayMode::Peek:
+						overlayMode_ = OverlayMode::Hidden; // hold released → dismiss
+						break;
+					default:
+						break;
+				}
+				continue;
 			}
-			/* Escape dismisses the overlay */
-			if (overlayVisible_ && event.type == SDL_EVENT_KEY_DOWN &&
+			/* Escape dismisses all overlay modes */
+			if (overlayMode_ != OverlayMode::Hidden && event.type == SDL_EVENT_KEY_DOWN &&
 				event.key.scancode == SDL_SCANCODE_ESCAPE)
 			{
-				overlayVisible_ = false;
+				overlayMode_ = OverlayMode::Hidden;
+				continue;
+			}
+			/* Suppress Ctrl+Click → right-click while overlay visible */
+			if (overlayMode_ != OverlayMode::Hidden && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+				event.button.button == SDL_BUTTON_RIGHT)
+			{
 				continue;
 			}
 
@@ -162,7 +194,7 @@ void ImGuiBackend::runLoop()
 			if (!imGuiConsumedEvent(event))
 			{
 				/* When overlay is visible, don't forward to emulator */
-				if (overlayVisible_) continue;
+				if (overlayMode_ != OverlayMode::Hidden) continue;
 
 				PlatformEvent pe = translateSdlEvent(event);
 				if (pe.type != PlatformEvent::Type::None) shell_->dispatchEvent(pe);
@@ -222,7 +254,7 @@ void ImGuiBackend::drawWindowedState()
 {
 	/* Process saved tasks (disk inserts etc.) */
 	shell_->processSavedTasks();
-	if (overlayVisible_) shell_->forceShowCursor();
+	if (overlayMode_ != OverlayMode::Hidden) shell_->forceShowCursor();
 	if (shell_->shouldQuit()) return;
 
 	/* Handle speed-stopped state */
@@ -259,8 +291,8 @@ void ImGuiBackend::drawWindowedState()
 
 	drawEmulatorViewport();
 
-	/* Control overlay (Ctrl key held) */
-	if (overlayVisible_)
+	/* Control overlay */
+	if (overlayMode_ != OverlayMode::Hidden)
 	{
 		UIState requested = uiState_;
 		overlay_.draw(uiState_, shell_, this, requested);
@@ -277,7 +309,7 @@ void ImGuiBackend::drawWindowedState()
 				default:
 					break;
 			}
-			overlayVisible_ = false;
+			overlayMode_ = OverlayMode::Hidden;
 		}
 	}
 
@@ -499,7 +531,7 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event &event)
 				pEvt.dx = event.motion.xrel;
 				pEvt.dy = event.motion.yrel;
 			}
-			else if (!overlayVisible_)
+			else if (overlayMode_ == OverlayMode::Hidden)
 			{
 				bool inView = mouseInEmuView(event.motion.x, event.motion.y, pEvt.x, pEvt.y);
 				if (emuViewportHovered_)

@@ -115,7 +115,16 @@ private:
 
 	/* UI state */
 	UIState uiState_ = UIState::ModelSelector;
-	bool overlayVisible_ = false;
+	enum class OverlayMode : uint8_t
+	{
+		Hidden,
+		PeekPending,
+		Peek,
+		Sticky
+	};
+	OverlayMode overlayMode_ = OverlayMode::Hidden;
+	uint64_t ctrlDownTick_ = 0;
+	static constexpr uint64_t kPeekThresholdMs = 250;
 	bool pendingBoot_ = false;
 	LaunchConfig pendingBootConfig_;
 
