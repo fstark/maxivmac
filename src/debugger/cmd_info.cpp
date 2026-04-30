@@ -18,6 +18,8 @@
 
 #include "lang/type_registry.h"
 
+#include "util/macroman.h"
+
 #include <cstdio>
 
 extern uint32_t g_instructionCount;
@@ -212,6 +214,82 @@ static void InfoVIA(Debugger &dbg)
 	dumpVIA("VIA2", g_machine->findDevice<VIA2Device>());
 }
 
+static void InfoScrap(Debugger &dbg)
+{
+	uint32_t scrapSize = get_vm_long(0x0960);
+	uint32_t scrapHandle = get_vm_long(0x0964);
+	int16_t scrapCount = static_cast<int16_t>(get_vm_word(0x0968));
+	int16_t scrapState = static_cast<int16_t>(get_vm_word(0x096A));
+
+	dbg.io().write("ScrapSize=%u  ScrapHandle=$%08X  ScrapCount=%d  ScrapState=%d", scrapSize,
+				   scrapHandle, scrapCount, scrapState);
+	if (scrapState > 0)
+		dbg.io().write(" (in memory)\n");
+	else if (scrapState == 0)
+		dbg.io().write(" (on disk)\n");
+	else
+		dbg.io().write(" (uninitialized)\n");
+
+	if (scrapState <= 0 || scrapHandle == 0) return;
+
+	uint32_t masterPtr = get_vm_long(scrapHandle);
+	if (masterPtr == 0)
+	{
+		dbg.io().write("Master pointer is NULL (purged?)\n");
+		return;
+	}
+
+	uint32_t ramSz = g_machine ? g_machine->ramSize() : 0;
+	uint32_t offset = 0;
+	int entryIdx = 0;
+
+	while (offset + 8 <= scrapSize)
+	{
+		uint32_t entryAddr = masterPtr + offset;
+		if (entryAddr + 8 > ramSz) break;
+
+		char type[5];
+		for (int i = 0; i < 4; i++)
+			type[i] = static_cast<char>(get_vm_byte(entryAddr + static_cast<uint32_t>(i)));
+		type[4] = '\0';
+
+		uint32_t entryLen = get_vm_long(entryAddr + 4);
+		if (entryLen > scrapSize - offset - 8) break;
+
+		uint32_t dataAddr = entryAddr + 8;
+		dbg.io().write("Entry %d: '%s' %u bytes @$%08X\n", entryIdx, type, entryLen, dataAddr);
+
+		if (entryLen > 0 && memcmp(type, "TEXT", 4) == 0)
+		{
+			uint32_t previewLen = (entryLen < 4096) ? entryLen : 4096;
+			std::vector<uint8_t> buf(previewLen);
+			for (uint32_t i = 0; i < previewLen; i++)
+				buf[i] = get_vm_byte(dataAddr + i);
+			std::string display = UTF8FromMacRoman({buf.data(), previewLen});
+			for (auto &c : display)
+				if (c == '\r') c = '\n';
+			if (entryLen > previewLen) display += "...";
+			dbg.io().write("  %s\n", display.c_str());
+		}
+		else if (entryLen > 0)
+		{
+			uint32_t dumpLen = (entryLen < 128) ? entryLen : 128;
+			for (uint32_t row = 0; row < dumpLen; row += 16)
+			{
+				dbg.io().write("  %04X  ", row);
+				uint32_t cols = (dumpLen - row < 16) ? dumpLen - row : 16;
+				for (uint32_t c = 0; c < cols; c++)
+					dbg.io().write("%02X ", get_vm_byte(dataAddr + row + c));
+				dbg.io().write("\n");
+			}
+		}
+
+		offset += 8 + entryLen;
+		if (offset & 1) offset++;
+		entryIdx++;
+	}
+}
+
 static void InfoTypes(Debugger &dbg, const std::vector<Token> &args)
 {
 	std::string_view prefix;
@@ -310,10 +388,13 @@ void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 		InfoTypes(dbg, args);
 	else if (sub == "via")
 		InfoVIA(dbg);
+	else if (sub == "scrap")
+		InfoScrap(dbg);
 	else
-		dbg.io().write("Unknown info sub-command '%s'.\n"
-					   "  Available: break, reg, trace, traps, globals, types, symbol, insn, via\n",
-					   sub.c_str());
+		dbg.io().write(
+			"Unknown info sub-command '%s'.\n"
+			"  Available: break, reg, trace, traps, globals, types, symbol, insn, via, scrap\n",
+			sub.c_str());
 }
 
 void CmdBacktrace(Debugger &dbg, const std::vector<Token> &)
