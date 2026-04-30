@@ -302,6 +302,7 @@ add_executable(tests
     src/util/macroman.cpp
     test/test_drive_manager.cpp
     test/test_types.cpp
+    test/test_ui.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
