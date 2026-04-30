@@ -9,8 +9,12 @@
 
 #include "core/extn_clip.h"
 #include "core/machine.h"
+#include "core/machine_obj.h"
 #include "cpu/m68k.h"
 #include "cpu/trap_counter.h"
+
+#include "devices/via.h"
+#include "devices/via2.h"
 
 #include "lang/type_registry.h"
 
@@ -178,6 +182,36 @@ static void InfoInsn(Debugger &dbg)
 	dbg.io().write("Instructions executed: %u\n", g_instructionCount);
 }
 
+static void InfoVIA(Debugger &dbg)
+{
+	if (!g_machine)
+	{
+		dbg.io().write("Machine not initialized.\n");
+		return;
+	}
+
+	auto dumpVIA = [&](const char *label, VIABase *via)
+	{
+		if (!via)
+		{
+			dbg.io().write("%s: not present\n", label);
+			return;
+		}
+		auto &d = via->d_;
+		dbg.io().write("%s:\n", label);
+		dbg.io().write("  ORA=%02X  ORB=%02X  DDRA=%02X  DDRB=%02X\n", d.ORA, d.ORB, d.DDR_A,
+					   d.DDR_B);
+		dbg.io().write("  T1C=%08X  T1L=%02X%02X  T2C=%08X  T2L=%02X\n", d.T1C_F, d.T1L_H, d.T1L_L,
+					   d.T2C_F, d.T2L_L);
+		dbg.io().write("  SR=%02X  ACR=%02X  PCR=%02X  IFR=%02X  IER=%02X\n", d.SR, d.ACR, d.PCR,
+					   d.IFR, d.IER);
+		dbg.io().write("  T1Active=%d  T2Active=%d\n", via->T1_Active, via->T2_Active);
+	};
+
+	dumpVIA("VIA1", g_machine->findDevice<VIA1Device>());
+	dumpVIA("VIA2", g_machine->findDevice<VIA2Device>());
+}
+
 static void InfoTypes(Debugger &dbg, const std::vector<Token> &args)
 {
 	std::string_view prefix;
@@ -274,9 +308,11 @@ void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 		InfoTrace(dbg);
 	else if (sub == "types")
 		InfoTypes(dbg, args);
+	else if (sub == "via")
+		InfoVIA(dbg);
 	else
 		dbg.io().write("Unknown info sub-command '%s'.\n"
-					   "  Available: break, reg, trace, traps, globals, types, symbol, insn\n",
+					   "  Available: break, reg, trace, traps, globals, types, symbol, insn, via\n",
 					   sub.c_str());
 }
 
