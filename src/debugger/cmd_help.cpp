@@ -66,7 +66,7 @@ void CmdHelp(Debugger &dbg, const std::vector<Token> &args)
 	dbg.io().write("  info break      List breakpoints/watchpoints\n");
 	dbg.io().write("  info reg        Show registers\n");
 	dbg.io().write("  info traps [p]  Search trap dictionary\n");
-	dbg.io().write("  info globals [p] Search low-memory globals\n");
+	dbg.io().write("  info globals [p] [--section S] Search low-memory globals\n");
 	dbg.io().write("  info symbol <a> Reverse symbol lookup\n");
 	dbg.io().write("  info insn       Instruction count\n");
 	dbg.io().write("  info via        VIA1/VIA2 register dump\n");

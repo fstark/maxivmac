@@ -17,6 +17,7 @@
 #include "devices/via2.h"
 
 #include "lang/type_registry.h"
+#include "lang/global_registry.h"
 
 #include "util/macroman.h"
 
@@ -139,20 +140,61 @@ static void InfoGlobals(Debugger &dbg, const std::vector<Token> &args)
 {
 	std::string_view prefix;
 	std::string prefixStr;
-	if (args.size() > 1 && args[1].kind == Token::Kind::Word)
+	std::string sectionFilter;
+
+	/* Parse args: info globals [prefix] [--section NAME]
+	   The tokenizer splits -- into two Operator('-') tokens, so we
+	   detect -,-,section as the flag. */
+	for (size_t i = 1; i < args.size(); ++i)
 	{
-		prefixStr = args[1].text;
-		prefix = prefixStr;
+		if (args[i].kind == Token::Kind::End) break;
+		/* Detect --section: Operator('-') Operator('-') Word('section') */
+		if (args[i].kind == Token::Kind::Operator && args[i].text == "-" && i + 2 < args.size() &&
+			args[i + 1].kind == Token::Kind::Operator && args[i + 1].text == "-" &&
+			args[i + 2].kind == Token::Kind::Word && args[i + 2].text == "section" &&
+			i + 3 < args.size() && args[i + 3].kind != Token::Kind::End)
+		{
+			sectionFilter = args[i + 3].text;
+			i += 3; /* skip -, -, section, NAME */
+			continue;
+		}
+		if (args[i].kind == Token::Kind::Word && prefixStr.empty())
+		{
+			prefixStr = args[i].text;
+			prefix = prefixStr;
+		}
 	}
 
-	std::vector<SymbolEntry> results;
-	SymbolsSearch(prefix, 'g', results, 50);
-
-	dbg.io().write("%-20s  Address   Size\n", "Name");
-	for (auto &e : results)
-		dbg.io().write("%-20.*s  $%04X     %u\n", static_cast<int>(e.name.size()), e.name.data(),
-					   e.address, e.size);
-	dbg.io().write("(%zu results)\n", results.size());
+	if (!sectionFilter.empty())
+	{
+		/* Section-filtered listing from GlobalRegistry */
+		auto &reg = g_globalRegistry();
+		dbg.io().write("%-20s  Address   Size\n", "Name");
+		int count = 0;
+		for (auto &gd : reg.globals())
+		{
+			if (gd.section != sectionFilter) continue;
+			if (!prefix.empty() &&
+				!(gd.name.size() >= prefix.size() &&
+				  strncasecmp(gd.name.data(), prefix.data(), prefix.size()) == 0))
+				continue;
+			dbg.io().write("%-20.*s  $%04X     %u\n", static_cast<int>(gd.name.size()),
+						   gd.name.data(), gd.addr, gd.size);
+			if (++count >= 50) break;
+		}
+		dbg.io().write("(%d results, section=%s)\n", count, sectionFilter.c_str());
+	}
+	else
+	{
+		/* Original prefix-search behavior */
+		std::vector<SymbolEntry> results;
+		SymbolsSearch(prefix, 'g', results, 50);
+		dbg.io().write("%-20s  Address   Size\n", "Name");
+		for (auto &e : results)
+			dbg.io().write("%-20.*s  $%04X     %u\n", static_cast<int>(e.name.size()),
+						   e.name.data(), e.address, e.size);
+		dbg.io().write("(%zu results)\n", results.size());
+	}
 }
 
 static void InfoSymbol(Debugger &dbg, const std::vector<Token> &args)
