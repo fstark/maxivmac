@@ -111,7 +111,7 @@ static CmdEntry s_commands[] = {
 	 "diag [<subsystem> <on|off>]\n  Toggle subsystem traces. 'diag' lists all.\n"
 	 "  diag all on/off — toggle everything.\n"},
 	{"info", "i", CmdInfo, "Show info about debugger state",
-	 "info <break|reg|traps|globals|symbol|insn|via|scrap>\n  Show various debugger "
+	 "info <break|reg|traps|globals|symbol|insn|via|scrap|console>\n  Show various debugger "
 	 "information.\n"},
 	{"log", "", CmdLog, "Show guest log / log to file",
 	 "log [N]\n  Show last N guest log lines (default 20).\n"

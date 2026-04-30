@@ -71,6 +71,7 @@ void CmdHelp(Debugger &dbg, const std::vector<Token> &args)
 	dbg.io().write("  info insn       Instruction count\n");
 	dbg.io().write("  info via        VIA1/VIA2 register dump\n");
 	dbg.io().write("  info scrap      Guest clipboard contents\n");
+	dbg.io().write("  info console    Guest debug console output\n");
 	dbg.io().write("  backtrace (bt)  Heuristic stack trace\n");
 	dbg.io().write("\n");
 

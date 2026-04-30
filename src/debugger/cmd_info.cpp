@@ -332,12 +332,35 @@ static void InfoScrap(Debugger &dbg)
 	}
 }
 
+static void InfoConsole(Debugger &dbg, const std::vector<Token> &args)
+{
+	/* info console clear — clear the buffer */
+	if (args.size() > 1 && args[1].kind == Token::Kind::Word && args[1].text == "clear")
+	{
+		ExtnDbgConsoleClear();
+		dbg.io().write("Console cleared.\n");
+		return;
+	}
+
+	const auto &lines = extnDbgConsoleLines();
+	if (lines.empty())
+	{
+		dbg.io().write("[guest console — empty]\n");
+		return;
+	}
+
+	dbg.io().write("[guest console — %zu line(s)]\n", lines.size());
+	for (auto &line : lines)
+		dbg.io().write("%s\n", line.c_str());
+}
+
 static void InfoTypes(Debugger &dbg, const std::vector<Token> &args)
 {
 	std::string_view prefix;
 	std::string prefixStr;
 	if (args.size() > 1 && args[1].kind == Token::Kind::Word)
 	{
+
 		prefixStr = args[1].text;
 		prefix = prefixStr;
 	}
@@ -432,11 +455,13 @@ void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 		InfoVIA(dbg);
 	else if (sub == "scrap")
 		InfoScrap(dbg);
+	else if (sub == "console")
+		InfoConsole(dbg, args);
 	else
-		dbg.io().write(
-			"Unknown info sub-command '%s'.\n"
-			"  Available: break, reg, trace, traps, globals, types, symbol, insn, via, scrap\n",
-			sub.c_str());
+		dbg.io().write("Unknown info sub-command '%s'.\n"
+					   "  Available: break, reg, trace, traps, globals, types, symbol, insn, via, "
+					   "scrap, console\n",
+					   sub.c_str());
 }
 
 void CmdBacktrace(Debugger &dbg, const std::vector<Token> &)
