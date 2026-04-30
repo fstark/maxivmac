@@ -647,13 +647,47 @@ void ImGuiBackend::drawViewportWindowed()
 							 ImGuiWindowFlags_NoBringToFrontOnFocus |
 							 ImGuiWindowFlags_NoSavedSettings;
 	emuViewportHovered_ = false;
+
+	if (scalingMode_ == ScalingMode::Stretched)
+	{
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+	}
+
 	if (ImGui::Begin("Macintosh", nullptr, flags))
 	{
 		emuViewportHovered_ = ImGui::IsWindowHovered();
-		ImGui::SetCursorPos(ImVec2(0, 0));
-		displayEmulatorImage(displaySize.x, displaySize.y);
+		if (scalingMode_ == ScalingMode::Integer)
+		{
+			ImGui::SetCursorPos(ImVec2(0, 0));
+			displayEmulatorImage(displaySize.x, displaySize.y);
+		}
+		else
+		{
+			float emuAspect = static_cast<float>(emuTexW_) / emuTexH_;
+			float winAspect = displaySize.x / displaySize.y;
+			float viewW, viewH;
+			if (emuAspect > winAspect)
+			{
+				viewW = displaySize.x;
+				viewH = displaySize.x / emuAspect;
+			}
+			else
+			{
+				viewH = displaySize.y;
+				viewW = displaySize.y * emuAspect;
+			}
+			float offsetX = (displaySize.x - viewW) * 0.5f;
+			float offsetY = (displaySize.y - viewH) * 0.5f;
+			ImGui::SetCursorPos(ImVec2(offsetX, offsetY));
+			displayEmulatorImage(viewW, viewH);
+		}
 	}
 	ImGui::End();
+
+	if (scalingMode_ == ScalingMode::Stretched)
+	{
+		ImGui::PopStyleColor();
+	}
 }
 
 void ImGuiBackend::drawViewportFullscreen()
