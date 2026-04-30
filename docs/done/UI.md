@@ -1,4 +1,4 @@
-> **Note (2026-04):** Developer mode was removed. See [DEVREMOVE.md](../DEVREMOVE.md).
+> **Note (2026-04):** Developer mode was removed.
 > This document is kept as historical reference.
 
 # Plan: ImGui UI Redesign
