@@ -699,7 +699,7 @@ void ImGuiBackend::drawViewportFullscreen()
 							 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
 							 ImGuiWindowFlags_NoSavedSettings |
 							 ImGuiWindowFlags_NoBringToFrontOnFocus;
-	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.102f, 0.102f, 0.102f, 1.0f));
 	emuViewportHovered_ = false;
 	if (ImGui::Begin("##FullscreenViewport", nullptr, flags))
 	{
@@ -717,17 +717,22 @@ void ImGuiBackend::drawViewportFullscreen()
 			scaledH = displaySize.y;
 			scaledW = displaySize.y * emuAspect;
 		}
-		int intScale = (int)(scaledW / emuTexW_);
-		if (intScale >= 1)
+
+		if (scalingMode_ == ScalingMode::Integer)
 		{
-			float intW = emuTexW_ * intScale;
-			float intH = emuTexH_ * intScale;
-			if (intW <= displaySize.x && intH <= displaySize.y)
+			int intScale = static_cast<int>(scaledW / emuTexW_);
+			if (intScale >= 1)
 			{
-				scaledW = intW;
-				scaledH = intH;
+				float intW = emuTexW_ * intScale;
+				float intH = emuTexH_ * intScale;
+				if (intW <= displaySize.x && intH <= displaySize.y)
+				{
+					scaledW = intW;
+					scaledH = intH;
+				}
 			}
 		}
+
 		float offsetX = (displaySize.x - scaledW) * 0.5f;
 		float offsetY = (displaySize.y - scaledH) * 0.5f;
 		ImGui::SetCursorPos(ImVec2(offsetX, offsetY));
