@@ -113,6 +113,9 @@ public:
 	/* Action dispatch (used by overlay and shortcuts) */
 	void executeAction(UIAction action);
 
+	/* Shell accessor (for file dialog callback) */
+	EmulatorShell *shell() { return shell_; }
+
 private:
 	EmulatorShell *shell_ = nullptr;
 	SDL_Window *window_ = nullptr;

@@ -762,9 +762,23 @@ void ImGuiBackend::captureScreenshot()
 	/* Implemented in Phase 9 */
 }
 
+static void fileDialogCallback(void *userdata, const char *const *filelist, int filter)
+{
+	(void)filter;
+	auto *backend = static_cast<ImGuiBackend *>(userdata);
+	if (filelist && filelist[0])
+	{
+		backend->shell()->insertDiskOrRom(filelist[0], false);
+	}
+}
+
 void ImGuiBackend::openFileDialog()
 {
-	/* Implemented in Phase 8 */
+	static const SDL_DialogFileFilter filters[] = {
+		{"Disk Images", "dsk;img;hfs;dmg;iso;image;dc42"},
+		{"All Files", "*"},
+	};
+	SDL_ShowOpenFileDialog(fileDialogCallback, this, window_, filters, 2, nullptr, false);
 }
 
 void ImGuiBackend::uploadFramebuffer()
