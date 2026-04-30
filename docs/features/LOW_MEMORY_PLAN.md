@@ -1,3 +1,6 @@
+> **Note (2026-04):** The ImGui LowMemTool was removed with developer mode.
+> This document is kept as historical reference.
+
 # Low-Memory Globals Viewer — Implementation Plan
 
 Design: `docs/features/LOW_MEMORY_DESIGN.md`

@@ -25,7 +25,7 @@ cmake --preset macos
 cmake --build --preset macos
 ```
 
-The binary is at `bld/macos/maxivmac`. The ImGui backend provides a graphical UI with debug tools. Place a Mac ROM file in the working directory and pass a System disk image on the command line to boot.
+The binary is at `bld/macos/maxivmac`. The ImGui backend provides a graphical UI with a model selector and control overlay. Use `--debugger` for the interactive command-line debugger. Place a Mac ROM file in the working directory and pass a System disk image on the command line to boot.
 
 ## Runtime Model Selection
 

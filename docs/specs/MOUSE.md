@@ -27,7 +27,7 @@ Three coordinate spaces are involved:
 1. **Host window** — the SDL window, in logical pixels.
 2. **Emulator viewport** — the region of the window occupied by the
    guest image, potentially scaled and offset (centered with black
-   borders in fullscreen, or at a fixed origin in developer mode).
+   borders in fullscreen).
 3. **Guest screen** — the Macintosh framebuffer in native pixels
    (e.g. 512×342 for a Mac Plus).
 
@@ -63,29 +63,6 @@ The mouse operates in relative (grabbed) mode: raw deltas are applied
 to the guest position and the physical cursor is confined to the
 display.  Positions on the border are clamped to the nearest guest
 edge.
-
-### Developer
-
-The guest image is displayed at native resolution inside a resizable
-ImGui window.  Other ImGui windows (debug tools, menus) may overlap
-the guest viewport.
-
-Cursor visibility depends on what is topmost under the pointer:
-
-- **Guest viewport topmost** — the host cursor is hidden and the
-  guest receives both position and click events, exactly as in
-  windowed mode.
-- **ImGui window on top of the guest** — the host cursor is shown
-  (the user is interacting with host UI).  The guest still receives
-  position updates so its cursor tracks the host pointer, but clicks
-  go to the ImGui window, not the guest.
-- **Pointer outside the guest area entirely** — the guest receives
-  no updates; its cursor stays where it was last seen.
-
-This means the guest cursor follows the host pointer whenever the
-pointer is geometrically over the guest image, regardless of which
-layer is on top, but the guest only reacts to clicks when nothing
-is covering it.
 
 ## Control overlay
 

@@ -21,8 +21,6 @@ features into the imgui overlay. See commit `0b356be`.
 - Advanced tab: About section (product name, copyright, license)
 
 **Dropped features (not worth replacing):**
-- Ctrl Key toggle — symptom of hardcoded overlay key; real fix is configurable key
-- Copy Options — developer-only; build system documents this
 - Confirmation dialogs (quit/reset/interrupt) — imgui panel reduces accidental activation
 
 ## Remaining Work
@@ -42,7 +40,7 @@ stderr. A lightweight imgui toast system would restore user-visible feedback.
 | **ROM file too short** | `rom_loader.cpp` — truncated ROM | Error | Rare, but confusing if silent |
 | **ROM read error** | `rom_loader.cpp` — I/O error on ROM file | Error | Rare |
 | **Unsupported disk image** | `sony.cpp` — bad format | Warning | User dragged wrong file type |
-| **Abnormal trap** | `osglu_common.cpp` — emulation anomaly | Info | Developer-oriented, low priority |
+| **Abnormal trap** | `osglu_common.cpp` — emulation anomaly | Info | Low priority |
 | **Quit with disks mounted** | `emulator_shell.cpp` — unclean shutdown | Warning | Could also be a confirmation prompt |
 
 #### Toast design notes

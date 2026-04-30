@@ -1,3 +1,6 @@
+> **Note (2026-04):** Developer mode was removed. See [DEVREMOVE.md](../DEVREMOVE.md).
+> This document is kept as historical reference.
+
 # Plan: ImGui UI Redesign
 
 ## TL;DR

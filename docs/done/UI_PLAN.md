@@ -1,3 +1,6 @@
+> **Note (2026-04):** Developer mode was removed. See [DEVREMOVE.md](../DEVREMOVE.md).
+> Phase 5 (Developer Mode + DockSpace) and Phase 6 (Tool Framework) are no longer applicable.
+
 # UI_PLAN.md — ImGui UI Implementation Plan
 
 Reference design: [docs/done/UI.md](done/UI.md)

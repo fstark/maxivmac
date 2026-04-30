@@ -1,5 +1,3 @@
-* Remove Developer Mode UI completely
-
 * Fix keyboard (Command-Q / Ctrl...)
 
 * Group guest/host comm logically

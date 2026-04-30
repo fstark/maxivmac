@@ -29,8 +29,8 @@ src/
     disk_io.h            ← updated #include path
     disk_io.cpp          ← rewritten to use util/macroman.h
   platform/
-    imgui_lomem_tool.cpp ← rewritten to use util/macroman.h
-    imgui_debug_windows.cpp ← rewritten to use util/macroman.h
+    imgui_lomem_tool.cpp ← [removed — developer mode deleted]
+    imgui_debug_windows.cpp ← [removed — developer mode deleted]
     emulator_shell.cpp   ← updated #include path (no call sites)
 ```
 
@@ -199,7 +199,7 @@ std::string u = UTF8FromMacRoman({raw, len});
 snprintf(buf, bufSize, "\"%s\"", u.c_str());
 ```
 
-### 3.4 — imgui_debug_windows.cpp (lines 404, 406)
+### 3.4 — imgui_debug_windows.cpp [removed — developer mode deleted]
 
 **Current:** `MacRoman2UniCodeSize` + `MacRoman2UniCodeData` into
 `std::string`.

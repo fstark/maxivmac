@@ -43,14 +43,14 @@ Additionally, `WaitForRom()` in control_mode.cpp has its own blocking loop calli
 
 Dear ImGui uses an **immediate-mode** rendering model. Every frame, the application must:
 1. Call `ImGui::NewFrame()`
-2. Issue all draw commands (menus, debug windows, emulator viewport)
+2. Issue all draw commands (overlay, emulator viewport)
 3. Call `ImGui::Render()`
 4. Present the result
 
 This creates three incompatibilities with the current architecture:
 
 ### 1. Frame cadence
-SDL renders only when the emulated screen has changed (dirty-rect push). ImGui must render **every host frame** — menus, hover states, and debug windows update continuously even when the emulated screen is static.
+SDL renders only when the emulated screen has changed (dirty-rect push). ImGui must render **every host frame** — the overlay and model selector update continuously even when the emulated screen is static.
 
 ### 2. Loop ownership
 The core's `MainEventLoop` drives everything: it calls `WaitForNextTick()` which blocks inside SDL. ImGui needs to own the outer frame loop and call emulation as a non-blocking subroutine: "run however many ticks are due, then let me render my frame."
@@ -83,7 +83,7 @@ Three layers, each replaceable independently. **The backend drives the frame loo
 │    5. Render:                                         │
 │       - SDL: blit emulator texture, present            │
 │       - ImGui: NewFrame → menus → Image(emuTex)       │
-│                → debug windows → Render → Present      │
+│                → overlay → Render → Present             │
 │       - Headless: no-op / write to file                │
 │                                                       │
 │  Platform primitives:                                 │

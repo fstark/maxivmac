@@ -1,3 +1,7 @@
+> **Note (2026-04):** The ImGui LowMemTool was removed with developer mode.
+> The `info globals` debugger command provides equivalent functionality.
+> This document is kept as historical reference.
+
 # Low-Memory Globals Viewer — Design
 
 ## Feature Summary
