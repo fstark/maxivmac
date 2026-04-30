@@ -36,6 +36,10 @@ extern bool g_speedStopped;
 #include <cmath>
 #include <algorithm>
 #include <array>
+#include <vector>
+
+#include "platform/clipboard_image.h"
+#include "stb_image_write.h"
 
 /* ── Shortcut table ──────────────────────────────────── */
 
@@ -757,9 +761,39 @@ void ImGuiBackend::setSpeed(int idx)
 	g_speedValue = kSpeedPresets[idx];
 }
 
+static void pngWriteCallback(void *context, void *data, int size)
+{
+	auto *buf = static_cast<std::vector<uint8_t> *>(context);
+	auto *bytes = static_cast<const uint8_t *>(data);
+	buf->insert(buf->end(), bytes, bytes + size);
+}
+
 void ImGuiBackend::captureScreenshot()
 {
-	/* Implemented in Phase 9 */
+	if (!shell_ || !shell_->getFramebuffer()) return;
+
+	int w = emuTexW_;
+	int h = emuTexH_;
+	const uint32_t *src = reinterpret_cast<const uint32_t *>(shell_->getFramebuffer());
+
+	/* BGRA → RGBA swizzle */
+	std::vector<uint8_t> rgba(w * h * 4);
+	for (int i = 0; i < w * h; ++i)
+	{
+		uint32_t px = src[i];
+		rgba[i * 4 + 0] = (px >> 16) & 0xFF; // R
+		rgba[i * 4 + 1] = (px >> 8) & 0xFF;	 // G
+		rgba[i * 4 + 2] = (px >> 0) & 0xFF;	 // B
+		rgba[i * 4 + 3] = 0xFF;				 // A
+	}
+
+	std::vector<uint8_t> pngBuf;
+	stbi_write_png_to_func(pngWriteCallback, &pngBuf, w, h, 4, rgba.data(), w * 4);
+
+	if (!pngBuf.empty())
+	{
+		HostClipSetImage(pngBuf.data(), pngBuf.size());
+	}
 }
 
 static void fileDialogCallback(void *userdata, const char *const *filelist, int filter)

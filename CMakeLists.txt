@@ -135,6 +135,8 @@ set(MINIVMAC_SOURCES
     src/platform/imgui_model_selector.cpp
     src/platform/imgui_overlay.cpp
     src/platform/lomem_globals.cpp
+    src/platform/clipboard_image.cpp
+    src/platform/stb_impl.cpp
 
     # Platform — Headless backend
     src/platform/headless_backend.cpp
@@ -197,6 +199,7 @@ endif()
 # Include paths: src/ for source headers.
 target_include_directories(maxivmac PRIVATE
     "${CMAKE_SOURCE_DIR}/src"
+    "${CMAKE_SOURCE_DIR}/libs/stb"
 )
 
 # Build-time definitions: version string and optional feature toggles
@@ -215,6 +218,11 @@ target_compile_options(maxivmac PRIVATE
     -Wundef
     -Wconditional-uninitialized
     -Wno-write-strings
+)
+
+# stb_image_write is a third-party header; suppress warnings-as-errors
+set_source_files_properties(src/platform/stb_impl.cpp PROPERTIES
+    COMPILE_FLAGS "-Wno-error"
 )
 
 # Optimization: Release uses -Os (optimize for size), matching the original
