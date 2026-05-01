@@ -27,7 +27,7 @@ enum class UIState
 /* Scaling mode for the emulator viewport. */
 enum class ScalingMode : uint8_t
 {
-	Integer, // "Pixel Perfect" in the UI
+	PixelPerfect,
 	Stretched
 };
 
@@ -37,6 +37,7 @@ enum class UIAction : uint8_t
 	None,
 	ToggleFullscreen,
 	ToggleScaling,
+	Zoom,
 	Screenshot,
 	SpeedUp,
 	SpeedDown,
@@ -131,7 +132,7 @@ private:
 	bool emuViewportHovered_ = false;
 	bool cursorHidden_ = false;
 	TextureFilter textureFilter_ = TextureFilter::Linear;
-	ScalingMode scalingMode_ = ScalingMode::Integer;
+	ScalingMode scalingMode_ = ScalingMode::PixelPerfect;
 	bool snapping_ = false;
 	int currentScale_ = 2;
 
@@ -157,6 +158,11 @@ private:
 	int savedWinX_ = 0, savedWinY_ = 0;
 	int savedWinW_ = 0, savedWinH_ = 0;
 
+	/* Zoom (our own maximize: largest Pixel Perfect, centered) */
+	bool zoomed_ = false;
+	int preZoomX_ = 0, preZoomY_ = 0;
+	int preZoomW_ = 0, preZoomH_ = 0;
+
 	PlatformEvent translateSdlEvent(SDL_Event &event);
 	bool imGuiConsumedEvent(const SDL_Event &event) const;
 	void uploadFramebuffer();
@@ -179,6 +185,7 @@ private:
 	void setSpeed(int idx);
 	void captureScreenshot();
 	void openFileDialog();
+	void toggleZoom();
 };
 
 #endif /* IMGUI_BACKEND_H */

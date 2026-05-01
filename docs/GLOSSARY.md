@@ -133,6 +133,17 @@ activation modes: hold (peek) and tap (sticky).
 
 Avoid: HUD, menu, toolbar
 
+### Scaling Mode
+
+Determines how the guest framebuffer maps to the host window.  Two
+modes: **Pixel Perfect** renders at exact integer multiples of the
+guest resolution (no interpolation, black bars if the window is
+oversized); **Stretched** fills the window while preserving aspect
+ratio (fractional scaling, bars only for aspect correction).
+
+Code: `ScalingMode` in `src/platform/imgui_backend.h`
+Avoid: integer mode, magnification
+
 ### Shared Drive
 
 A host folder mounted as a read-only or read-write Mac volume inside

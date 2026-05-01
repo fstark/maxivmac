@@ -52,6 +52,7 @@ struct ShortcutEntry
 static constexpr std::array kShortcuts = {
 	ShortcutEntry{SDL_SCANCODE_F, UIAction::ToggleFullscreen},
 	ShortcutEntry{SDL_SCANCODE_M, UIAction::ToggleScaling},
+	ShortcutEntry{SDL_SCANCODE_Z, UIAction::Zoom},
 	ShortcutEntry{SDL_SCANCODE_S, UIAction::Screenshot},
 	ShortcutEntry{SDL_SCANCODE_RIGHT, UIAction::SpeedUp},
 	ShortcutEntry{SDL_SCANCODE_LEFT, UIAction::SpeedDown},
@@ -221,10 +222,11 @@ void ImGuiBackend::runLoop()
 				}
 			}
 
-			/* Integer-snap resize logic */
-			if (event.type == SDL_EVENT_WINDOW_RESIZED && !snapping_)
+			/* Integer-snap resize logic (skip when OS-maximized) */
+			if (event.type == SDL_EVENT_WINDOW_RESIZED && !snapping_ &&
+				!(SDL_GetWindowFlags(window_) & SDL_WINDOW_MAXIMIZED))
 			{
-				if (uiState_ == UIState::Windowed && scalingMode_ == ScalingMode::Integer)
+				if (uiState_ == UIState::Windowed && scalingMode_ == ScalingMode::PixelPerfect)
 				{
 					int newW = event.window.data1;
 					int newH = event.window.data2;
@@ -689,7 +691,7 @@ void ImGuiBackend::setScalingMode(ScalingMode m)
 {
 	if (scalingMode_ == m) return;
 	scalingMode_ = m;
-	if (m == ScalingMode::Integer && uiState_ == UIState::Windowed)
+	if (m == ScalingMode::PixelPerfect && uiState_ == UIState::Windowed)
 	{
 		int w, h;
 		SDL_GetWindowSize(window_, &w, &h);
@@ -717,8 +719,11 @@ void ImGuiBackend::executeAction(UIAction action)
 			overlayMode_ = OverlayMode::Hidden;
 			break;
 		case UIAction::ToggleScaling:
-			setScalingMode(scalingMode_ == ScalingMode::Integer ? ScalingMode::Stretched
-																: ScalingMode::Integer);
+			setScalingMode(scalingMode_ == ScalingMode::PixelPerfect ? ScalingMode::Stretched
+																	 : ScalingMode::PixelPerfect);
+			break;
+		case UIAction::Zoom:
+			toggleZoom();
 			break;
 		case UIAction::Screenshot:
 			captureScreenshot();
@@ -859,18 +864,24 @@ void ImGuiBackend::drawViewportWindowed()
 							 ImGuiWindowFlags_NoSavedSettings;
 	emuViewportHovered_ = false;
 
-	if (scalingMode_ == ScalingMode::Stretched)
-	{
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-	}
+	/* Both modes need black background when window exceeds content */
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	if (ImGui::Begin("Macintosh", nullptr, flags))
 	{
 		emuViewportHovered_ = ImGui::IsWindowHovered();
-		if (scalingMode_ == ScalingMode::Integer)
+		if (scalingMode_ == ScalingMode::PixelPerfect)
 		{
-			ImGui::SetCursorPos(ImVec2(0, 0));
-			displayEmulatorImage(displaySize.x, displaySize.y);
+			/* Largest integer scale that fits the window */
+			int scaleX = std::max(1, static_cast<int>(displaySize.x) / emuTexW_);
+			int scaleY = std::max(1, static_cast<int>(displaySize.y) / emuTexH_);
+			int scale = std::min(scaleX, scaleY);
+			float viewW = static_cast<float>(emuTexW_ * scale);
+			float viewH = static_cast<float>(emuTexH_ * scale);
+			float offsetX = (displaySize.x - viewW) * 0.5f;
+			float offsetY = (displaySize.y - viewH) * 0.5f;
+			ImGui::SetCursorPos(ImVec2(offsetX, offsetY));
+			displayEmulatorImage(viewW, viewH);
 		}
 		else
 		{
@@ -894,11 +905,7 @@ void ImGuiBackend::drawViewportWindowed()
 		}
 	}
 	ImGui::End();
-
-	if (scalingMode_ == ScalingMode::Stretched)
-	{
-		ImGui::PopStyleColor();
-	}
+	ImGui::PopStyleColor();
 }
 
 void ImGuiBackend::drawViewportFullscreen()
@@ -929,7 +936,7 @@ void ImGuiBackend::drawViewportFullscreen()
 			scaledW = displaySize.y * emuAspect;
 		}
 
-		if (scalingMode_ == ScalingMode::Integer)
+		if (scalingMode_ == ScalingMode::PixelPerfect)
 		{
 			int intScale = static_cast<int>(scaledW / emuTexW_);
 			if (intScale >= 1)
@@ -1204,6 +1211,58 @@ void ImGuiBackend::onResolutionChanged(uint16_t newW, uint16_t newH)
 			if (newW * 2 > bounds.w || newH * 2 > bounds.h) scale = 1;
 		}
 		SDL_SetWindowSize(window_, newW * scale, newH * scale);
+	}
+}
+
+/* ── Zoom (custom maximize: largest Pixel Perfect, centered) ── */
+
+void ImGuiBackend::toggleZoom()
+{
+	if (!window_ || emuTexW_ == 0 || emuTexH_ == 0) return;
+	if (uiState_ != UIState::Windowed) return;
+
+	/* Compute max Pixel Perfect size */
+	SDL_Rect usable;
+	SDL_DisplayID did = SDL_GetDisplayForWindow(window_);
+	if (!did || !SDL_GetDisplayUsableBounds(did, &usable)) return;
+
+	int maxScaleX = std::max(1, usable.w / emuTexW_);
+	int maxScaleY = std::max(1, usable.h / emuTexH_);
+	int maxScale = std::min(maxScaleX, maxScaleY);
+	int maxW = emuTexW_ * maxScale;
+	int maxH = emuTexH_ * maxScale;
+
+	int curW, curH;
+	SDL_GetWindowSize(window_, &curW, &curH);
+
+	if (zoomed_ || (curW == maxW && curH == maxH))
+	{
+		/* Unzoom: restore saved geometry */
+		if (preZoomW_ > 0 && preZoomH_ > 0)
+		{
+			snapping_ = true;
+			SDL_SetWindowSize(window_, preZoomW_, preZoomH_);
+			SDL_SetWindowPosition(window_, preZoomX_, preZoomY_);
+			snapping_ = false;
+			currentScale_ = preZoomW_ / emuTexW_;
+		}
+		zoomed_ = false;
+	}
+	else
+	{
+		/* Zoom: save current geometry, go to max centered */
+		SDL_GetWindowPosition(window_, &preZoomX_, &preZoomY_);
+		preZoomW_ = curW;
+		preZoomH_ = curH;
+
+		int cx = usable.x + (usable.w - maxW) / 2;
+		int cy = usable.y + (usable.h - maxH) / 2;
+		snapping_ = true;
+		SDL_SetWindowSize(window_, maxW, maxH);
+		SDL_SetWindowPosition(window_, cx, cy);
+		snapping_ = false;
+		currentScale_ = maxScale;
+		zoomed_ = true;
 	}
 }
 

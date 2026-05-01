@@ -71,7 +71,7 @@ void ControlOverlay::drawPrimaryControls(UIState currentState, EmulatorShell *sh
 {
 	float btnW = 130, btnH = 32, sp = 8;
 
-	/* Row 1: Insert Disk, Fullscreen, Scaling */
+	/* Row 1: Insert Disk, Fullscreen, Scaling, Zoom */
 	if (ImGui::Button("Insert Disk (I)", ImVec2(btnW, btnH)))
 		backend->executeAction(UIAction::InsertDisk);
 	ImGui::SameLine(0, sp);
@@ -79,10 +79,13 @@ void ControlOverlay::drawPrimaryControls(UIState currentState, EmulatorShell *sh
 	if (ImGui::Button(isFS ? "Windowed (F)" : "Fullscreen (F)", ImVec2(btnW, btnH)))
 		requestedState = isFS ? UIState::Windowed : UIState::Fullscreen;
 	ImGui::SameLine(0, sp);
-	const char *scaleLabel =
-		(backend->scalingMode() == ScalingMode::Integer) ? "Pixel Perfect (M)" : "Stretched (M)";
+	const char *scaleLabel = (backend->scalingMode() == ScalingMode::PixelPerfect)
+								 ? "Pixel Perfect (M)"
+								 : "Stretched (M)";
 	if (ImGui::Button(scaleLabel, ImVec2(btnW, btnH)))
 		backend->executeAction(UIAction::ToggleScaling);
+
+	if (ImGui::Button("Zoom (Z)", ImVec2(btnW, btnH))) backend->executeAction(UIAction::Zoom);
 
 	ImGui::Spacing();
 
