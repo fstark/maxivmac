@@ -6,6 +6,7 @@
 
 #include "doctest/doctest.h"
 #include "core/model_defs.h"
+#include "core/config_loader.h"
 
 // Declared in machine_config.cpp — preserved for round-trip testing
 extern MachineConfig OldMachineConfigForModel(MacModel model);
@@ -178,5 +179,58 @@ TEST_CASE("ModelDef produces identical MachineConfig")
 
 		checkVIAConfigEqual(oldC.via1Config, newC.via1Config, "VIA1");
 		checkVIAConfigEqual(oldC.via2Config, newC.via2Config, "VIA2");
+	}
+}
+
+// --- ParseModelName and ModelToString tests ---
+
+TEST_CASE("ParseModelName accepts slug")
+{
+	MacModel m;
+	CHECK(ParseModelName("Plus", m));
+	CHECK(m == MacModel::Plus);
+	CHECK(ParseModelName("II", m));
+	CHECK(m == MacModel::II);
+	CHECK(ParseModelName("IIx", m));
+	CHECK(m == MacModel::IIx);
+}
+
+TEST_CASE("ParseModelName accepts legacy aliases")
+{
+	MacModel m;
+	CHECK(ParseModelName("plus", m));
+	CHECK(m == MacModel::Plus);
+	CHECK(ParseModelName("se", m));
+	CHECK(m == MacModel::SE);
+	CHECK(ParseModelName("128k", m));
+	CHECK(m == MacModel::Mac128K);
+	CHECK(ParseModelName("powerbook100", m));
+	CHECK(m == MacModel::PB100);
+	CHECK(ParseModelName("kanji", m));
+	CHECK(m == MacModel::Kanji);
+}
+
+TEST_CASE("ParseModelName rejects unknown")
+{
+	MacModel m;
+	CHECK_FALSE(ParseModelName("Amiga", m));
+	CHECK_FALSE(ParseModelName("", m));
+}
+
+TEST_CASE("ModelToString round-trips")
+{
+	constexpr MacModel allModels[] = {
+		MacModel::Twig43, MacModel::Twiggy, MacModel::Mac128K,
+		MacModel::Mac512Ke, MacModel::Kanji, MacModel::Plus,
+		MacModel::SE, MacModel::SEFDHD, MacModel::Classic,
+		MacModel::PB100, MacModel::II, MacModel::IIx,
+	};
+	for (auto m : allModels)
+	{
+		const char *str = ModelToString(m);
+		INFO("Model: " << str);
+		MacModel parsed;
+		REQUIRE(ParseModelName(str, parsed));
+		CHECK(parsed == m);
 	}
 }

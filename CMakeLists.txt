@@ -307,6 +307,7 @@ add_executable(tests
     test/test_model_defs.cpp
     src/core/model_defs.cpp
     src/core/machine_config.cpp
+    src/core/config_loader.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)

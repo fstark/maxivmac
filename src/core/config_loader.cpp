@@ -5,7 +5,9 @@
 */
 
 #include "core/config_loader.h"
+#include "core/model_defs.h"
 #include <algorithm>
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -19,113 +21,51 @@ static std::string toLower(const std::string &s)
 	return result;
 }
 
+// Legacy aliases not covered by ModelDef slug or name fields.
+static constexpr struct
+{
+	std::string_view alias;
+	MacModel model;
+} kLegacyAliases[] = {
+	{"powerbook100", MacModel::PB100},
+};
+
 // Map a model name string to MacModel enum (case-insensitive).
 bool ParseModelName(const std::string &name, MacModel &out)
 {
 	std::string lower = toLower(name);
 
-	// Canonical names (= ROM base names, case-insensitive)
-	if (lower == "twig43")
+	for (const auto &def : kModelDefs)
 	{
-		out = MacModel::Twig43;
-		return true;
-	}
-	if (lower == "twiggy")
-	{
-		out = MacModel::Twiggy;
-		return true;
-	}
-	if (lower == "mac128k")
-	{
-		out = MacModel::Mac128K;
-		return true;
-	}
-	if (lower == "mac512ke")
-	{
-		out = MacModel::Mac512Ke;
-		return true;
-	}
-	if (lower == "macpluskanji")
-	{
-		out = MacModel::Kanji;
-		return true;
-	}
-	if (lower == "macplus")
-	{
-		out = MacModel::Plus;
-		return true;
-	}
-	if (lower == "macse")
-	{
-		out = MacModel::SE;
-		return true;
-	}
-	if (lower == "sefdhd")
-	{
-		out = MacModel::SEFDHD;
-		return true;
-	}
-	if (lower == "classic")
-	{
-		out = MacModel::Classic;
-		return true;
-	}
-	if (lower == "pb100")
-	{
-		out = MacModel::PB100;
-		return true;
-	}
-	if (lower == "macii")
-	{
-		out = MacModel::II;
-		return true;
-	}
-	if (lower == "maciix")
-	{
-		out = MacModel::IIx;
-		return true;
+		// Match against slug (case-insensitive)
+		std::string defSlug(def.slug.size(), '\0');
+		std::transform(def.slug.begin(), def.slug.end(), defSlug.begin(),
+					   [](unsigned char c) { return std::tolower(c); });
+		if (lower == defSlug)
+		{
+			out = def.id;
+			return true;
+		}
+
+		// Match against canonical name (case-insensitive)
+		std::string defName(def.name.size(), '\0');
+		std::transform(def.name.begin(), def.name.end(), defName.begin(),
+					   [](unsigned char c) { return std::tolower(c); });
+		if (lower == defName)
+		{
+			out = def.id;
+			return true;
+		}
 	}
 
-	// Legacy aliases
-	if (lower == "plus")
+	// Check legacy aliases
+	for (const auto &[alias, model] : kLegacyAliases)
 	{
-		out = MacModel::Plus;
-		return true;
-	}
-	if (lower == "se")
-	{
-		out = MacModel::SE;
-		return true;
-	}
-	if (lower == "ii")
-	{
-		out = MacModel::II;
-		return true;
-	}
-	if (lower == "iix")
-	{
-		out = MacModel::IIx;
-		return true;
-	}
-	if (lower == "128k")
-	{
-		out = MacModel::Mac128K;
-		return true;
-	}
-	if (lower == "512ke")
-	{
-		out = MacModel::Mac512Ke;
-		return true;
-	}
-	if (lower == "kanji")
-	{
-		out = MacModel::Kanji;
-		return true;
-	}
-	if (lower == "powerbook100")
-	{
-		out = MacModel::PB100;
-		return true;
+		if (lower == alias)
+		{
+			out = model;
+			return true;
+		}
 	}
 
 	return false;
@@ -623,34 +563,9 @@ EmulatorConfig BuildEmulatorConfig(const LaunchConfig &launch)
 
 const char *ModelToString(MacModel model)
 {
-	switch (model)
-	{
-		case MacModel::Twig43:
-			return "Twig43";
-		case MacModel::Twiggy:
-			return "Twiggy";
-		case MacModel::Mac128K:
-			return "Mac128K";
-		case MacModel::Mac512Ke:
-			return "Mac512Ke";
-		case MacModel::Kanji:
-			return "MacPlusKanji";
-		case MacModel::Plus:
-			return "MacPlus";
-		case MacModel::SE:
-			return "MacSE";
-		case MacModel::SEFDHD:
-			return "SEFDHD";
-		case MacModel::Classic:
-			return "Classic";
-		case MacModel::PB100:
-			return "PB100";
-		case MacModel::II:
-			return "MacII";
-		case MacModel::IIx:
-			return "MacIIx";
-	}
-	return "MacII";
+	const ModelDef *def = ModelDefFor(model);
+	assert(def && "ModelToString: no ModelDef for model");
+	return def->name.data();
 }
 
 const char *DefaultRomFileName(MacModel model)
