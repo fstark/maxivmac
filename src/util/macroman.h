@@ -1,5 +1,22 @@
-/* MacRoman ↔ Unicode conversion primitives.
-   Shared header used by clipboard, disk I/O, storage layer, and UI. */
+/* MacRoman ↔ Unicode/UTF-8 conversion primitives.
+
+   This is the SINGLE canonical location for MacRoman encoding logic.
+   All code that converts between MacRoman and UTF-8 must use these
+   functions — do not duplicate conversion tables or loops elsewhere.
+
+   Callers: clipboard, disk I/O, storage layer (AppleDouble / filename
+   encoding / text conversion / host volume), debugger.
+
+   Primitives (inline, header-only):
+	 kMacRomanToUnicode[128]       — byte 0x80..0xFF → Unicode code point
+	 AppendUTF8(out, cp)           — encode one code point as UTF-8
+	 MacRomanFromCodePoint(cp)     — Unicode code point → MacRoman byte
+	 DecodeUTF8(data, pos)         — decode one UTF-8 code point
+
+   String-level (defined in macroman.cpp):
+	 UTF8FromMacRoman(span)        — MacRoman bytes  → UTF-8 string
+	 MacRomanFromUTF8(string_view) — UTF-8 string    → MacRoman bytes
+									 (unmappable code points become '?') */
 #pragma once
 
 #include <cstdint>

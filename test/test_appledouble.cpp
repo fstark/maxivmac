@@ -288,6 +288,61 @@ TEST_CASE("UTF8FromMacRoman round-trip all 256 bytes")
 	}
 }
 
+/* ── MacRomanFromUTF8 (string-level) ────────────────── */
+
+TEST_CASE("MacRomanFromUTF8 ASCII")
+{
+	CHECK(MacRomanFromUTF8("Hello") == "Hello");
+}
+
+TEST_CASE("MacRomanFromUTF8 2-byte")
+{
+	// é is U+00E9, UTF-8 C3 A9 → MacRoman 0x8E
+	auto result = MacRomanFromUTF8("\xC3\xA9");
+	REQUIRE(result.size() == 1);
+	CHECK(static_cast<uint8_t>(result[0]) == 0x8E);
+}
+
+TEST_CASE("MacRomanFromUTF8 3-byte")
+{
+	// ™ is U+2122, UTF-8 E2 84 A2 → MacRoman 0xAA
+	auto result = MacRomanFromUTF8("\xE2\x84\xA2");
+	REQUIRE(result.size() == 1);
+	CHECK(static_cast<uint8_t>(result[0]) == 0xAA);
+}
+
+TEST_CASE("MacRomanFromUTF8 unmappable becomes ?")
+{
+	// 😀 U+1F600 is not in MacRoman
+	auto result = MacRomanFromUTF8("\xF0\x9F\x98\x80");
+	REQUIRE(result.size() == 1);
+	CHECK(result[0] == '?');
+}
+
+TEST_CASE("MacRomanFromUTF8 round-trip all 256 bytes")
+{
+	for (int b = 0; b < 256; ++b)
+	{
+		std::vector<uint8_t> input = {static_cast<uint8_t>(b)};
+		auto utf8 = UTF8FromMacRoman(input);
+		auto mr = MacRomanFromUTF8(utf8);
+		REQUIRE(mr.size() == 1);
+		CHECK(static_cast<uint8_t>(mr[0]) == static_cast<uint8_t>(b));
+	}
+}
+
+TEST_CASE("MacRomanFromUTF8 + UTF8FromMacRoman identity")
+{
+	for (int b = 0; b < 256; ++b)
+	{
+		std::vector<uint8_t> original = {static_cast<uint8_t>(b)};
+		auto utf8 = UTF8FromMacRoman(original);
+		auto mr = MacRomanFromUTF8(utf8);
+		auto utf8_again = UTF8FromMacRoman({reinterpret_cast<const uint8_t *>(mr.data()), mr.size()});
+		CHECK(utf8_again == utf8);
+	}
+}
+
 /* ══════════════════════════════════════════════════════
    Phase 4 — Sidecar Binary Format
    ══════════════════════════════════════════════════════ */
