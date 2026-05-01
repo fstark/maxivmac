@@ -41,6 +41,7 @@ set(MINIVMAC_LOCALTALK "0" CACHE STRING "Enable LocalTalk (1/0)")
 set(MINIVMAC_SOURCES
     # Core
     src/core/machine_config.cpp
+    src/core/model_defs.cpp
     src/core/config_loader.cpp
     src/core/wire_bus.cpp
     src/core/ict_scheduler.cpp
@@ -303,6 +304,8 @@ add_executable(tests
     test/test_drive_manager.cpp
     test/test_types.cpp
     test/test_ui.cpp
+    test/test_model_defs.cpp
+    src/core/model_defs.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)

@@ -55,15 +55,82 @@ each `case` in `MachineConfigForModel()` (src/core/machine_config.cpp
 lines 142–465).  Every field must match the existing
 switch statement exactly — this is the highest-risk transcription.
 
+**Field mapping — ModelDef field → MachineConfig source:**
+
+| ModelDef field     | MachineConfig field | Notes                         |
+|--------------------|---------------------|-------------------------------|
+| `id`               | `model`             | MacModel enum value           |
+| `name`             | (new)               | e.g. `"Macintosh Plus"`       |
+| `slug`             | (new)               | e.g. `"Plus"` (CLI/mac-file)  |
+| `use68020`         | `use68020`          | direct copy                   |
+| `emFPU`            | `emFPU`             | direct copy                   |
+| `emMMU`            | `emMMU`             | direct copy                   |
+| `ramASize`         | `ramASize`          | direct copy                   |
+| `ramBSize`         | `ramBSize`          | direct copy (0 for single-bank) |
+| `rom.filename`     | `romFileName`       | direct copy                   |
+| `rom.size`         | `romSize`           | direct copy                   |
+| `rom.base`         | `romBase`           | direct copy                   |
+| `rom.md5`          | (new)               | from MD5 table above          |
+| `screen.width`     | `screenWidth`       | direct copy                   |
+| `screen.height`    | `screenHeight`      | direct copy                   |
+| `screen.depth`     | `screenDepth`       | direct copy                   |
+| `emVIA1`           | `emVIA1`            | direct copy                   |
+| `emVIA2`           | `emVIA2`            | direct copy                   |
+| `emADB`            | `emADB`             | direct copy                   |
+| `emClassicKbrd`    | `emClassicKbrd`     | direct copy                   |
+| `emRTC`            | `emRTC`             | direct copy (default `true`)  |
+| `emPMU`            | `emPMU`             | direct copy (default `false`) |
+| `emASC`            | `emASC`             | direct copy                   |
+| `emClassicSnd`     | `emClassicSnd`      | direct copy                   |
+| `emVidCard`        | `emVidCard`         | direct copy                   |
+| `includeVidMem`    | `includeVidMem`     | direct copy                   |
+| `vidMemSize`       | `vidMemSize`        | direct copy                   |
+| `vidROMSize`       | `vidROMSize`        | direct copy                   |
+| `extnBlockBase`    | `extnBlockBase`     | direct copy                   |
+| `extnLn2Spc`       | `extnLn2Spc`        | default `7`, not set per-model |
+| `clockMult`        | `clockMult`         | direct copy                   |
+| `autoSlowSubTicks` | `autoSlowSubTicks`  | default `16384`, not per-model |
+| `autoSlowTime`     | `autoSlowTime`      | default `60`, not per-model   |
+| `maxATTListN`      | `maxATTListN`       | direct copy                   |
+
+**Mac II gotcha:** The `case MacModel::II` block only sets
+`romFileName`, `clockMult`, and VIA configs — all other fields
+come from MachineConfig's **default member initializers**.  Copy
+those defaults explicitly:
+`use68020=true`, `emFPU=true`, `emMMU=false`,
+`ramASize=0x00400000`, `ramBSize=0x00400000`,
+`romSize=0x00040000`, `romBase=0x00800000`,
+`extnBlockBase=0x50F0C000`,
+`emVIA1=true`, `emVIA2=true`, `emADB=true`,
+`emClassicKbrd=false`, `emRTC=true`, `emPMU=false`,
+`emASC=true`, `emClassicSnd=false`, `emVidCard=true`,
+`includeVidMem=true`, `vidMemSize=0x00080000`,
+`vidROMSize=0x002000`, `maxATTListN=20`,
+`screenWidth=640`, `screenHeight=480`, `screenDepth=3`.
+
 The `slug` field for each model uses short CLI-friendly names:
 `Twig43`, `Twiggy`, `128K`, `512Ke`, `Kanji`, `Plus`, `SE`, `SEFDHD`,
 `Classic`, `PB100`, `II`, `IIx`.
 
-ROM MD5s: compute from the bundled ROM files in `roms/` using
-`md5 -q roms/MacPlus.ROM` etc.  For models that share a ROM file
-(e.g. Twig43 and Twiggy may share), use the same MD5.  For models
-whose ROM we don't bundle, use an empty string `""` — validation
-will skip the MD5 check when the string is empty.
+ROM MD5s (pre-computed from `roms/`):
+
+| Model    | ROM file          | MD5                              |
+|----------|-------------------|----------------------------------|
+| Twig43   | Twig43.ROM        | `e4faf3ecb169b875a1e66abbd5306b52` |
+| Twiggy   | Twiggy.ROM        | `4f28b54a2c6d699b596a1e6072a57f58` |
+| Mac128K  | Mac128K.ROM       | `db7e6d3205a2b48023fba5aa867ac6d6` |
+| Mac512Ke | Mac512Ke.ROM      | `8a41e0754ffd1bb00d8183875c55164c` |
+| Kanji    | MacPlusKanji.ROM  | `56737a4960e70635e310db0a7fb5332c` |
+| Plus     | MacPlus.ROM       | `8a41e0754ffd1bb00d8183875c55164c` |
+| SE       | MacSE.ROM         | `9fb38bdcc0d53d9d380897ee53dc1322` |
+| SEFDHD   | SEFDHD.ROM        | `886444d7abc1185112391b8656c7e448` |
+| Classic  | Classic.ROM       | `c229bb677cb41b84b780c9e38a09173e` |
+| PB100    | PB100.ROM         | `dd390f7c86a730caac46fd522f8b2665` |
+| II       | MacII.ROM         | `2a8a4c7f2a38e0ab0771f59a9a0f1ee4` |
+| IIx      | MacIIx.ROM        | `2a8a4c7f2a38e0ab0771f59a9a0f1ee4` |
+
+Note: Mac512Ke and Plus share the same MD5 (same ROM binary).
+Same for II and IIx.
 
 ### 1.2 — Implement `ModelDefFor()` and `ModelDefForSlug()`
 
@@ -130,10 +197,25 @@ static VIAConfig MakeVIA1ConfigFor(MacModel model);
 static VIAConfig MakeVIA2ConfigFor(MacModel model);
 ```
 
-`MakeVIA1ConfigFor()` dispatches to the existing `MakeVIA1Config_Plus()`,
-`MakeVIA1Config_SE()`, `MakeVIA1Config_PB100()`, `MakeVIA1Config_MacII()`
-based on model.  `MakeVIA2ConfigFor()` returns `MakeVIA2Config_MacII()`
-for II-family, default `VIAConfig{}` otherwise.
+`MakeVIA1ConfigFor()` dispatches to the existing functions.
+`MakeVIA2ConfigFor()` returns `MakeVIA2Config_MacII()` for II-family,
+default `VIAConfig{}` otherwise.
+
+**VIA1 routing table** (extracted from existing switch cases):
+
+| Models                                          | VIA1 function           |
+|-------------------------------------------------|-------------------------|
+| Twig43, Twiggy, Mac128K, Mac512Ke, Kanji, Plus  | `MakeVIA1Config_Plus()` |
+| SE, SEFDHD, Classic                              | `MakeVIA1Config_SE()`   |
+| PB100                                            | `MakeVIA1Config_PB100()`|
+| II, IIx                                          | `MakeVIA1Config_MacII()`|
+
+**VIA2 routing table:**
+
+| Models   | VIA2 function             |
+|----------|---------------------------|
+| II, IIx  | `MakeVIA2Config_MacII()`  |
+| all others | `VIAConfig{}` (default) |
 
 ### 2.3 — New MachineConfigForModel()
 
@@ -291,7 +373,16 @@ Test cases:
 - `"ParseMacFile: comments and blank lines"` — ignored correctly
 - `"ValidateMacEntry: ROM present"` — `romAvailable == true`
 - `"ValidateMacEntry: ROM missing"` — `romAvailable == false`, error set
+- `"ValidateMacEntry: ROM MD5 mismatch"` — wrong ROM file, error set
 - `"ValidateMacEntry: disk missing"` — `allDisksAvailable == false`
+
+**MD5 dependency note:** `md5_file()` already exists in
+`src/core/md5.h` — it takes a path and writes 16 raw bytes.
+To compare against the hex strings in `ModelDef.rom.md5`, write
+a small helper `md5_file_hex(path, out33)` that calls `md5_file()`
+then formats to hex with `snprintf("%02x")` (same pattern as
+`hashToHex()` in `state_recorder.cpp`).  Put it in `mac_file.cpp`
+as a `static` helper — it's only needed by `ValidateMacEntry()`.
 
 ### Fence
 
@@ -423,11 +514,20 @@ Update the 5 hardcoded load paths in the source:
 
 This requires `ResolveDataDir()` to be called early in the boot
 sequence and its result stored where `main.cpp` and
-`host_volume.cpp` can access it.  Options: (a) add a `dataDir`
-field to `LaunchConfig`, (b) resolve once in `ProgramEarlyInit()`
-and store in a file-scope static, (c) pass as parameter.  Prefer
-(a) — `LaunchConfig` already carries `romDir`, and `dataDir`
-subsumes it.
+`host_volume.cpp` can access it.
+
+**Decision: add `std::string dataDir` field to `LaunchConfig`.**
+It already carries `romDir`, and `dataDir` subsumes it.  Add the
+field after `romDir` in `src/core/config_loader.h`:
+
+```cpp
+std::string romDir;  // --romdir: directory to search for ROM files
+std::string dataDir; // resolved data/ directory (set by ResolveDataDir)
+```
+
+Set `dataDir` once in `app_main.cpp` before any loading code runs.
+All code that currently uses hardcoded `"assets/"` paths switches
+to `launchConfig.dataDir + "/debug/..."`.
 
 ### 6.4 — Tests
 
@@ -485,13 +585,74 @@ private:
 
 Implement the Launcher UI (design §5.5):
 - `init()` stores the entries
-- `draw()` renders a card for each entry:
-  - Name (from `.mac` file)
-  - Model info (look up `ModelDefFor()` for CPU, default RAM)
-  - Boot disk name(s)
-  - Status: green if bootable, greyed out with reason if not
-  - Valid cards are clickable — returns the selected `MacFileEntry*`
+- `draw()` renders a card grid for each entry, returns
+  `const MacFileEntry*` when clicked (null otherwise)
 - One click boots immediately (no config panel)
+
+**Draw pseudocode** (mirrors existing `ModelSelector::drawModelGrid()`
+pattern in `imgui_model_selector.cpp`):
+
+```cpp
+const MacFileEntry *Launcher::draw()
+{
+    // Full-window, no decoration (same as ModelSelector)
+    ImGui::SetNextWindowPos({0, 0});
+    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+    ImGui::Begin("##Launcher", nullptr, kFullscreenFlags);
+
+    // Title
+    ImGui::Text("Maxi vMac");
+    ImGui::Separator();
+
+    // Card grid: 4 columns, 16px gap
+    float avail = ImGui::GetContentRegionAvail().x;
+    int cols = std::max(1, (int)((avail + 16) / (200 + 16)));
+    float cardW = (avail - (cols - 1) * 16) / cols;
+    float cardH = 100.0f;
+
+    int col = 0;
+    for (int i = 0; i < (int)entries_.size(); ++i)
+    {
+        const auto &e = entries_[i];
+        if (col > 0) ImGui::SameLine(0, 16);
+
+        bool valid = e.romAvailable && e.allDisksAvailable;
+        if (!valid) ImGui::BeginDisabled();
+
+        // Card background — ImGui::Button sized as card
+        ImGui::PushID(i);
+        if (ImGui::Button("##card", {cardW, cardH}))
+        {
+            if (valid) { ImGui::PopID(); ImGui::End(); return &entries_[i]; }
+        }
+
+        // Overlay text on the button (use SetCursorPos back)
+        // Line 1: name (bold via PushFont or just larger)
+        //   e.g. "Mac Plus · System 6"
+        // Line 2: model info from ModelDefFor(e.model)
+        //   e.g. "68000 · 4 MB RAM · 512×342"
+        // Line 3: boot disk filename
+        //   e.g. "plus-608.hfs"
+        // Line 4 (invalid only): red text with e.validationError
+
+        ImGui::PopID();
+        if (!valid) ImGui::EndDisabled();
+
+        col = (col + 1) % cols;
+        if (col == 0) ImGui::Spacing();
+    }
+
+    ImGui::End();
+    return nullptr;
+}
+```
+
+The overlay text rendering uses `ImGui::SetCursorPos()` to
+position text inside the button rect (same technique as the
+existing model selector's `drawModelGrid`).  Valid cards are
+clickable; invalid cards use `ImGui::BeginDisabled()` /
+`ImGui::EndDisabled()` and show `e.validationError` in
+`ImVec4(0.8f, 0.2f, 0.2f, 1)` (red) as a final line.
 
 ### 7.3 — Add to CMakeLists.txt
 
