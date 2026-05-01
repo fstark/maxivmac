@@ -4,7 +4,7 @@
 
 #include "core/common.h"
 #include "devices/via2.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "core/abnormal_ids.h"
 
 VIA2Device::VIA2Device()

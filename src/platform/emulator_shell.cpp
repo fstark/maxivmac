@@ -7,7 +7,7 @@
 #include "platform/emulator_shell.h"
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "core/main.h"
 #include "platform/common/osglu_common.h"
 #include "platform/common/param_buffers.h"

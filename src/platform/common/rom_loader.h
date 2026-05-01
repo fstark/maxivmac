@@ -4,7 +4,7 @@
 #include "platform/common/osglu_ud.h"
 #include "platform/common/osglu_common.h"
 #include "platform/common/keyboard_map.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 
 /* ROM file loading. */
 

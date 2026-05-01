@@ -27,7 +27,7 @@ enum class UIState
 /* Scaling mode for the emulator viewport. */
 enum class ScalingMode : uint8_t
 {
-	Integer,
+	Integer, // "Pixel Perfect" in the UI
 	Stretched
 };
 

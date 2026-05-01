@@ -199,9 +199,11 @@ void ImGuiBackend::runLoop()
 				continue;
 			}
 
-			/* Shortcut dispatch while overlay is visible */
+			/* Shortcut dispatch while overlay is visible.
+			   Works with or without Ctrl held (so bare keys work in sticky mode). */
 			if (overlayMode_ != OverlayMode::Hidden && event.type == SDL_EVENT_KEY_DOWN &&
-				!event.key.repeat)
+				!event.key.repeat && event.key.scancode != SDL_SCANCODE_LCTRL &&
+				event.key.scancode != SDL_SCANCODE_RCTRL)
 			{
 				UIAction action = UIAction::None;
 				for (const auto &s : kShortcuts)
@@ -226,8 +228,8 @@ void ImGuiBackend::runLoop()
 				{
 					int newW = event.window.data1;
 					int newH = event.window.data2;
-					int scaleX = std::max(1, newW / emuTexW_);
-					int scaleY = std::max(1, newH / emuTexH_);
+					int scaleX = std::max(1, (newW + emuTexW_ / 2) / emuTexW_);
+					int scaleY = std::max(1, (newH + emuTexH_ / 2) / emuTexH_);
 					int scale = std::min(scaleX, scaleY);
 					int snapW = emuTexW_ * scale;
 					int snapH = emuTexH_ * scale;
@@ -556,8 +558,9 @@ PlatformEvent ImGuiBackend::translateSdlEvent(SDL_Event &event)
 	switch (event.type)
 	{
 		case SDL_EVENT_QUIT:
-			/* Do not quit — only Power Off button terminates.
-			   This prevents Cmd+Q from killing the emulator. */
+			/* Window close button quits. Cmd+Q is not routed here
+			   (intercepted by macOS menu handling). */
+			g_requestMacOff = true;
 			break;
 		case SDL_EVENT_WINDOW_FOCUS_GAINED:
 			pEvt.type = PlatformEvent::Type::FocusGained;
@@ -690,8 +693,8 @@ void ImGuiBackend::setScalingMode(ScalingMode m)
 	{
 		int w, h;
 		SDL_GetWindowSize(window_, &w, &h);
-		int scaleX = std::max(1, w / emuTexW_);
-		int scaleY = std::max(1, h / emuTexH_);
+		int scaleX = std::max(1, (w + emuTexW_ / 2) / emuTexW_);
+		int scaleY = std::max(1, (h + emuTexH_ / 2) / emuTexH_);
 		int scale = std::min(scaleX, scaleY);
 		snapping_ = true;
 		SDL_SetWindowSize(window_, emuTexW_ * scale, emuTexH_ * scale);

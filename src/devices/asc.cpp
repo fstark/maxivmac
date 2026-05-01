@@ -7,7 +7,7 @@
 
 #include "devices/via.h"
 #include "devices/via2.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 
 #include "devices/asc.h"
 #include "core/abnormal_ids.h"

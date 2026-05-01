@@ -12,7 +12,7 @@
 #include "core/common.h"
 
 #include "devices/rom.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 
 
 /* Sony driver patch is used for all models except PB100 */

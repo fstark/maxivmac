@@ -9,7 +9,7 @@
 
 #include "core/extn_clip.h"
 #include "core/machine.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "cpu/m68k.h"
 #include "cpu/trap_counter.h"
 

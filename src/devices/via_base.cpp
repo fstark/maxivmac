@@ -12,7 +12,7 @@
 
 #include "devices/via_base.h"
 #include "core/wire_bus.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 
 #define BIT_MASK(p) (1 << (p))
 #define TEST_BIT(i, p) (((i) & BIT_MASK(p)) != 0)

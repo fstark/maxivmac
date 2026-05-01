@@ -16,7 +16,7 @@
 #include "devices/video.h"
 #include "devices/slot_rom.h"
 #include "core/wire_bus.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "devices/via2.h"
 
 #include "cpu/m68k.h"

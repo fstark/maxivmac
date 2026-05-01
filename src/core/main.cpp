@@ -25,7 +25,7 @@
 #include "core/main.h"
 #include "core/diag.h"
 #include "core/config_loader.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "core/machine_config.h"
 #include "core/emulator_config.h"
 #include "core/ict_scheduler.h"

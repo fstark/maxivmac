@@ -16,7 +16,7 @@
 #include "core/common.h"
 
 #include "devices/iwm.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "core/abnormal_ids.h"
 
 /* Global singleton */

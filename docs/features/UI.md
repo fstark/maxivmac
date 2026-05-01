@@ -31,12 +31,12 @@ is available in both display states.
 
 Two modes, toggled in the overlay or via Ctrl+M:
 
-- **Integer** (default) — the window size is quantized to exact
+- **Pixel Perfect** (default) — the window size is quantized to exact
   multiples of the guest resolution (e.g. 512×342, 1024×684,
-  1536×1026…).  Dragging the window edge snaps between discrete
-  sizes.  There are **never** black borders — the viewport always
-  fills the window exactly.  Double-clicking the title bar (macOS
-  zoom) snaps to the largest integer size that fits the screen.
+  1536×1026…).  Dragging the window edge snaps to the **nearest**
+  integer multiple.  There are **never** black borders — the viewport
+  always fills the window exactly.  Double-clicking the title bar
+  (macOS zoom) snaps to the largest integer size that fits the screen.
 
 - **Stretched** — the window is freely resizable.  The viewport
   scales to fill the window while preserving aspect ratio.  Thin
@@ -51,9 +51,9 @@ The initial window size at boot is 2× the guest resolution (or 1× if
 ## Fullscreen State
 
 - Same two scaling modes apply:
-  - **Integer** — largest integer multiple that fits, centered, dark
-    gray (#1A1A1A) borders.  (Unlike windowed integer mode, the
-    display size is not quantized, so borders are unavoidable.)
+  - **Pixel Perfect** — largest integer multiple that fits, centered,
+    dark gray (#1A1A1A) borders.  (Unlike windowed Pixel Perfect mode,
+    the display size is not quantized, so borders are unavoidable.)
   - **Stretched** — fills the display preserving aspect ratio;
     bars only for aspect correction.
 - No window chrome.
@@ -106,13 +106,13 @@ rest.  Only controls that actually work should be visible — no stubs.
 |-----------------|------------------------------------------------|----------|
 | Insert Disk     | Opens a host file dialog                        | NOT IMP  |
 | Fullscreen      | Toggle (Windowed ↔ Full)                        |          |
-| Scaling Mode    | Integer / Stretched toggle                      | NOT IMP  |
+| Scaling Mode    | Pixel Perfect / Stretched toggle                |          |
 | Speed           | 1×, 2×, 4×, 8×, 16×, 32×, Unlimited            |          |
 | Screenshot      | Capture guest screen to clipboard               | NOT IMP  |
 | Reboot          | Warm-restarts the emulated Mac                  |          |
 | Power Off       | Terminates emulation                            |          |
 
-**Advanced** (collapsed or secondary section):
+**Advanced** (secondary section, always visible below a separator):
 
 | Control            | Description                                     | Status   |
 |--------------------|------------------------------------------------|----------|
@@ -127,14 +127,20 @@ rest.  Only controls that actually work should be visible — no stubs.
 
 Ctrl + another key fires a shortcut immediately and the overlay does
 **not** become sticky.  Shortcuts work both during the initial hold
-window and while the overlay is already visible in peek mode.  The
-overlay flashes briefly to confirm the action, then disappears on
-Ctrl release.
+window and while the overlay is already visible in peek mode.
+
+When the overlay is in **sticky** mode, bare shortcut keys (without
+Ctrl held) also fire the corresponding action.
+
+The overlay flashes briefly to confirm the action, then disappears on
+Ctrl release (hold mode) or stays open (sticky mode).
+
+Buttons show their shortcut key for discoverability.
 
 | Shortcut     | Action                          |
 |--------------|---------------------------------|
 | Ctrl + F     | Toggle Fullscreen               |
-| Ctrl + M     | Toggle Scaling Mode (Int/Str)   |
+| Ctrl + M     | Toggle Scaling Mode (PP/Str)   |
 | Ctrl + S     | Screenshot to clipboard         |
 | Ctrl + →     | Speed up (next preset)          |
 | Ctrl + ←     | Speed down (previous preset)    |

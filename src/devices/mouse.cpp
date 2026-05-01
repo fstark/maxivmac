@@ -8,7 +8,7 @@
 */
 
 #include "core/common.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "core/wire_bus.h"
 #include "core/wire_ids.h"
 #include "devices/scc.h"

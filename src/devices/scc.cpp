@@ -26,7 +26,7 @@
 #include "devices/scc.h"
 #include "devices/serial_backend.h"
 #include "core/wire_bus.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "core/abnormal_ids.h"
 
 /* Serial backends — one per channel (0 = A/modem, 1 = B/printer). */

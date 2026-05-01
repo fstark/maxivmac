@@ -17,12 +17,18 @@ TEST_CASE("ComputeIntegerSnap: exact 2x")
 	CHECK(r.height == 684);
 }
 
-TEST_CASE("ComputeIntegerSnap: between 1x and 2x snaps to 1x")
+TEST_CASE("ComputeIntegerSnap: between 1x and 2x rounds to nearest")
 {
-	auto r = ComputeIntegerSnap(700, 500, 512, 342);
-	CHECK(r.scale == 1);
-	CHECK(r.width == 512);
-	CHECK(r.height == 342);
+	/* 700/512 = 1.37 → rounds to 1x; but 800/512 = 1.56 → rounds to 2x */
+	auto r1 = ComputeIntegerSnap(700, 500, 512, 342);
+	CHECK(r1.scale == 1);
+	CHECK(r1.width == 512);
+	CHECK(r1.height == 342);
+
+	auto r2 = ComputeIntegerSnap(800, 600, 512, 342);
+	CHECK(r2.scale == 2);
+	CHECK(r2.width == 1024);
+	CHECK(r2.height == 684);
 }
 
 TEST_CASE("ComputeIntegerSnap: large window snaps to 3x")

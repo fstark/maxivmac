@@ -12,7 +12,7 @@
 #include "devices/via.h"
 #include "core/wire_bus.h"
 #include "core/wire_ids.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 
 
 VIA1Device *SoundDevice::via1() const

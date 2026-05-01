@@ -6,7 +6,7 @@
 	Part of Phase 4: Device Interface & Machine Object.
 */
 
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "devices/device.h"
 #include "platform/platform.h"
 

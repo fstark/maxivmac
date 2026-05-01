@@ -18,8 +18,8 @@ struct SnapResult
 
 inline SnapResult ComputeIntegerSnap(int newW, int newH, int guestW, int guestH)
 {
-	int scaleX = std::max(1, newW / guestW);
-	int scaleY = std::max(1, newH / guestH);
+	int scaleX = std::max(1, (newW + guestW / 2) / guestW);
+	int scaleY = std::max(1, (newH + guestH / 2) / guestH);
 	int scale = std::min(scaleX, scaleY);
 	return {scale, guestW * scale, guestH * scale};
 }

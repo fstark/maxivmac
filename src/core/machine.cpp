@@ -28,7 +28,7 @@
 #include "devices/pmu.h"
 #include "core/wire_bus.h"
 #include "cpu/cpu.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 
 #include <cstdio>
 /*

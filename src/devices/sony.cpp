@@ -17,7 +17,7 @@
 #include "cpu/m68k.h"
 
 #include "devices/sony.h"
-#include "core/machine_obj.h"
+#include "core/rig.h"
 #include "core/abnormal_ids.h"
 
 

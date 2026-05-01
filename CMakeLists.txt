@@ -44,7 +44,7 @@ set(MINIVMAC_SOURCES
     src/core/config_loader.cpp
     src/core/wire_bus.cpp
     src/core/ict_scheduler.cpp
-    src/core/machine_obj.cpp
+    src/core/rig.cpp
     src/core/machine.cpp
     src/core/extn_clip.cpp
     src/core/extn_extfs.cpp

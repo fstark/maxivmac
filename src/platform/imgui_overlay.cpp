@@ -69,18 +69,18 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell *shell, ImGuiBacke
 void ControlOverlay::drawPrimaryControls(UIState currentState, EmulatorShell *shell,
 										 ImGuiBackend *backend, UIState &requestedState)
 {
-	float btnW = 110, btnH = 32, sp = 8;
+	float btnW = 130, btnH = 32, sp = 8;
 
 	/* Row 1: Insert Disk, Fullscreen, Scaling */
-	if (ImGui::Button("Insert Disk", ImVec2(btnW, btnH)))
+	if (ImGui::Button("Insert Disk (I)", ImVec2(btnW, btnH)))
 		backend->executeAction(UIAction::InsertDisk);
 	ImGui::SameLine(0, sp);
 	bool isFS = (currentState == UIState::Fullscreen);
-	if (ImGui::Button(isFS ? "Windowed" : "Fullscreen", ImVec2(btnW, btnH)))
+	if (ImGui::Button(isFS ? "Windowed (F)" : "Fullscreen (F)", ImVec2(btnW, btnH)))
 		requestedState = isFS ? UIState::Windowed : UIState::Fullscreen;
 	ImGui::SameLine(0, sp);
 	const char *scaleLabel =
-		(backend->scalingMode() == ScalingMode::Integer) ? "Integer" : "Stretched";
+		(backend->scalingMode() == ScalingMode::Integer) ? "Pixel Perfect (M)" : "Stretched (M)";
 	if (ImGui::Button(scaleLabel, ImVec2(btnW, btnH)))
 		backend->executeAction(UIAction::ToggleScaling);
 
@@ -103,10 +103,10 @@ void ControlOverlay::drawPrimaryControls(UIState currentState, EmulatorShell *sh
 	ImGui::Spacing();
 
 	/* Row 3: Screenshot, Reboot, Power Off */
-	if (ImGui::Button("Screenshot", ImVec2(btnW, btnH)))
+	if (ImGui::Button("Screenshot (S)", ImVec2(btnW, btnH)))
 		backend->executeAction(UIAction::Screenshot);
 	ImGui::SameLine(0, sp);
-	if (ImGui::Button("Reboot", ImVec2(btnW, btnH))) backend->executeAction(UIAction::Reboot);
+	if (ImGui::Button("Reboot (R)", ImVec2(btnW, btnH))) backend->executeAction(UIAction::Reboot);
 	ImGui::SameLine(0, sp);
 	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.15f, 0.15f, 1.0f));
 	if (ImGui::Button("Power Off", ImVec2(btnW, btnH))) g_requestMacOff = true;
@@ -119,7 +119,7 @@ void ControlOverlay::drawPrimaryControls(UIState currentState, EmulatorShell *sh
 
 void ControlOverlay::drawAdvancedControls(ImGuiBackend *backend)
 {
-	if (ImGui::CollapsingHeader("Advanced"))
+	ImGui::Separator();
 	{
 		float btnW = 100, btnH = 28, sp = 8;
 
