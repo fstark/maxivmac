@@ -22,6 +22,8 @@ numbered phases, build/test gates, and status tracking.
 
 ## Ground Rules
 
+- **Read the glossary first.**  Read [docs/GLOSSARY.md](docs/GLOSSARY.md)
+  for project terminology.  Use the preferred terms throughout.
 - **Read the design first.**  Read the entire `XXX_DESIGN.md`.  Read
   the spec `XXX.md` too — you need both.
 - **Read the codebase.**  Verify every integration point in the design

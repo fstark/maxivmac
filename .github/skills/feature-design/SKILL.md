@@ -18,6 +18,8 @@ output is `XXX_DESIGN.md` (how it is built).
 
 ## Ground Rules
 
+- **Read the glossary first.** Read [docs/GLOSSARY.md](docs/GLOSSARY.md)
+  for project terminology.  Use the preferred terms throughout.
 - **Read the spec first.** Read the entire `XXX.md` before writing
   anything.  Understand every command, behavior, and constraint.
 - **Read the codebase.** Explore the integration points the feature

@@ -8,6 +8,7 @@ argument-hint: "Path to file(s) or directory to comment, e.g. src/core/globglue.
 
 Add clear, concise comments to C++ source files following project
 conventions in [STYLE.md](docs/STYLE.md) and [NAMING.md](docs/NAMING.md).
+Before writing, read [docs/GLOSSARY.md](docs/GLOSSARY.md) for project terminology.
 This is a **C++23 project** — use modern terminology (e.g. "returns",
 not "returns a pointer to"; reference `std::string_view` not
 `const char *` in comment text when describing interfaces).
