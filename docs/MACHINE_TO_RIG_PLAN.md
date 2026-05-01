@@ -1,11 +1,13 @@
-# Machine → Rig Rename Plan
+# Machine → Rig Rename Plan — COMPLETED
 
-Implements **ROADMAP_PLAN.md Phase A1**: rename the `Machine` class to
-`Rig`, `g_machine` to `g_rig`, update all call sites.
+Completed 1 May 2026. Commits: 552dc1f..a5cb57a
 
-**Gate:** builds, 260 unit tests pass, 4 headless golden tests pass.
-
-See [GLOSSARY.md](GLOSSARY.md) for the Rig / Model / Macintosh distinction.
+All phases executed successfully:
+- Phase 1: Renamed machine_obj.{h,cpp} → rig.{h,cpp}, updated 22 includes + CMakeLists
+- Phase 2: Renamed class Machine → Rig, member machine_ → rig_, s_machine → s_rig
+- Phase 3: Renamed g_machine → g_rig (227 occurrences across 18 files)
+- Phase 4: Updated comments and documentation
+- Phase 5: 280 unit tests ✅, 6 golden tests ✅, 34 debugger smoke tests ✅
 
 ---
 
