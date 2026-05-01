@@ -1,9 +1,7 @@
 /*
-	machine_obj.cpp
+	rig.cpp
 
-	Machine class implementation — owns all emulator state.
-
-	Part of Phase 4: Device Interface & Machine Object.
+	Rig class implementation — owns all emulator state.
 */
 
 #include "core/rig.h"
@@ -28,7 +26,7 @@
 #include "devices/sound.h"
 #include "devices/pmu.h"
 
-// Global Machine pointer for backward compatibility during migration
+// Global Rig pointer for backward compatibility during migration
 Rig *g_rig = nullptr;
 
 Rig::Rig(MachineConfig config) : config_(std::move(config)) {}

@@ -4,7 +4,7 @@
 	ICT (Interrupt/Cycle Timer) scheduler implementation.
 	Extracted from machine.cpp globals into a class.
 
-	Part of Phase 4: Device Interface & Machine Object.
+
 */
 
 #include "core/ict_scheduler.h"

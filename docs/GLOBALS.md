@@ -18,7 +18,7 @@ Excludes `static constexpr` / `inline constexpr` compile-time constants and `sta
 
 | Variable | Type | File | Tag | Notes |
 |----------|------|------|-----|-------|
-| `g_machine` | `Machine*` | core/machine_obj.h | **KEEP** | Central Machine singleton; accessor pattern already wraps it |
+| `g_rig` | `Rig*` | core/rig.h | **KEEP** | Central Rig singleton; accessor pattern already wraps it |
 | `g_shell` | `EmulatorShell*` | platform/emulator_shell.h | **KEEP** | Platform shell singleton; needed for legacy free-function wrappers |
 | `g_cpu` | `CPU` | cpu/cpu.cpp | **NEEDS WORK** | Should be owned by Machine. Currently standalone global instance |
 
@@ -248,7 +248,7 @@ Not globals — only visible within main.cpp. Listed for completeness.
 
 | Variable | Type | Tag | Notes |
 |----------|------|-----|-------|
-| `s_machine` | `unique_ptr<Machine>` | **KEEP** | Actual Machine object; `g_machine` points here |
+| `s_rig` | `unique_ptr<Rig>` | **KEEP** | Actual Rig object; `g_rig` points here |
 | `s_launchConfig` | `LaunchConfig` | **KEEP** | Startup config |
 | `s_machineConfig` | `MachineConfig` | **KEEP** | Hardware config |
 | `s_emulatorConfig` | `EmulatorConfig` | **KEEP** | Behavior config |
@@ -277,7 +277,7 @@ The ~80 NEEDS WORK globals cluster into natural refactoring targets:
 | **`TimingState`** | 10 speed/timing globals | Shell |
 | **`NetworkState`** | 8 LocalTalk globals | Shell (when networking matures) |
 | **`EmulatorState`** | 5 control/power globals | Shell |
-| **Machine ownership** | `g_cpu`, `g_ict`, `g_wires`, `g_ram`, `g_rom`, `g_vidMem`, `g_vidROM` | Machine class |
+| **Rig ownership** | `g_cpu`, `g_ict`, `g_wires`, `g_ram`, `g_rom`, `g_vidMem`, `g_vidROM` | Rig class |
 | **`DateConfig`** | lat, long, delta, date | Config → RTC at init |
 
 Each struct consolidation is independent and can be done incrementally without breaking

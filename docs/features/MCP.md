@@ -85,8 +85,8 @@ base64 PNG.
 | `drag` | Drag from (x1,y1) to (x2,y2) | `MouseDevice` |
 | `insert_disk` | Mount an HFS disk image | `SonyDevice` |
 | `eject_disk` | Eject a disk | `SonyDevice` |
-| `get_status` | Emulator state (model, time, instruction count) | `Machine` |
-| `pause` / `resume` | Pause/resume emulation | `Machine` |
+| `get_status` | Emulator state (model, time, instruction count) | `Rig` |
+| `pause` / `resume` | Pause/resume emulation | `Rig` |
 | `reset` | Restart the emulated Mac | `Machine::reset()` |
 | `read_memory` | Read N bytes from emulated address space | Memory bus |
 | `write_memory` | Write bytes to emulated address space | Memory bus |

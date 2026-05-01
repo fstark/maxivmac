@@ -107,8 +107,7 @@ The live runtime emulation engine.  Created when a Macintosh boots,
 destroyed when it shuts down.  Owns memory buffers, devices, wire bus,
 ICT scheduler.  One Rig = one running emulated Mac.
 
-Code: `Machine` class in `src/core/machine_obj.h`, global `g_machine`
-(rename to `Rig` / `g_rig` pending)
+Code: `Rig` class in `src/core/rig.h`, global `g_rig`
 
 See also: Macintosh, Model
 

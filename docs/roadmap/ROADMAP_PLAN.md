@@ -14,12 +14,14 @@ are marked explicitly.
 
 These are mechanical prerequisites that unblock everything else.
 
-### A1. Rename Machine → Rig
+### A1. Rename Machine → Rig  ✅
 
 Rename the `Machine` class to `Rig`, `g_machine` to `g_rig`, update
 all ~200 call sites. Mechanical find-and-replace + compile + test.
 
 **Gate:** builds, 260 unit tests pass, 4 headless golden tests pass.
+
+**Done** — 1 May 2026.
 
 ### A2. Model definition data
 

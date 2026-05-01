@@ -4,7 +4,7 @@
 	Runtime inter-device signal routing, replacing the compile-time
 	g_wires[] array and #define change notification aliases.
 
-	Part of Phase 4: Device Interface & Machine Object.
+
 */
 
 #pragma once
@@ -43,5 +43,5 @@ private:
 	std::array<std::vector<ChangeCallback>, kMaxWires> pulseCallbacks_{};
 };
 
-// Global wire bus instance (will move to Machine in a later step)
+// Global wire bus instance (will move to Rig in a later step)
 extern WireBus g_wires;

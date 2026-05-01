@@ -1,12 +1,8 @@
 /*
-	machine_obj.h
+	rig.h
 
-	Machine class — owns all emulator state: config, CPU, devices,
+	Rig class — owns all emulator state: config, CPU, devices,
 	wire bus, ICT scheduler, and memory buffers.
-
-	Separate from existing machine.h to avoid conflicts during migration.
-
-	Part of Phase 4: Device Interface & Machine Object.
 */
 
 #pragma once
@@ -82,6 +78,6 @@ private:
 	uint8_t curIPL_ = 0;
 };
 
-// Global Machine pointer — backward compatibility during migration.
+// Global Rig pointer — backward compatibility during migration.
 // Removed in final cleanup (Step 4.19).
 extern Rig *g_rig;

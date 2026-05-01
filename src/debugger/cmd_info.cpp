@@ -225,7 +225,7 @@ static void InfoVIA(Debugger &dbg)
 {
 	if (!g_rig)
 	{
-		dbg.io().write("Machine not initialized.\n");
+		dbg.io().write("Rig not initialized.\n");
 		return;
 	}
 

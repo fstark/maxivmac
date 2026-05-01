@@ -4,7 +4,7 @@
 	Thin wrapper implementation for the CPU class.
 	All methods forward to the existing free functions in m68k.cpp.
 
-	Part of Phase 4: Device Interface & Machine Object.
+
 */
 
 #include "core/common.h"

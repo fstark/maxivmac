@@ -423,7 +423,7 @@ void ImGuiBackend::bootFromSelector(const LaunchConfig &config)
 	/* Now do the full machine init (ROM, RAM, devices, window) */
 	if (!shell_->initMachine())
 	{
-		fprintf(stderr, "Machine init failed for %s\n", ModelToString(config.model));
+		fprintf(stderr, "Rig init failed for %s\n", ModelToString(config.model));
 		g_requestMacOff = true;
 		return;
 	}

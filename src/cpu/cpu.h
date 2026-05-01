@@ -3,9 +3,9 @@
 
 	Thin wrapper around the m68k emulator, presenting it as a class.
 	The actual CPU state remains as file-scope statics in m68k.cpp;
-	this class just wraps the public API for the Machine to own.
+	this class just wraps the public API for the Rig to own.
 
-	Part of Phase 4: Device Interface & Machine Object.
+
 */
 
 #pragma once
@@ -42,5 +42,5 @@ public:
 	ATTer *findATTel(uint32_t addr);
 };
 
-// Global CPU instance (will move to Machine in a later step)
+// Global CPU instance (will move to Rig in a later step)
 extern CPU g_cpu;

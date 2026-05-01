@@ -160,9 +160,10 @@ machines with custom RAM, disks, shared drives).
 
 ### Rename: Machine → Rig
 
-The existing `Machine` class (runtime emulation object) is renamed to
+The existing `Rig` class (runtime emulation object) was renamed from
 `Rig` to free "Machine" / "Macintosh" for the user-facing concept.
 `g_machine` → `g_rig`. Mechanical refactor, ~200 occurrences.
+✅ **Done** — see commits.
 Do it early to avoid conflicts with later work.
 
 ---

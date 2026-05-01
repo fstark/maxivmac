@@ -40,7 +40,7 @@ A `.cpp`/`.h` pair share the same stem (`sony.cpp` / `sony.h`).
 **PascalCase**, no prefix.
 
 ```cpp
-class Machine;
+class Rig;
 class WireBus;
 struct MachineConfig;
 struct VIAConfig;
@@ -216,7 +216,7 @@ This convention is consistent throughout the device and core classes.
 **`g_` prefix + camelCase.**
 
 ```cpp
-extern Machine* g_machine;
+extern Rig* g_rig;
 extern CPU g_cpu;
 ```
 
@@ -415,7 +415,7 @@ bool AnyDiskInserted();
 | Free functions | `PascalCase` | `ProgramMain()` |
 | Module free functions | `Module_PascalCase` | `Extn_Reset()` |
 | Member variables | `camelCase_` (trailing `_`) | `kybdState_` |
-| Global variables | `g_camelCase` | `g_machine` |
+| Global variables | `g_camelCase` | `g_rig` |
 | File-scope statics | `s_camelCase` | `s_useFullScreen` |
 | Local variables | `camelCase` | `byteCount` |
 | Parameters | `camelCase` | `writeMem` |

@@ -20,7 +20,7 @@ The emulator is a single-binary multi-model build.
 
 | Aspect | Design |
 |--------|--------|
-| Device ownership | `Machine` object owns all devices |
+| Device ownership | `Rig` object owns all devices |
 | Inter-device signals | `WireBus` + `findDevice<T>()` cross-refs |
 | Model selection | Runtime (`--model=` flag), 12 models in one binary |
 | Configuration | `MachineConfig` struct with runtime fields |

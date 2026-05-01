@@ -3,7 +3,7 @@
 
 	Runtime inter-device signal routing implementation.
 
-	Part of Phase 4: Device Interface & Machine Object.
+
 */
 
 #include "core/wire_bus.h"

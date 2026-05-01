@@ -18,10 +18,10 @@ output**, not the stale checked-in cfg file.
 **Current:** `src/core/main.cpp`, lines ~101–106
 
 ```cpp
-if (g_machine->config().emClassicSnd)
-    if (auto* d = g_machine->findDevice<SoundDevice>()) d->subTick(SubTick);
-else if (g_machine->config().emASC)
-    if (auto* d = g_machine->findDevice<ASCDevice>()) d->subTick(SubTick);
+if (g_rig->config().emClassicSnd)
+    if (auto* d = g_rig->findDevice<SoundDevice>()) d->subTick(SubTick);
+else if (g_rig->config().emASC)
+    if (auto* d = g_rig->findDevice<ASCDevice>()) d->subTick(SubTick);
 else
     UnusedParam(SubTick);
 ```

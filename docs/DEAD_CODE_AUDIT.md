@@ -449,8 +449,8 @@ These files in `src/core/` and `src/cpu/` contain no `#if 0`, no always-false co
 - `src/core/ict_scheduler.h`
 - `src/core/machine_config.cpp`
 - `src/core/machine_config.h`
-- `src/core/machine_obj.cpp`
-- `src/core/machine_obj.h`
+- `src/core/rig.cpp`
+- `src/core/rig.h`
 - `src/core/md5.h`
 - `src/core/state_recorder.cpp`
 - `src/core/state_recorder.hpp`

@@ -4,10 +4,8 @@
 	Abstract Device interface for all emulated hardware devices.
 
 	Every emulated hardware component (VIA, SCC, SCSI, etc.) implements
-	this interface. The Machine object owns all devices and dispatches
+	this interface. The Rig object owns all devices and dispatches
 	memory-mapped I/O through Device::access().
-
-	Part of Phase 4: Device Interface & Machine Object.
 */
 
 #pragma once
@@ -33,6 +31,6 @@ public:
 	virtual const char *name() const = 0;
 
 protected:
-	Rig *rig_ = nullptr; // set by Machine when device is registered
+	Rig *rig_ = nullptr; // set by Rig when device is registered
 	friend class Rig;
 };

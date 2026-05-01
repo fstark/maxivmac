@@ -336,7 +336,7 @@ bool lomem_snapshot_changed(const uint8_t *snapshot, uint32_t addr, uint16_t siz
 
 Implement in `lomem_globals.cpp`:
 - `lomem_snapshot_take`: `memcpy(snapshot, g_ram, 4096)`, guarded by
-  `if (!g_ram) return;` and clamped to `g_machine->ramSize()` if < 4096
+  `if (!g_ram) return;` and clamped to `g_rig->ramSize()` if < 4096
   (theoretical — every Mac has ≥ 128 KB).
 - `lomem_snapshot_changed`: `memcmp(snapshot + addr, g_ram + addr, size) != 0`,
   with bounds checks.

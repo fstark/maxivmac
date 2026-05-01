@@ -4,7 +4,7 @@
 	Cycle-based task scheduler for the emulated machine.
 	Replaces global ICTactive/ICTwhen/NextiCount state.
 
-	Part of Phase 4: Device Interface & Machine Object.
+
 */
 
 #pragma once
@@ -45,5 +45,5 @@ private:
 	std::function<void(int32_t)> setCyclesRemaining_;
 };
 
-// Global ICT scheduler instance (will move to Machine in a later step)
+// Global ICT scheduler instance (will move to Rig in a later step)
 extern ICTScheduler g_ict;

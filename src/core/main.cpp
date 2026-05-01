@@ -515,8 +515,8 @@ EmulatorConfig &GetEmulatorConfigMut()
 
 /*
 	Parse CLI args and set up non-model-dependent state.
-	When a model is known (--model or --verify), also creates the Machine.
-	When no model is specified, the Machine is created later by
+	When a model is known (--model or --verify), also creates the Rig.
+	When no model is specified, the Rig is created later by
 	SetLaunchConfig() after the user picks one in the selector.
 */
 void ProgramEarlyInit(int argc, char *argv[])

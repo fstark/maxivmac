@@ -11,8 +11,8 @@ easy high-value cleanups.
 
 `core/machine.h` and `platform/platform.h` together export **107 mutable
 globals** — `RAM`, `VidMem`, `CurMouseH`, `WantMacReset`,
-`g_InstructionCount`, etc.  On top of that, `g_machine` (declared in
-`core/machine_obj.h`) is a God-object pointer used everywhere.
+`g_InstructionCount`, etc.  On top of that, `g_rig` (declared in
+`core/rig.h`) is a God-object pointer used everywhere.
 
 The CPU lives as a single file-scope `static struct regstruct` in
 `cpu/m68k.cpp` (~100 fields).  The SCC is a `static SCC_Ty SCC;` in
@@ -95,21 +95,21 @@ The codebase is stuck between two architectures:
 
 | Singleton | References | Purpose |
 |-----------|----------:|---------|
-| `g_machine` | 207 | God object, owns devices |
+| `g_rig` | 207 | God object, owns devices |
 | `g_wires` | 92 | Inter-device signal bus |
 | `g_ict` | 22 | Cycle-based task scheduler |
 | `g_cpu` | 12 | CPU dispatch entry point |
 
 These were extracted from raw globals into classes (good), but are still
-global singletons (bad).  The `Machine` class owns `std::unique_ptr<uint8_t[]>
+global singletons (bad).  The `Rig` class owns `std::unique_ptr<uint8_t[]>
 ram_` that is *never populated* — actual RAM comes from the platform arena
 allocator and lives in the global `uint8_t * RAM`.  Wire change callbacks
-do `g_machine->findDevice<RTCDevice>()` lookups on every signal transition
+do `g_rig->findDevice<RTCDevice>()` lookups on every signal transition
 instead of holding direct pointers.
 
 **Impact:** the codebase has all the complexity of *two* architectures but the
 benefits of neither.  You can't reason about ownership because it's split
-between the arena allocator and the `Machine` object.
+between the arena allocator and the `Rig` object.
 
 ### 8. `endian.h` — hand-rolled byte-swap with dead alternatives
 

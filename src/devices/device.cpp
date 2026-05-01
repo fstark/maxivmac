@@ -2,8 +2,6 @@
 	device.cpp
 
 	Default implementations for the Device interface.
-
-	Part of Phase 4: Device Interface & Machine Object.
 */
 
 #include "devices/device.h"
