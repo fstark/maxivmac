@@ -35,3 +35,4 @@ verbose.txt
 *-fail.txt
 macsrc/shareddrive/tracing.txt
 debug_mouse.dbg
+data/disks/
