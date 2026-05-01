@@ -84,7 +84,7 @@ void SoundDevice::subTick(int subTick)
 	uint16_t i;
 	uint32_t StartOffset = SubTick_offset[subTick];
 	uint16_t n = SubTick_n[subTick];
-	uint32_t ramSz = g_machine->config().ramSize();
+	uint32_t ramSz = g_rig->config().ramSize();
 	unsigned long addy =
 #ifdef SoundBuffer
 		(SoundBuffer == 0) ? (ramSz - kSnd_Alt_Offset) :

@@ -22,7 +22,7 @@ void ScreenDevice::endTickNotify()
 {
 	uint8_t *screencurrentbuff;
 
-	if (g_machine->config().includeVidMem)
+	if (g_rig->config().includeVidMem)
 	{
 		screencurrentbuff = g_vidMem;
 	}
@@ -30,7 +30,7 @@ void ScreenDevice::endTickNotify()
 	{
 		/* Compact Macs: screen buffer in main RAM
 		   (uses SCRNvPage2 wire for page selection — not yet wired) */
-		screencurrentbuff = get_ram_address(g_machine->config().ramSize() - kMain_Offset);
+		screencurrentbuff = get_ram_address(g_rig->config().ramSize() - kMain_Offset);
 	}
 
 	Screen_OutputFrame(screencurrentbuff);

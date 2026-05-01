@@ -321,7 +321,7 @@ static const uint8_t my_disk_icon[] = {
 
 static uint32_t getSonyDriverBase()
 {
-	auto m = g_machine->config().model;
+	auto m = g_rig->config().model;
 	if (m == MacModel::Twig43) return 0x1836;
 	if (m == MacModel::Twiggy) return 0x16E4;
 	if (m == MacModel::Mac128K) return 0x1690;
@@ -343,7 +343,7 @@ static void Sony_Install()
 
 	MoveBytes(const_cast<uint8_t *>(sony_driver), pto, sizeof(sony_driver));
 	{
-		auto m = g_machine->config().model;
+		auto m = g_rig->config().model;
 		if (m <= MacModel::Twiggy)
 		{
 			do_put_mem_long(pto + 0x14, 0x4469736B);
@@ -358,10 +358,10 @@ static void Sony_Install()
 	pto += 2;
 	do_put_mem_word(pto, kExtnSony);
 	pto += 2;
-	do_put_mem_long(pto, g_machine->config().extnBlockBase); /* pokeaddr */
+	do_put_mem_long(pto, g_rig->config().extnBlockBase); /* pokeaddr */
 	pto += 4;
 
-	g_diskIconAddr = (pto - g_rom) + g_machine->config().romBase;
+	g_diskIconAddr = (pto - g_rom) + g_rig->config().romBase;
 	MoveBytes(const_cast<uint8_t *>(my_disk_icon), pto, sizeof(my_disk_icon));
 	pto += sizeof(my_disk_icon);
 
@@ -382,7 +382,7 @@ static void ROMscrambleForMTB()
 	uint8_t *p = g_rom;
 	uint8_t *p2 = g_rom + (1 << ln2mtb);
 
-	for (j = g_machine->config().romSize / (1 << ln2mtb) / 2; --j >= 0;)
+	for (j = g_rig->config().romSize / (1 << ln2mtb) / 2; --j >= 0;)
 	{
 		int32_t i;
 
@@ -410,7 +410,7 @@ bool ROMDevice::init()
 
 	/* skip the rom checksum */
 	{
-		auto m = g_machine->config().model;
+		auto m = g_rig->config().model;
 		if (m == MacModel::Twig43)
 		{
 			/* no checksum code */
@@ -431,7 +431,7 @@ bool ROMDevice::init()
 		{
 			do_put_mem_word(0x1C68 + g_rom, 0x6008);
 		}
-		else if (g_machine->config().isIIFamily())
+		else if (g_rig->config().isIIFamily())
 		{
 			do_put_mem_word(0x2AB0 + g_rom, 0x6008);
 		}
@@ -439,7 +439,7 @@ bool ROMDevice::init()
 
 
 	{
-		auto m = g_machine->config().model;
+		auto m = g_rig->config().model;
 		if (m <= MacModel::Mac128K)
 		{
 			/* nothing */
@@ -456,7 +456,7 @@ bool ROMDevice::init()
 			do_put_mem_word(134 + g_rom, 0x6002);
 			do_put_mem_word(286 + g_rom, 0x6002);
 		}
-		else if (g_machine->config().isIIFamily())
+		else if (g_rig->config().isIIFamily())
 		{
 			do_put_mem_word(0xEE + g_rom, 0x6002);
 			do_put_mem_word(0x1AA + g_rom, 0x6002);
@@ -470,7 +470,7 @@ bool ROMDevice::init()
 	/* do_put_mem_word(862 + ROM, 0x4E71); */ /* shorten set memory */
 
 	{
-		auto m = g_machine->config().model;
+		auto m = g_rig->config().model;
 		if (m != MacModel::PB100)
 		{
 			Sony_Install();

@@ -56,19 +56,19 @@ static void EmulatedHardwareZap()
 {
 	MemoryReset();
 	g_ict.zap();
-	if (auto *d = g_machine->findDevice<IWMDevice>()) d->reset();
-	if (auto *d = g_machine->findDevice<SCCDevice>()) d->reset();
-	if (auto *d = g_machine->findDevice<SCSIDevice>()) d->reset();
-	if (auto *d = g_machine->findDevice<VIA1Device>()) d->zap();
-	if (auto *d = g_machine->findDevice<VIA2Device>()) d->zap();
-	if (auto *d = g_machine->findDevice<SonyDevice>()) d->reset();
+	if (auto *d = g_rig->findDevice<IWMDevice>()) d->reset();
+	if (auto *d = g_rig->findDevice<SCCDevice>()) d->reset();
+	if (auto *d = g_rig->findDevice<SCSIDevice>()) d->reset();
+	if (auto *d = g_rig->findDevice<VIA1Device>()) d->zap();
+	if (auto *d = g_rig->findDevice<VIA2Device>()) d->zap();
+	if (auto *d = g_rig->findDevice<SonyDevice>()) d->reset();
 	ExtnReset();
 	g_cpu.reset();
 }
 
 static void DoMacReset()
 {
-	if (auto *d = g_machine->findDevice<SonyDevice>()) d->ejectAllDisks();
+	if (auto *d = g_rig->findDevice<SonyDevice>()) d->ejectAllDisks();
 	EmulatedHardwareZap();
 }
 
@@ -96,13 +96,13 @@ static void InterruptReset_Update()
 // Route audio sub-tick to the active sound device.
 static void SubTickNotify(int SubTick)
 {
-	if (g_machine->config().emClassicSnd)
+	if (g_rig->config().emClassicSnd)
 	{
-		if (auto *d = g_machine->findDevice<SoundDevice>()) d->subTick(SubTick);
+		if (auto *d = g_rig->findDevice<SoundDevice>()) d->subTick(SubTick);
 	}
-	else if (g_machine->config().emASC)
+	else if (g_rig->config().emASC)
 	{
-		if (auto *d = g_machine->findDevice<ASCDevice>()) d->subTick(SubTick);
+		if (auto *d = g_rig->findDevice<ASCDevice>()) d->subTick(SubTick);
 	}
 	else
 	{
@@ -110,7 +110,7 @@ static void SubTickNotify(int SubTick)
 	}
 }
 
-#define CYCLES_SCALED_PER_TICK (130240UL * g_machine->config().clockMult * kCycleScale)
+#define CYCLES_SCALED_PER_TICK (130240UL * g_rig->config().clockMult * kCycleScale)
 #define CYCLES_SCALED_PER_SUB_TICK (CYCLES_SCALED_PER_TICK / kNumSubTicks)
 
 static uint16_t s_subTickCounter;
@@ -160,24 +160,24 @@ static void SixtiethSecondNotify()
 		s_ticksSinceSecond = 0;
 		g_curMacDateInSeconds++;
 	}
-	if (auto *d = g_machine->findDevice<MouseDevice>()) d->update();
+	if (auto *d = g_rig->findDevice<MouseDevice>()) d->update();
 	InterruptReset_Update();
-	if (g_machine->config().emClassicKbrd)
-		if (auto *d = g_machine->findDevice<KeyboardDevice>()) d->update();
-	if (g_machine->config().emADB)
-		if (auto *d = g_machine->findDevice<ADBDevice>()) d->update();
+	if (g_rig->config().emClassicKbrd)
+		if (auto *d = g_rig->findDevice<KeyboardDevice>()) d->update();
+	if (g_rig->config().emADB)
+		if (auto *d = g_rig->findDevice<ADBDevice>()) d->update();
 
-	if (auto *d = g_machine->findDevice<VIA1Device>())
+	if (auto *d = g_rig->findDevice<VIA1Device>())
 		d->iCA1_PulseNtfy(); /* Vertical Blanking Interrupt */
-	if (auto *d = g_machine->findDevice<SonyDevice>()) d->update();
+	if (auto *d = g_rig->findDevice<SonyDevice>()) d->update();
 
-	if (auto *d = g_machine->findDevice<SCCDevice>()) d->serialTick();
+	if (auto *d = g_rig->findDevice<SCCDevice>()) d->serialTick();
 #if EmLocalTalk
-	if (auto *d = g_machine->findDevice<SCCDevice>()) d->localTalkTick();
+	if (auto *d = g_rig->findDevice<SCCDevice>()) d->localTalkTick();
 #endif
-	if (auto *d = g_machine->findDevice<RTCDevice>()) d->interrupt();
-	if (g_machine->config().emVidCard)
-		if (auto *d = g_machine->findDevice<VideoDevice>()) d->update();
+	if (auto *d = g_rig->findDevice<RTCDevice>()) d->interrupt();
+	if (g_rig->config().emVidCard)
+		if (auto *d = g_rig->findDevice<VideoDevice>()) d->update();
 
 	SubTickTaskStart();
 }
@@ -186,8 +186,8 @@ static void SixtiethSecondNotify()
 static void SixtiethEndNotify()
 {
 	SubTickTaskEnd();
-	if (auto *d = g_machine->findDevice<MouseDevice>()) d->endTickNotify();
-	if (auto *d = g_machine->findDevice<ScreenDevice>()) d->endTickNotify();
+	if (auto *d = g_rig->findDevice<MouseDevice>()) d->endTickNotify();
+	if (auto *d = g_rig->findDevice<ScreenDevice>()) d->endTickNotify();
 #if 0
 	dbglog_WriteNote("end Sixtieth");
 #endif
@@ -195,20 +195,20 @@ static void SixtiethEndNotify()
 
 static void ExtraTimeBeginNotify()
 {
-	if (auto *d = g_machine->findDevice<VIA1Device>()) d->extraTimeBegin();
-	if (auto *d = g_machine->findDevice<VIA2Device>()) d->extraTimeBegin();
+	if (auto *d = g_rig->findDevice<VIA1Device>()) d->extraTimeBegin();
+	if (auto *d = g_rig->findDevice<VIA2Device>()) d->extraTimeBegin();
 }
 
 static void ExtraTimeEndNotify()
 {
-	if (auto *d = g_machine->findDevice<VIA1Device>()) d->extraTimeEnd();
-	if (auto *d = g_machine->findDevice<VIA2Device>()) d->extraTimeEnd();
+	if (auto *d = g_rig->findDevice<VIA1Device>()) d->extraTimeEnd();
+	if (auto *d = g_rig->findDevice<VIA2Device>()) d->extraTimeEnd();
 }
 
 // Allocate RAM, VidROM, and VidMem buffers per machine config.
 bool EmulationReserveAlloc()
 {
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	if (!AllocBlock(&g_ram, cfg.ramSize() + RAMSafetyMarginFudge, false)) return false;
 	if (cfg.emVidCard)
 		if (!AllocBlock(&g_vidROM, cfg.vidROMSize, false)) return false;
@@ -269,78 +269,74 @@ bool InitEmulation()
 
 	/* Register ICT task handlers */
 	g_ict.registerTask(kICT_SubTick, SubTickTaskDo);
-	if (g_machine->config().emClassicKbrd)
+	if (g_rig->config().emClassicKbrd)
 	{
 		g_ict.registerTask(kICT_Kybd_ReceiveEndCommand,
 						   []()
 						   {
-							   if (auto *d = g_machine->findDevice<KeyboardDevice>())
+							   if (auto *d = g_rig->findDevice<KeyboardDevice>())
 								   d->receiveEndCommand();
 						   });
 		g_ict.registerTask(kICT_Kybd_ReceiveCommand,
 						   []()
 						   {
-							   if (auto *d = g_machine->findDevice<KeyboardDevice>())
+							   if (auto *d = g_rig->findDevice<KeyboardDevice>())
 								   d->receiveCommand();
 						   });
 	}
-	if (g_machine->config().emADB)
+	if (g_rig->config().emADB)
 		g_ict.registerTask(kICT_ADB_NewState,
 						   []()
 						   {
-							   if (auto *d = g_machine->findDevice<ADBDevice>()) d->doNewState();
+							   if (auto *d = g_rig->findDevice<ADBDevice>()) d->doNewState();
 						   });
-	if (g_machine->config().emPMU)
+	if (g_rig->config().emPMU)
 		g_ict.registerTask(kICT_PMU_Task,
 						   []()
 						   {
-							   if (auto *d = g_machine->findDevice<PMUDevice>()) d->doTask();
+							   if (auto *d = g_rig->findDevice<PMUDevice>()) d->doTask();
 						   });
-	if (g_machine->config().emVIA1)
+	if (g_rig->config().emVIA1)
 	{
 		g_ict.registerTask(kICT_VIA1_Timer1Check,
 						   []()
 						   {
-							   if (auto *d = g_machine->findDevice<VIA1Device>())
-								   d->doTimer1Check();
+							   if (auto *d = g_rig->findDevice<VIA1Device>()) d->doTimer1Check();
 						   });
 		g_ict.registerTask(kICT_VIA1_Timer2Check,
 						   []()
 						   {
-							   if (auto *d = g_machine->findDevice<VIA1Device>())
-								   d->doTimer2Check();
+							   if (auto *d = g_rig->findDevice<VIA1Device>()) d->doTimer2Check();
 						   });
 	}
-	if (g_machine->config().emVIA2)
+	if (g_rig->config().emVIA2)
 	{
 		g_ict.registerTask(kICT_VIA2_Timer1Check,
 						   []()
 						   {
-							   if (auto *d = g_machine->findDevice<VIA2Device>())
-								   d->doTimer1Check();
+							   if (auto *d = g_rig->findDevice<VIA2Device>()) d->doTimer1Check();
 						   });
 		g_ict.registerTask(kICT_VIA2_Timer2Check,
 						   []()
 						   {
-							   if (auto *d = g_machine->findDevice<VIA2Device>())
-								   d->doTimer2Check();
+							   if (auto *d = g_rig->findDevice<VIA2Device>()) d->doTimer2Check();
 						   });
 	}
 
 	bool ok = true;
-	if (ok && g_machine->config().emRTC)
+	if (ok && g_rig->config().emRTC)
 	{
-		auto *rtc = g_machine->findDevice<RTCDevice>();
+		auto *rtc = g_rig->findDevice<RTCDevice>();
 		ok = rtc ? rtc->init() : false;
 	}
 	if (ok)
 	{
-		auto *rom = g_machine->findDevice<ROMDevice>();
+		auto *rom = g_rig->findDevice<ROMDevice>();
 		ok = rom ? rom->init() : false;
 	}
-	if (ok && g_machine->config().emVidCard)
+	if (ok && g_rig->config().emVidCard)
 	{
-		auto *vid = g_machine->findDevice<VideoDevice>();
+		auto *vid = g_rig->findDevice<VideoDevice>();
 		ok = vid ? vid->init() : false;
 	}
 	if (ok) ok = AddrSpac_Init();

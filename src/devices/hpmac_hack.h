@@ -359,7 +359,7 @@ static const uint8_t my_HappyMac_icon[] = {
 
 static uint32_t getHappyMacBase()
 {
-	auto m = g_machine->config().model;
+	auto m = g_rig->config().model;
 	if (m == MacModel::Twig43) return 0xA34;
 	if (m == MacModel::Twiggy) return 0x8F4;
 	if (m == MacModel::Mac128K) return 0x8A0;
@@ -372,7 +372,7 @@ static uint32_t getHappyMacBase()
 
 static void PatchHappyMac()
 {
-	auto m = g_machine->config().model;
+	auto m = g_rig->config().model;
 	if (m == MacModel::PB100 || m == MacModel::II || m == MacModel::IIx)
 	{
 		int i;

@@ -29,22 +29,22 @@
 #include "devices/pmu.h"
 
 // Global Machine pointer for backward compatibility during migration
-Rig *g_machine = nullptr;
+Rig *g_rig = nullptr;
 
 Rig::Rig(MachineConfig config) : config_(std::move(config)) {}
 
 Rig::~Rig()
 {
-	if (g_machine == this)
+	if (g_rig == this)
 	{
-		g_machine = nullptr;
+		g_rig = nullptr;
 	}
 }
 
 bool Rig::init()
 {
 	// Set global pointer for backward compatibility.
-	g_machine = this;
+	g_rig = this;
 
 	// Set runtime screen globals from config (used by platform layer macros).
 	g_screenWidth = config_.screenWidth;

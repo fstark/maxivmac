@@ -241,7 +241,7 @@ bool EmulatorShell::initMachine()
 	   and inform the video subsystem so it can add host-derived
 	   resolutions.  Then bump VRAM if the host desktop at 32 bpp
 	   exceeds the current allocation. */
-	if (g_machine->config().emVidCard)
+	if (g_rig->config().emVidCard)
 	{
 		PlatformDisplayBounds db;
 		if (backend_->getDisplayBounds(&db) && db.w > 0 && db.h > 0)
@@ -262,7 +262,7 @@ bool EmulatorShell::initMachine()
 		/* Cap to NuBus slot 9 address-space limit */
 		uint32_t vramCap = Vid_MaxVRAM();
 		if (fbSize > vramCap) fbSize = vramCap;
-		if (fbSize > g_machine->config().vidMemSize) g_machine->configMut().vidMemSize = fbSize;
+		if (fbSize > g_rig->config().vidMemSize) g_rig->configMut().vidMemSize = fbSize;
 	}
 
 	if (!allocMyMemory()) return false;
@@ -311,7 +311,7 @@ bool EmulatorShell::initMachine()
 	/* Attach serial backends from command-line options. */
 	{
 		const LaunchConfig &slc = GetLaunchConfig();
-		if (auto *scc = g_machine->findDevice<SCCDevice>())
+		if (auto *scc = g_rig->findDevice<SCCDevice>())
 		{
 			if (auto b = CreateSerialBackend(slc.serialA, 0))
 			{
@@ -1010,7 +1010,7 @@ bool EmulatorShell::scanCommandLine()
 bool EmulatorShell::allocMyMemory()
 {
 	if (!dbglog_ReserveAlloc()) goto fail;
-	if (!AllocBlock(&g_rom, g_machine->config().romSize, false)) goto fail;
+	if (!AllocBlock(&g_rom, g_rig->config().romSize, false)) goto fail;
 	/* Allocate screen compare buffer for the largest resolution
 	   at the deepest mode (32 bpp) so resolution switches don't
 	   need reallocation. */

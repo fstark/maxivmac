@@ -52,14 +52,14 @@ uint32_t g_diskIconAddr;
 // Reset all emulated devices to their power-on state.
 void CustomReset()
 {
-	if (auto *d = g_machine->findDevice<IWMDevice>()) d->reset();
-	if (auto *d = g_machine->findDevice<SCCDevice>()) d->reset();
-	if (auto *d = g_machine->findDevice<SCSIDevice>()) d->reset();
-	if (auto *d = g_machine->findDevice<VIA1Device>()) d->reset();
-	if (auto *d = g_machine->findDevice<VIA2Device>()) d->reset();
-	if (auto *d = g_machine->findDevice<SonyDevice>()) d->reset();
+	if (auto *d = g_rig->findDevice<IWMDevice>()) d->reset();
+	if (auto *d = g_rig->findDevice<SCCDevice>()) d->reset();
+	if (auto *d = g_rig->findDevice<SCSIDevice>()) d->reset();
+	if (auto *d = g_rig->findDevice<VIA1Device>()) d->reset();
+	if (auto *d = g_rig->findDevice<VIA2Device>()) d->reset();
+	if (auto *d = g_rig->findDevice<SonyDevice>()) d->reset();
 	ExtnReset();
-	if (g_machine->config().isCompactMac())
+	if (g_rig->config().isCompactMac())
 	{
 		g_wantMacReset = true;
 		/*
@@ -191,30 +191,30 @@ static constexpr uint32_t kRAM_Base = 0x00000000; /* when overlay off */
 
 static uint32_t GetRAMLn2Spc()
 {
-	auto m = g_machine->config().model;
-	if (m == MacModel::PB100 || g_machine->config().isIIFamily()) return 23;
+	auto m = g_rig->config().model;
+	if (m == MacModel::PB100 || g_rig->config().isIIFamily()) return 23;
 	return 22;
 }
 
 static uint32_t GetVidMemBase()
 {
-	if (g_machine->config().model == MacModel::PB100) return 0x00FA0000;
+	if (g_rig->config().model == MacModel::PB100) return 0x00FA0000;
 	return 0x00540000;
 }
 static uint32_t GetVidMemLn2Spc()
 {
-	if (g_machine->config().model == MacModel::PB100) return 16;
+	if (g_rig->config().model == MacModel::PB100) return 16;
 	return 18;
 }
 
 static uint32_t GetSCSIBlockBase()
 {
-	if (g_machine->config().model == MacModel::PB100) return 0x00F90000;
+	if (g_rig->config().model == MacModel::PB100) return 0x00F90000;
 	return 0x00580000;
 }
 static uint32_t GetSCSILn2Spc()
 {
-	if (g_machine->config().model == MacModel::PB100) return 16;
+	if (g_rig->config().model == MacModel::PB100) return 16;
 	return 19;
 }
 
@@ -223,12 +223,12 @@ static constexpr uint32_t kRAM_Overlay_Base = 0x00600000; /* when overlay on */
 
 static uint32_t GetSCCRdBlockBase()
 {
-	if (g_machine->config().model == MacModel::PB100) return 0x00FD0000;
+	if (g_rig->config().model == MacModel::PB100) return 0x00FD0000;
 	return 0x00800000;
 }
 static uint32_t GetSCCLn2Spc()
 {
-	if (g_machine->config().model == MacModel::PB100) return 16;
+	if (g_rig->config().model == MacModel::PB100) return 16;
 	return 22;
 }
 
@@ -238,35 +238,35 @@ static constexpr uint32_t kSCCWr_Block_Base = 0x00A00000;
 
 static uint32_t GetIWMBlockBase()
 {
-	if (g_machine->config().model == MacModel::PB100) return 0x00F60000;
+	if (g_rig->config().model == MacModel::PB100) return 0x00F60000;
 	return 0x00C00000;
 }
 static uint32_t GetIWMLn2Spc()
 {
-	if (g_machine->config().model == MacModel::PB100) return 16;
+	if (g_rig->config().model == MacModel::PB100) return 16;
 	return 21;
 }
 
 static uint32_t GetVIA1BlockBase()
 {
-	if (g_machine->config().model == MacModel::PB100) return 0x00F70000;
+	if (g_rig->config().model == MacModel::PB100) return 0x00F70000;
 	return 0x00E80000;
 }
 static uint32_t GetVIA1Ln2Spc()
 {
-	if (g_machine->config().model == MacModel::PB100) return 16;
+	if (g_rig->config().model == MacModel::PB100) return 16;
 	return 19;
 }
 
 /* ASC: on PB100, at a different address; other models use EmASC guard */
 static uint32_t GetASCBlockBase()
 {
-	if (g_machine->config().model == MacModel::PB100) return 0x00FB0000;
+	if (g_rig->config().model == MacModel::PB100) return 0x00FB0000;
 	return 0x50F00000; /* Mac II 32-bit ASC base */
 }
 static uint32_t GetASCLn2Spc()
 {
-	if (g_machine->config().model == MacModel::PB100) return 16;
+	if (g_rig->config().model == MacModel::PB100) return 16;
 	return 26; /* Mac II ASC space */
 }
 static constexpr uint32_t kASC_Mask = 0x00000FFF;
@@ -528,7 +528,7 @@ static void ExtnFind_Access(uint32_t p)
 			   kExtnVideo is always in the enum for stable IDs,
 			   but only counts when the model has a video card. */
 			uint16_t n = kNumExtns;
-			if (!g_machine->config().emVidCard)
+			if (!g_rig->config().emVidCard)
 			{
 				--n; /* don't count kExtnVideo (it's still
 						present in the enum for stable values) */
@@ -654,7 +654,7 @@ static uint32_t extnAccess(uint32_t Data, bool writeMem, uint32_t addr)
 						ExtnFind_Access(p);
 						break;
 					case kExtnVideo:
-						if (auto *d = g_machine->findDevice<VideoDevice>()) d->extnVideoAccess(p);
+						if (auto *d = g_rig->findDevice<VideoDevice>()) d->extnVideoAccess(p);
 						break;
 					case kExtnParamBuffers:
 						ExtnParamBuffers_Access(p);
@@ -663,10 +663,10 @@ static uint32_t extnAccess(uint32_t Data, bool writeMem, uint32_t addr)
 						ExtnHostTextClipExchange_Access(p);
 						break;
 					case kExtnDisk:
-						if (auto *d = g_machine->findDevice<SonyDevice>()) d->extnDiskAccess(p);
+						if (auto *d = g_rig->findDevice<SonyDevice>()) d->extnDiskAccess(p);
 						break;
 					case kExtnSony:
-						if (auto *d = g_machine->findDevice<SonyDevice>()) d->extnSonyAccess(p);
+						if (auto *d = g_rig->findDevice<SonyDevice>()) d->extnSonyAccess(p);
 						break;
 					default:
 						put_vm_word(p + EXTN_DAT_RESULT,
@@ -678,7 +678,7 @@ static uint32_t extnAccess(uint32_t Data, bool writeMem, uint32_t addr)
 		break;
 		case kDSK_QuitOnEject:
 			/* obsolete, kept for compatibility */
-			if (auto *d = g_machine->findDevice<SonyDevice>()) d->setQuitOnEject();
+			if (auto *d = g_rig->findDevice<SonyDevice>()) d->setQuitOnEject();
 			break;
 	}
 	return Data;
@@ -717,7 +717,7 @@ static constexpr uint32_t kIWM_Mask = 0x00000F; /* Allocated Memory Bandwidth fo
 
 static uint32_t GetROMCmpZeroMask()
 {
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	auto m = cfg.model;
 	if (m <= MacModel::Mac512Ke) return 0;
 	if (m <= MacModel::Plus)
@@ -732,7 +732,7 @@ static uint32_t GetROMCmpZeroMask()
 
 static uint32_t GetOverlayROMCmpZeroMask()
 {
-	auto m = g_machine->config().model;
+	auto m = g_rig->config().model;
 	if (m <= MacModel::Mac512Ke) return 0x00100000;
 	if (m <= MacModel::Plus) return 0x00020000;
 	if (m <= MacModel::Classic) return 0x00300000;
@@ -845,7 +845,7 @@ static void FinishATTList()
 /* Mac II/IIx: RAM24 setup with VIA2 bank select */
 static void SetUp_RAM24()
 {
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	ATTer r{};
 	uint32_t bankbit = 0x00100000 << (((VIA2_iA7 << 1) | VIA2_iA6) << 1);
 
@@ -953,7 +953,7 @@ static void SetUp_io()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA1;
-	r.device = g_machine->findDevice<VIA1Device>();
+	r.device = g_rig->findDevice<VIA1Device>();
 	AddToATTList(&r);
 
 	if (ADDR32)
@@ -969,7 +969,7 @@ static void SetUp_io()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA2;
-	r.device = g_machine->findDevice<VIA2Device>();
+	r.device = g_rig->findDevice<VIA2Device>();
 	AddToATTList(&r);
 
 	if (ADDR32)
@@ -985,7 +985,7 @@ static void SetUp_io()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCC;
-	r.device = g_machine->findDevice<SCCDevice>();
+	r.device = g_rig->findDevice<SCCDevice>();
 	AddToATTList(&r);
 
 	if (ADDR32)
@@ -1017,7 +1017,7 @@ static void SetUp_io()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCSI;
-	r.device = g_machine->findDevice<SCSIDevice>();
+	r.device = g_rig->findDevice<SCSIDevice>();
 	AddToATTList(&r);
 
 	if (ADDR32)
@@ -1033,7 +1033,7 @@ static void SetUp_io()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_ASC;
-	r.device = g_machine->findDevice<ASCDevice>();
+	r.device = g_rig->findDevice<ASCDevice>();
 	AddToATTList(&r);
 
 	if (ADDR32)
@@ -1049,14 +1049,14 @@ static void SetUp_io()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_IWM;
-	r.device = g_machine->findDevice<IWMDevice>();
+	r.device = g_rig->findDevice<IWMDevice>();
 	AddToATTList(&r);
 }
 
 /* Mac II/IIx: 24-bit address space setup */
 static void SetUp_address24()
 {
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	ATTer r{};
 
 
@@ -1118,7 +1118,7 @@ static void SetUp_address24()
 /* Mac II/IIx: 32-bit address space setup */
 static void SetUp_address32()
 {
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	ATTer r{};
 
 	if (MEM_OVERLAY)
@@ -1278,7 +1278,7 @@ static void ADD_TO_ATT_LIST_WITH_MTB(ATTEntryPtr p)
 /* Compact Mac: simple 24-bit RAM setup (no VIA2 bank select) */
 static void SetUp_RAM24_compact()
 {
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	ATTer r{};
 
 	if (cfg.ramBSize == 0 || cfg.ramASize == cfg.ramBSize)
@@ -1317,7 +1317,7 @@ static void SetUp_RAM24_compact()
 /* Compact Mac: 24-bit address space setup */
 static void SetUp_address_compact()
 {
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	ATTer r{};
 
 	if (MEM_OVERLAY)
@@ -1372,11 +1372,11 @@ static void SetUp_address_compact()
 		ADD_TO_ATT_LIST_WITH_MTB(&r);
 	}
 
-	if (g_machine->config().includeVidMem)
+	if (g_rig->config().includeVidMem)
 	{
 		r.cmpmask = 0x00FFFFFF & ~((1 << GetVidMemLn2Spc()) - 1);
 		r.cmpvalu = GetVidMemBase();
-		r.usemask = g_machine->config().vidMemSize - 1;
+		r.usemask = g_rig->config().vidMemSize - 1;
 		r.usebase = g_vidMem;
 		r.Access = kATTA_readwritereadymask;
 		AddToATTList(&r);
@@ -1387,7 +1387,7 @@ static void SetUp_address_compact()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_VIA1;
-	r.device = g_machine->findDevice<VIA1Device>();
+	r.device = g_rig->findDevice<VIA1Device>();
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~((1 << GetSCCLn2Spc()) - 1);
@@ -1395,25 +1395,25 @@ static void SetUp_address_compact()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCC;
-	r.device = g_machine->findDevice<SCCDevice>();
+	r.device = g_rig->findDevice<SCCDevice>();
 	AddToATTList(&r);
 
-	r.cmpmask = 0x00FFFFFF & ~((1 << g_machine->config().extnLn2Spc) - 1);
-	r.cmpvalu = g_machine->config().extnBlockBase;
+	r.cmpmask = 0x00FFFFFF & ~((1 << g_rig->config().extnLn2Spc) - 1);
+	r.cmpvalu = g_rig->config().extnBlockBase;
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_Extn;
 	r.device = &g_extnDevice;
 	AddToATTList(&r);
 
-	if (g_machine->config().model == MacModel::PB100)
+	if (g_rig->config().model == MacModel::PB100)
 	{
 		r.cmpmask = 0x00FFFFFF & ~((1 << GetASCLn2Spc()) - 1);
 		r.cmpvalu = GetASCBlockBase();
 		r.usebase = nullptr;
 		r.Access = kATTA_mmdvmask;
 		r.MMDV = kMMDV_ASC;
-		r.device = g_machine->findDevice<ASCDevice>();
+		r.device = g_rig->findDevice<ASCDevice>();
 		AddToATTList(&r);
 	}
 
@@ -1422,7 +1422,7 @@ static void SetUp_address_compact()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_SCSI;
-	r.device = g_machine->findDevice<SCSIDevice>();
+	r.device = g_rig->findDevice<SCSIDevice>();
 	AddToATTList(&r);
 
 	r.cmpmask = 0x00FFFFFF & ~((1 << GetIWMLn2Spc()) - 1);
@@ -1430,14 +1430,14 @@ static void SetUp_address_compact()
 	r.usebase = nullptr;
 	r.Access = kATTA_mmdvmask;
 	r.MMDV = kMMDV_IWM;
-	r.device = g_machine->findDevice<IWMDevice>();
+	r.device = g_rig->findDevice<IWMDevice>();
 	AddToATTList(&r);
 }
 
 /* Unified address space setup — dispatches by model family */
 static void SetUp_address()
 {
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		SetUp_address_II();
 	}
@@ -1470,7 +1470,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 		case kMMDV_VIA1:
 			if (!byteSize)
 			{
-				if (g_machine->config().isIIFamily() && writeMem && (addr == 0xF40006))
+				if (g_rig->config().isIIFamily() && writeMem && (addr == 0xF40006))
 				{
 					/* for weirdness on shutdown in System 6 */
 				}
@@ -1485,10 +1485,10 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 			}
 			else
 			{
-				if (g_machine->config().model != MacModel::PB100)
+				if (g_rig->config().model != MacModel::PB100)
 				{
 					bool nonStandard;
-					if (g_machine->config().isIIFamily())
+					if (g_rig->config().isIIFamily())
 					{
 						nonStandard = (addr & 0x000001FE) != 0x00000000;
 					}
@@ -1547,7 +1547,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 			break;
 		case kMMDV_SCC:
 
-			if (g_machine->config().isSEFamily())
+			if (g_rig->config().isSEFamily())
 			{
 				/* SE/Classic only: check for unassigned SCC address */
 				if ((addr & 0x00100000) == 0)
@@ -1562,11 +1562,11 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 				REPORT_ABNORMAL_ID(AbnormalID::kMACH_Attemped_Phase_Adjust,
 								   "Attemped Phase Adjust");
 			}
-			else if (!g_machine->config().isIIFamily() && writeMem != ((addr & 1) != 0))
+			else if (!g_rig->config().isIIFamily() && writeMem != ((addr & 1) != 0))
 			{
 				if (writeMem)
 				{
-					auto m = g_machine->config().model;
+					auto m = g_rig->config().model;
 					if (m >= MacModel::Mac512Ke && m != MacModel::PB100)
 					{
 						REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCC_even_odd, "access SCC even/odd");
@@ -1574,21 +1574,21 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 				}
 				else
 				{
-					if (auto *d = g_machine->findDevice<SCCDevice>()) d->reset();
+					if (auto *d = g_rig->findDevice<SCCDevice>()) d->reset();
 				}
 			}
-			else if (g_machine->config().model != MacModel::PB100 &&
-					 !g_machine->config().isIIFamily() && writeMem != (addr >= kSCCWr_Block_Base))
+			else if (g_rig->config().model != MacModel::PB100 && !g_rig->config().isIIFamily() &&
+					 writeMem != (addr >= kSCCWr_Block_Base))
 			{
 				REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCC_wr_rd_base_wrong,
 								   "access SCC wr/rd base wrong");
 			}
 			else
 			{
-				if (g_machine->config().model != MacModel::PB100)
+				if (g_rig->config().model != MacModel::PB100)
 				{
 					bool nonStandard;
-					if (g_machine->config().isIIFamily())
+					if (g_rig->config().isIIFamily())
 					{
 						nonStandard = (addr & 0x1FF9) != 0x00000000;
 					}
@@ -1630,7 +1630,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 		case kMMDV_ASC:
 			if (!byteSize)
 			{
-				if (g_machine->config().isIIFamily())
+				if (g_rig->config().isIIFamily())
 				{
 					if (writeMem)
 					{
@@ -1659,13 +1659,13 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 			{
 				REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCSI_word, "access SCSI word");
 			}
-			else if (!g_machine->config().isIIFamily() && writeMem != ((addr & 1) != 0))
+			else if (!g_rig->config().isIIFamily() && writeMem != ((addr & 1) != 0))
 			{
 				REPORT_ABNORMAL_ID(AbnormalID::kMACH_SCSI_even_odd, "access SCSI even/odd");
 			}
 			else
 			{
-				if (g_machine->config().isIIFamily())
+				if (g_rig->config().isIIFamily())
 				{
 					if ((addr & 0x1F8F) != 0x00000000)
 					{
@@ -1678,7 +1678,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 
 			break;
 		case kMMDV_IWM:
-			if (g_machine->config().isSEFamily())
+			if (g_rig->config().isSEFamily())
 			{
 				if ((addr & 0x00100000) == 0)
 				{
@@ -1690,7 +1690,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 			if (!byteSize)
 			{
 			}
-			else if (g_machine->config().isIIFamily())
+			else if (g_rig->config().isIIFamily())
 			{
 				if ((addr & 1) != 0)
 				{
@@ -1709,8 +1709,7 @@ uint32_t MMDV_Access(ATTEntryPtr p, uint32_t data, bool writeMem, bool byteSize,
 				}
 				else
 				{
-					if (g_machine->config().model != MacModel::PB100 &&
-						!g_machine->config().isIIFamily())
+					if (g_rig->config().model != MacModel::PB100 && !g_rig->config().isIIFamily())
 					{
 						if ((addr & 0x001FE1FF) != 0x001FE1FF)
 						{
@@ -1756,7 +1755,7 @@ bool MemAccessNtfy(ATTEntryPtr pT)
 	switch (pT->Ntfy)
 	{
 		case kMAN_OverlayOff:
-			if (g_machine->config().model >= MacModel::SE)
+			if (g_rig->config().model >= MacModel::SE)
 			{
 				pT->Access = kATTA_readreadymask;
 
@@ -1780,7 +1779,7 @@ void MemOverlay_ChangeNtfy()
 void Addr32_ChangeNtfy()
 {
 	/* Mac II/IIx use 24/32-bit addressing mode switch */
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		SetUpMemBanks();
 	}
@@ -1866,7 +1865,7 @@ void VIAorSCCinterruptChngNtfy()
 {
 	uint8_t NewIPL;
 
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		/* Mac II priority: NMI > SCC > VIA2 > VIA1 */
 		if (g_interruptButton)
@@ -1920,7 +1919,7 @@ bool AddrSpac_Init()
 	   is needed because WireBus::set() only fires callbacks on actual
 	   value changes. */
 	{
-		auto m = g_machine->config().model;
+		auto m = g_rig->config().model;
 		bool needsSync = (m != MacModel::Classic && m != MacModel::PB100);
 		if (needsSync)
 		{
@@ -1931,7 +1930,7 @@ bool AddrSpac_Init()
 		}
 	}
 
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		extern void PowerOff_ChangeNtfy();
 		g_wires.onChange(Wire_VIA2_iA7_unknown, Addr32_ChangeNtfy);
@@ -1942,65 +1941,61 @@ bool AddrSpac_Init()
 	g_wires.onChange(Wire_VIA1_InterruptRequest, VIAorSCCinterruptChngNtfy);
 	g_wires.onChange(Wire_VIA2_InterruptRequest, VIAorSCCinterruptChngNtfy);
 	g_wires.onChange(Wire_SCCInterruptRequest, VIAorSCCinterruptChngNtfy);
-	if (g_machine->config().emRTC)
+	if (g_rig->config().emRTC)
 	{
 		g_wires.onChange(Wire_VIA1_iB0_RTCdataLine,
 						 []()
 						 {
-							 if (auto *d = g_machine->findDevice<RTCDevice>())
-								 d->dataLineChangeNtfy();
+							 if (auto *d = g_rig->findDevice<RTCDevice>()) d->dataLineChangeNtfy();
 						 });
 		g_wires.onChange(Wire_VIA1_iB1_RTCclock,
 						 []()
 						 {
-							 if (auto *d = g_machine->findDevice<RTCDevice>()) d->clockChangeNtfy();
+							 if (auto *d = g_rig->findDevice<RTCDevice>()) d->clockChangeNtfy();
 						 });
 		g_wires.onChange(Wire_VIA1_iB2_RTCunEnabled,
 						 []()
 						 {
-							 if (auto *d = g_machine->findDevice<RTCDevice>())
-								 d->unEnabledChangeNtfy();
+							 if (auto *d = g_rig->findDevice<RTCDevice>()) d->unEnabledChangeNtfy();
 						 });
 	}
-	if (g_machine->config().emADB)
+	if (g_rig->config().emADB)
 	{
 		g_wires.onChange(Wire_VIA1_iB4_ADB_st0,
 						 []()
 						 {
-							 if (auto *d = g_machine->findDevice<ADBDevice>()) d->stateChangeNtfy();
+							 if (auto *d = g_rig->findDevice<ADBDevice>()) d->stateChangeNtfy();
 						 });
 		g_wires.onChange(Wire_VIA1_iB5_ADB_st1,
 						 []()
 						 {
-							 if (auto *d = g_machine->findDevice<ADBDevice>()) d->stateChangeNtfy();
+							 if (auto *d = g_rig->findDevice<ADBDevice>()) d->stateChangeNtfy();
 						 });
 		g_wires.onChange(Wire_VIA1_iCB2_ADB_Data,
 						 []()
 						 {
-							 if (auto *d = g_machine->findDevice<ADBDevice>())
-								 d->dataLineChngNtfy();
+							 if (auto *d = g_rig->findDevice<ADBDevice>()) d->dataLineChngNtfy();
 						 });
 	}
-	if (g_machine->config().emClassicKbrd)
+	if (g_rig->config().emClassicKbrd)
 	{
 		g_wires.onChange(Wire_VIA1_iCB2,
 						 []()
 						 {
-							 if (auto *d = g_machine->findDevice<KeyboardDevice>())
+							 if (auto *d = g_rig->findDevice<KeyboardDevice>())
 								 d->dataLineChngNtfy();
 						 });
 	}
-	if (g_machine->config().emPMU)
+	if (g_rig->config().emPMU)
 	{
 		g_wires.onChange(Wire_PMU_ToReady,
 						 []()
 						 {
-							 if (auto *d = g_machine->findDevice<PMUDevice>())
-								 d->toReadyChangeNtfy();
+							 if (auto *d = g_rig->findDevice<PMUDevice>()) d->toReadyChangeNtfy();
 						 });
 	}
 
-	g_cpu.init(&s_curIPL, &g_machine->config());
+	g_cpu.init(&s_curIPL, &g_rig->config());
 	return true;
 }
 

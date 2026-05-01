@@ -16,7 +16,7 @@ tMacErr LoadMacRomFrom(char *path)
 	}
 	else
 	{
-		const uint32_t romSize = g_machine->config().romSize;
+		const uint32_t romSize = g_rig->config().romSize;
 		File_Size = fread(g_rom, 1, romSize, ROM_File);
 		if ((uint32_t)File_Size != romSize)
 		{
@@ -46,7 +46,7 @@ static tMacErr LoadMacRomFromPrefDir(char *pref_dir)
 	tMacErr err;
 	char *t = nullptr;
 	char *t2 = nullptr;
-	const char *romFileName = g_machine->config().romFileName;
+	const char *romFileName = g_rig->config().romFileName;
 
 	if (nullptr == pref_dir)
 	{
@@ -74,7 +74,7 @@ static tMacErr LoadMacRomFromPrefDir(char *pref_dir)
 static tMacErr LoadMacRomFromAppPar(char *d_arg, char *app_parent)
 {
 	tMacErr err;
-	const char *romFileName = g_machine->config().romFileName;
+	const char *romFileName = g_rig->config().romFileName;
 	char *d = (nullptr == d_arg) ? app_parent : d_arg;
 
 	if (nullptr == d)
@@ -108,7 +108,7 @@ bool LoadMacRom(char *rom_path, char *d_arg, char *app_parent, char *pref_dir)
 		if (tMacErr::fnfErr == (err = LoadMacRomFromAppPar(d_arg, app_parent)))
 			if (tMacErr::fnfErr == (err = LoadMacRomFromPrefDir(pref_dir)))
 				if (tMacErr::fnfErr ==
-					(err = LoadMacRomFrom(const_cast<char *>(g_machine->config().romFileName))))
+					(err = LoadMacRomFrom(const_cast<char *>(g_rig->config().romFileName))))
 				{
 				}
 

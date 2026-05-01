@@ -1029,7 +1029,7 @@ static uint8_t SCC_GetRR8(int chan)
 		}
 #else
 			/* Rx Enable */
-			if (!g_machine->config().isSEOrLater())
+			if (!g_rig->config().isSEOrLater())
 			{
 				REPORT_ABNORMAL_ID(AbnormalID::kSCC_read_rr8_when_RxEnable,
 								   "read rr8 when RxEnable");
@@ -1557,7 +1557,7 @@ static void SCC_PutWR3(uint8_t Data, int chan)
 				/* look for a packet */
 				if (0 != chan)
 				{
-					g_machine->findDevice<SCCDevice>()->localTalkTick();
+					g_rig->findDevice<SCCDevice>()->localTalkTick();
 				}
 			}
 #endif
@@ -2027,11 +2027,11 @@ static void SCC_PutWR9(uint8_t Data, int chan)
 #if SCC_dolog
 			dbglog_WriteNote("SCC Force Hardware Reset");
 #endif
-			if (!g_machine->config().isSEOrLater())
+			if (!g_rig->config().isSEOrLater())
 			{
 				REPORT_ABNORMAL_ID(AbnormalID::kSCC_SCC_Reset, "SCC_Reset");
 			}
-			g_machine->findDevice<SCCDevice>()->reset();
+			g_rig->findDevice<SCCDevice>()->reset();
 			CheckSCCInterruptFlag();
 			break;
 		case 0: /* No Reset */
@@ -2417,7 +2417,7 @@ static void SCC_PutWR15(uint8_t Data, int chan)
 
 	if ((Data & (1 << 3)) == 0)
 	{ /* DCD_IE */
-		if (!g_machine->config().isSEOrLater())
+		if (!g_rig->config().isSEOrLater())
 		{
 			REPORT_ABNORMAL_ID(AbnormalID::kSCC_not_DCD_IE, "not DCD IE");
 		}

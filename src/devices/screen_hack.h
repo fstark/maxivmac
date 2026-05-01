@@ -16,9 +16,9 @@ static void ApplyScreenHack(uint8_t *pto)
 
 	uint8_t *patchp = pto;
 	const uint32_t kVidMem_Base =
-		(g_machine->config().model == MacModel::PB100) ? 0x00FA0000u : 0x00540000u;
+		(g_rig->config().model == MacModel::PB100) ? 0x00FA0000u : 0x00540000u;
 
-	if (g_machine->config().model <= MacModel::Mac128K)
+	if (g_rig->config().model <= MacModel::Mac128K)
 	{
 		do_put_mem_long(112 + g_rom, kVidMem_Base);
 		do_put_mem_long(260 + g_rom, kVidMem_Base);
@@ -41,7 +41,7 @@ static void ApplyScreenHack(uint8_t *pto)
 			pto = 862 + g_rom;
 			do_put_mem_word(pto, 0x4EB9); /* JSR */
 			pto += 2;
-			do_put_mem_long(pto, g_machine->config().romBase + (patchp - g_rom));
+			do_put_mem_long(pto, g_rig->config().romBase + (patchp - g_rom));
 			pto += 4;
 
 			do_put_mem_word(patchp, 0x21FC); /* MOVE.L */
@@ -88,7 +88,7 @@ static void ApplyScreenHack(uint8_t *pto)
 			pto = 3448 + g_rom;
 			do_put_mem_word(pto, 0x4EB9); /* JSR */
 			pto += 2;
-			do_put_mem_long(pto, g_machine->config().romBase + (patchp - g_rom));
+			do_put_mem_long(pto, g_rig->config().romBase + (patchp - g_rom));
 			pto += 4;
 
 			do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave),A0 */
@@ -115,7 +115,7 @@ static void ApplyScreenHack(uint8_t *pto)
 			pto = 3646 + g_rom;
 			do_put_mem_word(pto, 0x4EB9); /* JSR */
 			pto += 2;
-			do_put_mem_long(pto, g_machine->config().romBase + (patchp - g_rom));
+			do_put_mem_long(pto, g_rig->config().romBase + (patchp - g_rom));
 			pto += 4;
 
 			do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x,D5 */
@@ -139,7 +139,7 @@ static void ApplyScreenHack(uint8_t *pto)
 		do_put_mem_word(3838 + g_rom, VMAC_SCREEN_WIDTH);
 		/* do_put_mem_word(7810 + ROM, VMAC_SCREEN_HEIGHT); */
 	}
-	else if (g_machine->config().model <= MacModel::Plus)
+	else if (g_rig->config().model <= MacModel::Plus)
 	{
 
 		do_put_mem_long(138 + g_rom, kVidMem_Base);
@@ -166,7 +166,7 @@ static void ApplyScreenHack(uint8_t *pto)
 			pto = 1132 + g_rom;
 			do_put_mem_word(pto, 0x4EB9); /* JSR */
 			pto += 2;
-			do_put_mem_long(pto, g_machine->config().romBase + (patchp - g_rom));
+			do_put_mem_long(pto, g_rig->config().romBase + (patchp - g_rom));
 			pto += 4;
 
 			do_put_mem_word(patchp, 0x21FC); /* MOVE.L */
@@ -217,7 +217,7 @@ static void ApplyScreenHack(uint8_t *pto)
 			pto = 7372 + g_rom;
 			do_put_mem_word(pto, 0x4EB9); /* JSR */
 			pto += 2;
-			do_put_mem_long(pto, g_machine->config().romBase + (patchp - g_rom));
+			do_put_mem_long(pto, g_rig->config().romBase + (patchp - g_rom));
 			pto += 4;
 
 			do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave), A0 */
@@ -244,7 +244,7 @@ static void ApplyScreenHack(uint8_t *pto)
 			pto = 7570 + g_rom;
 			do_put_mem_word(pto, 0x4EB9); /* JSR */
 			pto += 2;
-			do_put_mem_long(pto, g_machine->config().romBase + (patchp - g_rom));
+			do_put_mem_long(pto, g_rig->config().romBase + (patchp - g_rom));
 			pto += 4;
 
 			do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x,D5 */
@@ -268,7 +268,7 @@ static void ApplyScreenHack(uint8_t *pto)
 		do_put_mem_word(7790 + g_rom, VMAC_SCREEN_WIDTH);
 		do_put_mem_word(7810 + g_rom, VMAC_SCREEN_HEIGHT);
 	}
-	else if (g_machine->config().model <= MacModel::Classic)
+	else if (g_rig->config().model <= MacModel::Classic)
 	{
 
 		/* screen setup, main */
@@ -276,7 +276,7 @@ static void ApplyScreenHack(uint8_t *pto)
 			pto = 1482 + g_rom;
 			do_put_mem_word(pto, 0x4EB9); /* JSR */
 			pto += 2;
-			do_put_mem_long(pto, g_machine->config().romBase + (patchp - g_rom));
+			do_put_mem_long(pto, g_rig->config().romBase + (patchp - g_rom));
 			pto += 4;
 
 			do_put_mem_word(patchp, 0x21FC); /* MOVE.L */
@@ -333,7 +333,7 @@ static void ApplyScreenHack(uint8_t *pto)
 			pto = 101886 + g_rom;
 			do_put_mem_word(pto, 0x4EB9); /* JSR */
 			pto += 2;
-			do_put_mem_long(pto, g_machine->config().romBase + (patchp - g_rom));
+			do_put_mem_long(pto, g_rig->config().romBase + (patchp - g_rom));
 			pto += 4;
 
 			do_put_mem_word(patchp, 0x41F8); /* Lea.L     (CrsrSave),A0 */
@@ -360,7 +360,7 @@ static void ApplyScreenHack(uint8_t *pto)
 			pto = 102084 + g_rom;
 			do_put_mem_word(pto, 0x4EB9); /* JSR */
 			pto += 2;
-			do_put_mem_long(pto, g_machine->config().romBase + (patchp - g_rom));
+			do_put_mem_long(pto, g_rig->config().romBase + (patchp - g_rom));
 			pto += 4;
 
 			do_put_mem_word(patchp, 0x2A3C); /* MOVE.L #$x, D5 */

@@ -111,7 +111,7 @@ static void ChecksumSlotROM()
 	uint8_t *p = g_vidROM;
 	uint32_t crc = 0;
 
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	for (i = cfg.vidROMSize; --i >= 0;)
 	{
 		crc = ((crc << 1) | (crc >> 31)) + *p++;
@@ -134,7 +134,7 @@ static void ChecksumSlotROM()
 */
 static void patchSlotROMVPBlocks(uint16_t newW, uint16_t newH)
 {
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	SlotROMWriter w(g_vidROM, cfg.vidROMSize);
 
 	for (int d = 0; d < s_numVPBlocks; d++)
@@ -286,7 +286,7 @@ static void buildResolutionTable()
 */
 bool VideoDevice::init()
 {
-	const auto &cfg = g_machine->config();
+	const auto &cfg = g_rig->config();
 	uint16_t bootWidth = cfg.screenWidth;
 	uint16_t bootHeight = cfg.screenHeight;
 
@@ -538,8 +538,7 @@ static tMacErr Vid_SetMode(uint16_t modeID)
 	if (newDepth < 0 || newDepth > 5) return tMacErr::paramErr;
 
 	/* Verify the current resolution fits in VRAM at this depth */
-	if (VRAMForResolution(s_currentWidth, s_currentHeight, newDepth) >
-		g_machine->config().vidMemSize)
+	if (VRAMForResolution(s_currentWidth, s_currentHeight, newDepth) > g_rig->config().vidMemSize)
 		return tMacErr::paramErr;
 	if (newDepth == s_currentDepth) return tMacErr::noErr;
 
@@ -567,8 +566,7 @@ uint16_t VideoDevice::vidReset()
 {
 	int defDepth = (s_preferredDepth >= 0) ? s_preferredDepth : 0;
 	/* Clamp to what fits at current resolution */
-	int resMax =
-		maxDepthForResolution(s_currentWidth, s_currentHeight, g_machine->config().vidMemSize);
+	int resMax = maxDepthForResolution(s_currentWidth, s_currentHeight, g_rig->config().vidMemSize);
 	if (defDepth > resMax) defDepth = resMax;
 
 	s_currentDepth = defDepth;
@@ -586,7 +584,7 @@ uint16_t VideoDevice::vidReset()
 		if (res)
 		{
 			uint32_t needBytes = VRAMForResolution(res->width, res->height, defDepth);
-			if (needBytes <= g_machine->config().vidMemSize)
+			if (needBytes <= g_rig->config().vidMemSize)
 			{
 				s_currentWidth = res->width;
 				s_currentHeight = res->height;
@@ -974,7 +972,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 
 						/* Validate VRAM fits */
 						if (VRAMForResolution(res->width, res->height, newDepth) >
-							g_machine->config().vidMemSize)
+							g_rig->config().vidMemSize)
 						{
 							result = tMacErr::paramErr;
 							break;
@@ -1207,7 +1205,7 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						if (next)
 						{
 							int resMax = maxDepthForResolution(next->width, next->height,
-															   g_machine->config().vidMemSize);
+															   g_rig->config().vidMemSize);
 							put_vm_long(csParam + VDResInfo_csRIDisplayModeID, next->displayModeID);
 							put_vm_long(csParam + VDResInfo_csHorizontalPixels, next->width);
 							put_vm_long(csParam + VDResInfo_csVerticalLines, next->height);
@@ -1245,10 +1243,9 @@ void VideoDevice::extnVideoAccess(uint32_t p)
 						dbglog_writelnNum("  depthMode", depthMode);
 						int depth = depthMode - 0x80;
 						const ResolutionEntry *res = findResolution(displayModeID);
-						int resMaxDepth =
-							res ? maxDepthForResolution(res->width, res->height,
-														g_machine->config().vidMemSize)
-								: -1;
+						int resMaxDepth = res ? maxDepthForResolution(res->width, res->height,
+																	  g_rig->config().vidMemSize)
+											  : -1;
 						if (!res || depth < 0 || depth > resMaxDepth)
 						{
 							VID_LOG("GetVideoParameters modeID=%u depth=0x%02X → paramErr (res=%p "

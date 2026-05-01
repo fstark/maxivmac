@@ -65,7 +65,7 @@ static uint32_t s_lastRealDate;
 #ifndef DISK_CACHE_SZ /* in 1,2,3,4,6,8,12 */
 /* actual cache size is DISK_CACHE_SZ * 32k */
 /* 4 for compact Macs, 1 for Mac II (matches reference) */
-#define DISK_CACHE_SZ (g_machine->config().isIIFamily() ? 1 : 4)
+#define DISK_CACHE_SZ (g_rig->config().isIIFamily() ? 1 : 4)
 #endif
 
 #ifndef STARTUP_DISK /* in 0..1 */
@@ -91,12 +91,12 @@ static uint32_t s_lastRealDate;
 
 /* CaretBlinkTime: 8 for Mac II family, 3 for compact Macs (matches reference) */
 #ifndef CaretBlinkTime
-#define CaretBlinkTime (g_machine->config().isIIFamily() ? 0x08 : 0x03)
+#define CaretBlinkTime (g_rig->config().isIIFamily() ? 0x08 : 0x03)
 #endif
 
 /* DoubleClickTime: 8 for Mac II family, 5 for compact Macs (matches reference) */
 #ifndef DoubleClickTime
-#define DoubleClickTime (g_machine->config().isIIFamily() ? 0x08 : 0x05)
+#define DoubleClickTime (g_rig->config().isIIFamily() ? 0x08 : 0x05)
 #endif
 
 #define prb_fontHi 0
@@ -161,7 +161,7 @@ bool RTCDevice::init()
 	s_rtc.PARAMRAM[2 + GROUP1_BASE] = g_ltNodeHint;
 	/* set to constant instead for testing collisions */
 #else
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		s_rtc.PARAMRAM[2 + GROUP1_BASE] = 1;
 		/* node id hint for printer port (AppleTalk) */
@@ -187,7 +187,7 @@ bool RTCDevice::init()
 	s_rtc.PARAMRAM[7 + GROUP1_BASE] = 10;  /* portB, low */
 	s_rtc.PARAMRAM[13 + GROUP1_BASE] = prb_fontLo;
 	s_rtc.PARAMRAM[14 + GROUP1_BASE] = prb_kbdPrintHi;
-	if (g_machine->config().isIIFamily() || EmLocalTalk)
+	if (g_rig->config().isIIFamily() || EmLocalTalk)
 	{
 		s_rtc.PARAMRAM[15 + GROUP1_BASE] = 1;
 		/*
@@ -204,7 +204,7 @@ bool RTCDevice::init()
 	s_rtc.PARAMRAM[3 + GROUP2_BASE] = prb_miscLo | ((0 != VMAC_SCREEN_DEPTH) ? 0x80 : 0x00);
 
 	/* XPRAM: extended parameter ram signature */
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		s_rtc.PARAMRAM[12] = 0x4e;
 		s_rtc.PARAMRAM[13] = 0x75;
@@ -219,12 +219,12 @@ bool RTCDevice::init()
 		s_rtc.PARAMRAM[15] = 0x73;
 	}
 
-	if (g_machine->config().isSEFamily() || g_machine->config().isIIFamily())
+	if (g_rig->config().isSEFamily() || g_rig->config().isIIFamily())
 	{
 		s_rtc.PARAMRAM[0x01] = 0x80;
 		s_rtc.PARAMRAM[0x02] = 0x4F;
 	}
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		s_rtc.PARAMRAM[0x03] = 0x48;
 
@@ -236,12 +236,12 @@ bool RTCDevice::init()
 		s_rtc.PARAMRAM[0x48] = 0x80 + bootDepth;
 	}
 
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		s_rtc.PARAMRAM[0x77] = 0x01;
 	}
 
-	if (g_machine->config().isSEFamily() || g_machine->config().isIIFamily())
+	if (g_rig->config().isSEFamily() || g_rig->config().isIIFamily())
 	{
 		/* start up disk (encoded how?) */
 		s_rtc.PARAMRAM[0x78] = 0x00;
@@ -250,13 +250,13 @@ bool RTCDevice::init()
 		s_rtc.PARAMRAM[0x7B] = 0xFE;
 	}
 
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		s_rtc.PARAMRAM[0x80] = 0x09;
 		s_rtc.PARAMRAM[0x81] = 0x80;
 	}
 
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 
 #define pr_HilColRedHi (pr_HilColRed >> 8)

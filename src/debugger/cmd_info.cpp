@@ -223,7 +223,7 @@ static void InfoInsn(Debugger &dbg)
 
 static void InfoVIA(Debugger &dbg)
 {
-	if (!g_machine)
+	if (!g_rig)
 	{
 		dbg.io().write("Machine not initialized.\n");
 		return;
@@ -247,8 +247,8 @@ static void InfoVIA(Debugger &dbg)
 		dbg.io().write("  T1Active=%d  T2Active=%d\n", via->T1_Active, via->T2_Active);
 	};
 
-	dumpVIA("VIA1", g_machine->findDevice<VIA1Device>());
-	dumpVIA("VIA2", g_machine->findDevice<VIA2Device>());
+	dumpVIA("VIA1", g_rig->findDevice<VIA1Device>());
+	dumpVIA("VIA2", g_rig->findDevice<VIA2Device>());
 }
 
 static void InfoScrap(Debugger &dbg)
@@ -276,7 +276,7 @@ static void InfoScrap(Debugger &dbg)
 		return;
 	}
 
-	uint32_t ramSz = g_machine ? g_machine->ramSize() : 0;
+	uint32_t ramSz = g_rig ? g_rig->ramSize() : 0;
 	uint32_t offset = 0;
 	int entryIdx = 0;
 

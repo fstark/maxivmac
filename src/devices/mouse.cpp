@@ -28,9 +28,9 @@
 */
 bool Mouse_Enabled()
 {
-	if (g_machine->config().emClassicKbrd)
+	if (g_rig->config().emClassicKbrd)
 	{
-		if (auto *scc = g_machine->findDevice<SCCDevice>()) return scc->interruptsEnabled();
+		if (auto *scc = g_rig->findDevice<SCCDevice>()) return scc->interruptsEnabled();
 		return false;
 	}
 	return !ADBMouseDisabled;
@@ -64,7 +64,7 @@ void MouseDevice::update()
 
 		if ((0 == g_masterEvtQLock) && (nullptr != (p = EvtQOutP())))
 		{
-			if (g_machine->config().emClassicKbrd && EvtQElKind::MouseDelta == p->kind)
+			if (g_rig->config().emClassicKbrd && EvtQElKind::MouseDelta == p->kind)
 			{
 				if ((p->u.pos.h != 0) || (p->u.pos.v != 0))
 				{
@@ -84,7 +84,7 @@ void MouseDevice::update()
 					put_ram_long(0x0828, NewMouse);
 					/* Set Mouse Position */
 					put_ram_long(0x082C, NewMouse);
-					if (g_machine->config().emClassicKbrd)
+					if (g_rig->config().emClassicKbrd)
 					{
 						put_ram_byte(0x08CE, get_ram_byte(0x08CF));
 						/* Tell MacOS to redraw the Mouse */

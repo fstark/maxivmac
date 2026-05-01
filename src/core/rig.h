@@ -84,4 +84,4 @@ private:
 
 // Global Machine pointer — backward compatibility during migration.
 // Removed in final cleanup (Step 4.19).
-extern Rig *g_machine;
+extern Rig *g_rig;

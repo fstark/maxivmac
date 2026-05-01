@@ -897,7 +897,7 @@ static constexpr int kDriveStatus = 8;
 
 static uint32_t sony_SonyVarsPtr()
 {
-	auto m = g_machine->config().model;
+	auto m = g_rig->config().model;
 	if (m <= MacModel::Twiggy) return 0x0128;
 	return 0x0134;
 }
@@ -905,7 +905,7 @@ static uint32_t sony_SonyVarsPtr()
 
 static uint32_t sony_FirstDriveVarsOffset()
 {
-	auto m = g_machine->config().model;
+	auto m = g_rig->config().model;
 	if (m == MacModel::Twiggy) return 0x004C;
 	return 0x004A;
 }
@@ -913,7 +913,7 @@ static uint32_t sony_FirstDriveVarsOffset()
 
 static uint32_t sony_EachDriveVarsSize()
 {
-	auto m = g_machine->config().model;
+	auto m = g_rig->config().model;
 	if (m == MacModel::Twiggy) return 0x002E;
 	return 0x0042;
 }
@@ -921,7 +921,7 @@ static uint32_t sony_EachDriveVarsSize()
 
 static uint32_t sony_MinSonVarsSize()
 {
-	auto m = g_machine->config().model;
+	auto m = g_rig->config().model;
 	if (m == MacModel::Twig43) return 0x000000FA;
 	if (m == MacModel::Twiggy) return 0x000000E6;
 	if (m == MacModel::Mac128K) return 0x000000FA;
@@ -977,7 +977,7 @@ static tMacErr Sony_Mount(uint32_t p)
 		dbglog_writeReturn();
 #endif
 
-		auto mdl = g_machine->config().model;
+		auto mdl = g_rig->config().model;
 		if (mdl <= MacModel::Twiggy && L == 1702)
 		{
 			put_vm_byte(dvl + kTwoSideFmt, 0xFF);
@@ -1024,7 +1024,7 @@ static tMacErr Sony_Mount(uint32_t p)
 			put_vm_word(dvl + kQDrvSz2, L >> 16);
 		}
 
-		if (g_machine->config().model <= MacModel::Twiggy)
+		if (g_rig->config().model <= MacModel::Twiggy)
 		{
 			put_vm_word(dvl + kQFSID, 0x00); /* kQFSID must be 0 for 4.3T */
 		}
@@ -1121,7 +1121,7 @@ static tMacErr Sony_Prime(uint32_t p)
 
 		result = tMacErr::nsDrvErr;
 	}
-	else if (g_machine->config().model >= MacModel::Twiggy && 0xA002 != (IOTrap & 0xF0FE))
+	else if (g_rig->config().model >= MacModel::Twiggy && 0xA002 != (IOTrap & 0xF0FE))
 	{
 #if SONY_DO_LOG
 		dbglog_WriteNote("Sony : Prime : "
@@ -1235,7 +1235,7 @@ static tMacErr Sony_Control(uint32_t p)
 		dbglog_WriteNote("Sony : Control : kTrackCacheControl");
 #endif
 
-		if (g_machine->config().model <= MacModel::Mac128K)
+		if (g_rig->config().model <= MacModel::Mac128K)
 		{
 			result = tMacErr::controlErr;
 		}
@@ -1327,7 +1327,7 @@ static tMacErr Sony_Control(uint32_t p)
 					}
 					break;
 				case kDriveInfo:
-					if (g_machine->config().isSEOrLater())
+					if (g_rig->config().isSEOrLater())
 					{
 						uint32_t v;
 
@@ -1477,13 +1477,13 @@ static tMacErr Sony_OpenB(uint32_t p)
 	uint32_t SonyVars = get_vm_long(p + EXTN_DAT_PARAMS + 4);
 	/* uint32_t ParamBlk = get_vm_long(p + EXTN_DAT_PARAMS + 24); (unused) */
 	uint32_t DeviceCtl = 0;
-	if (g_machine->config().model > MacModel::Mac128K)
+	if (g_rig->config().model > MacModel::Mac128K)
 	{
 		DeviceCtl = get_vm_long(p + EXTN_DAT_PARAMS + 28);
 	}
 
 	put_vm_long(SonyVars + 16 /* checkval */, kcom_checkval);
-	put_vm_long(SonyVars + 20 /* pokeaddr */, g_machine->config().extnBlockBase);
+	put_vm_long(SonyVars + 20 /* pokeaddr */, g_rig->config().extnBlockBase);
 	put_vm_word(SonyVars + 24 /* NumDrives */, NumDrives);
 	put_vm_word(SonyVars + 26 /* DiskExtn */, kExtnDisk);
 
@@ -1493,7 +1493,7 @@ static tMacErr Sony_OpenB(uint32_t p)
 	{
 		put_vm_byte(dvl + kDiskInPlace, 0x00); /* Drive i No Disk */
 		put_vm_byte(dvl + kInstalled, 0x01);   /* Drive i Installed */
-		if (g_machine->config().model <= MacModel::Mac128K)
+		if (g_rig->config().model <= MacModel::Mac128K)
 		{
 			put_vm_byte(dvl + kSides, 0x00);
 			/* Drive i Single Sided */
@@ -1514,13 +1514,13 @@ static tMacErr Sony_OpenB(uint32_t p)
 		/* use same drive for hard disk as used for sony floppies */
 	}
 
-	if (g_machine->config().model > MacModel::Mac128K)
+	if (g_rig->config().model > MacModel::Mac128K)
 	{
 		/* driver version in driver i/o queue header */
 		put_vm_byte(DeviceCtl + 7, 1);
 	}
 
-	if (g_machine->config().model <= MacModel::Mac128K)
+	if (g_rig->config().model <= MacModel::Mac128K)
 	{
 		/* init Drive Queue */
 		put_vm_word(0x308, 0);
@@ -1533,7 +1533,7 @@ static tMacErr Sony_OpenB(uint32_t p)
 	put_vm_word(p + EXTN_DAT_PARAMS + 14, NumDrives);
 	put_vm_word(p + EXTN_DAT_PARAMS + 16, 1);
 	put_vm_word(p + EXTN_DAT_PARAMS + 18, 0xFFFB);
-	if (g_machine->config().model <= MacModel::Mac128K)
+	if (g_rig->config().model <= MacModel::Mac128K)
 	{
 		put_vm_long(p + EXTN_DAT_PARAMS + 20, 0);
 	}
@@ -1554,7 +1554,7 @@ static tMacErr Sony_OpenC(uint32_t p)
 #endif
 
 	s_mountCallBack = get_vm_long(p + EXTN_DAT_PARAMS + 0);
-	if (g_machine->config().isIIFamily())
+	if (g_rig->config().isIIFamily())
 	{
 		s_mountCallBack |= 0x40000000;
 	}

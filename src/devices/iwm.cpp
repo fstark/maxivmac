@@ -98,7 +98,7 @@ static uint8_t IWM_Read_Reg()
 	switch ((s_iwm.Lines & (kq6 + kq7)) >> 6)
 	{
 		case 0:
-			if (!g_machine->config().isSEOrLater())
+			if (!g_rig->config().isSEOrLater())
 			{
 				REPORT_ABNORMAL_ID(AbnormalID::kVIA2_IWM_Data_Read, "IWM Data Read");
 			}
