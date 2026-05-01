@@ -360,7 +360,7 @@ void PMUDevice::checkCommandCompletion()
 			}
 			i_ = 0;
 			sending_ = true;
-			g_ict.add(kICT_PMU_Task, 20400UL * kCycleScale / 64 * machine_->config().clockMult);
+			g_ict.add(kICT_PMU_Task, 20400UL * kCycleScale / 64 * rig_->config().clockMult);
 		}
 	}
 }
@@ -450,7 +450,7 @@ void PMUDevice::toReadyChangeNtfy()
 				sendNext_ = buffL_;
 				state_ = kPMUStateSendBuffer;
 				sending_ = true;
-				g_ict.add(kICT_PMU_Task, 20400UL * kCycleScale / 64 * machine_->config().clockMult);
+				g_ict.add(kICT_PMU_Task, 20400UL * kCycleScale / 64 * rig_->config().clockMult);
 			}
 			break;
 		case kPMUStateSendBuffer:
@@ -482,8 +482,7 @@ void PMUDevice::toReadyChangeNtfy()
 					--rem_;
 					++i_;
 					sending_ = true;
-					g_ict.add(kICT_PMU_Task,
-							  20400UL * kCycleScale / 64 * machine_->config().clockMult);
+					g_ict.add(kICT_PMU_Task, 20400UL * kCycleScale / 64 * rig_->config().clockMult);
 				}
 			}
 			break;

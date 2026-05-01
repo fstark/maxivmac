@@ -29,11 +29,11 @@
 #include "devices/pmu.h"
 
 // Global Machine pointer for backward compatibility during migration
-Machine *g_machine = nullptr;
+Rig *g_machine = nullptr;
 
-Machine::Machine(MachineConfig config) : config_(std::move(config)) {}
+Rig::Rig(MachineConfig config) : config_(std::move(config)) {}
 
-Machine::~Machine()
+Rig::~Rig()
 {
 	if (g_machine == this)
 	{
@@ -41,7 +41,7 @@ Machine::~Machine()
 	}
 }
 
-bool Machine::init()
+bool Rig::init()
 {
 	// Set global pointer for backward compatibility.
 	g_machine = this;
@@ -105,7 +105,7 @@ bool Machine::init()
 	return true;
 }
 
-void Machine::reset()
+void Rig::reset()
 {
 	for (auto &dev : devices_)
 	{
@@ -113,7 +113,7 @@ void Machine::reset()
 	}
 }
 
-void Machine::zap()
+void Rig::zap()
 {
 	for (auto &dev : devices_)
 	{
@@ -121,13 +121,13 @@ void Machine::zap()
 	}
 }
 
-void Machine::addDevice(std::unique_ptr<Device> dev)
+void Rig::addDevice(std::unique_ptr<Device> dev)
 {
-	dev->machine_ = this;
+	dev->rig_ = this;
 	devices_.push_back(std::move(dev));
 }
 
-void Machine::recalcIPL()
+void Rig::recalcIPL()
 {
 	// Placeholder — will be populated from VIAorSCCinterruptChngNtfy()
 	// logic in machine.cpp during Step 4.12/4.14.

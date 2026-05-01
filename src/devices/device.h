@@ -13,7 +13,7 @@
 #pragma once
 #include <cstdint>
 
-class Machine; // forward declaration
+class Rig; // forward declaration
 
 class Device
 {
@@ -33,6 +33,6 @@ public:
 	virtual const char *name() const = 0;
 
 protected:
-	Machine *machine_ = nullptr; // set by Machine when device is registered
-	friend class Machine;
+	Rig *rig_ = nullptr; // set by Machine when device is registered
+	friend class Rig;
 };

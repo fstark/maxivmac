@@ -478,7 +478,7 @@ void RunEmulatedTicksToTrueTime()
 
 /* MainEventLoop has been removed — the backend now drives the loop. */
 
-static std::unique_ptr<Machine> s_machine;
+static std::unique_ptr<Rig> s_rig;
 static LaunchConfig s_launchConfig;
 static MachineConfig s_machineConfig;
 static EmulatorConfig s_emulatorConfig;
@@ -503,8 +503,8 @@ void SetLaunchConfig(const LaunchConfig &lc)
 
 	s_machineConfig = BuildMachineConfig(s_launchConfig);
 	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
-	s_machine = std::make_unique<Machine>(s_machineConfig);
-	s_machine->init();
+	s_rig = std::make_unique<Rig>(s_machineConfig);
+	s_rig->init();
 }
 
 const EmulatorConfig &GetEmulatorConfig()
@@ -658,13 +658,13 @@ void ProgramEarlyInit(int argc, char *argv[])
 		}
 	}
 
-	s_machine = std::make_unique<Machine>(std::move(s_machineConfig));
-	s_machine->init();
+	s_rig = std::make_unique<Rig>(std::move(s_machineConfig));
+	s_rig->init();
 }
 
 void ProgramCleanup()
 {
-	s_machine.reset();
+	s_rig.reset();
 }
 
 bool ProgramMain()

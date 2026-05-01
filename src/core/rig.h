@@ -18,11 +18,11 @@
 
 class Device;
 
-class Machine
+class Rig
 {
 public:
-	explicit Machine(MachineConfig config);
-	~Machine();
+	explicit Rig(MachineConfig config);
+	~Rig();
 
 	// Lifecycle
 	bool init();  // allocate buffers, create devices, build ATT
@@ -84,4 +84,4 @@ private:
 
 // Global Machine pointer — backward compatibility during migration.
 // Removed in final cleanup (Step 4.19).
-extern Machine *g_machine;
+extern Rig *g_machine;

@@ -316,7 +316,7 @@ void RTCDevice::interrupt()
 
 		s_lastRealDate = NewRealDate;
 
-		if (auto *via1 = machine_->findDevice<VIA1Device>()) via1->iCA2_PulseNtfy();
+		if (auto *via1 = rig_->findDevice<VIA1Device>()) via1->iCA2_PulseNtfy();
 	}
 }
 

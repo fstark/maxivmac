@@ -17,7 +17,7 @@
 
 VIA1Device *SoundDevice::via1() const
 {
-	return machine_->findDevice<VIA1Device>();
+	return rig_->findDevice<VIA1Device>();
 }
 
 void SoundDevice::reset()

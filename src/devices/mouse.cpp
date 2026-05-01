@@ -101,7 +101,7 @@ void MouseDevice::update()
 		}
 	}
 
-	if (machine_->config().emClassicKbrd)
+	if (rig_->config().emClassicKbrd)
 	{
 		EvtQEl *p;
 

@@ -242,7 +242,7 @@ uint8_t VIABase::shiftOutData()
 	}
 }
 
-#define CYCLES_PER_VIA_TIME (10 * machine_->config().clockMult)
+#define CYCLES_PER_VIA_TIME (10 * rig_->config().clockMult)
 #define CYCLES_SCALED_PER_VIA_TIME (kCycleScale * CYCLES_PER_VIA_TIME)
 
 /*

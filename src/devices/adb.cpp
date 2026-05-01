@@ -46,7 +46,7 @@ void ADBDevice::doNewState()
 				}
 				s_adbTalkDatBuf = false;
 				ADB_IndexDatBuf = 0;
-				s_adbCurCmd = machine_->findDevice<VIA1Device>()->shiftOutData();
+				s_adbCurCmd = rig_->findDevice<VIA1Device>()->shiftOutData();
 				/* which sets interrupt, acknowleding command */
 #ifdef _VIA_Debug
 				fprintf(stderr, "in: %d\n", s_adbCurCmd);
@@ -96,7 +96,7 @@ void ADBDevice::doNewState()
 					*/
 					if ((!s_adbTalkDatBuf) || (ADB_IndexDatBuf >= s_adbSzDatBuf))
 					{
-						machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
+						rig_->findDevice<VIA1Device>()->shiftInData(0xFF);
 						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 						g_wires.set(Wire_VIA1_iB3_ADB_Int, 0);
 					}
@@ -105,8 +105,7 @@ void ADBDevice::doNewState()
 #ifdef _VIA_Debug
 						fprintf(stderr, "*** talk one\n");
 #endif
-						machine_->findDevice<VIA1Device>()->shiftInData(
-							s_adbDatBuf[ADB_IndexDatBuf]);
+						rig_->findDevice<VIA1Device>()->shiftInData(s_adbDatBuf[ADB_IndexDatBuf]);
 						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 						ADB_IndexDatBuf += 1;
 					}
@@ -118,7 +117,7 @@ void ADBDevice::doNewState()
 						REPORT_ABNORMAL_ID(AbnormalID::kADB_ADB_listen_too_much,
 										   "ADB listen too much");
 						/* ADB_MaxSzDatBuf isn't big enough */
-						(void)machine_->findDevice<VIA1Device>()->shiftOutData();
+						(void)rig_->findDevice<VIA1Device>()->shiftOutData();
 					}
 					else
 					{
@@ -126,7 +125,7 @@ void ADBDevice::doNewState()
 						fprintf(stderr, "*** listen one\n");
 #endif
 						s_adbDatBuf[ADB_IndexDatBuf] =
-							machine_->findDevice<VIA1Device>()->shiftOutData();
+							rig_->findDevice<VIA1Device>()->shiftOutData();
 						ADB_IndexDatBuf += 1;
 					}
 				}
@@ -145,7 +144,7 @@ void ADBDevice::doNewState()
 						REPORT_ABNORMAL_ID(AbnormalID::kADB_idle_when_not_done_talking,
 										   "idle when not done talking");
 					}
-					machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
+					rig_->findDevice<VIA1Device>()->shiftInData(0xFF);
 					/* ADB_Int = 0; */
 				}
 				else if (CheckForADBanyEvt())
@@ -154,7 +153,7 @@ void ADBDevice::doNewState()
 					{
 						ADB_DoTalk();
 					}
-					machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
+					rig_->findDevice<VIA1Device>()->shiftInData(0xFF);
 					/* ADB_Int = 0; */
 				}
 				break;
@@ -167,7 +166,7 @@ void ADBDevice::stateChangeNtfy()
 #ifdef _VIA_Debug
 	fprintf(stderr, "ADBstate_ChangeNtfy: %d, %d, %d\n", ADB_st1, ADB_st0, g_ict.getCurrent());
 #endif
-	g_ict.add(kICT_ADB_NewState, 348160UL * kCycleScale / 64 * machine_->config().clockMult);
+	g_ict.add(kICT_ADB_NewState, 348160UL * kCycleScale / 64 * rig_->config().clockMult);
 	/*
 		Macintosh Family Hardware Reference say device "must respond
 		to talk command within 260 microseconds", which translates
@@ -205,7 +204,7 @@ void ADBDevice::update()
 			{
 				ADB_DoTalk();
 			}
-			machine_->findDevice<VIA1Device>()->shiftInData(0xFF);
+			rig_->findDevice<VIA1Device>()->shiftInData(0xFF);
 			/*
 				Wouldn't expect this would be needed unless
 				there is actually talk data. But without it,

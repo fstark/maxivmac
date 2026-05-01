@@ -353,7 +353,7 @@ uint32_t ASCDevice::access(uint32_t Data, bool WriteMem, uint32_t addr)
 					s_soundReg804 = Data;
 					if (0 != s_soundReg804)
 					{
-						if (auto *via2 = machine_->findDevice<VIA2Device>()) via2->iCB1_PulseNtfy();
+						if (auto *via2 = rig_->findDevice<VIA2Device>()) via2->iCB1_PulseNtfy();
 						/*
 							Generating this interrupt seems
 							to be the point of writing to
@@ -838,7 +838,7 @@ void ASCDevice::subTick(int SubTick)
 #if ASC_dolog
 				dbglog_WriteNote("setting half flag A");
 #endif
-				if (auto *via2 = machine_->findDevice<VIA2Device>()) via2->iCB1_PulseNtfy();
+				if (auto *via2 = rig_->findDevice<VIA2Device>()) via2->iCB1_PulseNtfy();
 				s_soundReg804 |= 0x01;
 			}
 		}
@@ -881,7 +881,7 @@ void ASCDevice::subTick(int SubTick)
 #if ASC_dolog
 					dbglog_WriteNote("setting half flag B");
 #endif
-					if (auto *via2 = machine_->findDevice<VIA2Device>()) via2->iCB1_PulseNtfy();
+					if (auto *via2 = rig_->findDevice<VIA2Device>()) via2->iCB1_PulseNtfy();
 					s_soundReg804 |= 0x04;
 				}
 			}

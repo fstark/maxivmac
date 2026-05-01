@@ -28,7 +28,7 @@
 
 VIA1Device *KeyboardDevice::via1() const
 {
-	return machine_->findDevice<VIA1Device>();
+	return rig_->findDevice<VIA1Device>();
 }
 
 void KeyboardDevice::reset()
@@ -188,7 +188,7 @@ void KeyboardDevice::dataLineChngNtfy()
 				fprintf(stderr, "posting kICT_Kybd_ReceiveCommand\n");
 #endif
 				g_ict.add(kICT_Kybd_ReceiveCommand,
-						  6800UL * kCycleScale / 64 * machine_->config().clockMult);
+						  6800UL * kCycleScale / 64 * rig_->config().clockMult);
 
 				if (inquiryCommandTimer_ != 0)
 				{
@@ -204,7 +204,7 @@ void KeyboardDevice::dataLineChngNtfy()
 				fprintf(stderr, "posting kICT_Kybd_ReceiveEndCommand\n");
 #endif
 				g_ict.add(kICT_Kybd_ReceiveEndCommand,
-						  6800UL * kCycleScale / 64 * machine_->config().clockMult);
+						  6800UL * kCycleScale / 64 * rig_->config().clockMult);
 			}
 			break;
 		default:

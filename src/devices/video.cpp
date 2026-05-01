@@ -523,7 +523,7 @@ void VideoDevice::update()
 	if (!VID_VBL_INT_UNENBL)
 	{
 		g_wires.set(Wire_VBLinterrupt, 0);
-		if (auto *via2 = machine_->findDevice<VIA2Device>()) via2->iCA1_PulseNtfy();
+		if (auto *via2 = rig_->findDevice<VIA2Device>()) via2->iCA1_PulseNtfy();
 	}
 }
 

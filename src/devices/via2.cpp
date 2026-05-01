@@ -14,5 +14,5 @@ VIA2Device::VIA2Device()
 
 const VIAConfig &VIA2Device::viaConfig() const
 {
-	return machine_->config().via2Config;
+	return rig_->config().via2Config;
 }
