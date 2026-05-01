@@ -76,6 +76,15 @@ A third-party Homebrew repository hosting the maxivmac formula.
 macOS users install via `brew install maxivmac`.  Builds from source,
 bypassing Gatekeeper/notarization.
 
+### Data Directory
+
+The `data/` directory next to the binary.  Contains all runtime
+assets: `roms/`, `disks/`, `macs/`, `shared/`, `system/`, `debug/`.
+The binary resolves its own path at startup and locates `data/` as
+a sibling.
+
+Avoid: assets, resources, share
+
 ### ICTScheduler
 
 Cycle-based task scheduler.  Devices schedule future interrupts by
@@ -92,12 +101,23 @@ Greyed-out cards show why they can't boot (ROM missing, no boot disk).
 
 Avoid: model selector, start screen
 
+### .mac File
+
+The file format for a Macintosh definition.  Lives in `data/macs/`.
+Uses the same `key = value` syntax as `.def` files.  Parsed at
+startup by the Launcher.
+
+See also: Macintosh, Data Directory
+
+Avoid: config file, profile file
+
 ### Macintosh
 
-A saved, user-owned configuration based on a Model.  Specifies boot
-disk, RAM size, shared drive folder, and other per-instance settings.
+A bootable configuration based on a Model.  Defined by a `.mac` file
+that specifies disk image(s), optional RAM/screen overrides, shared
+drive(s), and serial port configuration.
 
-See also: Model, Rig
+See also: Model, Rig, .mac File
 
 Avoid: VM, emulator instance, profile
 
@@ -154,11 +174,14 @@ See also: Extension Interface
 
 Avoid: shared folder, host mount, network drive
 
-### Tools Disk
+### Tool Disk
 
-A read-only HFS disk image bundled with the distribution, containing
-the INIT ready to be drag-installed onto any guest OS.  Mounted
-automatically when the host detects the INIT is not installed.
+A read-only HFS disk image bundled in `data/system/`, containing
+the INIT installer.  Mounted on demand when the user requests it
+(e.g. "Install maxivmac extensions").  Not referenced by any
+`.mac` file.
+
+See also: Data Directory, INIT
 
 ### WireBus
 
