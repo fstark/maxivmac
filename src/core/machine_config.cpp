@@ -7,6 +7,7 @@
 */
 
 #include "core/machine_config.h"
+#include "core/model_defs.h"
 #include "core/wire_ids.h"
 
 // Helper to build the Mac II VIA1 config
@@ -137,8 +138,9 @@ static VIAConfig MakeVIA1Config_PB100()
 
 /* Populate a MachineConfig with all hardware parameters for the
    given Mac model: CPU type, g_ram layout, g_rom, screen, peripherals,
-   VIA wiring, and feature flags. */
-MachineConfig MachineConfigForModel(MacModel model)
+   VIA wiring, and feature flags.
+   PRESERVED for round-trip regression testing — will be deleted in phase 8. */
+MachineConfig OldMachineConfigForModel(MacModel model)
 {
 	MachineConfig c;
 	c.model = model;
@@ -462,5 +464,90 @@ MachineConfig MachineConfigForModel(MacModel model)
 			break;
 	}
 
+	return c;
+}
+
+// --- VIA dispatcher functions ---
+
+static VIAConfig MakeVIA1ConfigFor(MacModel model)
+{
+	switch (model)
+	{
+		case MacModel::Twig43:
+		case MacModel::Twiggy:
+		case MacModel::Mac128K:
+		case MacModel::Mac512Ke:
+		case MacModel::Kanji:
+		case MacModel::Plus:
+			return MakeVIA1Config_Plus();
+
+		case MacModel::SE:
+		case MacModel::SEFDHD:
+		case MacModel::Classic:
+			return MakeVIA1Config_SE();
+
+		case MacModel::PB100:
+			return MakeVIA1Config_PB100();
+
+		case MacModel::II:
+		case MacModel::IIx:
+			return MakeVIA1Config_MacII();
+	}
+	return MakeVIA1Config_Plus(); // unreachable
+}
+
+static VIAConfig MakeVIA2ConfigFor(MacModel model)
+{
+	switch (model)
+	{
+		case MacModel::II:
+		case MacModel::IIx:
+			return MakeVIA2Config_MacII();
+		default:
+			return VIAConfig{};
+	}
+}
+
+// --- New table-driven implementation ---
+
+MachineConfig MachineConfigForModel(MacModel model)
+{
+	const ModelDef *def = ModelDefFor(model);
+	assert(def && "MachineConfigForModel: no ModelDef for model");
+
+	MachineConfig c;
+	c.model = def->id;
+	c.use68020 = def->use68020;
+	c.emFPU = def->emFPU;
+	c.emMMU = def->emMMU;
+	c.ramASize = def->ramASize;
+	c.ramBSize = def->ramBSize;
+	c.romSize = def->rom.size;
+	c.romBase = def->rom.base;
+	c.romFileName = def->rom.filename.data();
+	c.extnBlockBase = def->extnBlockBase;
+	c.extnLn2Spc = def->extnLn2Spc;
+	c.emVIA1 = def->emVIA1;
+	c.emVIA2 = def->emVIA2;
+	c.emADB = def->emADB;
+	c.emClassicKbrd = def->emClassicKbrd;
+	c.emRTC = def->emRTC;
+	c.emPMU = def->emPMU;
+	c.emASC = def->emASC;
+	c.emClassicSnd = def->emClassicSnd;
+	c.emVidCard = def->emVidCard;
+	c.includeVidMem = def->includeVidMem;
+	c.vidMemSize = def->vidMemSize;
+	c.vidROMSize = def->vidROMSize;
+	c.clockMult = def->clockMult;
+	c.autoSlowSubTicks = def->autoSlowSubTicks;
+	c.autoSlowTime = def->autoSlowTime;
+	c.maxATTListN = def->maxATTListN;
+	c.screenWidth = def->screen.width;
+	c.screenHeight = def->screen.height;
+	c.screenDepth = def->screen.depth;
+
+	c.via1Config = MakeVIA1ConfigFor(model);
+	c.via2Config = MakeVIA2ConfigFor(model);
 	return c;
 }
