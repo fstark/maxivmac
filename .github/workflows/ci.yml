@@ -44,3 +44,30 @@ jobs:
 
     - name: Unit tests
       run: ctest --test-dir bld/linux --output-on-failure
+
+  build-macos:
+    strategy:
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: arm64
+          - runner: macos-13
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install dependencies
+      run: brew install ninja sdl3
+
+    - name: Configure
+      run: cmake --preset macos
+
+    - name: Build
+      run: cmake --build --preset macos -- -k 0
+
+    - name: Unit tests
+      run: ctest --test-dir bld/macos --output-on-failure
