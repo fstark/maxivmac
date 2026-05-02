@@ -337,9 +337,6 @@ static_assert(kModelDefs[11].clockMult == 2);
 static_assert(kModelDefs[11].maxATTListN == 20);
 
 // Verify ModelDefFor works at compile time for key models
-static_assert(ModelDefFor(MacModel::Plus) != nullptr);
 static_assert(ModelDefFor(MacModel::Plus)->rom.size == 0x00020000);
-static_assert(ModelDefFor(MacModel::II) != nullptr);
 static_assert(ModelDefFor(MacModel::II)->use68020 == true);
-static_assert(ModelDefFor(MacModel::PB100) != nullptr);
 static_assert(ModelDefFor(MacModel::PB100)->emPMU == true);
