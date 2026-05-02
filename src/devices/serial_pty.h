@@ -69,7 +69,12 @@ public:
 
 	void txByte(uint8_t byte) override
 	{
-		if (masterFd_ >= 0) (void)write(masterFd_, &byte, 1);
+		if (masterFd_ >= 0)
+		{
+			if (write(masterFd_, &byte, 1) < 0)
+			{ /* best-effort */
+			}
+		}
 	}
 
 	bool rxReady() override { return !rxQueue_.empty(); }
