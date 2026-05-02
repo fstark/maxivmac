@@ -66,7 +66,18 @@ jobs:
       run: ctest --test-dir bld/macos --output-on-failure
 
   build-windows:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - runner: windows-latest
+            msystem: MINGW64
+            pkg-prefix: mingw-w64-x86_64
+            preset: windows
+          - runner: windows-11-arm
+            msystem: CLANGARM64
+            pkg-prefix: mingw-w64-clang-aarch64
+            preset: windows
+    runs-on: ${{ matrix.runner }}
     defaults:
       run:
         shell: msys2 {0}
@@ -74,12 +85,12 @@ jobs:
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
-        msystem: MINGW64
+        msystem: ${{ matrix.msystem }}
         install: >-
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-ninja
-          mingw-w64-x86_64-sdl3
+          ${{ matrix.pkg-prefix }}-cc
+          ${{ matrix.pkg-prefix }}-cmake
+          ${{ matrix.pkg-prefix }}-ninja
+          ${{ matrix.pkg-prefix }}-sdl3
           git
 
     - name: Checkout
