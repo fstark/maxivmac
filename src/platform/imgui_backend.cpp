@@ -12,6 +12,8 @@
 #include "platform/sdl_keyboard.h"
 #include "platform/sdl_sound.h"
 #include "platform/platform.h"
+#include "config/mac_file.h"
+#include "core/config_loader.h"
 #include "core/main.h"
 
 /* Forward declarations to avoid pulling in the full osglu_common.h
@@ -143,8 +145,8 @@ void ImGuiBackend::runLoop()
 		{
 			ImGui_ImplSDL3_ProcessEvent(&event);
 
-			/* In ModelSelector state, only handle quit events */
-			if (uiState_ == UIState::ModelSelector)
+			/* In ModelSelector/Launcher state, only handle quit events */
+			if (uiState_ == UIState::ModelSelector || uiState_ == UIState::Launcher)
 			{
 				if (event.type == SDL_EVENT_QUIT) g_requestMacOff = true;
 				continue;
@@ -295,6 +297,37 @@ void ImGuiBackend::runLoop()
 				break;
 			}
 
+			case UIState::Launcher:
+			{
+				ImGui_ImplOpenGL3_NewFrame();
+				ImGui_ImplSDL3_NewFrame();
+				ImGui::NewFrame();
+
+				drawLauncher();
+
+				ImGui::Render();
+				{
+					int displayW, displayH;
+					SDL_GetWindowSizeInPixels(window_, &displayW, &displayH);
+					glViewport(0, 0, displayW, displayH);
+					glClearColor(0.78f, 0.78f, 0.78f, 1.0f);
+					glClear(GL_COLOR_BUFFER_BIT);
+					ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+					SDL_GL_SwapWindow(window_);
+				}
+
+				if (pendingBoot_)
+				{
+					pendingBoot_ = false;
+					bootFromSelector(pendingBootConfig_);
+				}
+				else
+				{
+					SDL_Delay(16);
+				}
+				break;
+			}
+
 			case UIState::Windowed:
 			case UIState::Fullscreen:
 				drawWindowedState();
@@ -431,6 +464,59 @@ void ImGuiBackend::bootFromSelector(const LaunchConfig &config)
 	}
 
 	uiState_ = UIState::Windowed;
+}
+
+/* ── Launcher ────────────────────────────────────────── */
+
+void ImGuiBackend::drawLauncher()
+{
+	const MacFileEntry *selected = launcher_.draw();
+	if (selected && shell_)
+	{
+		bootFromLauncher(*selected);
+	}
+}
+
+void ImGuiBackend::bootFromLauncher(const MacFileEntry &entry)
+{
+	LaunchConfig lc = LaunchConfigFromMacEntry(entry, launcherDataDir_);
+	pendingBoot_ = true;
+	pendingBootConfig_ = lc;
+}
+
+bool ImGuiBackend::createLauncher(std::vector<MacFileEntry> entries)
+{
+	launcherDataDir_ = "data"; // default; caller can set properly
+
+	/* Create the window (same as createSelectorWindow) */
+	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+	window_ = SDL_CreateWindow("Maxi vMac", 700, 500, flags);
+	if (!window_)
+	{
+		fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
+		return false;
+	}
+	glContext_ = SDL_GL_CreateContext(window_);
+	if (!glContext_)
+	{
+		fprintf(stderr, "SDL_GL_CreateContext failed: %s\n", SDL_GetError());
+		return false;
+	}
+	SDL_GL_MakeCurrent(window_, glContext_);
+	SDL_GL_SetSwapInterval(1);
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigWindowsMoveFromTitleBarOnly = true;
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplSDL3_InitForOpenGL(window_, glContext_);
+	ImGui_ImplOpenGL3_Init("#version 150");
+
+	launcher_.init(std::move(entries));
+	return true;
 }
 
 /* ── State transitions ───────────────────────────────── */

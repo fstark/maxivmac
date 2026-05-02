@@ -11,6 +11,7 @@
 
 #include "platform/platform_backend.h"
 #include "platform/imgui_model_selector.h"
+#include "platform/imgui_launcher.h"
 #include "platform/imgui_overlay.h"
 #include <SDL3/SDL.h>
 
@@ -19,7 +20,8 @@ typedef unsigned int GLuint;
 /* UI state machine — determines what the backend draws each frame. */
 enum class UIState
 {
-	ModelSelector, // Pre-boot: user picks a model + config
+	ModelSelector, // Pre-boot: user picks a model + config (legacy)
+	Launcher,	   // Pre-boot: .mac file launcher cards
 	Windowed,	   // Running emulation in a window (no chrome)
 	Fullscreen,	   // Running emulation fullscreen
 };
@@ -103,6 +105,9 @@ public:
 	   (no emulation texture, no emulator shell dependency). */
 	bool createSelectorWindow();
 
+	/* Create the Launcher UI from .mac file entries. */
+	bool createLauncher(std::vector<MacFileEntry> entries);
+
 	/* GL texture filter */
 	void setTextureFilter(TextureFilter f);
 	TextureFilter textureFilter() const { return textureFilter_; }
@@ -171,10 +176,16 @@ private:
 	void drawViewportFullscreen();
 	void displayEmulatorImage(float w, float h);
 
-	/* Model selector (pre-boot) */
+	/* Model selector (pre-boot, legacy) */
 	ModelSelector modelSelector_;
 	void drawModelSelector();
 	void bootFromSelector(const LaunchConfig &config);
+
+	/* Launcher (pre-boot, new) */
+	Launcher launcher_;
+	std::string launcherDataDir_;
+	void drawLauncher();
+	void bootFromLauncher(const MacFileEntry &entry);
 
 	/* Per-state draw dispatchers */
 	void drawWindowedState();
