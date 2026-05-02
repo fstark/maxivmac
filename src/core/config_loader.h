@@ -58,6 +58,9 @@ struct LaunchConfig
 	std::string debugServerPath;		 // empty = not enabled, "auto" = default path
 	std::vector<std::string> dbgScripts; // --dbg-script=FILE (repeatable)
 	std::string diagSubsystems;			 // --diag=extfs,guest,...
+
+	// Direct .mac file launch (positional arg ending in .mac)
+	std::string macFilePath;
 };
 
 // Parse command-line arguments into a LaunchConfig.

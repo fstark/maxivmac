@@ -122,7 +122,7 @@ void ImGuiBackend::runLoop()
 {
 	if (!shell_) return;
 
-	/* In ModelSelector state, shouldQuit() would crash (no machine).
+	/* In Launcher state, shouldQuit() would crash (no machine).
 	   Use g_forceMacOff directly when machine isn't inited. */
 	auto wantQuit = [this]() -> bool
 	{
@@ -145,8 +145,8 @@ void ImGuiBackend::runLoop()
 		{
 			ImGui_ImplSDL3_ProcessEvent(&event);
 
-			/* In ModelSelector/Launcher state, only handle quit events */
-			if (uiState_ == UIState::ModelSelector || uiState_ == UIState::Launcher)
+			/* In Launcher state, only handle quit events */
+			if (uiState_ == UIState::Launcher)
 			{
 				if (event.type == SDL_EVENT_QUIT) g_requestMacOff = true;
 				continue;
@@ -261,42 +261,6 @@ void ImGuiBackend::runLoop()
 		/* Branch on UI state */
 		switch (uiState_)
 		{
-			case UIState::ModelSelector:
-			{
-				/* No emulation ticks — just draw the selector UI */
-				ImGui_ImplOpenGL3_NewFrame();
-				ImGui_ImplSDL3_NewFrame();
-				ImGui::NewFrame();
-
-				/* drawModelSelector() may set pendingBoot_ — we must
-				   finish the current ImGui frame before tearing down
-				   the context, so defer the actual boot. */
-				drawModelSelector();
-
-				ImGui::Render();
-				{
-					int displayW, displayH;
-					SDL_GetWindowSizeInPixels(window_, &displayW, &displayH);
-					glViewport(0, 0, displayW, displayH);
-					glClearColor(0.78f, 0.78f, 0.78f, 1.0f);
-					glClear(GL_COLOR_BUFFER_BIT);
-					ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-					SDL_GL_SwapWindow(window_);
-				}
-
-				/* Now it's safe to tear down ImGui and boot */
-				if (pendingBoot_)
-				{
-					pendingBoot_ = false;
-					bootFromSelector(pendingBootConfig_);
-				}
-				else
-				{
-					SDL_Delay(16); /* ~60 fps for UI */
-				}
-				break;
-			}
-
 			case UIState::Launcher:
 			{
 				ImGui_ImplOpenGL3_NewFrame();
@@ -319,7 +283,7 @@ void ImGuiBackend::runLoop()
 				if (pendingBoot_)
 				{
 					pendingBoot_ = false;
-					bootFromSelector(pendingBootConfig_);
+					bootFromLauncherConfig(pendingBootConfig_);
 				}
 				else
 				{
@@ -424,17 +388,7 @@ void ImGuiBackend::drawFullscreenState()
 
 /* ── Model selector ──────────────────────────────────── */
 
-void ImGuiBackend::drawModelSelector()
-{
-	ModelSelectorResult result = modelSelector_.draw();
-	if (result.accepted && shell_)
-	{
-		pendingBoot_ = true;
-		pendingBootConfig_ = result.config;
-	}
-}
-
-void ImGuiBackend::bootFromSelector(const LaunchConfig &config)
+void ImGuiBackend::bootFromLauncherConfig(const LaunchConfig &config)
 {
 	/* Update the global config with user's choices */
 	SetLaunchConfig(config);
@@ -488,7 +442,7 @@ bool ImGuiBackend::createLauncher(std::vector<MacFileEntry> entries)
 {
 	launcherDataDir_ = "data"; // default; caller can set properly
 
-	/* Create the window (same as createSelectorWindow) */
+	/* Create the Launcher window */
 	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 	window_ = SDL_CreateWindow("Maxi vMac", 700, 500, flags);
 	if (!window_)
@@ -546,48 +500,6 @@ void ImGuiBackend::enterFullscreen()
 	}
 	if (shell_) shell_->setFullscreenHint(true);
 	uiState_ = UIState::Fullscreen;
-}
-
-/* ── Selector window (pre-boot) ──────────────────────── */
-
-bool ImGuiBackend::createSelectorWindow()
-{
-	/* Create a modest window for the model selector, no emulation
-	   texture needed yet. */
-	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-
-	window_ = SDL_CreateWindow("Maxi vMac", 700, 500, flags);
-	if (!window_)
-	{
-		fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
-		return false;
-	}
-
-	glContext_ = SDL_GL_CreateContext(window_);
-	if (!glContext_)
-	{
-		fprintf(stderr, "SDL_GL_CreateContext failed: %s\n", SDL_GetError());
-		return false;
-	}
-	SDL_GL_MakeCurrent(window_, glContext_);
-	SDL_GL_SetSwapInterval(1);
-
-	/* Initialize ImGui */
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO &io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigWindowsMoveFromTitleBarOnly = true;
-	ImGui::StyleColorsDark();
-
-	ImGui_ImplSDL3_InitForOpenGL(window_, glContext_);
-	ImGui_ImplOpenGL3_Init("#version 150");
-
-	/* Initialize model selector with ROM discovery */
-	const LaunchConfig &lc = GetLaunchConfig();
-	modelSelector_.init(lc.romDir);
-
-	return true;
 }
 
 /* ── event translation ───────────────────────────────── */

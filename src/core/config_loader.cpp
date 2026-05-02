@@ -448,6 +448,16 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 			exit(1);
 		}
 
+		// Positional .mac file → direct launch
+		{
+			size_t len = std::strlen(arg);
+			if (len >= 4 && std::strcmp(arg + len - 4, ".mac") == 0)
+			{
+				lc.macFilePath = arg;
+				continue;
+			}
+		}
+
 		// Positional arguments are disk image paths
 		lc.diskPaths.push_back(arg);
 	}

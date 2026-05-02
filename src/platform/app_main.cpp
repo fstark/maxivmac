@@ -47,6 +47,35 @@ int main(int argc, char **argv)
 		}
 		imguiBackend.setUIState(UIState::Windowed);
 	}
+	else if (!lc.macFilePath.empty())
+	{
+		/* Direct .mac file launch — parse, validate, boot */
+		MacFileEntry entry;
+		std::string err;
+		if (!ParseMacFile(lc.macFilePath, entry, err))
+		{
+			fprintf(stderr, "%s\n", err.c_str());
+			ProgramCleanup();
+			return 1;
+		}
+		std::string dataDir = ResolveDataDir("");
+		ValidateMacEntry(entry, dataDir + "/roms", dataDir + "/disks");
+		if (!entry.romAvailable)
+		{
+			fprintf(stderr, "%s: %s\n", lc.macFilePath.c_str(), entry.validationError.c_str());
+			ProgramCleanup();
+			return 1;
+		}
+		LaunchConfig macLc = LaunchConfigFromMacEntry(entry, dataDir);
+		SetLaunchConfig(macLc);
+		if (!shell.init(argc, argv))
+		{
+			shell.shutdown();
+			ProgramCleanup();
+			return 1;
+		}
+		imguiBackend.setUIState(UIState::Windowed);
+	}
 	else
 	{
 		/* ImGui without --model: platform init only, show Launcher */

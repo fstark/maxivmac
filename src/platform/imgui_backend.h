@@ -10,9 +10,9 @@
 #define IMGUI_BACKEND_H
 
 #include "platform/platform_backend.h"
-#include "platform/imgui_model_selector.h"
 #include "platform/imgui_launcher.h"
 #include "platform/imgui_overlay.h"
+#include "core/config_loader.h"
 #include <SDL3/SDL.h>
 
 typedef unsigned int GLuint;
@@ -20,10 +20,9 @@ typedef unsigned int GLuint;
 /* UI state machine — determines what the backend draws each frame. */
 enum class UIState
 {
-	ModelSelector, // Pre-boot: user picks a model + config (legacy)
-	Launcher,	   // Pre-boot: .mac file launcher cards
-	Windowed,	   // Running emulation in a window (no chrome)
-	Fullscreen,	   // Running emulation fullscreen
+	Launcher,	// Pre-boot: .mac file launcher cards
+	Windowed,	// Running emulation in a window (no chrome)
+	Fullscreen, // Running emulation fullscreen
 };
 
 /* Scaling mode for the emulator viewport. */
@@ -101,10 +100,6 @@ public:
 	void enterWindowed();
 	void enterFullscreen();
 
-	/* Pre-boot window: create a window suitable for the model selector
-	   (no emulation texture, no emulator shell dependency). */
-	bool createSelectorWindow();
-
 	/* Create the Launcher UI from .mac file entries. */
 	bool createLauncher(std::vector<MacFileEntry> entries);
 
@@ -142,7 +137,7 @@ private:
 	int currentScale_ = 2;
 
 	/* UI state */
-	UIState uiState_ = UIState::ModelSelector;
+	UIState uiState_ = UIState::Launcher;
 	enum class OverlayMode : uint8_t
 	{
 		Hidden,
@@ -176,16 +171,12 @@ private:
 	void drawViewportFullscreen();
 	void displayEmulatorImage(float w, float h);
 
-	/* Model selector (pre-boot, legacy) */
-	ModelSelector modelSelector_;
-	void drawModelSelector();
-	void bootFromSelector(const LaunchConfig &config);
-
-	/* Launcher (pre-boot, new) */
+	/* Launcher (pre-boot) */
 	Launcher launcher_;
 	std::string launcherDataDir_;
 	void drawLauncher();
 	void bootFromLauncher(const MacFileEntry &entry);
+	void bootFromLauncherConfig(const LaunchConfig &config);
 
 	/* Per-state draw dispatchers */
 	void drawWindowedState();

@@ -21,6 +21,4 @@ All 9 phases implemented. Commit range: `5ac811b..cb17271`.
 
 ### Deferred items (moved to TODO.md)
 
-- Direct `.mac` file launch from command line (Phase 8.2)
-- Old model selector file removal (Phase 8.3) — kept as legacy fallback
 - Resolution change window sizing bug (unrelated to this plan)
