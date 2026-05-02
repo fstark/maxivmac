@@ -6,6 +6,7 @@
 
 #include "doctest/doctest.h"
 #include "config/mac_file.h"
+#include "core/config_loader.h"
 #include "core/model_defs.h"
 #include <filesystem>
 #include <fstream>
@@ -266,4 +267,68 @@ TEST_CASE("ResolveDataDir: returns empty if not found")
 	// If CWD has data/ this will still find it via fallback
 	// So only check it doesn't crash
 	(void)result;
+}
+
+// --- LaunchConfigFromMacEntry tests ---
+
+TEST_CASE("LaunchConfigFromMacEntry: basic conversion")
+{
+	MacFileEntry e;
+	e.name = "Test";
+	e.model = MacModel::Plus;
+	e.romPath = "/data/roms/MacPlus.ROM";
+	e.disks = {"boot.hfs"};
+	e.sharedDirs = {"shared/"};
+	e.serialA = "slip";
+	e.ramOverrideMB = 8;
+	e.screenW = 800;
+	e.screenH = 600;
+	e.screenDepth = 3;
+
+	LaunchConfig lc = LaunchConfigFromMacEntry(e, "/data");
+	CHECK(lc.model == MacModel::Plus);
+	CHECK(lc.modelExplicit == true);
+	CHECK(lc.romPath == "/data/roms/MacPlus.ROM");
+	CHECK(lc.ramMB == 8);
+	CHECK(lc.screenW == 800);
+	CHECK(lc.screenH == 600);
+	CHECK(lc.screenDepth == 3);
+	CHECK(lc.serialA == "slip");
+}
+
+TEST_CASE("LaunchConfigFromMacEntry: disk paths resolved")
+{
+	MacFileEntry e;
+	e.name = "Test";
+	e.model = MacModel::Plus;
+	e.disks = {"boot.hfs", "data.hfs"};
+
+	LaunchConfig lc = LaunchConfigFromMacEntry(e, "/mydata");
+	REQUIRE(lc.diskPaths.size() == 2);
+	CHECK(lc.diskPaths[0] == "/mydata/disks/boot.hfs");
+	CHECK(lc.diskPaths[1] == "/mydata/disks/data.hfs");
+}
+
+TEST_CASE("LaunchConfigFromMacEntry: absolute shared dir preserved")
+{
+	MacFileEntry e;
+	e.name = "Test";
+	e.model = MacModel::Plus;
+	e.sharedDirs = {"/absolute/share"};
+
+	LaunchConfig lc = LaunchConfigFromMacEntry(e, "/mydata");
+	REQUIRE(lc.drivePaths.size() == 1);
+	CHECK(lc.drivePaths[0] == "/absolute/share");
+}
+
+TEST_CASE("LaunchConfigFromMacEntry: relative shared dir resolved")
+{
+	MacFileEntry e;
+	e.name = "Test";
+	e.model = MacModel::Plus;
+	e.sharedDirs = {"shared/"};
+
+	LaunchConfig lc = LaunchConfigFromMacEntry(e, "/mydata");
+	REQUIRE(lc.drivePaths.size() == 1);
+	CHECK(lc.drivePaths[0] == "/mydata/shared/");
 }

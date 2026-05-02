@@ -6,6 +6,7 @@
 
 #include "core/config_loader.h"
 #include "core/model_defs.h"
+#include "config/mac_file.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
@@ -612,4 +613,31 @@ std::string ResolveRomPath(const std::string &romPath, MacModel model, const std
 	if (fileExists(p)) return p;
 
 	return {};
+}
+
+LaunchConfig LaunchConfigFromMacEntry(const MacFileEntry &entry, std::string_view dataDir)
+{
+	LaunchConfig lc;
+	lc.model = entry.model;
+	lc.modelExplicit = true;
+	lc.romPath = entry.romPath;
+	lc.ramMB = entry.ramOverrideMB;
+	lc.screenW = entry.screenW;
+	lc.screenH = entry.screenH;
+	lc.screenDepth = entry.screenDepth;
+	lc.serialA = entry.serialA;
+
+	std::string diskDir = std::string(dataDir) + "/disks/";
+	for (const auto &d : entry.disks)
+		lc.diskPaths.push_back(diskDir + d);
+
+	for (const auto &s : entry.sharedDirs)
+	{
+		if (!s.empty() && s[0] == '/')
+			lc.drivePaths.push_back(s);
+		else
+			lc.drivePaths.push_back(std::string(dataDir) + "/" + s);
+	}
+
+	return lc;
 }

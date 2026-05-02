@@ -87,3 +87,9 @@ const char *DefaultRomFileName(MacModel model);
 // Returns empty string if not found.
 std::string ResolveRomPath(const std::string &romPath, MacModel model,
 						   const std::string &romDir = {});
+
+// Forward declaration
+struct MacFileEntry;
+
+// Convert a parsed .mac file entry into a LaunchConfig.
+LaunchConfig LaunchConfigFromMacEntry(const MacFileEntry &entry, std::string_view dataDir);
