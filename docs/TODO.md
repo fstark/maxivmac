@@ -48,6 +48,16 @@
 
 * Fixed date at startup
 
+* Debug networking
+
+* Resolution change window sizing: when the guest System restores a
+  saved resolution matching the host desktop (ID 100) or half-desktop
+  (ID 101), onResolutionChanged sizes the window to fill the entire
+  usable area and macOS auto-maximizes it. Need a smarter strategy
+  for host-derived resolutions — possibly cap at a sensible pixel-
+  perfect multiple or skip the resize when the target would fill the
+  screen.
+
 * Acceleration and 1s clock management is not user friendly anymore
 
 * Funky kExtnVideo management

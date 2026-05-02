@@ -241,8 +241,18 @@ std::vector<MacFileEntry> ScanMacDirectory(std::string_view dirPath)
 
 		MacFileEntry entry;
 		std::string err;
-		if (ParseMacFile(dirEntry.path().string(), entry, err)) entries.push_back(std::move(entry));
-		// else: silently skip (logged via DIAG in production)
+		if (ParseMacFile(dirEntry.path().string(), entry, err))
+		{
+			entries.push_back(std::move(entry));
+		}
+		else
+		{
+			fprintf(stderr, "%s\n", err.c_str());
+			/* Keep the entry so the Launcher can show it grayed out */
+			entry.validationError = err;
+			if (entry.name.empty()) entry.name = dirEntry.path().stem().string();
+			entries.push_back(std::move(entry));
+		}
 	}
 
 	// Sort by name for deterministic order
@@ -264,9 +274,12 @@ static std::string md5ToHex(const uint8_t digest[16])
 
 void ValidateMacEntry(MacFileEntry &entry, std::string_view romDir, std::string_view diskDir)
 {
+	/* If the parser already flagged an error (e.g. unknown model),
+	   keep it — there's nothing useful to validate. */
+	if (!entry.validationError.empty()) return;
+
 	entry.romAvailable = false;
 	entry.allDisksAvailable = true;
-	entry.validationError.clear();
 
 	// Look up model's ROM info
 	const ModelDef *def = ModelDefFor(entry.model);
