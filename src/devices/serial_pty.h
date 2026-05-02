@@ -9,6 +9,7 @@
 #pragma once
 
 #include "devices/serial_backend.h"
+#include "core/diag.h"
 
 #ifndef _WIN32
 
@@ -72,8 +73,7 @@ public:
 		if (masterFd_ >= 0)
 		{
 			if (write(masterFd_, &byte, 1) < 0)
-			{ /* best-effort */
-			}
+				DIAG(Serial, "PTY write failed: %s\n", strerror(errno));
 		}
 	}
 
