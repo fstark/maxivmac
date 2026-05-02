@@ -650,7 +650,7 @@ OSErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
 	{
 		fflush(of.fp);
 		int fd = fileno(of.fp);
-		if (fd >= 0) (void)ftruncate(fd, static_cast<off_t>(newSize));
+		if (fd < 0 || ftruncate(fd, static_cast<off_t>(newSize)) != 0) return kIoErr;
 		e->dataForkSize = newSize;
 	}
 	e->modDate = currentMacDate();
