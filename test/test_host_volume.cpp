@@ -6,6 +6,13 @@
 
 namespace fs = std::filesystem;
 
+/* Colons are illegal in Windows filenames — skip tests that use them. */
+#ifdef _WIN32
+static constexpr bool kSkipColonTests = true;
+#else
+static constexpr bool kSkipColonTests = false;
+#endif
+
 namespace
 {
 
@@ -109,7 +116,7 @@ TEST_CASE("HostVolume: hidden files skipped")
 	CHECK(vol.childCount(storage::HostVolume::kRootDirID) == 0);
 }
 
-TEST_CASE("HostVolume: filename decoding")
+TEST_CASE("HostVolume: filename decoding" * doctest::skip(kSkipColonTests))
 {
 	TempDir td;
 	writeFile(td.path / "\x1B"
@@ -218,7 +225,7 @@ TEST_CASE("HostVolume: createFile duplicate")
 	CHECK(cnid2 == 0);
 }
 
-TEST_CASE("HostVolume: createFile escaped name")
+TEST_CASE("HostVolume: createFile escaped name" * doctest::skip(kSkipColonTests))
 {
 	TempDir td;
 	storage::HostVolume vol;
