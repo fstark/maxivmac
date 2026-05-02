@@ -5,14 +5,15 @@ Spec: [MODEL.md](MODEL.md)
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Constexpr ModelDef table and lookup functions | |
-| 2 | Refactor MachineConfigForModel() to use ModelDef table | |
-| 3 | Simplify ParseModelName() and ModelToString() | |
-| 4 | .mac file parser and validator | |
-| 5 | LaunchConfigFromMacEntry adapter | |
-| 6 | Data directory resolution + asset migration (ROMs, .def files) | |
-| 7 | Launcher UI (replaces model selector) | |
-| 8 | Boot path integration | |
+| 1 | Constexpr ModelDef table and lookup functions | ✅ 5ac811b |
+| 2 | Refactor MachineConfigForModel() to use ModelDef table | ✅ 7cf1b30 |
+| 3 | Simplify ParseModelName() and ModelToString() | ✅ 1fe93c1 |
+| 4 | .mac file parser and validator | ✅ 8923d14 |
+| 5 | LaunchConfigFromMacEntry adapter | ✅ ebb3bce |
+| 6 | Data directory resolution + asset migration (ROMs, .def files) | ✅ 87e6c63 |
+| 7 | Launcher UI (replaces model selector) | ✅ 0e234d1 |
+| 8 | Boot path integration | ✅ e2e4f93 |
+| 9 | Human testing — manual boot verification | ⬜ deferred |
 | 9 | Human testing — manual boot verification | |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
