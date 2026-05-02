@@ -23,14 +23,13 @@ TEST_CASE("ParseMacFile: valid file")
 {
 	MacFileEntry e;
 	std::string err;
-	bool ok = parse(
-		"name = Mac Plus Test\n"
-		"model = Plus\n"
-		"disk = boot.hfs\n"
-		"shared = shared/\n"
-		"serial-a = slip\n"
-		"description = A test entry.\n",
-		e, err);
+	bool ok = parse("name = Mac Plus Test\n"
+					"model = Plus\n"
+					"disk = boot.hfs\n"
+					"shared = shared/\n"
+					"serial-a = slip\n"
+					"description = A test entry.\n",
+					e, err);
 	REQUIRE(ok);
 	CHECK(err.empty());
 	CHECK(e.name == "Mac Plus Test");
@@ -65,11 +64,10 @@ TEST_CASE("ParseMacFile: unknown key")
 {
 	MacFileEntry e;
 	std::string err;
-	bool ok = parse(
-		"name = Test\n"
-		"model = Plus\n"
-		"bogus = value\n",
-		e, err);
+	bool ok = parse("name = Test\n"
+					"model = Plus\n"
+					"bogus = value\n",
+					e, err);
 	CHECK_FALSE(ok);
 	CHECK(err.find("bogus") != std::string::npos);
 }
@@ -78,12 +76,11 @@ TEST_CASE("ParseMacFile: repeatable disk")
 {
 	MacFileEntry e;
 	std::string err;
-	bool ok = parse(
-		"name = Test\n"
-		"model = Plus\n"
-		"disk = boot.hfs\n"
-		"disk = data.hfs\n",
-		e, err);
+	bool ok = parse("name = Test\n"
+					"model = Plus\n"
+					"disk = boot.hfs\n"
+					"disk = data.hfs\n",
+					e, err);
 	REQUIRE(ok);
 	CHECK(e.disks.size() == 2);
 	CHECK(e.disks[0] == "boot.hfs");
@@ -94,12 +91,11 @@ TEST_CASE("ParseMacFile: repeatable shared")
 {
 	MacFileEntry e;
 	std::string err;
-	bool ok = parse(
-		"name = Test\n"
-		"model = Plus\n"
-		"shared = dir1/\n"
-		"shared = /absolute/dir2\n",
-		e, err);
+	bool ok = parse("name = Test\n"
+					"model = Plus\n"
+					"shared = dir1/\n"
+					"shared = /absolute/dir2\n",
+					e, err);
 	REQUIRE(ok);
 	CHECK(e.sharedDirs.size() == 2);
 	CHECK(e.sharedDirs[0] == "dir1/");
@@ -110,11 +106,10 @@ TEST_CASE("ParseMacFile: RAM size 4M")
 {
 	MacFileEntry e;
 	std::string err;
-	bool ok = parse(
-		"name = Test\n"
-		"model = Plus\n"
-		"ram = 4M\n",
-		e, err);
+	bool ok = parse("name = Test\n"
+					"model = Plus\n"
+					"ram = 4M\n",
+					e, err);
 	REQUIRE(ok);
 	CHECK(e.ramOverrideMB == 4);
 }
@@ -123,11 +118,10 @@ TEST_CASE("ParseMacFile: RAM size 8m lowercase")
 {
 	MacFileEntry e;
 	std::string err;
-	bool ok = parse(
-		"name = Test\n"
-		"model = Plus\n"
-		"ram = 8m\n",
-		e, err);
+	bool ok = parse("name = Test\n"
+					"model = Plus\n"
+					"ram = 8m\n",
+					e, err);
 	REQUIRE(ok);
 	CHECK(e.ramOverrideMB == 8);
 }
@@ -136,11 +130,10 @@ TEST_CASE("ParseMacFile: RAM size sub-MB error")
 {
 	MacFileEntry e;
 	std::string err;
-	bool ok = parse(
-		"name = Test\n"
-		"model = Plus\n"
-		"ram = 2560K\n",
-		e, err);
+	bool ok = parse("name = Test\n"
+					"model = Plus\n"
+					"ram = 2560K\n",
+					e, err);
 	CHECK_FALSE(ok);
 	CHECK(err.find("sub-MB") != std::string::npos);
 }
@@ -149,11 +142,10 @@ TEST_CASE("ParseMacFile: screen spec 640x480x8")
 {
 	MacFileEntry e;
 	std::string err;
-	bool ok = parse(
-		"name = Test\n"
-		"model = II\n"
-		"screen = 640x480x8\n",
-		e, err);
+	bool ok = parse("name = Test\n"
+					"model = II\n"
+					"screen = 640x480x8\n",
+					e, err);
 	REQUIRE(ok);
 	CHECK(e.screenW == 640);
 	CHECK(e.screenH == 480);
@@ -164,15 +156,14 @@ TEST_CASE("ParseMacFile: comments and blank lines")
 {
 	MacFileEntry e;
 	std::string err;
-	bool ok = parse(
-		"# This is a comment\n"
-		"\n"
-		"name = Test  # inline comment\n"
-		"\n"
-		"# Another comment\n"
-		"model = Plus\n"
-		"\n",
-		e, err);
+	bool ok = parse("# This is a comment\n"
+					"\n"
+					"name = Test  # inline comment\n"
+					"\n"
+					"# Another comment\n"
+					"model = Plus\n"
+					"\n",
+					e, err);
 	REQUIRE(ok);
 	CHECK(e.name == "Test");
 	CHECK(e.model == MacModel::Plus);

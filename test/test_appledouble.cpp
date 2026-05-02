@@ -91,7 +91,7 @@ TEST_CASE("LoadTypeMappings returns -1 for missing file")
 
 TEST_CASE("LoadTypeMappings loads actual assets/typemap.def")
 {
-	int count = LoadTypeMappings("assets/typemap.def");
+	int count = LoadTypeMappings("data/debug/typemap.def");
 	CHECK(count >= 19);
 	auto fi = FinderInfoFromExtension(".txt");
 	CHECK(fi.type == FourCC("TEXT"));
@@ -338,7 +338,8 @@ TEST_CASE("MacRomanFromUTF8 + UTF8FromMacRoman identity")
 		std::vector<uint8_t> original = {static_cast<uint8_t>(b)};
 		auto utf8 = UTF8FromMacRoman(original);
 		auto mr = MacRomanFromUTF8(utf8);
-		auto utf8_again = UTF8FromMacRoman({reinterpret_cast<const uint8_t *>(mr.data()), mr.size()});
+		auto utf8_again =
+			UTF8FromMacRoman({reinterpret_cast<const uint8_t *>(mr.data()), mr.size()});
 		CHECK(utf8_again == utf8);
 	}
 }
@@ -477,7 +478,7 @@ TEST_CASE("parseSidecar skips unknown entry IDs")
 TEST_CASE("GetFinderInfo with no sidecar returns extension default")
 {
 	// Ensure typemap is loaded
-	LoadTypeMappings("assets/typemap.def");
+	LoadTypeMappings("data/debug/typemap.def");
 	auto p = writeTempFile("hello", "fi_test.txt");
 	auto fi = GetFinderInfo(p);
 	CHECK(fi.type == FourCC("TEXT"));

@@ -112,7 +112,7 @@ TEST_CASE("TypeRegistry loadErrors")
 {
 	TypeRegistry reg;
 	reg.init({get_vm_byte, get_vm_word, get_vm_long});
-	int e = reg.loadErrors("assets/errors.def");
+	int e = reg.loadErrors("data/debug/errors.def");
 	CHECK(e > 0);
 }
 
@@ -278,7 +278,7 @@ TEST_CASE("TypeRegistry OSErr formatting")
 	TypeRegistry reg;
 	reg.init({get_vm_byte, get_vm_word, get_vm_long});
 	reg.load(tmp);
-	reg.loadErrors("assets/errors.def");
+	reg.loadErrors("data/debug/errors.def");
 
 	/* -43 = fnfErr */
 	put_be16(0x100, static_cast<uint16_t>(-43));
@@ -416,7 +416,7 @@ TEST_CASE("types.def loads all expected types")
 {
 	TypeRegistry reg;
 	reg.init({get_vm_byte, get_vm_word, get_vm_long});
-	int n = reg.load("assets/types.def");
+	int n = reg.load("data/debug/types.def");
 	CHECK(n > 0);
 
 	CHECK(reg.has("Point"));

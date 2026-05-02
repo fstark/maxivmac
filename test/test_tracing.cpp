@@ -87,7 +87,7 @@ static void ensureTypeRegistryInit()
 	if (done) return;
 	auto &tr = g_typeRegistry();
 	tr.init({get_vm_byte, get_vm_word, get_vm_long});
-	tr.load("assets/types.def");
+	tr.load("data/debug/types.def");
 	done = true;
 }
 
@@ -333,7 +333,7 @@ TEST_CASE("TrapDefs load actual traps.def")
 	ensureTypeRegistryInit();
 	/* Verify the shipped traps.def file parses without error */
 	TrapDefs defs;
-	int count = defs.load("assets/traps.def");
+	int count = defs.load("data/debug/traps.def");
 	CHECK(count >= 25);
 
 	/* Spot-check a few entries */
@@ -354,7 +354,7 @@ TEST_CASE("TrapDefs load actual traps.def")
 TEST_CASE("TrapDefs load actual errors.def")
 {
 	TrapDefs defs;
-	int count = defs.loadErrors("assets/errors.def");
+	int count = defs.loadErrors("data/debug/errors.def");
 	CHECK(count >= 10);
 	if (count > 0)
 	{
@@ -1041,7 +1041,7 @@ TEST_CASE("TrapDefs load actual traps.def has dispatch subtraps")
 {
 	ensureTypeRegistryInit();
 	TrapDefs defs;
-	int n = defs.load("assets/traps.def");
+	int n = defs.load("data/debug/traps.def");
 	REQUIRE(n > 0);
 
 	/* HFSDispatch should have subtraps */

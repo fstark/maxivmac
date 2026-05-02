@@ -31,8 +31,9 @@ struct LaunchConfig
 	bool silent = false;
 	bool traceTraps = false;
 	bool help = false;
-	std::string title;	// --title: window title (platform-specific)
-	std::string romDir; // --romdir: directory to search for ROM files
+	std::string title;	 // --title: window title (platform-specific)
+	std::string romDir;	 // --romdir: directory to search for ROM files
+	std::string dataDir; // resolved data/ directory (set by ResolveDataDir)
 
 	// StateRecorder options
 	std::string recordPath;		   // --record=<path>

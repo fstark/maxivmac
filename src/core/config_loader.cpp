@@ -608,7 +608,11 @@ std::string ResolveRomPath(const std::string &romPath, MacModel model, const std
 		if (fileExists(p)) return p;
 	}
 
-	// Try roms/<name>
+	// Try data/roms/<name> (new primary path)
+	p = std::string("data/roms/") + name;
+	if (fileExists(p)) return p;
+
+	// Try roms/<name> (legacy fallback)
 	p = std::string("roms/") + name;
 	if (fileExists(p)) return p;
 

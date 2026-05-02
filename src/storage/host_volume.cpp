@@ -39,7 +39,7 @@ bool HostVolume::mount(const std::filesystem::path &hostDir)
 	static bool s_typesLoaded = false;
 	if (!s_typesLoaded)
 	{
-		appledouble::LoadTypeMappings("assets/typemap.def");
+		appledouble::LoadTypeMappings("data/debug/typemap.def");
 		s_typesLoaded = true;
 	}
 

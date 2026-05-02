@@ -19,10 +19,9 @@ TEST_CASE("ModelDef table has 12 entries")
 TEST_CASE("ModelDef table covers all MacModel values")
 {
 	constexpr MacModel allModels[] = {
-		MacModel::Twig43, MacModel::Twiggy, MacModel::Mac128K,
-		MacModel::Mac512Ke, MacModel::Kanji, MacModel::Plus,
-		MacModel::SE, MacModel::SEFDHD, MacModel::Classic,
-		MacModel::PB100, MacModel::II, MacModel::IIx,
+		MacModel::Twig43,  MacModel::Twiggy, MacModel::Mac128K, MacModel::Mac512Ke,
+		MacModel::Kanji,   MacModel::Plus,	 MacModel::SE,		MacModel::SEFDHD,
+		MacModel::Classic, MacModel::PB100,	 MacModel::II,		MacModel::IIx,
 	};
 	for (auto m : allModels)
 	{
@@ -98,8 +97,8 @@ TEST_CASE("ModelDefForSlug returns nullptr for unknown")
 TEST_CASE("ModelDefForSlug finds all models by slug")
 {
 	const char *slugs[] = {
-		"Twig43", "Twiggy", "128K", "512Ke", "Kanji", "Plus",
-		"SE", "SEFDHD", "Classic", "PB100", "II", "IIx",
+		"Twig43", "Twiggy", "128K",	   "512Ke", "Kanji", "Plus",
+		"SE",	  "SEFDHD", "Classic", "PB100", "II",	 "IIx",
 	};
 	for (const char *s : slugs)
 	{
@@ -133,10 +132,9 @@ static void checkVIAConfigEqual(const VIAConfig &a, const VIAConfig &b, const ch
 TEST_CASE("ModelDef produces identical MachineConfig")
 {
 	constexpr MacModel allModels[] = {
-		MacModel::Twig43, MacModel::Twiggy, MacModel::Mac128K,
-		MacModel::Mac512Ke, MacModel::Kanji, MacModel::Plus,
-		MacModel::SE, MacModel::SEFDHD, MacModel::Classic,
-		MacModel::PB100, MacModel::II, MacModel::IIx,
+		MacModel::Twig43,  MacModel::Twiggy, MacModel::Mac128K, MacModel::Mac512Ke,
+		MacModel::Kanji,   MacModel::Plus,	 MacModel::SE,		MacModel::SEFDHD,
+		MacModel::Classic, MacModel::PB100,	 MacModel::II,		MacModel::IIx,
 	};
 
 	for (auto m : allModels)
@@ -220,10 +218,9 @@ TEST_CASE("ParseModelName rejects unknown")
 TEST_CASE("ModelToString round-trips")
 {
 	constexpr MacModel allModels[] = {
-		MacModel::Twig43, MacModel::Twiggy, MacModel::Mac128K,
-		MacModel::Mac512Ke, MacModel::Kanji, MacModel::Plus,
-		MacModel::SE, MacModel::SEFDHD, MacModel::Classic,
-		MacModel::PB100, MacModel::II, MacModel::IIx,
+		MacModel::Twig43,  MacModel::Twiggy, MacModel::Mac128K, MacModel::Mac512Ke,
+		MacModel::Kanji,   MacModel::Plus,	 MacModel::SE,		MacModel::SEFDHD,
+		MacModel::Classic, MacModel::PB100,	 MacModel::II,		MacModel::IIx,
 	};
 	for (auto m : allModels)
 	{

@@ -23,9 +23,9 @@ static void EnsureSymbolsInit()
 {
 	if (!s_symbolsReady)
 	{
-		g_typeRegistry().load("assets/types.def");
-		g_globalRegistry().load("assets/globals.def", g_typeRegistry());
-		g_trapDefs.load("assets/traps.def");
+		g_typeRegistry().load("data/debug/types.def");
+		g_globalRegistry().load("data/debug/globals.def", g_typeRegistry());
+		g_trapDefs.load("data/debug/traps.def");
 		SymbolsInit();
 		s_symbolsReady = true;
 	}

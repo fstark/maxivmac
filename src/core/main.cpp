@@ -238,21 +238,21 @@ bool InitEmulation()
 	{
 		auto &tr = g_typeRegistry();
 		tr.init({get_vm_byte, get_vm_word, get_vm_long});
-		int n = tr.load("assets/types.def");
-		int e = tr.loadErrors("assets/errors.def");
+		int n = tr.load("data/debug/types.def");
+		int e = tr.loadErrors("data/debug/errors.def");
 		if (n > 0) std::fprintf(stderr, "type_registry: loaded %d types, %d error codes\n", n, e);
 	}
 
 	/* Load low-memory global definitions (must follow type registry) */
 	{
-		int n = g_globalRegistry().load("assets/globals.def", g_typeRegistry());
+		int n = g_globalRegistry().load("data/debug/globals.def", g_typeRegistry());
 		if (n > 0) std::fprintf(stderr, "global_registry: loaded %d globals\n", n);
 	}
 
 	/* Load external trap definitions for the hierarchical tracer */
 	{
-		int n = g_trapDefs.load("assets/traps.def");
-		int e = g_trapDefs.loadErrors("assets/errors.def");
+		int n = g_trapDefs.load("data/debug/traps.def");
+		int e = g_trapDefs.loadErrors("data/debug/errors.def");
 		if (n > 0) std::fprintf(stderr, "trap_defs: loaded %d traps, %d error codes\n", n, e);
 	}
 
