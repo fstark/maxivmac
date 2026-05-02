@@ -46,14 +46,7 @@ jobs:
       run: ctest --test-dir bld/linux --output-on-failure
 
   build-macos:
-    strategy:
-      matrix:
-        include:
-          - runner: macos-latest
-            arch: arm64
-          - runner: macos-13
-            arch: x86_64
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -71,3 +64,35 @@ jobs:
 
     - name: Unit tests
       run: ctest --test-dir bld/macos --output-on-failure
+
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-ninja
+          mingw-w64-x86_64-SDL3
+          mingw-w64-x86_64-opengl
+          git
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Configure
+      run: cmake --preset windows
+
+    - name: Build
+      run: cmake --build --preset windows -- -k 0
+
+    - name: Unit tests
+      run: ctest --test-dir bld/windows --output-on-failure

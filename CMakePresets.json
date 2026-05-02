@@ -67,6 +67,21 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Linux"
             }
+        },
+        {
+            "name": "windows",
+            "displayName": "Windows (MinGW)",
+            "description": "Release build on Windows with MinGW/MSYS2",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/bld/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
         }
     ],
     "buildPresets": [
@@ -85,6 +100,10 @@
         {
             "name": "linux",
             "configurePreset": "linux"
+        },
+        {
+            "name": "windows",
+            "configurePreset": "windows"
         }
     ]
 }
