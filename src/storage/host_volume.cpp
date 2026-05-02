@@ -1,5 +1,6 @@
 #include "storage/host_volume.h"
 #include "core/diag.h"
+#include "platform/common/path_utils.h"
 #include "util/macroman.h"
 
 #include <algorithm>
@@ -812,7 +813,7 @@ bool HostVolume::validateCatalog() const
 						"  catalog parent=%u -> \"%s\"\n"
 						"  hostPath parent  -> \"%s\"\n",
 						e.cnid, e.macName.c_str(), e.parentDirID, expectedParent.c_str(),
-						actualParent.string().c_str());
+						path_str(actualParent).c_str());
 				ok = false;
 			}
 		}

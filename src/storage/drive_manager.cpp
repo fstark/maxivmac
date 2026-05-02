@@ -3,6 +3,7 @@
 */
 #include "storage/drive_manager.h"
 #include "core/diag.h"
+#include "platform/common/path_utils.h"
 
 #include <algorithm>
 #include <cctype>
@@ -55,7 +56,7 @@ int DriveManager::mount(const std::filesystem::path &hostDir)
 	queuePendingMount(slot);
 
 	DIAG(ExtFS, "DriveManager: mounted slot %d \"%s\" → %s\n", slot, s.volumeName.c_str(),
-		 hostDir.string().c_str());
+		 path_str(hostDir).c_str());
 	return slot;
 }
 
