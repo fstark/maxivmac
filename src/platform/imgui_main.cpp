@@ -8,6 +8,8 @@
 
 #include "platform/imgui_backend.h"
 #include "platform/emulator_shell.h"
+#include "config/mac_file.h"
+#include "core/config_loader.h"
 #include "core/main.h"
 
 int main(int argc, char **argv)
@@ -32,20 +34,36 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		/* No model — platform init only, show model selector */
+		/* No model — platform init only, show Launcher */
 		if (!shell.initPlatform(argc, argv))
 		{
 			shell.shutdown();
 			ProgramCleanup();
 			return 1;
 		}
-		if (!backend.createSelectorWindow())
+
+		std::string dataDir = ResolveDataDir("");
+		if (dataDir.empty())
+		{
+			fprintf(stderr, "Error: data/ directory not found\n");
+			shell.shutdown();
+			ProgramCleanup();
+			return 1;
+		}
+
+		auto entries = ScanMacDirectory(dataDir + "/macs");
+		std::string romDir = dataDir + "/roms";
+		std::string diskDir = dataDir + "/disks";
+		for (auto &e : entries)
+			ValidateMacEntry(e, romDir, diskDir);
+
+		if (!backend.createLauncher(std::move(entries)))
 		{
 			shell.shutdown();
 			ProgramCleanup();
 			return 1;
 		}
-		backend.setUIState(UIState::ModelSelector);
+		backend.setUIState(UIState::Launcher);
 	}
 
 	backend.runLoop();
