@@ -22,6 +22,7 @@
 #include "util/macroman.h"
 
 #include <cstdio>
+#include <cstring>
 
 extern uint32_t g_instructionCount;
 

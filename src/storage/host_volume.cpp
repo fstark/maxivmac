@@ -650,7 +650,12 @@ OSErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
 	{
 		fflush(of.fp);
 		int fd = fileno(of.fp);
-		if (fd < 0 || ftruncate(fd, static_cast<off_t>(newSize)) != 0) return kIoErr;
+		if (fd < 0 || ftruncate(fd, static_cast<off_t>(newSize)) != 0)
+		{
+			DIAG(ExtFS, "ftruncate failed for cnid=%u newSize=%u: %s\n", of.cnid, newSize,
+				 strerror(errno));
+			return kIoErr;
+		}
 		e->dataForkSize = newSize;
 	}
 	e->modDate = currentMacDate();

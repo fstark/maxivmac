@@ -40,7 +40,7 @@ jobs:
       run: cmake --preset linux
 
     - name: Build
-      run: cmake --build --preset linux
+      run: cmake --build --preset linux -- -k 0
 
     - name: Unit tests
       run: ctest --test-dir bld/linux --output-on-failure
