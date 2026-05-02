@@ -43,6 +43,7 @@ set(MINIVMAC_SOURCES
     src/core/machine_config.cpp
     src/core/model_defs.cpp
     src/core/config_loader.cpp
+    src/config/mac_file.cpp
     src/core/wire_bus.cpp
     src/core/ict_scheduler.cpp
     src/core/rig.cpp
@@ -305,9 +306,11 @@ add_executable(tests
     test/test_types.cpp
     test/test_ui.cpp
     test/test_model_defs.cpp
+    test/test_mac_file.cpp
     src/core/model_defs.cpp
     src/core/machine_config.cpp
     src/core/config_loader.cpp
+    src/config/mac_file.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
