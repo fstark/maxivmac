@@ -55,7 +55,7 @@ int DriveManager::mount(const std::filesystem::path &hostDir)
 	queuePendingMount(slot);
 
 	DIAG(ExtFS, "DriveManager: mounted slot %d \"%s\" → %s\n", slot, s.volumeName.c_str(),
-		 hostDir.c_str());
+		 hostDir.string().c_str());
 	return slot;
 }
 

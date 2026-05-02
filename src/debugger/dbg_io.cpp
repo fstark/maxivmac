@@ -8,10 +8,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
+
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <vector>
+#endif
 
 /* ── DbgIO base ─────────────────────────────────────── */
 
@@ -86,6 +89,8 @@ std::unique_ptr<DbgIO> CreateStdioIO()
 }
 
 /* ── SocketIO ───────────────────────────────────────── */
+
+#ifndef _WIN32
 
 class SocketIO final : public DbgIO
 {
@@ -265,3 +270,5 @@ int CreateListenSocket(const std::string &path)
 
 	return fd;
 }
+
+#endif /* !_WIN32 */

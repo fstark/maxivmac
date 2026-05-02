@@ -46,7 +46,8 @@ inline void encode(const uint8_t *pkt, size_t len, std::vector<uint8_t> &out)
 		}
 	}
 	out.push_back(END);
-	SLP_LOG("encode: %zu bytes -> %zu framed", len, out.size());
+	SLP_LOG("encode: %lu bytes -> %lu framed", static_cast<unsigned long>(len),
+			static_cast<unsigned long>(out.size()));
 }
 
 /*
@@ -63,7 +64,8 @@ public:
 		{
 			if (!accum_.empty())
 			{
-				SLP_LOG("decode: complete packet %zu bytes", accum_.size());
+				SLP_LOG("decode: complete packet %lu bytes",
+						static_cast<unsigned long>(accum_.size()));
 				return true; /* packet complete */
 			}
 			return false; /* empty frame (inter-packet END) — ignore */

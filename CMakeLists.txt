@@ -223,6 +223,9 @@ target_compile_options(maxivmac PRIVATE
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(maxivmac PRIVATE -Wconditional-uninitialized)
 endif()
+if(MINGW)
+    target_compile_definitions(maxivmac PRIVATE __USE_MINGW_ANSI_STDIO=1)
+endif()
 
 # stb_image_write is a third-party header; suppress warnings-as-errors
 set_source_files_properties(src/platform/stb_impl.cpp PROPERTIES

@@ -1311,11 +1311,11 @@ void ExtFSDriveList(void (*printFn)(void *ctx, const char *line), void *ctx)
 		[&](int slot, storage::HostVolume &)
 		{
 			char buf[256];
+			auto hostStr = s_drives.hostPath(slot).string();
 			std::snprintf(buf, sizeof(buf), " %-5d %-15.*s %-28.*s %d", slot,
 						  static_cast<int>(s_drives.volumeName(slot).size()),
-						  s_drives.volumeName(slot).data(),
-						  static_cast<int>(s_drives.hostPath(slot).string().size()),
-						  s_drives.hostPath(slot).c_str(), s_drives.openForkCount(slot));
+						  s_drives.volumeName(slot).data(), static_cast<int>(hostStr.size()),
+						  hostStr.c_str(), s_drives.openForkCount(slot));
 			printFn(ctx, buf);
 		});
 }

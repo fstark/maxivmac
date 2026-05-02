@@ -43,7 +43,9 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 /*
 	REPORT_ABNORMAL_ID unused 0x1002 - 0x10FF
@@ -549,6 +551,7 @@ void ProgramEarlyInit(int argc, char *argv[])
 	}
 	else if (!s_launchConfig.debugServerPath.empty())
 	{
+#ifndef _WIN32
 		auto path = s_launchConfig.debugServerPath;
 		if (path == "auto") path = "/tmp/maxivmac-dbg-" + std::to_string(getpid()) + ".sock";
 		int listenFd = CreateListenSocket(path);
@@ -556,6 +559,10 @@ void ProgramEarlyInit(int argc, char *argv[])
 		std::fprintf(stderr, "debugserver: listening on %s\n", path.c_str());
 		Debugger::create(CreateSocketIO(listenFd).release());
 		g_debuggerActive = true;
+#else
+		std::fprintf(stderr, "Debug server is not supported on Windows.\n");
+		std::exit(1);
+#endif
 	}
 
 	/* No model specified — defer machine creation to SetLaunchConfig().

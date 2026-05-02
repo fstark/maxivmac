@@ -29,8 +29,12 @@ extern bool g_speedStopped;
 #if defined(__APPLE__)
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl.h>
+#elif defined(_WIN32)
+#include <GL/gl.h>
+#include <GL/glext.h>
 #else
 #include <GL/gl.h>
+#include <GL/glext.h>
 #endif
 
 #include <cstdio>

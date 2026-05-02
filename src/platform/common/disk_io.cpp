@@ -282,7 +282,11 @@ void MakeNewDisk(uint32_t L, char *drivename)
 
 	snprintf(s, sizeof(s), "out/%s", drivename);
 	/* Ensure "out" directory exists */
+#ifdef _WIN32
+	(void)mkdir("out");
+#else
 	(void)mkdir("out", 0755);
+#endif
 	MakeNewDisk0(L, s);
 	fprintf(stderr, "Exported file: %s\n", s);
 }

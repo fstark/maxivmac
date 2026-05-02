@@ -64,9 +64,11 @@ std::unique_ptr<DbgIO> CreateStdioIO();
 /* Client entry point: maxivmac debug [...] */
 int DebugClientMain(int argc, char *argv[]);
 
+#ifndef _WIN32
 /* Create a listening Unix domain socket at the given path.
    Returns the fd, or -1 on error (message printed to stderr). */
 int CreateListenSocket(const std::string &path);
 
 /* Create a SocketIO that accepts clients on listenFd. */
 std::unique_ptr<DbgIO> CreateSocketIO(int listenFd);
+#endif

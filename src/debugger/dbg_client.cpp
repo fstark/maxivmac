@@ -10,12 +10,25 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
+#ifndef _WIN32
 #include <glob.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#endif
 
 /* ── Socket auto-discovery ──────────────────────────── */
+
+#ifdef _WIN32
+
+int DebugClientMain(int, char *[])
+{
+	std::fprintf(stderr, "Debug client is not supported on Windows.\n");
+	return 1;
+}
+
+#else /* POSIX */
 
 static std::string FindSocket()
 {
@@ -203,3 +216,5 @@ int DebugClientMain(int argc, char *argv[])
 	close(fd);
 	return 0;
 }
+
+#endif /* !_WIN32 */
