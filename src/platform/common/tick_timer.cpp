@@ -3,14 +3,12 @@
 #include "platform/common/osglu_ui.h"
 #include "platform/platform.h"
 
-#include <ctime>
+#include <SDL3/SDL_timer.h>
 
 /* Monotonic millisecond timer — replaces GetTicksMs(). */
 static uint32_t GetTicksMs()
 {
-	struct timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	return (uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+	return (uint32_t)SDL_GetTicks();
 }
 
 #define DBGLOG_OSG_INIT 0

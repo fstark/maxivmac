@@ -47,6 +47,8 @@ jobs:
 
     - name: Golden tests
       run: EMU=./bld/linux/maxivmac ./test/verify.sh
+
+  build-macos:
     runs-on: macos-latest
     steps:
     - name: Checkout
@@ -68,6 +70,8 @@ jobs:
 
     - name: Golden tests
       run: EMU=./bld/macos/maxivmac ./test/verify.sh
+
+  build-windows:
     strategy:
       matrix:
         include:
