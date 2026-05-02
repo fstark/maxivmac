@@ -7775,7 +7775,7 @@ static void DoBitField()
 	uint16_t extra = nextiword();
 	uint32_t offset = ((extra & 0x0800) != 0) ? m68k_dreg((extra >> 6) & 7) : ((extra >> 6) & 0x1f);
 	uint32_t width = ((extra & 0x0020) != 0) ? m68k_dreg(extra & 7) : extra;
-	uint8_t bfa[5];
+	uint8_t bfa[5] = {};
 	uint32_t offwid = 0;
 
 	/* ReportAbnormal("Bit Field operator"); */

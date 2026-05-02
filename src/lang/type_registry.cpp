@@ -762,7 +762,6 @@ std::string TypeRegistry::formatValue(std::string_view typeName, uint32_t raw) c
 			/* raw is a guest pointer to a Pascal string */
 			if (raw == 0) return "$00000000";
 			uint8_t len = mem_.readByte(raw);
-			if (len > 255) len = 255;
 			std::string result;
 			char hdr[16];
 			std::snprintf(hdr, sizeof(hdr), "$%08X \"", raw);
