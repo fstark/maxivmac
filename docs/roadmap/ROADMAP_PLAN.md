@@ -23,7 +23,7 @@ all ~200 call sites. Mechanical find-and-replace + compile + test.
 
 **Done** — 1 May 2026.
 
-### A2. Model definition data
+### A2. Model definition data  ✅
 
 Extract the per-model facts from `MachineConfigForModel()` into a
 declarative data structure: name, ROM filename, ROM MD5, compatible
@@ -31,6 +31,10 @@ OS list, default RAM, screen geometry. The launcher and ROM
 validation will consume this.
 
 **Gate:** builds, existing behavior unchanged, data accessible via API.
+
+**Done** — 2 May 2026. Constexpr `ModelDef` table in
+`src/core/model_defs.h`, `.mac` file parser in
+`src/config/mac_file.cpp`.
 
 ### A3. CI/CD — build + unit tests
 
@@ -90,7 +94,7 @@ decision on what to ship without.
 
 **Depends on:** B2.
 
-### B4. Build bundled boot disks
+### B4. Build bundled boot disks  ✅
 
 Create clean HFS boot disk images:
 - Plus + System 6.0.8 + INIT installed
@@ -104,11 +108,14 @@ shared drive.
 
 **Depends on:** B3.
 
+**Done** — `data/disks/plus-608.hfs`, `data/disks/macii-7.hfs`
+committed.
+
 ---
 
 ## Track C — Launcher and UX
 
-### C1. Launcher: "Choose a Macintosh"
+### C1. Launcher: "Choose a Macintosh"  ✅
 
 Replace the current model selector with a card-based launcher. Each
 card represents one hardcoded Macintosh (from the bundled boot disks).
@@ -122,7 +129,10 @@ Macintosh, greyed-out cards show correct reasons.
 
 **Depends on:** A2 (model data), B4 (boot disks exist).
 
-### C2. CLI behavior cleanup
+**Done** — 2 May 2026. Card-based launcher in
+`src/platform/imgui_launcher.cpp`.
+
+### C2. CLI behavior cleanup  ✅
 
 - `maxivmac --model=Plus --disk=foo.hfs` → bypass launcher, boot
   directly.
@@ -131,11 +141,16 @@ Macintosh, greyed-out cards show correct reasons.
 
 **Gate:** all three cases behave correctly.
 
-### C3. UI fix: close window = quit
+**Done** — 2 May 2026. Positional `.mac`/`.hfs` args and
+`--model`/`--disk` flags all working.
+
+### C3. UI fix: close window = quit  ✅
 
 Fix G8 — clicking the window close button must quit the application.
 
 **Gate:** closing the window quits on macOS, Windows, Linux.
+
+**Done** — handled via `SDL_EVENT_QUIT` in `imgui_backend.cpp`.
 
 ### C4. Toast notifications
 
@@ -146,12 +161,16 @@ logging.
 **Gate:** error conditions produce visible toasts instead of silent
 failures.
 
-### C5. UI polish
+### C5. UI polish  ✅
 
 - Shortcut keys displayed on overlay buttons.
 - Terminology unified (pick "Integer" or "Pixel Perfect").
 
 **Gate:** visual inspection.
+
+**Done** — shortcut keys shown on all overlay buttons (e.g.
+"Insert Disk (I)", "Pixel Perfect (M)"). Terminology is "Pixel
+Perfect" / "Stretched".
 
 ---
 
