@@ -73,7 +73,7 @@ public:
 		if (masterFd_ >= 0)
 		{
 			if (write(masterFd_, &byte, 1) < 0)
-				DIAG(Serial, "PTY write failed: %s\n", strerror(errno));
+				DIAG(SER, "PTY write failed: %s\n", strerror(errno));
 		}
 	}
 
