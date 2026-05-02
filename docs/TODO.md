@@ -58,6 +58,9 @@
   perfect multiple or skip the resize when the target would fill the
   screen.
 
+* Display version string (MAXIVMAC_VERSION) in three places:
+  console at startup, launcher window, and overlay (for support).
+
 * Acceleration and 1s clock management is not user friendly anymore
 
 * Funky kExtnVideo management

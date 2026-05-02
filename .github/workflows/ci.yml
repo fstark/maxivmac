@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # full history for git describe
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          cmake ninja-build \
+          libx11-dev libxext-dev libxrandr-dev libxcursor-dev \
+          libxi-dev libxinerama-dev libxss-dev \
+          libgl-dev libgles-dev libegl-dev \
+          libwayland-dev libxkbcommon-dev wayland-protocols \
+          libasound2-dev libpulse-dev libpipewire-0.3-dev \
+          libdbus-1-dev libdecor-0-dev
+
+    - name: Build SDL3 from source
+      run: |
+        git clone --depth 1 --branch release-3.2.14 https://github.com/libsdl-org/SDL.git /tmp/SDL3
+        cmake -S /tmp/SDL3 -B /tmp/SDL3/build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/usr/local
+        cmake --build /tmp/SDL3/build
+        sudo cmake --install /tmp/SDL3/build
+
+    - name: Configure
+      run: cmake --preset linux
+
+    - name: Build
+      run: cmake --build --preset linux
+
+    - name: Unit tests
+      run: ctest --test-dir bld/linux --output-on-failure

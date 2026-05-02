@@ -218,9 +218,11 @@ target_compile_options(maxivmac PRIVATE
     -Wextra
     -Werror
     -Wundef
-    -Wconditional-uninitialized
     -Wno-write-strings
 )
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(maxivmac PRIVATE -Wconditional-uninitialized)
+endif()
 
 # stb_image_write is a third-party header; suppress warnings-as-errors
 set_source_files_properties(src/platform/stb_impl.cpp PROPERTIES
@@ -277,6 +279,7 @@ endif()
 # ---------------------------------------------------------------------------
 # Unit tests
 # ---------------------------------------------------------------------------
+enable_testing()
 add_executable(tests
     test/test_main.cpp
     test/test_slip.cpp
