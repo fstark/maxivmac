@@ -1,0 +1,7 @@
+#!/bin/sh
+# Auto-append [skip ci] to commit messages unless opted out.
+# To force CI, include [ci] or [no skip ci] in your message.
+
+if ! grep -qiE '\[(skip ci|ci skip|no skip ci|ci)\]' "$1"; then
+    printf '\n[skip ci]\n' >> "$1"
+fi
