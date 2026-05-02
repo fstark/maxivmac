@@ -79,8 +79,7 @@ jobs:
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-ninja
-          mingw-w64-x86_64-SDL3
-          mingw-w64-x86_64-opengl
+          mingw-w64-x86_64-sdl3
           git
 
     - name: Checkout
