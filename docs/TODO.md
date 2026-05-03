@@ -87,6 +87,11 @@ This is the expected outcome. The headless backend works correctly; the MacII/Ma
 - `EmLocalTalk` could become runtime when networking gets a device abstraction.
 - `dbglog_HAVE` / `WantAbnormalReports` could become runtime if debug
   logging overhead becomes negligible.
+- Support trap name aliases in `traps.def` (e.g. `InvertRgn` = `InverRgn`).
+- Clipboard extension fires ZeroScrap/PutScrap inside WaitNextEvent on Plus
+  but not on Mac II (confirmed: removing extension removes the block).
+  Visible in ResEdit icon editor selection but likely affects all apps.
+  Needs investigation — may cause timing or heap disruption during idle.
 
 ---
 

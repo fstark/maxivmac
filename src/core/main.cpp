@@ -505,7 +505,8 @@ void SetLaunchConfig(const LaunchConfig &lc)
 	s_launchConfig.sharedDirs = lc.sharedDirs;
 	if (lc.screenW) s_launchConfig.screenW = lc.screenW;
 	if (lc.screenH) s_launchConfig.screenH = lc.screenH;
-	if (lc.screenDepth) s_launchConfig.screenDepth = lc.screenDepth;
+	if (lc.screenDepth != LaunchConfig::kScreenDepthDefault)
+		s_launchConfig.screenDepth = lc.screenDepth;
 	if (!lc.serialA.empty()) s_launchConfig.serialA = lc.serialA;
 	if (!lc.serialB.empty()) s_launchConfig.serialB = lc.serialB;
 	if (!lc.slipRedirs.empty()) s_launchConfig.slipRedirs = lc.slipRedirs;
@@ -526,6 +527,30 @@ EmulatorConfig &GetEmulatorConfigMut()
 	return s_emulatorConfig;
 }
 
+static void ApplyDiagFlags(const std::string &flags)
+{
+	if (flags.empty()) return;
+	if (flags == "all")
+	{
+		Diag().setAll(true);
+		return;
+	}
+	std::string list = flags;
+	size_t pos = 0;
+	while (pos < list.size())
+	{
+		size_t comma = list.find(',', pos);
+		if (comma == std::string::npos) comma = list.size();
+		std::string name = list.substr(pos, comma - pos);
+		DiagSubsystem s;
+		if (DiagConfig::fromName(name.c_str(), s))
+			Diag().set(s, true);
+		else
+			fprintf(stderr, "Warning: unknown diag subsystem '%s'\n", name.c_str());
+		pos = comma + 1;
+	}
+}
+
 /*
 	Parse CLI args and set up non-model-dependent state.
 	When a model is known (--model or --verify), also creates the Rig.
@@ -540,6 +565,15 @@ void ProgramEarlyInit(int argc, char *argv[])
 
 	s_launchConfig = ParseCommandLine(argc, argv);
 	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);
+
+	/* Apply --diag= early so device init can log */
+	ApplyDiagFlags(s_launchConfig.diagSubsystems);
+
+	if (s_launchConfig.modelExplicit && !s_launchConfig.macFilePath.empty())
+	{
+		fprintf(stderr, "Error: --model and a .mac file cannot be used together\n");
+		std::exit(1);
+	}
 
 	if (s_launchConfig.help)
 	{
@@ -691,32 +725,8 @@ bool ProgramMain()
 		g_tracer.enable(true);
 	}
 
-	/* Apply --diag= subsystem flags */
-	if (!s_launchConfig.diagSubsystems.empty())
-	{
-		if (s_launchConfig.diagSubsystems == "all")
-		{
-			Diag().setAll(true);
-		}
-		else
-		{
-			/* Parse comma-separated list */
-			std::string list = s_launchConfig.diagSubsystems;
-			size_t pos = 0;
-			while (pos < list.size())
-			{
-				size_t comma = list.find(',', pos);
-				if (comma == std::string::npos) comma = list.size();
-				std::string name = list.substr(pos, comma - pos);
-				DiagSubsystem s;
-				if (DiagConfig::fromName(name.c_str(), s))
-					Diag().set(s, true);
-				else
-					fprintf(stderr, "Warning: unknown diag subsystem '%s'\n", name.c_str());
-				pos = comma + 1;
-			}
-		}
-	}
+	/* Apply --diag= subsystem flags (may re-apply; idempotent) */
+	ApplyDiagFlags(s_launchConfig.diagSubsystems);
 
 	/* Execute startup debug scripts (after registries so trap names resolve) */
 	if (auto *dbg = Debugger::instance())

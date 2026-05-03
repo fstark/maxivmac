@@ -21,11 +21,12 @@ struct LaunchConfig
 	uint32_t ramMB = 0;	  // 0 = use model default
 	uint16_t screenW = 0; // 0 = use model default
 	uint16_t screenH = 0;
-	uint8_t screenDepth = 0; // log2 bpp
-	int speed = 0;			 // 0 = model default
-	int scale = 0;			 // 0 = use default (2)
-	uint32_t logStart = 0;	 // first instruction to log (0 = no logging)
-	uint32_t logCount = 0;	 // how many instructions to log (0 = no logging)
+	static constexpr uint8_t kScreenDepthDefault = 0xFF; // sentinel: use model default
+	uint8_t screenDepth = kScreenDepthDefault;			 // log2 bpp, or 0xFF = not specified
+	int speed = 0;										 // 0 = model default
+	int scale = 0;										 // 0 = use default (2)
+	uint32_t logStart = 0; // first instruction to log (0 = no logging)
+	uint32_t logCount = 0; // how many instructions to log (0 = no logging)
 	bool fullscreen = false;
 	bool headless = false;
 	bool silent = false;

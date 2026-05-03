@@ -1,0 +1,47 @@
+# debug_ants_bitmap.dbg — Check if FrameRect patXor renders into offscreen bitmap
+#
+# HYPOTHESIS: FrameRect with patXor is NOT drawing the marching ants into the
+# offscreen bitmap on Plus. Either the Plus ROM FrameRect ignores patXor, or
+# the offscreen port is misconfigured.
+#
+# Usage (Plus):
+#   ./bld/macos/maxivmac --debugger --dbg-script=debug_ants_bitmap.dbg "data/macs/2-PLUS.mac"
+# Usage (Mac II, for comparison):
+#   ./bld/macos/maxivmac --debugger --dbg-script=debug_ants_bitmap.dbg "data/macs/1-II.mac"
+#
+# Steps:
+#   1. Boot, open ResEdit, open an icon, make a selection (ants should start)
+#   2. Type 'continue' in the debugger
+#   3. You'll break on FrameRect
+#
+# WHEN THE BREAKPOINT FIRES:
+#
+#   Step 1 — Read the current port's offscreen bitmap:
+#     p (a5 - 4)              # thePort (QD global, 4 bytes below A5)
+#     p ((a5 - 4))            # portBits.baseAddr (first long in GrafPort)
+#     p ((a5 - 4) + 4).w      # portBits.rowBytes
+#     x/4w ((a5 - 4) + 6)     # portBits.bounds: top, left, bottom, right
+#
+#   Step 2 — Read the FrameRect rect:
+#     x/4w (sp + 4)           # rect param: top, left, bottom, right
+#
+#   Step 3 — Dump pixel row at rect.top BEFORE FrameRect draws:
+#     # addr = baseAddr + (top * rowBytes)
+#     # e.g. if baseAddr=$0003B000, rowBytes=4, top=0:
+#     x/8b $0003B000
+#
+#   Step 4 — Let FrameRect execute:
+#     finish
+#
+#   Step 5 — Dump the SAME row AFTER FrameRect:
+#     x/8b $0003B000          # same address as step 3
+#
+#   RESULT:
+#     - Bytes IDENTICAL before/after → FrameRect did NOT draw. Bug found.
+#     - Bytes CHANGED → FrameRect drew fine, bug is in CopyBits scaling.
+#
+# NOTE: Run on both Plus and Mac II and compare behavior.
+
+break FrameRect
+
+continue

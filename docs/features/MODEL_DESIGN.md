@@ -396,9 +396,9 @@ LaunchConfig LaunchConfigFromMacEntry(const MacFileEntry &entry,
     for (const auto &s : entry.sharedDirs)
     {
         if (!s.empty() && s[0] == '/')
-            lc.drivePaths.push_back(s);
+            lc.sharedDirs.push_back(s);
         else
-            lc.drivePaths.push_back(std::string(dataDir) + "/" + s);
+            lc.sharedDirs.push_back(std::string(dataDir) + "/" + s);
     }
 
     return lc;

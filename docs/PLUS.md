@@ -72,7 +72,7 @@ There is no VIA2.
 | 3   | `Wire_VIA1_iA3`   | SCC vSync          |
 | 4   | `Wire_VIA1_iA4`   | **MemOverlay**     |
 | 5   | `Wire_VIA1_iA5`   | IWM vSel           |
-| 6   | `Wire_VIA1_iA6`   | (unused on Plus)   |
+| 6   | `Wire_VIA1_iA6`   | vPage2 (screen buffer select) |
 | 7   | `Wire_VIA1_iA7`   | SCC wait/request   |
 
 ### Port B Wire Mapping
@@ -295,7 +295,7 @@ screencurrentbuff = RAM + (ramSize - kMain_Offset);   // main screen page
 For the Plus with 4 MB RAM: `0x400000 - 0x5900 = 0x3FA700`.
 
 The alternate screen page at `kAlternate_Offset` can be selected via the
-`SCRNvPage2` wire (not currently wired in the emulator).
+`SCRNvPage2` wire (`Wire_VIA1_iA6`, VIA1 port A bit 6).
 
 For Mac II (`includeVidMem = true`), the screen comes from dedicated `VidMem`.
 

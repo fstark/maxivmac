@@ -28,9 +28,10 @@ void ScreenDevice::endTickNotify()
 	}
 	else
 	{
-		/* Compact Macs: screen buffer in main RAM
-		   (uses SCRNvPage2 wire for page selection — not yet wired) */
-		screencurrentbuff = get_ram_address(g_rig->config().ramSize() - kMain_Offset);
+		/* Compact Macs: screen buffer in main RAM.
+		   VIA1 port A bit 6 (vPage2): 1 = main, 0 = alternate. */
+		uint32_t offset = g_wires.get(Wire_VIA1_iA6) ? kMain_Offset : kAlternate_Offset;
+		screencurrentbuff = get_ram_address(g_rig->config().ramSize() - offset);
 	}
 
 	Screen_OutputFrame(screencurrentbuff);

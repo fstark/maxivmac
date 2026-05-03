@@ -5,7 +5,7 @@ Run on **Mac II** model with the **608.hfs** boot disk (reference system).
 
 ```
 Launch command:
-  ./bld/macos/maxivmac --model MacII --drive=shared 608.hfs
+  ./bld/macos/maxivmac --model MacII --shared=shared 608.hfs
 ```
 
 Place test files in `shared/` before launching. Suggested contents:
@@ -184,7 +184,7 @@ Keep the same session running from Session 1.
 
 Minimal check after a build, before deeper testing:
 
-1. [ ] Boot with `--model MacII --drive=shared 608.hfs` — reaches Finder
+1. [ ] Boot with `--model MacII --shared=shared 608.hfs` — reaches Finder
 2. [ ] SharedDrive icon visible, can open and list files
 3. [ ] Copy text on host → paste in guest TeachText → text matches
 4. [ ] Copy text in guest → paste on host → text matches

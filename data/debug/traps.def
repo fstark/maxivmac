@@ -901,7 +901,7 @@ A834 SetFScaleDisable toolbox
   in  disable:Boolean
 
 A835 FontMetrics toolbox
-  in  info:^FontInfo
+  out info:^FontInfo
 
 A837 MeasureText toolbox
   in  count:sword  text:Ptr  charLocs:Ptr
@@ -1149,7 +1149,7 @@ A87B ClipRect toolbox
   in  r:Rect
 
 A87C BackPat toolbox
-  in  pat:Ptr
+  in  pat:^Pattern
 
 A87D CloseCPort toolbox
   in  port:Ptr
@@ -1193,7 +1193,7 @@ A88A TextSize toolbox
   in  size:sword
 
 A88B GetFontInfo toolbox
-  in  info:^FontInfo
+  out info:^FontInfo
 
 A88C StringWidth toolbox
   in  s:Str255
@@ -1239,7 +1239,7 @@ A897 ShowPen toolbox
   void
 
 A898 GetPenState toolbox
-  in  penState:^PenState
+  out penState:^PenState
 
 A899 SetPenState toolbox
   in  penState:^PenState
@@ -1254,7 +1254,7 @@ A89C PenMode toolbox
   in  mode:sword
 
 A89D PenPat toolbox
-  in  pat:Ptr
+  in  pat:^Pattern
 
 A89E PenNormal toolbox
   void
@@ -1275,9 +1275,7 @@ A8A4 InverRect toolbox
   in  r:Rect
 
 A8A5 FillRect toolbox
-  in  r:Rect  pat:Ptr
-
-A8A6 EqualRect toolbox
+  in  r:Rect  pat:^Pattern toolbox
   in  r1:Rect  r2:Rect
     out equal:Boolean
 
@@ -1324,7 +1322,7 @@ A8B3 InverRoundRect toolbox
   in  r:Rect  ovalW:sword  ovalH:sword
 
 A8B4 FillRoundRect toolbox
-  in  r:Rect  ovalW:sword  ovalH:sword  pat:Ptr
+  in  r:Rect  ovalW:sword  ovalH:sword  pat:^Pattern
 
 A8B5 ScriptUtil toolbox dispatch=long
   in  selector:long
@@ -1366,7 +1364,7 @@ A8BA InvertOval toolbox
   in  r:Rect
 
 A8BB FillOval toolbox
-  in  r:Rect  pat:Ptr
+  in  r:Rect  pat:^Pattern
 
 A8BC SlopeFromAngle toolbox
   in  angle:sword
@@ -1388,7 +1386,7 @@ A8C1 InvertArc toolbox
   in  r:Rect  startAngle:sword  arcAngle:sword
 
 A8C2 FillArc toolbox
-  in  r:Rect  startAngle:sword  arcAngle:sword  pat:Ptr
+  in  r:Rect  startAngle:sword  arcAngle:sword  pat:^Pattern
 
 A8C3 PtToAngle toolbox
   in  r:Rect  pt:Point
@@ -1414,7 +1412,7 @@ A8C9 InvertPoly toolbox
   in  poly:Handle
 
 A8CA FillPoly toolbox
-  in  poly:Handle  pat:Ptr
+  in  poly:Handle  pat:^Pattern
 
 A8CB OpenPoly toolbox
   out poly:Handle
@@ -1450,7 +1448,7 @@ A8D5 InverRgn toolbox
   in  rgn:Handle
 
 A8D6 FillRgn toolbox
-  in  rgn:Handle  pat:Ptr
+  in  rgn:Handle  pat:^Pattern
 
 A8D8 NewRgn toolbox
   out rgn:Handle
@@ -1520,7 +1518,8 @@ A8EC CopyBits toolbox
   in  srcBits:Ptr  dstBits:Ptr  srcRect:Rect  dstRect:Rect  mode:sword  maskRgn:Handle
 
 A8ED StdTxMeas toolbox
-  in  count:sword  text:Ptr  numer:Point  denom:Point  info:^FontInfo
+  in  count:sword  text:Ptr  numer:Point  denom:Point
+  out info:^FontInfo
 
 A8EE StdGetPic toolbox
   in  data:Ptr  count:sword

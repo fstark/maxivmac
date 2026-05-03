@@ -336,15 +336,28 @@ bool VideoDevice::init()
 	s_currentDisplayModeID = bootRes->displayModeID;
 
 	/*
-		Boot at the highest indexed (CLUT) depth, not a direct-color
-		mode.  Direct modes (16 bpp / 32 bpp) require QuickDraw 32-bit
+		Boot depth selection:
+		1. If the user specified a depth (--screen or .mac file), use it
+		   (clamped to what fits in VRAM, capped at 8bpp for indexed modes).
+		2. Otherwise default to the highest indexed depth available.
+		Direct modes (16 bpp / 32 bpp) require QuickDraw 32-bit
 		support that the System only enables after the Slot Manager has
 		probed the card.  Booting straight into a direct mode hangs.
 		The user can switch to Thousands / Millions via Monitors once
 		the desktop is up.
 	*/
 	int bootResMaxDepth = maxDepthForResolution(bootRes->width, bootRes->height, cfg.vidMemSize);
-	int bootDepth = (bootResMaxDepth >= 4) ? 3 : bootResMaxDepth;
+	int maxClutDepth = (bootResMaxDepth >= 4) ? 3 : bootResMaxDepth;
+	int bootDepth;
+	int requestedDepth = cfg.screenDepth; /* from --screen or model default */
+	if (requestedDepth <= maxClutDepth)
+		bootDepth = requestedDepth;
+	else
+	{
+		VID_LOG("init: requested depth %d exceeds max CLUT depth %d, clamping", requestedDepth,
+				maxClutDepth);
+		bootDepth = maxClutDepth;
+	}
 	s_currentDepth = bootDepth;
 	g_screenDepth = bootDepth;
 	g_screenWidth = bootRes->width;
@@ -360,8 +373,9 @@ bool VideoDevice::init()
 	dbglog_writelnNum("  numResolutions", s_numResolutions);
 	dbglog_writelnNum("  vidROMSize", cfg.vidROMSize);
 	dbglog_writelnNum("  vidMemSize", cfg.vidMemSize);
-	VID_LOG("init: boot=%ux%u bootDepth=%d bootResMaxDepth=%d vidMem=%u numRes=%d", bootRes->width,
-			bootRes->height, bootDepth, bootResMaxDepth, cfg.vidMemSize, s_numResolutions);
+	VID_LOG("init: boot=%ux%u depth=%d (requested=%d, maxCLUT=%d) vidMem=%u numRes=%d",
+			bootRes->width, bootRes->height, bootDepth, requestedDepth, maxClutDepth,
+			cfg.vidMemSize, s_numResolutions);
 	for (int ri = 0; ri < s_numResolutions; ri++)
 		VID_LOG("  res[%d]: id=%u %ux%u", ri, s_resolutions[ri].displayModeID,
 				s_resolutions[ri].width, s_resolutions[ri].height);

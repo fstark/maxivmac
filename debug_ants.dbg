@@ -1,0 +1,41 @@
+# debug_ants.dbg — Compare marching ants behavior between Plus and Mac II
+#
+# Usage:
+#   ./bld/macos/maxivmac --debugger --dbg-script=debug_ants.dbg "data/macs/2-PLUS.mac"
+#   ./bld/macos/maxivmac --debugger --dbg-script=debug_ants.dbg "data/macs/1-II.mac"
+#
+# Redirect stderr to capture:
+#   ... 2> /tmp/ants_plus.log
+#   ... 2> /tmp/ants_ii.log
+#
+# Once ResEdit is open with the icon editor active:
+#   1. Type "trace traps on" in the debugger to start capturing
+#   2. Make a selection in the icon editor
+#   3. Wait a few seconds, then "trace traps off"
+#   4. Compare the two logs
+
+# --- VBL / Timer management ---
+# VInstall ($A033)   — install VBL task
+# VRemove  ($A034)   — remove VBL task
+# InsTime  ($A058)   — install Time Manager task
+# PrimeTime ($A05A)  — prime (start) Time Manager task
+
+# --- Event loop & timing ---
+# GetNextEvent  ($A970)
+# WaitNextEvent ($A860)
+# SystemTask    ($A9B2)
+# TickCount     ($A975)
+
+# --- Drawing (region/rect operations for marching ants) ---
+# FrameRgn  ($A8D2)
+# PaintRgn  ($A8D3)
+# InvertRgn ($A8D4)
+# FrameRect ($A8A1)
+# InvertRect ($A8A3)
+# PenPat    ($A89D)
+
+# Start with a filtered trace of the most interesting traps.
+# Uncomment "trace traps on" to trace ALL traps (very verbose).
+
+# trace traps FrameRgn InvertRgn InvertRect PenPat TickCount VInstall VRemove InsTime PrimeTime WaitNextEvent GetNextEvent SystemTask
+continue

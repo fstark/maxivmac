@@ -1,0 +1,5 @@
+# Mac plus · System 6, for ResEdit test
+name = A Mac plus, system 6
+description = Mac Plus.
+model = plus
+disk = @disks/plus-608.hfs

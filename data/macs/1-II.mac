@@ -1,0 +1,6 @@
+# Mac II · System 6, for ResEdit test
+name = A Mac II · System 6
+description = Color Macintosh.
+model = II
+disk = @disks/plus-608.hfs
+screen = 640x480x1

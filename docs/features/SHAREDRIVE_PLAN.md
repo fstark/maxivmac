@@ -10,7 +10,7 @@ Spec: [SHAREDRIVE.md](SHAREDRIVE.md)
 | 3 | Handle encoding (slot in upper 4 bits) | |
 | 4 | extn_extfs.cpp: replace s_volume with DriveManager dispatch | |
 | 5 | New register commands: PollMount, GetVolName, RegVersion change | |
-| 6 | Config loader `--drive` flag and boot-time mount | |
+| 6 | Config loader `--shared` flag and boot-time mount | |
 | 7 | Debugger `drive` command | |
 | 8 | Drag-and-drop directory mount | |
 | 9 | Guest INIT: multi-VCB bootstrap and jGNEFilter polling | |
@@ -29,9 +29,9 @@ codebase should be noted:
 1. **`closeAllForks()` does not exist** on HostVolume.  Individual
    `closeFork(handle)` exists.  Phase 1 adds a `closeAllForks()`
    method.
-2. **No `--drive` or `--disk` named flag** in config_loader.cpp.
+2. **No `--shared` or `--disk` named flag** in config_loader.cpp.
    Disk images use positional arguments (`lc.diskPaths`).  Phase 6
-   adds the `--drive` flag.
+   adds the `--shared` flag.
 3. **No jGNEFilter** in `macsrc/shareddrive/init.c`.  The ClipSync
    INIT has one.  Phase 9 adds a jGNEFilter to the SharedDrive INIT.
 4. **Handle encoding** — currently handles are plain monotonic
@@ -658,32 +658,32 @@ case kExtFSGetVolName:
 
 ---
 
-## Phase 6 — Config Loader `--drive` Flag
+## Phase 6 — Config Loader `--shared` Flag
 
-### 6.1 — Add drivePaths to LaunchConfig
+### 6.1 — Add sharedDirs to LaunchConfig
 
 **File:** `src/core/config_loader.h`
 
 Add to `LaunchConfig` struct:
 
 ```cpp
-std::vector<std::string> drivePaths;  // --drive <path> (repeatable)
+std::vector<std::string> sharedDirs;  // --shared <path> (repeatable)
 ```
 
-### 6.2 — Parse --drive
+### 6.2 — Parse --shared
 
 **File:** `src/core/config_loader.cpp`
 
 In the argument parsing loop, alongside existing flag handling:
 
 ```cpp
-if (arg == "--drive" && i + 1 < argc) {
-    lc.drivePaths.push_back(argv[++i]);
+if (arg == "--shared" && i + 1 < argc) {
+    lc.sharedDirs.push_back(argv[++i]);
     continue;
 }
 ```
 
-Add `--drive <path>` to the help text.
+Add `--shared <path>` to the help text.
 
 ### 6.3 — Mount at boot
 
@@ -694,7 +694,7 @@ After the config is loaded and before the emulation loop starts,
 mount each drive path:
 
 ```cpp
-for (auto &dp : lc.drivePaths) {
+for (auto &dp : lc.sharedDirs) {
     int slot = ExtFSMountDrive(dp);
     if (slot < 0)
         DIAG(ExtFS, "failed to mount drive: %s\n", dp.c_str());
@@ -708,11 +708,11 @@ Verify the boot sequence: find where `LaunchConfig` fields like
 
 ### Fence
 
-- [ ] `--drive` accepted on command line, can be repeated
-- [ ] Each `--drive` path mounted via `ExtFSMountDrive()` at boot
-- [ ] `--help` shows `--drive` option
+- [ ] `--shared` accepted on command line, can be repeated
+- [ ] Each `--shared` path mounted via `ExtFSMountDrive()` at boot
+- [ ] `--help` shows `--shared` option
 - [ ] Full build clean
-- [ ] Commit: `"shareddrive: phase 6 — --drive CLI flag and boot-time mount"`
+- [ ] Commit: `"shareddrive: phase 6 — --shared CLI flag and boot-time mount"`
 
 ---
 
@@ -1060,10 +1060,10 @@ echo "world" > test_dir_b/file_b.txt
 Boot the emulation and confirm both volumes appear on the Finder
 desktop.
 
-### 10.2 — CLI --drive test
+### 10.2 — CLI --shared test
 
 ```bash
-./bld/macos/maxivmac --drive test_dir_a --drive test_dir_b <disk.hfs>
+./bld/macos/maxivmac --shared test_dir_a --shared test_dir_b <disk.hfs>
 ```
 
 Verify host logs show two mounts at slot 0 and slot 1.
@@ -1095,7 +1095,7 @@ Mount a drive, open a file, unmount without closing.  Verify:
 ### Fence
 
 - [ ] Two-drive boot test passes
-- [ ] CLI `--drive` works
+- [ ] CLI `--shared` works
 - [ ] Debugger `drive mount / unmount / list` works at runtime
 - [ ] Handle isolation verified
 - [ ] Unmount cleanup verified

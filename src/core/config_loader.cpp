@@ -501,7 +501,7 @@ MachineConfig BuildMachineConfig(const LaunchConfig &launch)
 		config.screenWidth = launch.screenW;
 		config.screenHeight = launch.screenH;
 	}
-	if (launch.screenDepth > 0)
+	if (launch.screenDepth != LaunchConfig::kScreenDepthDefault)
 	{
 		config.screenDepth = launch.screenDepth;
 	}

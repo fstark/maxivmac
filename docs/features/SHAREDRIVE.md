@@ -22,11 +22,11 @@ desktop with its own volume name, drive number, and VCB.
 ### Mounting
 
 - **Command-line flag.**  Directories are mounted at launch with
-  `--drive`:
+  `--shared`:
   ```
-  maxivmac --drive ./shared --drive /tmp --drive ~/Pictures
+  maxivmac --shared ./shared --shared /tmp --shared ~/Pictures
   ```
-  Each `--drive` flag mounts the given host path as a new shared
+  Each `--shared` flag mounts the given host path as a new shared
   volume.
 - **Debugger command.**  While the emulator is running, the debugger
   can mount or unmount directories on the fly:

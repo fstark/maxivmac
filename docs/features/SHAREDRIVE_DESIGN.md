@@ -20,8 +20,8 @@ src/
   core/
     extn_extfs.h           (modified)   add ExtFSMountDrive(), ExtFSUnmountDrive()
     extn_extfs.cpp         (modified)   replace s_volume with DriveManager dispatch
-    config_loader.h        (modified)   add drivePaths to LaunchConfig
-    config_loader.cpp      (modified)   parse --drive
+    config_loader.h        (modified)   add sharedDirs to LaunchConfig
+    config_loader.cpp      (modified)   parse --shared
   platform/
     emulator_shell.cpp     (modified)   route FileDrop to mount
   debugger/
@@ -232,20 +232,20 @@ static void RegVersion(uint32_t regParam[], uint16_t &regResult)
 }
 ```
 
-### 3.4  config_loader — add `--drive`
+### 3.4  config_loader — add `--shared`
 
 **File:** [config_loader.h](src/core/config_loader.h) and
 [config_loader.cpp](src/core/config_loader.cpp).
 
 Add to `LaunchConfig`:
 ```cpp
-std::vector<std::string> drivePaths;  // --drive <path> (repeatable)
+std::vector<std::string> sharedDirs;  // --shared <path> (repeatable)
 ```
 
 In the parser (alongside the existing `--disk` handling):
 ```cpp
-if (arg == "--drive" && i + 1 < argc) {
-    lc.drivePaths.push_back(argv[++i]);
+if (arg == "--shared" && i + 1 < argc) {
+    lc.sharedDirs.push_back(argv[++i]);
 }
 ```
 
@@ -564,7 +564,7 @@ No new dependencies.  `drive_manager.cpp` includes `storage/host_volume.h`
                      │  LaunchConfig  │
                      │ (config_loader)│
                      └───────┬────────┘
-                             │ drivePaths
+                             │ sharedDirs
                              ▼
                ┌─────────────────────────┐
   CLI/debugger │   ExtFSMountDrive()     │◄── EmulatorShell (drag-drop)
@@ -666,7 +666,7 @@ dispatch table is needed.
 
 ### Integration tests
 
-- Boot with `--drive ./test_dir_a --drive ./test_dir_b`, verify both
+- Boot with `--shared ./test_dir_a --shared ./test_dir_b`, verify both
   volumes appear via `kExtFSVersion` returning 2.
 - Debugger script: `drive mount /tmp`, `drive list`, `drive unmount 0`,
   `drive list` — check output matches expectations.

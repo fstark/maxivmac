@@ -59,8 +59,8 @@ the user understands why they can't boot.
 name = Mac Plus · System 6
 description = The classic compact Macintosh experience.
 model = Plus
-disk = plus-608.hfs
-shared = shared/
+disk = @disks/plus-608.hfs
+shared = @shared/shared
 ```
 
 ```
@@ -68,8 +68,8 @@ shared = shared/
 name = Mac II · System 7
 description = Color Macintosh with networking.
 model = II
-disk = macii-7.hfs
-shared = shared/
+disk = @disks/macii-7.hfs
+shared = @shared/shared
 serial-a = slip
 screen = 640x480x8
 ram = 8M
@@ -82,11 +82,11 @@ ram = 8M
 | `name`        | yes      | no  | Informal user-facing label for the Launcher card. |
 | `description` | no       | no  | Longer descriptive text.  May or may not be displayed. |
 | `model`       | yes      | no  | Model identifier matching a `MacModel` enum name (`Plus`, `II`, `SE`, etc.). |
-| `disk`        | no       | yes | Disk image filename, looked up in `data/disks/`.  First occurrence is the boot disk.  Zero disks is valid — the Mac boots to the "insert disk" screen. |
-| `shared`      | no       | yes | Shared drive directory.  Absolute if starts with `/`, otherwise relative to `data/`. |
+| `disk`        | no       | yes | Disk image path.  Prefix with `@` to resolve relative to `data/` (e.g. `@disks/plus-608.hfs`).  Absolute paths (`/…`) are used as-is; bare names are relative to cwd.  First occurrence is the boot disk.  Zero disks is valid — the Mac boots to the "insert disk" screen. |
+| `shared`      | no       | yes | Shared drive directory.  Prefix with `@` to resolve relative to `data/` (e.g. `@shared/shared`).  Absolute paths (`/…`) are used as-is; bare names are relative to cwd. |
 | `serial-a`    | no       | no  | Serial port A configuration (e.g. `slip`). |
 | `ram`          | no       | no  | RAM size override (e.g. `4M`, `2560K`).  Replaces the Model default. |
-| `screen`       | no       | no  | Screen geometry override (e.g. `640x480x8`).  Replaces the Model default. |
+| `screen`       | no       | no  | Screen geometry override (e.g. `640x480x8`).  Replaces the Model default.  Depth is respected for Mac II (clamped to the video card's maximum CLUT depth). |
 
 Unrecognized keys cause a parse error (fail fast).
 
@@ -152,8 +152,8 @@ Two `.mac` files ship with the binary:
 
 | File | Name | Model | Disk | Notes |
 |------|------|-------|------|-------|
-| `plus-608.mac` | Mac Plus · System 6 | Plus | `plus-608.hfs` | Classic compact Mac |
-| `macii-7.mac` | Mac II · System 7 | II | `macii-7.hfs` | Color, networking via SLIP |
+| `plus-608.mac` | Mac Plus · System 6 | Plus | `@disks/plus-608.hfs` | Classic compact Mac |
+| `macii-7.mac` | Mac II · System 7 | II | `@disks/macii-7.hfs` | Color, networking via SLIP |
 
 ### Bundled Assets
 
@@ -182,6 +182,7 @@ Launch (no args) → scan data/macs/*.mac
 
 Launch foo.mac                     → load .mac file, bypass Launcher, boot directly
 Launch --model=Plus --disk=foo.hfs → bypass Launcher, boot directly
+Launch --model=Plus foo.mac        → error: --model and .mac file cannot be used together
 Launch foo.hfs (no --model)        → error with clear message
 ```
 
