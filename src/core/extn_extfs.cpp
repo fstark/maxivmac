@@ -1296,7 +1296,16 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 int ExtFSMountDrive(const std::filesystem::path &hostDir)
 {
-	return s_drives.mount(hostDir);
+	DIAG(ExtFS, "ExtFSMountDrive: path=\"%s\" exists=%d is_dir=%d\n", hostDir.c_str(),
+		 std::filesystem::exists(hostDir) ? 1 : 0, std::filesystem::is_directory(hostDir) ? 1 : 0);
+	int slot = s_drives.mount(hostDir);
+	if (slot < 0)
+		fprintf(stderr,
+				"Error: failed to mount shared drive \"%s\" (not found or not a directory)\n",
+				hostDir.c_str());
+	else
+		DIAG(ExtFS, "ExtFSMountDrive: OK slot=%d mountedCount=%d\n", slot, s_drives.mountedCount());
+	return slot;
 }
 
 bool ExtFSUnmountDrive(int slot)

@@ -486,18 +486,29 @@ const LaunchConfig &GetLaunchConfig()
 	return s_launchConfig;
 }
 
+// FReD: this is extrelemy error-prone. We need to come with a better way to make sure we have
+// arguments lost. It seems logical at some point that both ways (the commmand line and the
+// selector) should have the exact same configuration elements without having to make sure we
+// copy/past/update several places.
 void SetLaunchConfig(const LaunchConfig &lc)
 {
 	/* Merge selector choices onto the CLI-parsed config.
-	   The selector only sets model-specific fields (model, rom, ram,
-	   speed, disks).  CLI flags like --silent, --romdir, --title,
-	   --fullscreen, --scale must survive. */
+	   The selector sets model-specific fields and .mac file fields.
+	   CLI flags like --silent, --romdir, --title, --fullscreen,
+	   --scale must survive — only overwrite fields the caller set. */
 	s_launchConfig.model = lc.model;
 	s_launchConfig.modelExplicit = lc.modelExplicit;
 	s_launchConfig.romPath = lc.romPath;
 	s_launchConfig.ramMB = lc.ramMB;
 	s_launchConfig.speed = lc.speed;
 	s_launchConfig.diskPaths = lc.diskPaths;
+	s_launchConfig.sharedDirs = lc.sharedDirs;
+	if (lc.screenW) s_launchConfig.screenW = lc.screenW;
+	if (lc.screenH) s_launchConfig.screenH = lc.screenH;
+	if (lc.screenDepth) s_launchConfig.screenDepth = lc.screenDepth;
+	if (!lc.serialA.empty()) s_launchConfig.serialA = lc.serialA;
+	if (!lc.serialB.empty()) s_launchConfig.serialB = lc.serialB;
+	if (!lc.slipRedirs.empty()) s_launchConfig.slipRedirs = lc.slipRedirs;
 
 	s_machineConfig = BuildMachineConfig(s_launchConfig);
 	s_emulatorConfig = BuildEmulatorConfig(s_launchConfig);

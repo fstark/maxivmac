@@ -279,8 +279,13 @@ bool EmulatorShell::initMachine()
 		(void)Sony_Insert1(const_cast<char *>(diskPath.c_str()), false);
 	}
 
-	/* Mount shared drive directories from command line */
-	for (const auto &dp : lc.drivePaths)
+	if (!ProgramMain()) return false;
+
+	/* Mount shared drive directories — after ProgramMain() so --diag= is active */
+	DIAG(ExtFS, "initMachine: %zu shared dir(s) to mount\n", lc.sharedDirs.size());
+	for (size_t i = 0; i < lc.sharedDirs.size(); ++i)
+		DIAG(ExtFS, "  sharedDirs[%zu] = \"%s\"\n", i, lc.sharedDirs[i].c_str());
+	for (const auto &dp : lc.sharedDirs)
 	{
 		int slot = ExtFSMountDrive(dp);
 		if (slot < 0)
@@ -288,8 +293,6 @@ bool EmulatorShell::initMachine()
 		else
 			DIAG(ExtFS, "mounted drive slot %d: %s\n", slot, dp.c_str());
 	}
-
-	if (!ProgramMain()) return false;
 
 	/* Allocate ARGB framebuffer for screen conversion.
 	   Size for the largest resolution (classic + host-derived) at

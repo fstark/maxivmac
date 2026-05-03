@@ -13,7 +13,7 @@
 #include <sys/param.h>
 #include <sys/time.h>
 
-#define kStrAppName "Maxi vMac"
+#define kStrAppName "maxivmac"
 #define kAppVariationStr "maxivmac"
 #define kStrCopyrightYear "2026"
 #define kMaintainerName "Fred Stark"

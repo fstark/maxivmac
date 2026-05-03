@@ -56,7 +56,13 @@ bool ParseMacFileFromString(std::string_view content, std::string_view path, Mac
 std::vector<MacFileEntry> ScanMacDirectory(std::string_view dirPath);
 
 // Validate ROM and disk availability for a single entry.
-void ValidateMacEntry(MacFileEntry &entry, std::string_view romDir, std::string_view diskDir);
+void ValidateMacEntry(MacFileEntry &entry, std::string_view dataDir);
+
+// Resolve a path from a .mac file value.
+//   @path  → dataDir/path   (@ = data directory root)
+//   /abs   → /abs           (absolute, used as-is)
+//   rel    → rel            (CWD-relative, used as-is)
+std::string ResolveMacPath(std::string_view dataDir, std::string_view raw);
 
 // Resolve the data/ directory. Searches:
 //   1. <appParent>/data/

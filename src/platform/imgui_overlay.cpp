@@ -9,6 +9,7 @@
 #include "platform/imgui_backend.h"
 #include "platform/emulator_shell.h"
 #include "platform/platform.h"
+#include "platform/platform_config.h"
 #include <imgui.h>
 #include <SDL3/SDL.h>
 
@@ -153,7 +154,7 @@ void ControlOverlay::drawAdvancedControls(ImGuiBackend *backend)
 void ControlOverlay::drawAbout()
 {
 	ImGui::Separator();
-	ImGui::TextDisabled("maxivmac — Classic Macintosh Emulator");
+	ImGui::TextDisabled("maxivmac %s", MAXIVMAC_VERSION);
 	ImGui::TextDisabled("Licensed under GNU GPL v2");
 	ImGui::TextLinkOpenURL("github.com/InvisibleUp/minivmac",
 						   "https://github.com/InvisibleUp/minivmac");

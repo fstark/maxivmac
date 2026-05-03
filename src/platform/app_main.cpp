@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 			return 1;
 		}
 		std::string dataDir = ResolveDataDir("");
-		ValidateMacEntry(entry, dataDir + "/roms", dataDir + "/disks");
+		ValidateMacEntry(entry, dataDir);
 		if (!entry.romAvailable)
 		{
 			fprintf(stderr, "%s: %s\n", lc.macFilePath.c_str(), entry.validationError.c_str());
@@ -96,10 +96,8 @@ int main(int argc, char **argv)
 		}
 
 		auto entries = ScanMacDirectory(dataDir + "/macs");
-		std::string romDir = dataDir + "/roms";
-		std::string diskDir = dataDir + "/disks";
 		for (auto &e : entries)
-			ValidateMacEntry(e, romDir, diskDir);
+			ValidateMacEntry(e, dataDir);
 
 		if (!imguiBackend.createLauncher(std::move(entries)))
 		{

@@ -6,6 +6,7 @@
 
 #include "core/config_loader.h"
 #include "core/model_defs.h"
+#include "core/diag.h"
 #include "config/mac_file.h"
 #include <algorithm>
 #include <cassert>
@@ -161,7 +162,7 @@ void PrintUsage(const char *progname)
 			"  --serial-a=MODE  Modem port backend: loopback, file:tx=PATH[,rx=PATH], pty, slip\n"
 			"  --serial-b=MODE  Printer port backend (same modes as --serial-a)\n"
 			"  --slip-redir=SPEC  Port forward: tcp:hostport:guestip:guestport\n"
-			"  --drive=PATH     Mount host directory as shared drive (repeatable)\n"
+			"  --shared=PATH    Mount host directory as shared drive (repeatable)\n"
 			"  -h, --help       Show this help\n"
 			"\n"
 			"ROM auto-detection searches: ./<MODEL>.ROM, <romdir>/<MODEL>.ROM, roms/<MODEL>.ROM\n"
@@ -355,9 +356,9 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 			lc.slipRedirs.push_back(arg + 13);
 			continue;
 		}
-		if (strncmp(arg, "--drive=", 8) == 0)
+		if (strncmp(arg, "--shared=", 9) == 0)
 		{
-			lc.drivePaths.push_back(arg + 8);
+			lc.sharedDirs.push_back(arg + 9);
 			continue;
 		}
 
@@ -434,9 +435,9 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 			lc.logCount = (uint32_t)strtoul(argv[++i], nullptr, 10);
 			continue;
 		}
-		if (strcmp(arg, "--drive") == 0 && i + 1 < argc)
+		if (strcmp(arg, "--shared") == 0 && i + 1 < argc)
 		{
-			lc.drivePaths.push_back(argv[++i]);
+			lc.sharedDirs.push_back(argv[++i]);
 			continue;
 		}
 
@@ -641,17 +642,11 @@ LaunchConfig LaunchConfigFromMacEntry(const MacFileEntry &entry, std::string_vie
 	lc.screenDepth = entry.screenDepth;
 	lc.serialA = entry.serialA;
 
-	std::string diskDir = std::string(dataDir) + "/disks/";
 	for (const auto &d : entry.disks)
-		lc.diskPaths.push_back(diskDir + d);
+		lc.diskPaths.push_back(ResolveMacPath(dataDir, d));
 
 	for (const auto &s : entry.sharedDirs)
-	{
-		if (!s.empty() && s[0] == '/')
-			lc.drivePaths.push_back(s);
-		else
-			lc.drivePaths.push_back(std::string(dataDir) + "/" + s);
-	}
+		lc.sharedDirs.push_back(ResolveMacPath(dataDir, s));
 
 	return lc;
 }

@@ -2,6 +2,7 @@
 name = Mac II · System 7
 description = Color Macintosh with networking.
 model = II
-disk = macii-7.hfs
-shared = shared/
+disk = @disks/macii-7.hfs
+disk = @disks/plus-608.hfs
+shared = @shared/shared
 serial-a = slip

@@ -5,6 +5,7 @@
 */
 
 #include "platform/imgui_launcher.h"
+#include "platform/platform_config.h"
 #include "core/model_defs.h"
 #include <imgui.h>
 #include <cstdio>
@@ -35,7 +36,7 @@ const MacFileEntry *Launcher::draw()
 		/* Title */
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
 		{
-			const char *title = "Maxi vMac";
+			const char *title = "maxivmac";
 			float titleW = ImGui::CalcTextSize(title).x;
 			ImGui::SetCursorPosX((ImGui::GetContentRegionAvail().x - titleW) * 0.5f);
 			ImGui::Text("%s", title);
@@ -58,6 +59,19 @@ const MacFileEntry *Launcher::draw()
 		{
 			result = drawCards();
 		}
+
+		/* Version — bottom right */
+		{
+			const char *ver = MAXIVMAC_VERSION;
+			ImVec2 textSize = ImGui::CalcTextSize(ver);
+			ImVec2 winSize = ImGui::GetWindowSize();
+			ImVec2 pad = ImGui::GetStyle().WindowPadding;
+			ImGui::SetCursorPos(
+				ImVec2(winSize.x - pad.x - textSize.x, winSize.y - pad.y - textSize.y));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+			ImGui::TextUnformatted(ver);
+			ImGui::PopStyleColor();
+		}
 	}
 	ImGui::End();
 	ImGui::PopStyleVar();
@@ -77,7 +91,7 @@ const MacFileEntry *Launcher::drawCards()
 		cols = 3;
 		cardW = (avail - (cols - 1) * gap) / cols;
 	}
-	float cardH = 120.0f;
+	float cardH = 135.0f;
 
 	float totalW = cols * cardW + (cols - 1) * gap;
 	float offsetX = (avail - totalW) * 0.5f;
@@ -127,18 +141,22 @@ const MacFileEntry *Launcher::drawCards()
 			ImGui::GetWindowDrawList()->AddText(ImVec2(namePos.x + 1.0f, namePos.y),
 												IM_COL32(0, 0, 0, 255), e.name.c_str());
 
-			/* Line 2: Model info from ModelDef */
+			/* Line 2+3: Model info from ModelDef (two lines) */
 			const ModelDef *def = ModelDefFor(e.model);
 			if (def)
 			{
-				char line2[64];
-				snprintf(line2, sizeof(line2), "%s · %u MB · %ux%u",
-						 def->use68020 ? "68020" : "68000",
-						 (def->ramASize + def->ramBSize) / (1024 * 1024), def->screen.width,
-						 def->screen.height);
-				float l2W = ImGui::CalcTextSize(line2).x;
-				ImGui::SetCursorPosX((cardW - l2W) * 0.5f);
-				ImGui::Text("%s", line2);
+				char cpuLine[32];
+				snprintf(cpuLine, sizeof(cpuLine), "%s · %u MB", def->use68020 ? "68020" : "68000",
+						 (def->ramASize + def->ramBSize) / (1024 * 1024));
+				float cpuW = ImGui::CalcTextSize(cpuLine).x;
+				ImGui::SetCursorPosX((cardW - cpuW) * 0.5f);
+				ImGui::Text("%s", cpuLine);
+
+				char resLine[16];
+				snprintf(resLine, sizeof(resLine), "%ux%u", def->screen.width, def->screen.height);
+				float resW = ImGui::CalcTextSize(resLine).x;
+				ImGui::SetCursorPosX((cardW - resW) * 0.5f);
+				ImGui::Text("%s", resLine);
 			}
 
 			/* Line 3: Boot disk filename or validation error */
@@ -152,10 +170,10 @@ const MacFileEntry *Launcher::drawCards()
 			else if (!valid)
 			{
 				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.2f, 0.2f, 1));
-				const char *reason = e.validationError.c_str();
-				float errW = ImGui::CalcTextSize(reason).x;
+				const char *shortLabel = "unavailable";
+				float errW = ImGui::CalcTextSize(shortLabel).x;
 				ImGui::SetCursorPosX((cardW - errW) * 0.5f);
-				ImGui::Text("%s", reason);
+				ImGui::Text("%s", shortLabel);
 				ImGui::PopStyleColor();
 			}
 
@@ -164,6 +182,18 @@ const MacFileEntry *Launcher::drawCards()
 
 		bool hovered = ImGui::IsWindowHovered();
 		ImGui::EndChild();
+
+		if (hovered && !valid && !e.validationError.empty())
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
+			ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.15f, 0.15f, 0.15f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.85f, 1.0f));
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 6));
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
+			ImGui::SetItemTooltip("%s", e.validationError.c_str());
+			ImGui::PopStyleVar(3);
+			ImGui::PopStyleColor(2);
+		}
 
 		if (hovered && valid)
 		{

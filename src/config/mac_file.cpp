@@ -18,6 +18,13 @@
 
 namespace fs = std::filesystem;
 
+std::string ResolveMacPath(std::string_view dataDir, std::string_view raw)
+{
+	if (!raw.empty() && raw[0] == '@')
+		return std::string(dataDir) + "/" + std::string(raw.substr(1));
+	return std::string(raw);
+}
+
 // Trim leading and trailing whitespace
 static std::string_view trim(std::string_view s)
 {
@@ -272,7 +279,7 @@ static std::string md5ToHex(const uint8_t digest[16])
 	return buf;
 }
 
-void ValidateMacEntry(MacFileEntry &entry, std::string_view romDir, std::string_view diskDir)
+void ValidateMacEntry(MacFileEntry &entry, std::string_view dataDir)
 {
 	/* If the parser already flagged an error (e.g. unknown model),
 	   keep it — there's nothing useful to validate. */
@@ -290,7 +297,7 @@ void ValidateMacEntry(MacFileEntry &entry, std::string_view romDir, std::string_
 	}
 
 	// Resolve ROM path
-	std::string romPath = std::string(romDir) + "/" + std::string(def->rom.filename);
+	std::string romPath = std::string(dataDir) + "/roms/" + std::string(def->rom.filename);
 	if (!fs::exists(romPath))
 	{
 		entry.validationError = "ROM missing: " + std::string(def->rom.filename);
@@ -319,7 +326,7 @@ void ValidateMacEntry(MacFileEntry &entry, std::string_view romDir, std::string_
 	// Check disks
 	for (const auto &disk : entry.disks)
 	{
-		std::string diskPath = std::string(diskDir) + "/" + disk;
+		std::string diskPath = ResolveMacPath(dataDir, disk);
 		if (!fs::exists(diskPath))
 		{
 			entry.allDisksAvailable = false;

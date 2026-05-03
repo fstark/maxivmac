@@ -448,7 +448,7 @@ bool ImGuiBackend::createLauncher(std::vector<MacFileEntry> entries)
 
 	/* Create the Launcher window */
 	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-	window_ = SDL_CreateWindow("Maxi vMac", 700, 500, flags);
+	window_ = SDL_CreateWindow("maxivmac", 700, 500, flags);
 	if (!window_)
 	{
 		fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());

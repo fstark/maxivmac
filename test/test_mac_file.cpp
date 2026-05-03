@@ -200,7 +200,7 @@ TEST_CASE("ValidateMacEntry: ROM present")
 	}
 	MacFileEntry e;
 	e.model = MacModel::Plus;
-	ValidateMacEntry(e, "data/roms", "data/disks");
+	ValidateMacEntry(e, "data");
 	// This may or may not pass depending on ROM files in the repo
 	// Just check it doesn't crash
 }
@@ -209,7 +209,7 @@ TEST_CASE("ValidateMacEntry: ROM missing")
 {
 	MacFileEntry e;
 	e.model = MacModel::Plus;
-	ValidateMacEntry(e, "/nonexistent/roms", "/nonexistent/disks");
+	ValidateMacEntry(e, "/nonexistent");
 	CHECK_FALSE(e.romAvailable);
 	CHECK(e.validationError.find("ROM missing") != std::string::npos);
 }
@@ -232,8 +232,8 @@ TEST_CASE("ValidateMacEntry: disk missing")
 
 	MacFileEntry e;
 	e.model = MacModel::Plus;
-	e.disks.push_back("missing.hfs");
-	ValidateMacEntry(e, (tmpDir / "roms").string(), (tmpDir / "disks").string());
+	e.disks.push_back("@disks/missing.hfs");
+	ValidateMacEntry(e, tmpDir.string());
 
 	// ROM will fail MD5 check since it's all zeros
 	// But that's fine — the test verifies the flow doesn't crash
@@ -268,8 +268,8 @@ TEST_CASE("LaunchConfigFromMacEntry: basic conversion")
 	e.name = "Test";
 	e.model = MacModel::Plus;
 	e.romPath = "/data/roms/MacPlus.ROM";
-	e.disks = {"boot.hfs"};
-	e.sharedDirs = {"shared/"};
+	e.disks = {"@disks/boot.hfs"};
+	e.sharedDirs = {"@shared/"};
 	e.serialA = "slip";
 	e.ramOverrideMB = 8;
 	e.screenW = 800;
@@ -292,7 +292,7 @@ TEST_CASE("LaunchConfigFromMacEntry: disk paths resolved")
 	MacFileEntry e;
 	e.name = "Test";
 	e.model = MacModel::Plus;
-	e.disks = {"boot.hfs", "data.hfs"};
+	e.disks = {"@disks/boot.hfs", "@disks/data.hfs"};
 
 	LaunchConfig lc = LaunchConfigFromMacEntry(e, "/mydata");
 	REQUIRE(lc.diskPaths.size() == 2);
@@ -308,18 +308,30 @@ TEST_CASE("LaunchConfigFromMacEntry: absolute shared dir preserved")
 	e.sharedDirs = {"/absolute/share"};
 
 	LaunchConfig lc = LaunchConfigFromMacEntry(e, "/mydata");
-	REQUIRE(lc.drivePaths.size() == 1);
-	CHECK(lc.drivePaths[0] == "/absolute/share");
+	REQUIRE(lc.sharedDirs.size() == 1);
+	CHECK(lc.sharedDirs[0] == "/absolute/share");
 }
 
-TEST_CASE("LaunchConfigFromMacEntry: relative shared dir resolved")
+TEST_CASE("LaunchConfigFromMacEntry: @ shared dir resolved")
 {
 	MacFileEntry e;
 	e.name = "Test";
 	e.model = MacModel::Plus;
-	e.sharedDirs = {"shared/"};
+	e.sharedDirs = {"@shared/"};
 
 	LaunchConfig lc = LaunchConfigFromMacEntry(e, "/mydata");
-	REQUIRE(lc.drivePaths.size() == 1);
-	CHECK(lc.drivePaths[0] == "/mydata/shared/");
+	REQUIRE(lc.sharedDirs.size() == 1);
+	CHECK(lc.sharedDirs[0] == "/mydata/shared/");
+}
+
+TEST_CASE("LaunchConfigFromMacEntry: relative path used as-is")
+{
+	MacFileEntry e;
+	e.name = "Test";
+	e.model = MacModel::Plus;
+	e.sharedDirs = {"localdir/"};
+
+	LaunchConfig lc = LaunchConfigFromMacEntry(e, "/mydata");
+	REQUIRE(lc.sharedDirs.size() == 1);
+	CHECK(lc.sharedDirs[0] == "localdir/");
 }
