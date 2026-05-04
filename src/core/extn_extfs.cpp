@@ -515,7 +515,10 @@ static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 		/* By-name lookup */
 		std::string name = readPascalString(nameAddr);
 		if (!name.empty())
+		{
 			e = vol->findByPath(dirID, name);
+			if (!e) return kFnfErr;
+		}
 		else
 			e = vol->findByCNID(dirID);
 	}
