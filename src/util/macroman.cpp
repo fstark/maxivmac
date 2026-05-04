@@ -6,7 +6,9 @@ std::string UTF8FromMacRoman(std::span<const uint8_t> macRoman)
 	result.reserve(macRoman.size() * 2);
 	for (uint8_t b : macRoman)
 	{
-		if (b < 0x80)
+		if (b == '\r')
+			result += '\n';
+		else if (b < 0x80)
 			result += static_cast<char>(b);
 		else
 			AppendUTF8(result, kMacRomanToUnicode[b - 0x80]);
@@ -22,8 +24,18 @@ std::string MacRomanFromUTF8(std::string_view utf8)
 	while (pos < utf8.size())
 	{
 		uint32_t cp = DecodeUTF8(utf8, pos);
-		auto mr = MacRomanFromCodePoint(cp);
-		result += static_cast<char>(mr.valid ? mr.byte : '?');
+		if (cp == '\r')
+		{
+			result += '\r';
+			if (pos < utf8.size() && utf8[pos] == '\n') ++pos; // CRLF → single CR
+		}
+		else if (cp == '\n')
+			result += '\r';
+		else
+		{
+			auto mr = MacRomanFromCodePoint(cp);
+			result += static_cast<char>(mr.valid ? mr.byte : '?');
+		}
 	}
 	return result;
 }

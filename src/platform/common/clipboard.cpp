@@ -71,11 +71,6 @@ std::string hostClipGetTextMacRoman()
 	if (!utf8) return {};
 	std::string result = MacRomanFromUTF8(utf8);
 	SDL_free(utf8);
-	/* Host uses LF (0x0A), Mac uses CR (0x0D) */
-	for (auto &ch : result)
-	{
-		if (ch == '\n') ch = '\r';
-	}
 	return result;
 #else
 	return {};
@@ -85,13 +80,7 @@ std::string hostClipGetTextMacRoman()
 void HostClipSetText(const uint8_t *macRoman, uint32_t len)
 {
 #ifdef HAVE_SDL
-	/* Mac uses CR (0x0D), host uses LF (0x0A) */
-	std::vector<uint8_t> buf(macRoman, macRoman + len);
-	for (auto &ch : buf)
-	{
-		if (ch == '\r') ch = '\n';
-	}
-	std::string utf8 = UTF8FromMacRoman(buf);
+	std::string utf8 = UTF8FromMacRoman({macRoman, len});
 	SDL_SetClipboardText(utf8.c_str());
 #else
 	(void)macRoman;

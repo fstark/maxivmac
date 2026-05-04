@@ -256,6 +256,61 @@ TEST_CASE("MacRomanFromUTF8File unmappable becomes ?")
 	std::filesystem::remove(p);
 }
 
+TEST_CASE("MacRomanFromUTF8File converts LF to CR")
+{
+	auto p = writeTempFile("a\nb\nc");
+	auto result = MacRomanFromUTF8File(p);
+	REQUIRE(result.size() == 5);
+	CHECK(result[0] == 'a');
+	CHECK(result[1] == '\r');
+	CHECK(result[2] == 'b');
+	CHECK(result[3] == '\r');
+	CHECK(result[4] == 'c');
+	std::filesystem::remove(p);
+}
+
+TEST_CASE("MacRomanFromUTF8File converts CRLF to CR")
+{
+	auto p = writeTempFile("a\r\nb\r\nc");
+	auto result = MacRomanFromUTF8File(p);
+	REQUIRE(result.size() == 5);
+	CHECK(result[0] == 'a');
+	CHECK(result[1] == '\r');
+	CHECK(result[2] == 'b');
+	CHECK(result[3] == '\r');
+	CHECK(result[4] == 'c');
+	std::filesystem::remove(p);
+}
+
+TEST_CASE("MacRomanFromUTF8File passes through bare CR")
+{
+	auto p = writeTempFile("a\rb\rc");
+	auto result = MacRomanFromUTF8File(p);
+	REQUIRE(result.size() == 5);
+	CHECK(result[1] == '\r');
+	CHECK(result[3] == '\r');
+	std::filesystem::remove(p);
+}
+
+TEST_CASE("MacRomanSizeFromUTF8File counts CRLF as one")
+{
+	auto p = writeTempFile("a\r\nb"); // 4 bytes on disk, 3 MacRoman chars
+	CHECK(MacRomanSizeFromUTF8File(p) == 3);
+	std::filesystem::remove(p);
+}
+
+TEST_CASE("UTF8FromMacRoman converts CR to LF")
+{
+	std::vector<uint8_t> input = {'a', '\r', 'b', '\r', 'c'};
+	CHECK(UTF8FromMacRoman(input) == "a\nb\nc");
+}
+
+TEST_CASE("UTF8FromMacRoman preserves high bytes with CR")
+{
+	std::vector<uint8_t> input = {'c', 'a', 'f', 0x8E, '\r'};
+	CHECK(UTF8FromMacRoman(input) == "caf\xC3\xA9\n");
+}
+
 TEST_CASE("UTF8FromMacRoman ASCII")
 {
 	std::vector<uint8_t> input = {'H', 'i'};
@@ -277,6 +332,11 @@ TEST_CASE("UTF8FromMacRoman round-trip all 256 bytes")
 {
 	for (int b = 0; b < 256; ++b)
 	{
+		// LF (0x0A) round-trips to CR (0x0D) because
+		// UTF8FromMacRoman leaves LF alone but MacRomanFromUTF8File
+		// normalizes all host line endings to CR.
+		if (b == 0x0A) continue;
+
 		std::vector<uint8_t> input = {static_cast<uint8_t>(b)};
 		auto utf8 = UTF8FromMacRoman(input);
 		auto fname = "rt_" + std::to_string(b) + ".txt";
@@ -319,10 +379,23 @@ TEST_CASE("MacRomanFromUTF8 unmappable becomes ?")
 	CHECK(result[0] == '?');
 }
 
+TEST_CASE("MacRomanFromUTF8 converts LF to CR")
+{
+	auto result = MacRomanFromUTF8("a\nb\nc");
+	REQUIRE(result.size() == 5);
+	CHECK(result[1] == '\r');
+	CHECK(result[3] == '\r');
+}
+
 TEST_CASE("MacRomanFromUTF8 round-trip all 256 bytes")
 {
 	for (int b = 0; b < 256; ++b)
 	{
+		// CR (0x0D) → LF via UTF8FromMacRoman, LF → CR via MacRomanFromUTF8.
+		// LF (0x0A) → LF via UTF8FromMacRoman, LF → CR via MacRomanFromUTF8.
+		// So 0x0A round-trips to 0x0D. Skip it.
+		if (b == 0x0A) continue;
+
 		std::vector<uint8_t> input = {static_cast<uint8_t>(b)};
 		auto utf8 = UTF8FromMacRoman(input);
 		auto mr = MacRomanFromUTF8(utf8);
@@ -335,6 +408,8 @@ TEST_CASE("MacRomanFromUTF8 + UTF8FromMacRoman identity")
 {
 	for (int b = 0; b < 256; ++b)
 	{
+		if (b == 0x0A) continue; // LF collapses with CR
+
 		std::vector<uint8_t> original = {static_cast<uint8_t>(b)};
 		auto utf8 = UTF8FromMacRoman(original);
 		auto mr = MacRomanFromUTF8(utf8);

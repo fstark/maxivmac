@@ -304,8 +304,6 @@ static void InfoScrap(Debugger &dbg)
 			for (uint32_t i = 0; i < previewLen; i++)
 				buf[i] = get_vm_byte(dataAddr + i);
 			std::string display = UTF8FromMacRoman({buf.data(), previewLen});
-			for (auto &c : display)
-				if (c == '\r') c = '\n';
 			if (entryLen > previewLen) display += "...";
 			dbg.io().write("  %s\n", display.c_str());
 		}

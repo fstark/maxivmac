@@ -144,6 +144,7 @@ void SetModDate(const std::filesystem::path &hostPath, uint32_t macDate);
 
 std::vector<uint8_t> MacRomanFromUTF8File(const std::filesystem::path &hostPath);
 uint32_t MacRomanSizeFromUTF8File(const std::filesystem::path &hostPath);
+void UTF8FileFromMacRoman(const std::filesystem::path &hostPath, std::span<const uint8_t> macRoman);
 
 /* ── Filename escaping ────────────────────────────── */
 
