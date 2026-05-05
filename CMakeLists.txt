@@ -289,6 +289,7 @@ add_executable(icon-extract
     tools/icon_extract/icon_extract.cpp
     tools/icon_extract/resource_fork.cpp
     tools/icon_extract/icon_decode.cpp
+    tools/icon_extract/icns_decode.cpp
     tools/icon_extract/png_text.cpp
     tools/icon_extract/stb_impl.cpp
     src/storage/appledouble.cpp

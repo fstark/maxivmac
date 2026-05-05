@@ -1,5 +1,6 @@
 #include "resource_fork.h"
 #include "icon_decode.h"
+#include "icns_decode.h"
 #include "png_text.h"
 #include "storage/appledouble.h"
 #include "storage/appledouble_internal.h"
@@ -18,8 +19,8 @@ void PrintUsage()
     std::puts(
         "Usage: icon-extract [OPTIONS] FILE|DIR [FILE|DIR...]\n"
         "\n"
-        "Extract icl8 icons from Mac resource forks (or AppleDouble sidecars)\n"
-        "and write them as 32×32 RGBA PNG files.\n"
+        "Extract icons from Mac resource forks, AppleDouble sidecars,\n"
+        "and .icns files. Writes PNG files (largest available resolution).\n"
         "\n"
         "Options:\n"
         "  -o, --output-dir DIR    Write PNGs to DIR (default: .)\n"
@@ -65,6 +66,36 @@ std::vector<uint8_t> ForkFromSidecar(const std::vector<uint8_t> &blob)
 constexpr uint32_t kAppleDoubleMagic = 0x00051607u;
 constexpr uint32_t kIcl8Type = 0x69636C38u; // 'icl8'
 constexpr uint32_t kICNType = 0x49434E23u;  // 'ICN#'
+constexpr uint32_t kIcnsType = 0x69636E73u; // 'icns'
+constexpr uint32_t kIcnsMagic = 0x69636E73u; // 'icns' file header
+
+bool IsIcnsFile(const std::vector<uint8_t> &bytes)
+{
+    if (bytes.size() < 8) return false;
+    using appledouble::detail::ReadBE32;
+    return ReadBE32(bytes.data()) == kIcnsMagic;
+}
+
+// Write a DecodedIcon to a PNG file. Returns true on success.
+bool WriteIcon(const icns::DecodedIcon &icon, const fs::path &outFile,
+               std::string_view title, std::string_view source)
+{
+    if (icon.width == -1) {
+        // Raw PNG data — write directly
+        std::ofstream f(outFile, std::ios::binary);
+        if (!f) return false;
+        f.write(reinterpret_cast<const char *>(icon.rgba.data()),
+                static_cast<std::streamsize>(icon.rgba.size()));
+        return f.good();
+    }
+
+    png::TextChunk textChunks[] = {
+        {"Title", title},
+        {"Source", source},
+    };
+    return png::WritePngWithText(outFile, icon.width, icon.height,
+                                 icon.rgba, textChunks);
+}
 
 } // namespace
 
@@ -108,7 +139,8 @@ int main(int argc, char *argv[])
                 for (const auto &entry : fs::recursive_directory_iterator(input)) {
                     if (!entry.is_regular_file()) continue;
                     auto name = entry.path().filename().string();
-                    if (name.starts_with("._"))
+                    if (name.starts_with("._") ||
+                        entry.path().extension() == ".icns")
                         expanded.push_back(entry.path());
                 }
             } else {
@@ -129,19 +161,52 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        // Determine resource fork source
+        // Derive output name from input filename.
+        std::string basename = inputPath.filename().string();
+        if (basename.starts_with("._"))
+            basename = basename.substr(2);
+        else if (basename.ends_with(".icns"))
+            basename = basename.substr(0, basename.size() - 5);
+        std::string fullPath = inputPath.string();
+
+        // --- Path 1: Standalone .icns file ---
+        if (IsIcnsFile(bytes)) {
+            auto icon = icns::ExtractLargest(bytes);
+            if (icon.width == 0 && icon.rgba.empty()) {
+                if (verbose)
+                    std::fprintf(stderr, "Warning: no usable icon in '%s'\n",
+                                 inputPath.c_str());
+                continue;
+            }
+
+            std::string outName = basename + ".png";
+            auto outFile = outputDir / outName;
+            for (int dup = 2; fs::exists(outFile); ++dup) {
+                outFile = outputDir / (basename + " (" +
+                                       std::to_string(dup) + ").png");
+            }
+
+            if (!WriteIcon(icon, outFile, basename, fullPath)) {
+                std::fprintf(stderr, "Error: failed to write '%s'\n",
+                             outFile.c_str());
+                continue;
+            }
+            if (verbose) std::printf("  %s\n", outFile.c_str());
+            ++totalExtracted;
+            continue;
+        }
+
+        // --- Path 2: Resource fork (raw or from AppleDouble sidecar) ---
         std::vector<uint8_t> fork;
         using appledouble::detail::ReadBE32;
 
         if (bytes.size() >= 4 && ReadBE32(bytes.data()) == kAppleDoubleMagic) {
-            // Input IS a sidecar
             fork = ForkFromSidecar(bytes);
         } else if (auto sidecar = appledouble::SidecarPathFor(inputPath);
                    fs::exists(sidecar)) {
             auto sidecarBytes = ReadFile(sidecar);
             fork = ForkFromSidecar(sidecarBytes);
         } else {
-            // Treat as raw resource fork
             fork = std::move(bytes);
         }
 
@@ -152,20 +217,38 @@ int main(int argc, char *argv[])
         }
 
         auto resources = rsrc::ParseResourceFork(fork);
+
+        // Check for 'icns' resource (e.g. custom folder icon at ID -16455)
+        auto icnsResources = rsrc::FindByType(resources, kIcnsType);
+        if (!icnsResources.empty()) {
+            // Use the first icns resource (usually the custom icon)
+            auto *icnsRes = icnsResources[0];
+            auto icon = icns::ExtractLargest(icnsRes->data);
+            if (icon.width != 0 || !icon.rgba.empty()) {
+                std::string outName = basename + ".png";
+                auto outFile = outputDir / outName;
+                for (int dup = 2; fs::exists(outFile); ++dup) {
+                    outFile = outputDir / (basename + " (" +
+                                           std::to_string(dup) + ").png");
+                }
+
+                if (WriteIcon(icon, outFile, basename, fullPath)) {
+                    if (verbose) std::printf("  %s\n", outFile.c_str());
+                    ++totalExtracted;
+                }
+                continue;
+            }
+        }
+
+        // Fall back to classic icl8 extraction
         auto icl8s = rsrc::FindByType(resources, kIcl8Type);
 
         if (icl8s.empty()) {
-            std::fprintf(stderr, "Warning: no icl8 resources in '%s'\n",
-                         inputPath.c_str());
+            if (verbose)
+                std::fprintf(stderr, "Warning: no icons in '%s'\n",
+                             inputPath.c_str());
             continue;
         }
-
-        // Derive the original Mac filename from the input path.
-        // If it's a sidecar (._Foo), strip the ._ prefix.
-        std::string basename = inputPath.filename().string();
-        if (basename.starts_with("._"))
-            basename = basename.substr(2);
-        std::string fullPath = inputPath.string();
 
         for (auto *icl8 : icl8s) {
             if (icl8->data.size() != 1024) {
@@ -203,7 +286,6 @@ int main(int argc, char *argv[])
                 outFile = outputDir / dedupName;
             }
 
-            // Embed original filename and full path as iTXt metadata
             png::TextChunk textChunks[] = {
                 {"Title", basename},
                 {"Source", fullPath},
