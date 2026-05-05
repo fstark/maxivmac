@@ -199,6 +199,10 @@ bool ParseMacFileFromString(std::string_view content, std::string_view path, Mac
 				return false;
 			}
 		}
+		else if (key == "icon")
+		{
+			out.iconPath = std::string(val);
+		}
 		else
 		{
 			errorOut = std::string(path) + ":" + std::to_string(lineNum) + ": unknown key '" +
@@ -334,6 +338,9 @@ void ValidateMacEntry(MacFileEntry &entry, std::string_view dataDir)
 			return;
 		}
 	}
+
+	// Resolve icon path (non-fatal if missing)
+	if (!entry.iconPath.empty()) entry.iconPath = ResolveMacPath(dataDir, entry.iconPath);
 }
 
 std::string ResolveDataDir(std::string_view appParent)

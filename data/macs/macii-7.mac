@@ -5,3 +5,5 @@ model = II
 disk = @disks/701.1.hfs
 #shared = @shared/shared
 serial-a = slip
+icon = @icons/ii-2.png
+screen = 1024x768x8

@@ -31,6 +31,9 @@ struct MacFileEntry
 	// Serial
 	std::string serialA;
 
+	// Icon (optional PNG path, resolved after validation)
+	std::string iconPath;
+
 	// Overrides (0 = use model default)
 	uint32_t ramOverrideMB = 0;
 	uint16_t screenW = 0;

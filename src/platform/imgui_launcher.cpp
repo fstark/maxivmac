@@ -11,10 +11,54 @@
 #include <cstdio>
 #include <algorithm>
 
+#define GL_SILENCE_DEPRECATION
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
+#include <GL/gl.h>
+#endif
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#include "stb_image.h"
+#pragma GCC diagnostic pop
+
+Launcher::~Launcher()
+{
+	for (auto tex : textures_)
+		if (tex) glDeleteTextures(1, &tex);
+}
+
 void Launcher::init(std::vector<MacFileEntry> entries)
 {
 	entries_ = std::move(entries);
 	selectedIndex_ = -1;
+}
+
+void Launcher::loadTextures()
+{
+	textures_.resize(entries_.size(), 0);
+	for (size_t i = 0; i < entries_.size(); ++i)
+	{
+		const auto &path = entries_[i].iconPath;
+		if (path.empty()) continue;
+
+		int w, h, channels;
+		unsigned char *pixels = stbi_load(path.c_str(), &w, &h, &channels, 4);
+		if (!pixels) continue;
+
+		GLuint tex = 0;
+		glGenTextures(1, &tex);
+		glBindTexture(GL_TEXTURE_2D, tex);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		stbi_image_free(pixels);
+
+		textures_[i] = tex;
+	}
 }
 
 const MacFileEntry *Launcher::draw()
@@ -115,20 +159,28 @@ const MacFileEntry *Launcher::drawCards()
 		ImGui::BeginChild("card", ImVec2(cardW, cardH), ImGuiChildFlags_None,
 						  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		{
-			/* Icon: colored square with initial letter */
-			float iconSize = 32.0f;
+			/* Icon: texture if available, else colored square with initial */
+			float iconSize = 64.0f;
 			ImGui::SetCursorPosX((cardW - iconSize) * 0.5f);
-			ImVec2 iconPos = ImGui::GetCursorScreenPos();
-			ImU32 iconColor = valid ? IM_COL32(100, 149, 237, 255) : IM_COL32(80, 80, 80, 255);
-			ImGui::GetWindowDrawList()->AddRectFilled(
-				iconPos, ImVec2(iconPos.x + iconSize, iconPos.y + iconSize), iconColor, 6.0f);
-			char initial[2] = {e.name.empty() ? '?' : e.name[0], 0};
-			ImVec2 letterSize = ImGui::CalcTextSize(initial);
-			ImGui::GetWindowDrawList()->AddText(
-				ImVec2(iconPos.x + (iconSize - letterSize.x) * 0.5f,
-					   iconPos.y + (iconSize - letterSize.y) * 0.5f),
-				IM_COL32(255, 255, 255, 255), initial);
-			ImGui::Dummy(ImVec2(iconSize, iconSize));
+
+			if (i < (int)textures_.size() && textures_[i])
+			{
+				ImGui::Image((ImTextureID)(uintptr_t)textures_[i], ImVec2(iconSize, iconSize));
+			}
+			else
+			{
+				ImVec2 iconPos = ImGui::GetCursorScreenPos();
+				ImU32 iconColor = valid ? IM_COL32(100, 149, 237, 255) : IM_COL32(80, 80, 80, 255);
+				ImGui::GetWindowDrawList()->AddRectFilled(
+					iconPos, ImVec2(iconPos.x + iconSize, iconPos.y + iconSize), iconColor, 6.0f);
+				char initial[2] = {e.name.empty() ? '?' : e.name[0], 0};
+				ImVec2 letterSize = ImGui::CalcTextSize(initial);
+				ImGui::GetWindowDrawList()->AddText(
+					ImVec2(iconPos.x + (iconSize - letterSize.x) * 0.5f,
+						   iconPos.y + (iconSize - letterSize.y) * 0.5f),
+					IM_COL32(255, 255, 255, 255), initial);
+				ImGui::Dummy(ImVec2(iconSize, iconSize));
+			}
 			ImGui::Spacing();
 
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));

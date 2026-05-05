@@ -474,6 +474,7 @@ bool ImGuiBackend::createLauncher(std::vector<MacFileEntry> entries)
 	ImGui_ImplOpenGL3_Init("#version 150");
 
 	launcher_.init(std::move(entries));
+	launcher_.loadTextures();
 	return true;
 }
 
