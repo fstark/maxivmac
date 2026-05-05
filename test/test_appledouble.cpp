@@ -200,6 +200,18 @@ TEST_CASE("MacNameFromHost rejects unmappable UTF-8")
 	CHECK_FALSE(MacNameFromHost("\xe4\xb8\xad").has_value()); /* CJK character */
 }
 
+TEST_CASE("MacNameFromHost maps bare colon to slash")
+{
+	/* A host file with ':' in its name should appear as '/' to the Mac,
+	   since ':' is the Mac path separator and cannot appear in filenames. */
+	CHECK(MacNameFromHost("foo:bar") == "foo/bar");
+	CHECK(MacNameFromHost(":leading") == "/leading");
+	CHECK(MacNameFromHost("a:b:c") == "a/b/c");
+	/* Escaped colon (from Mac guest) still round-trips as ':' */
+	CHECK(MacNameFromHost("\x1B"
+						  "3Acolon") == ":colon");
+}
+
 TEST_CASE("IsSidecar")
 {
 	CHECK(IsSidecar("._foo.txt"));

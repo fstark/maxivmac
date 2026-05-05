@@ -283,6 +283,31 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------
+# Icon extraction tool
+# ---------------------------------------------------------------------------
+add_executable(icon-extract
+    tools/icon_extract/icon_extract.cpp
+    tools/icon_extract/resource_fork.cpp
+    tools/icon_extract/icon_decode.cpp
+    tools/icon_extract/png_text.cpp
+    tools/icon_extract/stb_impl.cpp
+    src/storage/appledouble.cpp
+    src/storage/filename_encoding.cpp
+    src/storage/text_convert.cpp
+    src/util/macroman.cpp
+)
+target_include_directories(icon-extract PRIVATE
+    "${CMAKE_SOURCE_DIR}/src"
+    "${CMAKE_SOURCE_DIR}/tools/icon_extract"
+    "${CMAKE_SOURCE_DIR}/libs/stb"
+    "${CMAKE_SOURCE_DIR}/libs"
+)
+target_compile_options(icon-extract PRIVATE -Wall -Wextra -Werror)
+set_source_files_properties(tools/icon_extract/stb_impl.cpp PROPERTIES
+    COMPILE_FLAGS "-Wno-error"
+)
+
+# ---------------------------------------------------------------------------
 # Unit tests
 # ---------------------------------------------------------------------------
 enable_testing()
@@ -294,6 +319,7 @@ add_executable(tests
     test/test_appledouble.cpp
     test/test_host_volume.cpp
     test/test_stubs.cpp
+    test/test_resource_fork.cpp
     src/cpu/trap_defs.cpp
     src/cpu/trap_tracer.cpp
     src/cpu/trap_counter.cpp
@@ -311,6 +337,8 @@ add_executable(tests
     src/lang/type_registry.cpp
     src/lang/global_registry.cpp
     src/util/macroman.cpp
+    tools/icon_extract/resource_fork.cpp
+    tools/icon_extract/icon_decode.cpp
     test/test_drive_manager.cpp
     test/test_types.cpp
     test/test_ui.cpp
@@ -321,6 +349,6 @@ add_executable(tests
     src/core/config_loader.cpp
     src/config/mac_file.cpp
 )
-target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs")
+target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs" "${CMAKE_SOURCE_DIR}/tools/icon_extract")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME tests COMMAND tests WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")

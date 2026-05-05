@@ -300,8 +300,7 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *driveNo)
 
 				if (L < checkheadersize)
 				{
-					WarnMsgUnsupportedDisk();
-					result = tMacErr::miscErr;
+					dbglog_WriteNote("Disk image too small for format detection, mounting raw");
 				}
 				else if (tMacErr::noErr ==
 						 (result =
@@ -415,8 +414,7 @@ static tMacErr vSonyNextPendingInsert(DriveIndex *driveNo)
 
 					if (!gotFormat)
 					{
-						WarnMsgUnsupportedDisk();
-						result = tMacErr::miscErr;
+						dbglog_WriteNote("Unrecognized disk image format, mounting raw");
 					}
 				}
 			}

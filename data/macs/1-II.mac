@@ -1,5 +1,5 @@
 # Mac II · System 6, for ResEdit test
-name = A Mac II · System 6
+name = Just MacII, 6.0.8
 description = Color Macintosh.
 model = II
 disk = @disks/plus-608.hfs

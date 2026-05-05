@@ -97,7 +97,12 @@ std::optional<std::string> MacNameFromHost(std::string_view hostName)
 		uint32_t cp = DecodeUTF8(utf8, i);
 		auto mr = MacRomanFromCodePoint(cp);
 		if (!mr.valid) return std::nullopt;
-		result += static_cast<char>(mr.byte);
+		/* ':' is the Mac path separator — map bare host ':' to '/'
+		   which is legal in Mac filenames (matches Finder convention). */
+		if (mr.byte == ':')
+			result += '/';
+		else
+			result += static_cast<char>(mr.byte);
 	}
 	return result;
 }

@@ -3,4 +3,4 @@ name = Mac Plus · System 6
 description = The classic compact Macintosh experience.
 model = Plus
 disk = @disks/plus-608.hfs
-shared = @shared/shared
+#shared = @shared/shared

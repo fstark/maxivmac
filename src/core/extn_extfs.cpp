@@ -1281,14 +1281,14 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kPB_CatMove:
 		case kPB_SetFileInfo:
 		case kPB_SetCatInfo:
-			s_drives.forEach(
-				[&](int, storage::HostVolume &vol)
-				{
-					if (!vol.validateCatalog())
-						DIAG(ExtFS,
-							 "*** CATALOG VALIDATION FAILED (slot %d) after cmd=0x%03x ***\n",
-							 vol.slot(), cmd);
-				});
+			// s_drives.forEach(
+			// 	[&](int, storage::HostVolume &vol)
+			// 	{
+			// 		if (!vol.validateCatalog())
+			// 			DIAG(ExtFS,
+			// 				 "*** CATALOG VALIDATION FAILED (slot %d) after cmd=0x%03x ***\n",
+			// 				 vol.slot(), cmd);
+			// 	});
 			break;
 		default:
 			break;

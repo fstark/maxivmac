@@ -591,7 +591,7 @@ static Boolean IsOurFCB(short refNum)
 static Ptr FindVCB(short vRefNum, Globals *g)
 {
 	short i;
-	/* vRefNum 0 → DefVCBPtr */
+	/* vRefNum 0 ? DefVCBPtr */
 	if (vRefNum == 0)
 	{
 		Ptr def = *(Ptr *)kDefVCBPtr;
@@ -1381,7 +1381,7 @@ static short DispatchFromTable(TrapEntry *table, short key, char *pb, Globals *g
 			}
 		}
 		/* Non-refBased traps handle ownership internally:
-		   host-first handlers return kNotOurs → kPassThrough,
+		   host-first handlers return kNotOurs ? kPassThrough,
 		   VCB-based handlers (GetVolInfo) check VCB pointers. */
 
 		err = e->handler(pb, g, isHFS);

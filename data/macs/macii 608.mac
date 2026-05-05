@@ -1,0 +1,7 @@
+# Mac II · System 6
+name = Mac II · System 6
+description = Color Macintosh.
+model = II
+disk = @disks/plus-608.hfs
+shared = @shared/shared
+shared = @shared/shared2

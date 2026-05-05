@@ -1,0 +1,7 @@
+# Mac II · System 701
+name = MacII/701
+description = Color Macintosh.
+model = II
+disk = @disks/701.hfs
+screen = 640x480x1
+shared = @shared/shared
