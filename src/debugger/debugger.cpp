@@ -61,6 +61,9 @@ void CmdScreenshot(Debugger &dbg, const std::vector<Token> &args);
 void CmdTimeout(Debugger &dbg, const std::vector<Token> &args);
 void CmdWait(Debugger &dbg, const std::vector<Token> &args);
 void CmdFail(Debugger &dbg, const std::vector<Token> &args);
+void CmdType(Debugger &dbg, const std::vector<Token> &args);
+void CmdKey(Debugger &dbg, const std::vector<Token> &args);
+void CmdClearKeys(Debugger &dbg, const std::vector<Token> &args);
 
 /* ── Command table ──────────────────────────────────── */
 
@@ -152,6 +155,12 @@ static CmdEntry s_commands[] = {
 	 "wait trap <name> [cycles]\n  Resume until trap fires.\n"},
 	{"fail", "", CmdFail, "Abort with error",
 	 "fail [\"message\"]\n  Print error, save screenshot, exit with code 1.\n"},
+	{"type", "", CmdType, "Inject text as keystrokes",
+	 "type \"text\"\n  Convert text to Mac key events and inject into event queue.\n"},
+	{"key", "", CmdKey, "Inject a key press",
+	 "key <keyspec>\n  Inject a single key press (e.g. cmd-S, return, cmd-shift-N).\n"},
+	{"clearkeys", "", CmdClearKeys, "Clear pending key events",
+	 "clearkeys\n  Remove all pending future key events from the queue.\n"},
 };
 
 static constexpr int kNumCommands = sizeof(s_commands) / sizeof(s_commands[0]);

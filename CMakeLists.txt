@@ -96,6 +96,7 @@ set(MINIVMAC_SOURCES
     src/debugger/bp_text.cpp
     src/debugger/bp_screen.cpp
     src/debugger/cmd_script.cpp
+    src/debugger/script_keymap.cpp
 
     # Devices
     src/devices/device.cpp

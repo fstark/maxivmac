@@ -4,10 +4,14 @@
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 #include "debugger/bp_screen.h"
+#include "debugger/script_keymap.h"
 
 #include "core/machine.h"
 #include "core/ict_scheduler.h"
 #include "platform/platform.h"
+#include "platform/keycodes.h"
+#include "platform/common/event_queue.h"
+#include "util/macroman.h"
 
 #include <cinttypes>
 #include <cstdlib>
@@ -189,4 +193,78 @@ void CheckScriptTimeouts()
 		// In headless/scripting mode, exit with error
 		std::exit(1);
 	}
+}
+
+void CmdType(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (args.empty() || args[0].isEnd())
+	{
+		dbg.io().write("Usage: type \"text\"\n");
+		return;
+	}
+
+	// Convert UTF-8 argument to MacRoman for key lookup
+	std::string macRoman = MacRomanFromUTF8(args[0].text);
+	ScaledCycleCount t = g_ict.getCurrent();
+
+	for (uint8_t ch : macRoman)
+	{
+		auto [keycode, needShift] = CharToMacKey(ch);
+		if (keycode == 0xFF) continue; // unmappable
+
+		if (needShift) EventQ_Push({t, EvtQElKind::Key, {.press = {MKC_Shift, true}}});
+		EventQ_Push({t, EvtQElKind::Key, {.press = {keycode, true}}});
+		EventQ_Push({t + 80000, EvtQElKind::Key, {.press = {keycode, false}}});
+		if (needShift) EventQ_Push({t + 80000, EvtQElKind::Key, {.press = {MKC_Shift, false}}});
+		t += 160000; // ~20ms inter-key gap at 8 MHz
+	}
+
+	dbg.io().write("Typed %zu characters\n", macRoman.size());
+}
+
+void CmdKey(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (args.empty() || args[0].isEnd())
+	{
+		dbg.io().write("Usage: key <keyspec>  (e.g. cmd-S, return, cmd-shift-N)\n");
+		return;
+	}
+
+	KeySpec ks = ParseKeySpec(args[0].text);
+	if (ks.keycode == 0xFF)
+	{
+		dbg.io().write("Error: cannot resolve key '%s'\n", args[0].text.c_str());
+		return;
+	}
+
+	ScaledCycleCount t = g_ict.getCurrent();
+
+	// Press modifiers
+	if (ks.modifiers & kModCmd) EventQ_Push({t, EvtQElKind::Key, {.press = {MKC_Command, true}}});
+	if (ks.modifiers & kModShift) EventQ_Push({t, EvtQElKind::Key, {.press = {MKC_Shift, true}}});
+	if (ks.modifiers & kModOption) EventQ_Push({t, EvtQElKind::Key, {.press = {MKC_Option, true}}});
+	if (ks.modifiers & kModCtrl) EventQ_Push({t, EvtQElKind::Key, {.press = {MKC_Control, true}}});
+
+	// Key down/up
+	EventQ_Push({t + 10000, EvtQElKind::Key, {.press = {ks.keycode, true}}});
+	EventQ_Push({t + 90000, EvtQElKind::Key, {.press = {ks.keycode, false}}});
+
+	// Release modifiers
+	ScaledCycleCount release = t + 100000;
+	if (ks.modifiers & kModCtrl)
+		EventQ_Push({release, EvtQElKind::Key, {.press = {MKC_Control, false}}});
+	if (ks.modifiers & kModOption)
+		EventQ_Push({release, EvtQElKind::Key, {.press = {MKC_Option, false}}});
+	if (ks.modifiers & kModShift)
+		EventQ_Push({release, EvtQElKind::Key, {.press = {MKC_Shift, false}}});
+	if (ks.modifiers & kModCmd)
+		EventQ_Push({release, EvtQElKind::Key, {.press = {MKC_Command, false}}});
+
+	dbg.io().write("Key: %s\n", args[0].text.c_str());
+}
+
+void CmdClearKeys(Debugger &dbg, const std::vector<Token> &)
+{
+	EventQ_ClearFutureKeys();
+	dbg.io().write("Cleared pending key events\n");
 }
