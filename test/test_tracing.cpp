@@ -1099,3 +1099,91 @@ TEST_CASE("TrapTracer emits subtrap name for dispatch trap")
 
 	CHECK(io.captured.find("PBGetCatInfo") != std::string::npos);
 }
+
+/* ════════════════════════════════════════════════════════
+   TextBuf/TextStart/TextCount type annotations
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("TrapDefs TextBuf/TextStart/TextCount parsing")
+{
+	ensureTypeRegistryInit();
+	auto path = writeTempFile("test_textbuf.def",
+							  "A885 DrawText toolbox\n"
+							  "  in  text:TextBuf  start:TextStart  count:TextCount\n");
+	TrapDefs defs;
+	defs.load(path);
+
+	const TrapDef *d = defs.find(0xA885);
+	REQUIRE(d != nullptr);
+	CHECK(d->name == "DrawText");
+	REQUIRE(d->paramsIn.size() == 3);
+
+	// TextBuf resolves to Ptr and marks isText
+	CHECK(d->paramsIn[0].name == "text");
+	CHECK(d->paramsIn[0].typeName == "Ptr");
+	CHECK(d->paramsIn[0].isText == true);
+	CHECK(d->paramsIn[0].isTextStart == false);
+	CHECK(d->paramsIn[0].isTextCount == false);
+
+	// TextStart resolves to sword and marks isTextStart
+	CHECK(d->paramsIn[1].name == "start");
+	CHECK(d->paramsIn[1].typeName == "sword");
+	CHECK(d->paramsIn[1].isText == false);
+	CHECK(d->paramsIn[1].isTextStart == true);
+	CHECK(d->paramsIn[1].isTextCount == false);
+
+	// TextCount resolves to sword and marks isTextCount
+	CHECK(d->paramsIn[2].name == "count");
+	CHECK(d->paramsIn[2].typeName == "sword");
+	CHECK(d->paramsIn[2].isText == false);
+	CHECK(d->paramsIn[2].isTextStart == false);
+	CHECK(d->paramsIn[2].isTextCount == true);
+
+	std::filesystem::remove(path);
+}
+
+TEST_CASE("TrapDefs TextBuf without TextCount emits warning")
+{
+	ensureTypeRegistryInit();
+	// TextBuf without a TextCount sibling should still parse (validation is at capture time)
+	auto path = writeTempFile("test_textbuf_nocount.def",
+							  "A885 DrawText toolbox\n"
+							  "  in  text:TextBuf  start:TextStart\n");
+	TrapDefs defs;
+	defs.load(path);
+
+	const TrapDef *d = defs.find(0xA885);
+	REQUIRE(d != nullptr);
+	CHECK(d->paramsIn.size() == 2);
+	CHECK(d->paramsIn[0].isText == true);
+	CHECK(d->paramsIn[1].isTextStart == true);
+	std::filesystem::remove(path);
+}
+
+TEST_CASE("TrapDefs actual traps.def has DrawText with TextBuf")
+{
+	ensureTypeRegistryInit();
+	TrapDefs defs;
+	defs.load("data/debug/traps.def");
+
+	const TrapDef *dt = defs.find(0xA885);
+	REQUIRE(dt != nullptr);
+	CHECK(dt->name == "DrawText");
+	REQUIRE(dt->paramsIn.size() == 3);
+	CHECK(dt->paramsIn[0].isText == true);
+	CHECK(dt->paramsIn[1].isTextStart == true);
+	CHECK(dt->paramsIn[2].isTextCount == true);
+
+	const TrapDef *st = defs.find(0xA882);
+	REQUIRE(st != nullptr);
+	CHECK(st->name == "StdText");
+	REQUIRE(st->paramsIn.size() == 4);
+	CHECK(st->paramsIn[0].isTextCount == true);
+	CHECK(st->paramsIn[1].isText == true);
+
+	const TrapDef *tb = defs.find(0xA9CE);
+	REQUIRE(tb != nullptr);
+	CHECK(tb->name == "TextBox");
+	CHECK(tb->paramsIn[0].isText == true);
+	CHECK(tb->paramsIn[1].isTextCount == true);
+}

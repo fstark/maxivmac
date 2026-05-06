@@ -158,6 +158,21 @@ static bool ParseParam(const std::string &token, ParamDef &out)
 			out.typeName = "Str255";
 			out.isText = true;
 		}
+		else if (typeStr == "TextBuf")
+		{
+			out.typeName = "Ptr";
+			out.isText = true;
+		}
+		else if (typeStr == "TextStart")
+		{
+			out.typeName = "sword";
+			out.isTextStart = true;
+		}
+		else if (typeStr == "TextCount")
+		{
+			out.typeName = "sword";
+			out.isTextCount = true;
+		}
 		else
 		{
 			out.typeName = typeStr;

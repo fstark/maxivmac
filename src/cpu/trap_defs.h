@@ -42,6 +42,8 @@ struct ParamDef
 	ParamLoc loc = ParamLoc::Stack;
 	bool isStructPtr = false; /* true when typeName is a ^struct pointer */
 	bool isText = false;	  /* true if this param carries displayable text (scripting) */
+	bool isTextStart = false; /* TextStart: byte offset into TextBuf */
+	bool isTextCount = false; /* TextCount: byte count for TextBuf */
 };
 
 enum class TrapConvention

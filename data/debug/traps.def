@@ -1168,13 +1168,13 @@ A881 EqualPt toolbox
     out equal:Boolean
 
 A882 StdText toolbox
-  in  count:sword  text:Ptr  numer:Point  denom:Point
+  in  count:TextCount  text:TextBuf  numer:Point  denom:Point
 
 A883 DrawChar toolbox
   in  ch:sword
 
 A885 DrawText toolbox
-  in  text:Ptr  start:sword  count:sword
+  in  text:TextBuf  start:TextStart  count:TextCount
 
 A886 TextWidth toolbox
   in  text:Ptr  start:sword  count:sword
@@ -2173,7 +2173,7 @@ A9CD TEDispose toolbox
   in  te:Handle
 
 A9CE TextBox toolbox
-  in  text:Ptr  length:long  box:Rect  just:sword
+  in  text:TextBuf  length:TextCount  box:Rect  just:sword
 
 A9CF TESetText toolbox
   in  text:Ptr  length:long  te:Handle

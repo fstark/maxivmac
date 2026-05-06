@@ -10,6 +10,7 @@
 #include "debugger/bp_text.h"
 #include "debugger/debugger.h"
 #include "lang/type_registry.h"
+#include "util/macroman.h"
 
 #include <cinttypes>
 #include <cstdio>
@@ -171,11 +172,41 @@ void TrapTracer::captureTextParams(uint16_t trapWord)
 		if (!pd.isText) continue;
 
 		uint32_t raw = readParamRaw(pd, sp, stackOff);
-		std::string val = formatParam(pd, raw);
-		std::string_view sv = val;
-		if (sv.size() >= 2 && sv.front() == '"' && sv.back() == '"')
-			sv = sv.substr(1, sv.size() - 2);
-		ScriptCaptureText(sv, def->name);
+
+		// TextBuf: read raw bytes using sibling TextStart/TextCount params
+		if (pd.typeName == "Ptr")
+		{
+			int16_t start = 0;
+			int16_t count = 0;
+			bool foundCount = false;
+			int sibOff = totalStack;
+			for (const auto &sib : def->paramsIn)
+			{
+				if (sib.loc == ParamLoc::Stack) sibOff -= paramSize(sib);
+				if (sib.isTextStart)
+					start = static_cast<int16_t>(readParamRaw(sib, sp, sibOff));
+				else if (sib.isTextCount)
+				{
+					count = static_cast<int16_t>(readParamRaw(sib, sp, sibOff));
+					foundCount = true;
+				}
+			}
+			if (!foundCount || count <= 0 || count > 255) continue;
+			std::vector<uint8_t> buf(count);
+			for (int i = 0; i < count; i++)
+				buf[i] = get_vm_byte(raw + start + i);
+			std::string utf8 = UTF8FromMacRoman(buf);
+			ScriptCaptureText(utf8, def->name);
+		}
+		else
+		{
+			// Text (Str255) — Pascal string pointer
+			std::string val = formatParam(pd, raw);
+			std::string_view sv = val;
+			if (sv.size() >= 2 && sv.front() == '"' && sv.back() == '"')
+				sv = sv.substr(1, sv.size() - 2);
+			ScriptCaptureText(sv, def->name);
+		}
 	}
 }
 
