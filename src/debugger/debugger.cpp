@@ -7,6 +7,7 @@
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 #include "debugger/expr.h"
+#include "debugger/script_suspend.h"
 
 #include "core/machine.h"
 #include "cpu/m68k.h"
@@ -184,6 +185,9 @@ struct Debugger::Impl
 
 	/* Last command (for empty-line repeat) */
 	std::string lastLine;
+
+	/* Pending script (scripting suspension/resumption) */
+	PendingScript pendingScript;
 
 	/* I/O transport */
 	std::unique_ptr<DbgIO> io;
@@ -581,8 +585,9 @@ int Debugger::commandTableSize() const
 
 void Debugger::executeCommands(const std::vector<std::string> &cmds)
 {
-	for (auto &line : cmds)
+	for (size_t i = 0; i < cmds.size(); ++i)
 	{
+		auto &line = cmds[i];
 		if (auto p = line.find_first_not_of(" \t"); p != std::string::npos && line[p] == '#')
 			continue;
 
@@ -595,9 +600,34 @@ void Debugger::executeCommands(const std::vector<std::string> &cmds)
 			std::vector<Token> args(tokens.begin() + 1, tokens.end());
 			entry->handler(*this, args);
 			if (impl_->state != DbgState::Stopped)
-				return; /* command changed state (e.g. continue) */
+			{
+				// Script suspended — save remaining lines for resumption
+				impl_->pendingScript.lines = cmds;
+				impl_->pendingScript.nextLine = static_cast<int>(i + 1);
+				return;
+			}
 		}
 	}
+	// All lines executed — clear any pending state
+	impl_->pendingScript.clear();
+}
+
+bool Debugger::tryResumeScript(const Breakpoint *firedBp)
+{
+	if (impl_->pendingScript.exhausted()) return false;
+
+	if (firedBp && firedBp->scriptOwned)
+	{
+		// Condition met — resume the pending script from where it left off
+		auto &ps = impl_->pendingScript;
+		std::vector<std::string> remaining(ps.lines.begin() + ps.nextLine, ps.lines.end());
+		ps.clear();
+		executeCommands(remaining);
+		return (impl_->state != DbgState::Stopped);
+	}
+	// Non-scriptOwned breakpoint → drop to interactive prompt
+	// (pending script remains for potential future resumption)
+	return false;
 }
 
 /* ── Source file ─────────────────────────────────────── */
@@ -863,10 +893,15 @@ bool Debugger::instructionHook(uint32_t pc)
 
 		/* Temporary breakpoints are one-shot — delete after firing */
 		bool wasTemporary = bp->temporary;
+		bool wasScriptOwned = bp->scriptOwned;
 		uint32_t bpId = bp->id;
 		if (wasTemporary) deleteById(bpId);
 
 		stop("");
+
+		// If a scriptOwned BP fired, try resuming the pending script
+		if (wasScriptOwned && tryResumeScript(nullptr)) return true;
+
 		commandLoop();
 		return true;
 	}
@@ -949,10 +984,15 @@ bool Debugger::trapHook(uint16_t trapWord)
 
 		/* Temporary breakpoints are one-shot — delete after firing */
 		bool wasTemporary = bp->temporary;
+		bool wasScriptOwned = bp->scriptOwned;
 		uint32_t bpId = bp->id;
 		if (wasTemporary) deleteById(bpId);
 
 		stop("");
+
+		// If a scriptOwned BP fired, try resuming the pending script
+		if (wasScriptOwned && tryResumeScript(nullptr)) return true;
+
 		return true; /* instructionHook will enter command loop */
 	}
 

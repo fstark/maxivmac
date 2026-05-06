@@ -92,6 +92,7 @@ set(MINIVMAC_SOURCES
     src/debugger/cmd_drive.cpp
     src/debugger/symbols.cpp
     src/debugger/expr.cpp
+    src/debugger/script_suspend.cpp
 
     # Devices
     src/devices/device.cpp

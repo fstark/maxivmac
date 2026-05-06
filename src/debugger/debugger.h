@@ -130,6 +130,10 @@ public:
 	// Breakpoint commands (used by cmd_break.cpp)
 	void executeCommands(const std::vector<std::string> &cmds);
 
+	// Script resume check: resumes a pending script when a scriptOwned BP fires.
+	// Returns true if the CPU was resumed (caller should return immediately).
+	bool tryResumeScript(const Breakpoint *firedBp);
+
 	// Command table access (used by cmd_help.cpp)
 	struct CmdEntry *commandTable();
 	int commandTableSize() const;
