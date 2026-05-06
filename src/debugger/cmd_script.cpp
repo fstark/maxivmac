@@ -230,10 +230,18 @@ void CmdKey(Debugger &dbg, const std::vector<Token> &args)
 		return;
 	}
 
-	KeySpec ks = ParseKeySpec(args[0].text);
+	// Reconstruct keyspec from tokens (tokenizer splits on '-')
+	std::string spec;
+	for (const auto &tok : args)
+	{
+		if (tok.isEnd()) break;
+		spec += tok.text;
+	}
+
+	KeySpec ks = ParseKeySpec(spec);
 	if (ks.keycode == 0xFF)
 	{
-		dbg.io().write("Error: cannot resolve key '%s'\n", args[0].text.c_str());
+		dbg.io().write("Error: cannot resolve key '%s'\n", spec.c_str());
 		return;
 	}
 
@@ -260,7 +268,7 @@ void CmdKey(Debugger &dbg, const std::vector<Token> &args)
 	if (ks.modifiers & kModCmd)
 		EventQ_Push({release, EvtQElKind::Key, {.press = {MKC_Command, false}}});
 
-	dbg.io().write("Key: %s\n", args[0].text.c_str());
+	dbg.io().write("Key: %s\n", spec.c_str());
 }
 
 void CmdClearKeys(Debugger &dbg, const std::vector<Token> &)
