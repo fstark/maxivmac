@@ -1,0 +1,6 @@
+# Boot, open a DA, type text, verify it appears.
+timeout 80000000
+wait text "File"
+type "Hello World"
+wait text "Hello World"
+screenshot "typed"

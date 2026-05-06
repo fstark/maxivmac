@@ -1,0 +1,3 @@
+# Verify that timeout produces non-zero exit.
+timeout 1000
+wait text "This will never appear"
