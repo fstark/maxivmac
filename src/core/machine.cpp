@@ -2008,10 +2008,15 @@ void MemoryReset()
 
 /* PowerOff_ChangeNtfy: only wired on Mac II/IIx (see AddrSpac_Init) */
 extern void PowerOff_ChangeNtfy();
+extern bool g_debuggerActive;
+void CheckPowerOffBreakpoints(); // defined in debugger/bp_screen.cpp
+
 void PowerOff_ChangeNtfy()
 {
 	if (!VIA2_iB2)
 	{
+		// Scripting: check power-off breakpoints before quitting
+		if (g_debuggerActive) CheckPowerOffBreakpoints();
 		g_forceMacOff = true;
 	}
 }

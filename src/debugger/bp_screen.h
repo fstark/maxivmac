@@ -23,3 +23,6 @@ void CheckScreenBreakpoints();
 
 // Save the current framebuffer to a PNG file.
 bool SaveScreenshot(const std::filesystem::path &path);
+
+// Called when the guest requests power-off. Fires Kind::PowerOff breakpoints.
+void CheckPowerOffBreakpoints();
