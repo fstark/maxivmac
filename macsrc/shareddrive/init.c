@@ -1813,10 +1813,12 @@ void FilterEntry(void)
 							Str255 appName;
 							/* dirPath = everything up to (not including) the last colon */
 							dirPath[0] = lastColon - 1;
-							for (i = 1; i < lastColon; i++) dirPath[i] = pathBuf[i];
+							for (i = 1; i < lastColon; i++)
+								dirPath[i] = pathBuf[i];
 							/* appName = everything after the last colon */
 							appName[0] = pathBuf[0] - lastColon;
-							for (i = 1; i <= appName[0]; i++) appName[i] = pathBuf[lastColon + i];
+							for (i = 1; i <= appName[0]; i++)
+								appName[i] = pathBuf[lastColon + i];
 
 							/* Set working directory to app's parent folder */
 							{
