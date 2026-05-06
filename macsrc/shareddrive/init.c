@@ -1784,9 +1784,10 @@ void FilterEntry(void)
 			   The host writes a Pascal string path into pathBuf for launch. */
 			{
 				Str255 pathBuf;
-				struct {
-					Ptr   namePtr;  /* pointer to Pascal string filename */
-					short config;   /* sound/screen buffer config (0=normal) */
+				struct
+				{
+					Ptr namePtr;  /* pointer to Pascal string filename */
+					short config; /* sound/screen buffer config (0=normal) */
 				} launchPB;
 
 				pathBuf[0] = 0;
@@ -1796,16 +1797,53 @@ void FilterEntry(void)
 					unsigned short cmd = reg_result(g->regBase);
 					if (cmd == 1)
 					{
-						/* _Launch: A0 points to a launch parameter block:
-						     (A0)  = pointer to Pascal string filename
-						     4(A0) = sound/screen buffer config word
-						   This trap never returns — it terminates the
-						   current app and starts the new one. */
-						launchPB.namePtr = (Ptr)pathBuf;
-						launchPB.config = 0;
-						asm {
-							LEA     launchPB, A0
-							DC.W    0xA9F2  ; _Launch
+						/* Split path at last ':' — SetVol to parent dir,
+						   then _Launch with just the filename.
+						   e.g. "Macintosh:Think C:THINK C 5.0"
+						   → SetVol("Macintosh:Think C")
+						   → _Launch("THINK C 5.0") */
+						short lastColon = 0;
+						short i;
+						for (i = 1; i <= pathBuf[0]; i++)
+							if (pathBuf[i] == ':') lastColon = i;
+
+						if (lastColon > 0)
+						{
+							Str255 dirPath;
+							Str255 appName;
+							/* dirPath = everything up to (not including) the last colon */
+							dirPath[0] = lastColon - 1;
+							for (i = 1; i < lastColon; i++) dirPath[i] = pathBuf[i];
+							/* appName = everything after the last colon */
+							appName[0] = pathBuf[0] - lastColon;
+							for (i = 1; i <= appName[0]; i++) appName[i] = pathBuf[lastColon + i];
+
+							/* Set working directory to app's parent folder */
+							{
+								HParamBlockRec vpb;
+								mem_zero((char *)&vpb, sizeof(vpb));
+								vpb.volumeParam.ioNamePtr = (StringPtr)dirPath;
+								vpb.volumeParam.ioVRefNum = 0;
+								PBHSetVol(&vpb, false);
+							}
+
+							/* Launch with just the filename */
+							launchPB.namePtr = (Ptr)appName;
+							launchPB.config = 0;
+							asm {
+								LEA     launchPB, A0
+								DC.W    0xA9F2  ; _Launch
+							}
+						}
+						else
+						{
+							/* No colon — bare filename, use current WD */
+							launchPB.namePtr = (Ptr)pathBuf;
+							launchPB.config = 0;
+							asm {
+								LEA     launchPB, A0
+								DC.W    0xA9F2  ; _Launch
+							}
 						}
 					}
 					else if (cmd == 2)
