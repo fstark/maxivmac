@@ -48,6 +48,8 @@
 #include <Files.h>
 #include <Devices.h>
 #include <Events.h>
+#include <SegLoad.h>
+#include <Shutdown.h>
 
 /* ---- constants ---- */
 
@@ -61,6 +63,7 @@
 /* Runtime mount polling commands */
 #define kExtFSPollMount 0x0219
 #define kExtFSGetVolName 0x021A
+#define kExtFSGuestCmd 0x0220
 
 /* jGNEFilter low-memory global */
 #define kJGNEFilter 0x029A
@@ -1773,6 +1776,40 @@ void FilterEntry(void)
 					short driveNum = (short)reg_get(g->regBase, 2);
 					MountNewDrive(g, s, vRefNum, driveNum);
 					PostEvent(diskEvt, driveNum);
+				}
+			}
+
+			/* Poll for guest commands from the debugger.
+			   Commands: 1=launch, 2=exittoshell, 3=shutdown.
+			   The host writes a Pascal string path into pathBuf for launch. */
+			{
+				Str255 pathBuf;
+				pathBuf[0] = 0;
+				reg_set(g->regBase, 0, (unsigned long)pathBuf);
+				reg_command(g->regBase, kExtFSGuestCmd);
+				{
+					unsigned short cmd = reg_result(g->regBase);
+					if (cmd == 1)
+					{
+						/* _Launch: A0 points to the application's full pathname
+						   as a Pascal string.  This trap never returns — it
+						   terminates the current app and starts the new one. */
+						asm {
+							LEA     pathBuf, A0
+							DC.W    0xA9F2  ; _Launch
+						}
+					}
+					else if (cmd == 2)
+					{
+						/* Terminate current application, return to Finder. */
+						ExitToShell();
+					}
+					else if (cmd == 3)
+					{
+						/* Clean shutdown — on Plus/SE shows "safe to turn off",
+						   on Mac II powers off via ADB power manager. */
+						ShutDwnPower();
+					}
 				}
 			}
 		}
