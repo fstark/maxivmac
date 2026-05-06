@@ -11,6 +11,7 @@
 #include "core/common.h"
 #include "core/state_recorder.hpp"
 #include "core/abnormal_ids.h"
+#include "platform/common/event_queue.h"
 
 /* Device headers for ATT Device* dispatch */
 #include "devices/device.h"
@@ -2026,19 +2027,16 @@ uint16_t g_masterEvtQLock = 0;
 
 bool FindKeyEvent(int *VirtualKey, bool *KeyDown)
 {
-	EvtQEl *p;
+	if (0 != g_masterEvtQLock) return false;
 
-	if ((0 == g_masterEvtQLock) && (nullptr != (p = EvtQOutP())))
+	TimedEvent *p = EventQ_Peek(g_ict.nextCount);
+	if (p && p->kind == EvtQElKind::Key)
 	{
-		if (EvtQElKind::Key == p->kind)
-		{
-			*VirtualKey = p->u.press.key;
-			*KeyDown = p->u.press.down;
-			EvtQOutDone();
-			return true;
-		}
+		*VirtualKey = p->u.press.key;
+		*KeyDown = p->u.press.down;
+		EventQ_Pop();
+		return true;
 	}
-
 	return false;
 }
 

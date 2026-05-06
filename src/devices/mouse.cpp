@@ -12,6 +12,7 @@
 #include "core/wire_bus.h"
 #include "core/wire_ids.h"
 #include "devices/scc.h"
+#include "platform/common/event_queue.h"
 
 #include "devices/mouse.h"
 
@@ -60,57 +61,58 @@ void MouseDevice::update()
 	*/
 	if (Mouse_Enabled())
 	{
-		EvtQEl *p;
-
-		if ((0 == g_masterEvtQLock) && (nullptr != (p = EvtQOutP())))
+		if (0 == g_masterEvtQLock)
 		{
-			if (g_rig->config().emClassicKbrd && EvtQElKind::MouseDelta == p->kind)
+			TimedEvent *p = EventQ_Peek(g_ict.nextCount);
+			if (p != nullptr)
 			{
-				if ((p->u.pos.h != 0) || (p->u.pos.v != 0))
+				if (g_rig->config().emClassicKbrd && EvtQElKind::MouseDelta == p->kind)
 				{
-					put_ram_word(0x0828, get_ram_word(0x0828) + p->u.pos.v);
-					put_ram_word(0x082A, get_ram_word(0x082A) + p->u.pos.h);
-					put_ram_byte(0x08CE, get_ram_byte(0x08CF));
-					/* Tell MacOS to redraw the Mouse */
-				}
-				EvtQOutDone();
-			}
-			else if (EvtQElKind::MousePos == p->kind)
-			{
-				uint32_t NewMouse = (p->u.pos.v << 16) | p->u.pos.h;
-
-				if (get_ram_long(0x0828) != NewMouse)
-				{
-					put_ram_long(0x0828, NewMouse);
-					/* Set Mouse Position */
-					put_ram_long(0x082C, NewMouse);
-					if (g_rig->config().emClassicKbrd)
+					if ((p->u.pos.h != 0) || (p->u.pos.v != 0))
 					{
+						put_ram_word(0x0828, get_ram_word(0x0828) + p->u.pos.v);
+						put_ram_word(0x082A, get_ram_word(0x082A) + p->u.pos.h);
 						put_ram_byte(0x08CE, get_ram_byte(0x08CF));
 						/* Tell MacOS to redraw the Mouse */
 					}
-					else
-					{
-						put_ram_long(0x0830, NewMouse);
-						put_ram_byte(0x08CE, 0xFF);
-						/* Tell MacOS to redraw the Mouse */
-					}
+					EventQ_Pop();
 				}
-				EvtQOutDone();
+				else if (EvtQElKind::MousePos == p->kind)
+				{
+					uint32_t NewMouse = (p->u.pos.v << 16) | p->u.pos.h;
+
+					if (get_ram_long(0x0828) != NewMouse)
+					{
+						put_ram_long(0x0828, NewMouse);
+						/* Set Mouse Position */
+						put_ram_long(0x082C, NewMouse);
+						if (g_rig->config().emClassicKbrd)
+						{
+							put_ram_byte(0x08CE, get_ram_byte(0x08CF));
+							/* Tell MacOS to redraw the Mouse */
+						}
+						else
+						{
+							put_ram_long(0x0830, NewMouse);
+							put_ram_byte(0x08CE, 0xFF);
+							/* Tell MacOS to redraw the Mouse */
+						}
+					}
+					EventQ_Pop();
+				}
 			}
 		}
 	}
 
 	if (rig_->config().emClassicKbrd)
 	{
-		EvtQEl *p;
-
-		if ((0 == g_masterEvtQLock) && (nullptr != (p = EvtQOutP())))
+		if (0 == g_masterEvtQLock)
 		{
-			if (EvtQElKind::MouseButton == p->kind)
+			TimedEvent *p = EventQ_Peek(g_ict.nextCount);
+			if (p != nullptr && EvtQElKind::MouseButton == p->kind)
 			{
 				g_wires.set(Wire_VIA1_iB3, p->u.press.down ? 0 : 1);
-				EvtQOutDone();
+				EventQ_Pop();
 				g_masterEvtQLock = 4;
 			}
 		}

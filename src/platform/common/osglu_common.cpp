@@ -597,21 +597,13 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 	bool CurDown = ((*kpi & bit) != 0);
 	if (CurDown != down)
 	{
-		EvtQEl *p = EvtQElAlloc();
-		if (nullptr != p)
+		if (down)
 		{
-			p->kind = EvtQElKind::Key;
-			p->u.press.key = k;
-			p->u.press.down = down;
-
-			if (down)
-			{
-				*kpi |= bit;
-			}
-			else
-			{
-				*kpi &= ~bit;
-			}
+			*kpi |= bit;
+		}
+		else
+		{
+			*kpi &= ~bit;
 		}
 
 		EventQ_PushKey(k, down);
@@ -625,15 +617,7 @@ void MouseButtonSet(bool down)
 {
 	if (g_mouseButtonState != down)
 	{
-		EvtQEl *p = EvtQElAlloc();
-		if (nullptr != p)
-		{
-			p->kind = EvtQElKind::MouseButton;
-			p->u.press.down = down;
-
-			g_mouseButtonState = down;
-		}
-
+		g_mouseButtonState = down;
 		EventQ_PushButton(down);
 		QUIET_ENDS();
 	}
@@ -643,23 +627,6 @@ void MousePositionSetDelta(uint16_t dh, uint16_t dv)
 {
 	if ((dh != 0) || (dv != 0))
 	{
-		EvtQEl *p = EvtQElPreviousIn();
-		if ((nullptr != p) && (EvtQElKind::MouseDelta == p->kind))
-		{
-			p->u.pos.h += dh;
-			p->u.pos.v += dv;
-		}
-		else
-		{
-			p = EvtQElAlloc();
-			if (nullptr != p)
-			{
-				p->kind = EvtQElKind::MouseDelta;
-				p->u.pos.h = dh;
-				p->u.pos.v = dv;
-			}
-		}
-
 		EventQ_PushMouseDelta(static_cast<int16_t>(dh), static_cast<int16_t>(dv));
 		QUIET_ENDS();
 	}
@@ -669,18 +636,6 @@ void MousePositionSet(uint16_t h, uint16_t v)
 {
 	if ((h != g_curMouseH) || (v != g_curMouseV))
 	{
-		EvtQEl *p = EvtQElPreviousIn();
-		if ((nullptr == p) || (EvtQElKind::MousePos != p->kind))
-		{
-			p = EvtQElAlloc();
-		}
-		if (nullptr != p)
-		{
-			p->kind = EvtQElKind::MousePos;
-			p->u.pos.h = h;
-			p->u.pos.v = v;
-		}
-
 		EventQ_PushMousePos(static_cast<int16_t>(h), static_cast<int16_t>(v));
 		QUIET_ENDS();
 	}

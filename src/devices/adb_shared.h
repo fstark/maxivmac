@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "platform/common/event_queue.h"
+
 
 /*
 	REPORT_ABNORMAL_ID unused 0x0D08 - 0x0DFF
@@ -29,19 +31,20 @@ static void ADB_DoMouseTalk()
 	{
 		case 0:
 		{
-			EvtQEl *p;
+			TimedEvent *p;
 			uint16_t partH;
 			uint16_t partV;
 			bool overflow = false;
 			bool MouseButtonChange = false;
 
-			if (nullptr != (p = EvtQOutP()))
+			p = EventQ_Peek(g_ict.nextCount);
+			if (p != nullptr)
 			{
 				if (EvtQElKind::MouseDelta == p->kind)
 				{
 					s_mouseADBDeltaH += p->u.pos.h;
 					s_mouseADBDeltaV += p->u.pos.v;
-					EvtQOutDone();
+					EventQ_Pop();
 				}
 			}
 			partH = s_mouseADBDeltaH;
@@ -77,13 +80,14 @@ static void ADB_DoMouseTalk()
 			s_mouseADBDeltaV -= partV;
 			if (!overflow)
 			{
-				if (nullptr != (p = EvtQOutP()))
+				p = EventQ_Peek(g_ict.nextCount);
+				if (p != nullptr)
 				{
 					if (EvtQElKind::MouseButton == p->kind)
 					{
 						s_savedCurMouseButton = p->u.press.down;
 						MouseButtonChange = true;
-						EvtQOutDone();
+						EventQ_Pop();
 					}
 				}
 			}
@@ -241,7 +245,7 @@ static void ADB_DoKeyboardListen()
 
 static bool CheckForADBanyEvt()
 {
-	EvtQEl *p = EvtQOutP();
+	TimedEvent *p = EventQ_Peek(g_ict.nextCount);
 	if (nullptr != p)
 	{
 		switch (p->kind)
