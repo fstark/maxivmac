@@ -229,7 +229,7 @@ void CmdType(Debugger &dbg, const std::vector<Token> &args)
 		t += 160000; // ~20ms inter-key gap at 8 MHz
 	}
 
-	dbg.io().write("Typed %zu characters\n", macRoman.size());
+	dbg.io().write("type \"%s\"\n", args[0].text.c_str());
 }
 
 void CmdKey(Debugger &dbg, const std::vector<Token> &args)
