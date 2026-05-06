@@ -322,6 +322,8 @@ add_executable(tests
     test/test_host_volume.cpp
     test/test_stubs.cpp
     test/test_resource_fork.cpp
+    test/test_event_queue.cpp
+    src/platform/common/event_queue.cpp
     src/cpu/trap_defs.cpp
     src/cpu/trap_tracer.cpp
     src/cpu/trap_counter.cpp
