@@ -44,16 +44,6 @@ extern uint32_t g_pbufSize[NumPbufs];
 extern uint32_t g_theKeys[4];
 extern bool g_mouseButtonState;
 
-/* event queue */
-#define EVT_Q_LG2_SZ 4
-#define EVT_Q_SZ (1 << EVT_Q_LG2_SZ)
-#define EVT_Q_IMASK (EVT_Q_SZ - 1)
-
-extern EvtQEl g_evtQA[EVT_Q_SZ];
-extern uint16_t g_evtQIn;
-extern uint16_t g_evtQOut;
-extern bool g_evtQNeedRecover;
-
 #if EmLocalTalk
 extern uint32_t g_entropyPool[2];
 extern uint32_t g_ltMyStamp;
@@ -82,10 +72,6 @@ void MousePositionSet(uint16_t h, uint16_t v);
 
 void InitKeyCodes();
 void DisconnectKeyCodes(uint32_t keepMask);
-void EvtQTryRecoverFromFull();
-
-EvtQEl *EvtQElPreviousIn();
-EvtQEl *EvtQElAlloc();
 
 void MacMsg(const char *briefMsg, const char *longMsg, bool fatal);
 

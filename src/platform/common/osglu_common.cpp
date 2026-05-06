@@ -533,57 +533,6 @@ void dbglog_writelnNum(char *s, int32_t v)
 }
 
 
-/* --- event queue --- */
-
-EvtQEl g_evtQA[EVT_Q_SZ];
-uint16_t g_evtQIn = 0;
-uint16_t g_evtQOut = 0;
-
-EvtQEl *EvtQOutP()
-{
-	EvtQEl *p = nullptr;
-	if (g_evtQIn != g_evtQOut)
-	{
-		p = &g_evtQA[g_evtQOut & EVT_Q_IMASK];
-	}
-	return p;
-}
-
-void EvtQOutDone()
-{
-	++g_evtQOut;
-}
-
-bool g_evtQNeedRecover = false;
-
-EvtQEl *EvtQElPreviousIn()
-{
-	EvtQEl *p = nullptr;
-	if (g_evtQIn - g_evtQOut != 0)
-	{
-		p = &g_evtQA[(g_evtQIn - 1) & EVT_Q_IMASK];
-	}
-
-	return p;
-}
-
-EvtQEl *EvtQElAlloc()
-{
-	EvtQEl *p = nullptr;
-	if (g_evtQIn - g_evtQOut >= EVT_Q_SZ)
-	{
-		g_evtQNeedRecover = true;
-	}
-	else
-	{
-		p = &g_evtQA[g_evtQIn & EVT_Q_IMASK];
-
-		++g_evtQIn;
-	}
-
-	return p;
-}
-
 /* --- keyboard and mouse --- */
 
 uint32_t g_theKeys[4];
@@ -697,12 +646,6 @@ void DisconnectKeyCodes(uint32_t keepMask)
 			}
 		}
 	}
-}
-
-void EvtQTryRecoverFromFull()
-{
-	MouseButtonSet(false);
-	DisconnectKeyCodes(0);
 }
 
 /* --- MacMsg --- */

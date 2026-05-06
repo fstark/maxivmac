@@ -218,27 +218,4 @@ enum class EvtQElKind : uint8_t
 	MouseDelta = 3,
 };
 
-struct EvtQEl
-{
-	/* expected size : 8 bytes */
-	EvtQElKind kind;
-	uint8_t pad[3];
-	union
-	{
-		struct
-		{
-			uint8_t down;
-			uint8_t key;
-		} press;
-		struct
-		{
-			uint16_t h;
-			uint16_t v;
-		} pos;
-	} u;
-};
-
-extern EvtQEl *EvtQOutP();
-extern void EvtQOutDone();
-
 #include "keycodes.h"

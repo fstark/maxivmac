@@ -477,12 +477,6 @@ void EmulatorShell::dispatchEvent(const PlatformEvent &evt)
 
 void EmulatorShell::processSavedTasks()
 {
-	if (g_evtQNeedRecover)
-	{
-		g_evtQNeedRecover = false;
-		EvtQTryRecoverFromFull();
-	}
-
 	if (g_requestMacOff)
 	{
 		g_requestMacOff = false;
