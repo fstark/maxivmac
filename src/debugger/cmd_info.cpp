@@ -21,10 +21,9 @@
 
 #include "util/macroman.h"
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstring>
-
-extern uint32_t g_instructionCount;
 
 /* ── SR flag formatting ─────────────────────────────── */
 
@@ -59,8 +58,8 @@ static void InfoBreak(Debugger &dbg)
 	/* Instruction-count breakpoint (if set) */
 	if (dbg.insnBreakCount() != 0)
 	{
-		dbg.io().write("%-4u insn-break  y    -           at instruction #%u\n", dbg.insnBreakId(),
-					   dbg.insnBreakCount());
+		dbg.io().write("%-4u insn-break  y    -           at instruction #%" PRIu64 "\n",
+					   dbg.insnBreakId(), dbg.insnBreakCount());
 	}
 
 	for (auto &bp : bps)

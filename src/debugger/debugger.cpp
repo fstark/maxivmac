@@ -16,12 +16,11 @@
 
 #include <algorithm>
 #include <bitset>
+#include <cinttypes>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <unordered_map>
-
-extern uint32_t g_instructionCount;
 
 /* ── Forward declarations for command handlers ──────── */
 
@@ -172,7 +171,7 @@ struct Debugger::Impl
 
 	/* Instruction-count breakpoint (0 = disabled) */
 	uint32_t insnBreakId = 0;
-	uint32_t insnBreakCount = 0;
+	InstructionCount insnBreakCount = 0;
 
 	/* Trace flags */
 	bool trTraps = false;
@@ -300,7 +299,7 @@ void Debugger::setUntil(uint32_t addr)
 	impl_->state = DbgState::Running;
 }
 
-uint32_t Debugger::setInsnBreak(uint32_t insnNumber)
+uint32_t Debugger::setInsnBreak(InstructionCount insnNumber)
 {
 	impl_->insnBreakId = impl_->nextBpId++;
 	impl_->insnBreakCount = insnNumber;
@@ -311,7 +310,7 @@ uint32_t Debugger::insnBreakId() const
 {
 	return impl_->insnBreakId;
 }
-uint32_t Debugger::insnBreakCount() const
+InstructionCount Debugger::insnBreakCount() const
 {
 	return impl_->insnBreakCount;
 }
@@ -811,9 +810,9 @@ bool Debugger::instructionHook(uint32_t pc)
 	if (impl_->insnBreakCount != 0 && g_instructionCount >= impl_->insnBreakCount)
 	{
 		uint32_t id = impl_->insnBreakId;
-		uint32_t target = impl_->insnBreakCount;
+		InstructionCount target = impl_->insnBreakCount;
 		impl_->insnBreakCount = 0; /* one-shot */
-		impl_->io->write("Breakpoint %u at instruction #%u\n", id, target);
+		impl_->io->write("Breakpoint %u at instruction #%" PRIu64 "\n", id, target);
 		stop("");
 		commandLoop();
 		return true;
@@ -864,7 +863,7 @@ bool Debugger::instructionHook(uint32_t pc)
 		auto disasm = Disassemble(disasmPC);
 		uint32_t d[8], a[8];
 		m68k_getRegs(d, a);
-		impl_->io->write("%u %08X: %04X  %-30s D=%08X %08X %08X %08X %08X %08X %08X %08X "
+		impl_->io->write("%" PRIu64 " %08X: %04X  %-30s D=%08X %08X %08X %08X %08X %08X %08X %08X "
 						 "A=%08X %08X %08X %08X %08X %08X %08X %08X\n",
 						 g_instructionCount, pc, opcode, disasm.c_str(), d[0], d[1], d[2], d[3],
 						 d[4], d[5], d[6], d[7], a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);

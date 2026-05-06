@@ -10,6 +10,9 @@
 #include <string_view>
 #include <vector>
 
+/* InstructionCount = uint64_t; canonical definition in core/machine.h */
+using InstructionCount = uint64_t;
+
 class DbgIO;
 
 class Debugger
@@ -39,9 +42,9 @@ public:
 	void setUntil(uint32_t addr);
 
 	// Instruction-count breakpoint
-	uint32_t setInsnBreak(uint32_t insnNumber);
+	uint32_t setInsnBreak(InstructionCount insnNumber);
 	uint32_t insnBreakId() const;
-	uint32_t insnBreakCount() const;
+	InstructionCount insnBreakCount() const;
 
 	// Breakpoint/watchpoint management (used by cmd_break.cpp)
 	struct Breakpoint

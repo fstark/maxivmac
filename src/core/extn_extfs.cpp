@@ -19,6 +19,7 @@
 #include "storage/drive_manager.h"
 
 #include <array>
+#include <cinttypes>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -1070,7 +1071,7 @@ static void RegFatal(uint32_t regParam[], uint16_t &regResult)
 	std::string msg = guestFormatLog(regParam[0], regParam);
 	DIAG(ExtFS, "GUEST FATAL: %s\n", msg.c_str());
 	guestConsoleAppend("FATAL: " + msg);
-	fprintf(stderr, "\n[GUEST FATAL] (insn #%u) %s\n", (unsigned)g_instructionCount, msg.c_str());
+	fprintf(stderr, "\n[GUEST FATAL] (insn #%" PRIu64 ") %s\n", g_instructionCount, msg.c_str());
 	DumpRecentDisasm();
 	fflush(stderr);
 	if (g_debuggerActive)

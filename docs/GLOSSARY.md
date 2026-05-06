@@ -88,11 +88,36 @@ Avoid: assets, resources, share
 ### ICTScheduler
 
 Cycle-based task scheduler.  Devices schedule future interrupts by
-cycle count.
+scaled cycle count.  Each task fires when `nextCount` reaches its
+scheduled `when` value.
 
 Code: `ICTScheduler` in `src/core/ict_scheduler.h`
 
+See also: ScaledCycleCount
+
 Avoid: timer, interrupt dispatcher
+
+### InstructionCount
+
+A 64-bit counter of executed CPU instructions.  Incremented once per
+instruction in the 68k interpreter loop.  Used by the debugger for
+instruction breakpoints and by the state recorder for snapshot timing.
+
+Code: `InstructionCount` in `src/core/machine.h`, `g_instructionCount` in `src/cpu/m68k.cpp`
+
+See also: ScaledCycleCount
+
+Avoid: cycle count, iCount
+
+### kCycleScale
+
+Fixed-point precision multiplier (value: 64).  All cycle arithmetic
+in the ICT scheduler operates in units of 1/64th of a real CPU cycle
+to avoid rounding errors in timer scheduling.
+
+Code: `kCycleScale` in `src/core/common.h`
+
+See also: ScaledCycleCount
 
 ### Launcher
 
@@ -163,6 +188,19 @@ ratio (fractional scaling, bars only for aspect correction).
 
 Code: `ScalingMode` in `src/platform/imgui_backend.h`
 Avoid: integer mode, magnification
+
+### ScaledCycleCount
+
+A 64-bit value representing CPU cycles multiplied by `kCycleScale`
+(64).  The ICT scheduler's `nextCount` and task `when` values are
+all in this unit.  Distinct from `InstructionCount`, which counts
+executed instructions.
+
+Code: `ScaledCycleCount` in `src/core/ict_scheduler.h`
+
+See also: InstructionCount, kCycleScale, ICTScheduler
+
+Avoid: instruction count, raw cycles
 
 ### Shared Drive
 

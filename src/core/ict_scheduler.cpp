@@ -30,7 +30,7 @@ void ICTScheduler::registerTask(int taskId, TaskHandler handler)
 	handlers_[taskId] = std::move(handler);
 }
 
-InstructionCount ICTScheduler::getCurrent() const
+ScaledCycleCount ICTScheduler::getCurrent() const
 {
 	return nextCount - getCyclesRemaining_();
 }
@@ -39,7 +39,7 @@ void ICTScheduler::add(int taskId, uint32_t n)
 {
 	/* n must be > 0 */
 	int32_t x = getCyclesRemaining_();
-	uint32_t whenVal = nextCount - x + n;
+	ScaledCycleCount whenVal = nextCount - x + n;
 
 #ifdef _VIA_Debug
 	fprintf(stderr, "ICT_add: %d, %d, %d\n", whenVal, taskId, n);
@@ -90,7 +90,7 @@ int32_t ICTScheduler::doGetNext(uint32_t maxn) const
 {
 	int i = 0;
 	uint32_t m = active;
-	uint32_t v = maxn;
+	ScaledCycleCount v = maxn;
 
 	while (0 != m)
 	{
@@ -103,7 +103,7 @@ int32_t ICTScheduler::doGetNext(uint32_t maxn) const
 			}
 			else
 			{
-				uint32_t d = when[i] - nextCount;
+				ScaledCycleCount d = when[i] - nextCount;
 				/* at this point d must be > 0 */
 				if (d < v)
 				{
@@ -118,5 +118,5 @@ int32_t ICTScheduler::doGetNext(uint32_t maxn) const
 		m >>= 1;
 	}
 
-	return v;
+	return static_cast<int32_t>(v);
 }

@@ -358,7 +358,7 @@ bool InitEmulation()
 static void m68k_go_nCycles_1(uint32_t n)
 {
 	uint32_t n2;
-	uint32_t StopiCount = g_ict.nextCount + n;
+	ScaledCycleCount StopiCount = g_ict.nextCount + n;
 	do
 	{
 		g_ict.doCurrentTasks();
@@ -375,7 +375,7 @@ static void m68k_go_nCycles_1(uint32_t n)
 #endif
 		g_ict.nextCount += n2;
 		g_cpu.go_nCycles(n2);
-		n = StopiCount - g_ict.nextCount;
+		n = static_cast<uint32_t>(StopiCount - g_ict.nextCount);
 	} while (n != 0);
 }
 

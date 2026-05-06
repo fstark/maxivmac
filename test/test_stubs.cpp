@@ -47,7 +47,7 @@ static uint32_t s_dregs[8] = {};
 static uint32_t s_aregs[8] = {};
 static uint32_t s_pc = 0;
 
-uint32_t g_instructionCount = 0;
+uint64_t g_instructionCount = 0;
 
 void m68k_getRegs(uint32_t *d, uint32_t *a)
 {

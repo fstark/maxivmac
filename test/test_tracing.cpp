@@ -17,7 +17,7 @@
 /* ── Stub control (defined in test_stubs.cpp) ──────────── */
 
 extern uint8_t g_ram[];
-extern uint32_t g_instructionCount;
+extern uint64_t g_instructionCount;
 extern void test_set_regs(const uint32_t d[8], const uint32_t a[8]);
 extern void test_set_pc(uint32_t pc);
 

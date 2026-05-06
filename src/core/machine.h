@@ -97,14 +97,15 @@ extern bool AddrSpac_Init();
 #define ui5r_FromUWord(x) ((uint32_t)(uint16_t)(x))
 #define ui5r_FromULong(x) ((uint32_t)(uint32_t)(x))
 
+using InstructionCount = uint64_t;
 
 /* Global instruction counter – defined in m68k.cpp */
-extern uint32_t g_instructionCount;
+extern InstructionCount g_instructionCount;
 
 /* Logging range [g_logStart, g_logEnd).  Set from --log-start / --log-count.
    Default 0,0 = no logging.  exit(0) when g_instructionCount reaches g_logEnd. */
-extern uint32_t g_logStart;
-extern uint32_t g_logEnd;
+extern InstructionCount g_logStart;
+extern InstructionCount g_logEnd;
 
 extern void dbglog_StartLine();
 
@@ -143,8 +144,6 @@ enum
 
 	kNumICTs
 };
-
-using InstructionCount = uint32_t;
 
 #define kLn2CycleScale 6
 #define kCycleScale (1 << kLn2CycleScale)

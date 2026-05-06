@@ -7,8 +7,10 @@
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 
+#include "core/machine.h"
 #include "cpu/trap_counter.h"
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstring>
 
@@ -101,14 +103,13 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 		uint32_t n = args[numIdx].numValue;
 		if (negative)
 		{
-			extern uint32_t g_instructionCount;
 			if (n > g_instructionCount)
 			{
-				dbg.io().write("Error: offset %u exceeds current insn count %u\n", n,
+				dbg.io().write("Error: offset %u exceeds current insn count %" PRIu64 "\n", n,
 							   g_instructionCount);
 				return;
 			}
-			n = g_instructionCount - n;
+			n = static_cast<uint32_t>(g_instructionCount - n);
 			dbg.io().write("(resolved to instruction #%u)\n", n);
 		}
 		uint32_t id = dbg.setInsnBreak(n);

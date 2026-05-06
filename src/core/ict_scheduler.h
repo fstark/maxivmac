@@ -14,7 +14,7 @@
 
 static constexpr int kMaxICTasks = 16;
 
-using InstructionCount = uint32_t;
+using ScaledCycleCount = uint64_t;
 
 class ICTScheduler
 {
@@ -24,7 +24,7 @@ public:
 	void zap();
 	void add(int taskId, uint32_t cyclesFromNow);
 
-	InstructionCount getCurrent() const;
+	ScaledCycleCount getCurrent() const;
 	void doCurrentTasks();
 	int32_t doGetNext(uint32_t maxn) const;
 
@@ -36,8 +36,8 @@ public:
 						   std::function<void(int32_t)> setCyclesRemaining);
 
 	uint32_t active = 0;
-	std::array<InstructionCount, kMaxICTasks> when{};
-	InstructionCount nextCount = 0;
+	std::array<ScaledCycleCount, kMaxICTasks> when{};
+	ScaledCycleCount nextCount = 0;
 
 private:
 	std::array<TaskHandler, kMaxICTasks> handlers_{};
