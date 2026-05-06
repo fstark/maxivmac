@@ -61,3 +61,10 @@ immediately.
 On verify, any mismatch prints a field-by-field diff and exits nonzero.
 Use `--log-start=N --log-count=M` to get a full text trace around the
 divergence point for debugging.
+
+## Event Queue Coverage
+
+Golden tests implicitly validate event queue delivery — keyboard and mouse
+input during boot affects the state recorder's I/O CRC output.  The event
+queue refactor (`src/platform/common/event_queue.h`) was validated by
+confirming all 6 model golden files pass unchanged.
