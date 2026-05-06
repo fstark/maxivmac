@@ -10,6 +10,7 @@
 #include "debugger/script_suspend.h"
 
 #include "core/machine.h"
+#include "core/ict_scheduler.h"
 #include "cpu/m68k.h"
 #include "cpu/trap_counter.h"
 #include "cpu/trap_tracer.h"
@@ -153,6 +154,7 @@ static CmdEntry s_commands[] = {
 	{"wait", "", CmdWait, "Wait for condition",
 	 "wait text \"pattern\" [cycles]\n  Resume until text appears (script suspends).\n"
 	 "wait screen \"ref.png\" [cycles] [pct]\n  Resume until screen matches reference.\n"
+	 "wait for <cycles>\n  Resume for a fixed number of cycles.\n"
 	 "wait off [cycles]\n  Resume until guest power-off.\n"
 	 "wait <addr|symbol> [cycles]\n  Resume until address is reached.\n"
 	 "wait trap <name> [cycles]\n  Resume until trap fires.\n"},
@@ -213,6 +215,12 @@ struct Debugger::Impl
 	/* Instruction-count breakpoint (0 = disabled) */
 	uint32_t insnBreakId = 0;
 	InstructionCount insnBreakCount = 0;
+	bool insnBreakScriptOwned = false;
+
+	/* Cycle-count breakpoint (0 = disabled) */
+	uint32_t cycleBreakId = 0;
+	ScaledCycleCount cycleBreakCount = 0;
+	bool cycleBreakScriptOwned = false;
 
 	/* Trace flags */
 	bool trTraps = false;
@@ -343,10 +351,11 @@ void Debugger::setUntil(uint32_t addr)
 	impl_->state = DbgState::Running;
 }
 
-uint32_t Debugger::setInsnBreak(InstructionCount insnNumber)
+uint32_t Debugger::setInsnBreak(InstructionCount insnNumber, bool scriptOwned)
 {
 	impl_->insnBreakId = impl_->nextBpId++;
 	impl_->insnBreakCount = insnNumber;
+	impl_->insnBreakScriptOwned = scriptOwned;
 	return impl_->insnBreakId;
 }
 
@@ -357,6 +366,23 @@ uint32_t Debugger::insnBreakId() const
 InstructionCount Debugger::insnBreakCount() const
 {
 	return impl_->insnBreakCount;
+}
+
+uint32_t Debugger::setCycleBreak(ScaledCycleCount cycleNumber, bool scriptOwned)
+{
+	impl_->cycleBreakId = impl_->nextBpId++;
+	impl_->cycleBreakCount = cycleNumber;
+	impl_->cycleBreakScriptOwned = scriptOwned;
+	return impl_->cycleBreakId;
+}
+
+uint32_t Debugger::cycleBreakId() const
+{
+	return impl_->cycleBreakId;
+}
+ScaledCycleCount Debugger::cycleBreakCount() const
+{
+	return impl_->cycleBreakCount;
 }
 
 /* ── Breakpoint/watchpoint management ───────────────── */
@@ -424,6 +450,14 @@ bool Debugger::deleteById(uint32_t id)
 	{
 		impl_->insnBreakId = 0;
 		impl_->insnBreakCount = 0;
+		impl_->insnBreakScriptOwned = false;
+		return true;
+	}
+	if (impl_->cycleBreakId == id && impl_->cycleBreakCount != 0)
+	{
+		impl_->cycleBreakId = 0;
+		impl_->cycleBreakCount = 0;
+		impl_->cycleBreakScriptOwned = false;
 		return true;
 	}
 	for (auto it = impl_->breakpoints.begin(); it != impl_->breakpoints.end(); ++it)
@@ -890,9 +924,27 @@ bool Debugger::instructionHook(uint32_t pc)
 	{
 		uint32_t id = impl_->insnBreakId;
 		InstructionCount target = impl_->insnBreakCount;
+		bool wasScriptOwned = impl_->insnBreakScriptOwned;
 		impl_->insnBreakCount = 0; /* one-shot */
+		impl_->insnBreakScriptOwned = false;
 		impl_->io->write("Breakpoint %u at instruction #%" PRIu64 "\n", id, target);
 		stop("");
+		if (wasScriptOwned && tryResumeScript(nullptr)) return true;
+		commandLoop();
+		return true;
+	}
+
+	/* Cycle-count breakpoint */
+	if (impl_->cycleBreakCount != 0 && g_ict.getCurrent() >= impl_->cycleBreakCount)
+	{
+		uint32_t id = impl_->cycleBreakId;
+		ScaledCycleCount target = impl_->cycleBreakCount;
+		bool wasScriptOwned = impl_->cycleBreakScriptOwned;
+		impl_->cycleBreakCount = 0; /* one-shot */
+		impl_->cycleBreakScriptOwned = false;
+		impl_->io->write("Breakpoint %u at cycle %" PRIu64 "\n", id, target);
+		stop("");
+		if (wasScriptOwned && tryResumeScript(nullptr)) return true;
 		commandLoop();
 		return true;
 	}

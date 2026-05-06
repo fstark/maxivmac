@@ -10,6 +10,7 @@
 #include "debugger/bp_screen.h"
 
 #include "core/machine.h"
+#include "core/ict_scheduler.h"
 #include "cpu/trap_counter.h"
 
 #include <cinttypes>
@@ -171,6 +172,28 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 		}
 		uint32_t id = dbg.setInsnBreak(n);
 		dbg.io().write("Breakpoint %u at instruction #%u\n", id, n);
+		return;
+	}
+
+	/* break cycle <N> or break cycle +<N> — cycle-count breakpoint */
+	if (args[0].isWord("cycle") && args.size() >= 2)
+	{
+		ScaledCycleCount target = 0;
+		if (args[1].isOperator("+") && args.size() >= 3 && args[2].isNumber())
+		{
+			target = g_ict.getCurrent() + args[2].numValue;
+		}
+		else if (args[1].isNumber())
+		{
+			target = args[1].numValue;
+		}
+		else
+		{
+			dbg.io().write("Usage: break cycle <N> or break cycle +<N>\n");
+			return;
+		}
+		uint32_t id = dbg.setCycleBreak(target);
+		dbg.io().write("Breakpoint %u at cycle %" PRIu64 "\n", id, target);
 		return;
 	}
 

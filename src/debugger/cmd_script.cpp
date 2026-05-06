@@ -42,6 +42,7 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 	{
 		dbg.io().write("Usage: wait text \"pattern\" [cycles]\n");
 		dbg.io().write("       wait screen \"ref.png\" [cycles] [pct]\n");
+		dbg.io().write("       wait for <cycles>\n");
 		dbg.io().write("       wait off [cycles]\n");
 		dbg.io().write("       wait <addr|symbol> [cycles]\n");
 		dbg.io().write("       wait trap <name> [cycles]\n");
@@ -99,6 +100,19 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 	{
 		bp.kind = Debugger::Breakpoint::Kind::PowerOff;
 		bp.timeoutAt = computeDeadline(parseBudget(1));
+	}
+	else if (args[0].isWord("for"))
+	{
+		if (args.size() < 2 || !args[1].isNumber())
+		{
+			dbg.io().write("Usage: wait for <cycles>\n");
+			return;
+		}
+		ScaledCycleCount target = g_ict.getCurrent() + args[1].numValue;
+		uint32_t id = dbg.setCycleBreak(target, true);
+		dbg.io().write("Waiting %'" PRIu64 " cycles (bp %u)...\n", args[1].numValue, id);
+		dbg.setRunning();
+		return;
 	}
 	else if (args[0].isWord("trap"))
 	{

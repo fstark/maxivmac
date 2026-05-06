@@ -47,9 +47,14 @@ public:
 	void setUntil(uint32_t addr);
 
 	// Instruction-count breakpoint
-	uint32_t setInsnBreak(InstructionCount insnNumber);
+	uint32_t setInsnBreak(InstructionCount insnNumber, bool scriptOwned = false);
 	uint32_t insnBreakId() const;
 	InstructionCount insnBreakCount() const;
+
+	// Cycle-count breakpoint
+	uint32_t setCycleBreak(ScaledCycleCount cycleNumber, bool scriptOwned = false);
+	uint32_t cycleBreakId() const;
+	ScaledCycleCount cycleBreakCount() const;
 
 	// Breakpoint/watchpoint management (used by cmd_break.cpp)
 	struct Breakpoint
