@@ -5,9 +5,11 @@ Spec: [SCRIPTING.md](SCRIPTING.md)
 
 ## Prerequisites
 
-- **Event queue refactor** ([EVENTS.md](EVENTS.md)) — must be
-  completed before this plan begins.  Key injection (Phase 7)
-  depends on the new `EventQ_Push()` API with `fireCycle` timestamps.
+- ~~**Event queue refactor** ([EVENTS.md](EVENTS.md))~~ — **Done.**
+  New API in `src/platform/common/event_queue.h`:
+  `EventQ_Push(TimedEvent)`, `EventQ_ClearFutureKeys()`,
+  `EventQ_PendingKeys()`.  Timing uses `ScaledCycleCount`
+  (`g_ict.nextCount`), not the old instruction count.
 
 ## Phase Summary
 
@@ -64,8 +66,8 @@ struct Breakpoint
     std::vector<std::string> commands;
     uint32_t ignoreCount = 0;
 
-    // Timeout: instruction-count deadline (0 = no timeout)
-    uint64_t timeoutAt = 0;
+    // Timeout: cycle-count deadline (0 = no timeout)
+    ScaledCycleCount timeoutAt = 0;
 };
 ```
 
@@ -518,7 +520,7 @@ See Design §4.5.  Parse the condition type from args:
 | `wait $addr` / `wait symbol` | Kind::Address, temporary, scriptOwned |
 | `wait trap Name` | Kind::Trap, temporary, scriptOwned |
 
-Set `bp.timeoutAt = g_instructionCount + budget`.
+Set `bp.timeoutAt = g_ict.nextCount + budget`.
 Call `dbg.addBreakpoint(bp)` then `dbg.setRunning()`.
 
 The `setRunning()` call triggers script suspension (Phase 2 logic
@@ -529,7 +531,7 @@ in `executeCommands()`).
 Add timeout evaluation to the breakpoint check paths:
 
 - In `ScriptCaptureText()` (bp_text.cpp): before condition check,
-  if `bp.timeoutAt != 0 && g_instructionCount >= bp.timeoutAt` →
+  if `bp.timeoutAt != 0 && g_ict.nextCount >= bp.timeoutAt` →
   call `FireTimeout(bp)`.
 - In `CheckScreenBreakpoints()` (bp_screen.cpp): same check.
 - In `instructionHook()`: for Kind::Address with `timeoutAt`, check
@@ -578,7 +580,7 @@ Unit tests in `test/debugger/test_cmd_script.cpp`:
 - `CmdTimeout` sets the default budget
 - `CmdWait` with text creates a temporary, scriptOwned, Kind::Text BP
 - `CmdFail` exits with code 1 in headless mode
-- Timeout fires when `g_instructionCount` exceeds deadline
+- Timeout fires when `g_ict.nextCount` exceeds deadline
 
 ### Fence
 
@@ -630,25 +632,26 @@ Implement:
 
 ### 7.3 — Implement `CmdType` in `cmd_script.cpp`
 
-See Design §5.5:
+See Design §5.5.  Uses the new event queue API
+(`#include "platform/common/event_queue.h"`):
 
 ```cpp
 void CmdType(Debugger &dbg, const std::vector<Token> &args)
 {
     // Convert UTF-8 argument to MacRoman
     std::string macRoman = MacRomanFromUTF8(args[0].str);
-    uint64_t t = g_instructionCount;
+    ScaledCycleCount t = g_ict.nextCount;
 
     for (uint8_t ch : macRoman) {
         auto [keycode, needShift] = CharToMacKey(ch);
         if (keycode == 0xFF) continue;  // unmappable
 
         if (needShift)
-            EventQ_Push({t, EvtQElKind::Key, {MKC_Shift, true}});
-        EventQ_Push({t,         EvtQElKind::Key, {keycode, true}});
-        EventQ_Push({t + 80000, EvtQElKind::Key, {keycode, false}});
+            EventQ_Push({t, EvtQElKind::Key, {.press = {MKC_Shift, true}}});
+        EventQ_Push({t,         EvtQElKind::Key, {.press = {keycode, true}}});
+        EventQ_Push({t + 80000, EvtQElKind::Key, {.press = {keycode, false}}});
         if (needShift)
-            EventQ_Push({t + 80000, EvtQElKind::Key, {MKC_Shift, false}});
+            EventQ_Push({t + 80000, EvtQElKind::Key, {.press = {MKC_Shift, false}}});
         t += 160000;  // ~20ms inter-key gap at 8 MHz
     }
 }
