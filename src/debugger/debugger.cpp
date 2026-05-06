@@ -653,7 +653,8 @@ bool Debugger::tryResumeScript(const Breakpoint *firedBp)
 {
 	if (impl_->pendingScript.exhausted()) return false;
 
-	if (firedBp && firedBp->scriptOwned)
+	// firedBp==nullptr means the caller already confirmed scriptOwned
+	if (!firedBp || firedBp->scriptOwned)
 	{
 		// Condition met — resume the pending script from where it left off
 		auto &ps = impl_->pendingScript;
