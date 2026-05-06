@@ -117,6 +117,7 @@ set(MINIVMAC_SOURCES
     # Platform — common
     src/core/main.cpp
     src/platform/common/osglu_common.cpp
+    src/platform/common/event_queue.cpp
     src/platform/common/param_buffers.cpp
     src/platform/common/keyboard_map.cpp
     src/platform/common/path_utils.cpp
