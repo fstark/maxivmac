@@ -1231,7 +1231,13 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			uint32_t guestBuf = regParam[0];
 			regResult = s_pendingGuestCmd;
 			if (s_pendingGuestCmd != 0 && guestBuf != 0 && !s_guestCmdPath.empty())
-				writePascalString(guestBuf, s_guestCmdPath);
+			{
+				// Write as Str255 (up to 255 bytes, not the 31-byte volume name limit)
+				uint8_t len = static_cast<uint8_t>(std::min(s_guestCmdPath.size(), size_t(255)));
+				put_vm_byte(guestBuf, len);
+				for (uint8_t i = 0; i < len; i++)
+					put_vm_byte(guestBuf + 1 + i, static_cast<uint8_t>(s_guestCmdPath[i]));
+			}
 			s_pendingGuestCmd = 0;
 			s_guestCmdPath.clear();
 			break;

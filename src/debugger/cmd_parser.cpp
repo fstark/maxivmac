@@ -85,6 +85,22 @@ std::vector<Token> Tokenize(std::string_view line)
 
 		char c = line[pos];
 
+		/* Quoted string — everything between quotes is one Word token */
+		if (c == '"')
+		{
+			++pos; /* skip opening quote */
+			int start = pos;
+			while (pos < len && line[pos] != '"')
+				++pos;
+			Token t;
+			t.kind = Token::Kind::Word;
+			t.text = std::string(line.substr(start, pos - start));
+			t.numValue = 0;
+			tokens.push_back(std::move(t));
+			if (pos < len) ++pos; /* skip closing quote */
+			continue;
+		}
+
 		/* Multi-char operators */
 		if (pos + 1 < len)
 		{
