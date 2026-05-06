@@ -74,6 +74,8 @@ void test_set_pc(uint32_t pc)
 
 /* ── Debug output stub ────────────────────────────────── */
 
+bool g_debuggerActive = false;
+
 void dbg_printf(const char *fmt, ...)
 {
 	va_list ap;
@@ -81,3 +83,8 @@ void dbg_printf(const char *fmt, ...)
 	std::vfprintf(stderr, fmt, ap);
 	va_end(ap);
 }
+
+/* ── Scripting stubs ──────────────────────────────────── */
+
+#include <string_view>
+void ScriptCaptureText(std::string_view, std::string_view) {}

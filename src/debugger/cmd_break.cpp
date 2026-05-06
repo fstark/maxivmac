@@ -6,6 +6,7 @@
 #include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
+#include "debugger/bp_text.h"
 
 #include "core/machine.h"
 #include "cpu/trap_counter.h"
@@ -80,6 +81,37 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 	{
 		dbg.io().write("Usage: break <location> [if <cond>]\n");
 		dbg.io().write("       break #<insn>   Break at instruction number\n");
+		dbg.io().write("       break text \"pattern\"  Break on text match\n");
+		dbg.io().write("       break off       Break on power-off\n");
+		return;
+	}
+
+	/* break text "pattern" — text breakpoint */
+	if (args[0].isWord("text"))
+	{
+		if (args.size() < 2 || args[1].isEnd())
+		{
+			dbg.io().write("Usage: break text \"pattern\"\n");
+			return;
+		}
+		Debugger::Breakpoint bp;
+		bp.enabled = true;
+		bp.kind = Debugger::Breakpoint::Kind::Text;
+		bp.textPattern = args[1].text;
+		uint32_t id = dbg.addBreakpoint(std::move(bp));
+		dbg.io().write("Breakpoint %u: text \"%s\"\n", id,
+					   dbg.breakpoints().back().textPattern.c_str());
+		return;
+	}
+
+	/* break off — power-off breakpoint */
+	if (args[0].isWord("off"))
+	{
+		Debugger::Breakpoint bp;
+		bp.enabled = true;
+		bp.kind = Debugger::Breakpoint::Kind::PowerOff;
+		uint32_t id = dbg.addBreakpoint(std::move(bp));
+		dbg.io().write("Breakpoint %u: power-off\n", id);
 		return;
 	}
 
@@ -370,4 +402,26 @@ void CmdTbreak(Debugger &dbg, const std::vector<Token> &args)
 	// The breakpoint just created is the last one in the vector
 	auto &bps = dbg.breakpoints();
 	if (!bps.empty()) bps.back().temporary = true;
+}
+
+void CmdShowtext(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (args.empty() || args[0].isEnd())
+	{
+		// Toggle
+		bool now = !ScriptShowTextGet();
+		ScriptShowTextSet(now);
+		dbg.io().write("showtext %s\n", now ? "on" : "off");
+		return;
+	}
+	if (args[0].isWord("on"))
+		ScriptShowTextSet(true);
+	else if (args[0].isWord("off"))
+		ScriptShowTextSet(false);
+	else
+	{
+		dbg.io().write("Usage: showtext [on|off]\n");
+		return;
+	}
+	dbg.io().write("showtext %s\n", ScriptShowTextGet() ? "on" : "off");
 }

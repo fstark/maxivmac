@@ -56,6 +56,7 @@ void CmdHelp(Debugger &dbg, const std::vector<Token> &args);
 void CmdQuit(Debugger &dbg, const std::vector<Token> &args);
 void CmdSource(Debugger &dbg, const std::vector<Token> &args);
 void CmdDrive(Debugger &dbg, const std::vector<Token> &args);
+void CmdShowtext(Debugger &dbg, const std::vector<Token> &args);
 
 /* ── Command table ──────────────────────────────────── */
 
@@ -133,6 +134,8 @@ static CmdEntry s_commands[] = {
 	 "drive mount <path>\n  Mount a host directory as a new shared drive.\n"
 	 "drive unmount <slot>\n  Unmount and release shared drive by slot number.\n"
 	 "drive list\n  Show all mounted shared drives.\n"},
+	{"showtext", "", CmdShowtext, "Toggle text capture display",
+	 "showtext [on|off]\n  Show/hide text captured from guest DrawString/ParamText calls.\n"},
 };
 
 static constexpr int kNumCommands = sizeof(s_commands) / sizeof(s_commands[0]);

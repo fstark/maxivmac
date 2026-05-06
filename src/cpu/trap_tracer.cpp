@@ -7,6 +7,8 @@
 #include "core/machine.h"
 #include "cpu/m68k.h"
 #include "debugger/dbg_io.h"
+#include "debugger/bp_text.h"
+#include "debugger/debugger.h"
 #include "lang/type_registry.h"
 
 #include <cinttypes>
@@ -518,7 +520,17 @@ void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 		}
 		else
 		{
-			params += formatParam(pd, raw);
+			std::string val = formatParam(pd, raw);
+			params += val;
+			// Scripting: capture text for text breakpoints (see bp_text.h)
+			if (pd.isText && g_debuggerActive)
+			{
+				// Strip surrounding quotes from the formatted PStr value
+				std::string_view sv = val;
+				if (sv.size() >= 2 && sv.front() == '"' && sv.back() == '"')
+					sv = sv.substr(1, sv.size() - 2);
+				ScriptCaptureText(sv, def.name);
+			}
 		}
 	}
 
