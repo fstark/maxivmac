@@ -32,6 +32,7 @@ void CmdNext(Debugger &dbg, const std::vector<Token> &args);
 void CmdFinish(Debugger &dbg, const std::vector<Token> &args);
 void CmdUntil(Debugger &dbg, const std::vector<Token> &args);
 void CmdBreak(Debugger &dbg, const std::vector<Token> &args);
+void CmdTbreak(Debugger &dbg, const std::vector<Token> &args);
 void CmdDelete(Debugger &dbg, const std::vector<Token> &args);
 void CmdDisable(Debugger &dbg, const std::vector<Token> &args);
 void CmdEnable(Debugger &dbg, const std::vector<Token> &args);
@@ -75,6 +76,8 @@ static CmdEntry s_commands[] = {
 	{"break", "b", CmdBreak, "Set breakpoint",
 	 "break <location> [if <cond>]\n  Set a breakpoint at address, trap name, or global name.\n"
 	 "  Optional 'if <cond>' adds a condition evaluated on hit.\n"},
+	{"tbreak", "tb", CmdTbreak, "Set temporary breakpoint",
+	 "tbreak <location> [if <cond>]\n  Set a one-shot breakpoint (deleted after first hit).\n"},
 	{"delete", "d", CmdDelete, "Delete breakpoint/watchpoint",
 	 "delete [id]\n  Delete breakpoint/watchpoint by ID.  No args = delete all.\n"},
 	{"disable", "", CmdDisable, "Disable breakpoint/watchpoint",
@@ -345,6 +348,14 @@ uint32_t Debugger::addBreakpoint(uint32_t addr, uint16_t trapWord, uint16_t subt
 	bp.trapWord = trapWord;
 	bp.subtrapSelector = subtrapSelector;
 	bp.condition = condition;
+	bp.kind = (addr != 0) ? Breakpoint::Kind::Address : Breakpoint::Kind::Trap;
+	impl_->breakpoints.push_back(std::move(bp));
+	return impl_->breakpoints.back().id;
+}
+
+uint32_t Debugger::addBreakpoint(Breakpoint bp)
+{
+	bp.id = impl_->nextBpId++;
 	impl_->breakpoints.push_back(std::move(bp));
 	return impl_->breakpoints.back().id;
 }
@@ -850,6 +861,11 @@ bool Debugger::instructionHook(uint32_t pc)
 			if (impl_->state != DbgState::Stopped) return true;
 		}
 
+		/* Temporary breakpoints are one-shot — delete after firing */
+		bool wasTemporary = bp->temporary;
+		uint32_t bpId = bp->id;
+		if (wasTemporary) deleteById(bpId);
+
 		stop("");
 		commandLoop();
 		return true;
@@ -930,6 +946,11 @@ bool Debugger::trapHook(uint16_t trapWord)
 			executeCommands(bp->commands);
 			if (impl_->state != DbgState::Stopped) return true;
 		}
+
+		/* Temporary breakpoints are one-shot — delete after firing */
+		bool wasTemporary = bp->temporary;
+		uint32_t bpId = bp->id;
+		if (wasTemporary) deleteById(bpId);
 
 		stop("");
 		return true; /* instructionHook will enter command loop */

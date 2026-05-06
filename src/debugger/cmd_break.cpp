@@ -362,3 +362,12 @@ void CmdIgnore(Debugger &dbg, const std::vector<Token> &args)
 	}
 	dbg.io().write("No breakpoint %u.\n", id);
 }
+
+void CmdTbreak(Debugger &dbg, const std::vector<Token> &args)
+{
+	// Create a regular breakpoint, then mark it temporary
+	CmdBreak(dbg, args);
+	// The breakpoint just created is the last one in the vector
+	auto &bps = dbg.breakpoints();
+	if (!bps.empty()) bps.back().temporary = true;
+}

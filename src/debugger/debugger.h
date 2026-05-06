@@ -13,6 +13,9 @@
 /* InstructionCount = uint64_t; canonical definition in core/machine.h */
 using InstructionCount = uint64_t;
 
+/* ScaledCycleCount = uint64_t; canonical definition in core/ict_scheduler.h */
+using ScaledCycleCount = uint64_t;
+
 class DbgIO;
 
 class Debugger
@@ -50,13 +53,34 @@ public:
 	struct Breakpoint
 	{
 		uint32_t id;
-		bool enabled;
-		uint32_t address;				   // PC address (0 for trap-only breakpoints)
-		uint16_t trapWord;				   // non-zero for trap breakpoints
-		uint16_t subtrapSelector = 0;	   // non-zero for subtrap breakpoints
+		bool enabled = true;
+		bool temporary = false;	  // deleted after first hit (tbreak, wait)
+		bool scriptOwned = false; // created by `wait` — auto-resumes script
+
+		// Condition type — exactly one is active:
+		enum class Kind
+		{
+			Address,
+			Trap,
+			Text,
+			Screen,
+			PowerOff
+		};
+		Kind kind = Kind::Address;
+
+		uint32_t address = 0;		  // PC address (Kind::Address)
+		uint16_t trapWord = 0;		  // trap word (Kind::Trap)
+		uint16_t subtrapSelector = 0; // subtrap selector (Kind::Trap)
+
+		std::string textPattern; // UTF-8 substring (Kind::Text)
+		// ScreenMatcher added in Phase 5
+
 		std::string condition;			   // raw condition text
 		std::vector<std::string> commands; // auto-execute on hit
 		uint32_t ignoreCount = 0;		   // remaining hits to skip
+
+		// Timeout: cycle-count deadline (0 = no timeout)
+		ScaledCycleCount timeoutAt = 0;
 	};
 
 	struct Watchpoint
@@ -74,6 +98,7 @@ public:
 	uint32_t addBreakpoint(uint32_t addr, uint16_t trapWord, const std::string &condition);
 	uint32_t addBreakpoint(uint32_t addr, uint16_t trapWord, uint16_t subtrapSelector,
 						   const std::string &condition);
+	uint32_t addBreakpoint(Breakpoint bp); // direct insert (scripting)
 	uint32_t addWatchpoint(uint32_t addr, uint32_t len, char mode, bool hasValCond,
 						   uint8_t valCondOp, uint32_t valCondValue);
 	bool deleteById(uint32_t id);
