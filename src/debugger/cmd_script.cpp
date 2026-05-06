@@ -48,11 +48,17 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 		return;
 	}
 
-	// Determine cycle budget
+	// Determine cycle budget (0 = no timeout)
 	auto parseBudget = [&](size_t argIdx) -> ScaledCycleCount
 	{
 		if (argIdx < args.size() && args[argIdx].isNumber()) return args[argIdx].numValue;
 		return s_defaultTimeout;
+	};
+
+	auto computeDeadline = [&](ScaledCycleCount budget) -> ScaledCycleCount
+	{
+		if (budget == 0) return 0; // infinite
+		return g_ict.getCurrent() + budget;
 	};
 
 	Debugger::Breakpoint bp;
@@ -69,7 +75,7 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 		}
 		bp.kind = Debugger::Breakpoint::Kind::Text;
 		bp.textPattern = args[1].text;
-		bp.timeoutAt = g_ict.getCurrent() + parseBudget(2);
+		bp.timeoutAt = computeDeadline(parseBudget(2));
 	}
 	else if (args[0].isWord("screen"))
 	{
@@ -84,7 +90,7 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 			dbg.io().write("Error: cannot load reference PNG '%s'\n", args[1].text.c_str());
 			return;
 		}
-		bp.timeoutAt = g_ict.getCurrent() + parseBudget(2);
+		bp.timeoutAt = computeDeadline(parseBudget(2));
 		// Optional threshold
 		if (args.size() >= 4 && args[3].isNumber())
 			bp.screenMatcher.threshold = static_cast<float>(args[3].numValue);
@@ -92,7 +98,7 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 	else if (args[0].isWord("off"))
 	{
 		bp.kind = Debugger::Breakpoint::Kind::PowerOff;
-		bp.timeoutAt = g_ict.getCurrent() + parseBudget(1);
+		bp.timeoutAt = computeDeadline(parseBudget(1));
 	}
 	else if (args[0].isWord("trap"))
 	{
@@ -112,7 +118,7 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 		bp.kind = Debugger::Breakpoint::Kind::Trap;
 		bp.trapWord = trapWord;
 		bp.subtrapSelector = subtrapSel;
-		bp.timeoutAt = g_ict.getCurrent() + parseBudget(2);
+		bp.timeoutAt = computeDeadline(parseBudget(2));
 	}
 	else
 	{
@@ -143,12 +149,16 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 			bp.kind = Debugger::Breakpoint::Kind::Address;
 			bp.address = addr;
 		}
-		bp.timeoutAt = g_ict.getCurrent() + parseBudget(1);
+		bp.timeoutAt = computeDeadline(parseBudget(1));
 	}
 
 	uint32_t id = dbg.addBreakpoint(std::move(bp));
-	dbg.io().write("Waiting (bp %u, timeout %" PRIu64 " cycles)...\n", id,
-				   dbg.breakpoints().back().timeoutAt - g_ict.getCurrent());
+	auto deadline = dbg.breakpoints().back().timeoutAt;
+	if (deadline == 0)
+		dbg.io().write("Waiting (bp %u, no timeout)...\n", id);
+	else
+		dbg.io().write("Waiting (bp %u, timeout %" PRIu64 " cycles)...\n", id,
+					   deadline - g_ict.getCurrent());
 	dbg.setRunning();
 }
 
