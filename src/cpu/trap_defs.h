@@ -41,6 +41,7 @@ struct ParamDef
 	std::string typeName; /* TypeRegistry type name (e.g. "long", "Str255", "IOParam") */
 	ParamLoc loc = ParamLoc::Stack;
 	bool isStructPtr = false; /* true when typeName is a ^struct pointer */
+	bool isText = false;	  /* true if this param carries displayable text (scripting) */
 };
 
 enum class TrapConvention

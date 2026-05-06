@@ -152,7 +152,16 @@ static bool ParseParam(const std::string &token, ParamDef &out)
 	else
 	{
 		out.isStructPtr = false;
-		out.typeName = typeStr;
+		/* "Text" is a semantic alias for Str255 — marks displayable text */
+		if (typeStr == "Text")
+		{
+			out.typeName = "Str255";
+			out.isText = true;
+		}
+		else
+		{
+			out.typeName = typeStr;
+		}
 		if (out.typeName.empty()) return false;
 		if (!g_typeRegistry().has(out.typeName))
 		{

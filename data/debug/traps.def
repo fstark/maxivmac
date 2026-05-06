@@ -370,7 +370,7 @@ A971 EventAvail toolbox
 # ── Misc ──────────────────────────────────────────────
 
 A884 DrawString toolbox
-  in  s:Str255
+  in  s:Text
 
 A9F0 LoadSeg toolbox noreturn
   in  segNum:sword
@@ -2023,7 +2023,7 @@ A98A FreeAlert toolbox
   in  alertID:sword
 
 A98B ParamText toolbox
-  in  param0:Str255  param1:Str255  param2:Str255  param3:Str255
+  in  param0:Text  param1:Text  param2:Text  param3:Text
 
 A98C ErrorSound toolbox
   in  proc:ProcPtr
