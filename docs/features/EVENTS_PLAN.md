@@ -4,12 +4,12 @@ Design: [EVENTS.md](EVENTS.md)
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | TimedEvent struct + EventQ API (header only, compiles) | |
-| 2 | EventQ implementation with unit tests | |
-| 3 | Wire producers to new API | |
-| 4 | Wire consumers to new API | |
-| 5 | Remove old ring buffer code | |
-| 6 | Golden tests re-record + full verification | |
+| 1 | TimedEvent struct + EventQ API (header only, compiles) | done |
+| 2 | EventQ implementation with unit tests | done |
+| 3 | Wire producers to new API | done |
+| 4 | Wire consumers to new API | done |
+| 5 | Remove old ring buffer code | done |
+| 6 | Golden tests re-record + full verification | done |
 
 Build gate: `cmake --preset macos && cmake --build --preset macos`
 Test gate:  `./bld/macos/tests && cd test && ./verify.sh`
