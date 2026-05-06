@@ -5,6 +5,7 @@
 #include "platform/common/osglu_ui.h"
 #include "platform/common/osglu_ud.h"
 #include "platform/common/osglu_common.h"
+#include "platform/common/event_queue.h"
 
 #include <cstring>
 
@@ -613,6 +614,7 @@ void Keyboard_UpdateKeyMap(uint8_t key, bool down)
 			}
 		}
 
+		EventQ_PushKey(k, down);
 		QUIET_ENDS();
 	}
 }
@@ -632,6 +634,7 @@ void MouseButtonSet(bool down)
 			g_mouseButtonState = down;
 		}
 
+		EventQ_PushButton(down);
 		QUIET_ENDS();
 	}
 }
@@ -657,6 +660,7 @@ void MousePositionSetDelta(uint16_t dh, uint16_t dv)
 			}
 		}
 
+		EventQ_PushMouseDelta(static_cast<int16_t>(dh), static_cast<int16_t>(dv));
 		QUIET_ENDS();
 	}
 }
@@ -677,6 +681,7 @@ void MousePositionSet(uint16_t h, uint16_t v)
 			p->u.pos.v = v;
 		}
 
+		EventQ_PushMousePos(static_cast<int16_t>(h), static_cast<int16_t>(v));
 		QUIET_ENDS();
 	}
 }
