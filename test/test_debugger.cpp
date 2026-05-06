@@ -365,6 +365,45 @@ TEST_CASE("tokenize 0x hex")
 	CHECK(tokens[0].numValue == 0xFF);
 }
 
+TEST_CASE("tokenize quoted string")
+{
+	auto tokens = Tokenize("launch \"Macintosh:Think C:THINK C 5.0\"");
+	REQUIRE(tokens.size() >= 2);
+	CHECK(tokens[0].kind == Token::Kind::Word);
+	CHECK(tokens[0].text == "launch");
+	CHECK(tokens[1].kind == Token::Kind::Word);
+	CHECK(tokens[1].text == "Macintosh:Think C:THINK C 5.0");
+}
+
+TEST_CASE("tokenize quoted string with spaces only")
+{
+	auto tokens = Tokenize("type \"hello world\"");
+	REQUIRE(tokens.size() >= 2);
+	CHECK(tokens[1].text == "hello world");
+}
+
+TEST_CASE("tokenize empty quoted string")
+{
+	auto tokens = Tokenize("fail \"\"");
+	REQUIRE(tokens.size() >= 2);
+	CHECK(tokens[1].kind == Token::Kind::Word);
+	CHECK(tokens[1].text == "");
+}
+
+TEST_CASE("tokenize quoted string preserves operators")
+{
+	auto tokens = Tokenize("wait text \"a + b = c\"");
+	REQUIRE(tokens.size() >= 3);
+	CHECK(tokens[2].text == "a + b = c");
+}
+
+TEST_CASE("ParseNumber handles 64-bit values")
+{
+	uint64_t val = 0;
+	CHECK(ParseNumber("4614455813800", val));
+	CHECK(val == 4614455813800ULL);
+}
+
 /* ════════════════════════════════════════════════════════
    Dispatch tests
    ════════════════════════════════════════════════════════ */
