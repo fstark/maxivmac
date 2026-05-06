@@ -268,3 +268,29 @@ void CmdClearKeys(Debugger &dbg, const std::vector<Token> &)
 	EventQ_ClearFutureKeys();
 	dbg.io().write("Cleared pending key events\n");
 }
+
+/* ── Guest commands ────────────────────────────────── */
+
+#include "core/extn_extfs.h"
+
+void CmdLaunch(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (args.empty())
+	{
+		dbg.io().write("Usage: launch \"path\"\n");
+		return;
+	}
+	auto path = MacRomanFromUTF8(args[0].text);
+	ExtFS_QueueGuestCmd(1, path);
+	dbg.io().write("Queued launch: %s\n", args[0].text.c_str());
+}
+
+void CmdExitToShell(Debugger &, const std::vector<Token> &)
+{
+	ExtFS_QueueGuestCmd(2);
+}
+
+void CmdShutdown(Debugger &, const std::vector<Token> &)
+{
+	ExtFS_QueueGuestCmd(3);
+}

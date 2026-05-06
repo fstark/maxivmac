@@ -45,6 +45,18 @@ static constexpr uint16_t kExtFSFatal = 0x214;
 static constexpr uint16_t kExtFSSetEOF = 0x218;
 static constexpr uint16_t kExtFSPollMount = 0x219;
 static constexpr uint16_t kExtFSGetVolName = 0x21A;
+static constexpr uint16_t kExtFSGuestCmd = 0x220;
+
+/* ── Guest command channel ─────────────────────────── */
+
+static uint16_t s_pendingGuestCmd = 0;
+static std::string s_guestCmdPath; // MacRoman pascal-string content
+
+void ExtFS_QueueGuestCmd(uint16_t cmd, std::string_view path)
+{
+	s_pendingGuestCmd = cmd;
+	s_guestCmdPath = path;
+}
 
 /* ── DriveManager instance ─────────────────────────── */
 
@@ -1214,6 +1226,16 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSGetVolName:
 			RegGetVolName(regParam, regResult);
 			break;
+		case kExtFSGuestCmd:
+		{
+			uint32_t guestBuf = regParam[0];
+			regResult = s_pendingGuestCmd;
+			if (s_pendingGuestCmd != 0 && guestBuf != 0 && !s_guestCmdPath.empty())
+				writePascalString(guestBuf, s_guestCmdPath);
+			s_pendingGuestCmd = 0;
+			s_guestCmdPath.clear();
+			break;
+		}
 
 		/* PB-based commands */
 		case kPB_GetCatInfo:

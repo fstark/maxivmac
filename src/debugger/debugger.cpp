@@ -64,6 +64,9 @@ void CmdFail(Debugger &dbg, const std::vector<Token> &args);
 void CmdType(Debugger &dbg, const std::vector<Token> &args);
 void CmdKey(Debugger &dbg, const std::vector<Token> &args);
 void CmdClearKeys(Debugger &dbg, const std::vector<Token> &args);
+void CmdLaunch(Debugger &dbg, const std::vector<Token> &args);
+void CmdExitToShell(Debugger &dbg, const std::vector<Token> &args);
+void CmdShutdown(Debugger &dbg, const std::vector<Token> &args);
 
 /* ── Command table ──────────────────────────────────── */
 
@@ -161,6 +164,12 @@ static CmdEntry s_commands[] = {
 	 "key <keyspec>\n  Inject a single key press (e.g. cmd-S, return, cmd-shift-N).\n"},
 	{"clearkeys", "", CmdClearKeys, "Clear pending key events",
 	 "clearkeys\n  Remove all pending future key events from the queue.\n"},
+	{"launch", "", CmdLaunch, "Launch app via INIT",
+	 "launch \"path\"\n  Queue a launch command for the SharedDrive INIT.\n"},
+	{"exittoshell", "", CmdExitToShell, "Quit current app via INIT",
+	 "exittoshell\n  Queue an ExitToShell command for the SharedDrive INIT.\n"},
+	{"shutdown", "", CmdShutdown, "Shut down guest via INIT",
+	 "shutdown\n  Queue a shutdown command for the SharedDrive INIT.\n"},
 };
 
 static constexpr int kNumCommands = sizeof(s_commands) / sizeof(s_commands[0]);
