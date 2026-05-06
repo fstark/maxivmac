@@ -1,4 +1,5 @@
 #include "lang/type_registry.h"
+#include "util/macroman.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -762,22 +763,13 @@ std::string TypeRegistry::formatValue(std::string_view typeName, uint32_t raw) c
 			/* raw is a guest pointer to a Pascal string */
 			if (raw == 0) return "$00000000";
 			uint8_t len = mem_.readByte(raw);
-			std::string result;
 			char hdr[16];
 			std::snprintf(hdr, sizeof(hdr), "$%08X \"", raw);
-			result = hdr;
+			std::vector<uint8_t> bytes(len);
 			for (uint8_t i = 0; i < len; ++i)
-			{
-				uint8_t c = mem_.readByte(raw + 1 + i);
-				if (c >= 0x20 && c < 0x7F)
-					result += static_cast<char>(c);
-				else
-				{
-					char esc[5];
-					std::snprintf(esc, sizeof(esc), "\\x%02X", c);
-					result += esc;
-				}
-			}
+				bytes[i] = mem_.readByte(raw + 1 + i);
+			std::string result = hdr;
+			result += UTF8FromMacRoman(bytes);
 			result += '"';
 			return result;
 		}
@@ -791,19 +783,11 @@ std::string TypeRegistry::formatValue(std::string_view typeName, uint32_t raw) c
 							 : (prim->kind == PrimitiveKind::Str63) ? 63
 																	: 31;
 			if (len > maxLen) len = maxLen;
-			std::string result = "\"";
+			std::vector<uint8_t> bytes(len);
 			for (uint8_t i = 0; i < len; ++i)
-			{
-				uint8_t c = mem_.readByte(raw + 1 + i);
-				if (c >= 0x20 && c < 0x7F)
-					result += static_cast<char>(c);
-				else
-				{
-					char esc[5];
-					std::snprintf(esc, sizeof(esc), "\\x%02X", c);
-					result += esc;
-				}
-			}
+				bytes[i] = mem_.readByte(raw + 1 + i);
+			std::string result = "\"";
+			result += UTF8FromMacRoman(bytes);
 			result += '"';
 			return result;
 		}

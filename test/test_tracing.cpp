@@ -557,6 +557,24 @@ TEST_CASE("TypeRegistry formatValue PStr dereferences")
 	CHECK(tr.formatValue("PStr", 0) == "$00000000");
 }
 
+TEST_CASE("TypeRegistry formatValue PStr MacRoman to UTF-8")
+{
+	ensureTypeRegistryInit();
+	auto &tr = g_typeRegistry();
+
+	memset(g_ram, 0, 256);
+	/* Build "A\xB9" at address 0x60 — 0xB9 is MacRoman for π */
+	g_ram[0x60] = 2;
+	g_ram[0x61] = 'A';
+	g_ram[0x62] = 0xB9;
+
+	std::string result = tr.formatValue("PStr", 0x60);
+	/* Should contain UTF-8 π (U+03C0 = 0xCF 0x80) not \xB9 */
+	CHECK(result.find("\\x") == std::string::npos);
+	CHECK(result.find("\xCF\x80") != std::string::npos); // UTF-8 for π
+	CHECK(result.find("\"A\xCF\x80\"") != std::string::npos);
+}
+
 TEST_CASE("TypeRegistry formatValue unknown type")
 {
 	ensureTypeRegistryInit();

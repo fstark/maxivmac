@@ -623,6 +623,156 @@ individual commands and parses the responses programmatically.
 
 ---
 
+## Scripting & Automation
+
+The debugger includes high-level scripting commands for driving the
+guest OS — launching apps, typing text, waiting for screen output,
+and clicking dialog buttons.  Combined with `--dbg-script`, these
+enable fully automated test scenarios.
+
+### Input Injection
+
+| Command | Description |
+|---------|-------------|
+| `type "text"` | Type a string as keyboard input (MacRoman) |
+| `key <name>` | Press a named key (Return, Escape, Tab, F1–F15, arrows, etc.) |
+| `key cmd-<k>` | Key with modifiers (cmd, shift, option, ctrl) |
+| `clearkeys` | Flush all pending key events from the queue |
+
+```
+(dbg) type "Hello, world!"
+type "Hello, world!"
+(dbg) key Return
+(dbg) key cmd-s
+```
+
+Keys are injected as timed events into the event queue with realistic
+inter-key delays (~20ms at 8 MHz emulated speed).
+
+### Wait Commands
+
+| Command | Description |
+|---------|-------------|
+| `wait text "pattern"` | Suspend script until captured text contains pattern |
+| `wait screen "pattern"` | Suspend script until OCR of the screen matches |
+| `wait for <cycles>` | Suspend script for N emulated CPU cycles |
+| `timeout <cycles>` | Set the cycle budget for subsequent waits (default ~5s at 8 MHz) |
+| `fail "message"` | Immediately fail the script with an error |
+
+```
+(dbg) timeout 80000000
+(dbg) wait text "Save changes"
+(dbg) wait for 1000000
+(dbg) wait screen "OK"
+```
+
+`wait text` matches against text captured from DrawString, DrawText,
+StdText, and TextBox traps.  Text is converted from MacRoman to UTF-8
+before matching.
+
+`wait screen` performs OCR on the current frame buffer and does a
+substring match on the recognized text.
+
+`wait for` simply pauses script execution for the given number of
+cycles, allowing the guest to run freely.
+
+### Guest OS Control
+
+| Command | Description |
+|---------|-------------|
+| `launch "path"` | Launch application via SharedDrive INIT |
+| `exittoshell` | Quit current app (ExitToShell via INIT) |
+| `shutdown` | Shut down the guest (via INIT) |
+
+```
+(dbg) launch "Shared:Apps:THINK C 5:THINK Project Manager"
+(dbg) exittoshell
+(dbg) shutdown
+```
+
+`launch` queues a command for the SharedDrive INIT which sets the
+working directory and calls `_Launch`.  The path uses Mac `:` separators.
+
+### Dialog Introspection & Clicking
+
+| Command | Description |
+|---------|-------------|
+| `dialog` | Dump the front dialog's item list |
+| `click button "title"` | Click a dialog button by title |
+| `click <x> <y>` | Click at absolute screen coordinates |
+
+```
+(dbg) dialog
+Dialog @ $00123400  origin=(40,80)  portRect=(0,0,100,200)  default=1
+  3 items:
+  #1  button    en  (60,120,80,180)  "OK"
+  #2  button    en  (60,40,80,100)   "Cancel"
+  #3  static    en  (10,10,50,190)   "Save changes?"
+
+(dbg) click button "OK"
+click button "OK" at (190,110)
+
+(dbg) click 100 50
+click at (100,50)
+```
+
+`dialog` reads the front window's DialogRecord from guest memory,
+walks the DITL (Dialog Item List), and prints each item's type,
+enabled state, bounds, and text content.  Requires the front window
+to have `windowKind == 2` (dialog).
+
+`click button` performs a case-insensitive substring match on button
+titles, computes the button's center in global coordinates, and
+injects mouse-move + mouse-down + mouse-up events with appropriate
+timing (~15ms between events).
+
+### Text Display
+
+| Command | Description |
+|---------|-------------|
+| `showtext on` | Echo all captured guest text to console |
+| `showtext off` | Stop echoing captured text |
+
+```
+(dbg) showtext on
+showtext on
+(dbg) c
+[text] DrawString: "Shared Drive.π"
+[text] DrawString: "Finder"
+[text] TextBox: "Welcome to Macintosh"
+```
+
+Text is captured from DrawString, DrawText, StdText, and TextBox traps.
+MacRoman characters are converted to UTF-8 for display (e.g. `0xB9` →
+`π`).  This is useful for debugging dialog content and verifying what
+text the guest is rendering.
+
+### Example: Automated Build Script
+
+```bash
+# build.dbg — compile a THINK C project automatically
+run
+wait text "Shared Drive"
+timeout 160000000
+launch "Shared:Apps:THINK C 5:THINK Project Manager"
+wait text "THINK Project"
+key cmd-o
+wait text "Open"
+type "MyProject.π"
+key Return
+wait for 2000000
+key cmd-k
+wait text "Done"
+# handle "Save?" dialog
+wait text "Save"
+dialog
+click button "Yes"
+wait for 5000000
+shutdown
+```
+
+---
+
 ## Non-Goals (for now)
 
 - **Source-level debugging** — no C/Pascal source correlation.

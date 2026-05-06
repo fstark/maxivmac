@@ -28,7 +28,28 @@ int main(int argc, char **argv)
 
 	if (lc.headless)
 	{
-		/* Headless: require --model, boot directly */
+		/* Headless: parse .mac file if provided, then boot directly */
+		if (!lc.macFilePath.empty())
+		{
+			MacFileEntry entry;
+			std::string err;
+			if (!ParseMacFile(lc.macFilePath, entry, err))
+			{
+				fprintf(stderr, "%s\n", err.c_str());
+				ProgramCleanup();
+				return 1;
+			}
+			std::string dataDir = ResolveDataDir("");
+			ValidateMacEntry(entry, dataDir);
+			if (!entry.romAvailable)
+			{
+				fprintf(stderr, "%s: %s\n", lc.macFilePath.c_str(), entry.validationError.c_str());
+				ProgramCleanup();
+				return 1;
+			}
+			LaunchConfig macLc = LaunchConfigFromMacEntry(entry, dataDir);
+			SetLaunchConfig(macLc);
+		}
 		if (!shell.init(argc, argv))
 		{
 			shell.shutdown();

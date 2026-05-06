@@ -68,6 +68,8 @@ void CmdClearKeys(Debugger &dbg, const std::vector<Token> &args);
 void CmdLaunch(Debugger &dbg, const std::vector<Token> &args);
 void CmdExitToShell(Debugger &dbg, const std::vector<Token> &args);
 void CmdShutdown(Debugger &dbg, const std::vector<Token> &args);
+void CmdClick(Debugger &dbg, const std::vector<Token> &args);
+void CmdDialog(Debugger &dbg, const std::vector<Token> &args);
 
 /* ── Command table ──────────────────────────────────── */
 
@@ -172,6 +174,11 @@ static CmdEntry s_commands[] = {
 	 "exittoshell\n  Queue an ExitToShell command for the SharedDrive INIT.\n"},
 	{"shutdown", "", CmdShutdown, "Shut down guest via INIT",
 	 "shutdown\n  Queue a shutdown command for the SharedDrive INIT.\n"},
+	{"click", "", CmdClick, "Click at coords or dialog button",
+	 "click button \"title\"\n  Click a dialog button by title.\nclick <x> <y>\n  Click at screen "
+	 "coordinates.\n"},
+	{"dialog", "", CmdDialog, "Dump front dialog structure",
+	 "dialog\n  Show all items in the front dialog window.\n"},
 };
 
 static constexpr int kNumCommands = sizeof(s_commands) / sizeof(s_commands[0]);

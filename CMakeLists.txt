@@ -98,6 +98,9 @@ set(MINIVMAC_SOURCES
     src/debugger/cmd_script.cpp
     src/debugger/script_keymap.cpp
 
+    # Guest memory introspection
+    src/guest/guest_dialog.cpp
+
     # Devices
     src/devices/device.cpp
     src/devices/via_base.cpp
@@ -357,6 +360,8 @@ add_executable(tests
     src/core/machine_config.cpp
     src/core/config_loader.cpp
     src/config/mac_file.cpp
+    src/guest/guest_dialog.cpp
+    test/test_guest_dialog.cpp
 )
 target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs" "${CMAKE_SOURCE_DIR}/tools/icon_extract")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)

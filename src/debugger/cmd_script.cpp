@@ -8,6 +8,7 @@
 
 #include "core/machine.h"
 #include "core/ict_scheduler.h"
+#include "guest/guest_dialog.h"
 #include "platform/platform.h"
 #include "platform/keycodes.h"
 #include "platform/common/event_queue.h"
@@ -325,4 +326,109 @@ void CmdExitToShell(Debugger &, const std::vector<Token> &)
 void CmdShutdown(Debugger &, const std::vector<Token> &)
 {
 	ExtFS_QueueGuestCmd(3);
+}
+
+void CmdClick(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (args.empty() || args[0].isEnd())
+	{
+		dbg.io().write("Usage: click button \"title\"\n");
+		dbg.io().write("       click <x> <y>\n");
+		return;
+	}
+
+	int16_t clickH, clickV;
+
+	if (args[0].isWord("button"))
+	{
+		if (args.size() < 2 || args[1].isEnd())
+		{
+			dbg.io().write("Usage: click button \"title\"\n");
+			return;
+		}
+		auto dlg = guest::readFrontDialog();
+		if (!dlg)
+		{
+			dbg.io().write("Error: front window is not a dialog\n");
+			return;
+		}
+		auto *btn = guest::findButton(*dlg, args[1].text);
+		if (!btn)
+		{
+			dbg.io().write("Error: no button matching \"%s\"\n", args[1].text.c_str());
+			return;
+		}
+		auto pt = guest::itemCenter(*dlg, *btn);
+		clickH = pt.h;
+		clickV = pt.v;
+		dbg.io().write("click button \"%s\" at (%d,%d)\n", btn->text.c_str(), clickH, clickV);
+	}
+	else if (args[0].isNumber() && args.size() >= 2 && args[1].isNumber())
+	{
+		clickH = static_cast<int16_t>(args[0].numValue);
+		clickV = static_cast<int16_t>(args[1].numValue);
+		dbg.io().write("click at (%d,%d)\n", clickH, clickV);
+	}
+	else
+	{
+		dbg.io().write("Usage: click button \"title\"\n");
+		dbg.io().write("       click <x> <y>\n");
+		return;
+	}
+
+	// Inject mouse position + button down/up
+	ScaledCycleCount t = g_ict.getCurrent();
+	EventQ_Push({t, EvtQElKind::MousePos, {.pos = {clickH, clickV}}});
+	EventQ_Push({t + 40000, EvtQElKind::MouseButton, {.press = {0, true}}});
+	EventQ_Push({t + 120000, EvtQElKind::MouseButton, {.press = {0, false}}});
+}
+
+static const char *itemTypeName(guest::DialogItemType t)
+{
+	switch (t)
+	{
+		case guest::DialogItemType::Button:
+			return "button";
+		case guest::DialogItemType::CheckBox:
+			return "checkbox";
+		case guest::DialogItemType::RadioButton:
+			return "radio";
+		case guest::DialogItemType::ResControl:
+			return "control";
+		case guest::DialogItemType::StaticText:
+			return "static";
+		case guest::DialogItemType::EditText:
+			return "edit";
+		case guest::DialogItemType::Icon:
+			return "icon";
+		case guest::DialogItemType::Picture:
+			return "picture";
+		case guest::DialogItemType::UserItem:
+			return "user";
+	}
+	return "?";
+}
+
+void CmdDialog(Debugger &dbg, const std::vector<Token> &)
+{
+	auto dlg = guest::readFrontDialog();
+	if (!dlg)
+	{
+		dbg.io().write("Front window is not a dialog (or no windows open)\n");
+		return;
+	}
+
+	dbg.io().write("Dialog @ $%08X  origin=(%d,%d)  portRect=(%d,%d,%d,%d)  default=%d\n",
+				   dlg->windowPtr, dlg->origin.h, dlg->origin.v, dlg->portRect.top,
+				   dlg->portRect.left, dlg->portRect.bottom, dlg->portRect.right, dlg->defaultItem);
+	dbg.io().write("  %zu items:\n", dlg->items.size());
+
+	for (const auto &item : dlg->items)
+	{
+		dbg.io().write("  #%d  %-8s  %s  (%d,%d,%d,%d)", item.index, itemTypeName(item.type),
+					   item.enabled ? "en" : "DIS", item.bounds.top, item.bounds.left,
+					   item.bounds.bottom, item.bounds.right);
+		if (!item.text.empty()) dbg.io().write("  \"%s\"", item.text.c_str());
+		dbg.io().write("\n");
+	}
 }
