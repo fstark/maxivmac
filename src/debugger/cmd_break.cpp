@@ -7,6 +7,7 @@
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 #include "debugger/bp_text.h"
+#include "debugger/bp_screen.h"
 
 #include "core/machine.h"
 #include "cpu/trap_counter.h"
@@ -112,6 +113,30 @@ void CmdBreak(Debugger &dbg, const std::vector<Token> &args)
 		bp.kind = Debugger::Breakpoint::Kind::PowerOff;
 		uint32_t id = dbg.addBreakpoint(std::move(bp));
 		dbg.io().write("Breakpoint %u: power-off\n", id);
+		return;
+	}
+
+	/* break screen "ref.png" [threshold%] — screen breakpoint */
+	if (args[0].isWord("screen"))
+	{
+		if (args.size() < 2 || args[1].isEnd())
+		{
+			dbg.io().write("Usage: break screen \"ref.png\" [threshold%%]\n");
+			return;
+		}
+		Debugger::Breakpoint bp;
+		bp.enabled = true;
+		bp.kind = Debugger::Breakpoint::Kind::Screen;
+		if (!bp.screenMatcher.loadReference(args[1].text))
+		{
+			dbg.io().write("Error: cannot load reference PNG '%s'\n", args[1].text.c_str());
+			return;
+		}
+		if (args.size() >= 3 && args[2].isNumber())
+			bp.screenMatcher.threshold = static_cast<float>(args[2].numValue);
+		uint32_t id = dbg.addBreakpoint(std::move(bp));
+		dbg.io().write("Breakpoint %u: screen \"%s\" (threshold %.1f%%)\n", id,
+					   args[1].text.c_str(), dbg.breakpoints().back().screenMatcher.threshold);
 		return;
 	}
 
@@ -424,4 +449,19 @@ void CmdShowtext(Debugger &dbg, const std::vector<Token> &args)
 		return;
 	}
 	dbg.io().write("showtext %s\n", ScriptShowTextGet() ? "on" : "off");
+}
+
+void CmdScreenshot(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (args.empty() || args[0].isEnd())
+	{
+		dbg.io().write("Usage: screenshot <filename>\n");
+		return;
+	}
+	std::string path = args[0].text;
+	if (path.find('.') == std::string::npos) path += ".png";
+	if (SaveScreenshot(path))
+		dbg.io().write("Screenshot saved: %s\n", path.c_str());
+	else
+		dbg.io().write("Error: failed to save screenshot to '%s'\n", path.c_str());
 }

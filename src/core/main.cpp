@@ -36,6 +36,7 @@
 #include "cpu/trap_tracer.h"
 #include "debugger/debugger.h"
 #include "debugger/dbg_io.h"
+#include "debugger/bp_screen.h"
 #include "debugger/symbols.h"
 #include "lang/type_registry.h"
 #include "lang/global_registry.h"
@@ -190,6 +191,8 @@ static void SixtiethEndNotify()
 	SubTickTaskEnd();
 	if (auto *d = g_rig->findDevice<MouseDevice>()) d->endTickNotify();
 	if (auto *d = g_rig->findDevice<ScreenDevice>()) d->endTickNotify();
+	// Scripting: check screen breakpoints once per tick
+	if (g_debuggerActive) CheckScreenBreakpoints();
 #if 0
 	dbglog_WriteNote("end Sixtieth");
 #endif

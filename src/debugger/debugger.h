@@ -10,6 +10,8 @@
 #include <string_view>
 #include <vector>
 
+#include "debugger/bp_screen.h"
+
 /* InstructionCount = uint64_t; canonical definition in core/machine.h */
 using InstructionCount = uint64_t;
 
@@ -72,8 +74,8 @@ public:
 		uint16_t trapWord = 0;		  // trap word (Kind::Trap)
 		uint16_t subtrapSelector = 0; // subtrap selector (Kind::Trap)
 
-		std::string textPattern; // UTF-8 substring (Kind::Text)
-		// ScreenMatcher added in Phase 5
+		std::string textPattern;	 // UTF-8 substring (Kind::Text)
+		ScreenMatcher screenMatcher; // reference image (Kind::Screen)
 
 		std::string condition;			   // raw condition text
 		std::vector<std::string> commands; // auto-execute on hit

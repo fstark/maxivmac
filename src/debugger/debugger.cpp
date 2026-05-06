@@ -57,6 +57,7 @@ void CmdQuit(Debugger &dbg, const std::vector<Token> &args);
 void CmdSource(Debugger &dbg, const std::vector<Token> &args);
 void CmdDrive(Debugger &dbg, const std::vector<Token> &args);
 void CmdShowtext(Debugger &dbg, const std::vector<Token> &args);
+void CmdScreenshot(Debugger &dbg, const std::vector<Token> &args);
 
 /* ── Command table ──────────────────────────────────── */
 
@@ -136,6 +137,8 @@ static CmdEntry s_commands[] = {
 	 "drive list\n  Show all mounted shared drives.\n"},
 	{"showtext", "", CmdShowtext, "Toggle text capture display",
 	 "showtext [on|off]\n  Show/hide text captured from guest DrawString/ParamText calls.\n"},
+	{"screenshot", "", CmdScreenshot, "Save framebuffer to PNG",
+	 "screenshot <filename>\n  Save the current framebuffer to a PNG file.\n"},
 };
 
 static constexpr int kNumCommands = sizeof(s_commands) / sizeof(s_commands[0]);
