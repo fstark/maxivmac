@@ -131,6 +131,54 @@ uint16_t TrapTracer::readSelector(const DispatchInfo &info)
 	return static_cast<uint16_t>(raw);
 }
 
+/* -- captureTextParams --------------------------------- */
+
+/*
+	Lightweight text capture for scripting — reads only text-typed params
+	from the trap's stack frame and calls ScriptCaptureText.  Called from
+	DoCodeA() independently of whether the full tracer is running.
+*/
+void TrapTracer::captureTextParams(uint16_t trapWord)
+{
+	const TrapDef *def = defs_.find(trapWord);
+	if (!def) return;
+
+	// Check if any in-param is marked isText
+	bool hasText = false;
+	for (const auto &pd : def->paramsIn)
+	{
+		if (pd.isText)
+		{
+			hasText = true;
+			break;
+		}
+	}
+	if (!hasText) return;
+
+	// Read SP and compute stack offset
+	uint32_t dregs[8], aregs[8];
+	m68k_getRegs(dregs, aregs);
+	uint32_t sp = aregs[7];
+
+	int totalStack = 0;
+	for (const auto &pd : def->paramsIn)
+		if (pd.loc == ParamLoc::Stack) totalStack += paramSize(pd);
+
+	int stackOff = totalStack;
+	for (const auto &pd : def->paramsIn)
+	{
+		if (pd.loc == ParamLoc::Stack) stackOff -= paramSize(pd);
+		if (!pd.isText) continue;
+
+		uint32_t raw = readParamRaw(pd, sp, stackOff);
+		std::string val = formatParam(pd, raw);
+		std::string_view sv = val;
+		if (sv.size() >= 2 && sv.front() == '"' && sv.back() == '"')
+			sv = sv.substr(1, sv.size() - 2);
+		ScriptCaptureText(sv, def->name);
+	}
+}
+
 /* -- enter --------------------------------------------- */
 
 void TrapTracer::enter(uint16_t trapWord)
@@ -522,15 +570,6 @@ void TrapTracer::emitEntry(const TrapFrame &frame, const TrapDef &def)
 		{
 			std::string val = formatParam(pd, raw);
 			params += val;
-			// Scripting: capture text for text breakpoints (see bp_text.h)
-			if (pd.isText && g_debuggerActive)
-			{
-				// Strip surrounding quotes from the formatted PStr value
-				std::string_view sv = val;
-				if (sv.size() >= 2 && sv.front() == '"' && sv.back() == '"')
-					sv = sv.substr(1, sv.size() - 2);
-				ScriptCaptureText(sv, def.name);
-			}
 		}
 	}
 

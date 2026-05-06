@@ -43,6 +43,7 @@ public:
 
 	void enter(uint16_t trapWord);
 	void checkReturn(uint32_t pc);
+	void captureTextParams(uint16_t trapWord);
 	bool active() const { return depth_ > 0; }
 
 	void enable(bool on);

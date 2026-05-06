@@ -19,7 +19,7 @@ struct Token
 	};
 	Kind kind;
 	std::string text;
-	uint32_t numValue; // valid when kind == Number
+	uint64_t numValue; // valid when kind == Number
 
 	bool isWord() const { return kind == Kind::Word; }
 	bool isWord(std::string_view s) const { return kind == Kind::Word && text == s; }
@@ -33,7 +33,16 @@ struct Token
 std::vector<Token> Tokenize(std::string_view line);
 
 // Try to parse a token as a hex/decimal number.  Returns true on success.
-bool ParseNumber(std::string_view text, uint32_t &outVal);
+bool ParseNumber(std::string_view text, uint64_t &outVal);
+
+// Convenience overload for 32-bit callers (truncates).
+inline bool ParseNumber(std::string_view text, uint32_t &outVal)
+{
+	uint64_t v;
+	if (!ParseNumber(text, v)) return false;
+	outVal = static_cast<uint32_t>(v);
+	return true;
+}
 
 class Debugger; // forward
 

@@ -1275,9 +1275,11 @@ A8A4 InverRect toolbox
   in  r:Rect
 
 A8A5 FillRect toolbox
-  in  r:Rect  pat:^Pattern toolbox
+  in  r:Rect  pat:^Pattern
+
+A8A6 EqualRect toolbox
   in  r1:Rect  r2:Rect
-    out equal:Boolean
+  out equal:Boolean
 
 A8A7 SetRect toolbox
   in  r:Rect  left:sword  top:sword  right:sword  bottom:sword

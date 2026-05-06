@@ -4538,6 +4538,7 @@ static void DoCodeA()
 	if (g_debuggerActive)
 	{
 		Debugger::instance()->trapHook(tw);
+		g_tracer.captureTextParams(tw);
 	}
 
 	g_tracer.enter(tw);

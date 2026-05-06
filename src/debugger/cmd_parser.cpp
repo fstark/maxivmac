@@ -9,7 +9,7 @@
 #include <cstdio>
 #include <cstring>
 
-bool ParseNumber(std::string_view text, uint32_t &outVal)
+bool ParseNumber(std::string_view text, uint64_t &outVal)
 {
 	if (text.empty()) return false;
 
@@ -18,10 +18,10 @@ bool ParseNumber(std::string_view text, uint32_t &outVal)
 	{
 		auto hex = text.substr(1);
 		if (hex.empty()) return false;
-		uint32_t val = 0;
+		uint64_t val = 0;
 		for (char c : hex)
 		{
-			uint32_t d;
+			uint64_t d;
 			if (c >= '0' && c <= '9')
 				d = c - '0';
 			else if (c >= 'a' && c <= 'f')
@@ -41,10 +41,10 @@ bool ParseNumber(std::string_view text, uint32_t &outVal)
 	{
 		auto hex = text.substr(2);
 		if (hex.empty()) return false;
-		uint32_t val = 0;
+		uint64_t val = 0;
 		for (char c : hex)
 		{
-			uint32_t d;
+			uint64_t d;
 			if (c >= '0' && c <= '9')
 				d = c - '0';
 			else if (c >= 'a' && c <= 'f')
@@ -60,7 +60,7 @@ bool ParseNumber(std::string_view text, uint32_t &outVal)
 	}
 
 	/* decimal */
-	uint32_t val = 0;
+	uint64_t val = 0;
 	for (char c : text)
 	{
 		if (c < '0' || c > '9') return false;
