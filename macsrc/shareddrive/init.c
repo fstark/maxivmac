@@ -1784,6 +1784,11 @@ void FilterEntry(void)
 			   The host writes a Pascal string path into pathBuf for launch. */
 			{
 				Str255 pathBuf;
+				struct {
+					Ptr   namePtr;  /* pointer to Pascal string filename */
+					short config;   /* sound/screen buffer config (0=normal) */
+				} launchPB;
+
 				pathBuf[0] = 0;
 				reg_set(g->regBase, 0, (unsigned long)pathBuf);
 				reg_command(g->regBase, kExtFSGuestCmd);
@@ -1791,11 +1796,15 @@ void FilterEntry(void)
 					unsigned short cmd = reg_result(g->regBase);
 					if (cmd == 1)
 					{
-						/* _Launch: A0 points to the application's full pathname
-						   as a Pascal string.  This trap never returns — it
-						   terminates the current app and starts the new one. */
+						/* _Launch: A0 points to a launch parameter block:
+						     (A0)  = pointer to Pascal string filename
+						     4(A0) = sound/screen buffer config word
+						   This trap never returns — it terminates the
+						   current app and starts the new one. */
+						launchPB.namePtr = (Ptr)pathBuf;
+						launchPB.config = 0;
 						asm {
-							LEA     pathBuf, A0
+							LEA     launchPB, A0
 							DC.W    0xA9F2  ; _Launch
 						}
 					}
