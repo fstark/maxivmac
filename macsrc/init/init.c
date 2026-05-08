@@ -346,8 +346,8 @@ void FilterEntry(void)
 			/* Clipboard sync (internally throttled to 30 ticks) */
 			SyncClipboard(g);
 
-			/* Mount polling + guest commands (throttled to 60 ticks) */
-			if (TickCount() - g->lastPollTick >= 60)
+			/* Mount polling + guest commands (every tick) */
+			if (TickCount() != g->lastPollTick)
 			{
 				g->lastPollTick = TickCount();
 				PollMounts(g);
