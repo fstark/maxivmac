@@ -4,6 +4,7 @@
 */
 
 #include "core/extn_system.h"
+#include "core/extn_clip.h"
 #include "core/diag.h"
 #include "platform/platform_config.h" // MAXIVMAC_VERSION
 
@@ -70,6 +71,9 @@ void ExtnSystemDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 	{
 		case kCmdInitIdent:
 		{
+			s_initInfo.reset();
+			ExtnClipReset();
+
 			int apiVer = static_cast<int>(regParam[0]);
 			std::string version = readGuestPascalStr(regParam[1]);
 			auto vRefNum = static_cast<int16_t>(regParam[2]);

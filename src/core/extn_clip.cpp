@@ -31,6 +31,14 @@ static std::unordered_map<uint32_t, uint32_t> s_kvStore;
 static uint32_t s_clipSeqNo = 0;
 static std::string s_lastClipText;
 
+void ExtnClipReset()
+{
+	s_kvStore.clear();
+	s_clipSeqNo = 0;
+	s_clipCache.clear();
+	s_lastClipText.clear();
+}
+
 /* ── Debug console log buffer ──────────────────────── */
 
 static constexpr size_t kMaxConsoleLines = 2048;
