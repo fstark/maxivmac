@@ -1,16 +1,20 @@
 #!/bin/bash
 # Build the maxivmac INIT with the current git version stamped in.
 #
-# Usage: ./build-init.sh [--disk DISK.hfs] [--mac macii-7.mac]
+# Stamps version.h, then launches maxivmac headless with the
+# build.dbg script to compile the INIT inside THINK C.
 #
 # Prerequisites:
 #   - A working maxivmac build in bld/macos/
-#   - A boot disk with THINK C 5.0 and an existing (old) INIT
+#   - macsrc/build.hfs with THINK C 5.0 and an existing INIT
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 INIT_DIR="$SCRIPT_DIR/macsrc/init"
+MAXIVMAC="${SCRIPT_DIR}/bld/macos/maxivmac"
+MAC_FILE="${SCRIPT_DIR}/macsrc/build.mac"
+DBG_SCRIPT="${INIT_DIR}/build.dbg"
 
 # Generate version.h from git
 VERSION=$(git describe --tags --match "v*" --always 2>/dev/null || echo "dev-unknown")
@@ -27,5 +31,7 @@ cat > "$INIT_DIR/version.h" << EOF
 EOF
 
 echo "Stamped INIT version: $VERSION"
-echo "Run the emulator with shared drive pointing at macsrc/init/"
-echo "and use build.dbg to compile."
+echo "Launching emulator to compile INIT..."
+
+"$MAXIVMAC" --headless --dbg-script="$DBG_SCRIPT" "$MAC_FILE"
+#"$MAXIVMAC" --dbg-script="$DBG_SCRIPT" "$MAC_FILE"
