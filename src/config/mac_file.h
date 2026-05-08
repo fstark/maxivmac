@@ -40,6 +40,9 @@ struct MacFileEntry
 	uint16_t screenH = 0;
 	uint8_t screenDepth = 0;
 
+	// Raw file content (for display in launcher)
+	std::string rawContent;
+
 	// Validation status (populated by ValidateMacEntry)
 	bool romAvailable = false;
 	std::string romPath;

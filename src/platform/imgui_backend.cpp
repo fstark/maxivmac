@@ -428,7 +428,8 @@ void ImGuiBackend::bootFromLauncherConfig(const LaunchConfig &config)
 
 void ImGuiBackend::drawLauncher()
 {
-	const MacFileEntry *selected = launcher_.draw();
+	launcher_.draw();
+	const MacFileEntry *selected = launcher_.selectedMac();
 	if (selected && shell_)
 	{
 		bootFromLauncher(*selected);

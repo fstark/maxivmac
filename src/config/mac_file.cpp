@@ -237,7 +237,10 @@ bool ParseMacFile(std::string_view path, MacFileEntry &out, std::string &errorOu
 
 	std::ostringstream ss;
 	ss << f.rdbuf();
-	return ParseMacFileFromString(ss.str(), path, out, errorOut);
+	std::string content = ss.str();
+	if (!ParseMacFileFromString(content, path, out, errorOut)) return false;
+	out.rawContent = content;
+	return true;
 }
 
 std::vector<MacFileEntry> ScanMacDirectory(std::string_view dirPath)
