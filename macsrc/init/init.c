@@ -5,6 +5,7 @@
 */
 
 #include "defs.h"
+#include "version.h"
 
 /* ================================================================ */
 /*            Dynamic 68k stub generation                           */
@@ -374,44 +375,67 @@ void FilterEntry(void)
 /*                         INIT entry point                         */
 /* ================================================================ */
 
+static Boolean ShiftKeyDown(void)
+{
+	KeyMap keys;
+	GetKeys(keys);
+	/* Shift = bit 56 of the KeyMap (byte 7, bit 0) */
+	return (((unsigned char *)keys)[7] & 0x01) != 0;
+}
+
 void main(void)
 {
 	char *regBase;
 	Globals *g;
 	Handle self;
 	Ptr myINITPtr;
-	short driveAvail, clipAvail;
+	SysEnvRec env;
+	FCBPBRec fcbPB;
+	Str63 initName;
+	short homeRef;
+	unsigned long slot;
 
 	asm { move.l a0, myINITPtr }
 	RememberA0();
 	SetUpA4();
-
-	/* Populate drive.c's SetUpA4 slot — see defs.h header comment */
 	DriveRememberA4();
 
 	regBase = find_reg_base();
 	if (regBase == NULL) goto bail;
 
-	dbg_log1(regBase, "maxivmac INIT: regBase=%lx", (unsigned long)regBase);
-
-	/* Check drive protocol version — non-zero means host has shared dir */
-	reg_command(regBase, 0x0200);
-	driveAvail = (reg_get(regBase, 0) != 0);
-
-	/* Check clipboard protocol version — need >= 2 for KV commands */
-	reg_command(regBase, kClipVersion);
-	clipAvail = ((long)reg_get(regBase, 0) >= 2);
-
-	if (!driveAvail && !clipAvail)
+	/* Shift-skip: standard Mac INIT convention */
+	if (ShiftKeyDown())
 	{
-		dbg_log(regBase, "maxivmac INIT: nothing available, bailing");
+		dbg_log(regBase, "maxivmac INIT: skipped by user (Shift held)");
 		goto bail;
 	}
 
-	dbg_log2(regBase, "maxivmac INIT: drive=%ld clip=%ld", (long)driveAvail, (long)clipAvail);
+	/* Locate our own resource and capture file info BEFORE detach */
+	self = GetResource('INIT', kInitResID);
+	if (self == NULL)
+	{
+		dbg_log(regBase, "maxivmac INIT: GetResource failed");
+		goto bail;
+	}
+	homeRef = HomeResFile(self);
 
-	/* Get volume stats (for VCB fill, if drive available) */
-	if (driveAvail) reg_command(regBase, kCmdGetVol);
+	/* Get file spec via PBGetFCBInfo */
+	initName[0] = 0;
+	mem_zero((char *)&fcbPB, sizeof(fcbPB));
+	fcbPB.ioNamePtr = (StringPtr)initName;
+	fcbPB.ioRefNum = homeRef;
+	fcbPB.ioFCBIndx = 0;  /* use ioRefNum, not index */
+	PBGetFCBInfoSync(&fcbPB);
+
+	/* Detach and lock the code resource */
+	DetachResource(self);
+	HLock(self);
+	HNoPurge(self);
+
+	/* Get guest environment */
+	SysEnvirons(1, &env);
+
+	dbg_log1(regBase, "maxivmac INIT: regBase=%lx", (unsigned long)regBase);
 
 	/* Allocate globals */
 	g = (Globals *)NewPtrSysClear(sizeof(Globals));
@@ -422,13 +446,11 @@ void main(void)
 	}
 	g->regBase = regBase;
 	g->driveCount = 0;
-	if (driveAvail)
-	{
-		g->volFileCount = reg_get(regBase, 0);
-		g->volTotalBytes = reg_get(regBase, 1);
-	}
+	g->initVRefNum = fcbPB.ioFCBVRefNum;
+	g->initDirID = fcbPB.ioFCBParID;
+	pstr_copy((char *)g->initFileName, (char *)initName);
 
-	/* Save A4 for code resource data access from stubs */
+	/* Save A4 */
 	{
 		long *a4dst = &g->savedA4;
 		asm {
@@ -439,73 +461,74 @@ void main(void)
 
 	set_globals(regBase, g);
 
-	/* Keep our code resource in memory */
-	self = GetResource('INIT', 314);
-	if (self != NULL)
+	/* ---- Identify to host ---- */
 	{
-		DetachResource(self);
-		HLock(self);
-		HNoPurge(self);
+		static char versionStr[] = kInitVersion;
+
+		reg_set(regBase, 0, (unsigned long)kApiVersion);
+		reg_set(regBase, 1, (unsigned long)versionStr);
+		reg_set(regBase, 2, (unsigned long)g->initVRefNum);
+		reg_set(regBase, 3, (unsigned long)g->initDirID);
+		reg_set(regBase, 4, (unsigned long)g->initFileName);
+		reg_set(regBase, 5, (unsigned long)env.machineType);
+		reg_set(regBase, 6, (unsigned long)env.systemVersion);
+		reg_command(regBase, kCmdInitIdent);
+
+		if (reg_result(regBase) != 0)
+		{
+			dbg_log(regBase, "maxivmac INIT: API rejected by host, bailing");
+			goto bail;
+		}
 	}
 
-	/* Mount shared drives if available */
-	if (driveAvail)
-	{
-		unsigned long slot;
+	dbg_log1(regBase, "maxivmac INIT: version=%s",
+			 (unsigned long)kInitVersion + 1);  /* skip Pascal length byte */
 
-		/* Drain the pending-mount queue */
+	/* ---- Install traps (unconditional) ---- */
+	InitTrapTables();
+	InstallHFSPatch(regBase);
+	InstallFlatPatch(0xA000, regBase); /* _Open */
+	InstallFlatPatch(0xA001, regBase); /* _Close */
+	InstallFlatPatch(0xA002, regBase); /* _Read */
+	InstallFlatPatch(0xA003, regBase); /* _Write */
+	InstallFlatPatch(0xA007, regBase); /* _GetVolInfo */
+	InstallFlatPatch(0xA008, regBase); /* _Create */
+	InstallFlatPatch(0xA009, regBase); /* _Delete */
+	InstallFlatPatch(0xA00A, regBase); /* _OpenRF */
+	InstallFlatPatch(0xA00B, regBase); /* _Rename */
+	InstallFlatPatch(0xA00C, regBase); /* _GetFileInfo */
+	InstallFlatPatch(0xA00D, regBase); /* _SetFileInfo */
+	InstallFlatPatch(0xA00E, regBase); /* _UnmountVol */
+	InstallFlatPatch(0xA010, regBase); /* _Allocate */
+	InstallFlatPatch(0xA011, regBase); /* _GetEOF */
+	InstallFlatPatch(0xA012, regBase); /* _SetEOF */
+	InstallFlatPatch(0xA013, regBase); /* _FlushVol */
+	InstallFlatPatch(0xA014, regBase); /* _GetVol */
+	InstallFlatPatch(0xA015, regBase); /* _SetVol */
+	InstallFlatPatch(0xA017, regBase); /* _Eject */
+	InstallFlatPatch(0xA018, regBase); /* _GetFPos */
+	InstallFlatPatch(0xA044, regBase); /* _SetFPos */
+	InstallFlatPatch(0xA045, regBase); /* _FlushFile */
+	dbg_log(regBase, "maxivmac INIT: traps patched");
+
+	/* ---- Drain pending mount queue ---- */
+	reg_command(regBase, kExtFSPollMount);
+	slot = reg_get(regBase, 0);
+	while (slot != 0xFFFFFFFFUL)
+	{
+		short s = (short)slot;
+		short vRefNum = (short)reg_get(regBase, 1);
+		short driveNum = (short)reg_get(regBase, 2);
+		MountNewDrive(g, s, vRefNum, driveNum);
 		reg_command(regBase, kExtFSPollMount);
 		slot = reg_get(regBase, 0);
-		while (slot != 0xFFFFFFFFUL)
-		{
-			short s = (short)slot;
-			short vRefNum = (short)reg_get(regBase, 1);
-			short driveNum = (short)reg_get(regBase, 2);
-			MountNewDrive(g, s, vRefNum, driveNum);
-			reg_command(regBase, kExtFSPollMount);
-			slot = reg_get(regBase, 0);
-		}
-
-		if (g->driveCount > 0)
-		{
-			dbg_log2(regBase, "maxivmac INIT: %ld files, %ld bytes", g->volFileCount,
-					 g->volTotalBytes);
-
-			/* Build dispatch tables */
-			InitTrapTables();
-
-			/* Install trap patches */
-			InstallHFSPatch(regBase);
-
-			/* Flat-file traps */
-			InstallFlatPatch(0xA000, regBase); /* _Open */
-			InstallFlatPatch(0xA001, regBase); /* _Close */
-			InstallFlatPatch(0xA002, regBase); /* _Read */
-			InstallFlatPatch(0xA003, regBase); /* _Write */
-			InstallFlatPatch(0xA007, regBase); /* _GetVolInfo */
-			InstallFlatPatch(0xA008, regBase); /* _Create */
-			InstallFlatPatch(0xA009, regBase); /* _Delete */
-			InstallFlatPatch(0xA00A, regBase); /* _OpenRF */
-			InstallFlatPatch(0xA00B, regBase); /* _Rename */
-			InstallFlatPatch(0xA00C, regBase); /* _GetFileInfo */
-			InstallFlatPatch(0xA00D, regBase); /* _SetFileInfo */
-			InstallFlatPatch(0xA00E, regBase); /* _UnmountVol */
-			InstallFlatPatch(0xA010, regBase); /* _Allocate */
-			InstallFlatPatch(0xA011, regBase); /* _GetEOF */
-			InstallFlatPatch(0xA012, regBase); /* _SetEOF */
-			InstallFlatPatch(0xA013, regBase); /* _FlushVol */
-			InstallFlatPatch(0xA014, regBase); /* _GetVol */
-			InstallFlatPatch(0xA015, regBase); /* _SetVol */
-			InstallFlatPatch(0xA017, regBase); /* _Eject */
-			InstallFlatPatch(0xA018, regBase); /* _GetFPos */
-			InstallFlatPatch(0xA044, regBase); /* _SetFPos */
-			InstallFlatPatch(0xA045, regBase); /* _FlushFile */
-
-			dbg_log(regBase, "maxivmac INIT: traps patched");
-		}
 	}
 
-	/* Install jGNEFilter (always — needed for clip even without drives) */
+	if (g->driveCount > 0)
+		dbg_log1(regBase, "maxivmac INIT: %ld drives mounted",
+				 (long)g->driveCount);
+
+	/* ---- Install jGNEFilter ---- */
 	g->oldFilter = *(long *)kJGNEFilter;
 	g->lastPollTick = 0;
 	g->lastClipTicks = 0;
