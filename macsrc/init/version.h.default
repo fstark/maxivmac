@@ -1,0 +1,6 @@
+/* Default INIT version — overwritten by build.sh for release builds.
+   Copy this file to version.h for manual builds. */
+#ifndef VERSION_H
+#define VERSION_H
+#define kInitVersion "\pdev"
+#endif

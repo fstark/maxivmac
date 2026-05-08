@@ -252,6 +252,15 @@
    "not handled — fall through to ROM". */
 #define kPassThrough 1
 
+/* ---- Host command codes — system range ($0xx) ---- */
+
+#define kCmdInitIdent  0x0001
+#define kApiVersion    1
+
+/* ---- INIT resource ID ---- */
+
+#define kInitResID  128
+
 /* ---- Host command codes — clipboard range ($1xx) ---- */
 
 #define kClipVersion 0x0100
@@ -300,6 +309,11 @@ typedef struct
 
 	/* clip */
 	long lastClipTicks; /* throttle clipboard checks */
+
+	/* INIT file location (for future auto-update) */
+	short       initVRefNum;
+	long        initDirID;
+	Str63       initFileName;
 
 	/* filter */
 	long oldFilter;	   /* previous jGNEFilter */
