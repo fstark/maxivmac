@@ -10,6 +10,7 @@
 #include "platform/emulator_shell.h"
 #include "platform/platform.h"
 #include "platform/platform_config.h"
+#include "core/extn_system.h"
 #include <imgui.h>
 #include <SDL3/SDL.h>
 
@@ -151,10 +152,74 @@ void ControlOverlay::drawAdvancedControls(ImGuiBackend *backend)
 
 /* ── About ───────────────────────────────────────────── */
 
+static std::string formatSystemVersion(int bcd)
+{
+	int major = (bcd >> 8) & 0xFF;
+	int minor = (bcd >> 4) & 0x0F;
+	int patch = bcd & 0x0F;
+	char buf[16];
+	if (patch)
+		snprintf(buf, sizeof(buf), "%d.%d.%d", major, minor, patch);
+	else
+		snprintf(buf, sizeof(buf), "%d.%d", major, minor);
+	return buf;
+}
+
+static std::string machineTypeName(int type)
+{
+	switch (type)
+	{
+		case 1:
+			return "Mac 512Ke";
+		case 2:
+			return "Mac Plus";
+		case 3:
+			return "Mac SE";
+		case 5:
+			return "Mac II";
+		case 6:
+			return "Mac IIx";
+		case 7:
+			return "Mac IIcx";
+		case 9:
+			return "Mac SE/30";
+		case 11:
+			return "Mac IIci";
+		default:
+		{
+			char buf[32];
+			snprintf(buf, sizeof(buf), "Mac (type %d)", type);
+			return buf;
+		}
+	}
+}
+
 void ControlOverlay::drawAbout()
 {
 	ImGui::Separator();
 	ImGui::TextDisabled("maxivmac %s", MAXIVMAC_VERSION);
+
+	{
+		const auto &info = ExtnSystemInitInfo();
+		if (!info.loaded())
+		{
+			ImGui::TextDisabled("INIT: not loaded");
+		}
+		else if (info.isStale())
+		{
+			ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.0f, 1.0f), "%s · System %s · INIT %s",
+							   machineTypeName(info.machineType()).c_str(),
+							   formatSystemVersion(info.systemVersion()).c_str(),
+							   std::string(info.version()).c_str());
+		}
+		else
+		{
+			ImGui::Text("%s · System %s · INIT %s", machineTypeName(info.machineType()).c_str(),
+						formatSystemVersion(info.systemVersion()).c_str(),
+						std::string(info.version()).c_str());
+		}
+	}
+
 	ImGui::TextDisabled("Licensed under GNU GPL v2");
 	ImGui::TextLinkOpenURL("github.com/InvisibleUp/minivmac",
 						   "https://github.com/InvisibleUp/minivmac");
