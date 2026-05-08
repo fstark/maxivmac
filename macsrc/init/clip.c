@@ -19,11 +19,11 @@ static long ExportMacToHost(char *regBase)
 	long length;
 
 	h = NewHandle(0);
-	if (h == NULL)
-		return -1;
+	if (h == NULL) return -1;
 
 	length = GetScrap(h, 'TEXT', &offset);
-	if (length <= 0) {
+	if (length <= 0)
+	{
 		DisposHandle(h);
 		return (length == 0) ? 0 : -1;
 	}
@@ -35,8 +35,7 @@ static long ExportMacToHost(char *regBase)
 	HUnlock(h);
 	DisposHandle(h);
 
-	if (reg_result(regBase) != 0)
-		return -1;
+	if (reg_result(regBase) != 0) return -1;
 	return length;
 }
 
@@ -55,25 +54,25 @@ static long ImportHostToMac(char *regBase)
 	/* ClipGetLen */
 	reg_command(regBase, kClipGetLen);
 	len = (long)reg_get(regBase, 0);
-	if (len <= 0)
-		return 0;
+	if (len <= 0) return 0;
 
 	buf = NewPtr(len);
-	if (buf == NULL)
-		return -1;
+	if (buf == NULL) return -1;
 
 	/* ClipImport */
 	reg_set(regBase, 0, (unsigned long)buf);
 	reg_set(regBase, 1, (unsigned long)len);
 	reg_command(regBase, kClipImport);
-	if (reg_result(regBase) != 0) {
+	if (reg_result(regBase) != 0)
+	{
 		DisposPtr(buf);
 		return -1;
 	}
 	actual = (long)reg_get(regBase, 1);
 
 	err = ZeroScrap();
-	if (err != 0) {
+	if (err != 0)
+	{
 		dbg_log1(regBase, "Import: ZeroScrap=%ld", err);
 		DisposPtr(buf);
 		return -1;
@@ -105,8 +104,7 @@ void SyncClipboard(Globals *g)
 
 	/* Throttle: at most every 30 ticks (~0.5s) */
 	now = TickCount();
-	if (now - g->lastClipTicks < 30)
-		return;
+	if (now - g->lastClipTicks < 30) return;
 	g->lastClipTicks = now;
 
 	appId = *(short *)kCurApRefNum;
@@ -117,14 +115,13 @@ void SyncClipboard(Globals *g)
 	key = (unsigned long)appId * 2;
 	lastSeq = kv_get(g->regBase, key);
 
-	if (hostSeq != lastSeq) {
-		dbg_log2(g->regBase, "Sync: host->mac seq %lx != %lx",
-			hostSeq, lastSeq);
+	if (hostSeq != lastSeq)
+	{
+		dbg_log2(g->regBase, "Sync: host->mac seq %lx != %lx", hostSeq, lastSeq);
 		ImportHostToMac(g->regBase);
 		kv_set(g->regBase, key, hostSeq);
 		/* Prevent feedback: update mac->host scrapCount too */
-		kv_set(g->regBase, (unsigned long)appId * 2 + 1,
-			(unsigned long)*(short *)kScrapCount);
+		kv_set(g->regBase, (unsigned long)appId * 2 + 1, (unsigned long)*(short *)kScrapCount);
 	}
 
 	/* --- Mac -> Host --- */
@@ -132,11 +129,10 @@ void SyncClipboard(Globals *g)
 	key = (unsigned long)appId * 2 + 1;
 	lastCnt = kv_get(g->regBase, key);
 
-	if ((unsigned long)scrapCnt != lastCnt) {
-		dbg_log2(g->regBase, "Sync: mac->host cnt %ld != %ld",
-			(unsigned long)scrapCnt, lastCnt);
+	if ((unsigned long)scrapCnt != lastCnt)
+	{
+		dbg_log2(g->regBase, "Sync: mac->host cnt %ld != %ld", (unsigned long)scrapCnt, lastCnt);
 		ExportMacToHost(g->regBase);
-		kv_set(g->regBase, key,
-			(unsigned long)scrapCnt);
+		kv_set(g->regBase, key, (unsigned long)scrapCnt);
 	}
 }

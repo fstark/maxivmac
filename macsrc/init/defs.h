@@ -2,6 +2,26 @@
 	maxivmac INIT — defs.h
 	Shared definitions for the unified INIT resource.
 	All .c files include this header.
+
+	IMPORTANT — SetUpA4 / RememberA0 constraint:
+	THINK C's <SetUpA4.h> defines __GetA4() as a *static* function.
+	Each .c file that #includes it gets its own copy, with its own
+	embedded dc.l storage slot for the saved A4 value.  Therefore:
+
+	  - RememberA0() / RememberA4() and SetUpA4() MUST be paired
+		within the SAME .c file.  A RememberA0() in init.c does NOT
+		populate drive.c's slot.
+
+	  - Any .c file that calls SetUpA4() must first have its slot
+		initialised by calling RememberA4() while A4 is valid.
+		We expose per-file init functions (e.g. DriveRememberA4())
+		for this purpose; init.c calls them at startup.
+
+	  - Static/global data in any .c file is accessed via A4.
+		If a file has statics and is called from a context where
+		A4 is set from a DIFFERENT file's slot, those accesses
+		will read garbage.  Files that only use pointer/parameter
+		data (no file-scope statics) are safe without SetUpA4.
 */
 
 #ifndef DEFS_H
@@ -268,7 +288,7 @@ typedef struct
 {
 	/* comm */
 	char *regBase;
-	long savedA4;	   /* THINK C code resource A4 */
+	long savedA4; /* THINK C code resource A4 */
 
 	/* drive */
 	Ptr vcb[kMaxDrives];
@@ -276,10 +296,10 @@ typedef struct
 	short driveCount;
 	long volFileCount;
 	long volTotalBytes;
-	short ejected;	   /* nonzero after _Eject */
+	short ejected; /* nonzero after _Eject */
 
 	/* clip */
-	long lastClipTicks;  /* throttle clipboard checks */
+	long lastClipTicks; /* throttle clipboard checks */
 
 	/* filter */
 	long oldFilter;	   /* previous jGNEFilter */
@@ -316,8 +336,7 @@ void dbg_log6(char *base, char *fmt, unsigned long a, unsigned long b, unsigned 
 			  unsigned long d, unsigned long e, unsigned long f);
 void dbg_fatal6(char *base, char *fmt, unsigned long a, unsigned long b, unsigned long c,
 				unsigned long d, unsigned long e, unsigned long f);
-void log_trap(char *base, unsigned short trapWord, char *pb, short action, short err,
-			  short flags);
+void log_trap(char *base, unsigned short trapWord, char *pb, short action, short err, short flags);
 void kv_set(char *regBase, unsigned long key, unsigned long val);
 unsigned long kv_get(char *regBase, unsigned long key);
 void pstr_copy(char *dst, char *src);
@@ -335,6 +354,7 @@ void SyncClipboard(Globals *g);
 
 /* ---- Function prototypes — drive.c ---- */
 
+void DriveRememberA4(void); /* must be called once while A4 is valid */
 short DispatchFlat(char *pb, short trapWord);
 short DispatchHFS(char *pb, short selector);
 void InitTrapTables(void);

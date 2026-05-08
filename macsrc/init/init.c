@@ -2,9 +2,6 @@
 	maxivmac INIT — init.c
 	INIT entry point, unified jGNEFilter, trap stub generation,
 	and boot-time initialisation.
-
-	Combines the SharedDrive INIT (ID 315) and ClipSync INIT (ID 314)
-	into a single INIT resource (ID 128).
 */
 
 #include "defs.h"
@@ -389,6 +386,9 @@ void main(void)
 	RememberA0();
 	SetUpA4();
 
+	/* Populate drive.c's SetUpA4 slot — see defs.h header comment */
+	DriveRememberA4();
+
 	regBase = find_reg_base();
 	if (regBase == NULL) goto bail;
 
@@ -411,8 +411,7 @@ void main(void)
 	dbg_log2(regBase, "maxivmac INIT: drive=%ld clip=%ld", (long)driveAvail, (long)clipAvail);
 
 	/* Get volume stats (for VCB fill, if drive available) */
-	if (driveAvail)
-		reg_command(regBase, kCmdGetVol);
+	if (driveAvail) reg_command(regBase, kCmdGetVol);
 
 	/* Allocate globals */
 	g = (Globals *)NewPtrSysClear(sizeof(Globals));
@@ -441,7 +440,7 @@ void main(void)
 	set_globals(regBase, g);
 
 	/* Keep our code resource in memory */
-	self = GetResource('INIT', 128);
+	self = GetResource('INIT', 314);
 	if (self != NULL)
 	{
 		DetachResource(self);
@@ -469,8 +468,8 @@ void main(void)
 
 		if (g->driveCount > 0)
 		{
-			dbg_log2(regBase, "maxivmac INIT: %ld files, %ld bytes",
-					 g->volFileCount, g->volTotalBytes);
+			dbg_log2(regBase, "maxivmac INIT: %ld files, %ld bytes", g->volFileCount,
+					 g->volTotalBytes);
 
 			/* Build dispatch tables */
 			InitTrapTables();

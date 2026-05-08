@@ -93,8 +93,7 @@ void dbg_log6(char *base, char *fmt, unsigned long a, unsigned long b, unsigned 
 
 /* ---- Structured trap logging (host-side pretty-print) ---- */
 
-void log_trap(char *base, unsigned short trapWord, char *pb, short action, short err,
-			  short flags)
+void log_trap(char *base, unsigned short trapWord, char *pb, short action, short err, short flags)
 {
 	reg_set(base, 0, (unsigned long)trapWord);
 	reg_set(base, 1, (unsigned long)pb);

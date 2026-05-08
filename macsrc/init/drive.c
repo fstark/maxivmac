@@ -6,6 +6,13 @@
 
 #include "defs.h"
 
+/* ---- A4 initialisation for this file (see defs.h header) ---- */
+
+void DriveRememberA4(void)
+{
+	RememberA4();
+}
+
 /* ---- FCB management ---- */
 
 static short AllocFCB(Ptr vcb, unsigned long cnid, unsigned long eof, unsigned char flags)
