@@ -169,22 +169,30 @@ static std::string machineTypeName(int type)
 {
 	switch (type)
 	{
+		case -2:
+			return "Mac XL";
+		case -1:
+			return "Mac 64K ROM";
 		case 1:
 			return "Mac 512Ke";
 		case 2:
 			return "Mac Plus";
 		case 3:
 			return "Mac SE";
-		case 5:
+		case 4:
 			return "Mac II";
-		case 6:
+		case 5:
 			return "Mac IIx";
-		case 7:
+		case 6:
 			return "Mac IIcx";
-		case 9:
+		case 7:
 			return "Mac SE/30";
-		case 11:
+		case 8:
+			return "Mac Portable";
+		case 9:
 			return "Mac IIci";
+		case 11:
+			return "Mac IIfx";
 		default:
 		{
 			char buf[32];

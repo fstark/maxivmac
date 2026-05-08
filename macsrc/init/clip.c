@@ -19,7 +19,11 @@ static long ExportMacToHost(char *regBase)
 	long length;
 
 	h = NewHandle(0);
-	if (h == NULL) return -1;
+	if (h == NULL)
+	{
+		dbg_log(regBase, "clip: export failed (NewHandle)");
+		return -1;
+	}
 
 	length = GetScrap(h, 'TEXT', &offset);
 	if (length <= 0)
@@ -35,7 +39,11 @@ static long ExportMacToHost(char *regBase)
 	HUnlock(h);
 	DisposHandle(h);
 
-	if (reg_result(regBase) != 0) return -1;
+	if (reg_result(regBase) != 0)
+	{
+		dbg_log(regBase, "clip: export failed (host rejected)");
+		return -1;
+	}
 	return length;
 }
 
@@ -57,7 +65,11 @@ static long ImportHostToMac(char *regBase)
 	if (len <= 0) return 0;
 
 	buf = NewPtr(len);
-	if (buf == NULL) return -1;
+	if (buf == NULL)
+	{
+		dbg_log(regBase, "clip: import failed (alloc)");
+		return -1;
+	}
 
 	/* ClipImport */
 	reg_set(regBase, 0, (unsigned long)buf);
@@ -65,6 +77,7 @@ static long ImportHostToMac(char *regBase)
 	reg_command(regBase, kClipImport);
 	if (reg_result(regBase) != 0)
 	{
+		dbg_log(regBase, "clip: import failed (host error)");
 		DisposPtr(buf);
 		return -1;
 	}
@@ -118,7 +131,8 @@ void SyncClipboard(Globals *g)
 	if (hostSeq != lastSeq)
 	{
 		dbg_log2(g->regBase, "Sync: host->mac seq %lx != %lx", hostSeq, lastSeq);
-		ImportHostToMac(g->regBase);
+		if (ImportHostToMac(g->regBase) < 0)
+			dbg_log(g->regBase, "clip: import error (ignored)");
 		kv_set(g->regBase, key, hostSeq);
 		/* Prevent feedback: update mac->host scrapCount too */
 		kv_set(g->regBase, (unsigned long)appId * 2 + 1, (unsigned long)*(short *)kScrapCount);
@@ -132,7 +146,8 @@ void SyncClipboard(Globals *g)
 	if ((unsigned long)scrapCnt != lastCnt)
 	{
 		dbg_log2(g->regBase, "Sync: mac->host cnt %ld != %ld", (unsigned long)scrapCnt, lastCnt);
-		ExportMacToHost(g->regBase);
+		if (ExportMacToHost(g->regBase) < 0)
+			dbg_log(g->regBase, "clip: export error (ignored)");
 		kv_set(g->regBase, key, (unsigned long)scrapCnt);
 	}
 }
