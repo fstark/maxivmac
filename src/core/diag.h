@@ -22,6 +22,7 @@ enum class DiagSubsystem : uint8_t
 	NET,   /* [NET]   networking (SLIRP)                 */
 	SLIP,  /* [SLIP]  Serial Line IP                     */
 	VID,   /* [VID]   video                              */
+	INIT,  /* [INIT]  INIT version/identity                */
 	kCount
 };
 

@@ -557,10 +557,15 @@ static uint32_t s_regParam[12]; /* p0–p11 */
 /* Forward declaration — implemented in extn_clip.cpp */
 #include "core/extn_clip.h"
 #include "core/extn_extfs.h"
+#include "core/extn_system.h"
 
 static void regDispatch(uint16_t cmd)
 {
-	if (cmd >= 0x100 && cmd <= 0x1FF)
+	if (cmd <= 0x0FF)
+	{
+		ExtnSystemDispatch(cmd, s_regParam, s_regResult);
+	}
+	else if (cmd >= 0x100 && cmd <= 0x1FF)
 	{
 		ExtnClipDispatch(cmd, s_regParam, s_regResult);
 	}
