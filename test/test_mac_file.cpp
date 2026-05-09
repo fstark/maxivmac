@@ -152,6 +152,42 @@ TEST_CASE("ParseMacFile: screen spec 640x480x8")
 	CHECK(e.screenDepth == 3); // log2(8)=3
 }
 
+TEST_CASE("ParseMacFile: speed spec")
+{
+	MacFileEntry e;
+	std::string err;
+
+	SUBCASE("1x")
+	{
+		REQUIRE(parse("name = T\nmodel = Plus\nspeed = 1x\n", e, err));
+		CHECK(e.speed == 0);
+	}
+	SUBCASE("8x")
+	{
+		REQUIRE(parse("name = T\nmodel = Plus\nspeed = 8x\n", e, err));
+		CHECK(e.speed == 3);
+	}
+	SUBCASE("max")
+	{
+		REQUIRE(parse("name = T\nmodel = Plus\nspeed = max\n", e, err));
+		CHECK(e.speed == 255);
+	}
+	SUBCASE("raw 0")
+	{
+		REQUIRE(parse("name = T\nmodel = Plus\nspeed = 0\n", e, err));
+		CHECK(e.speed == 0);
+	}
+	SUBCASE("invalid")
+	{
+		CHECK_FALSE(parse("name = T\nmodel = Plus\nspeed = banana\n", e, err));
+	}
+	SUBCASE("default")
+	{
+		REQUIRE(parse("name = T\nmodel = Plus\n", e, err));
+		CHECK(e.speed == -1);
+	}
+}
+
 TEST_CASE("ParseMacFile: comments and blank lines")
 {
 	MacFileEntry e;

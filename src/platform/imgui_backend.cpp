@@ -70,7 +70,7 @@ static constexpr std::array kShortcuts = {
 
 /* ── Speed presets ───────────────────────────────────── */
 
-static constexpr uint8_t kSpeedPresets[] = {1, 2, 4, 8, 16, 32, 0};
+static constexpr uint8_t kSpeedPresets[] = {0, 1, 2, 3, 4, 5, (uint8_t)-1};
 static constexpr int kSpeedPresetCount = 7;
 
 /* ── init / shutdown ─────────────────────────────────── */

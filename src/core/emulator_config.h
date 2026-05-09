@@ -23,5 +23,5 @@ struct EmulatorConfig
 	bool soundEnabled = true; // audio output
 
 	// Speed
-	int speed = 4; // 0=all-out, 1=1x, 2=2x, 3=4x, 4=8x, 5=16x
+	int speed = 4; // shift count: 0=1x, 1=2x, 2=4x, 3=8x, 4=16x, 5=32x
 };

@@ -39,6 +39,7 @@ struct MacFileEntry
 	uint16_t screenW = 0;
 	uint16_t screenH = 0;
 	uint8_t screenDepth = 0;
+	int speed = -1; // -1 = use default
 
 	// Raw file content (for display in launcher)
 	std::string rawContent;

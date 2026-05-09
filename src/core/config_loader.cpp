@@ -142,7 +142,7 @@ void PrintUsage(const char *progname)
 			"  --romdir=DIR     Directory to search for ROM files\n"
 			"  --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)\n"
 			"  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.\n"
-			"  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)\n"
+			"  --speed=N        Emulation speed: 0 (1x), 1 (2x), 2 (4x), 3 (8x), 4 (16x), 5 (32x)\n"
 			"  --scale=N        Window scale factor (default: 2)\n"
 			"  --fullscreen     Start in fullscreen mode\n"
 			"  --headless       Run without GUI (for testing/automation)\n"
@@ -568,7 +568,7 @@ EmulatorConfig BuildEmulatorConfig(const LaunchConfig &launch)
 	EmulatorConfig ec;
 	if (launch.fullscreen) ec.fullscreen = true;
 	if (launch.silent) ec.soundEnabled = false;
-	if (launch.speed > 0) ec.speed = launch.speed;
+	if (launch.speed >= 0) ec.speed = launch.speed;
 	if (launch.scale > 0) ec.windowScale = launch.scale;
 	return ec;
 }
@@ -641,6 +641,8 @@ LaunchConfig LaunchConfigFromMacEntry(const MacFileEntry &entry, std::string_vie
 	lc.screenH = entry.screenH;
 	lc.screenDepth = entry.screenDepth;
 	lc.serialA = entry.serialA;
+
+	if (entry.speed >= 0) lc.speed = entry.speed;
 
 	for (const auto &d : entry.disks)
 		lc.diskPaths.push_back(ResolveMacPath(dataDir, d));

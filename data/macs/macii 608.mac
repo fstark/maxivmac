@@ -5,3 +5,6 @@ model = II
 disk = @disks/plus-608.hfs
 shared = @shared/shared
 shared = @shared/shared2
+shared = macsrc/init
+icon = @icons/ii-2.png
+

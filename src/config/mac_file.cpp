@@ -116,6 +116,43 @@ static bool parseScreenSpec(std::string_view val, uint16_t &w, uint16_t &h, uint
 	return false;
 }
 
+// Parse speed spec: "1x", "2x", "4x", "8x", "16x", "32x", "max", or raw 0-5.
+// Returns the g_speedValue shift count, or -1 on error.
+static int parseSpeedSpec(std::string_view val, std::string &errorOut)
+{
+	struct
+	{
+		const char *label;
+		int value;
+	} presets[] = {
+		{"1x", 0}, {"2x", 1}, {"4x", 2}, {"8x", 3}, {"16x", 4}, {"32x", 5}, {"max", -2},
+	};
+	std::string lower;
+	for (char c : val)
+		lower += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	for (const auto &p : presets)
+		if (lower == p.label) return (p.value == -2) ? 255 : p.value;
+
+	// Try raw integer
+	if (!val.empty() && std::isdigit(static_cast<unsigned char>(val[0])))
+	{
+		int n = 0;
+		for (char c : val)
+		{
+			if (!std::isdigit(static_cast<unsigned char>(c)))
+			{
+				n = -1;
+				break;
+			}
+			n = n * 10 + (c - '0');
+		}
+		if (n >= 0 && n <= 5) return n;
+	}
+
+	errorOut = "invalid speed (expected 1x, 2x, 4x, 8x, 16x, 32x, or max)";
+	return -1;
+}
+
 bool ParseMacFileFromString(std::string_view content, std::string_view path, MacFileEntry &out,
 							std::string &errorOut)
 {
@@ -202,6 +239,15 @@ bool ParseMacFileFromString(std::string_view content, std::string_view path, Mac
 		else if (key == "icon")
 		{
 			out.iconPath = std::string(val);
+		}
+		else if (key == "speed")
+		{
+			out.speed = parseSpeedSpec(val, errorOut);
+			if (!errorOut.empty())
+			{
+				errorOut = std::string(path) + ":" + std::to_string(lineNum) + ": " + errorOut;
+				return false;
+			}
 		}
 		else
 		{

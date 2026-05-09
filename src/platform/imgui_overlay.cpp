@@ -94,7 +94,7 @@ void ControlOverlay::drawPrimaryControls(UIState currentState, EmulatorShell *sh
 	/* Row 2: Speed */
 	ImGui::Text("Speed:");
 	ImGui::SameLine();
-	static constexpr uint8_t kPresets[] = {1, 2, 4, 8, 16, 32, 0};
+	static constexpr uint8_t kPresets[] = {0, 1, 2, 3, 4, 5, (uint8_t)-1};
 	static constexpr const char *kLabels[] = {"1x", "2x", "4x", "8x", "16x", "32x", "\xe2\x88\x9e"};
 	for (int i = 0; i < 7; ++i)
 	{
