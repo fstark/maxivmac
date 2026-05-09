@@ -45,6 +45,7 @@ static constexpr uint16_t kExtFSFatal = 0x214;
 static constexpr uint16_t kExtFSSetEOF = 0x218;
 static constexpr uint16_t kExtFSPollMount = 0x219;
 static constexpr uint16_t kExtFSGetVolName = 0x21A;
+static constexpr uint16_t kExtFSUnmount = 0x21B;
 static constexpr uint16_t kExtFSGuestCmd = 0x220;
 
 /* ── Guest command channel ─────────────────────────── */
@@ -1072,7 +1073,12 @@ static void RegLogTrap(uint32_t regParam[], uint16_t &regResult)
 static void RegGuestVars(uint32_t regParam[], uint16_t &regResult)
 {
 	static uint32_t s_guestVarsPtr = 0;
-	if (regParam[1] != 0) s_guestVarsPtr = regParam[0];
+	if (regParam[1] != 0)
+	{
+		DIAG(ExtFS, "GuestVars SET ptr=%08X\n", regParam[0]);
+		s_guestVarsPtr = regParam[0];
+	}
+	DIAG(ExtFS, "GuestVars GET → %08X\n", s_guestVarsPtr);
 	regParam[0] = s_guestVarsPtr;
 	regResult = 0;
 }
@@ -1226,6 +1232,14 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSGetVolName:
 			RegGetVolName(regParam, regResult);
 			break;
+		case kExtFSUnmount:
+		{
+			int slot = static_cast<int>(regParam[0]);
+			DIAG(ExtFS, "guest unmount slot %d\n", slot);
+			s_drives.unmount(slot);
+			regResult = 0;
+			break;
+		}
 		case kExtFSGuestCmd:
 		{
 			uint32_t guestBuf = regParam[0];

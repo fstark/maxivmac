@@ -242,6 +242,7 @@
 
 #define kExtFSPollMount 0x0219
 #define kExtFSGetVolName 0x021A
+#define kCmdUnmount 0x021B
 #define kExtFSGuestCmd 0x0220
 
 /* Host returns this when the volume is not ours — guest passes through to ROM */
@@ -254,12 +255,12 @@
 
 /* ---- Host command codes — system range ($0xx) ---- */
 
-#define kCmdInitIdent  0x0001
-#define kApiVersion    1
+#define kCmdInitIdent 0x0001
+#define kApiVersion 1
 
 /* ---- INIT resource ID ---- */
 
-#define kInitResID  128
+#define kInitResID 128
 
 /* ---- Host command codes — clipboard range ($1xx) ---- */
 
@@ -311,9 +312,9 @@ typedef struct
 	long lastClipTicks; /* throttle clipboard checks */
 
 	/* INIT file location (for future auto-update) */
-	short       initVRefNum;
-	long        initDirID;
-	Str63       initFileName;
+	short initVRefNum;
+	long initDirID;
+	Str63 initFileName;
 
 	/* filter */
 	long oldFilter;	   /* previous jGNEFilter */

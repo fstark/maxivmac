@@ -645,35 +645,64 @@ static OSErr TrapSetVol(char *pb, Globals *g, short isHFS)
 	return kNoErr;
 }
 
-static OSErr TrapUnmountVol(char *pb, Globals *g, short isHFS)
+/* Find the slot index for a VCB pointer. Returns -1 if not found. */
+static short VCBToSlot(Ptr vcb, Globals *g)
 {
 	short i;
 	for (i = 0; i < g->driveCount; i++)
+		if (g->vcb[i] == vcb) return i;
+	return -1;
+}
+
+/* Tear down a single shared-drive slot (dequeue DQE + VCB, notify host). */
+static void TearDownSlot(short slot, Globals *g)
+{
+	if (g->dqe[slot] != NULL)
 	{
-		if (g->dqe[i] != NULL)
-		{
-			Dequeue((QElemPtr)(g->dqe[i] + 4), (QHdrPtr)kDrvQHdr);
-			g->dqe[i] = NULL;
-		}
-		if (g->vcb[i] != NULL) Dequeue((QElemPtr)g->vcb[i], (QHdrPtr)kVCBQHdr);
+		Dequeue((QElemPtr)(g->dqe[slot] + 4), (QHdrPtr)kDrvQHdr);
+		g->dqe[slot] = NULL;
 	}
+	if (g->vcb[slot] != NULL)
+	{
+		Dequeue((QElemPtr)g->vcb[slot], (QHdrPtr)kVCBQHdr);
+		g->vcb[slot] = NULL;
+	}
+	reg_set(g->regBase, 0, (unsigned long)slot);
+	reg_command(g->regBase, kCmdUnmount);
+}
+
+/* Check whether all slots have been torn down; if so, mark ejected. */
+static void CheckAllEjected(Globals *g)
+{
+	short i;
+	for (i = 0; i < g->driveCount; i++)
+		if (g->vcb[i] != NULL || g->dqe[i] != NULL) return;
 	g->ejected = 1;
+}
+
+static OSErr TrapUnmountVol(char *pb, Globals *g, short isHFS)
+{
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	Ptr vcb = FindVCB(vRefNum, g);
+	short slot;
+	if (vcb == NULL) return kPassThrough; /* not ours */
+	slot = VCBToSlot(vcb, g);
+	if (slot < 0) return kPassThrough;
+	TearDownSlot(slot, g);
+	CheckAllEjected(g);
 	return kNoErr;
 }
 
 static OSErr TrapEject(char *pb, Globals *g, short isHFS)
 {
-	short i;
-	for (i = 0; i < g->driveCount; i++)
-	{
-		if (g->dqe[i] != NULL)
-		{
-			Dequeue((QElemPtr)(g->dqe[i] + 4), (QHdrPtr)kDrvQHdr);
-			g->dqe[i] = NULL;
-		}
-		if (g->vcb[i] != NULL) Dequeue((QElemPtr)g->vcb[i], (QHdrPtr)kVCBQHdr);
-	}
-	g->ejected = 1;
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	Ptr vcb = FindVCB(vRefNum, g);
+	short slot;
+	if (vcb == NULL) return kPassThrough; /* not ours */
+	slot = VCBToSlot(vcb, g);
+	if (slot < 0) return kPassThrough;
+	TearDownSlot(slot, g);
+	CheckAllEjected(g);
 	return kNoErr;
 }
 
