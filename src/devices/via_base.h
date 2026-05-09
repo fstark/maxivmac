@@ -73,10 +73,10 @@ public:
 	uint8_t T2_Active = 0;
 	bool T1IntReady = false;
 	bool T1Running = true;
-	uint32_t T1LastTime = 0;
+	uint64_t T1LastTime = 0;
 	bool T2Running = true;
 	bool T2C_ShortTime = false;
-	uint32_t T2LastTime = 0;
+	uint64_t T2LastTime = 0;
 
 protected:
 	int viaNum_;			// 1 or 2

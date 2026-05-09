@@ -527,8 +527,8 @@ uint32_t VIABase::access(uint32_t Data, bool WriteMem, uint32_t addr)
 			}
 			else
 			{
-				clrInterruptFlag(kIntT2);
 				doTimer2Check();
+				clrInterruptFlag(kIntT2);
 				Data = (d_.T2C_F & 0x00FF0000) >> 16;
 			}
 			break;
