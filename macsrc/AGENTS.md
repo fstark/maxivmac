@@ -2,37 +2,24 @@
 
 This directory contains source code for Mac applications that run
 **inside** the emulated Mac, not on the host.  These are 68k programs
-built with MPW or THINK C.
-
-They were extracted from the HFS disk images in `extras/utils/` for
-reference.  The original minivmac project distributed them only as
-pre-built applications inside HFS images.
+built with THINK C.
 
 ## Contents
 
-### clipin/
-**ClipIn** — Desk accessory.  Imports the host clipboard into the Mac
-scrapbook.  Calls `HTCImport` via the extension mechanism, copies the
-result into the Mac scrap with `PutScrap`.
+### init/
+**maxivmac INIT** (resource type `INIT`, ID 128) — The unified
+host-integration INIT.  Provides clipboard synchronisation and shared
+drive management via a single jGNEFilter.
 
-### clipout/
-**ClipOut** — Desk accessory.  Exports the Mac scrapbook to the host
-clipboard.  Calls `GetScrap` to read the Mac scrap, then `HTCExport`
-to send it to the host.
+| File     | Responsibility |
+|----------|---------------|
+| `init.c` | INIT entry point, jGNEFilter, trap stub generation, boot-time init |
+| `clip.c` | Clipboard sync: export Mac scrap to host, import host scrap to Mac |
+| `drive.c` | Shared drive trap handlers, FCB/VCB/DQE management, mount logic |
+| `comm.c` | Extension discovery, register access helpers, debug logging |
+| `defs.h` | Shared definitions, constants, `Globals` struct, prototypes |
 
-### clipsync/
-**ClipSync** — Clipboard synchronization between host and emulated Mac.
-
-- **main.c** — Console app (THINK C ANSI project).  Bidirectional sync
-  using the register-block I/O interface at `extnBlockBase + $20`.
-  Works under Finder; does not work under MultiFinder.  Kept for
-  reference/debugging.
-
-- **init.c** — INIT resource (THINK C code resource project).  Installs
-  a jGNEFilter that runs in each app's partition context, bypassing
-  MultiFinder per-partition scrap isolation.  Per-app sync state stored
-  on host via KV commands ($106/$107).  Requires extension version >= 2.
-  See `CLIPBOARD_PLAN.md` and `INIT_PLAN.md` for design.
+See `init/INIT.md` for design details.
 
 ### importfl/
 **ImportFl** — Application.  Imports a file from the host into the
@@ -44,17 +31,10 @@ Full GUI with progress bar and drag-and-drop support.
 the host.  Uses the disk and pbuf extensions.  Full GUI with progress
 bar and drag-and-drop support.
 
-## Key file: ExtnGlue.i
+## Build Infrastructure
 
-Shared glue library (included by all four programs) that implements
-the 68k side of the extension calling convention:
-
-- Reads `SonyVarsPtr` (`$0134`) to find the extension block base
-  address (`pokeaddr`).
-- Discovers extension IDs via `kExtnFindExtn` using magic numbers.
-- Provides wrappers for pbufs (`PbufNew`, `PbufDispose`,
-  `PbufTransfer`, `PBufGetSize`) and clipboard (`HTCExport`,
-  `HTCImport`).
-- Calling convention: fill a 32-byte parameter block, write its
-  address to `pokeaddr` — a single memory-mapped write triggers the
-  host-side dispatch.
+- **build.hfs** — A bootable Mac II / System 6.0.8 disk image with
+  THINK C installed, used for compiling the guest-side code.
+- **build.mac** — Machine config that launches the build disk with
+  `macsrc/init` as the shared folder, so edits on the host are
+  immediately visible inside the emulator.

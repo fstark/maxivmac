@@ -1,8 +1,0 @@
-# Mac II + System 6.0.8 + THINK C
-name = THINK C Build System
-description = A disk for automatic think C builds
-model = II
-disk = macsrc/shareddrive/thinkc-build.hfs
-shared = macsrc/shareddrive
-shared = @disks
-
