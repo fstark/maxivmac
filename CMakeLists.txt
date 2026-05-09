@@ -319,6 +319,19 @@ set_source_files_properties(tools/icon_extract/stb_impl.cpp PROPERTIES
 )
 
 # ---------------------------------------------------------------------------
+# AppleDouble → MacBinary converter
+# ---------------------------------------------------------------------------
+add_executable(ad2bin
+    tools/ad2bin/ad2bin.cpp
+    src/storage/appledouble.cpp
+    src/storage/filename_encoding.cpp
+    src/storage/text_convert.cpp
+    src/util/macroman.cpp
+)
+target_include_directories(ad2bin PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_compile_options(ad2bin PRIVATE -Wall -Wextra -Werror)
+
+# ---------------------------------------------------------------------------
 # Unit tests
 # ---------------------------------------------------------------------------
 enable_testing()
