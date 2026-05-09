@@ -19,19 +19,31 @@
 /*
 	Mouse_Enabled() — model-dependent mouse gate.
 
-	On Mac Plus/SE/128K (emClassicKbrd): the original code used
-	SCC_InterruptsEnabled (SCC.MIE) to prevent mouse updates from
-	corrupting the boot-time memory test.
+	On Mac Plus/SE/128K (emClassicKbrd): the SCC.MIE bit prevents
+	mouse updates from corrupting the boot-time memory test.  Once
+	MIE has been set for the first time the boot test is over, so we
+	latch that and never block mouse again — driver-level SCC resets
+	(e.g. AppleTalk init) must not kill the cursor.
 
 	On Mac II (emADB, !emClassicKbrd): the original code used
 	!ADBMouseDisabled.  ADBMouseDisabled starts at 1 (wire default)
 	and is cleared to 0 when the ADB manager first polls the mouse.
 */
+static bool s_mouseEnabledLatch = false;
+
 bool Mouse_Enabled()
 {
 	if (g_rig->config().emClassicKbrd)
 	{
-		if (auto *scc = g_rig->findDevice<SCCDevice>()) return scc->interruptsEnabled();
+		if (s_mouseEnabledLatch) return true;
+		if (auto *scc = g_rig->findDevice<SCCDevice>())
+		{
+			if (scc->interruptsEnabled())
+			{
+				s_mouseEnabledLatch = true;
+				return true;
+			}
+		}
 		return false;
 	}
 	return !ADBMouseDisabled;

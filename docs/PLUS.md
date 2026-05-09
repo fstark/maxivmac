@@ -170,11 +170,27 @@ Source: `src/devices/mouse.cpp`, `src/devices/mouse.h`
 
 ### Mouse Enable Gate
 
-On the Plus (`emClassicKbrd = true`), `Mouse_Enabled()` returns
-`SCC_InterruptsEnabled()` — i.e., `SCC.MIE` (Master Interrupt Enable).
-This prevents mouse updates during the early boot-time memory test, which
-would corrupt low memory. The SCC MIE bit is not set until the ROM has
-finished the memory test and initialized the SCC.
+On the Plus (`emClassicKbrd = true`), `Mouse_Enabled()` uses a one-shot
+latch based on `SCC.MIE` (Master Interrupt Enable).  During the early
+boot-time memory test, the ROM has not yet set up interrupt handlers — if
+mouse updates wrote to low-memory globals at this point, they would corrupt
+the test patterns.  The SCC MIE bit happens to be off until the ROM
+finishes the memory test and initializes the SCC, so the original minivmac
+code checked MIE every tick as a proxy for "is boot done?".
+
+However, the emulator does **not** emulate SCC-based mouse hardware — it
+writes coordinates directly into RAM (see *Mouse Quadrature* below).  On
+real hardware, the SCC tracks mouse pulses in its internal registers
+regardless of whether MIE is on; MIE only controls whether the SCC can
+interrupt the CPU.  So the MIE check was only ever meaningful as a
+boot-time safety gate, not as an ongoing mouse enable.
+
+The original code kept checking MIE continuously, which caused a permanent
+mouse freeze whenever a driver (notably AppleTalk) performed a SCC hardware
+reset — writing `0xC0` to WR9 resets the entire chip and clears MIE as a
+side effect.  The fix: once MIE has been true for the first time (= boot
+memory test is done), a static latch (`s_mouseEnabledLatch`) remembers
+this and `Mouse_Enabled()` returns true unconditionally from that point on.
 
 On Mac II (`emADB`, `!emClassicKbrd`), `Mouse_Enabled()` returns
 `!ADBMouseDisabled`, which starts as disabled and is cleared when the ADB
