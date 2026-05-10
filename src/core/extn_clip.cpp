@@ -55,6 +55,8 @@ void ExtnClipMarkImageExported(int w, int h)
 	s_lastHasImage = true;
 	s_lastImageW = w;
 	s_lastImageH = h;
+	s_lastClipText.clear();
+	s_clipCache.clear();
 }
 
 /* ── Debug console log buffer ──────────────────────── */
@@ -291,6 +293,9 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			*/
 			s_lastClipText.assign(reinterpret_cast<char *>(buf.data()), count);
 			s_clipCache = s_lastClipText;
+			s_lastHasImage = false;
+			s_lastImageW = 0;
+			s_lastImageH = 0;
 
 			regResult = 0;
 		}
