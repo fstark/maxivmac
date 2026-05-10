@@ -179,9 +179,159 @@ void ExportPictToHost(char *regBase)
 
 /*
 	Import host clipboard image to Mac desk scrap as PICT.
-	Stub — implemented in Phase 10.
+	Queries host for image presence + dimensions, allocates
+	an offscreen buffer at screen depth, receives pixels,
+	then uses OpenPicture/CopyBits/ClosePicture to create
+	a valid PICT and puts it on the desk scrap.
 */
 void ImportPictFromHost(char *regBase)
 {
-	(void)regBase;
+	unsigned long hasImg, width, height;
+	short         depth;
+	Rect          r;
+
+	/* Ask host if it has an image */
+	reg_command(regBase, kPictHasImage);
+	hasImg = reg_get(regBase, 0);
+	if (!hasImg) return;
+	width  = reg_get(regBase, 1);
+	height = reg_get(regBase, 2);
+	if (width == 0 || height == 0 || width > 4096 || height > 4096)
+		return;
+
+	depth = ScreenDepth();
+	SetRect(&r, 0, 0, (short)width, (short)height);
+
+	if (depth == 1)
+	{
+		/* 1-bit: plain BitMap + GrafPort */
+		BitMap    offBits;
+		GrafPort  offPort;
+		GrafPtr   savePort;
+		PicHandle pic;
+		short     rowBytes;
+		long      bufSize;
+		Ptr       bits;
+
+		rowBytes = ((width + 15) / 16) * 2;
+		bufSize  = (long)rowBytes * height;
+		bits = NewPtr(bufSize);
+		if (bits == NULL)
+		{
+			dbg_log(regBase, "pict: import alloc failed");
+			return;
+		}
+
+		/* Tell host to fill our buffer with 1-bit pixels */
+		reg_set(regBase, 0, (unsigned long)bits);
+		reg_set(regBase, 1, (unsigned long)rowBytes);
+		reg_set(regBase, 2, 1);           /* depth */
+		reg_set(regBase, 3, width);
+		reg_set(regBase, 4, height);
+		reg_command(regBase, kPictImport);
+
+		if (reg_result(regBase) != 0)
+		{
+			dbg_log(regBase, "pict: import host error");
+			DisposPtr(bits);
+			return;
+		}
+
+		offBits.baseAddr = bits;
+		offBits.rowBytes = rowBytes;
+		offBits.bounds   = r;
+
+		/* Create PICT by recording a CopyBits */
+		GetPort(&savePort);
+		OpenPort(&offPort);
+		SetPortBits(&offBits);
+		offPort.portRect = r;
+		RectRgn(offPort.visRgn, &r);
+		RectRgn(offPort.clipRgn, &r);
+
+		pic = OpenPicture(&r);
+		CopyBits(&offBits, &offPort.portBits, &r, &r, srcCopy, NULL);
+		ClosePicture();
+
+		SetPort(savePort);
+		ClosePort(&offPort);
+		DisposPtr(bits);
+
+		if (pic != NULL && GetHandleSize((Handle)pic) > 10)
+		{
+			ZeroScrap();
+			HLock((Handle)pic);
+			PutScrap(GetHandleSize((Handle)pic), 'PICT', *pic);
+			HUnlock((Handle)pic);
+			KillPicture(pic);
+		}
+	}
+	else
+	{
+		/* 32-bit: GWorld */
+		GWorldPtr    gw;
+		PixMapHandle pm;
+		CGrafPtr     savePort;
+		GDHandle     saveDevice;
+		PicHandle    pic;
+		QDErr        err;
+		Ptr          baseAddr;
+		long         rb;
+
+		err = NewGWorld(&gw, 32, &r, NULL, NULL, 0);
+		if (err != noErr)
+		{
+			dbg_log1(regBase, "pict: import NewGWorld err=%d", (int)err);
+			return;
+		}
+
+		pm = GetGWorldPixMap(gw);
+		if (!LockPixels(pm))
+		{
+			DisposeGWorld(gw);
+			return;
+		}
+
+		baseAddr = GetPixBaseAddr(pm);
+		rb = (**pm).rowBytes & 0x3FFF;
+
+		/* Tell host to fill the PixMap buffer with XRGB pixels */
+		reg_set(regBase, 0, (unsigned long)StripAddress(baseAddr));
+		reg_set(regBase, 1, (unsigned long)rb);
+		reg_set(regBase, 2, 32);
+		reg_set(regBase, 3, width);
+		reg_set(regBase, 4, height);
+		reg_command(regBase, kPictImport);
+
+		if (reg_result(regBase) != 0)
+		{
+			dbg_log(regBase, "pict: import host error (32-bit)");
+			UnlockPixels(pm);
+			DisposeGWorld(gw);
+			return;
+		}
+
+		/* Create PICT by recording a CopyBits from the GWorld */
+		GetGWorld(&savePort, &saveDevice);
+		SetGWorld(gw, NULL);
+
+		pic = OpenPicture(&r);
+		CopyBits((BitMap *)*pm,
+				 (BitMap *)*pm,
+				 &r, &r, srcCopy, NULL);
+		ClosePicture();
+
+		SetGWorld(savePort, saveDevice);
+		UnlockPixels(pm);
+		DisposeGWorld(gw);
+
+		if (pic != NULL && GetHandleSize((Handle)pic) > 10)
+		{
+			ZeroScrap();
+			HLock((Handle)pic);
+			PutScrap(GetHandleSize((Handle)pic), 'PICT', *pic);
+			HUnlock((Handle)pic);
+			KillPicture(pic);
+		}
+	}
 }

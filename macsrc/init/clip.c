@@ -133,6 +133,7 @@ void SyncClipboard(Globals *g)
 		dbg_log2(g->regBase, "Sync: host->mac seq %lx != %lx", hostSeq, lastSeq);
 		if (ImportHostToMac(g->regBase) < 0)
 			dbg_log(g->regBase, "clip: import error (ignored)");
+		ImportPictFromHost(g->regBase);
 		kv_set(g->regBase, key, hostSeq);
 		/* Prevent feedback: update mac->host scrapCount too */
 		kv_set(g->regBase, (unsigned long)appId * 2 + 1, (unsigned long)*(short *)kScrapCount);
