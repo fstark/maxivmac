@@ -1,0 +1,8 @@
+# Smoke test: boot to Finder, open shared drive, verify BUILD.txt
+# Placeholders %%BUILD_ID%% are substituted by smoke.sh before use.
+timeout 0
+
+# Wait for Finder desktop
+wait text "Special"
+
+continue

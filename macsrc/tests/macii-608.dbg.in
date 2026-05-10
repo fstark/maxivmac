@@ -1,0 +1,34 @@
+# Smoke test: boot to Finder, open shared drive, verify BUILD.txt
+# Placeholders %%BUILD_ID%% are substituted by smoke.sh before use.
+timeout 0
+
+# Wait for Finder desktop
+wait text "Special"
+
+# Open the shared drive via TeachText
+launch "Macintosh:TeachText"
+
+# Wait for TeachText to open
+wait text "File"
+
+# Close any default window
+key Cmd-W
+
+# Open file dialog
+key Cmd-O
+
+key Tab
+wait text "BUILD.txt"
+
+# Type the filename
+type "BUILD.txt"
+
+# Press Open
+key Enter
+
+# Wait for the build ID to appear in the document
+wait text "%%BUILD_ID%%"
+
+# Success — shut down cleanly
+shutdown
+continue
