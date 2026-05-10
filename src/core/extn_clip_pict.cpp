@@ -9,14 +9,12 @@
 
 #include "core/extn_clip_pict.h"
 #include "core/extn_clip.h"
-#include "core/host_pasteboard.h"
 #include "core/diag.h"
 #include "core/pict_convert.h"
+#include "platform/host_pasteboard.h"
 
 #include <cstdint>
 #include <vector>
-
-#include "stb_image.h"
 
 /* Guest RAM access */
 extern uint8_t get_vm_byte(uint32_t addr);
@@ -37,9 +35,10 @@ static int s_passDepth = 0; /* 1 or 32 */
 static int s_passRowBytes = 0;
 static bool s_haveWhitePass = false;
 
-/* Staged PNG for ClipCommit. */
-static std::vector<uint8_t> s_stagedPng;
-static bool s_hasStagedPng = false;
+/* Feedback suppression: dimensions of the last imported image. */
+static int s_importedW = 0;
+static int s_importedH = 0;
+static bool s_justImported = false;
 
 /* ── Read pixel data from guest RAM ──────────────────── */
 
@@ -117,11 +116,21 @@ void HandlePictExport(uint32_t regParam[], uint16_t &regResult)
 		return;
 	}
 
-	/* Black-background pass — composite and stage PNG */
+	/* Black-background pass — composite and push to host clipboard */
 	if (!s_haveWhitePass || width != s_passWidth || height != s_passHeight)
 	{
 		s_haveWhitePass = false;
 		regResult = 1;
+		return;
+	}
+
+	/* Suppress feedback: guest is re-exporting what it just imported */
+	if (s_justImported && width == s_importedW && height == s_importedH)
+	{
+		DIAG(CLIP, "PictExport: suppressed feedback re-export %dx%d\n", width, height);
+		s_justImported = false;
+		s_haveWhitePass = false;
+		regResult = 0;
 		return;
 	}
 
@@ -132,10 +141,13 @@ void HandlePictExport(uint32_t regParam[], uint16_t &regResult)
 		rgba = Composite32Bit(s_passWhite.data(), pixels.data(), width, height, rowBytes);
 
 	auto png = EncodeRGBAPng(rgba.data(), width, height);
-	s_stagedPng = std::move(png);
-	s_hasStagedPng = !s_stagedPng.empty();
-	DIAG(CLIP, "PictExport: staged pass=1 %dx%d depth=%d → composited %zuB PNG\n", width, height,
-		 depth, s_stagedPng.size());
+	if (!png.empty())
+	{
+		DIAG(CLIP, "PictExport: composited %dx%d depth=%d -> %zu bytes PNG\n", width, height, depth,
+			 png.size());
+		GetHostPasteboard().setImage(png.data(), png.size());
+		ExtnClipMarkImageExported(width, height);
+	}
 
 	s_passWhite.clear();
 	s_haveWhitePass = false;
@@ -144,13 +156,14 @@ void HandlePictExport(uint32_t regParam[], uint16_t &regResult)
 
 void HandlePictHasImage(uint32_t regParam[], uint16_t &regResult)
 {
-	auto &pb = GetHostPasteboard();
-	std::lock_guard lock(pb.mu);
-	bool has = !pb.png.empty();
-	DIAG(CLIP, "PictHasImage: has=%d %dx%d\n", has, pb.imgW, pb.imgH);
+	int w = 0, h = 0;
+	bool has = GetHostPasteboard().hasImage(&w, &h);
+
+	DIAG(CLIP, "PictHasImage: has=%d %dx%d\n", has, w, h);
+
 	regParam[0] = has ? 1 : 0;
-	regParam[1] = static_cast<uint32_t>(pb.imgW);
-	regParam[2] = static_cast<uint32_t>(pb.imgH);
+	regParam[1] = static_cast<uint32_t>(w);
+	regParam[2] = static_cast<uint32_t>(h);
 	regResult = 0;
 }
 
@@ -165,28 +178,12 @@ void HandlePictImport(uint32_t regParam[], uint16_t &regResult)
 	DIAG(CLIP, "PictImport: buf=$%08X rb=%u depth=%u %ux%u\n", bufAddr, rowBytes, depth, width,
 		 height);
 
-	/* Grab the PNG blob under the lock */
-	std::vector<uint8_t> pngCopy;
+	/* Decode PNG from host clipboard to RGBA */
+	int imgW = 0, imgH = 0;
+	auto rgba = GetHostPasteboard().getImageRGBA(&imgW, &imgH);
+	if (rgba.empty())
 	{
-		auto &pb = GetHostPasteboard();
-		std::lock_guard lock(pb.mu);
-		pngCopy = pb.png;
-	}
-
-	if (pngCopy.empty())
-	{
-		DIAG(CLIP, "PictImport: no PNG in pasteboard\n");
-		regResult = 1;
-		return;
-	}
-
-	/* Decode PNG to RGBA (outside lock) */
-	int imgW = 0, imgH = 0, comp = 0;
-	uint8_t *pixels = stbi_load_from_memory(pngCopy.data(), static_cast<int>(pngCopy.size()), &imgW,
-											&imgH, &comp, 4);
-	if (!pixels)
-	{
-		DIAG(CLIP, "PictImport: PNG decode failed\n");
+		DIAG(CLIP, "PictImport: failed to decode PNG from clipboard\n");
 		regResult = 1;
 		return;
 	}
@@ -196,14 +193,9 @@ void HandlePictImport(uint32_t regParam[], uint16_t &regResult)
 	{
 		DIAG(CLIP, "PictImport: dimension mismatch: host=%dx%d guest=%ux%u\n", imgW, imgH, width,
 			 height);
-		stbi_image_free(pixels);
 		regResult = 2;
 		return;
 	}
-
-	/* Build RGBA vector for conversion */
-	std::vector<uint8_t> rgba(pixels, pixels + static_cast<size_t>(imgW) * imgH * 4);
-	stbi_image_free(pixels);
 
 	/* Convert RGBA to guest format and write into guest RAM */
 	if (depth == 1)
@@ -216,7 +208,9 @@ void HandlePictImport(uint32_t regParam[], uint16_t &regResult)
 			int copyBytes =
 				(outRB < static_cast<int>(rowBytes)) ? outRB : static_cast<int>(rowBytes);
 			for (int x = 0; x < copyBytes; ++x)
+			{
 				put_vm_byte(bufAddr + y * rowBytes + x, bits[y * outRB + x]);
+			}
 		}
 	}
 	else
@@ -229,11 +223,16 @@ void HandlePictImport(uint32_t regParam[], uint16_t &regResult)
 			int copyBytes =
 				(outRB < static_cast<int>(rowBytes)) ? outRB : static_cast<int>(rowBytes);
 			for (int x = 0; x < copyBytes; ++x)
+			{
 				put_vm_byte(bufAddr + y * rowBytes + x, xrgb[y * outRB + x]);
+			}
 		}
 	}
 
 	DIAG(CLIP, "PictImport: wrote %ux%u depth=%u into guest RAM\n", width, height, depth);
+	s_justImported = true;
+	s_importedW = static_cast<int>(width);
+	s_importedH = static_cast<int>(height);
 	regResult = 0;
 }
 
@@ -245,17 +244,7 @@ void ExtnPictReset()
 	s_passDepth = 0;
 	s_passRowBytes = 0;
 	s_haveWhitePass = false;
-	s_stagedPng.clear();
-	s_hasStagedPng = false;
-}
-
-bool HasStagedPng()
-{
-	return s_hasStagedPng;
-}
-
-std::vector<uint8_t> TakeStagedPng()
-{
-	s_hasStagedPng = false;
-	return std::move(s_stagedPng);
+	s_justImported = false;
+	s_importedW = 0;
+	s_importedH = 0;
 }

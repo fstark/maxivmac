@@ -554,7 +554,10 @@ static void ApplyDiagFlags(const std::string &flags)
 		if (DiagConfig::fromName(name.c_str(), s))
 			Diag().set(s, true);
 		else
-			fprintf(stderr, "Warning: unknown diag subsystem '%s'\n", name.c_str());
+		{
+			fprintf(stderr, "Error: unknown diag subsystem '%s'\n", name.c_str());
+			std::exit(1);
+		}
 		pos = comma + 1;
 	}
 }

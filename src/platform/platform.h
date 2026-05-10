@@ -100,9 +100,6 @@ extern PbufIndex g_sonyNewDiskName;
 
 extern tMacErr vSonyGetName(DriveIndex driveNo, PbufIndex *r);
 
-extern tMacErr HTCEexport(PbufIndex i);
-extern tMacErr HTCEimport(PbufIndex *r);
-
 extern uint32_t g_onTrueTime;
 
 extern uint32_t g_curMacDateInSeconds;

@@ -49,7 +49,6 @@ set(MINIVMAC_SOURCES
     src/core/rig.cpp
     src/core/machine.cpp
     src/core/extn_clip.cpp
-    src/core/host_pasteboard.cpp
     src/core/pict_convert.cpp
     src/core/extn_clip_pict.cpp
     src/core/extn_extfs.cpp
@@ -136,7 +135,6 @@ set(MINIVMAC_SOURCES
     src/platform/common/dbglog_platform.cpp
     src/platform/common/tick_timer.cpp
     src/platform/common/disk_io.cpp
-    src/platform/common/clipboard.cpp
     src/platform/common/rom_loader.cpp
     src/platform/screen_convert.cpp
     src/platform/emulator_shell.cpp
@@ -150,7 +148,7 @@ set(MINIVMAC_SOURCES
     src/platform/imgui_launcher.cpp
     src/platform/imgui_overlay.cpp
     src/platform/lomem_globals.cpp
-    src/platform/clipboard_image.cpp
+    src/platform/host_pasteboard.cpp
     src/platform/stb_impl.cpp
 
     # Platform — Headless backend

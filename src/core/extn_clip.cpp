@@ -1,10 +1,8 @@
 #include "core/extn_clip.h"
 #include "core/extn_clip_pict.h"
-#include "core/host_pasteboard.h"
 #include "core/diag.h"
 #include "debugger/debugger.h"
-#include "platform/clipboard_image.h"
-#include "util/macroman.h"
+#include "platform/host_pasteboard.h"
 
 #include <string>
 #include <vector>
@@ -14,12 +12,6 @@
 #include <algorithm>
 #include <unordered_map>
 #include <mutex>
-
-#ifdef HAVE_SDL
-#include <SDL3/SDL.h>
-#endif
-
-#include "stb_image.h"
 
 /* Guest RAM access — just need these four functions from m68k */
 extern uint8_t get_vm_byte(uint32_t addr);
@@ -37,20 +29,32 @@ static constexpr uint16_t kClipDbgLog = 0x108;
 static constexpr uint16_t kPictExport = 0x109;
 static constexpr uint16_t kPictHasImage = 0x10A;
 static constexpr uint16_t kPictImport = 0x10B;
-static constexpr uint16_t kClipCommit = 0x10C;
 
+static std::string s_clipCache;
 static std::unordered_map<uint32_t, uint32_t> s_kvStore;
-
-/* Staging buffers for guest→host export */
-static std::string s_stagedText;
-static bool s_hasStagedText = false;
+static uint32_t s_clipSeqNo = 0;
+static std::string s_lastClipText;
+static bool s_lastHasImage = false;
+static int s_lastImageW = 0;
+static int s_lastImageH = 0;
 
 void ExtnClipReset()
 {
 	s_kvStore.clear();
-	s_stagedText.clear();
-	s_hasStagedText = false;
+	s_clipSeqNo = 0;
+	s_clipCache.clear();
+	s_lastClipText.clear();
+	s_lastHasImage = false;
+	s_lastImageW = 0;
+	s_lastImageH = 0;
 	ExtnPictReset();
+}
+
+void ExtnClipMarkImageExported(int w, int h)
+{
+	s_lastHasImage = true;
+	s_lastImageW = w;
+	s_lastImageH = h;
 }
 
 /* ── Debug console log buffer ──────────────────────── */
@@ -198,58 +202,69 @@ std::string guestFormatLog(uint32_t fmtAddr, uint32_t args[7])
 	return out;
 }
 
+static void refreshCache()
+{
+	s_clipCache = GetHostPasteboard().getTextMacRoman();
+}
+
 void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 {
 	switch (cmd)
 	{
 		case kClipVersion:
-			regParam[0] = 4;
+			regParam[0] = 3;
 			regResult = 0;
 			break;
 
 		case kClipHasData:
-		{
-			auto &pb = GetHostPasteboard();
-			std::lock_guard lock(pb.mu);
-			regParam[0] = pb.text.empty() ? 0 : 1;
+			regParam[0] = GetHostPasteboard().hasText() ? 1 : 0;
 			regResult = 0;
-		}
-		break;
+			break;
 
 		case kClipGetLen:
-		{
-			auto &pb = GetHostPasteboard();
-			std::lock_guard lock(pb.mu);
-			regParam[0] = static_cast<uint32_t>(pb.text.size());
+			refreshCache();
+			regParam[0] = static_cast<uint32_t>(s_clipCache.size());
 			regResult = 0;
-		}
-		break;
+			break;
 
 		case kClipSeqNo:
 		{
 			auto &pb = GetHostPasteboard();
-			std::lock_guard lock(pb.mu);
-			regParam[0] = pb.seq;
-			DIAG(CLIP, "ClipSeqNo: returning seq=%u\n", pb.seq);
+			std::string current = pb.getTextMacRoman();
+			int curImgW = 0, curImgH = 0;
+			bool currentHasImage = pb.hasImage(&curImgW, &curImgH);
+			if (current != s_lastClipText || currentHasImage != s_lastHasImage ||
+				curImgW != s_lastImageW || curImgH != s_lastImageH)
+			{
+				DIAG(CLIP, "ClipSeqNo: changed %u->%u text=%zuB hasImg=%d\n", s_clipSeqNo,
+					 s_clipSeqNo + 1, current.size(), currentHasImage);
+				s_lastClipText = current;
+				s_lastHasImage = currentHasImage;
+				s_lastImageW = curImgW;
+				s_lastImageH = curImgH;
+				s_clipCache = current;
+				s_clipSeqNo++;
+			}
+			regParam[0] = s_clipSeqNo;
 			regResult = 0;
 		}
 		break;
 
 		case kClipImport:
 		{
-			auto &pb = GetHostPasteboard();
-			std::string text;
+			if (s_clipCache.empty())
 			{
-				std::lock_guard lock(pb.mu);
-				text = pb.text;
+				refreshCache();
 			}
 			uint32_t guestAddr = regParam[0];
 			uint32_t capacity = regParam[1];
 			uint32_t actual =
-				static_cast<uint32_t>(std::min(static_cast<size_t>(capacity), text.size()));
-			DIAG(CLIP, "ClipImport: %u bytes → guest $%08X\n", actual, guestAddr);
+				static_cast<uint32_t>(std::min(static_cast<size_t>(capacity), s_clipCache.size()));
+			DIAG(CLIP, "ClipImport: %u bytes -> guest $%08X\n", actual, guestAddr);
 			for (uint32_t i = 0; i < actual; i++)
-				put_vm_byte(guestAddr + i, static_cast<uint8_t>(text[i]));
+			{
+				put_vm_byte(guestAddr + i, static_cast<uint8_t>(s_clipCache[i]));
+			}
 			regParam[1] = actual;
 			regResult = 0;
 		}
@@ -259,11 +274,24 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			uint32_t guestAddr = regParam[0];
 			uint32_t count = regParam[1];
-			DIAG(CLIP, "ClipExport: staged %u bytes text\n", count);
-			s_stagedText.resize(count);
+			DIAG(CLIP, "ClipExport: %u bytes from guest $%08X\n", count, guestAddr);
+			std::vector<uint8_t> buf(count);
 			for (uint32_t i = 0; i < count; i++)
-				s_stagedText[i] = static_cast<char>(get_vm_byte(guestAddr + i));
-			s_hasStagedText = true;
+			{
+				buf[i] = get_vm_byte(guestAddr + i);
+			}
+			GetHostPasteboard().setText(buf.data(), count);
+
+			/*
+				Update cache to match what we just exported.
+				This prevents ClipSeqNo from seeing the export
+				as a "new" host change (feedback loop).
+				The cache is Mac Roman with CRs — same encoding
+				as the buffer we just read from guest RAM.
+			*/
+			s_lastClipText.assign(reinterpret_cast<char *>(buf.data()), count);
+			s_clipCache = s_lastClipText;
+
 			regResult = 0;
 		}
 		break;
@@ -299,56 +327,6 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kPictImport:
 			HandlePictImport(regParam, regResult);
 			break;
-
-		case kClipCommit:
-		{
-			auto &pb = GetHostPasteboard();
-			bool hasPng = HasStagedPng();
-
-			if (!s_hasStagedText && !hasPng)
-			{
-				std::lock_guard lock(pb.mu);
-				DIAG(CLIP, "ClipCommit: nothing staged, returning seq=%u\n", pb.seq);
-				regParam[0] = pb.seq;
-				regResult = 0;
-				break;
-			}
-
-			/* Convert and publish to SDL (outside lock) */
-			std::string textUtf8;
-			if (s_hasStagedText)
-				textUtf8 = UTF8FromMacRoman(
-					{reinterpret_cast<const uint8_t *>(s_stagedText.data()), s_stagedText.size()});
-
-			std::vector<uint8_t> pngData;
-			if (hasPng) pngData = TakeStagedPng();
-
-			if (s_hasStagedText) SDL_SetClipboardText(textUtf8.c_str());
-			if (!pngData.empty()) HostClipSetImage(pngData.data(), pngData.size());
-
-			/* Update pasteboard so SDL event sees identical content */
-			{
-				std::lock_guard lock(pb.mu);
-				uint32_t oldSeq = pb.seq;
-				if (s_hasStagedText) pb.text = std::move(s_stagedText);
-				if (!pngData.empty())
-				{
-					pb.png = std::move(pngData);
-					int comp = 0;
-					stbi_info_from_memory(pb.png.data(), static_cast<int>(pb.png.size()), &pb.imgW,
-										  &pb.imgH, &comp);
-				}
-				pb.seq++;
-				DIAG(CLIP, "ClipCommit: publishing text=%zuB png=%zuB → seq %u→%u\n",
-					 pb.text.size(), pb.png.size(), oldSeq, pb.seq);
-				regParam[0] = pb.seq;
-			}
-
-			s_hasStagedText = false;
-			s_stagedText.clear();
-			regResult = 0;
-		}
-		break;
 
 		default:
 			regResult = 0xFFFF;

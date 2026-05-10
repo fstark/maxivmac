@@ -14,7 +14,6 @@
 #include "platform/platform.h"
 #include "config/mac_file.h"
 #include "core/config_loader.h"
-#include "core/host_pasteboard.h"
 #include "core/main.h"
 
 /* Forward declarations to avoid pulling in the full osglu_common.h
@@ -45,7 +44,7 @@ extern bool g_speedStopped;
 #include <array>
 #include <vector>
 
-#include "platform/clipboard_image.h"
+#include "platform/host_pasteboard.h"
 #include "stb_image_write.h"
 
 /* ── Shortcut table ──────────────────────────────────── */
@@ -152,7 +151,7 @@ void ImGuiBackend::runLoop()
 
 			if (event.type == SDL_EVENT_CLIPBOARD_UPDATE)
 			{
-				HostPasteboardOnClipboardUpdate();
+				GetHostPasteboard().onClipboardUpdate();
 				continue;
 			}
 
@@ -816,7 +815,7 @@ void ImGuiBackend::captureScreenshot()
 
 	if (!pngBuf.empty())
 	{
-		HostClipSetImage(pngBuf.data(), pngBuf.size());
+		GetHostPasteboard().setImage(pngBuf.data(), pngBuf.size());
 	}
 }
 

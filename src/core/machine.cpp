@@ -12,6 +12,7 @@
 #include "core/state_recorder.hpp"
 #include "core/abnormal_ids.h"
 #include "platform/common/event_queue.h"
+#include "platform/host_pasteboard.h"
 
 /* Device headers for ATT Device* dispatch */
 #include "devices/device.h"
@@ -410,14 +411,14 @@ static void ExtnHostTextClipExchange_Access(uint32_t p)
 			result = CheckPbuf(pbufNo);
 			if (tMacErr::noErr == result)
 			{
-				result = HTCEexport(pbufNo);
+				result = GetHostPasteboard().legacyExport(pbufNo);
 			}
 		}
 		break;
 		case kCmndHTCEImport:
 		{
 			PbufIndex pbufNo;
-			result = HTCEimport(&pbufNo);
+			result = GetHostPasteboard().legacyImport(&pbufNo);
 			put_vm_word(p + EXTN_DAT_PARAMS + 0, pbufNo);
 		}
 		break;
