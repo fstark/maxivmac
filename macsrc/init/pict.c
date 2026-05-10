@@ -115,8 +115,61 @@ void ExportPictToHost(char *regBase)
 	}
 	else
 	{
-		/* Color path — implemented in Phase 6 */
-		dbg_log(regBase, "pict: color export not yet implemented");
+		/* Color: 32-bit GWorld */
+		GWorldPtr    gw;
+		PixMapHandle pm;
+		CGrafPtr     savePort;
+		GDHandle     saveDevice;
+		QDErr        err;
+
+		err = NewGWorld(&gw, 32, &picFrame, NULL, NULL, 0);
+		if (err != noErr)
+		{
+			dbg_log1(regBase, "pict: NewGWorld err=%d", (int)err);
+			DisposHandle(h);
+			return;
+		}
+
+		pm = GetGWorldPixMap(gw);
+		if (!LockPixels(pm))
+		{
+			DisposeGWorld(gw);
+			DisposHandle(h);
+			return;
+		}
+
+		GetGWorld(&savePort, &saveDevice);
+		SetGWorld(gw, NULL);
+
+		/* --- Pass 0: white background --- */
+		BackColor(whiteColor);
+		ForeColor(blackColor);
+		EraseRect(&picFrame);
+		DrawPicture((PicHandle)h, &picFrame);
+
+		/*
+			Send PixMap pointer.  The host reads the struct from
+			guest RAM: baseAddr, rowBytes (with 0x8000 flag),
+			bounds, and pixelSize at offset +34.
+			StripAddress needed for 24-bit addressing Macs.
+		*/
+		reg_set(regBase, 0, (unsigned long)StripAddress((Ptr)(*pm)));
+		reg_set(regBase, 1, 0);
+		reg_command(regBase, kPictExport);
+
+		/* --- Pass 1: black background --- */
+		BackColor(blackColor);
+		EraseRect(&picFrame);
+		BackColor(whiteColor);
+		DrawPicture((PicHandle)h, &picFrame);
+
+		reg_set(regBase, 0, (unsigned long)StripAddress((Ptr)(*pm)));
+		reg_set(regBase, 1, 1);
+		reg_command(regBase, kPictExport);
+
+		SetGWorld(savePort, saveDevice);
+		UnlockPixels(pm);
+		DisposeGWorld(gw);
 	}
 
 	DisposHandle(h);
