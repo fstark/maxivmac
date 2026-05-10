@@ -15,6 +15,8 @@
 #include <SDL3/SDL.h>
 #endif
 
+#include "stb_image.h"
+
 tMacErr HTCEexport(PbufIndex i)
 {
 #ifdef HAVE_SDL
@@ -85,5 +87,53 @@ void HostClipSetText(const uint8_t *macRoman, uint32_t len)
 #else
 	(void)macRoman;
 	(void)len;
+#endif
+}
+
+bool HostClipHasImage(int *width, int *height)
+{
+#ifdef HAVE_SDL
+	size_t dataLen = 0;
+	void *data = SDL_GetClipboardData("image/png", &dataLen);
+	if (!data || dataLen == 0) return false;
+
+	int w, h, comp;
+	bool ok = stbi_info_from_memory(static_cast<const uint8_t *>(data), static_cast<int>(dataLen),
+									&w, &h, &comp) != 0;
+	SDL_free(data);
+	if (!ok) return false;
+
+	if (width) *width = w;
+	if (height) *height = h;
+	return true;
+#else
+	(void)width;
+	(void)height;
+	return false;
+#endif
+}
+
+std::vector<uint8_t> HostClipGetImageRGBA(int *width, int *height)
+{
+#ifdef HAVE_SDL
+	size_t dataLen = 0;
+	void *data = SDL_GetClipboardData("image/png", &dataLen);
+	if (!data || dataLen == 0) return {};
+
+	int w, h, comp;
+	uint8_t *pixels = stbi_load_from_memory(static_cast<const uint8_t *>(data),
+											static_cast<int>(dataLen), &w, &h, &comp, 4);
+	SDL_free(data);
+	if (!pixels) return {};
+
+	*width = w;
+	*height = h;
+	std::vector<uint8_t> result(pixels, pixels + static_cast<size_t>(w) * h * 4);
+	stbi_image_free(pixels);
+	return result;
+#else
+	(void)width;
+	(void)height;
+	return {};
 #endif
 }

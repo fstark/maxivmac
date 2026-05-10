@@ -317,3 +317,56 @@ TEST_CASE("RGBATo1Bit roundtrip")
 	/* Row 1: same pattern */
 	CHECK(bits[2] == 0x80);
 }
+
+/* ── Phase 8: additional import/conversion tests ──────── */
+
+TEST_CASE("RGBATo1Bit black pixel")
+{
+	uint8_t pixel[] = {0, 0, 0, 255}; /* RGBA black */
+	int rowBytes = 0;
+	auto bits = RGBATo1Bit(pixel, 1, 1, rowBytes);
+	CHECK(rowBytes == 2);
+	CHECK((bits[0] & 0x80) != 0); /* bit = 1 (ink) */
+}
+
+TEST_CASE("RGBATo1Bit white pixel")
+{
+	uint8_t pixel[] = {255, 255, 255, 255}; /* RGBA white */
+	int rowBytes = 0;
+	auto bits = RGBATo1Bit(pixel, 1, 1, rowBytes);
+	CHECK(rowBytes == 2);
+	CHECK((bits[0] & 0x80) == 0); /* bit = 0 (paper) */
+}
+
+TEST_CASE("RGBATo1Bit gray boundary")
+{
+	/* 127 luminance → below 128 → ink (bit=1) */
+	uint8_t pixel[] = {127, 127, 127, 255};
+	int rowBytes = 0;
+	auto bits = RGBATo1Bit(pixel, 1, 1, rowBytes);
+	CHECK((bits[0] & 0x80) != 0);
+}
+
+TEST_CASE("RGBATo32Bit red pixel")
+{
+	uint8_t pixel[] = {255, 0, 0, 255}; /* RGBA red */
+	int rowBytes = 0;
+	auto xrgb = RGBATo32Bit(pixel, 1, 1, rowBytes);
+	REQUIRE(xrgb.size() == 4);
+	CHECK(xrgb[0] == 0x00);
+	CHECK(xrgb[1] == 0xFF);
+	CHECK(xrgb[2] == 0x00);
+	CHECK(xrgb[3] == 0x00);
+}
+
+TEST_CASE("WritePixels row stride padding")
+{
+	/* 1-bit: width=1 → rowBytes=2, verify extra byte zeroed */
+	uint8_t pixel[] = {0, 0, 0, 255}; /* black */
+	int rowBytes = 0;
+	auto bits = RGBATo1Bit(pixel, 1, 1, rowBytes);
+	CHECK(rowBytes == 2);
+	REQUIRE(bits.size() == 2);
+	CHECK((bits[0] & 0x80) != 0); /* bit set */
+	CHECK(bits[1] == 0);		  /* padding byte zeroed */
+}

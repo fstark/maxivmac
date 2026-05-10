@@ -1,5 +1,8 @@
 /*
-	stb_impl.cpp — Single-file implementation of stb_image_write
+	stb_impl.cpp — Single-file implementation of stb_image_write.
+
+	Note: STB_IMAGE_IMPLEMENTATION lives in imgui_launcher.cpp
+	(pulled in by the ImGui backend).  Only the write side is here.
 */
 
 #pragma GCC diagnostic push

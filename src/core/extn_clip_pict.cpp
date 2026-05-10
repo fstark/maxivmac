@@ -10,12 +10,14 @@
 #include "core/extn_clip_pict.h"
 #include "core/pict_convert.h"
 #include "platform/clipboard_image.h"
+#include "platform/common/clipboard.h"
 
 #include <cstdint>
 #include <vector>
 
 /* Guest RAM access */
 extern uint8_t get_vm_byte(uint32_t addr);
+extern void put_vm_byte(uint32_t addr, uint8_t b);
 extern uint16_t get_vm_word(uint32_t addr);
 extern uint32_t get_vm_long(uint32_t addr);
 
@@ -129,14 +131,72 @@ void HandlePictExport(uint32_t regParam[], uint16_t &regResult)
 
 void HandlePictHasImage(uint32_t regParam[], uint16_t &regResult)
 {
-	regParam[0] = 0; /* no image support yet (Phase 8) */
+	int w = 0, h = 0;
+	bool has = HostClipHasImage(&w, &h);
+
+	regParam[0] = has ? 1 : 0;
+	regParam[1] = static_cast<uint32_t>(w);
+	regParam[2] = static_cast<uint32_t>(h);
 	regResult = 0;
 }
 
 void HandlePictImport(uint32_t regParam[], uint16_t &regResult)
 {
-	(void)regParam;
-	regResult = 0xFFFF; /* not implemented (Phase 8) */
+	uint32_t bufAddr = regParam[0];
+	uint32_t rowBytes = regParam[1];
+	uint32_t depth = regParam[2];
+	uint32_t width = regParam[3];
+	uint32_t height = regParam[4];
+
+	/* Decode PNG from host clipboard to RGBA */
+	int imgW = 0, imgH = 0;
+	auto rgba = HostClipGetImageRGBA(&imgW, &imgH);
+	if (rgba.empty())
+	{
+		regResult = 1;
+		return;
+	}
+
+	/* Require exact dimension match (guest allocates from PictHasImage) */
+	if (static_cast<uint32_t>(imgW) != width || static_cast<uint32_t>(imgH) != height)
+	{
+		regResult = 2;
+		return;
+	}
+
+	/* Convert RGBA to guest format and write into guest RAM */
+	if (depth == 1)
+	{
+		int outRB = 0;
+		auto bits = RGBATo1Bit(rgba.data(), imgW, imgH, outRB);
+
+		for (int y = 0; y < imgH; ++y)
+		{
+			int copyBytes =
+				(outRB < static_cast<int>(rowBytes)) ? outRB : static_cast<int>(rowBytes);
+			for (int x = 0; x < copyBytes; ++x)
+			{
+				put_vm_byte(bufAddr + y * rowBytes + x, bits[y * outRB + x]);
+			}
+		}
+	}
+	else
+	{
+		int outRB = 0;
+		auto xrgb = RGBATo32Bit(rgba.data(), imgW, imgH, outRB);
+
+		for (int y = 0; y < imgH; ++y)
+		{
+			int copyBytes =
+				(outRB < static_cast<int>(rowBytes)) ? outRB : static_cast<int>(rowBytes);
+			for (int x = 0; x < copyBytes; ++x)
+			{
+				put_vm_byte(bufAddr + y * rowBytes + x, xrgb[y * outRB + x]);
+			}
+		}
+	}
+
+	regResult = 0;
 }
 
 void ExtnPictReset()
