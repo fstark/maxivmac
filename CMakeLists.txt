@@ -49,6 +49,7 @@ set(MINIVMAC_SOURCES
     src/core/rig.cpp
     src/core/machine.cpp
     src/core/extn_clip.cpp
+    src/core/pict_convert.cpp
     src/core/extn_extfs.cpp
     src/core/extn_system.cpp
     src/core/extfs_log.cpp
@@ -376,7 +377,13 @@ add_executable(tests
     src/config/mac_file.cpp
     src/guest/guest_dialog.cpp
     test/test_guest_dialog.cpp
+    test/test_clip_pict.cpp
+    src/core/pict_convert.cpp
+    test/test_stb_image_impl.cpp
 )
-target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs" "${CMAKE_SOURCE_DIR}/tools/icon_extract")
+target_include_directories(tests PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/libs" "${CMAKE_SOURCE_DIR}/libs/stb" "${CMAKE_SOURCE_DIR}/tools/icon_extract")
 target_compile_options(tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+set_source_files_properties(test/test_stb_image_impl.cpp PROPERTIES
+    COMPILE_FLAGS "-Wno-error"
+)
 add_test(NAME tests COMMAND tests WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
