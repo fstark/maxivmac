@@ -435,7 +435,7 @@ void main(void)
 	mem_zero((char *)&fcbPB, sizeof(fcbPB));
 	fcbPB.ioNamePtr = (StringPtr)initName;
 	fcbPB.ioRefNum = homeRef;
-	fcbPB.ioFCBIndx = 0;  /* use ioRefNum, not index */
+	fcbPB.ioFCBIndx = 0; /* use ioRefNum, not index */
 	PBGetFCBInfoSync(&fcbPB);
 
 	/* Detach and lock the code resource */
@@ -492,8 +492,7 @@ void main(void)
 		}
 	}
 
-	dbg_log1(regBase, "maxivmac INIT: version=%s",
-			 (unsigned long)kInitVersion + 1);  /* skip Pascal length byte */
+	dbg_log1(regBase, "maxivmac INIT: version=%S", (unsigned long)kInitVersion);
 
 	/* ---- Install traps (unconditional) ---- */
 	InitTrapTables();
@@ -536,8 +535,7 @@ void main(void)
 	}
 
 	if (g->driveCount > 0)
-		dbg_log1(regBase, "maxivmac INIT: %ld drives mounted",
-				 (long)g->driveCount);
+		dbg_log1(regBase, "maxivmac INIT: %ld drives mounted", (long)g->driveCount);
 
 	/* ---- Install jGNEFilter ---- */
 	g->oldFilter = *(long *)kJGNEFilter;
