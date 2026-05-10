@@ -313,7 +313,9 @@ typedef struct
 	short ejected; /* nonzero after _Eject */
 
 	/* clip */
-	long lastClipTicks; /* throttle clipboard checks */
+	long lastClipTicks;           /* throttle clipboard checks */
+	unsigned long lastHostSeq;    /* last seen host pasteboard seq */
+	short lastScrapCnt;           /* last seen ScrapCount */
 
 	/* INIT file location (for future auto-update) */
 	short initVRefNum;

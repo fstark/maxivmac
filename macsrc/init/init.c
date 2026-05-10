@@ -541,6 +541,8 @@ void main(void)
 	g->oldFilter = *(long *)kJGNEFilter;
 	g->lastPollTick = 0;
 	g->lastClipTicks = 0;
+	g->lastHostSeq = 0;
+	g->lastScrapCnt = *(short *)kScrapCount;
 	*(long *)kJGNEFilter = (long)FilterEntry;
 	dbg_log(regBase, "maxivmac INIT: jGNEFilter installed");
 

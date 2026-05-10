@@ -109,47 +109,44 @@ static long ImportHostToMac(char *regBase)
 void SyncClipboard(Globals *g)
 {
 	long now;
-	short appId;
-	unsigned long hostSeq, lastSeq;
 	short scrapCnt;
-	unsigned long lastCnt;
-	unsigned long key;
+	unsigned long hostSeq;
 
 	/* Throttle: at most every 30 ticks (~0.5s) */
 	now = TickCount();
 	if (now - g->lastClipTicks < 30) return;
 	g->lastClipTicks = now;
 
-	appId = *(short *)kCurApRefNum;
+	scrapCnt = *(short *)kScrapCount;
 
-	/* --- Host -> Mac --- */
-	reg_command(g->regBase, kClipSeqNo);
-	hostSeq = reg_get(g->regBase, 0);
-	key = (unsigned long)appId * 2;
-	lastSeq = kv_get(g->regBase, key);
-
-	if (hostSeq != lastSeq)
+	/* --- Mac changed? Export to host --- */
+	if (scrapCnt != g->lastScrapCnt)
 	{
-		dbg_log2(g->regBase, "Sync: host->mac seq %lx != %lx", hostSeq, lastSeq);
-		if (ImportHostToMac(g->regBase) < 0)
-			dbg_log(g->regBase, "clip: import error (ignored)");
-		ImportPictFromHost(g->regBase);
-		kv_set(g->regBase, key, hostSeq);
-		/* Prevent feedback: update mac->host scrapCount too */
-		kv_set(g->regBase, (unsigned long)appId * 2 + 1, (unsigned long)*(short *)kScrapCount);
+		dbg_log2(g->regBase, "Sync: mac changed cnt %ld->%ld, exporting",
+				 (long)g->lastScrapCnt, (long)scrapCnt);
+		ExportMacToHost(g->regBase);
+		ExportPictToHost(g->regBase);
+		reg_command(g->regBase, kClipCommit);
+		g->lastHostSeq  = reg_get(g->regBase, 0);
+		g->lastScrapCnt = scrapCnt;
+		dbg_log1(g->regBase, "Sync: commit -> hostSeq=%lu",
+				 g->lastHostSeq);
+		return;
 	}
 
-	/* --- Mac -> Host --- */
-	scrapCnt = *(short *)kScrapCount;
-	key = (unsigned long)appId * 2 + 1;
-	lastCnt = kv_get(g->regBase, key);
+	/* --- Host changed? Import to Mac --- */
+	reg_command(g->regBase, kClipSeqNo);
+	hostSeq = reg_get(g->regBase, 0);
 
-	if ((unsigned long)scrapCnt != lastCnt)
+	if (hostSeq != g->lastHostSeq)
 	{
-		dbg_log2(g->regBase, "Sync: mac->host cnt %ld != %ld", (unsigned long)scrapCnt, lastCnt);
-		if (ExportMacToHost(g->regBase) < 0)
-			dbg_log(g->regBase, "clip: export error (ignored)");
-		ExportPictToHost(g->regBase);
-		kv_set(g->regBase, key, (unsigned long)scrapCnt);
+		dbg_log2(g->regBase, "Sync: host changed seq %lu->%lu, importing",
+				 g->lastHostSeq, hostSeq);
+		ImportHostToMac(g->regBase);
+		ImportPictFromHost(g->regBase);
+		g->lastHostSeq  = hostSeq;
+		g->lastScrapCnt = *(short *)kScrapCount;
+		dbg_log1(g->regBase, "Sync: imported, scrapCnt now %ld",
+				 (long)g->lastScrapCnt);
 	}
 }
