@@ -29,6 +29,7 @@ extern bool g_speedStopped;
 #if defined(__APPLE__)
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl.h>
+extern "C" long platformPasteboardChangeCount();
 #elif defined(_WIN32)
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -143,17 +144,34 @@ void ImGuiBackend::runLoop()
 			overlayMode_ = OverlayMode::Peek;
 		}
 
+		/* Clipboard change detection — use native changeCount on
+		   macOS (zero-cost integer compare), fall back to SDL event
+		   on other platforms. */
+#if defined(__APPLE__)
+		{
+			static long s_lastChangeCount = 0;
+			long cc = platformPasteboardChangeCount();
+			if (cc != s_lastChangeCount)
+			{
+				s_lastChangeCount = cc;
+				GetHostPasteboard().onClipboardUpdate();
+			}
+		}
+#endif
+
 		/* 1. Poll SDL events — feed to ImGui first */
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
 			ImGui_ImplSDL3_ProcessEvent(&event);
 
+#if !defined(__APPLE__)
 			if (event.type == SDL_EVENT_CLIPBOARD_UPDATE)
 			{
 				GetHostPasteboard().onClipboardUpdate();
 				continue;
 			}
+#endif
 
 			/* In Launcher state, only handle quit events */
 			if (uiState_ == UIState::Launcher)

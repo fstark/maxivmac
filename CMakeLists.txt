@@ -160,6 +160,12 @@ set(MINIVMAC_SOURCES
 
 add_executable(maxivmac ${MINIVMAC_SOURCES})
 
+# macOS pasteboard change counter (Objective-C++)
+if(APPLE)
+    target_sources(maxivmac PRIVATE src/platform/pasteboard_macos.mm)
+    target_link_libraries(maxivmac PRIVATE "-framework AppKit")
+endif()
+
 # ---------------------------------------------------------------------------
 # SDL3 (always required — headless mode uses null stubs at runtime)
 # ---------------------------------------------------------------------------
