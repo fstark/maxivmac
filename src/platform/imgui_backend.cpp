@@ -14,6 +14,7 @@
 #include "platform/platform.h"
 #include "config/mac_file.h"
 #include "core/config_loader.h"
+#include "core/host_pasteboard.h"
 #include "core/main.h"
 
 /* Forward declarations to avoid pulling in the full osglu_common.h
@@ -148,6 +149,12 @@ void ImGuiBackend::runLoop()
 		while (SDL_PollEvent(&event))
 		{
 			ImGui_ImplSDL3_ProcessEvent(&event);
+
+			if (event.type == SDL_EVENT_CLIPBOARD_UPDATE)
+			{
+				HostPasteboardOnClipboardUpdate();
+				continue;
+			}
 
 			/* In Launcher state, only handle quit events */
 			if (uiState_ == UIState::Launcher)

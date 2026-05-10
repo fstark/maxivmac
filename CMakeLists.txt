@@ -49,6 +49,7 @@ set(MINIVMAC_SOURCES
     src/core/rig.cpp
     src/core/machine.cpp
     src/core/extn_clip.cpp
+    src/core/host_pasteboard.cpp
     src/core/pict_convert.cpp
     src/core/extn_clip_pict.cpp
     src/core/extn_extfs.cpp
