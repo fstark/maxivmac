@@ -81,6 +81,7 @@ void ExtnSystemDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			std::string fileName = readGuestPascalStr(regParam[4]);
 			int machType = static_cast<int>(regParam[5]);
 			int sysVer = static_cast<int>(regParam[6]);
+			auto sysHeapFree = static_cast<int32_t>(regParam[7]);
 
 			s_initInfo.populate(apiVer, version, vRefNum, dirID, fileName, machType, sysVer);
 
@@ -89,8 +90,8 @@ void ExtnSystemDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 			DIAG(INIT,
 				 "InitIdent: api=%d ver=\"%s\" file=\"%s\" "
-				 "machine=%d sysVer=$%04X → %s\n",
-				 apiVer, version.c_str(), fileName.c_str(), machType, sysVer,
+				 "machine=%d sysVer=$%04X sysHeapFree=%d → %s\n",
+				 apiVer, version.c_str(), fileName.c_str(), machType, sysVer, sysHeapFree,
 				 compatible ? "OK" : "REJECTED");
 			break;
 		}

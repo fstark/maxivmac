@@ -70,14 +70,14 @@ static Boolean IsOurFCB(short refNum)
 	fcb = GetFCB(refNum);
 	if (fcb == NULL)
 	{
-		dbg_log1(g->regBase, "IsOurFCB(%ld): fcb==NULL", (long)refNum);
+		extfs_log1(g->regBase, "IsOurFCB(%ld): fcb==NULL", (long)refNum);
 		return false;
 	}
 	fcbVCB = *(Ptr *)(fcb + kFCBVPtr);
 	if (!IsOurVCB(fcbVCB, g))
 	{
-		dbg_log2(g->regBase, "IsOurFCB(%ld): VCBPtr=%lx NOT ours", (long)refNum, (long)fcbVCB);
-		dbg_log2(g->regBase, "  g->vcb[0]=%lx driveCount=%ld", (long)g->vcb[0],
+		extfs_log2(g->regBase, "IsOurFCB(%ld): VCBPtr=%lx NOT ours", (long)refNum, (long)fcbVCB);
+		extfs_log2(g->regBase, "  g->vcb[0]=%lx driveCount=%ld", (long)g->vcb[0],
 				 (long)g->driveCount);
 		return false;
 	}
@@ -1101,28 +1101,28 @@ void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
 
 	if (slot >= g->driveCount) g->driveCount = slot + 1;
 
-	dbg_log2(g->regBase, "SharedDrive: mounted slot %ld drv=%ld", (long)slot, (long)driveNum);
+	extfs_log2(g->regBase, "SharedDrive: mounted slot %ld drv=%ld", (long)slot, (long)driveNum);
 
 	/* Dump VCB fields for debugging */
-	dbg_log3(g->regBase, "  VCB: vcbSigWord=%lx vcbFSID=%lx vcbVRefNum=%ld",
+	extfs_log3(g->regBase, "  VCB: vcbSigWord=%lx vcbFSID=%lx vcbVRefNum=%ld",
 			 (long)(unsigned short)*(short *)(v + 8),
 			 (long)(unsigned short)*(short *)(v + 76),
 			 (long)*(short *)(v + 78));
-	dbg_log3(g->regBase, "  VCB: vcbDrvNum=%ld vcbDRefNum=%ld vcbFreeBks=%ld",
+	extfs_log3(g->regBase, "  VCB: vcbDrvNum=%ld vcbDRefNum=%ld vcbFreeBks=%ld",
 			 (long)*(short *)(v + 72),
 			 (long)*(short *)(v + 74),
 			 (long)(unsigned short)*(short *)(v + 42));
-	dbg_log2(g->regBase, "  VCB: vcbNmAlBlks=%lx vcbAlBlkSiz=%lx",
+	extfs_log2(g->regBase, "  VCB: vcbNmAlBlks=%lx vcbAlBlkSiz=%lx",
 			 (long)(unsigned short)*(short *)(v + 26),
 			 (long)*(long *)(v + 28));
 	if (g->dqe[slot] != NULL)
 	{
 		Ptr dqe = g->dqe[slot];
-		dbg_log3(g->regBase, "  DQE: flags=%lx qType=%ld dQFSID=%lx",
+		extfs_log3(g->regBase, "  DQE: flags=%lx qType=%ld dQFSID=%lx",
 				 (long)*(long *)dqe,
 				 (long)*(short *)(dqe + 8),
 				 (long)(unsigned short)*(short *)(dqe + 14));
-		dbg_log2(g->regBase, "  DQE: dQDrvSz=%ld dQDrvSz2=%ld",
+		extfs_log2(g->regBase, "  DQE: dQDrvSz=%ld dQDrvSz2=%ld",
 				 (long)(unsigned short)*(short *)(dqe + 16),
 				 (long)(unsigned short)*(short *)(dqe + 18));
 	}

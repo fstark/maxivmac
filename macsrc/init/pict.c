@@ -6,6 +6,8 @@
 */
 
 #include "defs.h"
+#include <GestaltEqu.h>
+#include <QDOffscreen.h>
 
 /* ---- helpers ---- */
 
@@ -18,10 +20,8 @@ static short ScreenDepth(void)
 	long qdVersion;
 	GDHandle mainDev;
 
-	if (Gestalt(gestaltQuickdrawVersion, &qdVersion) != noErr)
-		return 1;
-	if (qdVersion < gestalt8BitQD)
-		return 1;
+	if (Gestalt(gestaltQuickdrawVersion, &qdVersion) != noErr) return 1;
+	if (qdVersion < gestalt8BitQD) return 1;
 
 	mainDev = GetMainDevice();
 	if (mainDev == NULL) return 1;
@@ -39,10 +39,10 @@ static short ScreenDepth(void)
 */
 void ExportPictToHost(char *regBase)
 {
-	Handle   h;
-	long     offset, length;
-	Rect     picFrame;
-	short    depth;
+	Handle h;
+	long offset, length;
+	Rect picFrame;
+	short depth;
 
 	/* Get PICT data from desk scrap */
 	h = NewHandle(0);
@@ -68,25 +68,25 @@ void ExportPictToHost(char *regBase)
 	{
 		/* 1-bit: offscreen BitMap + temporary GrafPort */
 		GrafPort offPort;
-		BitMap   offBits;
-		GrafPtr  savePort;
-		short    rowBytes;
-		long     bufSize;
-		Ptr      bits;
+		BitMap offBits;
+		GrafPtr savePort;
+		short rowBytes;
+		long bufSize;
+		Ptr bits;
 
 		rowBytes = ((picFrame.right - picFrame.left + 15) / 16) * 2;
-		bufSize  = (long)rowBytes * (picFrame.bottom - picFrame.top);
-		bits     = NewPtr(bufSize);
+		bufSize = (long)rowBytes * (picFrame.bottom - picFrame.top);
+		bits = NewPtr(bufSize);
 		if (bits == NULL)
 		{
-			dbg_log(regBase, "pict: export alloc failed");
+			clip_log(regBase, "pict: export alloc failed");
 			DisposHandle(h);
 			return;
 		}
 
 		offBits.baseAddr = bits;
 		offBits.rowBytes = rowBytes;
-		offBits.bounds   = picFrame;
+		offBits.bounds = picFrame;
 
 		GetPort(&savePort);
 		OpenPort(&offPort);
@@ -96,17 +96,17 @@ void ExportPictToHost(char *regBase)
 		RectRgn(offPort.clipRgn, &picFrame);
 
 		/* --- Pass 0: white background --- */
-		EraseRect(&picFrame);                   /* fills white (default) */
+		EraseRect(&picFrame); /* fills white (default) */
 		DrawPicture((PicHandle)h, &picFrame);
 		reg_set(regBase, 0, (unsigned long)&offBits);
-		reg_set(regBase, 1, 0);                 /* pass = white */
+		reg_set(regBase, 1, 0); /* pass = white */
 		reg_command(regBase, kPictExport);
 
 		/* --- Pass 1: black background --- */
 		FillRect(&picFrame, &qd.black);
 		DrawPicture((PicHandle)h, &picFrame);
 		reg_set(regBase, 0, (unsigned long)&offBits);
-		reg_set(regBase, 1, 1);                 /* pass = black */
+		reg_set(regBase, 1, 1); /* pass = black */
 		reg_command(regBase, kPictExport);
 
 		SetPort(savePort);
@@ -116,16 +116,16 @@ void ExportPictToHost(char *regBase)
 	else
 	{
 		/* Color: 32-bit GWorld */
-		GWorldPtr    gw;
+		GWorldPtr gw;
 		PixMapHandle pm;
-		CGrafPtr     savePort;
-		GDHandle     saveDevice;
-		QDErr        err;
+		CGrafPtr savePort;
+		GDHandle saveDevice;
+		QDErr err;
 
 		err = NewGWorld(&gw, 32, &picFrame, NULL, NULL, 0);
 		if (err != noErr)
 		{
-			dbg_log1(regBase, "pict: NewGWorld err=%d", (int)err);
+			clip_log1(regBase, "pict: NewGWorld err=%d", (int)err);
 			DisposHandle(h);
 			return;
 		}
@@ -187,17 +187,16 @@ void ExportPictToHost(char *regBase)
 void ImportPictFromHost(char *regBase)
 {
 	unsigned long hasImg, width, height;
-	short         depth;
-	Rect          r;
+	short depth;
+	Rect r;
 
 	/* Ask host if it has an image */
 	reg_command(regBase, kPictHasImage);
 	hasImg = reg_get(regBase, 0);
 	if (!hasImg) return;
-	width  = reg_get(regBase, 1);
+	width = reg_get(regBase, 1);
 	height = reg_get(regBase, 2);
-	if (width == 0 || height == 0 || width > 4096 || height > 4096)
-		return;
+	if (width == 0 || height == 0 || width > 4096 || height > 4096) return;
 
 	depth = ScreenDepth();
 	SetRect(&r, 0, 0, (short)width, (short)height);
@@ -205,41 +204,41 @@ void ImportPictFromHost(char *regBase)
 	if (depth == 1)
 	{
 		/* 1-bit: plain BitMap + GrafPort */
-		BitMap    offBits;
-		GrafPort  offPort;
-		GrafPtr   savePort;
+		BitMap offBits;
+		GrafPort offPort;
+		GrafPtr savePort;
 		PicHandle pic;
-		short     rowBytes;
-		long      bufSize;
-		Ptr       bits;
+		short rowBytes;
+		long bufSize;
+		Ptr bits;
 
 		rowBytes = ((width + 15) / 16) * 2;
-		bufSize  = (long)rowBytes * height;
+		bufSize = (long)rowBytes * height;
 		bits = NewPtr(bufSize);
 		if (bits == NULL)
 		{
-			dbg_log(regBase, "pict: import alloc failed");
+			clip_log(regBase, "pict: import alloc failed");
 			return;
 		}
 
 		/* Tell host to fill our buffer with 1-bit pixels */
 		reg_set(regBase, 0, (unsigned long)bits);
 		reg_set(regBase, 1, (unsigned long)rowBytes);
-		reg_set(regBase, 2, 1);           /* depth */
+		reg_set(regBase, 2, 1); /* depth */
 		reg_set(regBase, 3, width);
 		reg_set(regBase, 4, height);
 		reg_command(regBase, kPictImport);
 
 		if (reg_result(regBase) != 0)
 		{
-			dbg_log(regBase, "pict: import host error");
+			clip_log(regBase, "pict: import host error");
 			DisposPtr(bits);
 			return;
 		}
 
 		offBits.baseAddr = bits;
 		offBits.rowBytes = rowBytes;
-		offBits.bounds   = r;
+		offBits.bounds = r;
 
 		/* Create PICT by recording a CopyBits */
 		GetPort(&savePort);
@@ -269,19 +268,19 @@ void ImportPictFromHost(char *regBase)
 	else
 	{
 		/* 32-bit: GWorld */
-		GWorldPtr    gw;
+		GWorldPtr gw;
 		PixMapHandle pm;
-		CGrafPtr     savePort;
-		GDHandle     saveDevice;
-		PicHandle    pic;
-		QDErr        err;
-		Ptr          baseAddr;
-		long         rb;
+		CGrafPtr savePort;
+		GDHandle saveDevice;
+		PicHandle pic;
+		QDErr err;
+		Ptr baseAddr;
+		long rb;
 
 		err = NewGWorld(&gw, 32, &r, NULL, NULL, 0);
 		if (err != noErr)
 		{
-			dbg_log1(regBase, "pict: import NewGWorld err=%d", (int)err);
+			clip_log1(regBase, "pict: import NewGWorld err=%d", (int)err);
 			return;
 		}
 
@@ -305,7 +304,7 @@ void ImportPictFromHost(char *regBase)
 
 		if (reg_result(regBase) != 0)
 		{
-			dbg_log(regBase, "pict: import host error (32-bit)");
+			clip_log(regBase, "pict: import host error (32-bit)");
 			UnlockPixels(pm);
 			DisposeGWorld(gw);
 			return;
@@ -316,9 +315,7 @@ void ImportPictFromHost(char *regBase)
 		SetGWorld(gw, NULL);
 
 		pic = OpenPicture(&r);
-		CopyBits((BitMap *)*pm,
-				 (BitMap *)*pm,
-				 &r, &r, srcCopy, NULL);
+		CopyBits((BitMap *)*pm, (BitMap *)*pm, &r, &r, srcCopy, NULL);
 		ClosePicture();
 
 		SetGWorld(savePort, saveDevice);

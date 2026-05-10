@@ -21,7 +21,7 @@ static long ExportMacToHost(char *regBase)
 	h = NewHandle(0);
 	if (h == NULL)
 	{
-		dbg_log(regBase, "clip: export failed (NewHandle)");
+		clip_log(regBase, "clip: export failed (NewHandle)");
 		return -1;
 	}
 
@@ -41,7 +41,7 @@ static long ExportMacToHost(char *regBase)
 
 	if (reg_result(regBase) != 0)
 	{
-		dbg_log(regBase, "clip: export failed (host rejected)");
+		clip_log(regBase, "clip: export failed (host rejected)");
 		return -1;
 	}
 	return length;
@@ -67,7 +67,7 @@ static long ImportHostToMac(char *regBase)
 	buf = NewPtr(len);
 	if (buf == NULL)
 	{
-		dbg_log(regBase, "clip: import failed (alloc)");
+		clip_log(regBase, "clip: import failed (alloc)");
 		return -1;
 	}
 
@@ -77,7 +77,7 @@ static long ImportHostToMac(char *regBase)
 	reg_command(regBase, kClipImport);
 	if (reg_result(regBase) != 0)
 	{
-		dbg_log(regBase, "clip: import failed (host error)");
+		clip_log(regBase, "clip: import failed (host error)");
 		DisposPtr(buf);
 		return -1;
 	}
@@ -86,13 +86,13 @@ static long ImportHostToMac(char *regBase)
 	err = ZeroScrap();
 	if (err != 0)
 	{
-		dbg_log1(regBase, "Import: ZeroScrap=%ld", err);
+		clip_log1(regBase, "Import: ZeroScrap=%ld", err);
 		DisposPtr(buf);
 		return -1;
 	}
 
 	err = PutScrap(actual, 'TEXT', buf);
-	dbg_log2(regBase, "Import: PutScrap(%ld)=%ld", actual, err);
+	clip_log2(regBase, "Import: PutScrap(%ld)=%ld", actual, err);
 
 	DisposPtr(buf);
 	return (err == 0) ? actual : -1;
@@ -109,44 +109,45 @@ static long ImportHostToMac(char *regBase)
 void SyncClipboard(Globals *g)
 {
 	long now;
+	short appId;
+	unsigned long hostSeq, lastSeq;
 	short scrapCnt;
-	unsigned long hostSeq;
+	unsigned long lastCnt;
+	unsigned long key;
 
 	/* Throttle: at most every 30 ticks (~0.5s) */
 	now = TickCount();
 	if (now - g->lastClipTicks < 30) return;
 	g->lastClipTicks = now;
 
-	scrapCnt = *(short *)kScrapCount;
+	appId = *(short *)kCurApRefNum;
 
-	/* --- Mac changed? Export to host --- */
-	if (scrapCnt != g->lastScrapCnt)
-	{
-		dbg_log2(g->regBase, "Sync: mac changed cnt %ld->%ld, exporting",
-				 (long)g->lastScrapCnt, (long)scrapCnt);
-		ExportMacToHost(g->regBase);
-		ExportPictToHost(g->regBase);
-		reg_command(g->regBase, kClipCommit);
-		g->lastHostSeq  = reg_get(g->regBase, 0);
-		g->lastScrapCnt = scrapCnt;
-		dbg_log1(g->regBase, "Sync: commit -> hostSeq=%lu",
-				 g->lastHostSeq);
-		return;
-	}
-
-	/* --- Host changed? Import to Mac --- */
+	/* --- Host -> Mac --- */
 	reg_command(g->regBase, kClipSeqNo);
 	hostSeq = reg_get(g->regBase, 0);
+	key = (unsigned long)appId * 2;
+	lastSeq = kv_get(g->regBase, key);
 
-	if (hostSeq != g->lastHostSeq)
+	if (hostSeq != lastSeq)
 	{
-		dbg_log2(g->regBase, "Sync: host changed seq %lu->%lu, importing",
-				 g->lastHostSeq, hostSeq);
-		ImportHostToMac(g->regBase);
+		clip_log2(g->regBase, "Sync: host->mac seq %lx != %lx", hostSeq, lastSeq);
+		if (ImportHostToMac(g->regBase) < 0) clip_log(g->regBase, "clip: import error (ignored)");
 		ImportPictFromHost(g->regBase);
-		g->lastHostSeq  = hostSeq;
-		g->lastScrapCnt = *(short *)kScrapCount;
-		dbg_log1(g->regBase, "Sync: imported, scrapCnt now %ld",
-				 (long)g->lastScrapCnt);
+		kv_set(g->regBase, key, hostSeq);
+		/* Prevent feedback: update mac->host scrapCount too */
+		kv_set(g->regBase, (unsigned long)appId * 2 + 1, (unsigned long)*(short *)kScrapCount);
+	}
+
+	/* --- Mac -> Host --- */
+	scrapCnt = *(short *)kScrapCount;
+	key = (unsigned long)appId * 2 + 1;
+	lastCnt = kv_get(g->regBase, key);
+
+	if ((unsigned long)scrapCnt != lastCnt)
+	{
+		clip_log2(g->regBase, "Sync: mac->host cnt %ld != %ld", (unsigned long)scrapCnt, lastCnt);
+		if (ExportMacToHost(g->regBase) < 0) clip_log(g->regBase, "clip: export error (ignored)");
+		ExportPictToHost(g->regBase);
+		kv_set(g->regBase, key, (unsigned long)scrapCnt);
 	}
 }

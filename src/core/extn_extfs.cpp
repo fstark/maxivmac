@@ -475,8 +475,12 @@ static void pbWriteRootDir(PBRef pb, uint32_t nameAddr, storage::HostVolume &vol
 	pb.zero(24, 4); /* ioFRefNum(2) + ioFVersNum(1) + filler1(1) */
 	pb[ioFlAttrib] = kFlAttribDir;
 	pb[ioACUser] = 0;
-	pb[ioDrUsrWds] = Blob16{};
-	pb[ioDrFndrInfo] = Blob16{};
+	{
+		Blob16 dinfo{}, dxinfo{};
+		vol.getDirInfo(storage::HostVolume::kRootDirID, dinfo, dxinfo);
+		pb[ioDrUsrWds] = dinfo;
+		pb[ioDrFndrInfo] = dxinfo;
+	}
 	pb[ioDrNmFls] = vol.childCount(kRootDirID);
 	pb[ioDrDirID] = kRootDirID;
 	pb.zero(54, 18); /* filler3 */
@@ -771,6 +775,13 @@ static OSErr PbSetCatInfo(PBRef pb, bool isHFS)
 	DIAG(ExtFS, "PbSetCatInfo dir=%u name=\"%s\"\n", dirID, name.c_str());
 
 	auto *e = vol->findByPath(dirID, name);
+	if (!e && dirID == storage::HostVolume::kRootParentID)
+	{
+		/* Root directory: dirID=1 + volume name → root (cnid 2) */
+		Blob16 dinfo = pb[ioDrUsrWds];
+		Blob16 dxinfo = pb[ioDrFndrInfo];
+		return vol->setDirInfo(storage::HostVolume::kRootDirID, dinfo, dxinfo);
+	}
 	if (!e) return kFnfErr;
 
 	if (e->isDirectory)
@@ -1053,11 +1064,28 @@ static void RegClose(uint32_t regParam[], uint16_t &regResult)
 }
 
 /* Look up the dirID and procID for a WD refnum (register path). */
+/* Map guest channel ID to host DiagSubsystem. */
+static DiagSubsystem guestChannel(uint32_t ch)
+{
+	switch (ch)
+	{
+		case 0:
+			return DiagSubsystem::INIT;
+		case 1:
+			return DiagSubsystem::CLIP;
+		case 2:
+			return DiagSubsystem::ExtFS;
+		default:
+			return DiagSubsystem::ExtFS;
+	}
+}
+
 /* Format and display a debug log line from the guest. */
 static void RegDbgLog(uint32_t regParam[], uint16_t &regResult)
 {
 	std::string line = guestFormatLog(regParam[0], regParam);
-	DIAG(ExtFS, "GUEST: %s\n", line.c_str());
+	auto ch = guestChannel(regParam[7]);
+	if (Diag().isEnabled(ch)) DiagPrintf(ch, "GUEST: %s\n", line.c_str());
 	guestConsoleAppend(line);
 	regResult = 0;
 }
@@ -1077,10 +1105,9 @@ static void RegGuestVars(uint32_t regParam[], uint16_t &regResult)
 	static uint32_t s_guestVarsPtr = 0;
 	if (regParam[1] != 0)
 	{
-		DIAG(ExtFS, "GuestVars SET ptr=%08X\n", regParam[0]);
+		DIAG(INIT, "GuestVars SET ptr=%08X\n", regParam[0]);
 		s_guestVarsPtr = regParam[0];
 	}
-	DIAG(ExtFS, "GuestVars GET → %08X\n", s_guestVarsPtr);
 	regParam[0] = s_guestVarsPtr;
 	regResult = 0;
 }
@@ -1089,7 +1116,8 @@ static void RegGuestVars(uint32_t regParam[], uint16_t &regResult)
 static void RegFatal(uint32_t regParam[], uint16_t &regResult)
 {
 	std::string msg = guestFormatLog(regParam[0], regParam);
-	DIAG(ExtFS, "GUEST FATAL: %s\n", msg.c_str());
+	auto ch = guestChannel(regParam[7]);
+	if (Diag().isEnabled(ch)) DiagPrintf(ch, "GUEST FATAL: %s\n", msg.c_str());
 	guestConsoleAppend("FATAL: " + msg);
 	fprintf(stderr, "\n[GUEST FATAL] (insn #%" PRIu64 ") %s\n", g_instructionCount, msg.c_str());
 	DumpRecentDisasm();

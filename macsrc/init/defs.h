@@ -276,7 +276,6 @@
 #define kPictExport 0x0109
 #define kPictHasImage 0x010A
 #define kPictImport 0x010B
-#define kClipCommit 0x010C
 
 /* ---- Trap-log flags ---- */
 
@@ -333,16 +332,32 @@ typedef struct
 #define REG_RESULT 0x02
 #define REG_P(n) (0x04 + (n) * 4)
 
+/* ---- Diagnostic channels (matches host DiagSubsystem order) ---- */
+
+#define kDiagINIT  0
+#define kDiagCLIP  1
+#define kDiagExtFS 2
+
 /* ---- Debug log macros ---- */
 
-#define dbg_log(b, s) dbg_log6(b, s, 0, 0, 0, 0, 0, 0)
-#define dbg_log1(b, s, a) dbg_log6(b, s, (long)(a), 0, 0, 0, 0, 0)
-#define dbg_log2(b, s, a, c) dbg_log6(b, s, (long)(a), (long)(c), 0, 0, 0, 0)
-#define dbg_log3(b, s, a, c, d) dbg_log6(b, s, (long)(a), (long)(c), (long)(d), 0, 0, 0)
+#define dbg_log(b, s) dbg_log6(b, kDiagINIT, s, 0, 0, 0, 0, 0, 0)
+#define dbg_log1(b, s, a) dbg_log6(b, kDiagINIT, s, (long)(a), 0, 0, 0, 0, 0)
+#define dbg_log2(b, s, a, c) dbg_log6(b, kDiagINIT, s, (long)(a), (long)(c), 0, 0, 0, 0)
+#define dbg_log3(b, s, a, c, d) dbg_log6(b, kDiagINIT, s, (long)(a), (long)(c), (long)(d), 0, 0, 0)
 
-#define dbg_fatal(b, s) dbg_fatal6(b, s, 0, 0, 0, 0, 0, 0)
-#define dbg_fatal1(b, s, a) dbg_fatal6(b, s, (long)(a), 0, 0, 0, 0, 0)
-#define dbg_fatal2(b, s, a, c) dbg_fatal6(b, s, (long)(a), (long)(c), 0, 0, 0, 0)
+#define dbg_fatal(b, s) dbg_fatal6(b, kDiagINIT, s, 0, 0, 0, 0, 0, 0)
+#define dbg_fatal1(b, s, a) dbg_fatal6(b, kDiagINIT, s, (long)(a), 0, 0, 0, 0, 0)
+#define dbg_fatal2(b, s, a, c) dbg_fatal6(b, kDiagINIT, s, (long)(a), (long)(c), 0, 0, 0, 0)
+
+/* Channel-specific variants */
+#define clip_log(b, s) dbg_log6(b, kDiagCLIP, s, 0, 0, 0, 0, 0, 0)
+#define clip_log1(b, s, a) dbg_log6(b, kDiagCLIP, s, (long)(a), 0, 0, 0, 0, 0)
+#define clip_log2(b, s, a, c) dbg_log6(b, kDiagCLIP, s, (long)(a), (long)(c), 0, 0, 0, 0)
+
+#define extfs_log(b, s) dbg_log6(b, kDiagExtFS, s, 0, 0, 0, 0, 0, 0)
+#define extfs_log1(b, s, a) dbg_log6(b, kDiagExtFS, s, (long)(a), 0, 0, 0, 0, 0)
+#define extfs_log2(b, s, a, c) dbg_log6(b, kDiagExtFS, s, (long)(a), (long)(c), 0, 0, 0, 0)
+#define extfs_log3(b, s, a, c, d) dbg_log6(b, kDiagExtFS, s, (long)(a), (long)(c), (long)(d), 0, 0, 0)
 
 /* ---- Function prototypes — comm.c ---- */
 
@@ -353,9 +368,9 @@ void reg_command(char *base, unsigned short cmd);
 unsigned short reg_result(char *base);
 Globals *get_globals(void);
 void set_globals(char *base, Globals *g);
-void dbg_log6(char *base, char *fmt, unsigned long a, unsigned long b, unsigned long c,
+void dbg_log6(char *base, short ch, char *fmt, unsigned long a, unsigned long b, unsigned long c,
 			  unsigned long d, unsigned long e, unsigned long f);
-void dbg_fatal6(char *base, char *fmt, unsigned long a, unsigned long b, unsigned long c,
+void dbg_fatal6(char *base, short ch, char *fmt, unsigned long a, unsigned long b, unsigned long c,
 				unsigned long d, unsigned long e, unsigned long f);
 void log_trap(char *base, unsigned short trapWord, char *pb, short action, short err, short flags);
 void kv_set(char *regBase, unsigned long key, unsigned long val);

@@ -192,21 +192,25 @@ static Ptr MakeHFSStub(long dispatchAddr, long oldAddr)
 	Install one flat-file trap patch.
 	trapWord is the full trap word ($A0xx), e.g. $A000 for _Open.
 */
-static void InstallFlatPatch(unsigned short trapWord, char *regBase)
+static Boolean InstallFlatPatch(unsigned short trapWord, char *regBase)
 {
 	long oldAddr;
 	long dispAddr;
 	Ptr stub;
+
+	dbg_log1(regBase, "INIT: patching trap $%lx", (long)trapWord);
 
 	oldAddr = (long)NGetTrapAddress(trapWord, OSTrap);
 	dispAddr = (long)DispatchFlat;
 	stub = MakeFlatStub(dispAddr, oldAddr);
 	if (stub == NULL)
 	{
-		dbg_log1(regBase, "INIT: stub alloc failed for %lx", (long)trapWord);
-		return;
+		dbg_log1(regBase, "INIT: stub alloc FAILED for $%lx", (long)trapWord);
+		return false;
 	}
 	NSetTrapAddress((long)stub, trapWord, OSTrap);
+	dbg_log1(regBase, "INIT:   stub=$%lx ok", (long)stub);
+	return true;
 }
 
 static void InstallHFSPatch(char *regBase)
@@ -215,8 +219,10 @@ static void InstallHFSPatch(char *regBase)
 	long dispAddr;
 	Ptr stub;
 
+	dbg_log(regBase, "INIT: patching HFS ($A260)");
 	oldAddr = (long)NGetTrapAddress(0xA260, OSTrap);
 	dispAddr = (long)DispatchHFS;
+	dbg_log2(regBase, "INIT:   old=$%lx disp=$%lx", oldAddr, dispAddr);
 	stub = MakeHFSStub(dispAddr, oldAddr);
 	if (stub == NULL)
 	{
@@ -483,6 +489,7 @@ void main(void)
 		reg_set(regBase, 4, (unsigned long)g->initFileName);
 		reg_set(regBase, 5, (unsigned long)env.machineType);
 		reg_set(regBase, 6, (unsigned long)env.systemVersion);
+		reg_set(regBase, 7, (unsigned long)FreeMemSys());
 		reg_command(regBase, kCmdInitIdent);
 
 		if (reg_result(regBase) != 0)
@@ -497,28 +504,36 @@ void main(void)
 	/* ---- Install traps (unconditional) ---- */
 	InitTrapTables();
 	InstallHFSPatch(regBase);
-	InstallFlatPatch(0xA000, regBase); /* _Open */
-	InstallFlatPatch(0xA001, regBase); /* _Close */
-	InstallFlatPatch(0xA002, regBase); /* _Read */
-	InstallFlatPatch(0xA003, regBase); /* _Write */
-	InstallFlatPatch(0xA007, regBase); /* _GetVolInfo */
-	InstallFlatPatch(0xA008, regBase); /* _Create */
-	InstallFlatPatch(0xA009, regBase); /* _Delete */
-	InstallFlatPatch(0xA00A, regBase); /* _OpenRF */
-	InstallFlatPatch(0xA00B, regBase); /* _Rename */
-	InstallFlatPatch(0xA00C, regBase); /* _GetFileInfo */
-	InstallFlatPatch(0xA00D, regBase); /* _SetFileInfo */
-	InstallFlatPatch(0xA00E, regBase); /* _UnmountVol */
-	InstallFlatPatch(0xA010, regBase); /* _Allocate */
-	InstallFlatPatch(0xA011, regBase); /* _GetEOF */
-	InstallFlatPatch(0xA012, regBase); /* _SetEOF */
-	InstallFlatPatch(0xA013, regBase); /* _FlushVol */
-	InstallFlatPatch(0xA014, regBase); /* _GetVol */
-	InstallFlatPatch(0xA015, regBase); /* _SetVol */
-	InstallFlatPatch(0xA017, regBase); /* _Eject */
-	InstallFlatPatch(0xA018, regBase); /* _GetFPos */
-	InstallFlatPatch(0xA044, regBase); /* _SetFPos */
-	InstallFlatPatch(0xA045, regBase); /* _FlushFile */
+	if (!InstallFlatPatch(0xA000, regBase) /* _Open */
+		|| !InstallFlatPatch(0xA001, regBase) /* _Close */
+		|| !InstallFlatPatch(0xA002, regBase) /* _Read */
+		|| !InstallFlatPatch(0xA003, regBase) /* _Write */
+		|| !InstallFlatPatch(0xA007, regBase) /* _GetVolInfo */
+		|| !InstallFlatPatch(0xA008, regBase) /* _Create */
+		|| !InstallFlatPatch(0xA009, regBase) /* _Delete */
+		|| !InstallFlatPatch(0xA00A, regBase) /* _OpenRF */
+		|| !InstallFlatPatch(0xA00B, regBase) /* _Rename */
+		|| !InstallFlatPatch(0xA00C, regBase) /* _GetFileInfo */
+		|| !InstallFlatPatch(0xA00D, regBase) /* _SetFileInfo */
+		|| !InstallFlatPatch(0xA00E, regBase) /* _UnmountVol */
+		|| !InstallFlatPatch(0xA010, regBase) /* _Allocate */
+		|| !InstallFlatPatch(0xA011, regBase) /* _GetEOF */
+		|| !InstallFlatPatch(0xA012, regBase) /* _SetEOF */
+		|| !InstallFlatPatch(0xA013, regBase) /* _FlushVol */
+		|| !InstallFlatPatch(0xA014, regBase) /* _GetVol */
+		|| !InstallFlatPatch(0xA015, regBase) /* _SetVol */
+		|| !InstallFlatPatch(0xA017, regBase) /* _Eject */
+		|| !InstallFlatPatch(0xA018, regBase) /* _GetFPos */
+		|| !InstallFlatPatch(0xA044, regBase) /* _SetFPos */
+		|| !InstallFlatPatch(0xA045, regBase)) /* _FlushFile */
+	{
+		long sysFree = FreeMemSys();
+		dbg_fatal1(regBase, "INIT: FATAL — system heap full (free=%ld), shared drive unavailable",
+				   sysFree);
+		/* Show visible error to user — DebugStr shows in debugger/overlay */
+		DebugStr("\pmaxivmac INIT: system heap full — shared drive unavailable");
+		goto bail;
+	}
 	dbg_log(regBase, "maxivmac INIT: traps patched");
 
 	/* ---- Drain pending mount queue ---- */

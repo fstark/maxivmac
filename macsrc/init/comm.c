@@ -78,7 +78,7 @@ unsigned long kv_get(char *regBase, unsigned long key)
 
 /* ---- Debug log (drive subsystem, $020D) ---- */
 
-void dbg_log6(char *base, char *fmt, unsigned long a, unsigned long b, unsigned long c,
+void dbg_log6(char *base, short ch, char *fmt, unsigned long a, unsigned long b, unsigned long c,
 			  unsigned long d, unsigned long e, unsigned long f)
 {
 	reg_set(base, 0, (unsigned long)fmt);
@@ -88,6 +88,7 @@ void dbg_log6(char *base, char *fmt, unsigned long a, unsigned long b, unsigned 
 	reg_set(base, 4, d);
 	reg_set(base, 5, e);
 	reg_set(base, 6, f);
+	reg_set(base, 7, (unsigned long)ch);
 	reg_command(base, 0x020D);
 }
 
@@ -105,8 +106,8 @@ void log_trap(char *base, unsigned short trapWord, char *pb, short action, short
 
 /* ---- Fatal shutdown ---- */
 
-void dbg_fatal6(char *base, char *fmt, unsigned long a, unsigned long b, unsigned long c,
-				unsigned long d, unsigned long e, unsigned long f)
+void dbg_fatal6(char *base, short ch, char *fmt, unsigned long a, unsigned long b, unsigned long c,
+			   unsigned long d, unsigned long e, unsigned long f)
 {
 	reg_set(base, 0, (unsigned long)fmt);
 	reg_set(base, 1, a);
@@ -115,6 +116,7 @@ void dbg_fatal6(char *base, char *fmt, unsigned long a, unsigned long b, unsigne
 	reg_set(base, 4, d);
 	reg_set(base, 5, e);
 	reg_set(base, 6, f);
+	reg_set(base, 7, (unsigned long)ch);
 	reg_command(base, 0x0214);
 }
 
