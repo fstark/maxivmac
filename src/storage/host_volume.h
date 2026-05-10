@@ -275,9 +275,10 @@ public:
 private:
 	std::filesystem::path rootPath_; // host directory backing this volume
 	bool mounted_ = false;
-	int slot_ = 0;						// assigned by DriveManager::mount() via setSlot()
-	std::vector<CatalogEntry> catalog_; // flat list; searched linearly by CNID or name
-	uint32_t nextCNID_ = 16;			// monotonic counter; 1-2 are reserved for root
+	int slot_ = 0;						 // assigned by DriveManager::mount() via setSlot()
+	std::vector<CatalogEntry> catalog_;	 // flat list; searched linearly by CNID or name
+	uint32_t nextCNID_ = 16;			 // monotonic counter; 1-2 are reserved for root
+	uint8_t rootDirFinderInfo_[32] = {}; // DInfo(16) + DXInfo(16) for root dir
 	[[maybe_unused]] SidecarMode sidecarMode_ = SidecarMode::Full;
 	appledouble::TypeMap typeMap_; // per-volume extension→type mapping
 

@@ -49,6 +49,10 @@ bool HostVolume::mount(const std::filesystem::path &hostDir)
 	if (typeMap_.load(volumeMap) < 0) typeMap_ = appledouble::DefaultTypeMap();
 
 	scanDirectory(hostDir, kRootDirID);
+
+	/* Load root directory Finder info from sidecar */
+	appledouble::GetDirFinderInfo(hostDir, rootDirFinderInfo_, 32);
+
 	mounted_ = true;
 	return true;
 }
@@ -435,6 +439,12 @@ OSErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, ui
 bool HostVolume::getDirInfo(uint32_t cnid, std::array<uint8_t, 16> &dinfo,
 							std::array<uint8_t, 16> &dxinfo) const
 {
+	if (cnid == kRootDirID)
+	{
+		std::memcpy(dinfo.data(), rootDirFinderInfo_, 16);
+		std::memcpy(dxinfo.data(), rootDirFinderInfo_ + 16, 16);
+		return true;
+	}
 	const CatalogEntry *e = findByCNID(cnid);
 	if (!e || !e->isDirectory) return false;
 	std::memcpy(dinfo.data(), e->dirFinderInfo, 16);
@@ -445,6 +455,13 @@ bool HostVolume::getDirInfo(uint32_t cnid, std::array<uint8_t, 16> &dinfo,
 OSErr HostVolume::setDirInfo(uint32_t cnid, const std::array<uint8_t, 16> &dinfo,
 							 const std::array<uint8_t, 16> &dxinfo)
 {
+	if (cnid == kRootDirID)
+	{
+		std::memcpy(rootDirFinderInfo_, dinfo.data(), 16);
+		std::memcpy(rootDirFinderInfo_ + 16, dxinfo.data(), 16);
+		appledouble::SetDirFinderInfo(rootPath_, rootDirFinderInfo_, 32);
+		return kNoErr;
+	}
 	CatalogEntry *e = mutableFindByCNID(cnid);
 	if (!e || !e->isDirectory) return kFnfErr;
 	std::memcpy(e->dirFinderInfo, dinfo.data(), 16);

@@ -2,8 +2,11 @@
 # Placeholders %%BUILD_ID%% are substituted by smoke.sh before use.
 timeout 0
 
+trace traps GetResource Get1Resource SetApplBase
+
 # Wait for Finder desktop
 wait text "Special"
+
 
 # Open the shared drive via TeachText
 launch "Macintosh:TeachText"

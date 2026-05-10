@@ -4,11 +4,11 @@ Design: [CLIPBOARD_SYNC_DESIGN.md](CLIPBOARD_SYNC_DESIGN.md)
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | HostPasteboard struct + SDL event handler | done |
-| 2 | Rewire ClipSeqNo, ClipImport, PictHasImage, PictImport to read from pasteboard | done |
-| 3 | Stage-and-commit: ClipExport, PictExport staging + kClipCommit | done |
-| 4 | Guest-side sync loop rewrite | done |
-| 5 | Remove dead code + version bump | done |
+| 1 | HostPasteboard struct + SDL event handler | |
+| 2 | Rewire ClipSeqNo, ClipImport, PictHasImage, PictImport to read from pasteboard | |
+| 3 | Stage-and-commit: ClipExport, PictExport staging + kClipCommit | |
+| 4 | Guest-side sync loop rewrite | |
+| 5 | Remove dead code + version bump | |
 | 6 | Manual integration test | |
 
 Build gate: `cmake --build bld/macos`

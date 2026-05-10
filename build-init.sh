@@ -33,5 +33,5 @@ EOF
 echo "Stamped INIT version: $VERSION"
 echo "Launching emulator to compile INIT..."
 
-"$MAXIVMAC" --headless --dbg-script="$DBG_SCRIPT" "$MAC_FILE"
-#"$MAXIVMAC" --dbg-script="$DBG_SCRIPT" "$MAC_FILE"
+#"$MAXIVMAC" --headless --dbg-script="$DBG_SCRIPT" "$MAC_FILE"
+"$MAXIVMAC" --dbg-script="$DBG_SCRIPT" "$MAC_FILE"
