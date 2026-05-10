@@ -50,6 +50,7 @@ set(MINIVMAC_SOURCES
     src/core/machine.cpp
     src/core/extn_clip.cpp
     src/core/pict_convert.cpp
+    src/core/extn_clip_pict.cpp
     src/core/extn_extfs.cpp
     src/core/extn_system.cpp
     src/core/extfs_log.cpp

@@ -1,4 +1,5 @@
 #include "core/extn_clip.h"
+#include "core/extn_clip_pict.h"
 #include "core/diag.h"
 #include "debugger/debugger.h"
 #include "platform/common/clipboard.h"
@@ -25,6 +26,9 @@ static constexpr uint16_t kClipSeqNo = 0x105;
 static constexpr uint16_t kClipKVSet = 0x106;
 static constexpr uint16_t kClipKVGet = 0x107;
 static constexpr uint16_t kClipDbgLog = 0x108;
+static constexpr uint16_t kPictExport = 0x109;
+static constexpr uint16_t kPictHasImage = 0x10A;
+static constexpr uint16_t kPictImport = 0x10B;
 
 static std::string s_clipCache;
 static std::unordered_map<uint32_t, uint32_t> s_kvStore;
@@ -37,6 +41,7 @@ void ExtnClipReset()
 	s_clipSeqNo = 0;
 	s_clipCache.clear();
 	s_lastClipText.clear();
+	ExtnPictReset();
 }
 
 /* ── Debug console log buffer ──────────────────────── */
@@ -288,6 +293,16 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			regResult = 0;
 		}
 		break;
+
+		case kPictExport:
+			HandlePictExport(regParam, regResult);
+			break;
+		case kPictHasImage:
+			HandlePictHasImage(regParam, regResult);
+			break;
+		case kPictImport:
+			HandlePictImport(regParam, regResult);
+			break;
 
 		default:
 			regResult = 0xFFFF;
