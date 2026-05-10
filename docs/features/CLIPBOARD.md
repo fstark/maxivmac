@@ -12,7 +12,6 @@ into the System Folder and reboot the emulated Mac.
 
 ## Limitations
 
-- **TEXT only.** PICT and other scrap types are not synced.
 - **Private-scrap apps** (e.g. THINK C) only see host clipboard
   updates after a real MultiFinder context switch (activate Finder and
   back).  The desk scrap is updated immediately, but private-scrap
@@ -29,7 +28,20 @@ into the System Folder and reboot the emulated Mac.
 - **Encoding:** UTF-8 on the host, Mac OS Roman on the guest.
   Conversion and line-ending translation (LF ↔ CR) happen
   automatically.
-- **Data types:** TEXT only.  PICT is not yet supported.
+- **Data types:** TEXT and PICT.  If the Mac scrap has both, both are
+  sent — the host clipboard gets `text/plain` + `image/png`.  Host
+  apps pick whichever they prefer.
+- **PICT → Host:** The INIT renders the PICT through QuickDraw into
+  an offscreen buffer (two passes: white and black background).  The
+  host composites the passes to compute alpha, encodes as PNG, and
+  places on the host clipboard.
+- **Host → Mac:** The INIT queries host image dimensions, allocates
+  a buffer, receives decoded pixels, and creates a PICT via
+  `OpenPicture`/`CopyBits`/`ClosePicture`.
+- **Transparency:** Two-pass alpha detection: pixels that differ
+  between white-bg and black-bg renders are transparent.
+- **Depth:** Matches main screen — 1-bit BitMap on compact Macs,
+  32-bit GWorld on color Macs.
 
 ## Architecture
 
@@ -52,13 +64,19 @@ into the System Folder and reboot the emulated Mac.
 │  Emulator (C++)                                  │
 │                                                  │
 │  extn_clip.cpp                                   │
-│    dispatches clipboard commands ($100–$108)      │
+│    dispatches clipboard commands ($100–$10B)      │
 │    reads/writes guest RAM directly                │
 │    converts UTF-8 ↔ Mac OS Roman                 │
 │              │                                   │
 │              ▼                                   │
+│  extn_clip_pict.cpp                              │
+│    PictExport/PictHasImage/PictImport handlers   │
+│    two-pass compositing via pict_convert.cpp     │
+│              │                                   │
+│              ▼                                   │
 │  clipboard.cpp (platform layer)                  │
 │    SDL_GetClipboardText / SDL_SetClipboardText   │
+│    SDL_GetClipboardData / SDL_SetClipboardData   │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -93,22 +111,25 @@ Address varies by model:
 
 ### Clipboard commands (`extn_clip.cpp`)
 
-| Command     | Code  | Parameters                          | Returns                    |
-|-------------|-------|-------------------------------------|----------------------------|
-| ClipVersion | $100  | —                                   | p0 = version (currently 2) |
-| ClipExport  | $101  | p0 = buffer addr, p1 = byte count   | result                     |
-| ClipImport  | $102  | p0 = buffer addr, p1 = capacity     | p1 = actual byte count     |
-| ClipHasData | $103  | —                                   | p0 = 1 if host has text    |
-| ClipGetLen  | $104  | —                                   | p0 = byte count            |
-| ClipSeqNo   | $105  | —                                   | p0 = sequence number       |
-| ClipKVSet   | $106  | p0 = key, p1 = value                | result                     |
-| ClipKVGet   | $107  | p0 = key                            | p0 = value (0 if unset)    |
-| ClipDbgLog  | $108  | p0 = format string addr, p1–p6 args | result                     |
+| Command      | Code  | Parameters                          | Returns                    |
+|--------------|-------|-------------------------------------|----------------------------|
+| ClipVersion  | $100  | —                                   | p0 = version (currently 3) |
+| ClipExport   | $101  | p0 = buffer addr, p1 = byte count   | result                     |
+| ClipImport   | $102  | p0 = buffer addr, p1 = capacity     | p1 = actual byte count     |
+| ClipHasData  | $103  | —                                   | p0 = 1 if host has text    |
+| ClipGetLen   | $104  | —                                   | p0 = byte count            |
+| ClipSeqNo    | $105  | —                                   | p0 = sequence number       |
+| ClipKVSet    | $106  | p0 = key, p1 = value                | result                     |
+| ClipKVGet    | $107  | p0 = key                            | p0 = value (0 if unset)    |
+| ClipDbgLog   | $108  | p0 = format string addr, p1–p6 args | result                     |
+| PictExport   | $109  | p0 = BitMap/PixMap ptr, p1 = pass   | result                     |
+| PictHasImage | $10A  | —                                   | p0 = has?, p1 = w, p2 = h  |
+| PictImport   | $10B  | p0 = buf, p1 = rowBytes, p2 = depth, p3 = w, p4 = h | result   |
 
-`ClipSeqNo` increments whenever the host clipboard changes.  The guest
-polls it to detect new content without reading the full clipboard.
-After a `ClipExport`, the sequence number is not bumped — this
-prevents feedback loops.
+`ClipSeqNo` increments whenever the host clipboard changes (text or
+image).  The guest polls it to detect new content without reading the
+full clipboard.  After a `ClipExport` or `PictExport`, the sequence
+number is not bumped — this prevents feedback loops.
 
 `ClipKVSet` / `ClipKVGet` provide a host-side key-value store that
 the INIT uses to track per-app sync state under MultiFinder (avoids
@@ -123,6 +144,12 @@ Three functions, backed by SDL3:
   swaps LF → CR
 - `HostClipSetText(buf, len)` — swaps CR → LF, converts Mac OS Roman
   to UTF-8, calls `SDL_SetClipboardText()`
+- `HostClipHasImage(w, h)` — checks for `image/png` on host clipboard,
+  reads PNG header for dimensions via `stbi_info_from_memory`
+- `HostClipGetImageRGBA(w, h)` — decodes PNG from host clipboard to
+  RGBA pixels via `stbi_load_from_memory`
+- `HostClipSetImage(png, len)` — places PNG data on host clipboard
+  via `SDL_SetClipboardData`
 
 Without SDL (`HAVE_SDL` undefined), all functions return false/empty.
 
@@ -189,11 +216,15 @@ Four instructions per call:
 |------|---------|
 | `src/core/extn_clip.h` | Dispatcher interface |
 | `src/core/extn_clip.cpp` | Command handlers + debug console |
+| `src/core/extn_clip_pict.h` | PICT command handler interface |
+| `src/core/extn_clip_pict.cpp` | PictExport/PictHasImage/PictImport handlers |
+| `src/core/pict_convert.h` | Pixel compositing + format conversion interface |
+| `src/core/pict_convert.cpp` | Two-pass alpha compositing, PNG encode, RGBA↔Mac |
 | `src/platform/common/clipboard.h` | Platform abstraction |
 | `src/platform/common/clipboard.cpp` | SDL3 implementation + encoding |
+| `src/platform/clipboard_image.h` | Image clipboard (host → SDL) |
+| `src/platform/clipboard_image.cpp` | SDL3 image clipboard via callback |
 | `src/core/machine.cpp` | Register block ATT dispatch |
 | `src/core/machine_config.h` | Extension block base address + size |
-| `macsrc/clipsync/init.c` | jGNEFilter INIT (recommended) |
-| `macsrc/clipsync/main.c` | Bidirectional sync console app |
-| `macsrc/clipin/ClipIn.c` | Host→Mac desk accessory (legacy) |
-| `macsrc/clipout/ClipOut.c` | Mac→Host desk accessory (legacy) |
+| `macsrc/init/clip.c` | Clipboard sync loop (jGNEFilter) |
+| `macsrc/init/pict.c` | PICT export/import (guest side) |

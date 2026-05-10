@@ -206,7 +206,7 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 	switch (cmd)
 	{
 		case kClipVersion:
-			regParam[0] = 2;
+			regParam[0] = 3;
 			regResult = 0;
 			break;
 

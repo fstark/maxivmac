@@ -33,7 +33,10 @@ This matches real Mac behavior.  Approaches tried and failed:
 - Understand MultiFinder's internal suspend/resume dispatch
   (trap-level logging needed)
 - Edge cases: empty clipboard, large clipboard (>4K)
-- Consider PICT scrap type support
+
+**Done:**
+- ~~Consider PICT scrap type support~~ — Implemented (version 3).
+  Bidirectional image sync via two-pass QuickDraw rendering.
 
 ## I/O Register Interface
 

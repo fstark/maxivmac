@@ -3,20 +3,22 @@
 Design: [PICT_CLIPBOARD_DESIGN.md](PICT_CLIPBOARD_DESIGN.md)
 Spec: [features/CLIPBOARD.md](features/CLIPBOARD.md)
 
+**Status: All code phases implemented.** Human test gates (4, 7, 11) pending.
+
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Host-side 1-bit pixel extraction + alpha compositing + PNG encode + unit tests | |
-| 2 | Host-side PictExport command handler + dispatch wiring | |
-| 3 | Guest-side PICT export (1-bit compact Mac path) | |
-| 4 | Human test gate: 1-bit guest→host (MacPaint → host paste) | |
-| 5 | Host-side 32-bit pixel extraction + alpha compositing + unit tests | |
-| 6 | Guest-side PICT export (32-bit GWorld path + CQD detection) | |
-| 7 | Human test gate: 32-bit guest→host (Mac II color app → host paste) | |
-| 8 | Host-side image query + import (PictHasImage + PictImport) + unit tests | |
-| 9 | Unified ClipSeqNo (bump on text OR image) | |
-| 10 | Guest-side PICT import (host→guest) | |
-| 11 | Human test gate: host→guest (host copy → paste in Mac app) | |
-| 12 | Version bump to 3, documentation update | |
+| 1 | Host-side 1-bit pixel extraction + alpha compositing + PNG encode + unit tests | ✅ |
+| 2 | Host-side PictExport command handler + dispatch wiring | ✅ |
+| 3 | Guest-side PICT export (1-bit compact Mac path) | ✅ |
+| 4 | Human test gate: 1-bit guest→host (MacPaint → host paste) | pending |
+| 5 | Host-side 32-bit pixel extraction + alpha compositing + unit tests | ✅ |
+| 6 | Guest-side PICT export (32-bit GWorld path + CQD detection) | ✅ |
+| 7 | Human test gate: 32-bit guest→host (Mac II color app → host paste) | pending |
+| 8 | Host-side image query + import (PictHasImage + PictImport) + unit tests | ✅ |
+| 9 | Unified ClipSeqNo (bump on text OR image) | ✅ |
+| 10 | Guest-side PICT import (host→guest) | ✅ |
+| 11 | Human test gate: host→guest (host copy → paste in Mac app) | pending |
+| 12 | Version bump to 3, documentation update | ✅ |
 
 Build gate: `cmake --build bld/macos`
 Test gate: `bld/macos/tests`
