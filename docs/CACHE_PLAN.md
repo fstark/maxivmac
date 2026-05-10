@@ -4,6 +4,7 @@ Design: [CACHE_DESIGN.md](CACHE_DESIGN.md)
 
 | Phase | Description | Status |
 |-------|-------------|--------|
+| 0 | CACHE diagnostic channel | |
 | 1 | CnidTable data structure + unit tests | |
 | 2 | OpenFork extension + fork I/O resilience | |
 | 3 | Lazy scanning (ensureScanned + mount refactor) | |
@@ -50,6 +51,64 @@ Specifically:
   tick-gating rationale (guest calls ~60 Hz, we fire every ~1.5 s).
 
 Follow [STYLE.md](STYLE.md) and [NAMING.md](NAMING.md) throughout.
+
+---
+
+## Phase 0 — CACHE Diagnostic Channel
+
+Register a dedicated `CACHE` diagnostic subsystem so that all
+cache-related tracing can be toggled independently from the
+general `ExtFS` channel.  This keeps the output manageable:
+`--diag=CACHE` shows only cache lifecycle, while `--diag=ExtFS`
+continues to show trap-level I/O as before.
+
+### 0.1 — Add DiagSubsystem::CACHE
+
+**File:** `src/core/diag.h`
+
+Add a new entry before `kCount`:
+
+```cpp
+CACHE, /* [CACHE] catalog cache: scan, evict, CNID resolve  */
+```
+
+### 0.2 — Register the tag string
+
+**File:** `src/core/diag.cpp`
+
+Add `"CACHE"` to the `tag()` switch and `fromName()` lookup,
+following the existing pattern for other channels.
+
+### 0.3 — Add convenience macro
+
+**File:** `src/storage/host_volume.cpp` (file-scope, near includes)
+
+Define a local shorthand to keep call sites compact:
+
+```cpp
+#define CACHE_LOG(fmt, ...) DIAG(CACHE, fmt "\n", ##__VA_ARGS__)
+```
+
+Guidelines for `CACHE_LOG` messages across all phases:
+
+- **One line per event**.  Format: `verb: key=value key=value …`.
+  Examples: `resolve: new cnid=17 parent=2 name="README"`.
+- **Include the CNID and macName** in every message that touches
+  an identity.  These are the primary correlation keys when
+  reading log output.
+- **Avoid logging inside tight loops** that iterate every catalog
+  entry (e.g. `findByCNID` linear scan).  Log the *outcome*, not
+  each iteration step.
+- **Log at decision boundaries**: cache hit vs. miss, scan
+  triggered vs. short-circuited, entry evicted vs. retained.
+
+### Fence
+
+- [ ] `DiagSubsystem::CACHE` compiles and toggles independently
+- [ ] `--diag=CACHE` enables the channel (manual verification)
+- [ ] `CACHE_LOG` macro defined in `host_volume.cpp`
+- [ ] Full build clean
+- [ ] Commit: `"cache: phase 0 — CACHE diagnostic channel"`
 
 ---
 
@@ -160,18 +219,41 @@ FNV-1a hash of the lowercased `macName` bytes.
 If found, return the existing CNID (ignore hostPath).  Otherwise
 allocate `nextCnid_++`, insert into both `forward_` and
 `reverse_`, return the new CNID.
+Log on new allocation only (not on cache hits — those are too
+frequent):
+
+```cpp
+CACHE_LOG("resolve: new cnid=%u parent=%u name=\"%s\"",
+          cnid, parentDirID, std::string(macName).c_str());
+```
 
 **`reverse()`** — look up `cnid` in `reverse_`.  Return pointer to
-`CnidValue` or `nullptr`.
+`CnidValue` or `nullptr`.  No logging (called in tight loops).
 
 **`updateKey()`** — erase the old key from `forward_`, build a new
 `CnidKey{newParentDirID, newMacName}`, insert into `forward_`
 with the same CNID, update `reverse_[cnid]` with new key and
-hostPath.
+hostPath.  Log the identity change:
+
+```cpp
+CACHE_LOG("updateKey: cnid=%u -> parent=%u name=\"%s\"",
+          cnid, newParentDirID, std::string(newMacName).c_str());
+```
 
 **`updateHostPath()`** — update only `reverse_[cnid].hostPath`.
+Log the path change:
+
+```cpp
+CACHE_LOG("updateHostPath: cnid=%u -> \"%s\"",
+          cnid, std::string(newHostPath).c_str());
+```
 
 **`clear()`** — clear all three maps, reset `nextCnid_ = 16`.
+Log the size before clearing:
+
+```cpp
+CACHE_LOG("clear: dropping %zu entries", forward_.size());
+```
 
 **`nextCnid()`** — return `nextCnid_`.
 
@@ -259,6 +341,7 @@ approach and stick with it; do not leave a choice for the executor.**
 - [ ] `CnidKey`, `CnidKeyHash`, `CnidValue`, `CnidTable` defined in `host_volume.h`
 - [ ] All `CnidTable` methods implemented in `host_volume.cpp`
 - [ ] `cnidTable_` member exists in `HostVolume`
+- [ ] `CACHE_LOG` calls in `resolve()`, `updateKey()`, `updateHostPath()`, `clear()`
 - [ ] Unit tests pass: `ctest --preset macos`
 - [ ] Full build clean
 - [ ] Commit: `"cache: phase 1 — CnidTable data structure + unit tests"`
@@ -319,6 +402,11 @@ Current code calls `mutableFindByCNID(of.cnid)` and returns
 1. Call `mutableFindByCNID(of.cnid)`.
 2. If null (entry evicted), proceed using `of.hostPath` and
    `of.isText` instead of `e->hostPath` and `e->isText`.
+   Log the evicted-entry fallback:
+
+   ```cpp
+   CACHE_LOG("readFork: cnid=%u evicted, using of.hostPath", of.cnid);
+   ```
 3. For resource-fork reads: use `of.hostPath` instead of
    `e->hostPath` in calls to `appledouble::ReadResourceFork()`.
 4. For TEXT reads: use `of.hostPath` instead of `e->hostPath` in
@@ -337,6 +425,11 @@ Same pattern as readFork():
 
 1. Call `mutableFindByCNID(of.cnid)`.
 2. If null, use `of.hostPath` / `of.isText` for I/O.
+   Log the evicted-entry fallback:
+
+   ```cpp
+   CACHE_LOG("writeFork: cnid=%u evicted, using of.hostPath", of.cnid);
+   ```
 3. After writes: if `e != nullptr`, update `e->dataForkSize` and
    `e->modDate` as before.  If `e` is null, skip the metadata
    update — values will be refreshed from disk when the entry is
@@ -355,6 +448,11 @@ if null.  Same treatment as readFork/writeFork:
 
 1. If `e` is null, use `of.hostPath` for resource-fork operations
    (`appledouble::SetResourceForkSize()`).
+   Log the evicted-entry fallback:
+
+   ```cpp
+   CACHE_LOG("setEOF: cnid=%u evicted, using of.hostPath", of.cnid);
+   ```
 2. For data forks, `of.fp` is already available — `ftruncate()` works
    without a `CatalogEntry`.
 3. Skip `e->dataForkSize` / `e->rsrcForkSize` / `e->modDate` updates
@@ -390,6 +488,7 @@ Add test cases:
 - [ ] `OpenFork` has `hostPath` and `isText` fields
 - [ ] `openFork()` copies both fields from `CatalogEntry`
 - [ ] `readFork()`, `writeFork()`, and `setEOF()` tolerate null `CatalogEntry`
+- [ ] Evicted-entry fallback logged in `readFork`, `writeFork`, `setEOF`
 - [ ] Virtual forks work correctly (empty `hostPath` handled)
 - [ ] Existing fork tests still pass
 - [ ] New tests pass
@@ -428,6 +527,8 @@ Add the declaration in the `private:` section, near `scanDirectory()`.
 Implementation follows the algorithm in CACHE_DESIGN.md §4.2 closely:
 
 1. **Short-circuit:** if `cnidTable_.isScanned(dirID)`, return.
+   No logging on short-circuit (too noisy — this fires on every
+   `GetCatInfo` during Finder enumeration).
 2. **Resolve hostPath:**
    - If `dirID == kRootDirID`, use `rootPath_`.
    - Otherwise, `auto *val = cnidTable_.reverse(dirID)`.  If null,
@@ -449,6 +550,22 @@ Implementation follows the algorithm in CACHE_DESIGN.md §4.2 closely:
    `parentDirID == dirID` and `!isVirtual` and the host file no
    longer exists on disk.
 6. **Mark scanned:** `cnidTable_.markScanned(dirID)`.
+
+After step 6, log a single summary line with the scan result.
+Track `added`, `updated`, and `pruned` counters through steps 4–5:
+
+```cpp
+CACHE_LOG("ensureScanned: dir=%u added=%u updated=%u pruned=%u total=%zu",
+          dirID, added, updated, pruned, catalog_.size());
+```
+
+If step 5 prunes any entries, log each pruned entry individually
+(these are unexpected host-side deletions and worth tracking):
+
+```cpp
+CACHE_LOG("ensureScanned: pruned cnid=%u name=\"%s\"",
+          e.cnid, e.macName.c_str());
+```
 
 This method replaces the per-directory work that `scanDirectory()`
 did recursively.  `scanDirectory()` itself is retained temporarily
@@ -500,6 +617,15 @@ cnidTable_.resolve(kRootParentID, rootPath_.filename().string(),
 ensureScanned(kRootDirID);
 ```
 
+Log the mount event after `ensureScanned` returns:
+
+```cpp
+CACHE_LOG("mount: root=\"%s\" rootChildren=%d cnids=%zu",
+          rootPath_.string().c_str(), childCount(kRootDirID),
+          cnidTable_.size());
+```
+```
+
 Where `kRootParentID` is 1 (the HFS parent of root).  The Mac-visible
 volume name is set by `DriveManager` *after* `mount()` returns, so it
 is not available here.  Use the directory basename instead — the CNID
@@ -546,8 +672,11 @@ Add one new test:
 ### Fence (Phase 3 — verified jointly with Phase 4)
 
 - [ ] `ensureScanned()` declared and implemented
+- [ ] `ensureScanned()` logs summary line with added/updated/pruned counts
+- [ ] `ensureScanned()` logs individual pruned entries
 - [ ] `buildCatalogEntry()` helper extracted from `scanDirectory()`
 - [ ] `mount()` calls `ensureScanned(kRootDirID)` instead of `scanDirectory()`
+- [ ] `mount()` logs root mount summary
 - [ ] `cnidTable_` is cleared and root is registered in `mount()`
 - [ ] New lazy-scan test passes
 - [ ] (Full build + existing tests verified in Phase 4 fence)
@@ -648,6 +777,9 @@ const CatalogEntry *HostVolume::findByCNID(uint32_t cnid)
     auto *val = cnidTable_.reverse(cnid);
     if (!val) return nullptr;
 
+    CACHE_LOG("findByCNID: resurrecting cnid=%u parent=%u name=\"%s\"",
+              cnid, val->key.parentDirID, val->key.macName.c_str());
+
     ensureScanned(val->key.parentDirID);
 
     // Retry after scanning
@@ -658,7 +790,14 @@ const CatalogEntry *HostVolume::findByCNID(uint32_t cnid)
 }
 ```
 
-Also update `mutableFindByCNID()` with the same resurrection logic.
+Log the outcome when resurrection fails (file deleted from disk):
+
+```cpp
+CACHE_LOG("findByCNID: resurrection failed cnid=%u (deleted from disk)", cnid);
+```
+
+Also update `mutableFindByCNID()` with the same resurrection logic
+and the same logging.
 
 Both become non-const.  Update declarations accordingly.
 
@@ -712,6 +851,7 @@ Add new tests:
 - [ ] All five query methods are non-const
 - [ ] `resolveParentPath()` uses `cnidTable_.reverse()` instead of catalog walk
 - [ ] `findByCNID()` has resurrection path via `cnidTable_.reverse()`
+- [ ] `findByCNID()` logs resurrection attempts and failures
 - [ ] `mutableFindByCNID()` also has resurrection path
 - [ ] `createFile()` and `createDir()` use `cnidTable_.resolve()` for CNIDs
 - [ ] All existing tests pass
@@ -754,6 +894,18 @@ Implementation:
    added to `CnidTable` in Phase 1** (add it alongside
    `isScanned()` / `markScanned()` / `clearScanned()`):
 
+Log the eviction with before/after catalog size and how many entries
+were retained due to open forks:
+
+```cpp
+CACHE_LOG("invalidateDir: dir=%u evicted=%zu retained=%zu catalogSize=%zu",
+          dirID, evicted, retained, catalog_.size());
+```
+
+Where `evicted` = catalog size before − after, `retained` = count of
+entries matching `parentDirID == dirID` that survived (virtual or
+open-fork).
+
 ### 5.2 — Implement invalidateAll()
 
 **File:** `src/storage/host_volume.h` — add declaration:
@@ -773,6 +925,17 @@ Implementation:
 2. `std::erase_if(catalog_, ...)` — remove where `!isVirtual` and
    CNID not in open set.
 3. `cnidTable_.clearScanned()`.
+
+Log the eviction summary.  This fires every ~1.5 seconds once
+periodic refresh is wired (Phase 7), so keep it to a single line:
+
+```cpp
+CACHE_LOG("invalidateAll: evicted=%zu retained=%zu openForks=%zu cnids=%zu",
+          evicted, retained, openForks_.size(), cnidTable_.size());
+```
+
+Where `evicted` = catalog size before − after, `retained` = entries
+that survived (virtual + open-fork protected).
 
 ### 5.3 — Tests
 
@@ -812,6 +975,8 @@ Implementation:
 ### Fence
 
 - [ ] `invalidateDir()` and `invalidateAll()` declared and implemented
+- [ ] `invalidateDir()` logs eviction/retention counts
+- [ ] `invalidateAll()` logs eviction/retention/openForks/cnids counts
 - [ ] Virtual entries survive invalidation
 - [ ] Open-fork entries survive invalidation
 - [ ] Host filesystem additions/deletions detected after invalidation
@@ -839,10 +1004,22 @@ After the existing catalog-entry update loop, add:
 cnidTable_.updateKey(cnid, dirID, newMacName, newHostPath);
 ```
 
+Log the rename with old and new names:
+
+```cpp
+CACHE_LOG("rename: cnid=%u \"%s\" -> \"%s\" in dir=%u",
+          cnid, std::string(oldMacName).c_str(),
+          std::string(newMacName).c_str(), dirID);
+```
+
 For directory renames, also update descendant hostPaths in the
 CnidTable.  Iterate `cnidTable_` reverse map (or iterate `catalog_`
 to find descendant CNIDs, then call `cnidTable_.updateHostPath()`
-for each).
+for each).  Log the descendant count:
+
+```cpp
+CACHE_LOG("rename: updated %u descendant hostPaths", descendantCount);
+```
 
 ### 6.2 — Update move()
 
@@ -855,6 +1032,13 @@ After the existing catalog-entry update loop, add:
 cnidTable_.updateKey(cnid, dstDirID, macName, newHostPath);
 ```
 
+Log the move:
+
+```cpp
+CACHE_LOG("move: cnid=%u \"%s\" dir=%u -> dir=%u",
+          cnid, std::string(macName).c_str(), srcDirID, dstDirID);
+```
+
 For directory moves, update descendant hostPaths:
 
 ```cpp
@@ -862,6 +1046,7 @@ if (isDir) {
     // Update all descendants' host paths in cnidTable.
     // Iterate catalog entries with matching path prefix and
     // update their cnidTable hostPath.
+    uint32_t descendantCount = 0;
     for (const auto &entry : catalog_) {
         if (entry.hostPath.size() > oldHostPath.size() &&
             entry.hostPath.compare(0, oldHostPath.size(), oldHostPath) == 0 &&
@@ -869,8 +1054,10 @@ if (isDir) {
             cnidTable_.updateHostPath(
                 entry.cnid,
                 newHostPath + entry.hostPath.substr(oldHostPath.size()));
+            ++descendantCount;
         }
     }
+    CACHE_LOG("move: updated %u descendant hostPaths", descendantCount);
 }
 ```
 
@@ -895,7 +1082,9 @@ if (isDir) {
 ### Fence
 
 - [ ] `rename()` calls `cnidTable_.updateKey()` and updates descendant paths
+- [ ] `rename()` logs old/new name and descendant count
 - [ ] `move()` calls `cnidTable_.updateKey()` and updates descendant paths
+- [ ] `move()` logs src/dst dirs and descendant count
 - [ ] CNID stability verified after rename + invalidation
 - [ ] CNID stability verified after move + invalidation
 - [ ] All existing + new tests pass
@@ -968,11 +1157,19 @@ static void RegVersion(uint32_t regParam[], uint16_t &regResult)
 ```
 
 If testing reveals `kExtFSVersion` is not called frequently enough
-(verify with a `DIAG()` trace), fall back to gating on *any* ExtFS
-command in `ExtnExtFSDispatch()` — bump the counter at the top of
-the dispatch function before the switch.  Add a `DIAG()` trace at
-the invalidation site either way to verify timing during manual
-testing.
+(verify with a `DIAG(CACHE, ...)` trace), fall back to gating on
+*any* ExtFS command in `ExtnExtFSDispatch()` — bump the counter at
+the top of the dispatch function before the switch.
+
+Add a `DIAG(CACHE, ...)` trace at the invalidation trigger site to
+verify timing during manual testing:
+
+```cpp
+DIAG(CACHE, "periodic invalidate (counter=%u)\n", s_invalidateCounter);
+```
+
+This is the only `CACHE` log in `extn_extfs.cpp` — all other cache
+logging lives in `host_volume.cpp` via `CACHE_LOG`.
 
 ### 7.3 — Update volumeStats()
 
@@ -1008,6 +1205,7 @@ could be added for `DriveManager::invalidateAll()` if the
 
 - [ ] `DriveManager::invalidateAll()` declared and implemented
 - [ ] Periodic invalidation call added to ExtFS dispatch
+- [ ] Periodic invalidation site has `DIAG(CACHE, ...)` trace
 - [ ] `HostVolume::nextCnid()` accessor exists
 - [ ] `ioVNxtCNID` uses `nextCnid()` instead of old computation
 - [ ] All existing + new tests pass
@@ -1061,34 +1259,58 @@ screen hashes.
 
 ### 8.4 — Manual smoke test
 
+Run all scenarios below with `--diag=CACHE` enabled to verify
+logging output.  The log should tell a coherent story for each
+scenario — if a step is missing or confusing, add or adjust the
+log message before signing off.
+
 Verify the following scenarios manually in the emulator:
 
 1. **Mount a shared folder.**  Open it in the Finder.  Verify files
    and directories appear correctly.
+   *Expected log:* `mount:` line, `ensureScanned:` for root dir,
+   `resolve: new` for each child.
 
 2. **Add a file from the host** while the Finder window is open.
    Wait 2–3 seconds.  Verify the file appears in the guest.
+   *Expected log:* `periodic invalidate`, `invalidateAll:`,
+   then `ensureScanned:` with `added=1`.
 
 3. **Delete a file from the host.**  Wait 2–3 seconds.  Verify it
    disappears from the guest.
+   *Expected log:* `ensureScanned: pruned cnid=...`.
 
 4. **Open a file in a guest app** (e.g. TeachText).  While it's
    open, trigger invalidation (wait a few seconds).  Verify the
    file can still be read and saved.
+   *Expected log:* `invalidateAll: ... retained=1` (the open fork
+   entry survives), possibly `readFork: cnid=... evicted` or
+   `writeFork: cnid=... evicted` if the entry was evicted.
 
 5. **Rename a file in the guest.**  Verify it shows the new name.
    Trigger invalidation.  Verify the new name persists.
+   *Expected log:* `rename: cnid=... "old" -> "new"`,
+   `updateKey: cnid=...`.
 
 6. **Deep directory access.**  Navigate into a nested subdirectory.
    Verify files appear (proving lazy scanning works for subdirs).
+   *Expected log:* `ensureScanned:` lines for each level as the
+   Finder opens them, with `added=` counts.
 
 7. **Large directory.**  Mount a shared folder with 100+ files.
    Verify the Finder enumerates correctly (proving the scanned_ flag
    prevents hot-loop rescans).
+   *Expected log:* one `ensureScanned:` line (not 100+), because
+   the scanned flag short-circuits subsequent calls.
+
+8. **CNID resurrection.**  Open a file, note its CNID in the log,
+   wait for invalidation, then re-open it.  Verify the same CNID
+   appears in the log.
+   *Expected log:* `findByCNID: resurrecting cnid=...`.
 
 Document results in the commit message.
 
-### 8.5 — Comment audit
+### 8.5 — Comment and logging audit
 
 Review all new code for comment completeness:
 
@@ -1102,12 +1324,28 @@ Review all new code for comment completeness:
 - **No comment references the design doc or plan doc** — all
   comments are self-contained.
 
+Review all `CACHE_LOG` / `DIAG(CACHE, ...)` calls:
+
+- Every log line follows the `verb: key=value` format.
+- No logging inside tight iteration loops (linear scan of
+  `catalog_`).  Log the *outcome* only.
+- `ensureScanned` logs a summary with `added`/`updated`/`pruned`
+  counts, plus individual lines for pruned entries.
+- `invalidateAll` / `invalidateDir` log eviction counts.
+- `findByCNID` resurrection logs the CNID and parent.
+- Fork I/O evicted-entry fallback is logged.
+- `rename()` / `move()` log identity changes and descendant
+  path updates.
+- The periodic invalidation trigger in `extn_extfs.cpp` logs
+  once per fire.
+
 ### Fence
 
 - [ ] `scanDirectory()` removed from header and implementation
 - [ ] `nextCNID_` member removed
 - [ ] Golden tests pass
-- [ ] Manual smoke tests pass (all 7 scenarios)
+- [ ] Manual smoke tests pass (all 8 scenarios with `--diag=CACHE`)
 - [ ] Comment audit complete
+- [ ] Logging audit complete — all cache events traceable
 - [ ] Full build clean
 - [ ] Commit: `"cache: phase 8 — cleanup + end-to-end verification"`
