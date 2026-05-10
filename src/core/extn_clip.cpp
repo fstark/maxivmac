@@ -1,5 +1,6 @@
 #include "core/extn_clip.h"
 #include "core/extn_clip_pict.h"
+#include "core/host_pasteboard.h"
 #include "core/diag.h"
 #include "debugger/debugger.h"
 #include "platform/common/clipboard.h"
@@ -30,25 +31,12 @@ static constexpr uint16_t kPictExport = 0x109;
 static constexpr uint16_t kPictHasImage = 0x10A;
 static constexpr uint16_t kPictImport = 0x10B;
 
-static std::string s_clipCache;
 static std::unordered_map<uint32_t, uint32_t> s_kvStore;
-static uint32_t s_clipSeqNo = 0;
-static std::string s_lastClipText;
-static bool s_lastHasImage = false;
 
 void ExtnClipReset()
 {
 	s_kvStore.clear();
-	s_clipSeqNo = 0;
-	s_clipCache.clear();
-	s_lastClipText.clear();
-	s_lastHasImage = false;
 	ExtnPictReset();
-}
-
-void ExtnClipMarkImageExported()
-{
-	s_lastHasImage = true;
 }
 
 /* ── Debug console log buffer ──────────────────────── */
@@ -196,11 +184,6 @@ std::string guestFormatLog(uint32_t fmtAddr, uint32_t args[7])
 	return out;
 }
 
-static void refreshCache()
-{
-	s_clipCache = hostClipGetTextMacRoman();
-}
-
 void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 {
 	switch (cmd)
@@ -211,46 +194,48 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 			break;
 
 		case kClipHasData:
-			regParam[0] = hostClipHasText() ? 1 : 0;
+		{
+			auto &pb = GetHostPasteboard();
+			std::lock_guard lock(pb.mu);
+			regParam[0] = pb.text.empty() ? 0 : 1;
 			regResult = 0;
-			break;
+		}
+		break;
 
 		case kClipGetLen:
-			refreshCache();
-			regParam[0] = static_cast<uint32_t>(s_clipCache.size());
+		{
+			auto &pb = GetHostPasteboard();
+			std::lock_guard lock(pb.mu);
+			regParam[0] = static_cast<uint32_t>(pb.text.size());
 			regResult = 0;
-			break;
+		}
+		break;
 
 		case kClipSeqNo:
 		{
-			std::string current = hostClipGetTextMacRoman();
-			bool currentHasImage = HostClipHasImage(nullptr, nullptr);
-			if (current != s_lastClipText || currentHasImage != s_lastHasImage)
-			{
-				s_lastClipText = current;
-				s_lastHasImage = currentHasImage;
-				s_clipCache = current;
-				s_clipSeqNo++;
-			}
-			regParam[0] = s_clipSeqNo;
+			auto &pb = GetHostPasteboard();
+			std::lock_guard lock(pb.mu);
+			regParam[0] = pb.seq;
+			DIAG(CLIP, "ClipSeqNo: returning seq=%u\n", pb.seq);
 			regResult = 0;
 		}
 		break;
 
 		case kClipImport:
 		{
-			if (s_clipCache.empty())
+			auto &pb = GetHostPasteboard();
+			std::string text;
 			{
-				refreshCache();
+				std::lock_guard lock(pb.mu);
+				text = pb.text;
 			}
 			uint32_t guestAddr = regParam[0];
 			uint32_t capacity = regParam[1];
 			uint32_t actual =
-				static_cast<uint32_t>(std::min(static_cast<size_t>(capacity), s_clipCache.size()));
+				static_cast<uint32_t>(std::min(static_cast<size_t>(capacity), text.size()));
+			DIAG(CLIP, "ClipImport: %u bytes → guest $%08X\n", actual, guestAddr);
 			for (uint32_t i = 0; i < actual; i++)
-			{
-				put_vm_byte(guestAddr + i, static_cast<uint8_t>(s_clipCache[i]));
-			}
+				put_vm_byte(guestAddr + i, static_cast<uint8_t>(text[i]));
 			regParam[1] = actual;
 			regResult = 0;
 		}
@@ -260,23 +245,11 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		{
 			uint32_t guestAddr = regParam[0];
 			uint32_t count = regParam[1];
+			DIAG(CLIP, "ClipExport: %u bytes from guest $%08X\n", count, guestAddr);
 			std::vector<uint8_t> buf(count);
 			for (uint32_t i = 0; i < count; i++)
-			{
 				buf[i] = get_vm_byte(guestAddr + i);
-			}
 			HostClipSetText(buf.data(), count);
-
-			/*
-				Update cache to match what we just exported.
-				This prevents ClipSeqNo from seeing the export
-				as a "new" host change (feedback loop).
-				The cache is Mac Roman with CRs — same encoding
-				as the buffer we just read from guest RAM.
-			*/
-			s_lastClipText.assign(reinterpret_cast<char *>(buf.data()), count);
-			s_clipCache = s_lastClipText;
-
 			regResult = 0;
 		}
 		break;
