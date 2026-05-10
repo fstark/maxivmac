@@ -554,8 +554,37 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 	}
 	else
 	{
-		/* vidx < 0: return info about the default volume */
-		v = FindVCB(0, g);
+		/* vidx < 0: look up by name (ioNamePtr) */
+		short i;
+		v = NULL;
+		if (nameAddr != 0)
+		{
+			unsigned char *name = (unsigned char *)nameAddr;
+			short nameLen = name[0];
+			/* Strip trailing colon */
+			if (nameLen > 0 && name[nameLen] == ':')
+				nameLen--;
+			for (i = 0; i < g->driveCount; i++)
+			{
+				if (g->vcb[i] != NULL)
+				{
+					unsigned char *vcbName = (unsigned char *)(g->vcb[i] + 44);
+					short vcbLen = vcbName[0];
+					if (nameLen == vcbLen)
+					{
+						short j, match = 1;
+						for (j = 1; j <= nameLen; j++)
+						{
+							unsigned char a = name[j], b = vcbName[j];
+							if (a >= 'a' && a <= 'z') a -= 32;
+							if (b >= 'a' && b <= 'z') b -= 32;
+							if (a != b) { match = 0; break; }
+						}
+						if (match) { v = g->vcb[i]; break; }
+					}
+				}
+			}
+		}
 		if (v == NULL) return 1; /* not ours */
 	}
 	driveNum = *(short *)(v + 72);
@@ -607,7 +636,7 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 		*(short *)(pb + 64) = 0x4244;		  /* ioVSigWord */
 		*(short *)(pb + 66) = driveNum;		  /* ioVDrvInfo */
 		*(short *)(pb + 68) = kOurDrvrRefNum; /* ioVDRefNum */
-		*(short *)(pb + 70) = 0;			  /* ioVFSID = 0 (native HFS) */
+		*(short *)(pb + 70) = 0x5344;		  /* ioVFSID = 'SD' */
 		*(long *)(pb + 72) = 0;				  /* ioVBkUp */
 		*(short *)(pb + 76) = 0;			  /* ioVSeqNum */
 		*(long *)(pb + 78) = 0;				  /* ioVWrCnt */
@@ -1047,7 +1076,7 @@ void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
 	}
 	*(short *)(v + 72) = driveNum;
 	*(short *)(v + 74) = kOurDrvrRefNum;
-	*(short *)(v + 76) = 0; /* vcbFSID = 0 (native HFS to Finder) */
+	*(short *)(v + 76) = 0x5344; /* vcbFSID = 'SD' */
 	*(short *)(v + 78) = vRefNum;
 
 	Enqueue((QElemPtr)v, (QHdrPtr)kVCBQHdr);
@@ -1059,7 +1088,7 @@ void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
 		{
 			*(long *)dqe = 0x00000008L; /* disk-in-place = 8 (non-ejectable) */
 			*(short *)(dqe + 8) = 1;	/* qType */
-			*(short *)(dqe + 14) = 0;	/* dQFSID = 0 (match vcbFSID) */
+			*(short *)(dqe + 14) = 0x5344;	/* dQFSID = 'SD' (match vcbFSID) */
 			{
 				long sectors = (long)kTotalAllocBlks * (kAllocBlkSize / 512);
 				*(short *)(dqe + 16) = (short)(sectors & 0xFFFF);
@@ -1073,4 +1102,28 @@ void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
 	if (slot >= g->driveCount) g->driveCount = slot + 1;
 
 	dbg_log2(g->regBase, "SharedDrive: mounted slot %ld drv=%ld", (long)slot, (long)driveNum);
+
+	/* Dump VCB fields for debugging */
+	dbg_log3(g->regBase, "  VCB: vcbSigWord=%lx vcbFSID=%lx vcbVRefNum=%ld",
+			 (long)(unsigned short)*(short *)(v + 8),
+			 (long)(unsigned short)*(short *)(v + 76),
+			 (long)*(short *)(v + 78));
+	dbg_log3(g->regBase, "  VCB: vcbDrvNum=%ld vcbDRefNum=%ld vcbFreeBks=%ld",
+			 (long)*(short *)(v + 72),
+			 (long)*(short *)(v + 74),
+			 (long)(unsigned short)*(short *)(v + 42));
+	dbg_log2(g->regBase, "  VCB: vcbNmAlBlks=%lx vcbAlBlkSiz=%lx",
+			 (long)(unsigned short)*(short *)(v + 26),
+			 (long)*(long *)(v + 28));
+	if (g->dqe[slot] != NULL)
+	{
+		Ptr dqe = g->dqe[slot];
+		dbg_log3(g->regBase, "  DQE: flags=%lx qType=%ld dQFSID=%lx",
+				 (long)*(long *)dqe,
+				 (long)*(short *)(dqe + 8),
+				 (long)(unsigned short)*(short *)(dqe + 14));
+		dbg_log2(g->regBase, "  DQE: dQDrvSz=%ld dQDrvSz2=%ld",
+				 (long)(unsigned short)*(short *)(dqe + 16),
+				 (long)(unsigned short)*(short *)(dqe + 18));
+	}
 }

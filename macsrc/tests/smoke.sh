@@ -117,7 +117,7 @@ for cfg in "${CONFIGS[@]}"; do
     fi
     sed "s|^disk = .*|disk = ${DISK_IMG}|;s|^shared = .*|shared = ${SHARED_DIR}|" "$MAC_FILE" > "$TMP_MAC"
 
-    if "$MAXIVMAC"  --silent \
+    if "$MAXIVMAC"  --diag=INIT,ExtFS --silent \
         --dbg-script="$DBG_SCRIPT" "$TMP_MAC" 2>"$TMP_DIR/${cfg}.log"; then
         echo "  ✓ PASS"
         PASS=$((PASS + 1))

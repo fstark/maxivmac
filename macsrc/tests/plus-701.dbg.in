@@ -5,4 +5,10 @@ timeout 0
 # Wait for Finder desktop
 wait text "Special"
 
-continue
+#launch "Macintosh:TeachText"
+
+#type Cmd-O
+trace traps Open Close Read Write GetVolInfo Create Delete OpenRF Rename GetFileInfo SetFileInfo UnmountVol Allocate GetEOF SetEOF FlushVol GetVol SetVol Eject GetFPos SetFPos FlushFile HOpen HCreate HDelete HOpenRF HRename HGetFileInfo HSetFileInfo HSetVol MountVol PBOpenWD PBCloseWD PBCatMove PBDirCreate PBGetWDInfo PBGetFCBInfo PBGetCatInfo PBSetCatInfo PBSetVInfo PBGetVolParms
+#wait text "Trash"
+#trace traps off
+

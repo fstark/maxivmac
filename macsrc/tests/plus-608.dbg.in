@@ -30,7 +30,7 @@ key Enter
 wait text "%%BUILD_ID%%"
 
 # Success — shut down cleanly
-shutdown
-wait text "Restart"
+#shutdown
+#wait text "Restart"
 
-quit
+#quit
