@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 /* Guest → Host: receive rendered pixels from Mac-side DrawPicture. */
 void HandlePictExport(uint32_t regParam[], uint16_t &regResult);
@@ -20,3 +21,7 @@ void HandlePictImport(uint32_t regParam[], uint16_t &regResult);
 
 /* Reset PICT clipboard state on guest reboot. */
 void ExtnPictReset();
+
+/* Staging accessors for ClipCommit. */
+bool HasStagedPng();
+std::vector<uint8_t> TakeStagedPng();

@@ -276,6 +276,7 @@
 #define kPictExport 0x0109
 #define kPictHasImage 0x010A
 #define kPictImport 0x010B
+#define kClipCommit 0x010C
 
 /* ---- Trap-log flags ---- */
 

@@ -39,10 +39,9 @@ static int s_passDepth = 0; /* 1 or 32 */
 static int s_passRowBytes = 0;
 static bool s_haveWhitePass = false;
 
-/* Feedback suppression: dimensions of the last imported image. */
-static int s_importedW = 0;
-static int s_importedH = 0;
-static bool s_justImported = false;
+/* Staged PNG for ClipCommit. */
+static std::vector<uint8_t> s_stagedPng;
+static bool s_hasStagedPng = false;
 
 /* ── Read pixel data from guest RAM ──────────────────── */
 
@@ -120,21 +119,11 @@ void HandlePictExport(uint32_t regParam[], uint16_t &regResult)
 		return;
 	}
 
-	/* Black-background pass — composite and push to host clipboard */
+	/* Black-background pass — composite and stage PNG */
 	if (!s_haveWhitePass || width != s_passWidth || height != s_passHeight)
 	{
 		s_haveWhitePass = false;
 		regResult = 1;
-		return;
-	}
-
-	/* Suppress feedback: guest is re-exporting what it just imported */
-	if (s_justImported && width == s_importedW && height == s_importedH)
-	{
-		DIAG(CLIP, "PictExport: suppressed feedback re-export %dx%d\n", width, height);
-		s_justImported = false;
-		s_haveWhitePass = false;
-		regResult = 0;
 		return;
 	}
 
@@ -145,12 +134,10 @@ void HandlePictExport(uint32_t regParam[], uint16_t &regResult)
 		rgba = Composite32Bit(s_passWhite.data(), pixels.data(), width, height, rowBytes);
 
 	auto png = EncodeRGBAPng(rgba.data(), width, height);
-	if (!png.empty())
-	{
-		DIAG(CLIP, "PictExport: composited %dx%d depth=%d -> %zu bytes PNG\n", width, height, depth,
-			 png.size());
-		HostClipSetImage(png.data(), png.size());
-	}
+	s_stagedPng = std::move(png);
+	s_hasStagedPng = !s_stagedPng.empty();
+	DIAG(CLIP, "PictExport: staged pass=1 %dx%d depth=%d → composited %zuB PNG\n", width, height,
+		 depth, s_stagedPng.size());
 
 	s_passWhite.clear();
 	s_haveWhitePass = false;
@@ -260,7 +247,17 @@ void ExtnPictReset()
 	s_passDepth = 0;
 	s_passRowBytes = 0;
 	s_haveWhitePass = false;
-	s_justImported = false;
-	s_importedW = 0;
-	s_importedH = 0;
+	s_stagedPng.clear();
+	s_hasStagedPng = false;
+}
+
+bool HasStagedPng()
+{
+	return s_hasStagedPng;
+}
+
+std::vector<uint8_t> TakeStagedPng()
+{
+	s_hasStagedPng = false;
+	return std::move(s_stagedPng);
 }
