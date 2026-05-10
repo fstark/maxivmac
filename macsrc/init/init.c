@@ -277,9 +277,11 @@ static void PollGuestCmd(Globals *g)
 			{
 				Str255 dirPath;
 				Str255 appName;
-				/* dirPath = everything up to (not including) the last colon */
-				dirPath[0] = lastColon - 1;
-				for (i = 1; i < lastColon; i++)
+				/* dirPath = everything up to and including the last colon
+				   (trailing colon tells HFS to treat a bare volume name
+				   as a volume, not a filename in the current directory) */
+				dirPath[0] = lastColon;
+				for (i = 1; i <= lastColon; i++)
 					dirPath[i] = pathBuf[i];
 				/* appName = everything after the last colon */
 				appName[0] = pathBuf[0] - lastColon;
@@ -289,10 +291,14 @@ static void PollGuestCmd(Globals *g)
 				/* Set working directory to app's parent folder */
 				{
 					HParamBlockRec vpb;
+					OSErr err;
 					mem_zero((char *)&vpb, sizeof(vpb));
 					vpb.volumeParam.ioNamePtr = (StringPtr)dirPath;
 					vpb.volumeParam.ioVRefNum = 0;
-					PBHSetVol(&vpb, false);
+					err = PBHSetVol(&vpb, false);
+					if (err != noErr)
+						dbg_log2(g->regBase, "launch: PBHSetVol(\"%S\") err=%ld",
+								 (unsigned long)dirPath, (long)err);
 				}
 
 				/* Launch with just the filename */
@@ -302,6 +308,9 @@ static void PollGuestCmd(Globals *g)
 					LEA     launchPB, A0
 					DC.W    0xA9F2  ; _Launch
 				}
+				/* _Launch does not return on success */
+				dbg_log1(g->regBase, "launch: _Launch(\"%S\") returned unexpectedly",
+						 (unsigned long)appName);
 			}
 			else
 			{
@@ -312,6 +321,8 @@ static void PollGuestCmd(Globals *g)
 					LEA     launchPB, A0
 					DC.W    0xA9F2  ; _Launch
 				}
+				dbg_log1(g->regBase, "launch: _Launch(\"%S\") returned unexpectedly",
+						 (unsigned long)pathBuf);
 			}
 		}
 		else if (cmd == 2)
