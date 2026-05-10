@@ -543,11 +543,13 @@ static OSErr PbGetCatInfo(PBRef pb, bool isHFS)
 	}
 
 	/* Synthesize root if needed */
-	if (!e && (dirID == kRootDirID || dirID == kRootParentID))
+	if (!e && dirID == kRootDirID)
 	{
 		pbWriteRootDir(pb, nameAddr, *vol, s_drives.volumeName(slot));
 		return 0;
 	}
+	/* dirID 1 (root parent) — stop the walk; there's nothing above root */
+	if (!e && dirID == kRootParentID) return kFnfErr;
 
 	if (!e) return kFnfErr;
 
