@@ -78,7 +78,7 @@ static Boolean IsOurFCB(short refNum)
 	{
 		extfs_log2(g->regBase, "IsOurFCB(%ld): VCBPtr=%lx NOT ours", (long)refNum, (long)fcbVCB);
 		extfs_log2(g->regBase, "  g->vcb[0]=%lx driveCount=%ld", (long)g->vcb[0],
-				 (long)g->driveCount);
+				   (long)g->driveCount);
 		return false;
 	}
 	return true;
@@ -562,8 +562,7 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 			unsigned char *name = (unsigned char *)nameAddr;
 			short nameLen = name[0];
 			/* Strip trailing colon */
-			if (nameLen > 0 && name[nameLen] == ':')
-				nameLen--;
+			if (nameLen > 0 && name[nameLen] == ':') nameLen--;
 			for (i = 0; i < g->driveCount; i++)
 			{
 				if (g->vcb[i] != NULL)
@@ -578,9 +577,17 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 							unsigned char a = name[j], b = vcbName[j];
 							if (a >= 'a' && a <= 'z') a -= 32;
 							if (b >= 'a' && b <= 'z') b -= 32;
-							if (a != b) { match = 0; break; }
+							if (a != b)
+							{
+								match = 0;
+								break;
+							}
 						}
-						if (match) { v = g->vcb[i]; break; }
+						if (match)
+						{
+							v = g->vcb[i];
+							break;
+						}
 					}
 				}
 			}
@@ -1086,9 +1093,9 @@ void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
 		Ptr dqe = NewPtrSysClear(20);
 		if (dqe != NULL)
 		{
-			*(long *)dqe = 0x00000008L; /* disk-in-place = 8 (non-ejectable) */
-			*(short *)(dqe + 8) = 1;	/* qType */
-			*(short *)(dqe + 14) = 0x5344;	/* dQFSID = 'SD' (match vcbFSID) */
+			*(long *)dqe = 0x00000008L;	   /* disk-in-place = 8 (non-ejectable) */
+			*(short *)(dqe + 8) = 1;	   /* qType */
+			*(short *)(dqe + 14) = 0x5344; /* dQFSID = 'SD' (match vcbFSID) */
 			{
 				long sectors = (long)kTotalAllocBlks * (kAllocBlkSize / 512);
 				*(short *)(dqe + 16) = (short)(sectors & 0xFFFF);
@@ -1105,25 +1112,20 @@ void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
 
 	/* Dump VCB fields for debugging */
 	extfs_log3(g->regBase, "  VCB: vcbSigWord=%lx vcbFSID=%lx vcbVRefNum=%ld",
-			 (long)(unsigned short)*(short *)(v + 8),
-			 (long)(unsigned short)*(short *)(v + 76),
-			 (long)*(short *)(v + 78));
+			   (long)(unsigned short)*(short *)(v + 8), (long)(unsigned short)*(short *)(v + 76),
+			   (long)*(short *)(v + 78));
 	extfs_log3(g->regBase, "  VCB: vcbDrvNum=%ld vcbDRefNum=%ld vcbFreeBks=%ld",
-			 (long)*(short *)(v + 72),
-			 (long)*(short *)(v + 74),
-			 (long)(unsigned short)*(short *)(v + 42));
+			   (long)*(short *)(v + 72), (long)*(short *)(v + 74),
+			   (long)(unsigned short)*(short *)(v + 42));
 	extfs_log2(g->regBase, "  VCB: vcbNmAlBlks=%lx vcbAlBlkSiz=%lx",
-			 (long)(unsigned short)*(short *)(v + 26),
-			 (long)*(long *)(v + 28));
+			   (long)(unsigned short)*(short *)(v + 26), (long)*(long *)(v + 28));
 	if (g->dqe[slot] != NULL)
 	{
 		Ptr dqe = g->dqe[slot];
-		extfs_log3(g->regBase, "  DQE: flags=%lx qType=%ld dQFSID=%lx",
-				 (long)*(long *)dqe,
-				 (long)*(short *)(dqe + 8),
-				 (long)(unsigned short)*(short *)(dqe + 14));
+		extfs_log3(g->regBase, "  DQE: flags=%lx qType=%ld dQFSID=%lx", (long)*(long *)dqe,
+				   (long)*(short *)(dqe + 8), (long)(unsigned short)*(short *)(dqe + 14));
 		extfs_log2(g->regBase, "  DQE: dQDrvSz=%ld dQDrvSz2=%ld",
-				 (long)(unsigned short)*(short *)(dqe + 16),
-				 (long)(unsigned short)*(short *)(dqe + 18));
+				   (long)(unsigned short)*(short *)(dqe + 16),
+				   (long)(unsigned short)*(short *)(dqe + 18));
 	}
 }

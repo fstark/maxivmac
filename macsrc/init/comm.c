@@ -107,7 +107,7 @@ void log_trap(char *base, unsigned short trapWord, char *pb, short action, short
 /* ---- Fatal shutdown ---- */
 
 void dbg_fatal6(char *base, short ch, char *fmt, unsigned long a, unsigned long b, unsigned long c,
-			   unsigned long d, unsigned long e, unsigned long f)
+				unsigned long d, unsigned long e, unsigned long f)
 {
 	reg_set(base, 0, (unsigned long)fmt);
 	reg_set(base, 1, a);

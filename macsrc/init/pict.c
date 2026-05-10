@@ -79,7 +79,7 @@ void ExportPictToHost(char *regBase)
 		bits = NewPtr(bufSize);
 		if (bits == NULL)
 		{
-			clip_log(regBase, "pict: export alloc failed");
+			dbg_log(regBase, "pict: export alloc failed");
 			DisposHandle(h);
 			return;
 		}
@@ -125,7 +125,7 @@ void ExportPictToHost(char *regBase)
 		err = NewGWorld(&gw, 32, &picFrame, NULL, NULL, 0);
 		if (err != noErr)
 		{
-			clip_log1(regBase, "pict: NewGWorld err=%d", (int)err);
+			dbg_log1(regBase, "pict: NewGWorld err=%d", (int)err);
 			DisposHandle(h);
 			return;
 		}
@@ -217,7 +217,7 @@ void ImportPictFromHost(char *regBase)
 		bits = NewPtr(bufSize);
 		if (bits == NULL)
 		{
-			clip_log(regBase, "pict: import alloc failed");
+			dbg_log(regBase, "pict: import alloc failed");
 			return;
 		}
 
@@ -231,7 +231,7 @@ void ImportPictFromHost(char *regBase)
 
 		if (reg_result(regBase) != 0)
 		{
-			clip_log(regBase, "pict: import host error");
+			dbg_log(regBase, "pict: import host error");
 			DisposPtr(bits);
 			return;
 		}
@@ -280,7 +280,7 @@ void ImportPictFromHost(char *regBase)
 		err = NewGWorld(&gw, 32, &r, NULL, NULL, 0);
 		if (err != noErr)
 		{
-			clip_log1(regBase, "pict: import NewGWorld err=%d", (int)err);
+			dbg_log1(regBase, "pict: import NewGWorld err=%d", (int)err);
 			return;
 		}
 
@@ -304,7 +304,7 @@ void ImportPictFromHost(char *regBase)
 
 		if (reg_result(regBase) != 0)
 		{
-			clip_log(regBase, "pict: import host error (32-bit)");
+			dbg_log(regBase, "pict: import host error (32-bit)");
 			UnlockPixels(pm);
 			DisposeGWorld(gw);
 			return;

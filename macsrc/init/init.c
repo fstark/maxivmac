@@ -504,27 +504,27 @@ void main(void)
 	/* ---- Install traps (unconditional) ---- */
 	InitTrapTables();
 	InstallHFSPatch(regBase);
-	if (!InstallFlatPatch(0xA000, regBase) /* _Open */
-		|| !InstallFlatPatch(0xA001, regBase) /* _Close */
-		|| !InstallFlatPatch(0xA002, regBase) /* _Read */
-		|| !InstallFlatPatch(0xA003, regBase) /* _Write */
-		|| !InstallFlatPatch(0xA007, regBase) /* _GetVolInfo */
-		|| !InstallFlatPatch(0xA008, regBase) /* _Create */
-		|| !InstallFlatPatch(0xA009, regBase) /* _Delete */
-		|| !InstallFlatPatch(0xA00A, regBase) /* _OpenRF */
-		|| !InstallFlatPatch(0xA00B, regBase) /* _Rename */
-		|| !InstallFlatPatch(0xA00C, regBase) /* _GetFileInfo */
-		|| !InstallFlatPatch(0xA00D, regBase) /* _SetFileInfo */
-		|| !InstallFlatPatch(0xA00E, regBase) /* _UnmountVol */
-		|| !InstallFlatPatch(0xA010, regBase) /* _Allocate */
-		|| !InstallFlatPatch(0xA011, regBase) /* _GetEOF */
-		|| !InstallFlatPatch(0xA012, regBase) /* _SetEOF */
-		|| !InstallFlatPatch(0xA013, regBase) /* _FlushVol */
-		|| !InstallFlatPatch(0xA014, regBase) /* _GetVol */
-		|| !InstallFlatPatch(0xA015, regBase) /* _SetVol */
-		|| !InstallFlatPatch(0xA017, regBase) /* _Eject */
-		|| !InstallFlatPatch(0xA018, regBase) /* _GetFPos */
-		|| !InstallFlatPatch(0xA044, regBase) /* _SetFPos */
+	if (!InstallFlatPatch(0xA000, regBase)	   /* _Open */
+		|| !InstallFlatPatch(0xA001, regBase)  /* _Close */
+		|| !InstallFlatPatch(0xA002, regBase)  /* _Read */
+		|| !InstallFlatPatch(0xA003, regBase)  /* _Write */
+		|| !InstallFlatPatch(0xA007, regBase)  /* _GetVolInfo */
+		|| !InstallFlatPatch(0xA008, regBase)  /* _Create */
+		|| !InstallFlatPatch(0xA009, regBase)  /* _Delete */
+		|| !InstallFlatPatch(0xA00A, regBase)  /* _OpenRF */
+		|| !InstallFlatPatch(0xA00B, regBase)  /* _Rename */
+		|| !InstallFlatPatch(0xA00C, regBase)  /* _GetFileInfo */
+		|| !InstallFlatPatch(0xA00D, regBase)  /* _SetFileInfo */
+		|| !InstallFlatPatch(0xA00E, regBase)  /* _UnmountVol */
+		|| !InstallFlatPatch(0xA010, regBase)  /* _Allocate */
+		|| !InstallFlatPatch(0xA011, regBase)  /* _GetEOF */
+		|| !InstallFlatPatch(0xA012, regBase)  /* _SetEOF */
+		|| !InstallFlatPatch(0xA013, regBase)  /* _FlushVol */
+		|| !InstallFlatPatch(0xA014, regBase)  /* _GetVol */
+		|| !InstallFlatPatch(0xA015, regBase)  /* _SetVol */
+		|| !InstallFlatPatch(0xA017, regBase)  /* _Eject */
+		|| !InstallFlatPatch(0xA018, regBase)  /* _GetFPos */
+		|| !InstallFlatPatch(0xA044, regBase)  /* _SetFPos */
 		|| !InstallFlatPatch(0xA045, regBase)) /* _FlushFile */
 	{
 		long sysFree = FreeMemSys();
