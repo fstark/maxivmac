@@ -607,7 +607,7 @@ static OSErr TrapGetVolInfo(char *pb, Globals *g, short isHFS)
 		*(short *)(pb + 64) = 0x4244;		  /* ioVSigWord */
 		*(short *)(pb + 66) = driveNum;		  /* ioVDrvInfo */
 		*(short *)(pb + 68) = kOurDrvrRefNum; /* ioVDRefNum */
-		*(short *)(pb + 70) = 0x5344;		  /* ioVFSID */
+		*(short *)(pb + 70) = 0;			  /* ioVFSID = 0 (native HFS) */
 		*(long *)(pb + 72) = 0;				  /* ioVBkUp */
 		*(short *)(pb + 76) = 0;			  /* ioVSeqNum */
 		*(long *)(pb + 78) = 0;				  /* ioVWrCnt */
@@ -819,6 +819,18 @@ static OSErr TrapSetVInfo(char *pb, Globals *g, short isHFS)
 	return kNoErr;
 }
 
+/* Desktop Manager stubs — System 7's Finder calls these via
+   _HFSDispatch selectors $20-$2F.  We don't implement a desktop
+   database, but we MUST intercept the calls so they don't fall
+   through to the ROM and produce errors on our volume. */
+static OSErr TrapDTStub(char *pb, Globals *g, short isHFS)
+{
+	/* Check if this call targets our volume */
+	short vRefNum = *(short *)(pb + pb_ioVRefNum);
+	if (FindVCB(vRefNum, g) == NULL) return kPassThrough;
+	return kParamErr; /* "not supported" — Finder falls back gracefully */
+}
+
 /* ================================================================ */
 /*              Central dispatchers (called from stubs)             */
 /* ================================================================ */
@@ -833,7 +845,7 @@ typedef struct
 } TrapEntry;
 
 #define kMaxFlatTraps 23
-#define kMaxHFSTraps 11
+#define kMaxHFSTraps 28
 
 static TrapEntry sFlatTraps[kMaxFlatTraps];
 static TrapEntry sHFSTraps[kMaxHFSTraps];
@@ -888,6 +900,25 @@ void InitTrapTables(void)
 	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x000A, TrapSetCatInfo, 0);
 	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x000B, TrapSetVInfo, 0);
 	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0030, TrapGetVolParms, 0);
+
+	/* Desktop Manager selectors ($20-$2F) — stub out so they don't
+	   fall through to the ROM and trigger extFSErr on our volume. */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0020, TrapDTStub, 0); /* DTGetPath */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0021, TrapDTStub, 0); /* DTCloseDown */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0022, TrapDTStub, 0); /* DTAddIcon */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0023, TrapDTStub, 0); /* DTGetIcon */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0024, TrapDTStub, 0); /* DTGetIconInfo */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0025, TrapDTStub, 0); /* DTAddAPPL */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0026, TrapDTStub, 0); /* DTRemoveAPPL */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0027, TrapDTStub, 0); /* DTGetAPPL */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0028, TrapDTStub, 0); /* DTSetComment */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x0029, TrapDTStub, 0); /* DTRemoveComment */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x002A, TrapDTStub, 0); /* DTGetComment */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x002B, TrapDTStub, 0); /* DTFlush */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x002C, TrapDTStub, 0); /* DTReset */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x002D, TrapDTStub, 0); /* DTGetInfo */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x002E, TrapDTStub, 0); /* DTOpenInform */
+	AddEntry(sHFSTraps, &hi, kMaxHFSTraps, 0x002F, TrapDTStub, 0); /* DTDelete */
 }
 
 static short DispatchFromTable(TrapEntry *table, short key, char *pb, Globals *g, short isHFS,
@@ -1016,7 +1047,7 @@ void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
 	}
 	*(short *)(v + 72) = driveNum;
 	*(short *)(v + 74) = kOurDrvrRefNum;
-	*(short *)(v + 76) = 0x5344; /* vcbFSID = 'SD' */
+	*(short *)(v + 76) = 0; /* vcbFSID = 0 (native HFS to Finder) */
 	*(short *)(v + 78) = vRefNum;
 
 	Enqueue((QElemPtr)v, (QHdrPtr)kVCBQHdr);
@@ -1026,9 +1057,9 @@ void MountNewDrive(Globals *g, short slot, short vRefNum, short driveNum)
 		Ptr dqe = NewPtrSysClear(20);
 		if (dqe != NULL)
 		{
-			*(long *)dqe = 0x00080000L; /* flags: non-ejectable */
+			*(long *)dqe = 0x00000008L; /* disk-in-place = 8 (non-ejectable) */
 			*(short *)(dqe + 8) = 1;	/* qType */
-			*(short *)(dqe + 14) = 0;	/* dQFSID */
+			*(short *)(dqe + 14) = 0;	/* dQFSID = 0 (match vcbFSID) */
 			{
 				long sectors = (long)kTotalAllocBlks * (kAllocBlkSize / 512);
 				*(short *)(dqe + 16) = (short)(sectors & 0xFFFF);
