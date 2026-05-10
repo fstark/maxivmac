@@ -62,6 +62,38 @@ bool HostVolume::isMounted() const
 	return mounted_;
 }
 
+void HostVolume::setVirtualIcon(std::vector<uint8_t> rsrcFork)
+{
+	/* Remove any existing virtual Icon\r entry */
+	std::erase_if(catalog_, [](const CatalogEntry &e) { return e.isVirtual; });
+	virtualIconFork_ = std::move(rsrcFork);
+
+	if (virtualIconFork_.empty())
+	{
+		printf("[VIcon] setVirtualIcon: empty fork, skipping\n");
+		return;
+	}
+
+	CatalogEntry ce{};
+	ce.cnid = nextCNID_++;
+	ce.parentDirID = kRootDirID;
+	ce.isDirectory = false;
+	ce.macName = std::string("Icon\r");
+	ce.type = 0;			 /* no type */
+	ce.creator = 0;			 /* no creator */
+	ce.finderFlags = 0x4000; /* kIsInvisible */
+	ce.dataForkSize = 0;
+	ce.rsrcForkSize = static_cast<uint32_t>(virtualIconFork_.size());
+	ce.isVirtual = true;
+	catalog_.push_back(std::move(ce));
+	printf("[VIcon] virtual Icon\\r entry: cnid=%u rsrc=%u bytes, macName=%zu chars: ",
+		   catalog_.back().cnid, static_cast<unsigned>(virtualIconFork_.size()),
+		   catalog_.back().macName.size());
+	for (size_t i = 0; i < catalog_.back().macName.size(); ++i)
+		printf("%02X ", (unsigned char)catalog_.back().macName[i]);
+	printf("\n");
+}
+
 /* ── Slot identity ────────────────────────────────── */
 
 void HostVolume::setSlot(int slot)
@@ -507,8 +539,21 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, O
 	bool wantWrite = (permission != 1);
 	uint32_t handle = nextHandle_++;
 
+	if (e->isVirtual)
+		printf("[VIcon] openFork cnid=%u fork=%s perm=%d\n", cnid,
+			   fork == ForkType::Data ? "data" : "rsrc", permission);
+
 	if (fork == ForkType::Data)
 	{
+		if (e->isVirtual)
+		{
+			/* Virtual entry: data fork is empty */
+			outSize = 0;
+			openForks_[handle] = {cnid, ForkType::Data, nullptr, false};
+			errOut = kNoErr;
+			return handle;
+		}
+
 		FILE *fp = fopen(e->hostPath.c_str(), "r+b");
 		if (!fp) fp = fopen(e->hostPath.c_str(), "rb");
 		if (!fp) fp = fopen(e->hostPath.c_str(), "w+b");
@@ -533,9 +578,12 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, O
 	}
 	else
 	{
-		/* Resource fork: no FILE*, handled by AppleDouble library */
+		/* Resource fork: no FILE*, handled by AppleDouble library or virtual data */
 		openForks_[handle] = {cnid, ForkType::Resource, nullptr, wantWrite};
-		outSize = appledouble::ResourceForkSize(e->hostPath);
+		if (e->isVirtual)
+			outSize = static_cast<uint32_t>(virtualIconFork_.size());
+		else
+			outSize = appledouble::ResourceForkSize(e->hostPath);
 	}
 
 	errOut = kNoErr;
@@ -562,6 +610,18 @@ OSErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> 
 
 	if (of.fork == ForkType::Resource)
 	{
+		if (e->isVirtual)
+		{
+			printf("[VIcon] readFork virtual: off=%u req=%zu\n", offset, buf.size());
+			uint32_t available = (offset < virtualIconFork_.size())
+									 ? static_cast<uint32_t>(virtualIconFork_.size() - offset)
+									 : 0;
+			uint32_t toRead = std::min(static_cast<uint32_t>(buf.size()), available);
+			std::memcpy(buf.data(), virtualIconFork_.data() + offset, toRead);
+			outRead = toRead;
+			return kNoErr;
+		}
+
 		auto data =
 			appledouble::ReadResourceFork(e->hostPath, offset, static_cast<uint32_t>(buf.size()));
 		uint32_t toRead = static_cast<uint32_t>(data.size());
@@ -615,6 +675,12 @@ OSErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 
 	if (of.fork == ForkType::Resource)
 	{
+		if (e->isVirtual)
+		{
+			outWritten = 0;
+			return kWPrErr;
+		}
+
 		appledouble::WriteResourceFork(e->hostPath, offset, data);
 		e->rsrcForkSize = appledouble::ResourceForkSize(e->hostPath);
 		e->modDate = currentMacDate();
@@ -658,6 +724,8 @@ OSErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
 
 	if (of.fork == ForkType::Resource)
 	{
+		if (e->isVirtual) return kWPrErr;
+
 		appledouble::SetResourceForkSize(e->hostPath, newSize, typeMap_);
 		e->rsrcForkSize = newSize;
 	}

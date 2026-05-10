@@ -2,6 +2,7 @@
 	DriveManager — slot lifecycle, lookup, mount/unmount.
 */
 #include "storage/drive_manager.h"
+#include "storage/icon_builder.h"
 #include "core/diag.h"
 #include "platform/common/path_utils.h"
 
@@ -43,6 +44,38 @@ int DriveManager::mount(const std::filesystem::path &hostDir)
 		return -1;
 	}
 	s.vol->setSlot(slot);
+
+	/* Inject virtual Icon\r if no real one exists on the volume */
+	{
+		std::string iconName = std::string("Icon\r");
+		auto *realIcon = s.vol->findByName(HostVolume::kRootDirID, iconName);
+		printf("[VIcon] slot %d: real Icon\r %s\n", slot,
+			   realIcon ? "found — skipping" : "not found");
+		if (!realIcon)
+		{
+			/* Try .maxivmac/ per-volume icons first, then global defaults */
+			auto perVol = hostDir / ".maxivmac";
+			auto bw = perVol / "icon-bw.png";
+			auto col = perVol / "icon-color.png";
+			if (!fs::is_regular_file(bw) || !fs::is_regular_file(col))
+			{
+				bw = "data/defaults/floppy-bw.png";
+				col = "data/defaults/floppy-color.png";
+			}
+			printf("[VIcon] loading: %s + %s\n", bw.c_str(), col.c_str());
+			auto fork = BuildIconResourceFork(bw, col);
+			printf("[VIcon] resource fork: %zu bytes\n", fork.size());
+			if (!fork.empty())
+			{
+				s.vol->setVirtualIcon(std::move(fork));
+				printf("[VIcon] injected virtual Icon\r for slot %d\n", slot);
+			}
+			else
+			{
+				printf("[VIcon] BuildIconResourceFork FAILED\n");
+			}
+		}
+	}
 
 	// Derive volume name from directory basename, deduplicate.
 	std::string baseName = hostDir.filename().string();

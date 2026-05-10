@@ -66,6 +66,7 @@ set(MINIVMAC_SOURCES
     src/storage/text_convert.cpp
     src/storage/host_volume.cpp
     src/storage/drive_manager.cpp
+    src/storage/icon_builder.cpp
 
     # Language / type system
     src/lang/type_registry.cpp
@@ -366,6 +367,7 @@ add_executable(tests
     src/storage/text_convert.cpp
     src/storage/host_volume.cpp
     src/storage/drive_manager.cpp
+    src/storage/icon_builder.cpp
     src/core/diag.cpp
     src/lang/type_registry.cpp
     src/lang/global_registry.cpp

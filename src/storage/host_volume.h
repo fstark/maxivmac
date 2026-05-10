@@ -85,6 +85,7 @@ struct CatalogEntry
 	uint32_t crDate = 0;	   // creation date, Mac epoch (seconds since 1904)
 	uint32_t modDate = 0;	   // modification date, Mac epoch
 	bool isText = false;	   // true when type == 'TEXT'; enables encoding conversion
+	bool isVirtual = false;	   // true for synthesized entries (e.g. virtual Icon\r)
 
 	/* Directory Finder info: DInfo (16 bytes) + DXInfo (16 bytes).
 	   Only meaningful when isDirectory is true.  Stored in-memory and
@@ -135,6 +136,13 @@ public:
 	// previous mount state.  Returns false if hostDir does not exist.
 	bool mount(const std::filesystem::path &hostDir);
 	bool isMounted() const;
+
+	// Inject a virtual Icon\r entry into the catalog with the given
+	// resource fork data.  Called after mount if no real Icon\r exists.
+	void setVirtualIcon(std::vector<uint8_t> rsrcFork);
+
+	// True if a virtual Icon\r is active (no real one on disk).
+	bool hasVirtualIcon() const { return !virtualIconFork_.empty(); }
 
 	static constexpr uint32_t kRootParentID = 1; // HFS convention: root's parent
 	static constexpr uint32_t kRootDirID = 2;	 // HFS convention: root directory
@@ -275,10 +283,11 @@ public:
 private:
 	std::filesystem::path rootPath_; // host directory backing this volume
 	bool mounted_ = false;
-	int slot_ = 0;						 // assigned by DriveManager::mount() via setSlot()
-	std::vector<CatalogEntry> catalog_;	 // flat list; searched linearly by CNID or name
-	uint32_t nextCNID_ = 16;			 // monotonic counter; 1-2 are reserved for root
-	uint8_t rootDirFinderInfo_[32] = {}; // DInfo(16) + DXInfo(16) for root dir
+	int slot_ = 0;						   // assigned by DriveManager::mount() via setSlot()
+	std::vector<CatalogEntry> catalog_;	   // flat list; searched linearly by CNID or name
+	uint32_t nextCNID_ = 16;			   // monotonic counter; 1-2 are reserved for root
+	uint8_t rootDirFinderInfo_[32] = {};   // DInfo(16) + DXInfo(16) for root dir
+	std::vector<uint8_t> virtualIconFork_; // resource fork for virtual Icon\r
 	[[maybe_unused]] SidecarMode sidecarMode_ = SidecarMode::Full;
 	appledouble::TypeMap typeMap_; // per-volume extension→type mapping
 

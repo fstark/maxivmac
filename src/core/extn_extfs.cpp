@@ -478,6 +478,13 @@ static void pbWriteRootDir(PBRef pb, uint32_t nameAddr, storage::HostVolume &vol
 	{
 		Blob16 dinfo{}, dxinfo{};
 		vol.getDirInfo(storage::HostVolume::kRootDirID, dinfo, dxinfo);
+		/* Set kHasCustomIcon (0x0400) if virtual icon is active */
+		if (vol.hasVirtualIcon())
+		{
+			printf("[VIcon] pbWriteRootDir: setting kHasCustomIcon, dinfo[8]=%02X->%02X\n",
+				   dinfo[8], dinfo[8] | 0x04);
+			dinfo[8] |= 0x04; /* frFlags is at byte 8-9 in DInfo, big-endian */
+		}
 		pb[ioDrUsrWds] = dinfo;
 		pb[ioDrFndrInfo] = dxinfo;
 	}
@@ -615,6 +622,9 @@ static OSErr PbOpenFork(PBRef pb, uint32_t regParam[], storage::ForkType forkTyp
 		 forkType == storage::ForkType::Resource ? "RF" : "", dirID, name.c_str());
 
 	auto *e = vol->findByPath(dirID, name);
+	if (e && e->isVirtual)
+		printf("[VIcon] PbOpenFork found virtual entry cnid=%u fork=%s\n", e->cnid,
+			   forkType == storage::ForkType::Resource ? "rsrc" : "data");
 	if (!e) return kFnfErr;
 
 	uint32_t size = 0;
