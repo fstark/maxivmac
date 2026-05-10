@@ -14,6 +14,9 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult);
 /* Reset clipboard state on guest reboot. */
 void ExtnClipReset();
 
+/* Mark that the guest just exported an image — prevents feedback loop. */
+void ExtnClipMarkImageExported();
+
 /* Access the guest debug console log buffer (for UI display). */
 const std::deque<std::string> &extnDbgConsoleLines();
 

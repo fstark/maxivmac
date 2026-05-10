@@ -8,6 +8,7 @@
 */
 
 #include "core/extn_clip_pict.h"
+#include "core/extn_clip.h"
 #include "core/pict_convert.h"
 #include "platform/clipboard_image.h"
 #include "platform/common/clipboard.h"
@@ -122,7 +123,11 @@ void HandlePictExport(uint32_t regParam[], uint16_t &regResult)
 		rgba = Composite32Bit(s_passWhite.data(), pixels.data(), width, height, rowBytes);
 
 	auto png = EncodeRGBAPng(rgba.data(), width, height);
-	if (!png.empty()) HostClipSetImage(png.data(), png.size());
+	if (!png.empty())
+	{
+		HostClipSetImage(png.data(), png.size());
+		ExtnClipMarkImageExported();
+	}
 
 	s_passWhite.clear();
 	s_haveWhitePass = false;

@@ -34,6 +34,7 @@ static std::string s_clipCache;
 static std::unordered_map<uint32_t, uint32_t> s_kvStore;
 static uint32_t s_clipSeqNo = 0;
 static std::string s_lastClipText;
+static bool s_lastHasImage = false;
 
 void ExtnClipReset()
 {
@@ -41,7 +42,13 @@ void ExtnClipReset()
 	s_clipSeqNo = 0;
 	s_clipCache.clear();
 	s_lastClipText.clear();
+	s_lastHasImage = false;
 	ExtnPictReset();
+}
+
+void ExtnClipMarkImageExported()
+{
+	s_lastHasImage = true;
 }
 
 /* ── Debug console log buffer ──────────────────────── */
@@ -217,9 +224,11 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kClipSeqNo:
 		{
 			std::string current = hostClipGetTextMacRoman();
-			if (current != s_lastClipText)
+			bool currentHasImage = HostClipHasImage(nullptr, nullptr);
+			if (current != s_lastClipText || currentHasImage != s_lastHasImage)
 			{
 				s_lastClipText = current;
+				s_lastHasImage = currentHasImage;
 				s_clipCache = current;
 				s_clipSeqNo++;
 			}
