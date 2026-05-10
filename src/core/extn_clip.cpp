@@ -4,7 +4,6 @@
 #include "core/diag.h"
 #include "debugger/debugger.h"
 #include "platform/clipboard_image.h"
-#include "platform/common/clipboard.h"
 #include "util/macroman.h"
 
 #include <string>
@@ -204,7 +203,7 @@ void ExtnClipDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 	switch (cmd)
 	{
 		case kClipVersion:
-			regParam[0] = 3;
+			regParam[0] = 4;
 			regResult = 0;
 			break;
 

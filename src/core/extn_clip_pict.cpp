@@ -12,8 +12,6 @@
 #include "core/host_pasteboard.h"
 #include "core/diag.h"
 #include "core/pict_convert.h"
-#include "platform/clipboard_image.h"
-#include "platform/common/clipboard.h"
 
 #include <cstdint>
 #include <vector>
