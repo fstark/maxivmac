@@ -148,6 +148,7 @@ void SyncClipboard(Globals *g)
 		dbg_log2(g->regBase, "Sync: mac->host cnt %ld != %ld", (unsigned long)scrapCnt, lastCnt);
 		if (ExportMacToHost(g->regBase) < 0)
 			dbg_log(g->regBase, "clip: export error (ignored)");
+		ExportPictToHost(g->regBase);
 		kv_set(g->regBase, key, (unsigned long)scrapCnt);
 	}
 }

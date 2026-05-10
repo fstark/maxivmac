@@ -273,6 +273,9 @@
 #define kClipKVSet 0x0106
 #define kClipKVGet 0x0107
 #define kClipDbgLog 0x0108
+#define kPictExport 0x0109
+#define kPictHasImage 0x010A
+#define kPictImport 0x010B
 
 /* ---- Trap-log flags ---- */
 
@@ -366,6 +369,11 @@ void dbg_hexdump(char *regBase, char *label, unsigned char *addr, short len);
 /* ---- Function prototypes — clip.c ---- */
 
 void SyncClipboard(Globals *g);
+
+/* ---- Function prototypes — pict.c ---- */
+
+void ExportPictToHost(char *regBase);
+void ImportPictFromHost(char *regBase);
 
 /* ---- Function prototypes — drive.c ---- */
 
