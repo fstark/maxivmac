@@ -38,6 +38,7 @@ public:
 	bool isRunning() const;
 	bool isStopped() const;
 	void stop(std::string_view reason);
+	void requestScriptBreak();
 
 	// State control (used by cmd_exec.cpp)
 	void setRunning();

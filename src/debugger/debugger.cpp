@@ -71,6 +71,12 @@ void CmdShutdown(Debugger &dbg, const std::vector<Token> &args);
 void CmdClick(Debugger &dbg, const std::vector<Token> &args);
 void CmdDialog(Debugger &dbg, const std::vector<Token> &args);
 
+static void CmdDebugger(Debugger &dbg, const std::vector<Token> &)
+{
+	dbg.io().write("[script break — type 'continue' to resume]\n");
+	dbg.requestScriptBreak();
+}
+
 /* ── Command table ──────────────────────────────────── */
 
 static CmdEntry s_commands[] = {
@@ -179,6 +185,9 @@ static CmdEntry s_commands[] = {
 	 "coordinates.\n"},
 	{"dialog", "", CmdDialog, "Dump front dialog structure",
 	 "dialog\n  Show all items in the front dialog window.\n"},
+	{"debugger", "", CmdDebugger, "Break from script to interactive prompt",
+	 "debugger\n  Pause script execution and drop to the interactive debugger.\n"
+	 "  The remaining script lines are saved; type 'continue' to resume.\n"},
 };
 
 static constexpr int kNumCommands = sizeof(s_commands) / sizeof(s_commands[0]);
@@ -240,6 +249,7 @@ struct Debugger::Impl
 
 	/* Pending script (scripting suspension/resumption) */
 	PendingScript pendingScript;
+	bool scriptBreak = false;
 
 	/* I/O transport */
 	std::unique_ptr<DbgIO> io;
@@ -324,6 +334,11 @@ void Debugger::stop(std::string_view reason)
 	impl_->untilAddr = 0;
 	if (!reason.empty())
 		impl_->io->write("[%.*s]\n", static_cast<int>(reason.size()), reason.data());
+}
+
+void Debugger::requestScriptBreak()
+{
+	impl_->scriptBreak = true;
 }
 
 void Debugger::setRunning()
@@ -677,11 +692,14 @@ void Debugger::executeCommands(const std::vector<std::string> &cmds)
 		{
 			std::vector<Token> args(tokens.begin() + 1, tokens.end());
 			entry->handler(*this, args);
-			if (impl_->state != DbgState::Stopped)
+			if (impl_->state != DbgState::Stopped || impl_->scriptBreak)
 			{
 				// Script suspended — save remaining lines for resumption
+				bool wasBreak = impl_->scriptBreak;
+				impl_->scriptBreak = false;
 				impl_->pendingScript.lines = cmds;
 				impl_->pendingScript.nextLine = static_cast<int>(i + 1);
+				(void)wasBreak;
 				return;
 			}
 		}

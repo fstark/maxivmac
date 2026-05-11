@@ -70,3 +70,6 @@ size_t EventQ_Size();
 
 /// Return true if the queue is empty.
 bool EventQ_Empty();
+
+/// Return the latest fireCycle among queued key events, or 'now' if none.
+ScaledCycleCount EventQ_LatestKeyTime();

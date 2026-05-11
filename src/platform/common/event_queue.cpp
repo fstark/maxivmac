@@ -146,3 +146,13 @@ bool EventQ_Empty()
 {
 	return s_queue.empty();
 }
+
+ScaledCycleCount EventQ_LatestKeyTime()
+{
+	ScaledCycleCount latest = g_ict.nextCount;
+	for (const auto &e : s_queue)
+	{
+		if (e.kind == EvtQElKind::Key && e.fireCycle > latest) latest = e.fireCycle;
+	}
+	return latest;
+}

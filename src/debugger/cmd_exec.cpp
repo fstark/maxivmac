@@ -14,12 +14,14 @@
 
 void CmdRun(Debugger &dbg, const std::vector<Token> &)
 {
+	if (dbg.tryResumeScript(nullptr)) return;
 	dbg.io().write("[running]\n");
 	dbg.setRunning();
 }
 
 void CmdContinue(Debugger &dbg, const std::vector<Token> &)
 {
+	if (dbg.tryResumeScript(nullptr)) return;
 	dbg.io().write("[continuing]\n");
 	dbg.setRunning();
 }

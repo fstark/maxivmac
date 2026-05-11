@@ -230,7 +230,7 @@ void CmdType(Debugger &dbg, const std::vector<Token> &args)
 
 	// Convert UTF-8 argument to MacRoman for key lookup
 	std::string macRoman = MacRomanFromUTF8(args[0].text);
-	ScaledCycleCount t = g_ict.getCurrent();
+	ScaledCycleCount t = EventQ_LatestKeyTime() + 160000;
 
 	for (uint8_t ch : macRoman)
 	{
@@ -270,7 +270,7 @@ void CmdKey(Debugger &dbg, const std::vector<Token> &args)
 		return;
 	}
 
-	ScaledCycleCount t = g_ict.getCurrent();
+	ScaledCycleCount t = EventQ_LatestKeyTime() + 160000;
 
 	// Press modifiers
 	if (ks.modifiers & kModCmd) EventQ_Push({t, EvtQElKind::Key, {.press = {MKC_Command, true}}});
