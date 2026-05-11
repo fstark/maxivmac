@@ -7,7 +7,10 @@
 	AppleDouble sidecar files (._<name>).  TEXT-type files are stored as
 	UTF-8 on the host but appear as MacRoman to the guest Mac OS.
 
-	The volume is populated by a recursive directory scan at mount time.
+	The volume uses a lazy, demand-populated catalog cache backed by a
+	persistent CnidTable identity map.  Only directories the guest actually
+	visits are scanned.  Periodic invalidation forces re-scan from disk,
+	picking up external changes.
 */
 #pragma once
 
@@ -22,6 +25,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace storage
@@ -114,16 +118,92 @@ enum class SidecarMode
 	Full // sync all Finder info (type, creator, flags, location, folder)
 };
 
+/* ── CNID identity table ──────────────────────────── */
+
+// Identity key for the CNID table.  Matches Mac filesystem semantics:
+// (parentDirID, macName) identifies a catalog node.  Comparison and
+// hashing are case-insensitive (MacRoman folding) because Mac filenames
+// are case-insensitive.
+struct CnidKey
+{
+	uint32_t parentDirID = 0;
+	std::string macName; // case-preserved Mac name
+
+	bool operator==(const CnidKey &o) const;
+};
+
+// Case-insensitive hash for CnidKey.
+// Combines parentDirID with a case-folded FNV-1a of macName.
+struct CnidKeyHash
+{
+	std::size_t operator()(const CnidKey &k) const;
+};
+
+// Reverse-lookup value: stores identity and hostPath for a CNID.
+struct CnidValue
+{
+	CnidKey key;		  // (parentDirID, macName) that owns this CNID
+	std::string hostPath; // absolute host path at creation time
+};
+
+// Bidirectional identity map: (parentDirID, macName) ↔ CNID.
+// Only grows during a mount session — CNIDs are never freed or
+// reused.  Cleared on mount().
+class CnidTable
+{
+public:
+	// Look up an existing CNID for (parentDirID, macName), or
+	// allocate a new one.  hostPath is stored for reverse lookup;
+	// ignored if the CNID already exists.
+	uint32_t resolve(uint32_t parentDirID, std::string_view macName, std::string_view hostPath);
+
+	// Reverse lookup: CNID → (parentDirID, macName, hostPath).
+	// Returns nullptr if cnid was never assigned.
+	const CnidValue *reverse(uint32_t cnid) const;
+
+	// Update identity after a guest rename or move.  Changes the
+	// forward key and stored hostPath for an existing CNID.
+	void updateKey(uint32_t cnid, uint32_t newParentDirID, std::string_view newMacName,
+				   std::string_view newHostPath);
+
+	// Update hostPath only (used after parent dir move/rename to
+	// fix descendant paths).
+	void updateHostPath(uint32_t cnid, std::string_view newHostPath);
+
+	void clear();			   // mount-time reset
+	uint32_t nextCnid() const; // next CNID that will be assigned
+
+	// Directory scan tracking: prevents re-running directory_iterator
+	// for the same parent within one invalidation cycle.
+	bool isScanned(uint32_t dirID) const;
+	void markScanned(uint32_t dirID);
+	void clearScannedFor(uint32_t dirID); // single-directory invalidation
+	void clearScanned();				  // called by invalidateAll()
+
+	// Size of internal maps (for testing / diagnostics).
+	std::size_t size() const;
+
+private:
+	std::unordered_map<CnidKey, uint32_t, CnidKeyHash> forward_;
+	std::unordered_map<uint32_t, CnidValue> reverse_;
+	std::unordered_set<uint32_t> scanned_;
+
+	// HFS reserves CNIDs 1–15 (root parent, root dir, extents
+	// overflow, catalog file, etc.).
+	uint32_t nextCnid_ = 16;
+};
+
 /* ── HostVolume ───────────────────────────────────── */
 
 /*
 	A single virtual HFS volume rooted at a host directory.
 
-	On mount(), the host directory tree is scanned recursively to build an
-	in-memory catalog of CatalogEntry nodes, each assigned a unique CNID.
-	After mounting, callers can query the catalog, create/delete files and
-	directories, perform fork-level I/O, and open working directories —
-	mirroring the Classic Mac OS File Manager interface.
+	On mount(), the root directory is scanned to build an initial catalog.
+	Subdirectories are scanned lazily when the guest accesses them.  A
+	CnidTable maps (parentDirID, macName) ↔ CNID persistently within a
+	mount session — CNIDs are stable even across cache invalidation.
+	Periodic invalidation evicts cached entries; the next guest access
+	re-scans from disk, picking up external additions and deletions.
 
 	Fork I/O is handle-based: openFork() returns a uint32_t handle that
 	subsequent read/write/setEOF/close calls operate on.  Data forks
@@ -167,26 +247,30 @@ public:
 	/* ── Catalog queries ──────────────────────────── */
 
 	// Look up a catalog entry by its CNID.  Returns nullptr if not found.
-	const CatalogEntry *findByCNID(uint32_t cnid) const;
+	// Resurrects evicted entries via CnidTable reverse lookup.
+	const CatalogEntry *findByCNID(uint32_t cnid);
 
 	// Find a child of parentDirID with the given Mac name (case-insensitive).
-	const CatalogEntry *findByName(uint32_t parentDirID, std::string_view macName) const;
+	const CatalogEntry *findByName(uint32_t parentDirID, std::string_view macName);
 
 	// Find a catalog entry by an HFS path string (e.g. "Volume:dir:file").
 	// If the path contains no colon, behaves identically to findByName(startDirID, path).
 	// A leading colon makes the path relative to startDirID.
 	// Otherwise the first component is the volume name (skipped) and walking
 	// begins from the root directory.
-	const CatalogEntry *findByPath(uint32_t startDirID, std::string_view hfsPath) const;
+	const CatalogEntry *findByPath(uint32_t startDirID, std::string_view hfsPath);
 
 	// Return the nth child (0-based) of a directory.  Used for catalog iteration.
-	const CatalogEntry *nthChild(uint32_t parentDirID, int index) const;
+	const CatalogEntry *nthChild(uint32_t parentDirID, int index);
 
 	// Count immediate children of a directory.
-	int childCount(uint32_t parentDirID) const;
+	int childCount(uint32_t parentDirID);
 
 	// Aggregate file count, directory count, and total data-fork bytes.
-	void volumeStats(uint32_t &outFiles, uint32_t &outDirs, uint32_t &outBytes) const;
+	void volumeStats(uint32_t &outFiles, uint32_t &outDirs, uint32_t &outBytes);
+
+	// Next CNID that will be assigned.
+	uint32_t nextCnid() const;
 
 	/* ── File/directory creation ──────────────────── */
 
@@ -223,8 +307,7 @@ public:
 
 	// Get directory Finder info (DInfo + DXInfo, 16 bytes each).
 	// Returns false if cnid is not a directory.
-	bool getDirInfo(uint32_t cnid, std::array<uint8_t, 16> &dinfo,
-					std::array<uint8_t, 16> &dxinfo) const;
+	bool getDirInfo(uint32_t cnid, std::array<uint8_t, 16> &dinfo, std::array<uint8_t, 16> &dxinfo);
 
 	// Set directory Finder info (DInfo + DXInfo, 16 bytes each).
 	// Persists to AppleDouble sidecar.
@@ -260,6 +343,18 @@ public:
 	// Close the fork handle and release resources.
 	void closeFork(uint32_t handle);
 
+	/* ── Cache invalidation ───────────────────────── */
+
+	// Evict cached children of dirID from catalog_.  Entries with
+	// open forks or isVirtual are retained.  The next query for this
+	// directory triggers re-scan from disk.
+	void invalidateDir(uint32_t dirID);
+
+	// Evict all non-virtual, non-open-fork entries from catalog_.
+	// Clears the scanned set, forcing re-scan on next access.
+	// Called periodically to sync with host filesystem changes.
+	void invalidateAll();
+
 	/* ── Catalog consistency ──────────────────────── */
 
 	// Verify every catalog entry: host path exists, isDirectory matches
@@ -285,29 +380,45 @@ private:
 	bool mounted_ = false;
 	int slot_ = 0;						   // assigned by DriveManager::mount() via setSlot()
 	std::vector<CatalogEntry> catalog_;	   // flat list; searched linearly by CNID or name
-	uint32_t nextCNID_ = 16;			   // monotonic counter; 1-2 are reserved for root
 	uint8_t rootDirFinderInfo_[32] = {};   // DInfo(16) + DXInfo(16) for root dir
 	std::vector<uint8_t> virtualIconFork_; // resource fork for virtual Icon\r
 	[[maybe_unused]] SidecarMode sidecarMode_ = SidecarMode::Full;
 	appledouble::TypeMap typeMap_; // per-volume extension→type mapping
+	CnidTable cnidTable_;		   // CNID identity table — maps (parentDirID, macName) ↔ CNID
 
 	// Per-open-fork state.  Data forks hold a FILE*; resource forks
 	// have fp == nullptr (I/O goes through AppleDouble helpers).
+	// hostPath and isText are copied from CatalogEntry at open time
+	// so that fork I/O remains functional even if the catalog entry
+	// is evicted by invalidation.
 	struct OpenFork
 	{
 		uint32_t cnid = 0;
 		ForkType fork = ForkType::Data;
 		FILE *fp = nullptr;
 		bool hasWrite = false;
+		std::string hostPath; // absolute path, copied at open time
+		bool isText = false;  // copied at open time
 	};
 	std::unordered_map<uint32_t, OpenFork> openForks_; // handle → OpenFork
 	uint32_t nextHandle_ = 1;						   // monotonic handle allocator
 
 	mutable TextStats textStats_; // mutable: updated by const-ish read paths
 
-	// Recursively walk hostDir, creating CatalogEntry nodes for every
-	// file and subdirectory.  Skips hidden files and AppleDouble sidecars.
-	void scanDirectory(const std::filesystem::path &hostDir, uint32_t parentDirID);
+	// Lazily populate catalog entries for children of dirID.
+	// Scans one directory level from the host filesystem.  Skips hidden
+	// files and AppleDouble sidecars.  New entries get CNIDs from
+	// cnidTable_; existing entries are updated in place.
+	// Entries whose host file no longer exists are pruned.
+	// Short-circuits if this directory was already scanned this
+	// invalidation cycle (tracked by cnidTable_.scanned_).
+	void ensureScanned(uint32_t dirID);
+
+	// Build a CatalogEntry from a host filesystem entry.
+	// Populates metadata (type, creator, sizes, dates) from the
+	// AppleDouble sidecar and file stats.
+	CatalogEntry buildCatalogEntry(const std::filesystem::directory_entry &entry,
+								   uint32_t parentDirID, uint32_t cnid, std::string_view macName);
 
 	CatalogEntry *mutableFindByCNID(uint32_t cnid);
 

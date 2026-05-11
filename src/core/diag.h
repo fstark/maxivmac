@@ -23,6 +23,7 @@ enum class DiagSubsystem : uint8_t
 	SLIP,  /* [SLIP]  Serial Line IP                     */
 	VID,   /* [VID]   video                              */
 	INIT,  /* [INIT]  INIT version/identity                */
+	CACHE, /* [CACHE] catalog cache: scan, evict, CNID resolve  */
 	kCount
 };
 

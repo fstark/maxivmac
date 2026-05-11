@@ -87,9 +87,10 @@ TEST_CASE("HostVolume: mount with subdirectory")
 	auto *sub = vol.findByName(storage::HostVolume::kRootDirID, "subdir");
 	REQUIRE(sub != nullptr);
 	CHECK(sub->isDirectory);
-	CHECK(vol.childCount(sub->cnid) == 1);
+	uint32_t subCnid = sub->cnid;  // save CNID before catalog mutation
+	CHECK(vol.childCount(subCnid) == 1);
 
-	auto *inner = vol.nthChild(sub->cnid, 1);
+	auto *inner = vol.nthChild(subCnid, 1);
 	REQUIRE(inner != nullptr);
 	CHECK(inner->macName == "inner.txt");
 }
@@ -1120,4 +1121,366 @@ TEST_CASE("HostVolume: missing .maxivmac falls back to global typemap")
 	REQUIRE(e != nullptr);
 	CHECK(e->type == appledouble::FourCC("TEXT"));
 	CHECK(e->creator == appledouble::FourCC("ttxt")); // global default
+}
+
+/* ── CnidTable unit tests ─────────────────────────── */
+
+TEST_CASE("CnidTable: resolve allocates sequential CNIDs")
+{
+	storage::CnidTable tbl;
+	auto a = tbl.resolve(2, "fileA", "/root/fileA");
+	auto b = tbl.resolve(2, "fileB", "/root/fileB");
+	auto c = tbl.resolve(2, "fileC", "/root/fileC");
+	CHECK(a == 16);
+	CHECK(b == 17);
+	CHECK(c == 18);
+}
+
+TEST_CASE("CnidTable: resolve is stable")
+{
+	storage::CnidTable tbl;
+	auto a = tbl.resolve(2, "hello", "/root/hello");
+	auto b = tbl.resolve(2, "hello", "/root/hello");
+	CHECK(a == b);
+}
+
+TEST_CASE("CnidTable: resolve is case-insensitive")
+{
+	storage::CnidTable tbl;
+	auto a = tbl.resolve(2, "README", "/root/README");
+	auto b = tbl.resolve(2, "readme", "/root/readme");
+	CHECK(a == b);
+}
+
+TEST_CASE("CnidTable: reverse lookup")
+{
+	storage::CnidTable tbl;
+	auto cnid = tbl.resolve(5, "Test.txt", "/vol/Test.txt");
+	auto *val = tbl.reverse(cnid);
+	REQUIRE(val != nullptr);
+	CHECK(val->key.parentDirID == 5);
+	CHECK(val->key.macName == "Test.txt");
+	CHECK(val->hostPath == "/vol/Test.txt");
+}
+
+TEST_CASE("CnidTable: reverse unknown CNID")
+{
+	storage::CnidTable tbl;
+	CHECK(tbl.reverse(9999) == nullptr);
+}
+
+TEST_CASE("CnidTable: updateKey")
+{
+	storage::CnidTable tbl;
+	auto cnid = tbl.resolve(2, "old.txt", "/root/old.txt");
+
+	tbl.updateKey(cnid, 3, "new.txt", "/other/new.txt");
+
+	// Reverse now returns updated values
+	auto *val = tbl.reverse(cnid);
+	REQUIRE(val != nullptr);
+	CHECK(val->key.parentDirID == 3);
+	CHECK(val->key.macName == "new.txt");
+	CHECK(val->hostPath == "/other/new.txt");
+
+	// Old key should no longer resolve to this CNID
+	auto fresh = tbl.resolve(2, "old.txt", "/root/old.txt");
+	CHECK(fresh != cnid);
+}
+
+TEST_CASE("CnidTable: updateHostPath")
+{
+	storage::CnidTable tbl;
+	auto cnid = tbl.resolve(2, "file.txt", "/old/file.txt");
+
+	tbl.updateHostPath(cnid, "/new/file.txt");
+
+	auto *val = tbl.reverse(cnid);
+	REQUIRE(val != nullptr);
+	CHECK(val->hostPath == "/new/file.txt");
+	CHECK(val->key.macName == "file.txt");  // key unchanged
+}
+
+TEST_CASE("CnidTable: clear resets state")
+{
+	storage::CnidTable tbl;
+	tbl.resolve(2, "a", "/a");
+	tbl.resolve(2, "b", "/b");
+	CHECK(tbl.size() == 2);
+
+	tbl.clear();
+	CHECK(tbl.size() == 0);
+	CHECK(tbl.nextCnid() == 16);
+}
+
+TEST_CASE("CnidTable: scanned tracking")
+{
+	storage::CnidTable tbl;
+	CHECK_FALSE(tbl.isScanned(42));
+
+	tbl.markScanned(42);
+	CHECK(tbl.isScanned(42));
+
+	tbl.clearScannedFor(42);
+	CHECK_FALSE(tbl.isScanned(42));
+
+	tbl.markScanned(42);
+	tbl.markScanned(99);
+	tbl.clearScanned();
+	CHECK_FALSE(tbl.isScanned(42));
+	CHECK_FALSE(tbl.isScanned(99));
+}
+
+/* ── Lazy scanning + CNID stability tests ─────────── */
+
+TEST_CASE("HostVolume: lazy scan — subdirectory not populated until accessed")
+{
+	TempDir td;
+	fs::create_directory(td.path / "sub");
+	writeFile(td.path / "sub" / "child.txt", "data");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	// Root should see the subdirectory
+	CHECK(vol.childCount(storage::HostVolume::kRootDirID) == 1);
+
+	// Access subs CNID, then verify its children are populated on demand
+	auto *sub = vol.findByName(storage::HostVolume::kRootDirID, "sub");
+	REQUIRE(sub != nullptr);
+	uint32_t subCnid = sub->cnid;
+	CHECK(vol.childCount(subCnid) == 1);
+}
+
+TEST_CASE("HostVolume: CNID stability across ensureScanned")
+{
+	TempDir td;
+	writeFile(td.path / "stable.txt", "data");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	auto *e1 = vol.findByName(storage::HostVolume::kRootDirID, "stable.txt");
+	REQUIRE(e1 != nullptr);
+	uint32_t cnid1 = e1->cnid;
+
+	// Access again — CNID should be the same
+	auto *e2 = vol.findByName(storage::HostVolume::kRootDirID, "stable.txt");
+	REQUIRE(e2 != nullptr);
+	CHECK(e2->cnid == cnid1);
+}
+
+TEST_CASE("HostVolume: nextCnid reflects allocated CNIDs")
+{
+	TempDir td;
+	writeFile(td.path / "a.txt", "1");
+	writeFile(td.path / "b.txt", "2");
+	writeFile(td.path / "c.txt", "3");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	// 16 = base, root dir uses one (CNID 16), then 3 files = at least 20
+	CHECK(vol.nextCnid() >= 19);
+}
+
+/* ── Invalidation tests ──────────────────────────── */
+
+TEST_CASE("HostVolume: invalidateAll clears catalog")
+{
+	TempDir td;
+	writeFile(td.path / "file1.txt", "data1");
+	writeFile(td.path / "file2.txt", "data2");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+	CHECK(vol.childCount(storage::HostVolume::kRootDirID) == 2);
+
+	vol.invalidateAll();
+
+	// childCount triggers ensureScanned, which rebuilds from disk
+	CHECK(vol.childCount(storage::HostVolume::kRootDirID) == 2);
+}
+
+TEST_CASE("HostVolume: invalidateAll preserves virtual entries")
+{
+	TempDir td;
+	writeFile(td.path / "file.txt", "data");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+	vol.setVirtualIcon({0x00, 0x01, 0x02, 0x03});
+
+	vol.invalidateAll();
+
+	// Virtual icon should survive
+	CHECK(vol.hasVirtualIcon());
+}
+
+TEST_CASE("HostVolume: invalidateAll preserves open fork entries")
+{
+	TempDir td;
+	writeFile(td.path / "keep.txt", "persistent");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "keep.txt");
+	REQUIRE(e != nullptr);
+	uint32_t cnid = e->cnid;
+
+	storage::OSErr err;
+	uint32_t sz;
+	uint32_t h = vol.openFork(cnid, storage::ForkType::Data, sz, err);
+	CHECK(h != 0);
+
+	vol.invalidateAll();
+
+	// Fork I/O should still work after invalidation
+	std::array<uint8_t, 10> buf{};
+	uint32_t got = 0;
+	auto res = vol.readFork(h, 0, buf, got);
+	CHECK(res == storage::kNoErr);
+	CHECK(got > 0);
+
+	vol.closeFork(h);
+}
+
+TEST_CASE("HostVolume: invalidateAll picks up new host files")
+{
+	TempDir td;
+	writeFile(td.path / "original.txt", "data");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+	CHECK(vol.childCount(storage::HostVolume::kRootDirID) == 1);
+
+	vol.invalidateAll();
+
+	// Add file from host
+	writeFile(td.path / "added.txt", "new data");
+
+	CHECK(vol.childCount(storage::HostVolume::kRootDirID) == 2);
+	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "added.txt") != nullptr);
+}
+
+TEST_CASE("HostVolume: invalidateAll picks up deleted host files")
+{
+	TempDir td;
+	writeFile(td.path / "delete_me.txt", "byebye");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "delete_me.txt") != nullptr);
+
+	vol.invalidateAll();
+
+	// Delete file from host
+	fs::remove(td.path / "delete_me.txt");
+
+	CHECK(vol.findByName(storage::HostVolume::kRootDirID, "delete_me.txt") == nullptr);
+}
+
+TEST_CASE("HostVolume: invalidateDir only affects target directory")
+{
+	TempDir td;
+	writeFile(td.path / "root_file.txt", "root");
+	fs::create_directory(td.path / "subdir");
+	writeFile(td.path / "subdir" / "sub_file.txt", "sub");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	auto *sub = vol.findByName(storage::HostVolume::kRootDirID, "subdir");
+	REQUIRE(sub != nullptr);
+	uint32_t subCnid = sub->cnid;
+
+	// Force subdir scan
+	CHECK(vol.childCount(subCnid) == 1);
+
+	// Invalidate root only
+	vol.invalidateDir(storage::HostVolume::kRootDirID);
+
+	// Root children are evicted (will re-scan), but subdir contents
+	// should still be in catalog (different parentDirID)
+	CHECK(vol.childCount(storage::HostVolume::kRootDirID) == 2); // rebuild both root children
+}
+
+TEST_CASE("HostVolume: findByCNID resurrection after invalidateAll")
+{
+	TempDir td;
+	writeFile(td.path / "resurrect.txt", "data");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "resurrect.txt");
+	REQUIRE(e != nullptr);
+	uint32_t cnid = e->cnid;
+
+	vol.invalidateAll();
+
+	// Resurrection via findByCNID
+	auto *e2 = vol.findByCNID(cnid);
+	REQUIRE(e2 != nullptr);
+	CHECK(e2->cnid == cnid);
+	CHECK(e2->macName == "resurrect.txt");
+}
+
+/* ── rename/move + CnidTable consistency tests ────── */
+
+TEST_CASE("HostVolume: rename preserves CNID after invalidation")
+{
+	TempDir td;
+	writeFile(td.path / "before.txt", "data");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "before.txt");
+	REQUIRE(e != nullptr);
+	uint32_t cnid = e->cnid;
+
+	auto err = vol.rename(storage::HostVolume::kRootDirID, "before.txt", "after.txt");
+	CHECK(err == storage::kNoErr);
+
+	vol.invalidateAll();
+
+	auto *e2 = vol.findByCNID(cnid);
+	REQUIRE(e2 != nullptr);
+	CHECK(e2->cnid == cnid);
+	CHECK(e2->macName == "after.txt");
+}
+
+TEST_CASE("HostVolume: move preserves CNID after invalidation")
+{
+	TempDir td;
+	fs::create_directory(td.path / "dirA");
+	fs::create_directory(td.path / "dirB");
+	writeFile(td.path / "dirA" / "moveme.txt", "data");
+
+	storage::HostVolume vol;
+	CHECK(vol.mount(td.path));
+
+	auto *dirA = vol.findByName(storage::HostVolume::kRootDirID, "dirA");
+	REQUIRE(dirA != nullptr);
+	uint32_t dirACnid = dirA->cnid;
+
+	auto *dirB = vol.findByName(storage::HostVolume::kRootDirID, "dirB");
+	REQUIRE(dirB != nullptr);
+	uint32_t dirBCnid = dirB->cnid;
+
+	auto *e = vol.findByName(dirACnid, "moveme.txt");
+	REQUIRE(e != nullptr);
+	uint32_t cnid = e->cnid;
+
+	auto err = vol.move(dirACnid, "moveme.txt", dirBCnid);
+	CHECK(err == storage::kNoErr);
+
+	vol.invalidateAll();
+
+	auto *e2 = vol.findByCNID(cnid);
+	REQUIRE(e2 != nullptr);
+	CHECK(e2->cnid == cnid);
+	CHECK(e2->parentDirID == dirBCnid);
 }

@@ -87,6 +87,10 @@ public:
 	// guest discovery.  Returns the slot index, or -1 if none.
 	int popPendingMount();
 
+	// Invalidate all catalog caches.  Called periodically from the
+	// ExtFS poll path to sync with host filesystem changes.
+	void invalidateAll();
+
 	// Open a fork on a specific slot, encoding the slot in the handle.
 	uint32_t openFork(int slot, uint32_t cnid, ForkType fork, uint32_t &outSize, OSErr &errOut,
 					  uint8_t perm = 0);

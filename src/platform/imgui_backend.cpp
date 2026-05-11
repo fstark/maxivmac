@@ -14,6 +14,7 @@
 #include "platform/platform.h"
 #include "config/mac_file.h"
 #include "core/config_loader.h"
+#include "core/extn_extfs.h"
 #include "core/main.h"
 
 /* Forward declarations to avoid pulling in the full osglu_common.h
@@ -360,6 +361,18 @@ void ImGuiBackend::drawWindowedState()
 		return;
 	}
 	if (shell_->tickIsDue() && !shell_->shouldQuit()) shell_->runOneTick();
+
+	/* Periodic shared-drive catalog refresh (~every 2 seconds at 60 fps).
+	   Host-driven, not guest-driven — keeps the door open for future
+	   filesystem-notification triggers. */
+	{
+		static int s_refreshCounter = 0;
+		if (++s_refreshCounter >= 120)
+		{
+			s_refreshCounter = 0;
+			ExtFS_RefreshCatalogs();
+		}
+	}
 
 	/* Upload emulator framebuffer to GL texture */
 	uploadFramebuffer();

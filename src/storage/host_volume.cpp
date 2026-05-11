@@ -3,6 +3,8 @@
 #include "platform/common/path_utils.h"
 #include "util/macroman.h"
 
+#define CACHE_LOG(fmt, ...) DIAG(CACHE, fmt "\n", ##__VA_ARGS__)
+
 #include <algorithm>
 #include <chrono>
 #include <cstring>
@@ -13,6 +15,119 @@ namespace storage
 {
 
 namespace fs = std::filesystem;
+
+/* ── CnidTable ────────────────────────────────────── */
+
+bool CnidKey::operator==(const CnidKey &o) const
+{
+	if (parentDirID != o.parentDirID) return false;
+	if (macName.size() != o.macName.size()) return false;
+	for (size_t i = 0; i < macName.size(); ++i)
+	{
+		if (tolower(static_cast<unsigned char>(macName[i])) !=
+			tolower(static_cast<unsigned char>(o.macName[i])))
+			return false;
+	}
+	return true;
+}
+
+std::size_t CnidKeyHash::operator()(const CnidKey &k) const
+{
+	// FNV-1a hash of case-folded macName, mixed with parentDirID
+	std::size_t h = 14695981039346656037ULL;
+	for (unsigned char c : k.macName)
+	{
+		h ^= static_cast<std::size_t>(tolower(c));
+		h *= 1099511628211ULL;
+	}
+	return h ^ std::hash<uint32_t>{}(k.parentDirID);
+}
+
+uint32_t CnidTable::resolve(uint32_t parentDirID, std::string_view macName,
+							std::string_view hostPath)
+{
+	CnidKey key{parentDirID, std::string(macName)};
+	auto it = forward_.find(key);
+	if (it != forward_.end()) return it->second;
+
+	uint32_t cnid = nextCnid_++;
+	forward_[key] = cnid;
+	reverse_[cnid] = CnidValue{key, std::string(hostPath)};
+
+	CACHE_LOG("resolve: new cnid=%u parent=%u name=\"%s\"", cnid, parentDirID,
+			  std::string(macName).c_str());
+	return cnid;
+}
+
+const CnidValue *CnidTable::reverse(uint32_t cnid) const
+{
+	auto it = reverse_.find(cnid);
+	return it != reverse_.end() ? &it->second : nullptr;
+}
+
+void CnidTable::updateKey(uint32_t cnid, uint32_t newParentDirID, std::string_view newMacName,
+						  std::string_view newHostPath)
+{
+	auto rit = reverse_.find(cnid);
+	if (rit == reverse_.end()) return;
+
+	// Erase old forward entry
+	forward_.erase(rit->second.key);
+
+	// Build new key
+	CnidKey newKey{newParentDirID, std::string(newMacName)};
+	forward_[newKey] = cnid;
+	rit->second.key = newKey;
+	rit->second.hostPath = std::string(newHostPath);
+
+	CACHE_LOG("updateKey: cnid=%u -> parent=%u name=\"%s\"", cnid, newParentDirID,
+			  std::string(newMacName).c_str());
+}
+
+void CnidTable::updateHostPath(uint32_t cnid, std::string_view newHostPath)
+{
+	auto rit = reverse_.find(cnid);
+	if (rit == reverse_.end()) return;
+	rit->second.hostPath = std::string(newHostPath);
+
+	CACHE_LOG("updateHostPath: cnid=%u -> \"%s\"", cnid, std::string(newHostPath).c_str());
+}
+
+void CnidTable::clear()
+{
+	CACHE_LOG("clear: dropping %zu entries", forward_.size());
+	forward_.clear();
+	reverse_.clear();
+	scanned_.clear();
+	nextCnid_ = 16;
+}
+
+uint32_t CnidTable::nextCnid() const
+{
+	return nextCnid_;
+}
+
+bool CnidTable::isScanned(uint32_t dirID) const
+{
+	return scanned_.contains(dirID);
+}
+void CnidTable::markScanned(uint32_t dirID)
+{
+	scanned_.insert(dirID);
+}
+void CnidTable::clearScannedFor(uint32_t dirID)
+{
+	scanned_.erase(dirID);
+}
+void CnidTable::clearScanned()
+{
+	scanned_.clear();
+}
+
+std::size_t CnidTable::size() const
+{
+	return forward_.size();
+}
 
 /* ── Helpers ──────────────────────────────────────── */
 
@@ -31,7 +146,6 @@ bool HostVolume::mount(const std::filesystem::path &hostDir)
 
 	rootPath_ = hostDir;
 	catalog_.clear();
-	nextCNID_ = 16;
 	openForks_.clear();
 	nextHandle_ = 1;
 	textStats_ = {};
@@ -48,7 +162,16 @@ bool HostVolume::mount(const std::filesystem::path &hostDir)
 	auto volumeMap = hostDir / ".maxivmac" / "typemap.def";
 	if (typeMap_.load(volumeMap) < 0) typeMap_ = appledouble::DefaultTypeMap();
 
-	scanDirectory(hostDir, kRootDirID);
+	// Initialize CNID table.  Register root directory (CNID 2).
+	cnidTable_.clear();
+	cnidTable_.resolve(kRootParentID, rootPath_.filename().string(), rootPath_.string());
+
+	// Scan root directory only — subdirectories are scanned lazily
+	// when the guest accesses them.
+	ensureScanned(kRootDirID);
+
+	CACHE_LOG("mount: root=\"%s\" rootChildren=%d cnids=%zu", rootPath_.string().c_str(),
+			  childCount(kRootDirID), cnidTable_.size());
 
 	/* Load root directory Finder info from sidecar */
 	appledouble::GetDirFinderInfo(hostDir, rootDirFinderInfo_, 32);
@@ -75,7 +198,7 @@ void HostVolume::setVirtualIcon(std::vector<uint8_t> rsrcFork)
 	}
 
 	CatalogEntry ce{};
-	ce.cnid = nextCNID_++;
+	ce.cnid = cnidTable_.resolve(kRootDirID, "Icon\r", "");
 	ce.parentDirID = kRootDirID;
 	ce.isDirectory = false;
 	ce.macName = std::string("Icon\r");
@@ -131,15 +254,34 @@ void HostVolume::closeAllForks()
 
 /* ── Catalog queries ──────────────────────────────── */
 
-const CatalogEntry *HostVolume::findByCNID(uint32_t cnid) const
+const CatalogEntry *HostVolume::findByCNID(uint32_t cnid)
 {
+	// Fast path: entry is in catalog
 	for (const auto &e : catalog_)
 		if (e.cnid == cnid) return &e;
+
+	// Resurrection: entry was evicted or never scanned.
+	// Look up identity from cnidTable to find its parent, then
+	// scan that parent directory to re-populate.
+	auto *val = cnidTable_.reverse(cnid);
+	if (!val) return nullptr;
+
+	CACHE_LOG("findByCNID: resurrecting cnid=%u parent=%u name=\"%s\"", cnid, val->key.parentDirID,
+			  val->key.macName.c_str());
+
+	ensureScanned(val->key.parentDirID);
+
+	// Retry after scanning
+	for (const auto &e : catalog_)
+		if (e.cnid == cnid) return &e;
+
+	CACHE_LOG("findByCNID: resurrection failed cnid=%u (deleted from disk)", cnid);
 	return nullptr;
 }
 
-const CatalogEntry *HostVolume::findByName(uint32_t parentDirID, std::string_view macName) const
+const CatalogEntry *HostVolume::findByName(uint32_t parentDirID, std::string_view macName)
 {
+	ensureScanned(parentDirID);
 	for (const auto &e : catalog_)
 	{
 		if (e.parentDirID != parentDirID) continue;
@@ -159,7 +301,7 @@ const CatalogEntry *HostVolume::findByName(uint32_t parentDirID, std::string_vie
 	return nullptr;
 }
 
-const CatalogEntry *HostVolume::findByPath(uint32_t startDirID, std::string_view hfsPath) const
+const CatalogEntry *HostVolume::findByPath(uint32_t startDirID, std::string_view hfsPath)
 {
 	/* No colon → plain name lookup in the given directory */
 	auto firstColon = hfsPath.find(':');
@@ -202,8 +344,9 @@ const CatalogEntry *HostVolume::findByPath(uint32_t startDirID, std::string_view
 	return nullptr;
 }
 
-const CatalogEntry *HostVolume::nthChild(uint32_t parentDirID, int index) const
+const CatalogEntry *HostVolume::nthChild(uint32_t parentDirID, int index)
 {
+	ensureScanned(parentDirID);
 	int count = 0;
 	for (const auto &e : catalog_)
 	{
@@ -216,15 +359,16 @@ const CatalogEntry *HostVolume::nthChild(uint32_t parentDirID, int index) const
 	return nullptr;
 }
 
-int HostVolume::childCount(uint32_t parentDirID) const
+int HostVolume::childCount(uint32_t parentDirID)
 {
+	ensureScanned(parentDirID);
 	int count = 0;
 	for (const auto &e : catalog_)
 		if (e.parentDirID == parentDirID) ++count;
 	return count;
 }
 
-void HostVolume::volumeStats(uint32_t &outFiles, uint32_t &outDirs, uint32_t &outBytes) const
+void HostVolume::volumeStats(uint32_t &outFiles, uint32_t &outDirs, uint32_t &outBytes)
 {
 	outFiles = 0;
 	outDirs = 0;
@@ -272,7 +416,7 @@ uint32_t HostVolume::createFile(uint32_t parentDirID, std::string_view macName, 
 	fclose(fp);
 
 	CatalogEntry ce{};
-	ce.cnid = nextCNID_++;
+	ce.cnid = cnidTable_.resolve(parentDirID, macName, hostPath);
 	ce.parentDirID = parentDirID;
 	ce.hostPath = hostPath;
 	ce.macName = std::string(macName);
@@ -312,7 +456,7 @@ uint32_t HostVolume::createDir(uint32_t parentDirID, std::string_view macName, O
 	}
 
 	CatalogEntry ce{};
-	ce.cnid = nextCNID_++;
+	ce.cnid = cnidTable_.resolve(parentDirID, macName, hostPath);
 	ce.parentDirID = parentDirID;
 	ce.hostPath = hostPath;
 	ce.macName = std::string(macName);
@@ -396,6 +540,31 @@ OSErr HostVolume::move(uint32_t srcDirID, std::string_view macName, uint32_t dst
 			entry.hostPath = newHostPath + entry.hostPath.substr(oldHostPath.size());
 		}
 	}
+
+	// Keep CnidTable in sync so that re-scans after invalidation
+	// match the new location to the existing CNID.
+	cnidTable_.updateKey(cnid, dstDirID, macName, newHostPath);
+	CACHE_LOG("move: cnid=%u \"%s\" dir=%u -> dir=%u", cnid, std::string(macName).c_str(), srcDirID,
+			  dstDirID);
+
+	// For directory moves, update all descendants' host paths in cnidTable.
+	if (isDir)
+	{
+		uint32_t descendantCount = 0;
+		for (const auto &entry : catalog_)
+		{
+			if (entry.hostPath.size() > newHostPath.size() &&
+				entry.hostPath.compare(0, newHostPath.size(), newHostPath) == 0 &&
+				entry.hostPath[newHostPath.size()] == '/')
+			{
+				cnidTable_.updateHostPath(entry.cnid, entry.hostPath);
+				++descendantCount;
+			}
+		}
+		if (descendantCount > 0)
+			CACHE_LOG("move: updated %u descendant hostPaths", descendantCount);
+	}
+
 	return kNoErr;
 }
 
@@ -443,6 +612,31 @@ OSErr HostVolume::rename(uint32_t dirID, std::string_view oldMacName, std::strin
 			entry.hostPath = newHostPath + entry.hostPath.substr(oldHostPath.size());
 		}
 	}
+
+	// Keep CnidTable in sync so that re-scans after invalidation
+	// match the new name to the existing CNID.
+	cnidTable_.updateKey(cnid, dirID, newMacName, newHostPath);
+	CACHE_LOG("rename: cnid=%u \"%s\" -> \"%s\" in dir=%u", cnid, std::string(oldMacName).c_str(),
+			  std::string(newMacName).c_str(), dirID);
+
+	// For directory renames, update all descendants' host paths in cnidTable.
+	if (isDir)
+	{
+		uint32_t descendantCount = 0;
+		for (const auto &entry : catalog_)
+		{
+			if (entry.hostPath.size() > newHostPath.size() &&
+				entry.hostPath.compare(0, newHostPath.size(), newHostPath) == 0 &&
+				entry.hostPath[newHostPath.size()] == '/')
+			{
+				cnidTable_.updateHostPath(entry.cnid, entry.hostPath);
+				++descendantCount;
+			}
+		}
+		if (descendantCount > 0)
+			CACHE_LOG("rename: updated %u descendant hostPaths", descendantCount);
+	}
+
 	return kNoErr;
 }
 
@@ -469,7 +663,7 @@ OSErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, ui
 }
 
 bool HostVolume::getDirInfo(uint32_t cnid, std::array<uint8_t, 16> &dinfo,
-							std::array<uint8_t, 16> &dxinfo) const
+							std::array<uint8_t, 16> &dxinfo)
 {
 	if (cnid == kRootDirID)
 	{
@@ -549,7 +743,7 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, O
 		{
 			/* Virtual entry: data fork is empty */
 			outSize = 0;
-			openForks_[handle] = {cnid, ForkType::Data, nullptr, false};
+			openForks_[handle] = {cnid, ForkType::Data, nullptr, false, {}, false};
 			errOut = kNoErr;
 			return handle;
 		}
@@ -574,12 +768,12 @@ uint32_t HostVolume::openFork(uint32_t cnid, ForkType fork, uint32_t &outSize, O
 			fseek(fp, 0, SEEK_SET);
 		}
 
-		openForks_[handle] = {cnid, ForkType::Data, fp, wantWrite};
+		openForks_[handle] = {cnid, ForkType::Data, fp, wantWrite, e->hostPath, e->isText};
 	}
 	else
 	{
 		/* Resource fork: no FILE*, handled by AppleDouble library or virtual data */
-		openForks_[handle] = {cnid, ForkType::Resource, nullptr, wantWrite};
+		openForks_[handle] = {cnid, ForkType::Resource, nullptr, wantWrite, e->hostPath, e->isText};
 		if (e->isVirtual)
 			outSize = static_cast<uint32_t>(virtualIconFork_.size());
 		else
@@ -602,15 +796,19 @@ OSErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> 
 
 	const OpenFork &of = it->second;
 	CatalogEntry *e = mutableFindByCNID(of.cnid);
-	if (!e)
-	{
-		outRead = 0;
-		return kFnfErr;
-	}
+
+	// Entry may be null if evicted between open and read.
+	// Fork I/O uses of.hostPath/of.isText copied at open time.
+	const std::string &hostPath = e ? e->hostPath : of.hostPath;
+	bool isText = e ? e->isText : of.isText;
+	bool isVirtual = e && e->isVirtual;
+
+	if (!e && !of.hostPath.empty())
+		CACHE_LOG("readFork: cnid=%u evicted, using of.hostPath", of.cnid);
 
 	if (of.fork == ForkType::Resource)
 	{
-		if (e->isVirtual)
+		if (isVirtual)
 		{
 			printf("[VIcon] readFork virtual: off=%u req=%zu\n", offset, buf.size());
 			uint32_t available = (offset < virtualIconFork_.size())
@@ -623,21 +821,24 @@ OSErr HostVolume::readFork(uint32_t handle, uint32_t offset, std::span<uint8_t> 
 		}
 
 		auto data =
-			appledouble::ReadResourceFork(e->hostPath, offset, static_cast<uint32_t>(buf.size()));
+			appledouble::ReadResourceFork(hostPath, offset, static_cast<uint32_t>(buf.size()));
 		uint32_t toRead = static_cast<uint32_t>(data.size());
 		std::memcpy(buf.data(), data.data(), toRead);
 		outRead = toRead;
 		return kNoErr;
 	}
 
-	if (e->isText)
+	if (isText)
 	{
-		auto converted = appledouble::MacRomanFromUTF8File(e->hostPath);
+		auto converted = appledouble::MacRomanFromUTF8File(hostPath);
 
-		std::error_code ec;
-		textStats_.conversions++;
-		textStats_.bytesIn += fs::file_size(e->hostPath, ec);
-		textStats_.bytesOut += converted.size();
+		if (e)
+		{
+			std::error_code ec;
+			textStats_.conversions++;
+			textStats_.bytesIn += fs::file_size(hostPath, ec);
+			textStats_.bytesOut += converted.size();
+		}
 
 		uint32_t available =
 			(offset < converted.size()) ? static_cast<uint32_t>(converted.size() - offset) : 0;
@@ -667,36 +868,46 @@ OSErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 
 	const OpenFork &of = it->second;
 	CatalogEntry *e = mutableFindByCNID(of.cnid);
-	if (!e)
-	{
-		outWritten = 0;
-		return kFnfErr;
-	}
+
+	// Entry may be null if evicted between open and write.
+	// Fork I/O uses of.hostPath/of.isText copied at open time.
+	const std::string &hostPath = e ? e->hostPath : of.hostPath;
+	bool isText = e ? e->isText : of.isText;
+	bool isVirtual = e && e->isVirtual;
+
+	if (!e && !of.hostPath.empty())
+		CACHE_LOG("writeFork: cnid=%u evicted, using of.hostPath", of.cnid);
 
 	if (of.fork == ForkType::Resource)
 	{
-		if (e->isVirtual)
+		if (isVirtual)
 		{
 			outWritten = 0;
 			return kWPrErr;
 		}
 
-		appledouble::WriteResourceFork(e->hostPath, offset, data);
-		e->rsrcForkSize = appledouble::ResourceForkSize(e->hostPath);
-		e->modDate = currentMacDate();
+		appledouble::WriteResourceFork(hostPath, offset, data);
+		if (e)
+		{
+			e->rsrcForkSize = appledouble::ResourceForkSize(hostPath);
+			e->modDate = currentMacDate();
+		}
 		outWritten = static_cast<uint32_t>(data.size());
 		return kNoErr;
 	}
 
-	if (e->isText)
+	if (isText)
 	{
-		auto existing = appledouble::MacRomanFromUTF8File(e->hostPath);
+		auto existing = appledouble::MacRomanFromUTF8File(hostPath);
 		if (offset + data.size() > existing.size()) existing.resize(offset + data.size());
 		std::memcpy(existing.data() + offset, data.data(), data.size());
-		appledouble::UTF8FileFromMacRoman(e->hostPath, existing);
+		appledouble::UTF8FileFromMacRoman(hostPath, existing);
 		outWritten = static_cast<uint32_t>(data.size());
-		e->dataForkSize = static_cast<uint32_t>(existing.size());
-		e->modDate = currentMacDate();
+		if (e)
+		{
+			e->dataForkSize = static_cast<uint32_t>(existing.size());
+			e->modDate = currentMacDate();
+		}
 		return kNoErr;
 	}
 
@@ -706,9 +917,12 @@ OSErr HostVolume::writeFork(uint32_t handle, uint32_t offset, std::span<const ui
 	size_t wrote = fwrite(data.data(), 1, data.size(), fp);
 	fflush(fp);
 
-	fseek(fp, 0, SEEK_END);
-	e->dataForkSize = static_cast<uint32_t>(ftell(fp));
-	e->modDate = currentMacDate();
+	if (e)
+	{
+		fseek(fp, 0, SEEK_END);
+		e->dataForkSize = static_cast<uint32_t>(ftell(fp));
+		e->modDate = currentMacDate();
+	}
 	outWritten = static_cast<uint32_t>(wrote);
 	return kNoErr;
 }
@@ -720,14 +934,20 @@ OSErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
 
 	const OpenFork &of = it->second;
 	CatalogEntry *e = mutableFindByCNID(of.cnid);
-	if (!e) return kFnfErr;
+
+	// Entry may be null if evicted between open and setEOF.
+	const std::string &hostPath = e ? e->hostPath : of.hostPath;
+	bool isVirtual = e && e->isVirtual;
+
+	if (!e && !of.hostPath.empty())
+		CACHE_LOG("setEOF: cnid=%u evicted, using of.hostPath", of.cnid);
 
 	if (of.fork == ForkType::Resource)
 	{
-		if (e->isVirtual) return kWPrErr;
+		if (isVirtual) return kWPrErr;
 
-		appledouble::SetResourceForkSize(e->hostPath, newSize, typeMap_);
-		e->rsrcForkSize = newSize;
+		appledouble::SetResourceForkSize(hostPath, newSize, typeMap_);
+		if (e) e->rsrcForkSize = newSize;
 	}
 	else if (of.fp)
 	{
@@ -739,9 +959,9 @@ OSErr HostVolume::setEOF(uint32_t handle, uint32_t newSize)
 				 strerror(errno));
 			return kIoErr;
 		}
-		e->dataForkSize = newSize;
+		if (e) e->dataForkSize = newSize;
 	}
-	e->modDate = currentMacDate();
+	if (e) e->modDate = currentMacDate();
 	return kNoErr;
 }
 
@@ -751,6 +971,75 @@ void HostVolume::closeFork(uint32_t handle)
 	if (it == openForks_.end()) return;
 	if (it->second.fp) fclose(it->second.fp);
 	openForks_.erase(it);
+}
+
+/* ── Cache invalidation ──────────────────────────── */
+
+void HostVolume::invalidateDir(uint32_t dirID)
+{
+	// Collect CNIDs with open forks — these entries must survive eviction.
+	std::unordered_set<uint32_t> openCnids;
+	for (auto &[_, of] : openForks_)
+		openCnids.insert(of.cnid);
+
+	auto sizeBefore = catalog_.size();
+	uint32_t retained = 0;
+
+	std::erase_if(catalog_,
+				  [&](const CatalogEntry &e)
+				  {
+					  if (e.parentDirID != dirID) return false;
+					  if (e.isVirtual)
+					  {
+						  ++retained;
+						  return false;
+					  }
+					  if (openCnids.contains(e.cnid))
+					  {
+						  ++retained;
+						  return false;
+					  }
+					  return true;
+				  });
+
+	cnidTable_.clearScannedFor(dirID);
+
+	uint32_t evicted = static_cast<uint32_t>(sizeBefore - catalog_.size());
+	CACHE_LOG("invalidateDir: dir=%u evicted=%u retained=%u catalogSize=%zu", dirID, evicted,
+			  retained, catalog_.size());
+}
+
+void HostVolume::invalidateAll()
+{
+	// Collect CNIDs with open forks — these entries must survive eviction.
+	std::unordered_set<uint32_t> openCnids;
+	for (auto &[_, of] : openForks_)
+		openCnids.insert(of.cnid);
+
+	auto sizeBefore = catalog_.size();
+	uint32_t retained = 0;
+
+	std::erase_if(catalog_,
+				  [&](const CatalogEntry &e)
+				  {
+					  if (e.isVirtual)
+					  {
+						  ++retained;
+						  return false;
+					  }
+					  if (openCnids.contains(e.cnid))
+					  {
+						  ++retained;
+						  return false;
+					  }
+					  return true;
+				  });
+
+	cnidTable_.clearScanned();
+
+	uint32_t evicted = static_cast<uint32_t>(sizeBefore - catalog_.size());
+	CACHE_LOG("invalidateAll: evicted=%u retained=%u openForks=%zu cnids=%zu", evicted, retained,
+			  openForks_.size(), cnidTable_.size());
 }
 
 /* ── TEXT conversion stats ────────────────────────── */
@@ -767,10 +1056,73 @@ void HostVolume::resetTextConversionStats()
 
 /* ── Private helpers ──────────────────────────────── */
 
-void HostVolume::scanDirectory(const std::filesystem::path &hostDir, uint32_t parentDirID)
+CatalogEntry HostVolume::buildCatalogEntry(const fs::directory_entry &entry, uint32_t parentDirID,
+										   uint32_t cnid, std::string_view macName)
 {
 	std::error_code ec;
-	for (const auto &entry : fs::directory_iterator(hostDir, ec))
+	CatalogEntry ce{};
+	ce.cnid = cnid;
+	ce.parentDirID = parentDirID;
+	ce.hostPath = entry.path().string();
+	ce.macName = std::string(macName);
+
+	if (entry.is_directory(ec))
+	{
+		ce.isDirectory = true;
+		auto ftime = fs::last_write_time(entry.path(), ec);
+		ce.crDate = ec ? 0 : appledouble::MacDateFromFileTime(ftime);
+		ce.modDate = ce.crDate;
+		appledouble::GetDirFinderInfo(entry.path(), ce.dirFinderInfo, 32);
+	}
+	else if (entry.is_regular_file(ec))
+	{
+		auto info = appledouble::GetFileInfo(entry.path(), typeMap_);
+		ce.isDirectory = false;
+		ce.type = info.finder.type;
+		ce.creator = info.finder.creator;
+		ce.finderFlags = info.finder.flags;
+		ce.fdLocation = info.finder.location;
+		ce.fdFldr = info.finder.folder;
+		ce.dataForkSize = info.dataForkSize;
+		ce.rsrcForkSize = info.rsrcForkSize;
+		ce.crDate = info.crDate;
+		ce.modDate = info.modDate;
+		ce.isText = info.isText;
+	}
+	return ce;
+}
+
+/* Lazily populate catalog entries for children of dirID.
+   Short-circuits when the directory was already scanned this invalidation
+   cycle (tracked by cnidTable_.scanned_).  On the first call for a given
+   dirID, walks the host directory with directory_iterator, resolving
+   CNIDs for every child via cnidTable_.  Existing catalog entries are
+   updated with fresh metadata; new entries are appended.  Children
+   whose host file has been deleted since the last scan are pruned. */
+void HostVolume::ensureScanned(uint32_t dirID)
+{
+	// Already scanned this invalidation cycle — nothing to do.
+	if (cnidTable_.isScanned(dirID)) return;
+
+	// Resolve the host path for this directory.
+	std::string hostPath;
+	if (dirID == kRootDirID)
+		hostPath = rootPath_.string();
+	else
+	{
+		auto *val = cnidTable_.reverse(dirID);
+		if (!val) return;
+		hostPath = val->hostPath;
+	}
+
+	// Bail if directory no longer exists on disk.
+	std::error_code ec;
+	if (hostPath.empty() || !fs::is_directory(hostPath, ec)) return;
+
+	uint32_t added = 0, updated = 0, pruned = 0;
+
+	// Walk one level of the host directory.
+	for (const auto &entry : fs::directory_iterator(hostPath, ec))
 	{
 		if (ec) break;
 		std::string name = entry.path().filename().string();
@@ -785,55 +1137,104 @@ void HostVolume::scanDirectory(const std::filesystem::path &hostDir, uint32_t pa
 		}
 		if (macName->size() > 31) *macName = macName->substr(0, 31);
 
-		CatalogEntry ce{};
-		ce.cnid = nextCNID_++;
-		ce.parentDirID = parentDirID;
-		ce.hostPath = entry.path().string();
-		ce.macName = std::move(*macName);
+		uint32_t cnid = cnidTable_.resolve(dirID, *macName, entry.path().string());
 
-		if (entry.is_directory(ec))
+		// Already in catalog?  Update metadata in place.
+		CatalogEntry *existing = nullptr;
+		for (auto &ce : catalog_)
 		{
-			ce.isDirectory = true;
-			auto ftime = fs::last_write_time(entry.path(), ec);
-			ce.crDate = ec ? 0 : appledouble::MacDateFromFileTime(ftime);
-			ce.modDate = ce.crDate;
-			appledouble::GetDirFinderInfo(entry.path(), ce.dirFinderInfo, 32);
-			uint32_t thisDirID = ce.cnid;
-			catalog_.push_back(std::move(ce));
-			scanDirectory(entry.path(), thisDirID);
+			if (ce.cnid == cnid)
+			{
+				existing = &ce;
+				break;
+			}
 		}
-		else if (entry.is_regular_file(ec))
+
+		if (existing)
 		{
-			auto info = appledouble::GetFileInfo(entry.path(), typeMap_);
-			ce.isDirectory = false;
-			ce.type = info.finder.type;
-			ce.creator = info.finder.creator;
-			ce.finderFlags = info.finder.flags;
-			ce.fdLocation = info.finder.location;
-			ce.fdFldr = info.finder.folder;
-			ce.dataForkSize = info.dataForkSize;
-			ce.rsrcForkSize = info.rsrcForkSize;
-			ce.crDate = info.crDate;
-			ce.modDate = info.modDate;
-			ce.isText = info.isText;
-			catalog_.push_back(std::move(ce));
+			// Refresh metadata from disk (sizes, dates, Finder info)
+			if (entry.is_regular_file(ec))
+			{
+				auto info = appledouble::GetFileInfo(entry.path(), typeMap_);
+				existing->dataForkSize = info.dataForkSize;
+				existing->rsrcForkSize = info.rsrcForkSize;
+				existing->modDate = info.modDate;
+				existing->type = info.finder.type;
+				existing->creator = info.finder.creator;
+				existing->finderFlags = info.finder.flags;
+				existing->isText = info.isText;
+			}
+			else if (entry.is_directory(ec))
+			{
+				auto ftime = fs::last_write_time(entry.path(), ec);
+				existing->modDate =
+					ec ? existing->modDate : appledouble::MacDateFromFileTime(ftime);
+			}
+			existing->hostPath = entry.path().string();
+			++updated;
+			continue;
 		}
+
+		// New entry: build from disk and append.
+		catalog_.push_back(buildCatalogEntry(entry, dirID, cnid, *macName));
+		++added;
 	}
+
+	// Prune deleted: remove entries whose parent is dirID but whose
+	// host file no longer exists on disk.
+	auto before = catalog_.size();
+	std::erase_if(catalog_,
+				  [&](const CatalogEntry &e)
+				  {
+					  if (e.parentDirID != dirID || e.isVirtual) return false;
+					  if (!fs::exists(e.hostPath, ec))
+					  {
+						  CACHE_LOG("ensureScanned: pruned cnid=%u name=\"%s\"", e.cnid,
+									e.macName.c_str());
+						  return true;
+					  }
+					  return false;
+				  });
+	pruned = static_cast<uint32_t>(before - catalog_.size());
+
+	// Mark as scanned so subsequent calls this cycle short-circuit.
+	cnidTable_.markScanned(dirID);
+
+	CACHE_LOG("ensureScanned: dir=%u added=%u updated=%u pruned=%u total=%zu", dirID, added,
+			  updated, pruned, catalog_.size());
+}
+
+uint32_t HostVolume::nextCnid() const
+{
+	return cnidTable_.nextCnid();
 }
 
 CatalogEntry *HostVolume::mutableFindByCNID(uint32_t cnid)
 {
 	for (auto &e : catalog_)
 		if (e.cnid == cnid) return &e;
+
+	// Resurrection: entry was evicted or never scanned.
+	auto *val = cnidTable_.reverse(cnid);
+	if (!val) return nullptr;
+
+	CACHE_LOG("mutableFindByCNID: resurrecting cnid=%u parent=%u name=\"%s\"", cnid,
+			  val->key.parentDirID, val->key.macName.c_str());
+
+	ensureScanned(val->key.parentDirID);
+
+	for (auto &e : catalog_)
+		if (e.cnid == cnid) return &e;
+
+	CACHE_LOG("mutableFindByCNID: resurrection failed cnid=%u (deleted from disk)", cnid);
 	return nullptr;
 }
 
 std::string HostVolume::resolveParentPath(uint32_t parentDirID) const
 {
 	if (parentDirID == kRootDirID) return rootPath_.string();
-	for (const auto &e : catalog_)
-		if (e.cnid == parentDirID && e.isDirectory) return e.hostPath;
-	return {};
+	auto *val = cnidTable_.reverse(parentDirID);
+	return val ? val->hostPath : std::string{};
 }
 
 void HostVolume::invalidateTextSize(CatalogEntry &entry)

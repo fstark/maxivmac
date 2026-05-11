@@ -1399,6 +1399,15 @@ bool ExtFSUnmountDrive(int slot)
 	return s_drives.unmount(slot);
 }
 
+void ExtFS_RefreshCatalogs()
+{
+	if (s_drives.mountedCount() > 0)
+	{
+		DIAG(CACHE, "periodic invalidate\n");
+		s_drives.invalidateAll();
+	}
+}
+
 void ExtFSDriveList(void (*printFn)(void *ctx, const char *line), void *ctx)
 {
 	printFn(ctx, " Slot  Volume          Host path                    Forks");

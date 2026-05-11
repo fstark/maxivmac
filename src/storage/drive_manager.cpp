@@ -182,6 +182,11 @@ int DriveManager::openForkCount(int slot) const
 	return v ? v->openForkCount() : 0;
 }
 
+void DriveManager::invalidateAll()
+{
+	forEach([](int /*slot*/, HostVolume &vol) { vol.invalidateAll(); });
+}
+
 /* ── Fork handle encoding ─────────────────────────── */
 
 uint32_t DriveManager::openFork(int slot, uint32_t cnid, ForkType fork, uint32_t &outSize,

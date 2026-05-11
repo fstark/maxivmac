@@ -23,6 +23,11 @@ bool ExtFSUnmountDrive(int slot);
 // Callback: void(const char *line)
 void ExtFSDriveList(void (*printFn)(void *ctx, const char *line), void *ctx);
 
+// Invalidate all shared drive catalog caches so the next guest
+// access re-scans from the host filesystem.  Called from the
+// platform display loop (~every 2 seconds), not from guest code.
+void ExtFS_RefreshCatalogs();
+
 // Queue a guest command for pickup by the SharedDrive INIT.
 // cmd: 1=launch, 2=exittoshell, 3=shutdown
 void ExtFS_QueueGuestCmd(uint16_t cmd, std::string_view path = {});
