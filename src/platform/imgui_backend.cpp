@@ -31,6 +31,7 @@ extern bool g_speedStopped;
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl.h>
 extern "C" long platformPasteboardChangeCount();
+extern "C" void platformRemoveMenuKeyEquivalents();
 #elif defined(_WIN32)
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -86,6 +87,12 @@ bool ImGuiBackend::init(EmulatorShell *shell)
 		fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
 		return false;
 	}
+
+#if defined(__APPLE__)
+	/* Strip Cmd+Q and Cmd+W from the macOS menu bar so they flow
+	   through SDL as normal key events and reach the guest. */
+	platformRemoveMenuKeyEquivalents();
+#endif
 
 	/* Request OpenGL 3.2 Core (minimum for ImGui) */
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);

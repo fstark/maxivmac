@@ -163,7 +163,7 @@ add_executable(maxivmac ${MINIVMAC_SOURCES})
 
 # macOS pasteboard change counter (Objective-C++)
 if(APPLE)
-    target_sources(maxivmac PRIVATE src/platform/pasteboard_macos.mm)
+    target_sources(maxivmac PRIVATE src/platform/platform_macos.mm)
     target_link_libraries(maxivmac PRIVATE "-framework AppKit")
 endif()
 
