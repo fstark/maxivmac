@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
+#include <string>
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
@@ -131,6 +132,16 @@ static bool parseScreenSpec(const char *s, uint16_t &w, uint16_t &h, uint8_t &d)
 
 void PrintUsage(const char *progname)
 {
+	/* Build the diag module list from the single source of truth. */
+	std::string diagList;
+	for (size_t i = 0; i < DiagConfig::count(); ++i)
+	{
+		if (i) diagList += ',';
+		const char *t = DiagConfig::tag(static_cast<DiagSubsystem>(i));
+		for (const char *p = t; *p; ++p)
+			diagList += static_cast<char>(std::tolower(static_cast<unsigned char>(*p)));
+	}
+
 	fprintf(stderr,
 			"Usage: %s [options] [disk1.img] [disk2.img] ...\n"
 			"\n"
@@ -148,7 +159,7 @@ void PrintUsage(const char *progname)
 			"  --headless       Run without GUI (for testing/automation)\n"
 			"  --silent         Disable audio output\n"
 			"  --trace-traps    Enable hierarchical A-line trap tracing to stderr\n"
-			"  --diag=LIST      Enable diagnostic traces (comma-separated: extfs,guest,sd,...)\n"
+			"  --diag=LIST      Enable diagnostic traces (comma-separated: %s)\n"
 			"  --debugger       Start with debugger prompt (paused at first instruction)\n"
 			"  --dbg-script=FILE  Execute .dbg script at debugger startup (repeatable)\n"
 			"  --debugserver[=PATH] Start debug server on Unix socket\n"
@@ -170,7 +181,7 @@ void PrintUsage(const char *progname)
 			"Examples:\n"
 			"  %s --model=MacII system7.img\n"
 			"  %s --model=MacPlus disk.img\n",
-			progname, progname, progname);
+			progname, diagList.c_str(), progname, progname);
 }
 
 /*
