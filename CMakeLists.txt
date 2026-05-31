@@ -146,6 +146,7 @@ set(MINIVMAC_SOURCES
 
     # Platform — ImGui backend
     src/platform/imgui_backend.cpp
+    src/platform/crt_effect.cpp
     src/platform/imgui_launcher.cpp
     src/platform/imgui_overlay.cpp
     src/platform/lomem_globals.cpp

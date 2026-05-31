@@ -34,6 +34,9 @@ private:
 	const char *flashMsg_ = nullptr;
 	uint64_t flashExpiry_ = 0;
 
+	/* Rendering state */
+	bool crtEnabled_ = false;
+
 	/* Hover help (set each frame by drawPrimaryControls / drawAdvancedControls) */
 	const char *hoverHelp_ = nullptr;
 };

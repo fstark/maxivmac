@@ -7,6 +7,7 @@
 
 #include "platform/imgui_overlay.h"
 #include "platform/imgui_backend.h"
+#include "platform/crt_effect.h"
 #include "platform/emulator_shell.h"
 #include "platform/platform.h"
 #include "platform/platform_config.h"
@@ -158,9 +159,8 @@ void ControlOverlay::drawPrimaryControls(UIState currentState, EmulatorShell *sh
 	}
 	ImGui::SameLine(0, sp * 3);
 	{
-		bool crt = (backend->renderStyle() == RenderStyle::CRT);
-		if (ImGui::Checkbox("CRT", &crt))
-			backend->setRenderStyle(crt ? RenderStyle::CRT : RenderStyle::Plain);
+		if (ImGui::Checkbox("CRT", &crtEnabled_))
+			backend->setEffect(crtEnabled_ ? std::make_unique<CRTEffect>() : nullptr);
 		if (!hoverHelp_ && ImGui::IsItemHovered())
 			hoverHelp_ = "Apply a CRT monitor effect: scanline gaps, barrel distortion (curved glass), and corner vignette. Evokes the look of the original Mac's built-in display.";
 	}

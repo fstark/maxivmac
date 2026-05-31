@@ -12,8 +12,10 @@
 #include "platform/platform_backend.h"
 #include "platform/imgui_launcher.h"
 #include "platform/imgui_overlay.h"
+#include "platform/render_effect.h"
 #include "core/config_loader.h"
 #include <SDL3/SDL.h>
+#include <memory>
 
 typedef unsigned int GLuint;
 
@@ -56,13 +58,6 @@ enum class TextureFilter
 {
 	Nearest,
 	Linear
-};
-
-/* Post-process render style for the emulator viewport. */
-enum class RenderStyle
-{
-	Plain, // direct texture display
-	CRT    // scanlines + barrel distortion + vignette
 };
 
 class ImGuiBackend : public PlatformBackend
@@ -121,9 +116,9 @@ public:
 	ScalingMode scalingMode() const { return scalingMode_; }
 	void setScalingMode(ScalingMode m);
 
-	/* CRT render style */
-	RenderStyle renderStyle() const { return renderStyle_; }
-	void setRenderStyle(RenderStyle s);
+	/* Post-process effect (null = plain pass-through) */
+	void setEffect(std::unique_ptr<RenderEffect> e);
+	bool hasEffect() const { return effect_ != nullptr; }
 
 	/* Action dispatch (used by overlay and shortcuts) */
 	void executeAction(UIAction action);
@@ -151,18 +146,7 @@ private:
 	bool cursorHidden_ = false;
 	TextureFilter textureFilter_ = TextureFilter::Linear;
 	ScalingMode scalingMode_ = ScalingMode::PixelPerfect;
-	RenderStyle renderStyle_ = RenderStyle::Plain;
-
-	/* CRT shader resources (zero = uninitialized) */
-	GLuint crtProgram_ = 0;
-	GLuint crtVao_ = 0;
-	GLuint crtVbo_ = 0;
-	GLuint crtFboId_ = 0;
-	GLuint crtFboTexId_ = 0;
-	int crtFboW_ = 0;
-	int crtFboH_ = 0;
-	int crtUniformTex_ = -1;
-	int crtUniformTexSize_ = -1;
+	std::unique_ptr<RenderEffect> effect_;
 	bool snapping_ = false;
 	int currentScale_ = 2;
 
@@ -217,11 +201,6 @@ private:
 	void openFileDialog();
 	void toggleZoom();
 
-	/* CRT shader */
-	void initCRTResources();
-	void shutdownCRTResources();
-	void renderCRTPass(int viewW, int viewH);
-	void ensureCRTFBO(int w, int h);
 };
 
 #endif /* IMGUI_BACKEND_H */
