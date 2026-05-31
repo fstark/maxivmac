@@ -1129,10 +1129,12 @@ void main() {
 
     vec4 col = texture(uTex, uv);
 
-    /* Scanlines: darken alternate rows at emulator-pixel resolution
-       so the gaps scale correctly with zoom level.                   */
-    float row = floor(uv.y * uTexSize.y);
-    col.rgb  *= mix(0.60, 1.0, mod(row, 2.0));
+    /* Scanlines: dark gap between emulator pixel rows, bright at centre.
+       py=0/1 is the boundary between rows, py=0.5 is the pixel centre.  */
+    float py       = fract(uv.y * uTexSize.y);
+    float scanline = sin(py * 3.14159265);
+    scanline       = scanline * scanline;   /* sharpen the falloff */
+    col.rgb       *= mix(0.50, 1.0, scanline);
 
     /* Vignette: darken towards the edges */
     vec2  vig      = uv * (1.0 - uv);
@@ -1438,7 +1440,12 @@ void ImGuiBackend::drawViewportFullscreen()
 							 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
 							 ImGuiWindowFlags_NoSavedSettings |
 							 ImGuiWindowFlags_NoBringToFrontOnFocus;
-	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.102f, 0.102f, 0.102f, 1.0f));
+	/* In CRT mode the barrel distortion produces black corners, so the
+	   surrounding area must also be black to avoid a visible seam.    */
+	ImVec4 bgColor = (renderStyle_ == RenderStyle::CRT)
+		? ImVec4(0.0f, 0.0f, 0.0f, 1.0f)
+		: ImVec4(0.102f, 0.102f, 0.102f, 1.0f);
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, bgColor);
 	emuViewportHovered_ = false;
 	if (ImGui::Begin("##FullscreenViewport", nullptr, flags))
 	{
