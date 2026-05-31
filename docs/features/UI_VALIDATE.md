@@ -1,20 +1,23 @@
 # UI — Manual Validation Test Plan
 
-Tests derived from [UI.md](UI.md) and [UI_DESIGN.md](UI_DESIGN.md).
-Number each test for easy reference. Mark **PASS** / **FAIL** / **SKIP**.
+Tests derived from [UI.md](UI.md).  Mark **PASS** / **FAIL** / **SKIP**.
 
 Pre-requisites: build with `cmake --preset macos && cmake --build --preset macos`.
-Launch without `--model` unless stated otherwise.
+Launch without arguments unless stated otherwise.
 
 ---
 
-## A. Model Selector
+## A. Launcher
 
 | #   | Test | Expected |
 |-----|------|----------|
-| A1  | Launch without `--model`. Model selector appears. | |
-| A2  | Select a model (e.g. Mac Plus). Emulator boots. | |
-| A3  | Launch with `--model MacPlus`. Boots directly, no selector. | |
+| A1  | Launch without arguments. | Launcher window (700×500, gray background) appears with card grid. |
+| A2  | Click a valid card (bold, full opacity). | Launcher closes; emulator boots and window appears. |
+| A3  | Hover an invalid card (greyed, 35% opacity). | Tooltip shows validation error. Card is not clickable. |
+| A4  | Click the ⓘ button on a card. | Info popup opens. Click outside → dismisses. |
+| A5  | Launch with `--model MacPlus`. | Boots directly to windowed state; no launcher. |
+| A6  | Launch with `path/to/file.mac`. | Boots directly; no launcher. |
+| A7  | Remove all .mac files from `data/macs/`. Launch. | Launcher shows "No .mac files found in data/macs/". |
 
 ---
 
@@ -22,11 +25,11 @@ Launch without `--model` unless stated otherwise.
 
 | #   | Test | Expected |
 |-----|------|---------|
-| B1  | Boot Mac Plus. Window is 1024×684 (2× of 512×342). | |
-| B2  | Drag window edge. Size snaps to nearest integer multiple (1×, 2×, 3×). | Snaps to closest, not always down. No black bars. |
-| B3  | Double-click title bar (macOS zoom). Snaps to largest integer multiple fitting the screen. | |
-| B4  | Shrink below 1× guest resolution. Window stays at 1×. | |
-| B5  | Boot on a small display where 2× doesn't fit. Initial size is 1×. | |
+| B1  | Boot Mac Plus. Inspect window size. | 1024×684 (2× of 512×342). |
+| B2  | Drag window edge. | Snaps to nearest integer multiple (1×, 2×, 3×, …). No black bars. Snaps up as well as down. |
+| B3  | Double-click title bar (macOS green zoom button). | **Known issue (B3):** window ends up non-integer-snapped. Mark FAIL until fixed. |
+| B4  | Resize below 1× guest resolution. | Window stays at 1×; does not go smaller. |
+| B5  | Boot on a small display where 2× doesn't fit. | Initial size is 1×. |
 
 ---
 
@@ -34,95 +37,98 @@ Launch without `--model` unless stated otherwise.
 
 | #   | Test | Expected |
 |-----|------|----------|
-| C1  | Toggle to Stretched (Ctrl+M or overlay button). Button reads "Pixel Perfect (M)"/"Stretched (M)". | |
-| C2  | Drag window freely. Viewport scales with aspect ratio preserved. | Letterbox/pillarbox bars appear as needed. |
-| C3  | Switch back to Pixel Perfect (Ctrl+M). Window snaps to nearest integer size. | |
+| C1  | Toggle to Stretched (Ctrl+M or overlay button). | Button label flips. Window can now be freely resized. |
+| C2  | Drag window freely. | Viewport scales with aspect ratio preserved; black bars appear as needed. |
+| C3  | Switch back to Pixel Perfect (Ctrl+M). | Window snaps to nearest integer size. |
 
 ---
 
-## D. Fullscreen
+## D. Zoom
 
 | #   | Test | Expected |
 |-----|------|----------|
-| D1  | Ctrl+F or overlay button. Window goes fullscreen. | No window chrome. |
-| D2  | Fullscreen + Pixel Perfect mode. Guest centered, dark gray (#1A1A1A) borders. | |
-| D3  | Fullscreen + Stretched mode. Guest fills display, bars only for aspect correction. | |
-| D4  | Press Escape in fullscreen. Key forwarded to guest, does NOT exit fullscreen. | |
-| D5  | Ctrl+F again. Returns to windowed. | |
+| D1  | Press Ctrl+Z (or overlay Zoom button). | Window jumps to largest Pixel Perfect multiple that fits the screen, centered. |
+| D2  | Press Ctrl+Z again. | Previous window geometry restored. |
 
 ---
 
-## E. Overlay — Activation & Dismissal
+## E. Fullscreen
 
 | #   | Test | Expected |
 |-----|------|----------|
-| E1  | Hold Ctrl > 250 ms. Overlay appears (peek mode). Release Ctrl → overlay dismisses. | |
-| E2  | Tap Ctrl quickly (< 250 ms). Overlay stays open (sticky). | |
-| E3  | Sticky overlay open. Tap Ctrl again → dismisses. | |
-| E4  | Sticky overlay open. Press Escape → dismisses. | |
-| E5  | Click a state-change button (e.g. Fullscreen). Overlay dismisses. | |
-| E6  | While overlay is open: host cursor visible, no input reaches guest. | |
+| E1  | Ctrl+F or overlay Fullscreen button. | Window goes fullscreen; no window chrome. |
+| E2  | Fullscreen + Pixel Perfect mode. | Guest centered, dark gray (#1A1A1A) borders. |
+| E3  | Fullscreen + Stretched mode. | Guest fills display, bars only for aspect correction. |
+| E4  | Press Escape in fullscreen. | Key forwarded to guest; does NOT exit fullscreen. |
+| E5  | Ctrl+F again. | Returns to windowed at previous size. |
 
 ---
 
-## F. Overlay — Panel Layout
+## F. Overlay — Activation & Dismissal
 
 | #   | Test | Expected |
 |-----|------|----------|
-| F1  | Open overlay. Single flat panel visible (~400×320), centered, semi-transparent scrim behind. | |
-| F2  | Primary controls visible: Insert Disk (I), Fullscreen (F), Scaling Mode (M), Speed, Screenshot (S), Reboot (R), Power Off. | Buttons show shortcut keys. |
-| F3  | Advanced section visible below separator (not collapsed). | Shows: Interrupt, Filter, Stopped, Run in Background, AutoSlow, About. |
-| F4  | Overlay fits within a Mac Plus viewport (512×342 at 1×). | |
+| F1  | Hold Ctrl ≥ 250 ms. | Overlay appears (peek mode). Release Ctrl → overlay dismisses. |
+| F2  | Tap Ctrl quickly (< 250 ms). | Overlay stays open (sticky). |
+| F3  | Sticky overlay: tap Ctrl again. | Overlay dismisses. |
+| F4  | Sticky overlay: press Escape. | Overlay dismisses. |
+| F5  | Click Fullscreen or Insert Disk button. | Overlay dismisses. |
+| F6  | While overlay open: move/click mouse. | Host cursor visible; no input reaches guest. |
 
 ---
 
-## G. Overlay — Primary Controls
+## G. Overlay — Panel Layout
 
 | #   | Test | Expected |
 |-----|------|----------|
-| G1  | Insert Disk → native file dialog opens. Select a disk image → mounts. | |
-| G2  | Insert Disk → cancel dialog. Nothing happens. | |
-| G3  | Fullscreen toggle button. Switches display state. | |
-| G4  | Scaling Mode toggle. Switches Pixel Perfect ↔ Stretched. | |
-| G5  | Speed buttons (1×, 2×, 4×, 8×, 16×, 32×, Unlimited). Each changes emulation speed. | |
-| G6  | Screenshot. Guest screen captured to clipboard. Paste in another app to verify. | |
-| G7  | Reboot. Guest warm-restarts. | |
-| G8  | Power Off. Emulation terminates, app closes. | |
-| G9  | Close window (title bar X / Cmd+W). App quits. | |
+| G1  | Open overlay. | Single flat panel (~400×320), centered, dark background, scrim over viewport. |
+| G2  | Primary row: Insert Disk (I), Fullscreen (F), Pixel Perfect/Stretched (M), Zoom (Z). | All visible; buttons show shortcut keys. |
+| G3  | Speed row: 1× 2× 4× 8× 16× 32× ∞. | Current speed highlighted. |
+| G4  | Screenshot (S), Reboot (R), Power Off. | All visible. |
+| G5  | Separator below primary. Advanced controls below: Interrupt, Filter, Stopped, Run in Background, AutoSlow, About. | Always visible without expanding. |
 
 ---
 
-## H. Overlay — Advanced Controls
+## H. Overlay — Controls
 
 | #   | Test | Expected |
 |-----|------|----------|
-| H1  | Interrupt. NMI sent (if Programmer's Key handler installed, debugger appears). | |
-| H2  | Filter toggle. Nearest ↔ Linear. Visible on scaled viewports. | |
-| H3  | Stopped toggle. Emulation pauses. Toggle again → resumes. | |
-| H4  | Run in Background toggle. Lose window focus → emulation keeps running. | |
-| H5  | About. Shows app name, GPL v2 license, GitHub link. No folder icon. | |
+| H1  | Insert Disk → native file dialog. Select .dsk → mounts. | |
+| H2  | Insert Disk → cancel dialog. | Nothing happens. |
+| H3  | Fullscreen toggle button. | Switches display state. |
+| H4  | Scaling Mode toggle. | Switches Pixel Perfect ↔ Stretched. |
+| H5  | Speed buttons 1×…∞. | Emulation speed changes; selected button highlighted. |
+| H6  | Screenshot. | Guest screen captured as PNG to clipboard. Paste in a host app to verify. |
+| H7  | Reboot. | Guest warm-restarts. |
+| H8  | Power Off. | Emulation terminates; app exits. |
+| H9  | Close window (title-bar ×). | App quits immediately; no dialog. |
+| H10 | Interrupt. | NMI sent (if Programmer's Key handler installed, debugger appears). |
+| H11 | Filter toggle. | Nearest ↔ Linear. Visible difference on a scaled viewport. |
+| H12 | Stopped checkbox. | Emulation pauses. Uncheck → resumes. |
+| H13 | Run in Background. | App backgrounded → emulation keeps running. |
+| H14 | About section. | Shows version, machine info, GPL v2, GitHub link. |
 
 ---
 
 ## I. Ctrl Shortcuts
 
-All shortcuts: hold Ctrl, press key. Overlay flashes confirmation, dismisses on Ctrl release.
-In sticky mode, bare keys (without Ctrl) also fire the shortcut.
+All shortcuts work while the overlay is visible (any mode).  In sticky mode, bare keys
+(without Ctrl held) also fire the action.
 
-| #   | Test | Expected |
-|-----|------|---------|
+| #   | Shortcut | Expected |
+|-----|----------|---------|
 | I1  | Ctrl+F | Toggle fullscreen. |
 | I2  | Ctrl+M | Toggle scaling mode. |
-| I3  | Ctrl+S | Screenshot to clipboard. |
-| I4  | Ctrl+→ | Speed up one step. |
-| I5  | Ctrl+← | Speed down one step. |
-| I6  | Ctrl+0 | Speed reset to 1×. |
-| I7  | Ctrl+P | Toggle paused. |
-| I8  | Ctrl+I | Insert Disk dialog. |
-| I9  | Ctrl+R | Reboot. |
-| I10 | Shortcut does NOT make overlay sticky. | Overlay dismisses when Ctrl released. |
-| I11 | Sticky overlay open. Press bare "F" (no Ctrl). | Toggles fullscreen. |
-| I12 | Sticky overlay open. Press bare "S". | Screenshot taken. |
+| I3  | Ctrl+Z | Zoom. |
+| I4  | Ctrl+S | Screenshot. |
+| I5  | Ctrl+→ | Speed up one step. |
+| I6  | Ctrl+← | Speed down one step. |
+| I7  | Ctrl+0 | Speed reset to 1×. |
+| I8  | Ctrl+P | Toggle paused. |
+| I9  | Ctrl+I | Insert Disk dialog. |
+| I10 | Ctrl+R | Reboot. |
+| I11 | Shortcut key does not make overlay sticky. | Overlay dismisses on Ctrl release (hold mode). |
+| I12 | Sticky overlay + bare "F" (no Ctrl). | Toggles fullscreen. |
 
 ---
 
@@ -130,10 +136,9 @@ In sticky mode, bare keys (without Ctrl) also fire the shortcut.
 
 | #   | Test | Expected |
 |-----|------|----------|
-| J1  | Move mouse inside window. Host cursor hidden, guest cursor tracks. | |
-| J2  | Move mouse outside window. Host cursor reappears. | |
-| J3  | Click-drag inside guest, release outside window. Guest receives mouse-up. | |
-| J4  | Guest cursor not movable by clicking on background (no viewport dragging). | |
+| J1  | Move mouse inside window. | Host cursor hidden; guest-drawn cursor tracks position. |
+| J2  | Move mouse outside window. | Host cursor reappears. |
+| J3  | Click-drag inside guest, release button outside window. | Guest receives the mouse-up event. |
 
 ---
 
@@ -141,9 +146,8 @@ In sticky mode, bare keys (without Ctrl) also fire the shortcut.
 
 | #   | Test | Expected |
 |-----|------|----------|
-| K1  | Mouse in relative mode. Raw deltas applied to guest position. | |
-| K2  | Host cursor hidden everywhere, including over borders. | |
-| K3  | Move to border area. Position clamped to nearest guest edge. | |
+| K1  | Move mouse in fullscreen. | Host cursor hidden; guest cursor tracks correctly. |
+| K2  | Move mouse to border area. | Guest cursor clamped to nearest screen edge. |
 
 ---
 
@@ -151,18 +155,3 @@ In sticky mode, bare keys (without Ctrl) also fire the shortcut.
 
 | #   | Test | Expected |
 |-----|------|----------|
-| L1  | Type normal keys (no overlay). All forwarded to guest. | |
-| L2  | Cmd+Q. Sends ⌘Q to guest, does NOT quit emulator. | |
-| L3  | Left/Right Command. Forwarded as ⌘. | |
-| L4  | Right Option. Sent to guest as Control. | Verify in Think C or MPW. |
-| L5  | Ctrl (left or right). Activates overlay, never reaches guest. | |
-
----
-
-## M. Window Chrome & About
-
-| #   | Test | Expected |
-|-----|------|----------|
-| M1  | macOS menu bar present. | |
-| M2  | About panel: app name, license, GitHub link. No folder icon. | |
-| M3  | Cmd+Tab, Cmd+H grabbed by macOS (platform limitation — document only). | |

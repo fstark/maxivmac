@@ -1,32 +1,61 @@
 # UI — Future Work
 
-Items deferred from UI_ISSUES.md that need further investigation or
-are out of scope for the current iteration.
+Items deferred from current implementation.
 
 ---
 
 ## D1 — Ctrl+F vs macOS Green Zoom Box
 
-Ctrl+F toggles true fullscreen. The macOS green zoom box maximizes
-the window, which is a different operation. Currently both end up in
-fullscreen.
+Ctrl+F toggles true OS fullscreen (`SDL_SetWindowFullscreen`).  The macOS green zoom
+button maximizes the window, which is a different operation — the window stays windowed
+but fills the screen without entering fullscreen mode.  Currently the green button
+produces a non-integer-snapped window (see B3 in [UI_ISSUES.md](UI_ISSUES.md)).
 
-**Future**: when multi-monitor support is added, Ctrl+F should go
-fullscreen across all screens, while the green button maximizes on the
-current display only.
+**Future**: when multi-monitor support is added, Ctrl+F should go fullscreen on all
+screens (or the current screen), while the green button should snap to the largest Pixel
+Perfect multiple on the current display only.
 
 ---
 
 ## G1 — Ctrl+Click Blocked by macOS in Peek Mode
 
-When the overlay is shown via Ctrl-hold (peek mode), clicking a button
-requires Ctrl to stay held. macOS transforms Ctrl+Click into
-right-click at the OS level before SDL receives it. The right-click is
-suppressed, but the left-click may not arrive.
+When the overlay is open via hold (peek) mode, clicking a button requires Ctrl to remain
+held.  macOS converts Ctrl+Click to right-click at the OS level before SDL receives it.
+The right-click is suppressed, but the left-click may be lost.
 
-Workaround: use tap (sticky) mode instead of hold mode for button
-interaction.
+Workaround: use tap (sticky) mode instead.
 
-**Future**: investigate SDL3 event filtering or Cocoa-level overrides
-to suppress the Ctrl+Click→right-click transformation while the
-overlay is visible.
+**Future**: investigate SDL3 event filtering or a Cocoa-level override to suppress the
+Ctrl+Click → right-click transformation while the overlay is visible.
+
+---
+
+## Configurable Overlay Activation Key
+
+The overlay activation key is hardcoded to Ctrl (left or right).  This conflicts with the
+emulated Mac's Control key: Ctrl is consumed by the overlay and never reaches the guest.
+Right Option is mapped to guest Control as a workaround.
+
+**Future**: allow the user to configure the activation key (e.g. F12, Pause, right-Ctrl
+only) so the physical Ctrl key can pass through to the guest, removing the need for the
+Right Option workaround.
+
+---
+
+## Toast Notifications
+
+User-facing errors (disk insert failure, too many disks, ROM read error, unsupported disk
+image format) currently produce output on stderr only.  The user gets no in-app feedback.
+
+**Future**: a lightweight ImGui toast system — auto-dismiss after ~5 s, color-coded by
+severity (info / warning / error), stacked in a corner, no focus steal.
+
+Representative use cases:
+
+| Trigger | Severity |
+|---------|---------|
+| Disk image open failed (not found, permissions) | Warning |
+| All 6 disk slots full | Warning |
+| Disk image format unsupported | Warning |
+| ROM file too short / unreadable | Error |
+| Quit with disks still mounted | Warning |

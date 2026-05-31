@@ -1,20 +1,30 @@
-B2:
-    Can't window snap during drag when integer mode?
-    Can't we go to closest multiplier instead of largest that is smaller?
+# UI — Open Issues
 
-B3:
-    Double-click does not respect integer
-    Resulting window is stretched and aspect ratio is lost
+Confirmed-open bugs as of May 2026.  Resolved items have been dropped.
 
-C: "Integer mode" is a very bad name. Find something better.
+---
 
-D1 (mac): ctrl-F is different from green Mac zoom box (I am ok with that -- when we will implement multi-screen I expect the green to be maximize this window and Ctrl-F maximize all screens if you have multiple screens on you desktop). maybe doc update or future point in UI_FUTURE.md
+**B3 — macOS green zoom button ignores Pixel Perfect snap**
 
-F3: I don't like the advanced section beeing hidden. I think it should just be displayed on the bottom, maybe with a separartor.
+Double-clicking the macOS title bar (green zoom button) triggers `SDL_WINDOW_MAXIMIZED`,
+which the snap handler deliberately skips.  The resulting window size is not an integer
+multiple of the guest resolution, leaving it in an effectively stretched state until the
+user manually resizes.
 
-G1: user has to release control to click. it is counter-intuitive for quick access.
+Expected: the zoom action should snap to the largest Pixel Perfect multiple that fits the
+screen, same as Ctrl+Z / Zoom button.  This requires intercepting the macOS zoom action
+before SDL reports it.
 
-G8: closing the window does not do anything. it should quit without questions (for now)
+---
 
-Buttons should show their shortcuts for discoveability.
-Ideally if the overlay is open, we should not need to press ctrl for shortcuts, so Ctrl-S is Ctrl, S too.
+**G1 — Ctrl+Click unreliable in peek (hold) mode**
+
+When the overlay is opened by holding Ctrl (peek mode), the user must keep Ctrl held while
+clicking buttons.  macOS converts Ctrl+Click to right-click at the OS level before SDL
+receives it.  The right-click is suppressed, but the left-click may not arrive, so buttons
+may not respond.
+
+Workaround: use tap (sticky) mode — tap and release Ctrl quickly, then click buttons
+freely.
+
+Tracked as a future improvement in [UI_FUTURE.md](UI_FUTURE.md).
