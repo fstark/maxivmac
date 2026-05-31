@@ -8,7 +8,7 @@ interconnects, the main-loop tick sequence, and the interrupt priority chain.
 
 ## 1. Machine Configuration (MacModel::Plus)
 
-Source: `src/core/machine_config.cpp` — `MachineConfigForModel(MacModel::Plus)`
+Source: `src/core/model_defs.h` — `kModelDefs` (Plus entry); `src/core/machine_config.cpp` — `MachineConfigForModel(MacModel::Plus)` reads from that table.
 
 | Field             | Value                  | Notes                                          |
 |-------------------|------------------------|-------------------------------------------------|
@@ -19,12 +19,14 @@ Source: `src/core/machine_config.cpp` — `MachineConfigForModel(MacModel::Plus)
 | `ramBSize`        | `0`                    | No bank B                                       |
 | `romSize`         | `0x00020000` (128 KB)  | Plus ROM                                        |
 | `romBase`         | `0x00400000`           | ROM mapped at 4 MB                              |
-| `romFileName`     | `"vMac.ROM"`           | 128 KB Plus ROM image                           |
-| `extnBlockBase`   | `0x00F0C000`           | 24-bit address space extension block            |
+| `romFileName`     | `"MacPlus.ROM"`        | 128 KB Plus ROM image                           |
+| `extnBlockBase`   | `0x00F40000`           | 24-bit address space extension block            |
 | `emVIA1`          | `true`                 | Single VIA (6522)                               |
 | `emVIA2`          | `false`                | No VIA2 (Mac II only)                           |
 | `emADB`           | `false`                | No ADB (SE and later)                           |
 | `emClassicKbrd`   | `true`                 | Classic keyboard shift-register protocol        |
+| `emRTC`           | `true`                 | Real-time clock present                         |
+| `emPMU`           | `false`                | No PMU (PB100 only)                             |
 | `emASC`           | `false`                | No Apple Sound Chip                             |
 | `emClassicSnd`    | `true`                 | Classic PWM-in-RAM sound                        |
 | `emVidCard`       | `false`                | No NuBus video card                             |
@@ -32,7 +34,7 @@ Source: `src/core/machine_config.cpp` — `MachineConfigForModel(MacModel::Plus)
 | `screenWidth`     | `512`                  | Built-in CRT width                              |
 | `screenHeight`    | `342`                  | Built-in CRT height                             |
 | `screenDepth`     | `0`                    | 1-bit (monochrome)                              |
-| `clockMult`       | `2` (default)          | Cycle multiplier for timing                     |
+| `clockMult`       | `1`                    | Cycle multiplier for timing                     |
 | `via1Config`      | `MakeVIA1Config_Plus()`| See §2 below                                   |
 
 Helper predicates: `isCompactMac()` → `true`, `isIIFamily()` → `false`,
@@ -405,10 +407,14 @@ It controls whether the SCC drives its interrupt output.
 
 ### Role in Mouse Gating
 
-On the Plus, `Mouse_Enabled()` returns `scc->interruptsEnabled()`. This
-means mouse updates are suppressed until the ROM initializes the SCC and
-sets MIE — which happens *after* the memory test. This prevents the mouse
-update code from corrupting low-memory addresses during the self-test.
+On the Plus, `Mouse_Enabled()` uses a one-shot latch (`s_mouseEnabledLatch`
+in `mouse.cpp`). The first time `scc->interruptsEnabled()` returns true
+(i.e. the ROM has set MIE after completing the memory test), the latch is
+set permanently. From that point `Mouse_Enabled()` returns true regardless
+of the current MIE value. This prevents the mouse update code from
+corrupting low-memory addresses during the self-test, while also avoiding
+the permanent mouse freeze caused by SCC hardware resets (e.g. AppleTalk
+driver init) that clear MIE as a side effect. See §4 for full detail.
 
 ### SCC Interrupt Wire
 
@@ -433,7 +439,8 @@ Each emulated 1/60th-second frame follows this sequence:
 | 4     | `ADBDevice::update()`                    | `emADB` (not Plus)     |
 | 5     | `VIA1Device::iCA1_PulseNtfy()`           | Always — **VBL interrupt** |
 | 6     | `SonyDevice::update()`                   | Always — floppy motor  |
-| 7     | `SCCDevice::localTalkTick()`             | `EmLocalTalk` only     |
+| 7     | `SCCDevice::serialTick()`                | Always — serial I/O    |
+| 7a    | `SCCDevice::localTalkTick()`             | `EmLocalTalk` only     |
 | 8     | `RTCDevice::interrupt()`                 | Always — 1-sec update  |
 | 9     | `VideoDevice::update()`                  | `emVidCard` (not Plus) |
 | 10    | `SubTickTaskStart()`                     | Starts 16 sub-ticks    |
@@ -679,45 +686,14 @@ Tasks **not** registered on Plus (no VIA2, no ADB, no PMU):
 
 ### Outstanding Issues
 
-#### Plus crashes (bomb dialog) when reaching the Finder
+None known. The Plus is confirmed working: it boots the Finder, accepts
+SCSI disk images, and passes a golden screen test (`test/MacPlus.golden`).
 
-The Plus boots, shows the "insert disk" screen with a working cursor,
-accepts the 608.hfs SCSI disk, but crashes with a Mac bomb dialog when
-the Finder is loading.
+### Resolved: Plus crash (bomb dialog) when reaching the Finder
 
-**Possible causes to investigate:**
-
-1. **CPU instruction issue (68000 mode)**: The CPU dispatch table fixup
-   (step 5.5) demotes 68020-only instructions to illegal. If a 68000
-   instruction is incorrectly demoted, the Plus ROM or System could hit
-   an unexpected illegal instruction exception.
-
-2. **SCSI data corruption**: The Finder reads from SCSI during launch.
-   If the SCSI emulation has a data transfer bug, it could corrupt the
-   Finder code or resources in memory, leading to a crash.
-
-3. **VIA1 timer inaccuracy**: T1 and T2 timers drive sound timing and
-   potentially other system services. If timer interrupts fire at the
-   wrong rate, timing-sensitive code could fail.
-
-4. **ROM patch side effects**: The emulator patches the ROM for Sony
-   driver and RAM test shortcuts. If a patch corrupts adjacent code,
-   it could manifest as a crash during Finder load.
-
-5. **Memory mapping issue**: If the ATT (address translation table) has
-   a hole or an incorrect mapping in the 24-bit address space, reading
-   from certain addresses during Finder load could return wrong data.
-
-6. **Stack or heap corruption**: If the interrupt handler or a device
-   access routine corrupts the application stack or the System heap,
-   the crash would appear when the corrupted data is first used (which
-   could be during Finder initialization).
-
-**Debugging strategy:**
-
-- Add a 68000 exception vector logger that captures the exception type,
-  PC, SR, and stack frame when a bomb-dialog exception fires (vectors
-  2–11: bus error, address error, illegal instruction, etc.)
-- Compare memory layout with a known-working minivmac build
-- Run the original upstream minivmac 37.03 compiled for Plus to verify
-  the ROM and disk image work correctly
+This was traced (commit `49975f4`) to the **disk image**, not the emulator:
+an RTS at `0xE00250F6` popped `0x0F` as a return address because ROM IWM
+bit-bang code at `0x40A732` was returning zeros, leading the error-unwind
+path through `0x409EDE JMP (A0)` into RAM code from a MacFlim disk image.
+Using a clean HFS disk image resolves the crash. The emulator itself was
+correct.
