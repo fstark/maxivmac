@@ -25,7 +25,7 @@ The emulator is a single-binary multi-model build.
 | Model selection | Runtime (`--model=` flag), 12 models in one binary |
 | Configuration | `MachineConfig` struct with runtime fields |
 | Scheduling | `ICTScheduler` class with cycle-based task dispatch |
-| Device access | `Machine::findDevice<>()` (no global device pointers) |
+| Device access | `g_rig->findDevice<T>()` (global `Rig*` for back-compat) |
 | CPU feature gates | Dispatch table fixup + runtime checks |
 | Memory/screen sizes | `MachineConfig` fields, allocated dynamically |
 
@@ -33,36 +33,55 @@ The emulator is a single-binary multi-model build.
 
 ```
 src/
-  config/       — CNFUDPIC.h, CNFUDALL.h, CNFUIALL.h, etc. (mostly legacy, thinned out)
-  core/         — Machine, MachineConfig, WireBus, ICTScheduler, main loop, config_loader
-  cpu/          — m68k.cpp (68000/68020), m68k_tables.cpp, disasm.cpp, fpu_math.h
+  config/       — mac_file.cpp/.h  (parse .mac bundle files)
+  core/         — Machine, MachineConfig, WireBus, ICTScheduler, Rig, config_loader,
+                  emulation_config, emulator_config, state_recorder, extn_* extension blocks
+  cpu/          — cpu.cpp (entry), m68k.cpp (68000/68020), m68k_tables.cpp, disasm.cpp,
+                  fpu_math.h, trap_counter, trap_defs, trap_tracer
+  debugger/     — debugger, commands (break/exec/memory/trace/…), expression evaluator,
+                  script engine, symbols, dbg_client, dbg_io
   devices/      — VIA, SCC, SCSI, IWM, RTC, ROM, ADB, Keyboard, Mouse, Sound, ASC, PMU,
-                  Sony, Screen, Video — each a Device subclass
-  platform/     — sdl.cpp (sole backend, cross-platform)
-  lang/         — Localized string headers
+                  Sony, Screen, Video, serial backends (file/pty/loopback/SLIP), slot_rom
+  guest/        — guest_dialog, guest_types
+  lang/         — type_registry, global_registry  (debugger variable inspection)
+  platform/     — app_main (entry), ImGui backend, Headless backend, EmulatorShell,
+                  SDL keyboard/sound, screen_convert, platform_macos.mm
   resources/    — App icons and resources
+  storage/      — drive_manager, host_volume, appledouble, filename_encoding, text_convert,
+                  icon_builder
+  util/         — macroman.cpp/.h
 ```
 
 ## Runtime Configuration Flow
 
 ```
-main(argc, argv)
-  → ProgramEarlyInit(argc, argv)         // parse CLI args into LaunchConfig
-  → BuildMachineConfig(LaunchConfig)      // merge CLI overrides with model defaults
-  → Machine::init(MachineConfig)          // create devices, set up WireBus, init CPU
-  → LoadMacRom()                          // load ROM file (size from config)
-  → MainEventLoop()                       // 60 Hz tick loop
+main(argc, argv)   [platform/app_main.cpp]
+  → ProgramEarlyInit(argc, argv)         // parse CLI args; create Rig if --model given
+  → EmulatorShell.run(backend)           // backend = ImGuiBackend or HeadlessBackend
+     → backend drives the tick loop
+        → ProgramMain()                  // trap setup, debugger scripts, InitEmulation
+           → Rig::init()                 // create devices, set up WireBus, init CPU
+           → LoadMacRom()               // load ROM file (size from MachineConfig)
+
+Model not specified at startup → selector UI → SetLaunchConfig() → Rig created then.
 ```
 
 ## CLI Interface
 
 ```
 ./maxivmac --model=MacII --rom=MacII.ROM --ram=8M --screen=640x480x8 disk.img
-./maxivmac --model=MacPlus --rom=MacPlus.ROM --ram=4M disk.img
-./maxivmac --model=MacSE --rom=MacSE.ROM disk.img
-./maxivmac --model=PB100 --rom=PB100.ROM disk.img
+./maxivmac --model=MacPlus disk.img
+./maxivmac --model=MacSE --shared=/path/to/host/dir disk.img
+./maxivmac --headless --verify=golden.bin   # non-regression testing
+./maxivmac --debugger --dbg-script=foo.dbg disk.img
+./maxivmac --serial-a=slip --slip-redir=tcp:8080:10.0.2.15:80 disk.img
 ./maxivmac -h   # show help
 ```
+
+Key flags: `--model`, `--rom`, `--romdir`, `--ram`, `--screen`, `--speed`, `--scale`,
+`--fullscreen`, `--headless`, `--silent`, `--shared`, `--serial-a/b`, `--slip-redir`,
+`--debugger`, `--dbg-script`, `--debugserver`, `--trace-traps`, `--diag`,
+`--record`, `--verify`, `--trace`, `--trace-cpu`.
 
 ## Supported Models
 
@@ -104,18 +123,16 @@ struct MachineConfig {
 };
 ```
 
-## Remaining Compile-Time Defines
+## Compile-Time Constants
 
-These are still in `CNFUDPIC.h` / `CNFUDALL.h` but do not vary per model in the current build:
+The old `CNFUDPIC.h` / `CNFUDALL.h` header files are gone.  The few remaining
+constants live in `src/core/emulation_config.h`:
 
-| Define | Value | Purpose |
-|--------|-------|---------|
-| `Use68020` | 1 | Always 1; runtime dispatch handles 68000 vs 68020 |
-| `EmFPU` | 1 | Always 1; runtime check skips FPU for 68000 models |
-| `EmMMU` | 0 | Always 0; MMU not emulated |
-| `WantCycByPriOp` | 1 | Cycle-accurate per primary op |
-| `WantCloserCyc` | 1 | More accurate cycle counting |
-| `MySoundEnabled` | 1 | Sound support enabled |
+| Constant | Value | Purpose |
+|----------|-------|--------|
 | `NumDrives` | 6 | Max simultaneous disk drives |
-| `Sony_SupportDC42` | 1 | DC42 disk image format support |
-| `WantDisasm` | 0 | Disassembly support (debug) |
+| `NumPbufs` | 4 | Disk parameter block buffer count |
+
+CPU feature flags (`Use68020`, `EmFPU`, `EmMMU`) are now pure runtime fields in
+`MachineConfig` — no compile-time defines.  The dispatch table is fixed up in
+`M68KITAB_setup()` based on the runtime values.
