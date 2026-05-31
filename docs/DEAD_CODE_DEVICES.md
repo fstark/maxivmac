@@ -18,7 +18,6 @@ Key always-false/always-true flags affecting dead code in device files:
 | `dbglog_HAVE` | **0** (release) / **1** (debug) | `cfg/CNFUDALL.h` / `src/config/` | `dbglog_HAVE && 0` always dead; standalone `#if dbglog_HAVE` alive in debug |
 | `_VIA_Debug` | **never defined** | nowhere | All `#ifdef _VIA_Debug` blocks dead |
 | `CurAltHappyMac` | **never defined** | nowhere | `hpmac_hack.h` never included |
-| `ln2mtb` | **never defined** | nowhere | MTB scramble code dead |
 | `UseLargeScreenHack` | **0** | `rom.cpp:38` | `screen_hack.h` never included |
 | `MySoundRecenterSilence` | **0** | `cfg/CNFUDALL.h` | Always false in conditionals |
 
@@ -178,7 +177,6 @@ Key always-false/always-true flags affecting dead code in device files:
 |---|-------|-----------|-------------|----------|
 | 1 | L38 | `UseLargeScreenHack` = 0 | `screen_hack.h` never `#include`d (L224-L230) | NOT_YET_ENABLED |
 | 2 | L244 | `#ifdef CurAltHappyMac` | `hpmac_hack.h` never `#include`d (never defined) | NOT_YET_ENABLED |
-| 3 | L248-L268 | `#ifdef ln2mtb` | `ROMscrambleForMTB()` function — never compiled (ln2mtb never defined) | NOT_YET_ENABLED |
 
 Note: `DisableRomCheck` (L237) = 1 and `DisableRamTest` (L241) = 1 — these are **always-true**, meaning the rom check skip and ram test skip code is **always active**. The code inside `#if DisableRomCheck`/`#if DisableRamTest` is live, not dead.
 
@@ -292,7 +290,6 @@ No preprocessor conditionals.
 | `rtc.cpp` | L166-L168, L176-L179 | LocalTalk PRAM init (EmLocalTalk=0) |
 | `rom.cpp` | L224-L230 | Large screen hack (UseLargeScreenHack=0) |
 | `rom.cpp` | L244-L246 | Alt Happy Mac icons (CurAltHappyMac undef) |
-| `rom.cpp` | L248-L268 | MTB ROM scramble (ln2mtb undef) |
 | `screen_hack.h` | L266-L291 | Alert rect positioning (unfinished, has `?` values) |
 | `screen_hack.h` | entire file | Never included (UseLargeScreenHack=0) |
 | `hpmac_hack.h` | entire file | Never included (CurAltHappyMac undef) |
@@ -343,4 +340,4 @@ The `XXX_dolog` defines (VIA1_dolog, VIA2_dolog, ASC_dolog, Sony_dolog, VID_dolo
 
 ### Low Priority — NOT_YET_ENABLED features
 
-The `UseLargeScreenHack`, `CurAltHappyMac`, `ln2mtb` features were never completed. `screen_hack.h` (404 lines) and `hpmac_hack.h` (256 lines) are entirely dead. Could be removed or moved to `src/unused/` if historical preservation is desired. The unfinished video driver stubs (SetGamma, GetEntries, GetCurrentMode) should stay as they document the intended Mac II video card API.
+The `UseLargeScreenHack` and `CurAltHappyMac` features were never completed. `screen_hack.h` (404 lines) and `hpmac_hack.h` (256 lines) are entirely dead. Could be removed or moved to `src/unused/` if historical preservation is desired. The unfinished video driver stubs (SetGamma, GetEntries, GetCurrentMode) should stay as they document the intended Mac II video card API.

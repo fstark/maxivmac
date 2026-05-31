@@ -90,11 +90,7 @@ void SoundDevice::subTick(int subTick)
 		(SoundBuffer == 0) ? (ramSz - kSnd_Alt_Offset) :
 #endif
 						   (ramSz - kSnd_Main_Offset);
-#ifndef ln2mtb
 	uint8_t *addr = addy + (2 * StartOffset) + g_ram;
-#else
-	uint32_t addr = addy + (2 * StartOffset);
-#endif
 	uint16_t SoundInvertTime = via1()->getT1InvertTime();
 	uint8_t SoundVolume = g_wires.get(Wire_SoundVolb0) | (g_wires.get(Wire_SoundVolb1) << 1) |
 						  (g_wires.get(Wire_SoundVolb2) << 2);
@@ -128,13 +124,7 @@ void SoundDevice::subTick(int subTick)
 			for (i = 0; i < actL; i++)
 			{
 				/* Copy sound data, high byte of each word */
-				*p++ =
-#ifndef ln2mtb
-					*addr
-#else
-					get_vm_byte(addr)
-#endif
-					<< 8;
+				*p++ = *addr << 8;
 
 				/* Move the address on */
 				addr += 2;

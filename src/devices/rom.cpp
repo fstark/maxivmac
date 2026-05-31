@@ -375,31 +375,6 @@ static void Sony_Install()
 #include "devices/hpmac_hack.h"
 #endif
 
-#ifdef ln2mtb
-static void ROMscrambleForMTB()
-{
-	int32_t j;
-	uint8_t *p = g_rom;
-	uint8_t *p2 = g_rom + (1 << ln2mtb);
-
-	for (j = g_rig->config().romSize / (1 << ln2mtb) / 2; --j >= 0;)
-	{
-		int32_t i;
-
-		for (i = (1 << ln2mtb); --i >= 0;)
-		{
-			uint8_t t0 = *p;
-			uint8_t t1 = *p2;
-			*p++ = t1;
-			*p2++ = t0;
-		}
-
-		p += (1 << ln2mtb);
-		p2 += (1 << ln2mtb);
-	}
-}
-#endif
-
 /*
 	Patch the g_rom image: disable checksum/g_ram test, install
 	the Sony replacement driver, apply Happy Mac hack,
@@ -476,10 +451,6 @@ bool ROMDevice::init()
 			Sony_Install();
 		}
 	}
-
-#ifdef ln2mtb
-	ROMscrambleForMTB();
-#endif
 
 	return true;
 }

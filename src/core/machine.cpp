@@ -1258,29 +1258,7 @@ static void SetUp_address_II()
 	and back out of the current instruction.
 */
 
-#ifndef ln2mtb
-#define ADD_TO_ATT_LIST_WITH_MTB AddToATTList
-#else
-static void ADD_TO_ATT_LIST_WITH_MTB(ATTEntryPtr p)
-{
-	/*
-		Test of memory mapping system.
-	*/
-	ATTer r{};
 
-	r.Access = p->Access;
-	r.cmpmask = p->cmpmask | (1 << ln2mtb);
-	r.usemask = p->usemask & ~(1 << ln2mtb);
-
-	r.cmpvalu = p->cmpvalu + (1 << ln2mtb);
-	r.usebase = p->usebase;
-	AddToATTList(&r);
-
-	r.cmpvalu = p->cmpvalu;
-	r.usebase = p->usebase + (1 << ln2mtb);
-	AddToATTList(&r);
-}
-#endif
 
 /* Compact Mac: simple 24-bit RAM setup (no VIA2 bank select) */
 static void SetUp_RAM24_compact()
@@ -1295,7 +1273,7 @@ static void SetUp_RAM24_compact()
 		r.usemask = cfg.ramSize() - 1;
 		r.usebase = g_ram;
 		r.Access = kATTA_readwritereadymask;
-		ADD_TO_ATT_LIST_WITH_MTB(&r);
+		AddToATTList(&r);
 	}
 	else
 	{
@@ -1309,7 +1287,7 @@ static void SetUp_RAM24_compact()
 			r.usemask = cfg.ramBSize - 1;
 			r.usebase = cfg.ramASize + g_ram;
 			r.Access = kATTA_readwritereadymask;
-			ADD_TO_ATT_LIST_WITH_MTB(&r);
+			AddToATTList(&r);
 		}
 
 		r.cmpmask = 0x00FFFFFF & (cfg.ramASize | ~((1 << GetRAMLn2Spc()) - 1));
@@ -1317,7 +1295,7 @@ static void SetUp_RAM24_compact()
 		r.usemask = cfg.ramASize - 1;
 		r.usebase = g_ram;
 		r.Access = kATTA_readwritereadymask;
-		ADD_TO_ATT_LIST_WITH_MTB(&r);
+		AddToATTList(&r);
 	}
 }
 
@@ -1334,7 +1312,7 @@ static void SetUp_address_compact()
 		r.usemask = cfg.romSize - 1;
 		r.usebase = g_rom;
 		r.Access = kATTA_readreadymask;
-		ADD_TO_ATT_LIST_WITH_MTB(&r);
+		AddToATTList(&r);
 	}
 	else
 	{
@@ -1355,7 +1333,7 @@ static void SetUp_address_compact()
 		r.usemask = cfg.romSize - 1;
 		r.usebase = g_rom;
 		r.Access = kATTA_readreadymask;
-		ADD_TO_ATT_LIST_WITH_MTB(&r);
+		AddToATTList(&r);
 	}
 
 	if (MEM_OVERLAY)
@@ -1376,7 +1354,7 @@ static void SetUp_address_compact()
 			r.usebase = cfg.ramASize + g_ram;
 			r.Access = kATTA_readwritereadymask;
 		}
-		ADD_TO_ATT_LIST_WITH_MTB(&r);
+		AddToATTList(&r);
 	}
 
 	if (g_rig->config().includeVidMem)
