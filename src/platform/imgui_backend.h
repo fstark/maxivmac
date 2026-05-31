@@ -58,6 +58,13 @@ enum class TextureFilter
 	Linear
 };
 
+/* Post-process render style for the emulator viewport. */
+enum class RenderStyle
+{
+	Plain, // direct texture display
+	CRT    // scanlines + barrel distortion + vignette
+};
+
 class ImGuiBackend : public PlatformBackend
 {
 public:
@@ -114,6 +121,10 @@ public:
 	ScalingMode scalingMode() const { return scalingMode_; }
 	void setScalingMode(ScalingMode m);
 
+	/* CRT render style */
+	RenderStyle renderStyle() const { return renderStyle_; }
+	void setRenderStyle(RenderStyle s);
+
 	/* Action dispatch (used by overlay and shortcuts) */
 	void executeAction(UIAction action);
 
@@ -140,6 +151,18 @@ private:
 	bool cursorHidden_ = false;
 	TextureFilter textureFilter_ = TextureFilter::Linear;
 	ScalingMode scalingMode_ = ScalingMode::PixelPerfect;
+	RenderStyle renderStyle_ = RenderStyle::Plain;
+
+	/* CRT shader resources (zero = uninitialized) */
+	GLuint crtProgram_ = 0;
+	GLuint crtVao_ = 0;
+	GLuint crtVbo_ = 0;
+	GLuint crtFboId_ = 0;
+	GLuint crtFboTexId_ = 0;
+	int crtFboW_ = 0;
+	int crtFboH_ = 0;
+	int crtUniformTex_ = -1;
+	int crtUniformTexSize_ = -1;
 	bool snapping_ = false;
 	int currentScale_ = 2;
 
@@ -165,10 +188,7 @@ private:
 	int savedWinX_ = 0, savedWinY_ = 0;
 	int savedWinW_ = 0, savedWinH_ = 0;
 
-	/* Zoom (our own maximize: largest Pixel Perfect, centered) */
-	bool zoomed_ = false;
-	int preZoomX_ = 0, preZoomY_ = 0;
-	int preZoomW_ = 0, preZoomH_ = 0;
+	/* Zoom — cycles through integer scales 1× … max× (no saved state needed) */
 
 	PlatformEvent translateSdlEvent(SDL_Event &event);
 	bool imGuiConsumedEvent(const SDL_Event &event) const;
@@ -196,6 +216,12 @@ private:
 	void captureScreenshotToFile();
 	void openFileDialog();
 	void toggleZoom();
+
+	/* CRT shader */
+	void initCRTResources();
+	void shutdownCRTResources();
+	void renderCRTPass(int viewW, int viewH);
+	void ensureCRTFBO(int w, int h);
 };
 
 #endif /* IMGUI_BACKEND_H */

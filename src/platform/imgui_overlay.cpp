@@ -37,16 +37,21 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell *shell, ImGuiBacke
 	ImVec2 ds = ImGui::GetIO().DisplaySize;
 	ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0, 0), ds, IM_COL32(0, 0, 0, 160));
 
-	/* Centered panel */
-	float panelW = 480, panelH = 360;
+	/* Centered panel — capped so a 16 px border is preserved on all sides */
+	const float kBorder = 16.0f;
+	float panelW = std::min(480.0f, ds.x - 2.0f * kBorder);
+	float panelH = std::min(360.0f, ds.y - 2.0f * kBorder);
 	ImVec2 panelPos((ds.x - panelW) * 0.5f, (ds.y - panelH) * 0.5f);
 	ImGui::SetNextWindowPos(panelPos, ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(panelW, panelH), ImGuiCond_Always);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.12f, 0.16f, 0.95f));
 
-	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-							 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
+	/* NoDecoration includes NoScrollbar; replace it with its other parts so
+	   a scrollbar can appear if the panel is shorter than its content. */
+	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
+							 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+							 ImGuiWindowFlags_NoSavedSettings;
 
 	if (ImGui::Begin("##OverlayPanel", nullptr, flags))
 	{
@@ -54,7 +59,7 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell *shell, ImGuiBacke
 		if (requestedState != currentState) stateChanged = true;
 
 		/* Info area: flash → hover help → about */
-		ImGui::Separator();
+		ImGui::SeparatorText("Information");
 		if (flashMsg_ && SDL_GetTicks() < flashExpiry_)
 		{
 			ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "%s", flashMsg_);
@@ -71,6 +76,10 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell *shell, ImGuiBacke
 		/* Bottom row: Interrupt | Reboot | Power Off — pinned to panel bottom */
 		{
 			const float btnH = 32, sp = 8;
+			float sepY = ImGui::GetContentRegionMax().y - btnH
+						 - ImGui::GetStyle().ItemSpacing.y - 1.0f;
+			ImGui::SetCursorPosY(sepY - ImGui::GetStyle().ItemSpacing.y);
+			ImGui::Separator();
 			ImGui::SetCursorPosY(ImGui::GetContentRegionMax().y - btnH);
 			const float btn3W = (ImGui::GetContentRegionAvail().x - 2 * sp) / 3.0f;
 			if (ImGui::Button("Interrupt (N)", ImVec2(btn3W, btnH)))
@@ -127,30 +136,38 @@ void ControlOverlay::drawPrimaryControls(UIState currentState, EmulatorShell *sh
 	ImGui::SameLine(0, sp);
 	if (ImGui::Button("Zoom (Z)", ImVec2(btn2W, btnH))) backend->executeAction(UIAction::Zoom);
 	if (!hoverHelp_ && ImGui::IsItemHovered())
-		hoverHelp_ = "Toggle between 1x and 2x window size. Handy when the Mac's native 512x342 pixel resolution feels too small on a modern high-DPI display.";
+		hoverHelp_ = "Cycle the window through integer scales (1×, 2×, 3×, … up to the largest that fits the display, then back to 1×). Each press snaps to the next size and centres the window.";
 
-	/* Row 3: Pixel Perfect | Filter */
-	const char *scaleLabel = (backend->scalingMode() == ScalingMode::PixelPerfect)
-							 ? "Pixel Perfect (P)"
-							 : "Stretched (P)";
-	if (ImGui::Button(scaleLabel, ImVec2(btn2W, btnH)))
-		backend->executeAction(UIAction::ToggleScaling);
-	if (!hoverHelp_ && ImGui::IsItemHovered())
-		hoverHelp_ = "Choose how the Mac screen fills the window. Pixel Perfect scales to the largest exact integer multiple (sharp pixels); Stretched fills all available space, which may introduce slight blur.";
-	ImGui::SameLine(0, sp);
+	ImGui::SeparatorText("Rendering");
+
+	/* Row 3: Pixel Perfect | Smooth filter */
 	{
-		bool isNearest = (backend->textureFilter() == TextureFilter::Nearest);
-		const char *fLabel = isNearest ? "Filter: Near" : "Filter: Linear";
-		if (ImGui::Button(fLabel, ImVec2(btn2W, btnH)))
-			backend->setTextureFilter(isNearest ? TextureFilter::Linear : TextureFilter::Nearest);
+		bool pixelPerfect = (backend->scalingMode() == ScalingMode::PixelPerfect);
+		if (ImGui::Checkbox("Pixel Perfect (P)", &pixelPerfect))
+			backend->setScalingMode(pixelPerfect ? ScalingMode::PixelPerfect : ScalingMode::Stretched);
 		if (!hoverHelp_ && ImGui::IsItemHovered())
-			hoverHelp_ = "Toggle texture filtering. Nearest gives sharp, blocky pixels true to the original hardware. Linear softens edges for a smoother, less pixelated appearance.";
+			hoverHelp_ = "Choose how the Mac screen fills the window. Pixel Perfect scales to the largest exact integer multiple (sharp pixels); unchecked stretches to fill all available space.";
+	}
+	ImGui::SameLine(0, sp * 3);
+	{
+		bool smooth = (backend->textureFilter() == TextureFilter::Linear);
+		if (ImGui::Checkbox("Smooth", &smooth))
+			backend->setTextureFilter(smooth ? TextureFilter::Linear : TextureFilter::Nearest);
+		if (!hoverHelp_ && ImGui::IsItemHovered())
+			hoverHelp_ = "Toggle texture filtering. Smooth (Linear) softens edges for a less pixelated appearance. Uncheck for sharp, blocky pixels true to the original hardware.";
+	}
+	ImGui::SameLine(0, sp * 3);
+	{
+		bool crt = (backend->renderStyle() == RenderStyle::CRT);
+		if (ImGui::Checkbox("CRT", &crt))
+			backend->setRenderStyle(crt ? RenderStyle::CRT : RenderStyle::Plain);
+		if (!hoverHelp_ && ImGui::IsItemHovered())
+			hoverHelp_ = "Apply a CRT monitor effect: scanline gaps, barrel distortion (curved glass), and corner vignette. Evokes the look of the original Mac's built-in display.";
 	}
 
-	ImGui::Spacing();
-	ImGui::Spacing();
+	ImGui::SeparatorText("Speed");
 
-	/* Speed row: Pause | presets | Background | AutoSlow */
+	/* Speed row */
 	{
 		bool paused = g_speedStopped;
 		if (paused) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.5f, 0.8f, 1.0f));
@@ -159,31 +176,46 @@ void ControlOverlay::drawPrimaryControls(UIState currentState, EmulatorShell *sh
 		if (!hoverHelp_ && ImGui::IsItemHovered())
 			hoverHelp_ = "Freeze the emulated Mac completely: no CPU cycles run, no sound plays, and the clock stops. Click Pause again to resume exactly where you left off.";
 	}
-	ImGui::SameLine(0, 8);
-	ImGui::Text("Speed:");
-	ImGui::SameLine(0, 4);
 	static constexpr uint8_t kPresets[] = {0, 1, 2, 3, 4, 5, (uint8_t)-1};
 	static constexpr const char *kLabels[] = {"1x", "2x", "4x", "8x", "16x", "32x", "Max"};
 	for (int i = 0; i < 7; ++i)
 	{
 		ImGui::SameLine(0, 4);
-		bool selected = (g_speedValue == kPresets[i]);
+		bool selected = (!g_speedStopped && g_speedValue == kPresets[i]);
 		if (selected) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.5f, 0.8f, 1.0f));
-		if (ImGui::SmallButton(kLabels[i])) g_speedValue = kPresets[i];
+		if (ImGui::SmallButton(kLabels[i])) { g_speedValue = kPresets[i]; g_speedStopped = false; }
 		if (selected) ImGui::PopStyleColor();
 		if (!hoverHelp_ && ImGui::IsItemHovered())
 			hoverHelp_ = "Set how fast the emulated Mac runs. 1x is authentic vintage speed. Higher values fast-forward the guest; Max runs as fast as your host CPU allows.";
 	}
-	ImGui::SameLine(0, 8);
-	ImGui::Checkbox("Background", &g_runInBackground);
-	if (!hoverHelp_ && ImGui::IsItemHovered())
-		hoverHelp_ = "When checked, the Mac keeps running even when this window loses focus. Uncheck to pause automatically whenever you switch to another host application.";
-	ImGui::SameLine(0, 8);
+
+	/* Background behaviour: [Pause][Slow][Fast] */
+	ImGui::SameLine(0, 12);
+	ImGui::Text("Background:");
+	ImGui::SameLine(0, 4);
 	{
-		bool autoSlow = !g_wantNotAutoSlow;
-		if (ImGui::Checkbox("AutoSlow", &autoSlow)) g_wantNotAutoSlow = !autoSlow;
-		if (!hoverHelp_ && ImGui::IsItemHovered())
-			hoverHelp_ = "Automatically reduce emulation speed when the window loses focus. Prevents the Mac from consuming excessive CPU while you work in other host applications.";
+		static constexpr const char *kBgLabels[] = {"Pause##bg", "Slow##bg", "Fast##bg"};
+		static constexpr const char *kBgHelp[] = {
+			"Pause the Mac when the window loses focus.",
+			"Reduce emulation speed automatically when the window loses focus (AutoSlow).",
+			"Keep the Mac running at full speed even when the window loses focus.",
+		};
+		int bgState = g_runInBackground ? (g_wantNotAutoSlow ? 2 : 1) : 0;
+		for (int i = 0; i < 3; ++i)
+		{
+			if (i > 0) ImGui::SameLine(0, 4);
+			bool sel = (bgState == i);
+			if (sel) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.5f, 0.8f, 1.0f));
+			if (ImGui::SmallButton(kBgLabels[i]))
+			{
+				if (i == 0)      { g_runInBackground = false; }
+				else if (i == 1) { g_runInBackground = true; g_wantNotAutoSlow = false; }
+				else             { g_runInBackground = true; g_wantNotAutoSlow = true; }
+			}
+			if (sel) ImGui::PopStyleColor();
+			if (!hoverHelp_ && ImGui::IsItemHovered())
+				hoverHelp_ = kBgHelp[i];
+		}
 	}
 
 	ImGui::Spacing();
