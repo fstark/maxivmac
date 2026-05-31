@@ -3,59 +3,79 @@
 ## Source Layout
 
 ```
-src/core/        — Core emulation (machine glue, main loop, endian helpers)
+src/core/        — Core emulation (machine config, main loop, extensions)
 src/cpu/         — 68000/68020 CPU emulator and instruction decode tables
 src/devices/     — Hardware device emulation (VIA, SCC, IWM, SCSI, ADB, etc.)
+src/debugger/    — Interactive debugger, scripting, breakpoints
+src/guest/       — Guest memory introspection (dialog detection, etc.)
+src/storage/     — Host file system, AppleDouble, drive manager
+src/lang/        — Type registry and global registry
 src/platform/    — Platform backend (ImGui + SDL3 for windowing/audio)
-  common/        — Shared platform code compiled as separate translation units:
-                   osglu_common, intl_chars, param_buffers, control_mode
-src/config/      — Build configuration headers and language strings
+  common/        — Shared platform code: event queue, keyboard map, disk I/O
+src/config/      — Build configuration headers and Mac file format
+src/util/        — Utilities (MacRoman encoding, etc.)
 src/resources/   — Application icon resources
 ```
 
 ## Quick Start (macOS)
 
-Clean:
+The convenience script builds everything in one step:
+
 ```bash
-rm -rf bld/
+./build-macos.sh
 ```
+
+This is equivalent to:
 
 ```bash
 cmake --preset macos
 cmake --build --preset macos
 ```
 
-The binary is at `bld/macos/maxivmac`. The ImGui backend provides a graphical UI with a model selector and control overlay. Use `--debugger` for the interactive command-line debugger. Place a Mac ROM file in the working directory and pass a System disk image on the command line to boot.
+The binary is at `bld/macos/maxivmac`. To clean, remove the `bld/` directory.
 
-## Runtime Model Selection
+## Running
 
-The emulator is a single binary supporting multiple Mac models. Use command-line
-flags to select the model at launch:
+The emulator requires a ROM file and at least one disk image:
 
 ```bash
 # Mac II (default)
-./maxivmac --rom=MacII.ROM disk.hfs
+./bld/macos/maxivmac --rom=MacII.ROM disk.hfs
 
 # Mac Plus
-./maxivmac --model=MacPlus --rom=MacPlus.ROM disk.dsk
-
-# Mac SE
-./maxivmac --model=MacSE --rom=MacSE.ROM disk.hfs
-
-# Custom RAM and screen
-./maxivmac --model=MacII --ram=8M --screen=1024x768x8
+./bld/macos/maxivmac --model=MacPlus disk.img
 ```
+
+ROM auto-detection searches `./`, `roms/`, and `--romdir` for `<MODEL>.ROM`.
 
 ### Command-Line Options
 
 | Flag | Description |
 |------|-------------|
-| `--model=MODEL` | Mac model (= ROM base name): `MacPlus`, `MacSE`, `MacII`, `MacIIx`, `Classic`, `PB100`, `SEFDHD`, `Mac128K`, `Mac512Ke` |
-| `--rom=PATH` | Path to ROM file (overrides model default) |
-| `--ram=SIZE` | RAM size: `1M`, `2M`, `4M`, `8M`, etc. |
-| `--screen=WxHxD` | Screen: `512x342x1`, `640x480x8`, etc. (D = log2 bpp) |
-| `--speed=N` | Speed multiplier (1 = 1×, 4 = 4×, 0 = all-out) |
+| `--model=MODEL` | Mac model: `MacPlus`, `MacSE`, `MacII`, `MacIIx`, `Classic`, `PB100`, `SEFDHD`, `Mac128K`, `Mac512Ke`, `MacPlusKanji`, `Twig43`, `Twiggy` (default: `MacII`) |
+| `--rom=PATH` | Path to ROM file (auto-detected from model if omitted) |
+| `--romdir=DIR` | Directory to search for ROM files |
+| `--ram=SIZE` | RAM size: `1M`, `2M`, `4M`, `8M` (default: model-specific) |
+| `--screen=WxHxD` | Screen geometry: `512x342x1`, `640x480x8`, etc. (D = log₂ bpp) |
+| `--speed=N` | Emulation speed: `0`=1×, `1`=2×, `2`=4×, `3`=8×, `4`=16×, `5`=32× |
+| `--scale=N` | Window scale factor (default: 2) |
 | `--fullscreen` | Start in fullscreen mode |
+| `--headless` | Run without GUI (for testing/automation) |
+| `--silent` | Disable audio output |
+| `--shared=PATH` | Mount host directory as shared drive (repeatable) |
+| `--serial-a=MODE` | Modem port backend: `loopback`, `file:tx=PATH[,rx=PATH]`, `pty`, `slip` |
+| `--serial-b=MODE` | Printer port backend (same modes as `--serial-a`) |
+| `--slip-redir=SPEC` | Port forward: `tcp:hostport:guestip:guestport` |
+| `--debugger` | Start with debugger prompt (paused at first instruction) |
+| `--dbg-script=FILE` | Execute `.dbg` script at debugger startup (repeatable) |
+| `--debugserver[=PATH]` | Start debug server on Unix socket |
+| `--trace-traps` | Enable A-line trap tracing to stderr |
+| `--diag=LIST` | Enable diagnostic traces (comma-separated: `extfs`, `guest`, `sd`, …) |
+| `--record=PATH` | Record golden file for non-regression testing |
+| `--verify=PATH` | Verify against golden file (exit 0=pass, 1=fail) |
+| `--trace=PATH` | Write CPU+IO text trace to file |
+| `--trace-cpu=PATH` | Write CPU-only text trace to file |
+| `--title=TEXT` | Window title |
 | `-h`, `--help` | Show help |
 | positional args | Disk image paths |
 
@@ -63,20 +83,24 @@ flags to select the model at launch:
 
 - **CMake** ≥ 3.20
 - **Ninja** (recommended) or Make
-- **SDL2** or **SDL3** development libraries (all platforms)
+- **SDL3** development libraries
+- **OpenGL** (provided by the OS on macOS/Windows; Mesa on Linux)
 - **macOS:** Xcode command-line tools (provides Clang)
 - **Linux:** X11 development libraries (optional, for X11 support via SDL)
 - **Windows:** MinGW or MSVC
 
+Optional:
+- **libslirp** — enables TCP/IP networking via `--slip-redir` (auto-detected at configure time)
+
 ## Build Presets
 
-| Preset | Platform | Backend | Notes |
-|--------|----------|---------|-------|
-| `macos` | macOS | SDL | Default for macOS. |
-| `linux` | Linux | SDL | Default for Linux. |
-| `windows` | Windows | SDL | Default for Windows. |
-
-Usage:
+| Preset | Platform | Type | Notes |
+|--------|----------|------|-------|
+| `macos` | macOS | Release | Default macOS build |
+| `macos-coverage` | macOS | Debug | Clang source-based code coverage |
+| `macos-asan` | macOS | Debug | AddressSanitizer + UndefinedBehaviorSanitizer |
+| `linux` | Linux | Release | Default Linux build |
+| `windows` | Windows | Release | MinGW/MSYS2 |
 
 ```bash
 cmake --preset <preset>
@@ -85,56 +109,28 @@ cmake --build --preset <preset>
 
 ## Manual Configuration
 
-If you don't want to use presets:
-
 ```bash
-cmake -B bld -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release
+cmake -B bld -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build bld
 ```
 
 ## CMake Options
 
-### Display (build-time window defaults)
-
 | Option | Default | Description |
 |--------|---------|-------------|
-| `MINIVMAC_MAGNIFY_ENABLE` | `1` | Allow window magnification |
-| `MINIVMAC_MAGNIFY_INIT` | `1` | Start magnified |
-| `MINIVMAC_WINDOW_SCALE` | `2` | Window scale factor |
-| `MINIVMAC_FULLSCREEN_VAR` | `1` | Variable fullscreen |
-| `MINIVMAC_FULLSCREEN_INIT` | `0` | Start in fullscreen |
-| `MINIVMAC_SPEED` | `4` | Speed (0–5, where 4 = 8×) |
-
-Note: Screen resolution, bit depth, and RAM size are now runtime — use `--screen` and `--ram` flags.
-
-### Audio & Drives
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `MINIVMAC_SOUND` | `1` | Enable sound |
-| `MINIVMAC_NUM_DRIVES` | `6` | Number of floppy drives |
-
-### Localization
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `MINIVMAC_LANGUAGE` | `English` | UI language: English, French, German, Italian, Spanish, Dutch, PortugueseBrazilian, Polish, Czech, Serbian |
-
-### Debug
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `MINIVMAC_DBGLOG` | `1` | Enable debug logging |
 | `MINIVMAC_ABNORMAL_REPORTS` | `0` | Enable abnormal-condition reports |
 | `MINIVMAC_LOCALTALK` | `0` | Enable LocalTalk emulation |
+| `MAXIVMAC_COVERAGE` | `OFF` | Clang source-based coverage instrumentation (use `macos-coverage` preset) |
+| `MAXIVMAC_SANITIZE` | `OFF` | AddressSanitizer + UBSan (use `macos-asan` preset) |
 
-## Legacy Build
+## Building the INIT (macOS guest code)
 
-The original build scripts and `setup/` tool remain in the `reference/` directory. They use a 3-stage pipeline:
+`build-init.sh` compiles the classic Mac INIT that runs inside the emulated guest OS. It stamps the current git version into `macsrc/init/version.h`, then launches the emulator to drive THINK C 5.0 via a `.dbg` automation script.
 
-1. Compile `setup/tool.c` → `setup_t`
-2. Run `./setup_t` → generates `setup.sh` and config headers in `cfg/`
-3. Run `setup.sh` → invokes `xcodebuild` or `make`
+**Prerequisites:**
+- A working emulator build at `bld/macos/maxivmac`
+- `macsrc/build.mac` — a `.mac` bundle containing the THINK C 5.0 environment and the INIT project
 
-The CMake build replaces this pipeline with a single step. The `cfg/` directory still contains the original generated headers as a reference.
+```bash
+./build-init.sh
+```
