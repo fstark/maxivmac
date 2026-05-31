@@ -19,7 +19,7 @@ Excludes `static constexpr` / `inline constexpr` compile-time constants and `sta
 | Variable | Type | File | Tag | Notes |
 |----------|------|------|-----|-------|
 | `g_rig` | `Rig*` | core/rig.h | **KEEP** | Central Rig singleton; accessor pattern already wraps it |
-| `g_shell` | `EmulatorShell*` | platform/emulator_shell.h | **KEEP** | Platform shell singleton; needed for legacy free-function wrappers |
+| `g_shell` | `EmulatorShell*` | platform/emulator_shell.cpp | **KEEP** | Platform shell singleton; needed for legacy free-function wrappers |
 | `g_cpu` | `CPU` | cpu/cpu.cpp | **NEEDS WORK** | Should be owned by Machine. Currently standalone global instance |
 
 ## 2. Machine Subsystem Objects
@@ -29,7 +29,7 @@ Excludes `static constexpr` / `inline constexpr` compile-time constants and `sta
 | `g_ict` | `ICTScheduler` | core/main.cpp | **NEEDS WORK** | Should be owned by Machine |
 | `g_wires` | `WireBus` | core/wire_bus.cpp | **NEEDS WORK** | Should be owned by Machine |
 | `g_recorder` | `StateRecorder` | core/state_recorder.cpp | **KEEP** | Debug/test tool, orthogonal to emulation |
-| `g_wiresData` | `uint8_t*` | core/machine.cpp | ~~REMOVE~~ DONE | Replaced with `g_wires.data()` in all macros |
+
 
 ## 3. Memory Buffers
 
@@ -42,24 +42,7 @@ Excludes `static constexpr` / `inline constexpr` compile-time constants and `sta
 
 ## 4. Display & Screen
 
-All 14 consolidated into **`DisplayState`** struct on EmulatorShell (commit 55014c2).
-
-| Variable | Type | File | Tag | Notes |
-|----------|------|------|-----|-------|
-| `g_screenWidth` | `uint16_t` | osglu_common.cpp | **DONE** | DisplayState.screenWidth |
-| `g_screenHeight` | `uint16_t` | osglu_common.cpp | **DONE** | DisplayState.screenHeight |
-| `g_screenDepth` | `uint8_t` | osglu_common.cpp | **DONE** | DisplayState.screenDepth |
-| `g_useColorMode` | `bool` | osglu_common.cpp | **DONE** | DisplayState.useColorMode |
-| `g_colorModeWorks` | `bool` | osglu_common.cpp | **DONE** | DisplayState.colorModeWorks |
-| `g_colorMappingChanged` | `bool` | osglu_common.cpp | **DONE** | DisplayState.colorMappingChanged |
-| `g_colorTransValid` | `bool` | osglu_common.cpp | **DONE** | DisplayState.colorTransValid |
-| `CLUT_reds[256]` | `uint16_t[]` | osglu_common.cpp | **DONE** | DisplayState.clutReds |
-| `CLUT_greens[256]` | `uint16_t[]` | osglu_common.cpp | **DONE** | DisplayState.clutGreens |
-| `CLUT_blues[256]` | `uint16_t[]` | osglu_common.cpp | **DONE** | DisplayState.clutBlues |
-| `g_screenCompareBuff` | `uint8_t*` | osglu_common.cpp | **DONE** | DisplayState.screenCompareBuff |
-| `g_screenChanged` | `bool` | osglu_common.cpp | **DONE** | DisplayState.screenChanged |
-| `ScalingBuff` | `uint8_t*` | screen_convert.h | **DONE** | DisplayState.scalingBuff |
-| `CLUT_final` | `uint8_t*` | screen_convert.h | **DONE** | DisplayState.clutFinal |
+All 14 consolidated into **`DisplayState`** struct on EmulatorShell.
 
 ## 5. View / Scroll
 
@@ -82,11 +65,9 @@ Bundle into **`InputState`** on Shell.
 |----------|------|------|-----|-------|
 | `g_curMouseH` | `uint16_t` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_curMouseV` | `uint16_t` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_mousePosCurH` | `uint16_t` | osglu_common.cpp | ~~REMOVE~~ DONE | Removed; was redundant cached copy of g_curMouseH |
-| `g_mousePosCurV` | `uint16_t` | osglu_common.cpp | ~~REMOVE~~ DONE | Removed; was redundant cached copy of g_curMouseV |
 | `g_haveMouseMotion` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_mouseButtonState` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
-| `theKeys[4]` | `uint32_t[]` | osglu_common.cpp | **NEEDS WORK** | Keyboard bitmap |
+| `g_theKeys[4]` | `uint32_t[]` | osglu_common.cpp | **NEEDS WORK** | Keyboard bitmap |
 | `g_controlKeyPressed` | `bool` | keyboard_map.cpp | **NEEDS WORK** | |
 
 ## 7. Event Queue
@@ -95,11 +76,9 @@ Wrap into an **`EventQueue`** class (already a circular buffer pattern).
 
 | Variable | Type | File | Tag | Notes |
 |----------|------|------|-----|-------|
-| `EvtQA[16]` | `EvtQEl[]` | osglu_common.h | **NEEDS WORK** | |
-| `EvtQIn` | `uint16_t` | osglu_common.h | **NEEDS WORK** | |
-| `EvtQOut` | `uint16_t` | osglu_common.h | **NEEDS WORK** | |
-| `EvtQNeedRecover` | `bool` | osglu_common.h | **NEEDS WORK** | |
-| `MasterEvtQLock` | `uint16_t` | machine.cpp | **NEEDS WORK** | Legacy lock counter; used by mouse device for sync |
+| `g_masterEvtQLock` | `uint16_t` | machine.cpp | **NEEDS WORK** | Legacy lock counter; used by mouse device for sync |
+
+> Fixed-slot ring buffer (`EvtQA/EvtQIn/EvtQOut/EvtQNeedRecover`) replaced by `event_queue.h` API with internal static storage.
 
 ## 8. Disk / Sony
 
@@ -113,12 +92,12 @@ Bundle into a **`DiskManager`** class.
 | `g_sonyNewDiskWanted` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_sonyNewDiskSize` | `uint32_t` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_sonyNewDiskName` | `PbufIndex` | osglu_common.cpp | **NEEDS WORK** | |
-| `Drives[]` | `FILE*` | disk_io.h | **NEEDS WORK** | File handles |
-| `DriveNames[]` | `char*` | disk_io.h | **NEEDS WORK** | Disk image paths |
+| `g_drives[]` | `FILE*` | disk_io.cpp | **NEEDS WORK** | File handles |
+| `g_driveNames[]` | `char*` | disk_io.cpp | **NEEDS WORK** | Disk image paths |
 | `g_diskIconAddr` | `uint32_t` | machine.cpp | **NEEDS WORK** | Set by ROM patching, read by Sony driver; narrow scope but cross-module |
 | `g_pbufAllocatedMask` | `uint32_t` | osglu_common.cpp | **NEEDS WORK** | Parameter buffer pool — could be standalone or part of DiskManager |
-| `PbufSize[]` | `uint32_t[]` | osglu_common.cpp | **NEEDS WORK** | Same |
-| `PbufDat[]` | `void*[]` | param_buffers.h | **NEEDS WORK** | Same |
+| `g_pbufSize[]` | `uint32_t[]` | osglu_common.cpp | **NEEDS WORK** | Same |
+| `g_pbufDat[]` | `void*[]` | param_buffers.cpp | **NEEDS WORK** | Same |
 
 ## 9. Machine Control & Power
 
@@ -139,7 +118,7 @@ Bundle into **`TimingState`** on Shell.
 | Variable | Type | File | Tag | Notes |
 |----------|------|------|-----|-------|
 | `g_speedValue` | `uint8_t` | osglu_common.cpp | **NEEDS WORK** | |
-| `g_SkipThrottle` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
+| `g_skipThrottle` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_wantNotAutoSlow` | `bool` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_speedStopped` | `bool` | keyboard_map.cpp | **NEEDS WORK** | |
 | `g_runInBackground` | `bool` | keyboard_map.cpp | **NEEDS WORK** | |
@@ -166,9 +145,7 @@ Bundle into **`TimingState`** on Shell.
 | `g_wantMagnify` | `bool` | keyboard_map.cpp | **NEEDS WORK** | → Shell config |
 | `g_requestInsertDisk` | `bool` | keyboard_map.cpp | **NEEDS WORK** | → Shell command queue |
 | `g_requestIthDisk` | `uint8_t` | keyboard_map.cpp | **NEEDS WORK** | Same |
-| `SavedBriefMsg` | `const char*` | osglu_common.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::savedBriefMsg_ |
-| `SavedLongMsg` | `const char*` | osglu_common.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::savedLongMsg_ |
-| `g_savedFatalMsg` | `bool` | osglu_common.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::savedFatalMsg_ |
+
 
 ## 13. LocalTalk Networking
 
@@ -182,25 +159,17 @@ Bundle into **`NetworkState`** struct when networking matures.
 | `g_ltTxBuffSz` | `uint16_t` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_ltRxBuffer` | `uint8_t*` | osglu_common.cpp | **NEEDS WORK** | |
 | `g_ltRxBuffSz` | `uint32_t` | osglu_common.cpp | **NEEDS WORK** | |
-| `e_p[2]` | `uint32_t[]` | osglu_common.cpp | **NEEDS WORK** | Entropy pool for random generation |
+| `g_entropyPool[2]` | `uint32_t[]` | osglu_common.cpp | **NEEDS WORK** | Entropy pool for random generation |
 | `g_ltMyStamp` | `uint32_t` | osglu_common.cpp | **NEEDS WORK** | |
 
-## 14. Paths & Init
-
-| Variable | Type | File | Tag | Notes |
-|----------|------|------|-----|-------|
-| `rom_path` | `char*` | rom_loader.h | ~~REMOVE~~ DONE | Now a parameter to LoadMacRom() |
-| `app_parent` | `char*` | dbglog_platform.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::appParent_ |
-| `g_romLoaded` | `bool` | osglu_common.cpp | ~~REMOVE~~ DONE | Moved to EmulatorShell::romLoaded_ |
-
-## 15. CPU Internals
+## 14. CPU Internals
 
 | Variable | Type | File | Tag | Notes |
 |----------|------|------|-----|-------|
 | `regs` | `struct regstruct` | m68k.cpp | **KEEP** | CPU register file; static file-scope, well-encapsulated |
-| `g_InstructionCount` | `uint32_t` | m68k.cpp | **NEEDS WORK** | Debug counter — should be on CPU or Machine |
-| `g_LogStart` | `uint32_t` | m68k.cpp | **NEEDS WORK** | Debug range — same |
-| `g_LogEnd` | `uint32_t` | m68k.cpp | **NEEDS WORK** | Same |
+| `g_instructionCount` | `InstructionCount` | m68k.cpp | **KEEP** | Monotonic instruction counter; used by debugger log window |
+| `g_logStart` | `InstructionCount` | m68k.cpp | **KEEP** | Instruction range start for debug logging |
+| `g_logEnd` | `InstructionCount` | m68k.cpp | **KEEP** | Instruction range end for debug logging (0 = disabled) |
 | `g_regs` | `register regstruct*` | m68k.cpp | **KEEP** | Performance-critical register-pinned variable |
 | `g_pc_p` | `register uint8_t*` | m68k.cpp | **KEEP** | Same |
 | `g_MaxCyclesToGo` | `register int32_t` | m68k.cpp | **KEEP** | Same |
@@ -208,7 +177,7 @@ Bundle into **`NetworkState`** struct when networking matures.
 | `fpu_dat` | `fpustruct` | fpu_emdev.h | **KEEP** | FPU state; static file-scope |
 | `s_cpuConfig` | `const MachineConfig*` | m68k.cpp | **KEEP** | Cached config pointer; static file-scope |
 
-## 16. Device File-Scope Statics
+## 15. Device File-Scope Statics
 
 These are `static` (file-scope only) — not visible outside their translation unit.
 They're inherited minivmac style but already encapsulated. Ideally they move to
@@ -218,7 +187,6 @@ class members on their respective Device subclasses as device refactoring contin
 |------|-------|-----|-------|
 | ASC (sound chip) | ~15 | **KEEP** | Registers, sample buffer, FIFO pointers, playing flag |
 | ADB | ~12 | **KEEP** | Data buffer, command state, mouse/keyboard addresses and deltas |
-| IWM | 1 | ~~REMOVE~~ DONE | Added missing `static` keyword |
 | RTC | 2 | **KEEP** | `s_rtc` state, `s_lastRealDate` |
 | SCSI | 1 | **KEEP** | Register array |
 | SCC | ~9 | **KEEP** | Channel state, LocalTalk CTS/node vars |
@@ -228,7 +196,7 @@ class members on their respective Device subclasses as device refactoring contin
 | ROM | 2 | **KEEP** | Embedded Sony driver and disk icon (const binary data) |
 | Screen | 1 | **KEEP** | `kMain_Offset` constexpr |
 
-## 17. Debug & Diagnostics (all static file-scope)
+## 16. Debug & Diagnostics (all static file-scope)
 
 | Variable | File | Tag | Notes |
 |----------|------|-----|-------|
@@ -242,7 +210,7 @@ class members on their respective Device subclasses as device refactoring contin
 | `s_consoleLines` | extn_clip.cpp | **KEEP** | Debug console buffer |
 | `dbglog_File` | dbglog_platform.cpp | **KEEP** | Log file handle |
 
-## 18. Static File-Scope in core/main.cpp
+## 17. Static File-Scope in core/main.cpp
 
 Not globals — only visible within main.cpp. Listed for completeness.
 
@@ -263,7 +231,7 @@ Not globals — only visible within main.cpp. Listed for completeness.
 | Disposition | Count | Description |
 |-------------|-------|-------------|
 | **KEEP** | ~30 | Architecturally sound, well-encapsulated, or performance-critical |
-| **REMOVE** | ~~10~~ 0 | All completed — see GLOBAL_REMOVE.md |
+| **REMOVE** | 0 | All completed |
 | **NEEDS WORK** | ~80 | Require struct consolidation or ownership changes |
 
 The ~80 NEEDS WORK globals cluster into natural refactoring targets:
@@ -272,7 +240,7 @@ The ~80 NEEDS WORK globals cluster into natural refactoring targets:
 |---------------------|-----------------|-------|
 | **`DisplayState`** | 14 display globals | Shell or Machine |
 | **`InputState`** | 8 mouse/keyboard globals | Shell |
-| **`EventQueue`** class | 5 event queue globals | Shell |
+| **`EventQueue`** class | 1 remaining (`g_masterEvtQLock`) | Shell |
 | **`DiskManager`** | 12 sony/disk/pbuf globals | Shell |
 | **`TimingState`** | 10 speed/timing globals | Shell |
 | **`NetworkState`** | 8 LocalTalk globals | Shell (when networking matures) |
