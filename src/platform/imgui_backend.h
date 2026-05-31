@@ -40,12 +40,15 @@ enum class UIAction : uint8_t
 	ToggleScaling,
 	Zoom,
 	Screenshot,
+	SaveScreenshot,
 	SpeedUp,
 	SpeedDown,
 	SpeedReset,
 	TogglePaused,
 	InsertDisk,
 	Reboot,
+	PowerOff,
+	Interrupt,
 };
 
 /* GL texture filter for the emulator viewport. */
@@ -113,6 +116,10 @@ public:
 
 	/* Action dispatch (used by overlay and shortcuts) */
 	void executeAction(UIAction action);
+
+	/* Dismiss the overlay (callable from async callbacks) */
+	void hideOverlay() { overlayMode_ = OverlayMode::Hidden; }
+	void flashOverlay(const char *msg, uint32_t ms) { overlay_.flash(msg, ms); }
 
 	/* Shell accessor (for file dialog callback) */
 	EmulatorShell *shell() { return shell_; }
@@ -186,6 +193,7 @@ private:
 	void adjustSpeed(int delta);
 	void setSpeed(int idx);
 	void captureScreenshot();
+	void captureScreenshotToFile();
 	void openFileDialog();
 	void toggleZoom();
 };

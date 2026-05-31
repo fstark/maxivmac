@@ -21,6 +21,9 @@ public:
 	bool draw(UIState currentState, EmulatorShell *shell, ImGuiBackend *backend,
 			  UIState &requestedState);
 
+	/* Show a brief feedback message in the info area. */
+	void flash(const char *msg, uint32_t ms);
+
 private:
 	void drawPrimaryControls(UIState currentState, EmulatorShell *shell, ImGuiBackend *backend,
 							 UIState &requestedState);
@@ -30,4 +33,7 @@ private:
 	/* Flash feedback */
 	const char *flashMsg_ = nullptr;
 	uint64_t flashExpiry_ = 0;
+
+	/* Hover help (set each frame by drawPrimaryControls / drawAdvancedControls) */
+	const char *hoverHelp_ = nullptr;
 };

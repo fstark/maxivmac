@@ -958,7 +958,10 @@ bool EmulatorShell::insertDiskOrRom(const char *path, bool silent)
 
 const char *EmulatorShell::windowTitle() const
 {
-	return (nullptr != n_arg_) ? n_arg_ : kStrAppName;
+	static char buf[256];
+	const char *base = (nullptr != n_arg_) ? n_arg_ : kStrAppName;
+	snprintf(buf, sizeof(buf), "%s (press Ctrl for overlay)", base);
+	return buf;
 }
 
 /* --- Command line parsing --- */

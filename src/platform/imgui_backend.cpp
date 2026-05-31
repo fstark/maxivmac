@@ -60,15 +60,15 @@ struct ShortcutEntry
 
 static constexpr std::array kShortcuts = {
 	ShortcutEntry{SDL_SCANCODE_F, UIAction::ToggleFullscreen},
-	ShortcutEntry{SDL_SCANCODE_M, UIAction::ToggleScaling},
+	ShortcutEntry{SDL_SCANCODE_P, UIAction::ToggleScaling},
 	ShortcutEntry{SDL_SCANCODE_Z, UIAction::Zoom},
 	ShortcutEntry{SDL_SCANCODE_S, UIAction::Screenshot},
 	ShortcutEntry{SDL_SCANCODE_RIGHT, UIAction::SpeedUp},
 	ShortcutEntry{SDL_SCANCODE_LEFT, UIAction::SpeedDown},
-	ShortcutEntry{SDL_SCANCODE_0, UIAction::SpeedReset},
-	ShortcutEntry{SDL_SCANCODE_P, UIAction::TogglePaused},
 	ShortcutEntry{SDL_SCANCODE_I, UIAction::InsertDisk},
 	ShortcutEntry{SDL_SCANCODE_R, UIAction::Reboot},
+	ShortcutEntry{SDL_SCANCODE_N, UIAction::Interrupt},
+	ShortcutEntry{SDL_SCANCODE_Q, UIAction::PowerOff},
 };
 
 /* ── Speed presets ───────────────────────────────────── */
@@ -81,6 +81,13 @@ static constexpr int kSpeedPresetCount = 7;
 bool ImGuiBackend::init(EmulatorShell *shell)
 {
 	shell_ = shell;
+
+#if defined(__APPLE__)
+	/* Disable SDL's Ctrl+Click → right-click emulation so that Ctrl+Click
+	   while the overlay is open reaches ImGui as a plain left-click.
+	   Must be set before SDL_Init. */
+	SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "0");
+#endif
 
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
 	{
@@ -231,13 +238,6 @@ void ImGuiBackend::runLoop()
 				overlayMode_ = OverlayMode::Hidden;
 				continue;
 			}
-			/* Suppress Ctrl+Click → right-click while overlay visible */
-			if (overlayMode_ != OverlayMode::Hidden && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
-				event.button.button == SDL_BUTTON_RIGHT)
-			{
-				continue;
-			}
-
 			/* Shortcut dispatch while overlay is visible.
 			   Works with or without Ctrl held (so bare keys work in sticky mode). */
 			if (overlayMode_ != OverlayMode::Hidden && event.type == SDL_EVENT_KEY_DOWN &&
@@ -245,12 +245,38 @@ void ImGuiBackend::runLoop()
 				event.key.scancode != SDL_SCANCODE_RCTRL)
 			{
 				UIAction action = UIAction::None;
-				for (const auto &s : kShortcuts)
+				if ((event.key.mod & (SDL_KMOD_LSHIFT | SDL_KMOD_RSHIFT)) &&
+					event.key.scancode == SDL_SCANCODE_S)
 				{
-					if (event.key.scancode == s.scancode)
+					action = UIAction::SaveScreenshot;
+				}
+				else
+				{
+					/* Digit keys: 0=pause toggle, 1-6=speed presets, 9=Max */
+					int digit = -1;
+					if (event.key.scancode == SDL_SCANCODE_0)
+						digit = 0;
+					else if (event.key.scancode >= SDL_SCANCODE_1 &&
+					         event.key.scancode <= SDL_SCANCODE_9)
+						digit = event.key.scancode - SDL_SCANCODE_1 + 1;
+
+					if (digit >= 0)
 					{
-						action = s.action;
-						break;
+						if (digit == 0)
+							g_speedStopped = !g_speedStopped;
+						else if (digit >= 1 && digit <= 6)
+							g_speedValue = (uint8_t)(digit - 1);
+						else if (digit == 9)
+							g_speedValue = (uint8_t)-1;
+						continue;
+					}
+					for (const auto &s : kShortcuts)
+					{
+						if (event.key.scancode == s.scancode)
+						{
+							action = s.action;
+							break;
+						}
 					}
 				}
 				if (action != UIAction::None)
@@ -286,8 +312,16 @@ void ImGuiBackend::runLoop()
 
 			if (!imGuiConsumedEvent(event))
 			{
-				/* When overlay is visible, don't forward to emulator */
-				if (overlayMode_ != OverlayMode::Hidden) continue;
+				if (overlayMode_ != OverlayMode::Hidden)
+				{
+					/* A click outside the overlay panel dismisses it; the click
+					   is forwarded to the emulator naturally below.
+					   Any other event while the overlay is visible is discarded. */
+					if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+						overlayMode_ = OverlayMode::Hidden;
+					else
+						continue;
+				}
 
 				PlatformEvent pe = translateSdlEvent(event);
 				if (pe.type != PlatformEvent::Type::None) shell_->dispatchEvent(pe);
@@ -345,29 +379,23 @@ void ImGuiBackend::drawWindowedState()
 	if (overlayMode_ != OverlayMode::Hidden) shell_->forceShowCursor();
 	if (shell_->shouldQuit()) return;
 
-	/* Handle speed-stopped state */
+	/* Handle speed-stopped state: throttle frame rate but keep rendering
+	   so the overlay remains responsive. */
 	if (shell_->isSpeedStopped())
 	{
-		SDL_Event waitEvt;
-		if (SDL_WaitEvent(&waitEvt))
-		{
-			ImGui_ImplSDL3_ProcessEvent(&waitEvt);
-			if (!imGuiConsumedEvent(waitEvt))
-			{
-				PlatformEvent pe = translateSdlEvent(waitEvt);
-				if (pe.type != PlatformEvent::Type::None) shell_->dispatchEvent(pe);
-			}
-		}
-		return;
+		SDL_Delay(16);
+		/* fall through to render path */
 	}
-
-	/* Run emulation ticks */
-	if (!shell_->tickIsDue())
+	else
 	{
-		SDL_Delay(shell_->getDelayMs());
-		return;
+		/* Run emulation ticks */
+		if (!shell_->tickIsDue())
+		{
+			SDL_Delay(shell_->getDelayMs());
+			return;
+		}
+		if (shell_->tickIsDue() && !shell_->shouldQuit()) shell_->runOneTick();
 	}
-	if (shell_->tickIsDue() && !shell_->shouldQuit()) shell_->runOneTick();
 
 	/* Periodic shared-drive catalog refresh (~every 2 seconds at 60 fps).
 	   Host-driven, not guest-driven — keeps the door open for future
@@ -513,6 +541,12 @@ bool ImGuiBackend::createLauncher(std::vector<MacFileEntry> entries)
 	ImGuiIO &io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigWindowsMoveFromTitleBarOnly = true;
+#if defined(__APPLE__)
+	/* Disable ImGui's built-in Ctrl+Left-click → Right-click conversion.
+	   We use Ctrl as the overlay activation key, so Ctrl+Click must reach
+	   overlay buttons as a plain left-click. */
+	io.ConfigMacOSXBehaviors = false;
+#endif
 	ImGui::StyleColorsDark();
 
 	ImGui_ImplSDL3_InitForOpenGL(window_, glContext_);
@@ -776,6 +810,9 @@ void ImGuiBackend::executeAction(UIAction action)
 		case UIAction::Screenshot:
 			captureScreenshot();
 			break;
+		case UIAction::SaveScreenshot:
+			captureScreenshotToFile();
+			break;
 		case UIAction::SpeedUp:
 			adjustSpeed(+1);
 			break;
@@ -789,12 +826,21 @@ void ImGuiBackend::executeAction(UIAction action)
 			g_speedStopped = !g_speedStopped;
 			break;
 		case UIAction::InsertDisk:
+			/* Peek mode: dismiss immediately (Ctrl is held; overlay goes regardless).
+			   Sticky mode: keep overlay open until dialog resolves. */
+			if (overlayMode_ == OverlayMode::Peek || overlayMode_ == OverlayMode::PeekPending)
+				overlayMode_ = OverlayMode::Hidden;
 			openFileDialog();
-			overlayMode_ = OverlayMode::Hidden;
 			break;
 		case UIAction::Reboot:
 			g_wantMacReset = true;
 			overlayMode_ = OverlayMode::Hidden;
+			break;
+		case UIAction::PowerOff:
+			g_requestMacOff = true;
+			break;
+		case UIAction::Interrupt:
+			g_wantMacInterrupt = true;
 			break;
 		default:
 			break;
@@ -829,32 +875,68 @@ static void pngWriteCallback(void *context, void *data, int size)
 	buf->insert(buf->end(), bytes, bytes + size);
 }
 
-void ImGuiBackend::captureScreenshot()
+static std::vector<uint8_t> buildScreenshotPng(const uint32_t *src, int w, int h)
 {
-	if (!shell_ || !shell_->getFramebuffer()) return;
-
-	int w = emuTexW_;
-	int h = emuTexH_;
-	const uint32_t *src = reinterpret_cast<const uint32_t *>(shell_->getFramebuffer());
-
-	/* BGRA → RGBA swizzle */
 	std::vector<uint8_t> rgba(w * h * 4);
 	for (int i = 0; i < w * h; ++i)
 	{
 		uint32_t px = src[i];
-		rgba[i * 4 + 0] = (px >> 16) & 0xFF; // R
-		rgba[i * 4 + 1] = (px >> 8) & 0xFF;	 // G
-		rgba[i * 4 + 2] = (px >> 0) & 0xFF;	 // B
-		rgba[i * 4 + 3] = 0xFF;				 // A
+		rgba[i * 4 + 0] = (px >> 16) & 0xFF;
+		rgba[i * 4 + 1] = (px >> 8) & 0xFF;
+		rgba[i * 4 + 2] = px & 0xFF;
+		rgba[i * 4 + 3] = 0xFF;
 	}
-
 	std::vector<uint8_t> pngBuf;
 	stbi_write_png_to_func(pngWriteCallback, &pngBuf, w, h, 4, rgba.data(), w * 4);
+	return pngBuf;
+}
 
-	if (!pngBuf.empty())
+void ImGuiBackend::captureScreenshot()
+{
+	if (!shell_ || !shell_->getFramebuffer()) return;
+	auto png = buildScreenshotPng(
+		reinterpret_cast<const uint32_t *>(shell_->getFramebuffer()), emuTexW_, emuTexH_);
+	if (!png.empty())
 	{
-		GetHostPasteboard().setImage(pngBuf.data(), pngBuf.size());
+		GetHostPasteboard().setImage(png.data(), png.size());
+		overlay_.flash("Screenshot copied to clipboard", 2000);
 	}
+}
+
+struct ScreenshotSaveContext
+{
+	ImGuiBackend *backend;
+	std::vector<uint8_t> png;
+};
+
+static void screenshotSaveCallback(void *userdata, const char *const *filelist, int /*filter*/)
+{
+	auto *ctx = static_cast<ScreenshotSaveContext *>(userdata);
+	if (filelist && filelist[0])
+	{
+		FILE *f = fopen(filelist[0], "wb");
+		if (f)
+		{
+			fwrite(ctx->png.data(), 1, ctx->png.size(), f);
+			fclose(f);
+			ctx->backend->flashOverlay("Screenshot saved", 2000);
+		}
+	}
+	delete ctx;
+}
+
+void ImGuiBackend::captureScreenshotToFile()
+{
+	if (!shell_ || !shell_->getFramebuffer()) return;
+	auto *ctx = new ScreenshotSaveContext;
+	ctx->backend = this;
+	ctx->png = buildScreenshotPng(
+		reinterpret_cast<const uint32_t *>(shell_->getFramebuffer()), emuTexW_, emuTexH_);
+	if (ctx->png.empty()) { delete ctx; return; }
+	static const SDL_DialogFileFilter filters[] = {
+		{"PNG Image", "png"}, {"All Files", "*"}
+	};
+	SDL_ShowSaveFileDialog(screenshotSaveCallback, ctx, window_, filters, 2, "screenshot.png");
 }
 
 static void fileDialogCallback(void *userdata, const char *const *filelist, int filter)
@@ -864,7 +946,9 @@ static void fileDialogCallback(void *userdata, const char *const *filelist, int 
 	if (filelist && filelist[0])
 	{
 		backend->shell()->insertDiskOrRom(filelist[0], false);
+		backend->hideOverlay(); // disk inserted → dismiss overlay
 	}
+	// cancelled → overlay stays as-is
 }
 
 void ImGuiBackend::openFileDialog()
@@ -1059,6 +1143,12 @@ bool ImGuiBackend::createWindow(const char *title, int width, int height, bool f
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 	io.ConfigWindowsMoveFromTitleBarOnly = true;
+#if defined(__APPLE__)
+	/* Disable ImGui's built-in Ctrl+Left-click → Right-click conversion.
+	   We use Ctrl as the overlay activation key, so Ctrl+Click must reach
+	   overlay buttons as a plain left-click. */
+	io.ConfigMacOSXBehaviors = false;
+#endif
 	ImGui::StyleColorsDark();
 
 	ImGui_ImplSDL3_InitForOpenGL(window_, glContext_);

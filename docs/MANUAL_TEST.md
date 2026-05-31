@@ -127,10 +127,7 @@ Keep the same session running from Session 1.
 - [ ] Volume icon disappears from desktop
 - [ ] No error dialogs, guest continues running
 
-### 3.4 Eject All
-- [ ] Insert a second disk again
-- [ ] Open Control overlay → "Eject All"
-- [ ] All secondary volumes eject (boot disk remains)
+> Ejecting is done from the Finder (Cmd-E or drag to Trash). There is no Eject All in the overlay.
 
 ---
 
@@ -155,8 +152,8 @@ Keep the same session running from Session 1.
 ### 4.4 Speed
 - [ ] Set speed to 8x — guest visibly speeds up
 - [ ] Set speed back to 1x — guest returns to normal pace
-- [ ] Check "Stopped" — guest freezes (no screen updates, no input)
-- [ ] Uncheck "Stopped" — guest resumes
+- [ ] Click "Pause" — guest freezes (no screen updates, no input)
+- [ ] Click "Pause" again — guest resumes
 
 ---
 
