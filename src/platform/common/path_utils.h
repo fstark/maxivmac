@@ -1,5 +1,4 @@
-#ifndef PATH_UTILS_H
-#define PATH_UTILS_H
+#pragma once
 
 #include <cstdint>
 #include <filesystem>
@@ -20,4 +19,4 @@ inline std::string path_str(const std::filesystem::path &p)
 
 tMacErr ChildPath(char *x, char *y, char **r);
 
-#endif /* PATH_UTILS_H */
+

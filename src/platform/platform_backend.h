@@ -5,8 +5,7 @@
 	platform-specific operations (window, cursor, audio, input).
 */
 
-#ifndef PLATFORM_BACKEND_H
-#define PLATFORM_BACKEND_H
+#pragma once
 
 #include <cstdint>
 
@@ -100,5 +99,3 @@ public:
 	virtual char *getPrefDir(const char *org, const char *app) = 0;
 	virtual void freePath(void *path) = 0;
 };
-
-#endif /* PLATFORM_BACKEND_H */

@@ -1,5 +1,4 @@
-#ifndef TICK_TIMER_H
-#define TICK_TIMER_H
+#pragma once
 
 #include <cstdint>
 
@@ -13,4 +12,4 @@ void StartUpTimeAdjust();
 bool InitLocationDat();
 uint32_t GetTimerDelay();
 
-#endif /* TICK_TIMER_H */
+
