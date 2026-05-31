@@ -46,8 +46,8 @@ These guidelines apply to all code under `src/` **except**:
 | Directory | Reason |
 |-----------|--------|
 | `src/cpu/` | 68K interpreter inherited from minivmac.  Instruction handlers are necessarily repetitive and table-driven; restructuring them would risk correctness for no practical gain. |
-| `src/macsrc/` | Classic Macintosh source built with vintage toolchains. |
-| Third-party code | SoftFloat, Bochs FPU fragments, ImGui — keep upstream style. |
+| `macsrc/` | Classic Macintosh source built with vintage toolchains. |
+| Third-party code | SoftFloat, Bochs FPU fragments, ImGui, stb, doctest — keep upstream style. |
 
 When editing files in excepted directories, match the surrounding style.
 
@@ -65,10 +65,10 @@ Thirty lines is enough for a function that does one thing well:
 validate inputs, apply state, and return a result.  If a function
 needs more, that is usually a sign it mixes concerns and should be
 split.  The well-structured parts of the codebase (WireBus,
-EmulatorShell, serial backends) already hit this target naturally.
+IctScheduler) already hit this target naturally.
 
 Long functions are the single biggest readability problem in the
-legacy code.  `extnVideoAccess()` in video.cpp runs to ~640 lines;
+legacy code.  `extnVideoAccess()` in video.cpp runs to ~520 lines;
 several device `access()` methods are similarly large.  These exist
 because minivmac packed entire trap dispatchers into one function.
 New code must not repeat this pattern.
@@ -123,7 +123,9 @@ returns an error code — typically 15–30 lines.
 Organise a `.cpp` file in this order:
 
 1. File header comment (brief — what the module emulates / does)
-2. `#include` directives (own header first, then project, then system)
+2. `#include` directives (own header first, then project, then system).
+   Note: `.clang-format` sets `SortIncludes: Never` — this order is not
+   enforced automatically; maintain it by hand.
 3. Local constants and types (`static`, anonymous namespace)
 4. Local helper functions (`static`)
 5. Class method implementations (grouped logically, not alphabetically)
@@ -243,6 +245,29 @@ See [NAMING.md](NAMING.md) for the `g_` prefix rule.  Beyond naming:
 
 ---
 
+## Namespaces
+
+Named namespaces group a module's public API when it would otherwise
+pollute the global namespace.
+
+| Use case | Convention | Example |
+|----------|-----------|---------|
+| Module / subsystem | `snake_case`, matching the directory or concept | `namespace storage`, `namespace guest`, `namespace appledouble` |
+| Implementation detail (within a `.cpp` or `_internal.h`) | `detail` | `namespace appledouble::detail` |
+| Anonymous (file-local linkage) | `namespace { ... }` | prefer over `static` for non-member helpers |
+
+Rules:
+
+- **Do not create** a top-level namespace for a new single-file module.
+  A class or a group of helpers in an anonymous namespace is enough.
+- **Do not** `using namespace` at file scope in headers.
+- `namespace fs = std::filesystem;` is the standard alias and is fine
+  at the top of a `.cpp` file.
+- The legacy `AbnormalID` PascalCase namespace is grandfathered; new
+  namespaces use `snake_case`.
+
+---
+
 ## Formatting
 
 A `.clang-format` file in the project root encodes the mechanical
@@ -250,7 +275,7 @@ rules (indentation, braces, line length).  Run `clang-format` on
 all new and modified files.
 
 Legacy files should be reformatted too — the original minivmac
-source is preserved in `reference/src/` for behavioural comparison,
+source is preserved on the `reference` git branch for behavioural comparison,
 so there is no need to keep legacy formatting in `src/`.  When
 reformatting a file, make it a **separate commit** from logic changes
 so that the two are easy to distinguish in the history.

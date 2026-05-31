@@ -2,7 +2,6 @@
 	abnormal_ids.h
 
 	Central registry of REPORT_ABNORMAL_ID codes.
-	Auto-generated — do not edit by hand.
 */
 
 #pragma once
