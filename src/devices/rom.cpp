@@ -371,10 +371,6 @@ static void Sony_Install()
 }
 
 
-#ifdef CurAltHappyMac
-#include "devices/hpmac_hack.h"
-#endif
-
 /*
 	Patch the g_rom image: disable checksum/g_ram test, install
 	the Sony replacement driver, apply Happy Mac hack,
@@ -437,10 +433,6 @@ bool ROMDevice::init()
 			do_put_mem_word(0x1AA + g_rom, 0x6002);
 		}
 	}
-
-#ifdef CurAltHappyMac
-	PatchHappyMac();
-#endif
 
 	/* do_put_mem_word(862 + ROM, 0x4E71); */ /* shorten set memory */
 

@@ -13,10 +13,6 @@
 
 /* Global singleton */
 
-#ifdef _VIA_Debug
-#include <stdio.h>
-#endif
-
 /*
 	REPORT_ABNORMAL_ID unused 0x0C06 - 0x0CFF
 */
@@ -30,9 +26,6 @@ static uint8_t ADB_IndexDatBuf;
 void ADBDevice::doNewState()
 {
 	uint8_t state = ADB_st1 * 2 + ADB_st0;
-#ifdef _VIA_Debug
-	fprintf(stderr, "ADB_DoNewState: %d\n", state);
-#endif
 	{
 		g_wires.set(Wire_VIA1_iB3_ADB_Int, 1);
 		switch (state)
@@ -48,9 +41,7 @@ void ADBDevice::doNewState()
 				ADB_IndexDatBuf = 0;
 				s_adbCurCmd = rig_->findDevice<VIA1Device>()->shiftOutData();
 				/* which sets interrupt, acknowleding command */
-#ifdef _VIA_Debug
-				fprintf(stderr, "in: %d\n", s_adbCurCmd);
-#endif
+
 				switch ((s_adbCurCmd >> 2) & 3)
 				{
 					case 0: /* reserved */
@@ -75,9 +66,7 @@ void ADBDevice::doNewState()
 						break;
 					case 2: /* listen */
 						s_adbListenDatBuf = true;
-#ifdef _VIA_Debug
-						fprintf(stderr, "*** listening\n");
-#endif
+
 						break;
 					case 3: /* talk */
 						ADB_DoTalk();
@@ -102,9 +91,6 @@ void ADBDevice::doNewState()
 					}
 					else
 					{
-#ifdef _VIA_Debug
-						fprintf(stderr, "*** talk one\n");
-#endif
 						rig_->findDevice<VIA1Device>()->shiftInData(s_adbDatBuf[ADB_IndexDatBuf]);
 						g_wires.set(Wire_VIA1_iCB2_ADB_Data, 1);
 						ADB_IndexDatBuf += 1;
@@ -121,9 +107,6 @@ void ADBDevice::doNewState()
 					}
 					else
 					{
-#ifdef _VIA_Debug
-						fprintf(stderr, "*** listen one\n");
-#endif
 						s_adbDatBuf[ADB_IndexDatBuf] =
 							rig_->findDevice<VIA1Device>()->shiftOutData();
 						ADB_IndexDatBuf += 1;
@@ -163,9 +146,6 @@ void ADBDevice::doNewState()
 
 void ADBDevice::stateChangeNtfy()
 {
-#ifdef _VIA_Debug
-	fprintf(stderr, "ADBstate_ChangeNtfy: %d, %d, %d\n", ADB_st1, ADB_st0, g_ict.getCurrent());
-#endif
 	g_ict.add(kICT_ADB_NewState, 348160UL * kCycleScale / 64 * rig_->config().clockMult);
 	/*
 		Macintosh Family Hardware Reference say device "must respond
@@ -183,9 +163,6 @@ void ADBDevice::stateChangeNtfy()
 
 void ADBDevice::dataLineChngNtfy()
 {
-#ifdef _VIA_Debug
-	fprintf(stderr, "ADB_DataLineChngNtfy: %d\n", ADB_Data);
-#endif
 }
 
 void ADBDevice::update()

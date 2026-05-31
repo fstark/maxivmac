@@ -156,9 +156,6 @@ static int s_ticksSinceSecond = 0;
 */
 static void SixtiethSecondNotify()
 {
-#if 0
-	dbglog_WriteNote("begin new Sixtieth");
-#endif
 	if (++s_ticksSinceSecond >= 60)
 	{
 		s_ticksSinceSecond = 0;
@@ -198,9 +195,6 @@ static void SixtiethEndNotify()
 		CheckScreenBreakpoints();
 		CheckScriptTimeouts();
 	}
-#if 0
-	dbglog_WriteNote("end Sixtieth");
-#endif
 }
 
 static void ExtraTimeBeginNotify()
@@ -371,16 +365,6 @@ static void m68k_go_nCycles_1(uint32_t n)
 	{
 		g_ict.doCurrentTasks();
 		n2 = g_ict.doGetNext(n);
-#if 0
-		dbglog_StartLine();
-		dbglog_writeCStr("before m68k_go_nCycles, nextCount:");
-		dbglog_writeHex(g_ict.nextCount);
-		dbglog_writeCStr(", n2:");
-		dbglog_writeHex(n2);
-		dbglog_writeCStr(", n:");
-		dbglog_writeHex(n);
-		dbglog_writeReturn();
-#endif
 		g_ict.nextCount += n2;
 		g_cpu.go_nCycles(n2);
 		n = static_cast<uint32_t>(StopiCount - g_ict.nextCount);

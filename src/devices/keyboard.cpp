@@ -15,12 +15,7 @@
 #include "core/wire_ids.h"
 #include "core/rig.h"
 
-/* Global singleton */
-
-#ifdef _VIA_Debug
-#include <stdio.h>
 #include "core/abnormal_ids.h"
-#endif
 
 /*
 	REPORT_ABNORMAL_ID unused 0x0B03 - 0x0BFF
@@ -157,14 +152,8 @@ void KeyboardDevice::receiveEndCommand()
 	else
 	{
 		kybdState_ = kKybdStateIdle;
-#ifdef _VIA_Debug
-		fprintf(stderr, "enter DoKybd_ReceiveEndCommand\n");
-#endif
 		if (haveKeyBoardResult_)
 		{
-#ifdef _VIA_Debug
-			fprintf(stderr, "HaveKeyBoardResult: %d\n", keyBoardResult_);
-#endif
 			haveKeyBoardResult_ = false;
 			via1()->shiftInData(keyBoardResult_);
 			g_wires.set(Wire_VIA1_iCB2, 1);
@@ -184,9 +173,6 @@ void KeyboardDevice::dataLineChngNtfy()
 			if (g_wires.get(Wire_VIA1_iCB2) == 0)
 			{
 				kybdState_ = kKybdStateRecievingCommand;
-#ifdef _VIA_Debug
-				fprintf(stderr, "posting kICT_Kybd_ReceiveCommand\n");
-#endif
 				g_ict.add(kICT_Kybd_ReceiveCommand,
 						  6800UL * kCycleScale / 64 * rig_->config().clockMult);
 
@@ -200,9 +186,6 @@ void KeyboardDevice::dataLineChngNtfy()
 			if (g_wires.get(Wire_VIA1_iCB2) == 1)
 			{
 				kybdState_ = kKybdStateRecievingEndCommand;
-#ifdef _VIA_Debug
-				fprintf(stderr, "posting kICT_Kybd_ReceiveEndCommand\n");
-#endif
 				g_ict.add(kICT_Kybd_ReceiveEndCommand,
 						  6800UL * kCycleScale / 64 * rig_->config().clockMult);
 			}

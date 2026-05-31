@@ -9,10 +9,6 @@
 
 #include "core/ict_scheduler.h"
 
-#ifdef _VIA_Debug
-#include <cstdio>
-#endif
-
 void ICTScheduler::zap()
 {
 	active = 0;
@@ -41,9 +37,6 @@ void ICTScheduler::add(int taskId, uint32_t n)
 	int32_t x = getCyclesRemaining_();
 	ScaledCycleCount whenVal = nextCount - x + n;
 
-#ifdef _VIA_Debug
-	fprintf(stderr, "ICT_add: %d, %d, %d\n", whenVal, taskId, n);
-#endif
 	when[taskId] = whenVal;
 	active |= (1 << taskId);
 
@@ -72,9 +65,6 @@ void ICTScheduler::doCurrentTasks()
 			else if (when[i] == nextCount)
 			{
 				active &= ~(1 << i);
-#ifdef _VIA_Debug
-				fprintf(stderr, "doing task %d, %d\n", nextCount, i);
-#endif
 				if (handlers_[i])
 				{
 					handlers_[i]();
@@ -107,9 +97,6 @@ int32_t ICTScheduler::doGetNext(uint32_t maxn) const
 				/* at this point d must be > 0 */
 				if (d < v)
 				{
-#ifdef _VIA_Debug
-					fprintf(stderr, "coming task %d, %d, %d\n", nextCount, i, d);
-#endif
 					v = d;
 				}
 			}
