@@ -26,6 +26,7 @@ coverage.html
 *.profraw
 *.profdata
 753.hfs
+608-2.hfs
 macdocs/ref/mac-rom
 shared/
 shared2/
