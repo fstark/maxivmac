@@ -98,6 +98,7 @@ set(MINIVMAC_SOURCES
     src/debugger/expr.cpp
     src/debugger/script_suspend.cpp
     src/debugger/bp_text.cpp
+    src/debugger/bp_power.cpp
     src/debugger/bp_screen.cpp
     src/debugger/cmd_script.cpp
     src/debugger/script_keymap.cpp

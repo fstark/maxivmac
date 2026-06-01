@@ -11,6 +11,7 @@
 #include "core/common.h"
 #include "core/state_recorder.hpp"
 #include "core/abnormal_ids.h"
+#include "debugger/bp_power.h"
 #include "platform/common/event_queue.h"
 #include "platform/host_pasteboard.h"
 
@@ -1993,7 +1994,6 @@ void MemoryReset()
 /* PowerOff_ChangeNtfy: only wired on Mac II/IIx (see AddrSpac_Init) */
 extern void PowerOff_ChangeNtfy();
 extern bool g_debuggerActive;
-void CheckPowerOffBreakpoints(); // defined in debugger/bp_screen.cpp
 
 void PowerOff_ChangeNtfy()
 {
