@@ -290,6 +290,28 @@ Key choices captured in `.clang-format`:
 
 ---
 
+## Patterns To Avoid
+
+Do not introduce these patterns in new code:
+
+- **`std::filesystem::path::c_str()` passed to narrow C APIs**
+  On Windows, `path::c_str()` is `const wchar_t *`. This breaks `%s`
+  formatting and C libraries that expect `const char *`.
+  Use `path_str(path).c_str()` (from `platform/common/path_utils.h`) or
+  another explicit UTF-8/narrow conversion at the boundary.
+
+- **`__attribute__((format(printf, ...)))` on project logging wrappers**
+  For wrappers that use C `printf`-style formats across MinGW targets,
+  use `gnu_printf` format checking so `%zu` and other standard length
+  modifiers are validated correctly.
+
+- **Partially initialized breakpoint/watchpoint structs**
+  Struct fields used in move/copy paths must be default-initialized.
+  Prefer in-struct member initializers and value-initialized locals to
+  avoid `maybe-uninitialized` diagnostics.
+
+---
+
 ## Pragmatism
 
 These are guidelines, not laws.  Some situations where deviation is

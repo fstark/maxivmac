@@ -14,6 +14,7 @@
 #include "cpu/trap_counter.h"
 #include "cpu/disasm.h"
 #include "core/machine.h"
+#include "platform/common/path_utils.h"
 #include "platform/platform.h"
 #include "storage/host_volume.h"
 #include "storage/drive_manager.h"
@@ -1382,13 +1383,14 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 
 int ExtFSMountDrive(const std::filesystem::path &hostDir)
 {
-	DIAG(ExtFS, "ExtFSMountDrive: path=\"%s\" exists=%d is_dir=%d\n", hostDir.c_str(),
+	auto hostPath = path_str(hostDir);
+	DIAG(ExtFS, "ExtFSMountDrive: path=\"%s\" exists=%d is_dir=%d\n", hostPath.c_str(),
 		 std::filesystem::exists(hostDir) ? 1 : 0, std::filesystem::is_directory(hostDir) ? 1 : 0);
 	int slot = s_drives.mount(hostDir);
 	if (slot < 0)
 		fprintf(stderr,
 				"Error: failed to mount shared drive \"%s\" (not found or not a directory)\n",
-				hostDir.c_str());
+				hostPath.c_str());
 	else
 		DIAG(ExtFS, "ExtFSMountDrive: OK slot=%d mountedCount=%d\n", slot, s_drives.mountedCount());
 	return slot;

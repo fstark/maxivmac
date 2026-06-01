@@ -2,6 +2,7 @@
 #include "icon_decode.h"
 #include "icns_decode.h"
 #include "png_text.h"
+#include "platform/common/path_utils.h"
 #include "storage/appledouble.h"
 #include "storage/appledouble_internal.h"
 
@@ -157,7 +158,7 @@ int main(int argc, char *argv[])
         auto bytes = ReadFile(inputPath);
         if (bytes.empty()) {
             std::fprintf(stderr, "Error: cannot read '%s'\n",
-                         inputPath.c_str());
+                         path_str(inputPath).c_str());
             continue;
         }
 
@@ -175,7 +176,7 @@ int main(int argc, char *argv[])
             if (icon.width == 0 && icon.rgba.empty()) {
                 if (verbose)
                     std::fprintf(stderr, "Warning: no usable icon in '%s'\n",
-                                 inputPath.c_str());
+                                 path_str(inputPath).c_str());
                 continue;
             }
 
@@ -188,10 +189,10 @@ int main(int argc, char *argv[])
 
             if (!WriteIcon(icon, outFile, basename, fullPath)) {
                 std::fprintf(stderr, "Error: failed to write '%s'\n",
-                             outFile.c_str());
+                             path_str(outFile).c_str());
                 continue;
             }
-            if (verbose) std::printf("  %s\n", outFile.c_str());
+            if (verbose) std::printf("  %s\n", path_str(outFile).c_str());
             ++totalExtracted;
             continue;
         }
@@ -212,7 +213,7 @@ int main(int argc, char *argv[])
 
         if (fork.empty()) {
             std::fprintf(stderr, "Warning: no resource fork in '%s'\n",
-                         inputPath.c_str());
+                         path_str(inputPath).c_str());
             continue;
         }
 
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
                 }
 
                 if (WriteIcon(icon, outFile, basename, fullPath)) {
-                    if (verbose) std::printf("  %s\n", outFile.c_str());
+                    if (verbose) std::printf("  %s\n", path_str(outFile).c_str());
                     ++totalExtracted;
                 }
                 continue;
@@ -294,12 +295,12 @@ int main(int argc, char *argv[])
             if (!png::WritePngWithText(outFile, 32, 32,
                                        icon.pixels, textChunks)) {
                 std::fprintf(stderr, "Error: failed to write '%s'\n",
-                             outFile.c_str());
+                             path_str(outFile).c_str());
                 continue;
             }
 
             if (verbose)
-                std::printf("  %s\n", outFile.c_str());
+                std::printf("  %s\n", path_str(outFile).c_str());
             ++totalExtracted;
         }
     }

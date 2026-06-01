@@ -10,6 +10,14 @@
 #include <string_view>
 #include <vector>
 
+#ifndef MAXIVMAC_PRINTF_FORMAT_STYLE
+#if defined(__MINGW32__)
+#define MAXIVMAC_PRINTF_FORMAT_STYLE gnu_printf
+#else
+#define MAXIVMAC_PRINTF_FORMAT_STYLE printf
+#endif
+#endif
+
 #include "debugger/bp_screen.h"
 
 /* InstructionCount = uint64_t; canonical definition in core/machine.h */
@@ -60,7 +68,7 @@ public:
 	// Breakpoint/watchpoint management (used by cmd_break.cpp)
 	struct Breakpoint
 	{
-		uint32_t id;
+		uint32_t id = 0;
 		bool enabled = true;
 		bool temporary = false;	  // deleted after first hit (tbreak, wait)
 		bool scriptOwned = false; // created by `wait` — auto-resumes script
@@ -93,14 +101,14 @@ public:
 
 	struct Watchpoint
 	{
-		uint32_t id;
-		bool enabled;
-		uint32_t address;
-		uint32_t length;
-		char mode; // 'W', 'R', 'A'
-		bool hasValCond;
-		uint8_t valCondOp; // 0=eq,1=ne,2=lt,3=gt,4=le,5=ge,6=and
-		uint32_t valCondValue;
+		uint32_t id = 0;
+		bool enabled = false;
+		uint32_t address = 0;
+		uint32_t length = 0;
+		char mode = 'A'; // 'W', 'R', 'A'
+		bool hasValCond = false;
+		uint8_t valCondOp = 0; // 0=eq,1=ne,2=lt,3=gt,4=le,5=ge,6=and
+		uint32_t valCondValue = 0;
 	};
 
 	uint32_t addBreakpoint(uint32_t addr, uint16_t trapWord, const std::string &condition);
@@ -158,7 +166,8 @@ extern bool g_watchpointActive;
 
 /* Printf that routes to the debugger log file when active,
    otherwise falls through to stdout. */
-void dbg_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+void dbg_printf(const char *fmt, ...)
+	__attribute__((format(MAXIVMAC_PRINTF_FORMAT_STYLE, 1, 2)));
 
 // Load and execute every line of a .dbg script file.
 bool SourceFile(Debugger &dbg, std::string_view path);

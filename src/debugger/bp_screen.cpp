@@ -3,6 +3,7 @@
 #include "debugger/debugger.h"
 #include "debugger/dbg_io.h"
 #include "platform/emulator_shell.h"
+#include "platform/common/path_utils.h"
 #include "platform/platform.h"
 
 #include "stb_image.h"
@@ -11,7 +12,8 @@
 bool ScreenMatcher::loadReference(const std::filesystem::path &png)
 {
 	int w, h, channels;
-	unsigned char *data = stbi_load(png.c_str(), &w, &h, &channels, 4);
+	auto pngPath = path_str(png);
+	unsigned char *data = stbi_load(pngPath.c_str(), &w, &h, &channels, 4);
 	if (!data) return false;
 
 	refWidth = w;
@@ -126,7 +128,8 @@ bool SaveScreenshot(const std::filesystem::path &path)
 		rgba[i * 4 + 3] = 0xFF;					// A
 	}
 
-	return stbi_write_png(path.c_str(), width, height, 4, rgba.data(), width * 4) != 0;
+	auto pngPath = path_str(path);
+	return stbi_write_png(pngPath.c_str(), width, height, 4, rgba.data(), width * 4) != 0;
 }
 
 void CheckPowerOffBreakpoints()

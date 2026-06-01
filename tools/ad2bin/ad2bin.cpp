@@ -7,6 +7,7 @@
 */
 
 #include "storage/appledouble.h"
+#include "platform/common/path_utils.h"
 
 #include <array>
 #include <cstdint>
@@ -70,7 +71,7 @@ int main(int argc, char *argv[])
 	auto sidecar = appledouble::SidecarPathFor(hostPath);
 	if (!fs::exists(sidecar))
 	{
-		std::fprintf(stderr, "ad2bin: no sidecar found at %s\n", sidecar.c_str());
+		std::fprintf(stderr, "ad2bin: no sidecar found at %s\n", path_str(sidecar).c_str());
 		return 1;
 	}
 
@@ -145,7 +146,7 @@ int main(int argc, char *argv[])
 	std::ofstream out(outPath, std::ios::binary);
 	if (!out)
 	{
-		std::fprintf(stderr, "ad2bin: cannot create %s\n", outPath.c_str());
+		std::fprintf(stderr, "ad2bin: cannot create %s\n", path_str(outPath).c_str());
 		return 1;
 	}
 
@@ -192,8 +193,9 @@ int main(int argc, char *argv[])
 		return std::string(buf);
 	};
 
-	std::printf("%s → %s (type='%s' creator='%s' data=%zu rsrc=%zu)\n", hostPath.c_str(),
-				outPath.c_str(), typeFCC(fi.type).c_str(), typeFCC(fi.creator).c_str(),
+	std::printf("%s → %s (type='%s' creator='%s' data=%zu rsrc=%zu)\n",
+				path_str(hostPath).c_str(), path_str(outPath).c_str(), typeFCC(fi.type).c_str(),
+				typeFCC(fi.creator).c_str(),
 				dataFork.size(), rsrcData.size());
 	return 0;
 }

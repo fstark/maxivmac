@@ -1,4 +1,5 @@
 #include "icon_builder.h"
+#include "platform/common/path_utils.h"
 #include "stb_image.h"
 #include <array>
 #include <cstring>
@@ -334,7 +335,8 @@ std::vector<uint8_t> BuildIconResourceFork(const std::filesystem::path &bwPath,
 	uint8_t *bwPixels = stbi_load(bwPath.string().c_str(), &bwW, &bwH, &bwComp, 4);
 	if (!bwPixels || bwW != 32 || bwH != 32)
 	{
-		printf("[VIcon] failed to load BW: %s (%dx%d, ptr=%p)\n", bwPath.c_str(), bwW, bwH,
+		printf("[VIcon] failed to load BW: %s (%dx%d, ptr=%p)\n", path_str(bwPath).c_str(), bwW,
+			   bwH,
 			   (void *)bwPixels);
 		if (bwPixels) stbi_image_free(bwPixels);
 		return {};
@@ -344,7 +346,8 @@ std::vector<uint8_t> BuildIconResourceFork(const std::filesystem::path &bwPath,
 	uint8_t *colPixels = stbi_load(colorPath.string().c_str(), &colW, &colH, &colComp, 4);
 	if (!colPixels || colW != 32 || colH != 32)
 	{
-		printf("[VIcon] failed to load color: %s (%dx%d, ptr=%p)\n", colorPath.c_str(), colW, colH,
+		printf("[VIcon] failed to load color: %s (%dx%d, ptr=%p)\n",
+			   path_str(colorPath).c_str(), colW, colH,
 			   (void *)colPixels);
 		stbi_image_free(bwPixels);
 		if (colPixels) stbi_image_free(colPixels);

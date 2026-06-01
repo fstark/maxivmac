@@ -13,6 +13,14 @@
 #include <bitset>
 #include <cstdint>
 
+#ifndef MAXIVMAC_PRINTF_FORMAT_STYLE
+#if defined(__MINGW32__)
+#define MAXIVMAC_PRINTF_FORMAT_STYLE gnu_printf
+#else
+#define MAXIVMAC_PRINTF_FORMAT_STYLE printf
+#endif
+#endif
+
 /* Subsystem IDs — add new entries before kCount. */
 enum class DiagSubsystem : uint8_t
 {
@@ -47,7 +55,7 @@ private:
 DiagConfig &Diag();
 
 /* Formatted trace output (only when subsystem is enabled). */
-void DiagPrintf(DiagSubsystem s, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+void DiagPrintf(DiagSubsystem s, const char *fmt, ...) __attribute__((format(MAXIVMAC_PRINTF_FORMAT_STYLE, 2, 3)));
 
 /* Zero-cost when disabled: arguments are not evaluated. */
 #define DIAG(subsys, ...)                                                                          \

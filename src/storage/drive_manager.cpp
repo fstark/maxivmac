@@ -62,7 +62,7 @@ int DriveManager::mount(const std::filesystem::path &hostDir)
 				bw = "data/defaults/floppy-bw.png";
 				col = "data/defaults/floppy-color.png";
 			}
-			printf("[VIcon] loading: %s + %s\n", bw.c_str(), col.c_str());
+			printf("[VIcon] loading: %s + %s\n", path_str(bw).c_str(), path_str(col).c_str());
 			auto fork = BuildIconResourceFork(bw, col);
 			printf("[VIcon] resource fork: %zu bytes\n", fork.size());
 			if (!fork.empty())

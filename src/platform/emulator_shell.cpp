@@ -284,14 +284,14 @@ bool EmulatorShell::initMachine()
 	/* Mount shared drive directories — after ProgramMain() so --diag= is active */
 	DIAG(ExtFS, "initMachine: %zu shared dir(s) to mount\n", lc.sharedDirs.size());
 	for (size_t i = 0; i < lc.sharedDirs.size(); ++i)
-		DIAG(ExtFS, "  sharedDirs[%zu] = \"%s\"\n", i, lc.sharedDirs[i].c_str());
+		DIAG(ExtFS, "  sharedDirs[%zu] = \"%s\"\n", i, path_str(lc.sharedDirs[i]).c_str());
 	for (const auto &dp : lc.sharedDirs)
 	{
 		int slot = ExtFSMountDrive(dp);
 		if (slot < 0)
-			DIAG(ExtFS, "failed to mount drive: %s\n", dp.c_str());
+			DIAG(ExtFS, "failed to mount drive: %s\n", path_str(dp).c_str());
 		else
-			DIAG(ExtFS, "mounted drive slot %d: %s\n", slot, dp.c_str());
+			DIAG(ExtFS, "mounted drive slot %d: %s\n", slot, path_str(dp).c_str());
 	}
 
 	/* Allocate ARGB framebuffer for screen conversion.
