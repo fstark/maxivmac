@@ -19,9 +19,9 @@ the original 128K through the Mac II family — with a graphical launcher,
 transparent text and image clipboard sync, shared-drive file exchange, SLIP networking,
 and an integrated 68K debugger.
 
-It builds with standard CMake and C++. Clone the repo, run one command,
+It builds with standard CMake and C++. Just clone the repo, run one command,
 and you can be reading — or changing — the code within minutes. Full
-build time is around 5 seconds on modern hardware.
+build time is less than 10 seconds on modern hardware.
 
 **Supported platforms:** macOS (arm64 + x86_64) · Windows (x86_64 + arm64) · Linux
 
@@ -29,23 +29,15 @@ build time is around 5 seconds on modern hardware.
 
 ## Who is maxivmac for?
 
-You want to live in the machine? Boot fullscreen, load System 6, do a full Ultima III run.
-Toggle the CRT effect for that authentic Trinitron glow. Drag a folder onto the window and
+Do you want to relive the 80s? Just boot fullscreen and do a full Ultima III run under system 6. Toggle the CRT effect for an authentic Trinitron glow. Drag a folder onto the window and
 it mounts on the desktop — getting files onto the Mac never gets in your way.
 
 Or maybe you have maxivmac in a window next to your modern setup. Copy on the host, paste
-in the guest. Twelve Mac models wait in the launcher — how did the Plus compare to the SE?
-Drag your project folder onto the window, watch it mount on the desktop. Two decades of Mac
-history, one tab over.
+in the guest, text is converted, images to, with sensible defautls. Twelve Mac models wait in the launcher so you can understand how different the Plus and SE were.
 
-Writing software for Mac OS 6 or 7? Your modern workflow still applies. Edit in VSCode,
-share the folder, your code appears on the Mac ready to build — encoding handled. Script
-the emulator for automated builds. Watch decoded trap calls stream by as the program runs,
-set a breakpoint, catch that nasty Ptr leak. And if you are into that kind of thing, an AI
-assistant can help you debug — it knows the Toolbox surprisingly well.
+If like me, you're still writing software for Mac OS 6 or 7, this is designed for you. Your modern workflow can now apply to vintage macs. Edit in VSCode, share the folder, your code appears on the Mac ready to build — encoding handled. You can git add the AppleDouble files, everything, just work. You can script the emulator for automated builds or watch decoded trap calls stream by as the program runs, set breakpoints, and catch that nasty Ptr leak. And if you are into that kind of thing, an AI assistant can help you debug — it knows the Toolbox surprisingly well.
 
-Want to add a device, fix a bug, or extend the platform? The C++ codebase is written to be
-read and changed. Clone it, build in seconds, start hacking.
+Or emulators fascinates you and you want to add a device, fix a bug, or extend the platform? The C++ codebase is written to be read and changed. It is not perfect, far from it, but it is now possible to improve collectively. Clone it, build in seconds, start hacking.
 
 ---
 
@@ -53,7 +45,7 @@ read and changed. Clone it, build in seconds, start hacking.
 
 ### Visual launcher
 
-Pick your Mac from a card grid and boot with one click. No flags, no docs, no fuss.
+Look at models, hover for details, and click them to boot them. You can add models by creating a new ``.mac`` file, or completely skip that step via command line flags.
 
 <!-- ![Launcher](media/screenshot-launcher.png) -->
 > 📸 *Screenshot needed — see [media/MEDIA_NEEDED.md](media/MEDIA_NEEDED.md)*
