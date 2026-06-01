@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
         if (icl8s.empty()) {
             if (verbose)
                 std::fprintf(stderr, "Warning: no icons in '%s'\n",
-                             inputPath.c_str());
+                             path_str(inputPath).c_str());
             continue;
         }
 

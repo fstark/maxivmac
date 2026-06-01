@@ -14,7 +14,7 @@
 #include <cstdint>
 
 #ifndef MAXIVMAC_PRINTF_FORMAT_STYLE
-#if defined(__MINGW32__)
+#if defined(__MINGW32__) && defined(__GNUC__) && !defined(__clang__)
 #define MAXIVMAC_PRINTF_FORMAT_STYLE gnu_printf
 #else
 #define MAXIVMAC_PRINTF_FORMAT_STYLE printf

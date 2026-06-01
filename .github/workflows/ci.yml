@@ -6,8 +6,17 @@ on:
   pull_request:
     branches: [master]
 
+env:
+  # Override these via GitHub repository/environment Variables (Settings -> Secrets and variables -> Actions).
+  # Set to 'false' to disable.
+  CI_ENABLED: ${{ vars.CI_ENABLED || 'true' }}
+  CI_LINUX_ENABLED: ${{ vars.CI_LINUX_ENABLED || 'true' }}
+  CI_MACOS_ENABLED: ${{ vars.CI_MACOS_ENABLED || 'true' }}
+  CI_WINDOWS_ENABLED: ${{ vars.CI_WINDOWS_ENABLED || 'true' }}
+
 jobs:
   build-linux:
+    if: env.CI_ENABLED == 'true' && env.CI_LINUX_ENABLED == 'true'
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
@@ -49,6 +58,7 @@ jobs:
       run: EMU=./bld/linux/maxivmac ./test/verify.sh
 
   build-macos:
+    if: env.CI_ENABLED == 'true' && env.CI_MACOS_ENABLED == 'true'
     runs-on: macos-latest
     steps:
     - name: Checkout
@@ -72,6 +82,7 @@ jobs:
       run: EMU=./bld/macos/maxivmac ./test/verify.sh
 
   build-windows:
+    if: env.CI_ENABLED == 'true' && env.CI_WINDOWS_ENABLED == 'true'
     strategy:
       matrix:
         include:
