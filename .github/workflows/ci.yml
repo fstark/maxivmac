@@ -16,7 +16,7 @@ env:
 
 jobs:
   build-linux:
-    if: env.CI_ENABLED == 'true' && env.CI_LINUX_ENABLED == 'true'
+    if: ${{ vars.CI_ENABLED != 'false' && vars.CI_LINUX_ENABLED != 'false' }}
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
@@ -58,7 +58,7 @@ jobs:
       run: EMU=./bld/linux/maxivmac ./test/verify.sh
 
   build-macos:
-    if: env.CI_ENABLED == 'true' && env.CI_MACOS_ENABLED == 'true'
+    if: ${{ vars.CI_ENABLED != 'false' && vars.CI_MACOS_ENABLED != 'false' }}
     runs-on: macos-latest
     steps:
     - name: Checkout
@@ -82,7 +82,7 @@ jobs:
       run: EMU=./bld/macos/maxivmac ./test/verify.sh
 
   build-windows:
-    if: env.CI_ENABLED == 'true' && env.CI_WINDOWS_ENABLED == 'true'
+    if: ${{ vars.CI_ENABLED != 'false' && vars.CI_WINDOWS_ENABLED != 'false' }}
     strategy:
       matrix:
         include:
