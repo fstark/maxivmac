@@ -160,7 +160,10 @@ out vec4      fragColor;
 uniform sampler2D uTex;
 uniform vec2      uTexSize;   /* emulator texture pixel dimensions */
 
-/* Barrel distortion — push UV outward from centre */
+/*
+    Barrel distortion — simulate convex CRT curvature by pushing UVs
+    outward from the centre using quadratic distance scaling.
+*/
 vec2 barrel(vec2 uv) {
     vec2  cc   = uv - 0.5;
     float dist = dot(cc, cc);
@@ -178,14 +181,21 @@ void main() {
 
     vec4 col = texture(uTex, uv);
 
-    /* Scanlines: dark gap between emulator pixel rows, bright at centre.
-       py=0/1 is the boundary between rows, py=0.5 is the pixel centre.  */
+    /*
+        Scanlines: modulate brightness per row using sine to create
+        dark gaps between rows (py≈0,1) and bright centres (py≈0.5).
+        Squaring the sine sharpens the falloff for a crisp gap effect.
+    */
     float py       = fract(uv.y * uTexSize.y);
     float scanline = sin(py * 3.14159265);
-    scanline       = scanline * scanline;   /* sharpen the falloff */
+    scanline       = scanline * scanline;
     col.rgb       *= mix(0.50, 1.0, scanline);
 
-    /* Vignette: darken towards the edges */
+    /*
+        Vignette: darken corners using a quartic falloff (uv * (1-uv))
+        raised to 0.35 for subtle edge darkening that mimics CRT
+        phosphor fall-off at the screen periphery.
+    */
     vec2  vig      = uv * (1.0 - uv);
     float vignette = clamp(pow(vig.x * vig.y * 18.0, 0.35), 0.0, 1.0);
     col.rgb *= vignette;
@@ -196,6 +206,10 @@ void main() {
 
 /* ── Helpers ─────────────────────────────────────────── */
 
+/*
+    Compile a GLSL shader of the given type from the source string.
+    Returns 0 and logs errors if compilation fails.
+*/
 static GLuint compileShader(GLenum type, const char *src)
 {
 	GLuint s = glCreateShader(type);
@@ -245,8 +259,7 @@ void CRTEffect::init()
 		return;
 	}
 
-	/* Fullscreen quad: two triangles covering NDC [-1,1]×[-1,1].
-	   UV (0,0) = OpenGL bottom-left = Mac top row (raster order).   */
+	/* Fullscreen quad: two triangles covering NDC [-1,1]×[-1,1]. */
 	static const float kQuad[] = {
 		/* x      y     u     v  */
 		-1.0f, -1.0f,  0.0f, 0.0f,
@@ -295,6 +308,10 @@ void CRTEffect::shutdown()
 	fboW_ = fboH_ = 0;
 }
 
+/*
+    Create or resize the off-screen FBO and texture used for CRT post-processing.
+    Recycles existing resources if dimensions match; otherwise destroys and recreates.
+*/
 void CRTEffect::ensureFBO(int w, int h)
 {
 	if (fboW_ == w && fboH_ == h) return;
@@ -329,7 +346,7 @@ GLuint CRTEffect::process(GLuint srcTex, int srcW, int srcH, int dstW, int dstH)
 	if (!program_) return srcTex;
 	ensureFBO(dstW, dstH);
 
-	/* Save GL state we touch */
+	/* Save GL state we touch: FBO, viewport, program, texture units, VAO. */
 	GLint prevFBO       = 0; glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &prevFBO);
 	GLint prevVP[4]     = {}; glGetIntegerv(GL_VIEWPORT, prevVP);
 	GLint prevProg      = 0; glGetIntegerv(GL_CURRENT_PROGRAM, &prevProg);
@@ -339,7 +356,7 @@ GLuint CRTEffect::process(GLuint srcTex, int srcW, int srcH, int dstW, int dstH)
 	glGetIntegerv(GL_TEXTURE_BINDING_2D, &prevTex0);
 	GLint prevVAO       = 0; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVAO);
 
-	/* Render through CRT shader into the FBO */
+	/* Render srcTex through CRT shader into the FBO. */
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboId_);
 	glViewport(0, 0, dstW, dstH);
 
@@ -354,7 +371,7 @@ GLuint CRTEffect::process(GLuint srcTex, int srcW, int srcH, int dstW, int dstH)
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray((GLuint)prevVAO);
 
-	/* Restore GL state */
+	/* Restore GL state. */
 	glBindTexture(GL_TEXTURE_2D, (GLuint)prevTex0);
 	glActiveTexture((GLenum)prevActiveTex);
 	glUseProgram((GLuint)prevProg);
