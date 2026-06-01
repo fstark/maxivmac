@@ -96,7 +96,6 @@ set(MINIVMAC_SOURCES
     src/debugger/cmd_drive.cpp
     src/debugger/symbols.cpp
     src/debugger/expr.cpp
-    src/debugger/script_suspend.cpp
     src/debugger/bp_text.cpp
     src/debugger/bp_power.cpp
     src/debugger/bp_screen.cpp
