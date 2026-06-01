@@ -160,10 +160,8 @@ Three coordinate spaces: host window → emulator viewport (scaled/offset) → g
 - No mouse events forwarded to the guest.
 - macOS Ctrl+Click → right-click transformation suppressed while overlay is visible.
 
-**Known issue (G1):** clicking overlay buttons while Ctrl is physically held (peek mode)
-is unreliable — macOS transforms Ctrl+Click to right-click before SDL receives it; the
-right-click is suppressed but the left-click may be lost.  Workaround: use tap (sticky)
-mode to interact with overlay buttons.
+Clicking overlay buttons while Ctrl is physically held (peek mode) works correctly —
+macOS Ctrl+Click is remapped to left-click before ImGui processes it.
 
 ### Backgrounded or Stopped
 
@@ -194,7 +192,6 @@ grabbed by macOS below the app level and cannot be forwarded — platform limita
 
 | ID | Area | Description |
 |----|------|-------------|
-| G1 | Overlay | Ctrl+Click unreliable in peek mode (macOS right-click transform).  Use sticky mode. |
 | B3 | Windowed | macOS green zoom button bypasses Pixel Perfect snap. |
 | — | Notifications | User-facing errors (disk insert failure, ROM read error) currently go to stderr only.  No in-app toast.  See [UI_FUTURE.md](UI_FUTURE.md). |
 | — | Activation key | Ctrl as overlay key conflicts with the guest Control key.  Configurable activation key is future work.  See [UI_FUTURE.md](UI_FUTURE.md). |

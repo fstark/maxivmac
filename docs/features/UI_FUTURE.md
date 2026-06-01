@@ -17,19 +17,6 @@ Perfect multiple on the current display only.
 
 ---
 
-## G1 — Ctrl+Click Blocked by macOS in Peek Mode
-
-When the overlay is open via hold (peek) mode, clicking a button requires Ctrl to remain
-held.  macOS converts Ctrl+Click to right-click at the OS level before SDL receives it.
-The right-click is suppressed, but the left-click may be lost.
-
-Workaround: use tap (sticky) mode instead.
-
-**Future**: investigate SDL3 event filtering or a Cocoa-level override to suppress the
-Ctrl+Click → right-click transformation while the overlay is visible.
-
----
-
 ## Configurable Overlay Activation Key
 
 The overlay activation key is hardcoded to Ctrl (left or right).  This conflicts with the

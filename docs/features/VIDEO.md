@@ -122,7 +122,25 @@ vMacScreenMonoByteWidth = Width / 8
 │  ImGuiBackend::uploadFramebuffer()     [imgui_backend.cpp]   │
 │    • applies textureFilter_ (GL_NEAREST or GL_LINEAR)        │
 │    • glTexSubImage2D(GL_BGRA, UNSIGNED_INT_8_8_8_8_REV, …)  │
-│    → GL texture → ImGui image → rendered via OpenGL          │
+│    → GL texture (emuTextureId_)                              │
+└──────────────────┬───────────────────────────────────────────┘
+                   │  if a RenderEffect is active
+                   ▼
+┌──────────────────────────────────────────────────────────────┐
+│  RenderEffect::process()               [e.g. crt_effect.cpp] │
+│    • renders emuTextureId_ through a GLSL shader into an FBO │
+│    • returns FBO colour texture (fboTexId_)                  │
+│                                                              │
+│  Example: CRTEffect — barrel distortion, scanline gaps,      │
+│  corner vignette.  Inactive by default; toggled via the      │
+│  CRT checkbox in the Ctrl overlay.                           │
+└──────────────────┬───────────────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────────────┐
+│  ImGui::Image(texId)                   [imgui_backend.cpp]   │
+│    • texId = fboTexId_ (effect active) or emuTextureId_      │
+│    → rendered via OpenGL                                     │
 │                                                              │
 │  HeadlessBackend: no upload, conversion still runs for       │
 │  dirty-tracking / regression tests                           │

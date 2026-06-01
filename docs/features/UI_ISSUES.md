@@ -17,14 +17,8 @@ before SDL reports it.
 
 ---
 
-**G1 — Ctrl+Click unreliable in peek (hold) mode**
+**G1 — Ctrl+Click in peek (hold) mode** *(fixed)*
 
-When the overlay is opened by holding Ctrl (peek mode), the user must keep Ctrl held while
-clicking buttons.  macOS converts Ctrl+Click to right-click at the OS level before SDL
-receives it.  The right-click is suppressed, but the left-click may not arrive, so buttons
-may not respond.
-
-Workaround: use tap (sticky) mode — tap and release Ctrl quickly, then click buttons
-freely.
-
-Tracked as a future improvement in [UI_FUTURE.md](UI_FUTURE.md).
+Resolved: the macOS Ctrl+Click → right-click remapping is now intercepted before ImGui
+processes the event; right-button events are remapped to left-button while the overlay is
+visible, so buttons respond correctly in both peek and sticky modes.

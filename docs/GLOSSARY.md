@@ -178,6 +178,23 @@ activation modes: hold (peek) and tap (sticky).
 
 Avoid: HUD, menu, toolbar
 
+### RenderEffect
+
+An optional post-process pass applied to the emulator framebuffer
+texture before display.  Implemented as a pure-virtual interface
+(`init` / `shutdown` / `process` / `surroundColor`).  The
+`ImGuiBackend` holds at most one active effect, injected via
+`setEffect()`.  The concrete implementation `CRTEffect` renders a
+full-screen FBO pass with barrel distortion, scanline gaps, and a
+corner vignette.
+
+Code: `RenderEffect` in `src/platform/render_effect.h`,
+      `CRTEffect` in `src/platform/crt_effect.h`
+
+See also: Overlay, Backend
+
+Avoid: shader, filter, post-process (as a noun)
+
 ### Scaling Mode
 
 Determines how the guest framebuffer maps to the host window.  Two

@@ -1,102 +1,273 @@
-# Maxi vMac
+# maxivmac
 
-## Maxi vMac is a fork of Mini vMac that fixes my major issues with it:
+> Just works. Finally hackable.
 
-* Get rid of the byzantine build system
-* Supports all models in a single binary
-* Stop support for non mainstream platforms
-* Single front-end for all platforms
-* Stop focus in performance, focus on correctness and ease of development
-* Cycle-precise non-regression test
+<!-- TODO: replace with actual logo once media/logo.png is created -->
+<!-- ![maxivmac logo](media/logo.png) -->
 
-## Future directions:
+<!-- TODO: add demo GIF/MP4 once media/demo-launcher.gif is created -->
+<!-- ![Launcher demo](media/demo-launcher.gif) -->
 
-The long-term direction of the project (apart from the idea of playing with AI to modernize complex software) is to give me a tool for automatic testing and easier development of [MacFlim](https://github.com/fstark/macflim)
+---
 
-The goals of maxivmac are different from minivmac, and focus on user experience.
+## What is maxivmac?
 
-There are end-user features, and developer features. Some features are targetted at making the emulator friendlier, and some features are targetted at making the emulated machine better.
+maxivmac is a 68K Macintosh emulator built on the foundation of
+[Mini vMac](https://www.gryphel.com/c/minivmac/) (by Paul C. Pratt).
+A single binary covering the full classic Mac lineup — from
+the original 128K through the Mac II family — with a graphical launcher,
+transparent text and image clipboard sync, shared-drive file exchange, SLIP networking,
+and an integrated 68K debugger.
 
-That makes 4 streams of work:
+It builds with standard CMake and C++. Clone the repo, run one command,
+and you can be reading — or changing — the code within minutes. Full
+build time is around 5 seconds on modern hardware.
 
-### Improve Emulator User Experience
+**Supported platforms:** macOS (arm64 + x86_64) · Windows (x86_64 + arm64) · Linux
 
-This is about making onboarding and running the emulator as smooth as possible. Those are targetted at "first time users". In general, I prefer a feature to be removed than to be complicated to find and/or use.
+---
 
-- Binary releases for OSX arm/x86 and Windows arm/x86 + source release for Linux
-- Bundle the utilities in a "rom disk"
-- Bundle some system disk images
-- Explore an imgui interface
-- Explore graphical choice of mac models and run-time configuration options
+## Who is maxivmac for?
 
-### Improve Emulator Developer Experience
+You want to live in the machine? Boot fullscreen, load System 6, do a full Ultima III run.
+Toggle the CRT effect for that authentic Trinitron glow. Drag a folder onto the window and
+it mounts on the desktop — getting files onto the Mac never gets in your way.
 
-This is about making easier for me (and others if they want) to work on the maxivmac codebase. If the codebase is not high quality, there is little chance of anything else happening. The codebase is currently a mixed bag.
+Or maybe you have maxivmac in a window next to your modern setup. Copy on the host, paste
+in the guest. Twelve Mac models wait in the launcher — how did the Plus compare to the SE?
+Drag your project folder onto the window, watch it mount on the desktop. Two decades of Mac
+history, one tab over.
 
-- Remove *all* the remaining #define
-- Rename the functions into something understandable
-- Split mega-functions if possible
-- Remove spurious code or obscure functions
-- Introduce github actions, workflow, non-reg tests
+Writing software for Mac OS 6 or 7? Your modern workflow still applies. Edit in VSCode,
+share the folder, your code appears on the Mac ready to build — encoding handled. Script
+the emulator for automated builds. Watch decoded trap calls stream by as the program runs,
+set a breakpoint, catch that nasty Ptr leak. And if you are into that kind of thing, an AI
+assistant can help you debug — it knows the Toolbox surprisingly well.
 
-### Improve MacOS User Experience
+Want to add a device, fix a bug, or extend the platform? The C++ codebase is written to be
+read and changed. Clone it, build in seconds, start hacking.
 
-This is about making the life of the user of the emulated MacOS better.
+---
 
-- Redo the mac<->minivmac communication layer
-- Implement working transparent cut-and-paste
-- Explore host slip
-- Explore host file mounting
+## Features
 
-### Improve MacOS Developer Experience
+### Visual launcher
 
-This is about making the life of someone that wants to use the emulator to create vintage mac software easier.
+Pick your Mac from a card grid and boot with one click. No flags, no docs, no fuss.
 
-- Automatic send of keystrokes and mouse movments
-- Debugger, trap watcher, etc
-- Mcp server
+<!-- ![Launcher](media/screenshot-launcher.png) -->
+> 📸 *Screenshot needed — see [media/MEDIA_NEEDED.md](media/MEDIA_NEEDED.md)*
 
+---
 
+### Transparent clipboard sync
 
-```
-Usage: maxivmac [options] [disk1.img] [disk2.img] ...
+Copy on the host, paste in the guest — and vice versa — with no manual
+steps.  Supports both **text** (UTF-8 ↔ Mac OS Roman with automatic
+line-ending translation) and **images** (PICT ↔ PNG with alpha compositing).
 
-Options:
-  --model=MODEL    Mac model (= ROM base name): MacPlus, MacSE, MacII, MacIIx,
-                   Classic, PB100, SEFDHD, Mac128K, Mac512Ke, MacPlusKanji,
-                   Twig43, Twiggy  (default: MacII)
-  --rom=PATH       Path to ROM file (auto-detected from model if omitted)
-  --romdir=DIR     Directory to search for ROM files
-  --ram=SIZE       RAM size: 1M, 2M, 4M, 8M (default: model-specific)
-  --screen=WxHxD   Screen size: 512x342x1, 640x480x8, etc.
-  --speed=N        Emulation speed: 1 (1x), 2, 4, 8, 0 (all-out)
-  --fullscreen     Start in fullscreen mode
-  --title=TEXT     Window title
-  --record=PATH    Record golden file for non-regression testing
-  --verify=PATH    Verify against golden file (exit 0=pass, 1=fail)
-  --trace=PATH     Write CPU+IO text trace to file
-  --trace-cpu=PATH Write CPU-only text trace to file
-  --snapshot-interval=N  Instructions between snapshots (default: 100000)
-  --max-instructions=N   Instruction budget (default: 20000000)
-  -h, --help       Show this help
+<!-- ![Clipboard demo](media/demo-clipboard.gif) -->
+> 🎬 *Demo needed — see [media/MEDIA_NEEDED.md](media/MEDIA_NEEDED.md)*
 
-ROM auto-detection searches: ./<MODEL>.ROM, <romdir>/<MODEL>.ROM, roms/<MODEL>.ROM
+---
 
-Examples:
-  maxivmac --model=MacII system7.img
-  maxivmac --model=MacPlus disk.img
+### Shared drive
+
+Drag any host folder onto the emulator window and it instantly mounts as
+a read-write HFS volume on the Mac desktop — no disk image required.  Mount
+up to six drives simultaneously.  Unmount by dragging to the Trash. Add one by dragging a folder from the host onto the emulated mac.
+
+```sh
+maxivmac --shared ~/Documents --shared /tmp disk.img
 ```
 
-# ORIGINAL Mini vMac READ ME. MAY OR MAY NOT APPLY TO THE CONTENT OF THE REPO
+<!-- ![Shared drive demo](media/demo-shared-drive.gif) -->
+> 🎬 *Demo needed — see [media/MEDIA_NEEDED.md](media/MEDIA_NEEDED.md)*
 
-Mini vMac is a miniature Macintosh 68K emulator.  
-The original version of this software was written by Paul C. Pratt.
+---
 
-## Building Mini vMac
+### Dynamic Mac II video
 
-Use one of the build scripts in the top level of this repository as a starting point, editing the arguments to the setup tool as needed to customize the model and features of the Macintosh being emulated, and to specify the platform on which it is intended to run.
+The Mac II supports resolutions up to 640×480 at depths from 1-bit
+monochrome up to 32-bit true color, switchable live from the Monitors
+control panel.  The host window resizes automatically.
 
-By default, Mini vMac emulates a Macintosh Plus with a 512x342 monochrome display. Other 68K-based Mac models can be emulated by specifying a different model with the `-m` option. See the [Building Mini vMac page](https://minivmac.github.io/gryphel-mirror/c/minivmac/build.html) for details.
+<!-- ![Mac II resolution demo](media/demo-macii-resolution.gif) -->
+> 🎬 *Demo needed — see [media/MEDIA_NEEDED.md](media/MEDIA_NEEDED.md)*
+
+---
+
+### SLIP networking
+
+Connect the emulated Mac to the host's internet over a virtual serial port
+using MacTCP 2.0.6 and built-in SLIP.  Runs Netscape 2.0, FTP, Telnet, and
+anything else that speaks MacTCP — on System 6.0.8 and a Mac Plus.
+
+```sh
+maxivmac --serial-a=slip --slip-redir=tcp:8080:10.0.2.15:80 disk.img
+```
+
+<!-- ![SLIP demo](media/demo-slip.gif) -->
+> 🎬 *Demo needed — see [media/MEDIA_NEEDED.md](media/MEDIA_NEEDED.md)*
+
+---
+
+### CRT post-process effect
+
+Toggle a GLSL shader that adds scanline gaps, barrel (pincushion)
+distortion, and a corner vignette — the closest a flat panel gets to a
+vintage Trinitron.  Press **Ctrl** to open the overlay, then hit the CRT
+button.
+
+<!-- ![CRT effect](media/demo-crt.gif) -->
+> 🎬 *Demo needed — see [media/MEDIA_NEEDED.md](media/MEDIA_NEEDED.md)*
+
+---
+
+### Built-in 68K debugger
+
+Set breakpoints on addresses or Toolbox trap numbers, step through 68K
+instructions, inspect memory and registers, watch trap calls with decoded
+arguments, and explore Low Memory globals — all from a `(dbg)` prompt or
+via `.dbg` script files.
+
+```sh
+maxivmac --debugger --dbg-script=my_script.dbg disk.img
+```
+
+<!-- ![Debugger](media/screenshot-debugger.png) -->
+> 📸 *Screenshot needed — see [media/MEDIA_NEEDED.md](media/MEDIA_NEEDED.md)*
+
+---
+
+### Scriptable builds
+
+maxivmac can be scripted end-to-end — boot a Mac, compile your project, grab the output,
+shut down. No human in the loop. The same pipeline that builds the maxivmac INIT runs
+unattended in CI.
+
+```sh
+maxivmac --dbg-script=build.dbg --verify=expected.golden disk.img
+```
+
+<!-- ![Scripted build demo](media/demo-scripted-build.gif) -->
+> 🎬 *Demo needed — see [media/MEDIA_NEEDED.md](media/MEDIA_NEEDED.md)*
+
+---
+
+## Getting Started
+
+### macOS — Homebrew *(coming soon)*
+
+```sh
+brew install fstark/tap/maxivmac
+```
+
+### Windows — ZIP download *(coming soon)*
+
+Download the latest ZIP from the
+[Releases](https://github.com/fstark/maxivmac/releases) page, extract, and
+run `maxivmac.exe`.
+
+### Linux — build from source
+
+```sh
+git clone https://github.com/fstark/maxivmac.git
+cd maxivmac
+cmake --preset linux
+cmake --build --preset linux
+```
+
+The binary will be at `bld/linux/maxivmac`.  See [docs/BUILDING.md](docs/BUILDING.md)
+for full build instructions.
+
+---
+
+## Quick Start
+
+Launch the graphical launcher (no arguments):
+
+```sh
+maxivmac
+```
+
+Boot a specific machine directly:
+
+```sh
+# Mac Plus with System 6.0.8
+maxivmac MacPlus+System6.mac
+
+# Mac II from the command line
+maxivmac --model=MacII --rom=MacII.ROM system7.img
+
+# Share a host directory
+maxivmac --model=MacPlus --shared ~/Desktop/shared MacPlus.mac
+```
+
+---
+
+## CLI Reference
+
+| Flag | Description |
+|------|-------------|
+| `--model=MODEL` | `MacPlus` `MacSE` `MacII` `MacIIx` `Classic` `PB100` `Mac128K` `Mac512Ke` … (default: `MacII`) |
+| `--rom=PATH` | ROM file (auto-detected from model name if omitted) |
+| `--romdir=DIR` | Additional directory to search for ROMs |
+| `--ram=SIZE` | `1M` `2M` `4M` `8M` (default: model-specific) |
+| `--screen=WxHxD` | e.g. `512x342x1`, `640x480x8` |
+| `--speed=N` | `0`=1× `1`=2× `2`=4× `3`=8× `4`=16× `5`=32× |
+| `--fullscreen` | Start in fullscreen mode |
+| `--shared=PATH` | Mount host directory as HFS volume (repeatable) |
+| `--serial-a=MODE` | Modem port: `loopback` `slip` `pty` `file:tx=…` |
+| `--slip-redir=SPEC` | Port forward: `tcp:hostport:guestip:guestport` |
+| `--debugger` | Start paused at first instruction with `(dbg)` prompt |
+| `--dbg-script=FILE` | Load and execute a `.dbg` script at startup (repeatable) |
+| `--record=PATH` | Record a golden file for non-regression testing |
+| `--verify=PATH` | Verify against a golden file (exit 0 = pass) |
+| `-h` / `--help` | Full option list |
+
+---
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| **Ctrl** (tap) | Open control overlay (sticky — click buttons freely) |
+| **Ctrl** (hold) | Peek at overlay (dismisses on release) |
+| **Ctrl+F** | Toggle fullscreen |
+| **Ctrl+M** | Toggle scaling mode (Pixel Perfect ↔ Stretched) |
+| **Ctrl+Z** | Zoom to largest integer scale that fits the screen |
+| **Ctrl+S** | Save screenshot to clipboard |
+| **Escape** | Dismiss overlay |
+
+---
+
+## Building from Source
+
+```sh
+# macOS
+./build-macos.sh          # equivalent to cmake --preset macos && cmake --build --preset macos
+
+# Linux / Windows
+cmake --preset linux      # or: windows
+cmake --build --preset linux
+```
+
+See [docs/BUILDING.md](docs/BUILDING.md) for dependencies and advanced options.
+
+---
+
+## License & Credits
+
+maxivmac is released under the **GNU General Public License v2** (inherited
+from Mini vMac).
+
+- **Mini vMac** — original emulator core by [Paul C. Pratt](https://www.gryphel.com/)
+- **vMac** — the project Mini vMac grew from
+- **UAE** — 68K CPU emulator lineage
+- UI built with [Dear ImGui](https://github.com/ocornut/imgui) and
+  [SDL3](https://libsdl.org/)
+
 
 ### Building the Kanji (Japanese Mac Plus) variant
 The [recently discovered](https://web.archive.org/web/20250518175439/https://www.journaldulapin.com/2025/05/17/the-lost-japanese-rom-of-the-macintosh-plus-which-isnt-lost-anymore/) Japanese Mac Plus 256K ROM, which contains built-in KanjiTalk fonts for better performance, can now be used with Mini vMac. To emulate a Kanji model which can use this ROM, you can specify the new `-m Kanji` option in the setup tool. For example, this builds the Kanji variant for Apple Silicon, also enabling LocalTalk-over-UDP networking:
