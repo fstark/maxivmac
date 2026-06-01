@@ -1,6 +1,7 @@
 #include "icns_decode.h"
 #include "icon_decode.h"
 #include "mac_palette.h"
+#include "storage/appledouble.h"
 
 #include <algorithm>
 #include <cstring>
@@ -16,12 +17,6 @@ uint32_t ReadBE32(const uint8_t *p)
            (uint32_t(p[2]) << 8) | uint32_t(p[3]);
 }
 
-uint32_t FourCC(const char *s)
-{
-    return (uint32_t(uint8_t(s[0])) << 24) | (uint32_t(uint8_t(s[1])) << 16) |
-           (uint32_t(uint8_t(s[2])) << 8) | uint32_t(uint8_t(s[3]));
-}
-
 struct Element {
     uint32_t type;
     std::span<const uint8_t> data;
@@ -31,7 +26,7 @@ std::vector<Element> ParseContainer(std::span<const uint8_t> blob)
 {
     std::vector<Element> elems;
     if (blob.size() < 8) return elems;
-    if (ReadBE32(blob.data()) != FourCC("icns")) return elems;
+    if (ReadBE32(blob.data()) != appledouble::FourCC("icns")) return elems;
 
     uint32_t totalLen = ReadBE32(blob.data() + 4);
     if (totalLen > blob.size()) totalLen = static_cast<uint32_t>(blob.size());
@@ -143,19 +138,19 @@ bool IsJP2(std::span<const uint8_t> data)
 // Map from RGB type → corresponding mask type.
 uint32_t MaskForRGB(uint32_t rgbType)
 {
-    if (rgbType == FourCC("it32")) return FourCC("t8mk");
-    if (rgbType == FourCC("ih32")) return FourCC("h8mk");
-    if (rgbType == FourCC("il32")) return FourCC("l8mk");
-    if (rgbType == FourCC("is32")) return FourCC("s8mk");
+    if (rgbType == appledouble::FourCC("it32")) return appledouble::FourCC("t8mk");
+    if (rgbType == appledouble::FourCC("ih32")) return appledouble::FourCC("h8mk");
+    if (rgbType == appledouble::FourCC("il32")) return appledouble::FourCC("l8mk");
+    if (rgbType == appledouble::FourCC("is32")) return appledouble::FourCC("s8mk");
     return 0;
 }
 
 int SizeForRGB(uint32_t type)
 {
-    if (type == FourCC("it32")) return 128;
-    if (type == FourCC("ih32")) return 48;
-    if (type == FourCC("il32")) return 32;
-    if (type == FourCC("is32")) return 16;
+    if (type == appledouble::FourCC("it32")) return 128;
+    if (type == appledouble::FourCC("ih32")) return 48;
+    if (type == appledouble::FourCC("il32")) return 32;
+    if (type == appledouble::FourCC("is32")) return 16;
     return 0;
 }
 
@@ -180,7 +175,10 @@ DecodedIcon ExtractLargest(std::span<const uint8_t> data)
 
     // --- Try PNG/JP2 elements (largest first) ---
     static constexpr uint32_t kPngTypes[] = {
-        'ic10', 'ic14', 'ic13', 'ic09', 'ic08', 'ic07', 'ic12', 'ic11'};
+        appledouble::FourCC("ic10"), appledouble::FourCC("ic14"),
+        appledouble::FourCC("ic13"), appledouble::FourCC("ic09"),
+        appledouble::FourCC("ic08"), appledouble::FourCC("ic07"),
+        appledouble::FourCC("ic12"), appledouble::FourCC("ic11")};
 
     for (uint32_t type : kPngTypes) {
         auto it = byType.find(type);
@@ -203,7 +201,8 @@ DecodedIcon ExtractLargest(std::span<const uint8_t> data)
 
     // --- Try compressed RGB types (largest first) ---
     static constexpr uint32_t kRGBTypes[] = {
-        'it32', 'ih32', 'il32', 'is32'};
+        appledouble::FourCC("it32"), appledouble::FourCC("ih32"),
+        appledouble::FourCC("il32"), appledouble::FourCC("is32")};
 
     for (uint32_t type : kRGBTypes) {
         auto it = byType.find(type);
@@ -230,11 +229,11 @@ DecodedIcon ExtractLargest(std::span<const uint8_t> data)
 
     // --- Try icl8 (32×32 palette-indexed) ---
     {
-        auto it = byType.find(FourCC("icl8"));
+        auto it = byType.find(appledouble::FourCC("icl8"));
         if (it != byType.end() && it->second.size() == 1024) {
             // Look for ICN# mask
             std::optional<std::span<const uint8_t, 128>> mask;
-            auto mit = byType.find(FourCC("ICN#"));
+            auto mit = byType.find(appledouble::FourCC("ICN#"));
             if (mit != byType.end() && mit->second.size() == 256)
                 mask = std::span<const uint8_t, 128>(
                     mit->second.data() + 128, 128);
