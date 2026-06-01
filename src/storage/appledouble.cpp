@@ -1,5 +1,7 @@
 #include "storage/appledouble.h"
 #include "storage/appledouble_internal.h"
+#include "classic/mac_codes.h"
+#include "classic/mac_time.h"
 
 #include <algorithm>
 #include <cctype>
@@ -18,11 +20,11 @@ namespace appledouble
 namespace
 {
 
-constexpr FinderInfo kUnknownFinder = {FourCC("????"), FourCC("????"), 0};
+constexpr FinderInfo kUnknownFinder = {classic::FourCC("????"), classic::FourCC("????"), 0};
 
 uint32_t FourCCFromString(std::string_view s)
 {
-	if (s.size() != 4) return FourCC("????");
+	if (s.size() != 4) return classic::FourCC("????");
 	return (static_cast<uint32_t>(static_cast<uint8_t>(s[0])) << 24) |
 		   (static_cast<uint32_t>(static_cast<uint8_t>(s[1])) << 16) |
 		   (static_cast<uint32_t>(static_cast<uint8_t>(s[2])) << 8) |
@@ -500,12 +502,12 @@ uint32_t MacDateFromFileTime(std::filesystem::file_time_type ft)
 	auto sys = std::chrono::file_clock::to_sys(ft);
 	auto epoch = sys.time_since_epoch();
 	auto secs = std::chrono::duration_cast<std::chrono::seconds>(epoch).count();
-	return static_cast<uint32_t>(secs + kMacEpochOffset);
+	return static_cast<uint32_t>(secs + classic::kMacEpochOffset);
 }
 
 void SetModDate(const std::filesystem::path &hostPath, uint32_t macDate)
 {
-	auto secs = static_cast<int64_t>(macDate) - static_cast<int64_t>(kMacEpochOffset);
+	auto secs = static_cast<int64_t>(macDate) - static_cast<int64_t>(classic::kMacEpochOffset);
 	auto sys = std::chrono::system_clock::time_point(std::chrono::seconds(secs));
 	auto ft = std::chrono::file_clock::from_sys(sys);
 	std::filesystem::last_write_time(hostPath, ft);
@@ -520,7 +522,7 @@ FileInfo GetFileInfo(const std::filesystem::path &hostPath, const TypeMap &typeM
 	FileInfo info;
 	info.finder = GetFinderInfo(hostPath, typeMap);
 	info.rsrcForkSize = ResourceForkSize(hostPath);
-	info.isText = (info.finder.type == FourCC("TEXT"));
+	info.isText = (info.finder.type == classic::FourCC("TEXT"));
 
 	auto ft = std::filesystem::last_write_time(hostPath);
 	info.modDate = MacDateFromFileTime(ft);

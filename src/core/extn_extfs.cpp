@@ -7,6 +7,7 @@
 	register slots.  PB field layouts follow Inside Macintosh IV ch. 25.
 */
 #include "core/extn_extfs.h"
+#include "classic/mac_time.h"
 #include "core/extn_clip.h"
 #include "core/extfs_log.h"
 #include "core/diag.h"
@@ -472,7 +473,7 @@ static void pbWriteDirFields(PBRef pb, const storage::CatalogEntry *e, storage::
 static void pbWriteRootDir(PBRef pb, uint32_t nameAddr, storage::HostVolume &vol,
 						   std::string_view volName)
 {
-	uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + appledouble::kMacEpochOffset;
+	uint32_t now = static_cast<uint32_t>(std::time(nullptr)) + classic::kMacEpochOffset;
 	pb.zero(24, 4); /* ioFRefNum(2) + ioFVersNum(1) + filler1(1) */
 	pb[ioFlAttrib] = kFlAttribDir;
 	pb[ioACUser] = 0;

@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
-#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -14,8 +13,6 @@ namespace appledouble
 
 /* ── Constants ────────────────────────────────────── */
 
-inline constexpr uint32_t kMacEpochOffset = 2082844800u; // 1904→1970
-
 inline constexpr uint32_t kAppleDoubleMagic = 0x00051607u;
 inline constexpr uint32_t kAppleDoubleVersion = 0x00020000u;
 inline constexpr uint32_t kEntryIdResourceFork = 2u;
@@ -23,16 +20,6 @@ inline constexpr uint32_t kEntryIdFinderInfo = 9u;
 inline constexpr uint32_t kFinderInfoSize = 32u;
 inline constexpr uint32_t kHeaderSize = 26u;	// magic+ver+filler+nEntries
 inline constexpr uint32_t kEntryDescSize = 12u; // per entry descriptor
-
-/* ── FourCC helper ────────────────────────────────── */
-
-constexpr uint32_t FourCC(const char (&s)[5])
-{
-	return (static_cast<uint32_t>(static_cast<uint8_t>(s[0])) << 24) |
-		   (static_cast<uint32_t>(static_cast<uint8_t>(s[1])) << 16) |
-		   (static_cast<uint32_t>(static_cast<uint8_t>(s[2])) << 8) |
-		   static_cast<uint32_t>(static_cast<uint8_t>(s[3]));
-}
 
 /* ── Finder info ──────────────────────────────────── */
 

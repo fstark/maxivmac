@@ -1,4 +1,6 @@
 #include "storage/host_volume.h"
+#include "classic/mac_codes.h"
+#include "classic/mac_time.h"
 #include "core/diag.h"
 #include "platform/common/path_utils.h"
 #include "util/macroman.h"
@@ -135,7 +137,7 @@ uint32_t HostVolume::currentMacDate()
 {
 	auto now = std::chrono::system_clock::now();
 	auto secs = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
-	return static_cast<uint32_t>(secs + appledouble::kMacEpochOffset);
+	return static_cast<uint32_t>(secs + classic::kMacEpochOffset);
 }
 
 /* ── Mount ────────────────────────────────────────── */
@@ -656,7 +658,7 @@ OSErr HostVolume::setFileInfo(uint32_t cnid, uint32_t type, uint32_t creator, ui
 	e->fdFldr = folder;
 
 	bool wasText = e->isText;
-	e->isText = (type == appledouble::FourCC("TEXT"));
+	e->isText = (type == classic::FourCC("TEXT"));
 	if (e->isText != wasText) invalidateTextSize(*e);
 
 	return kNoErr;

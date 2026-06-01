@@ -1,4 +1,5 @@
 #include <doctest/doctest.h>
+#include "classic/mac_codes.h"
 #include "storage/host_volume.h"
 
 #include <filesystem>
@@ -169,8 +170,8 @@ TEST_CASE("HostVolume: metadata from extension")
 	CHECK(vol.mount(td.path));
 	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "readme.txt");
 	REQUIRE(e != nullptr);
-	CHECK(e->type == appledouble::FourCC("TEXT"));
-	CHECK(e->creator == appledouble::FourCC("ttxt"));
+	CHECK(e->type == classic::FourCC("TEXT"));
+	CHECK(e->creator == classic::FourCC("ttxt"));
 }
 
 TEST_CASE("HostVolume: metadata from sidecar")
@@ -178,14 +179,14 @@ TEST_CASE("HostVolume: metadata from sidecar")
 	TempDir td;
 	writeFile(td.path / "app", "data");
 	appledouble::SetFinderInfo(td.path / "app",
-							   {appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0});
+							   {classic::FourCC("APPL"), classic::FourCC("test"), 0});
 
 	storage::HostVolume vol;
 	CHECK(vol.mount(td.path));
 	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "app");
 	REQUIRE(e != nullptr);
-	CHECK(e->type == appledouble::FourCC("APPL"));
-	CHECK(e->creator == appledouble::FourCC("test"));
+	CHECK(e->type == classic::FourCC("APPL"));
+	CHECK(e->creator == classic::FourCC("test"));
 }
 
 TEST_CASE("HostVolume: mount nonexistent directory")
@@ -293,7 +294,7 @@ TEST_CASE("HostVolume: remove file with sidecar")
 	storage::OSErr err;
 	vol.createFile(storage::HostVolume::kRootDirID, "withsc", err);
 	appledouble::SetFinderInfo(td.path / "withsc",
-							   {appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0});
+							   {classic::FourCC("APPL"), classic::FourCC("test"), 0});
 	CHECK(fs::exists(td.path / "._withsc"));
 
 	auto result = vol.remove(storage::HostVolume::kRootDirID, "withsc");
@@ -375,7 +376,7 @@ TEST_CASE("HostVolume: move file with sidecar")
 	uint32_t dirB = vol.createDir(storage::HostVolume::kRootDirID, "dstdir", err);
 	vol.createFile(dirA, "withsc", err);
 	appledouble::SetFinderInfo(td.path / "srcdir" / "withsc",
-							   {appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0});
+							   {classic::FourCC("APPL"), classic::FourCC("test"), 0});
 
 	auto result = vol.move(dirA, "withsc", dirB);
 	CHECK(result == storage::kNoErr);
@@ -493,13 +494,13 @@ TEST_CASE("HostVolume: setFileInfo basic")
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "meta", err);
 
 	auto result =
-		vol.setFileInfo(cnid, appledouble::FourCC("APPL"), appledouble::FourCC("test"), 0);
+		vol.setFileInfo(cnid, classic::FourCC("APPL"), classic::FourCC("test"), 0);
 	CHECK(result == storage::kNoErr);
 
 	auto *e = vol.findByCNID(cnid);
 	REQUIRE(e != nullptr);
-	CHECK(e->type == appledouble::FourCC("APPL"));
-	CHECK(e->creator == appledouble::FourCC("test"));
+	CHECK(e->type == classic::FourCC("APPL"));
+	CHECK(e->creator == classic::FourCC("test"));
 	CHECK(fs::exists(td.path / "._meta"));
 }
 
@@ -516,7 +517,7 @@ TEST_CASE("HostVolume: setFileInfo updates isText")
 	REQUIRE(e != nullptr);
 	CHECK_FALSE(e->isText);
 
-	vol.setFileInfo(cnid, appledouble::FourCC("TEXT"), appledouble::FourCC("ttxt"), 0);
+	vol.setFileInfo(cnid, classic::FourCC("TEXT"), classic::FourCC("ttxt"), 0);
 	e = vol.findByCNID(cnid);
 	CHECK(e->isText);
 }
@@ -908,7 +909,7 @@ TEST_CASE("HostVolume: TEXT file write converts to UTF-8")
 
 	storage::OSErr err;
 	uint32_t cnid = vol.createFile(storage::HostVolume::kRootDirID, "write.txt", err);
-	vol.setFileInfo(cnid, appledouble::FourCC("TEXT"), appledouble::FourCC("ttxt"), 0);
+	vol.setFileInfo(cnid, classic::FourCC("TEXT"), classic::FourCC("ttxt"), 0);
 
 	uint32_t size = 0;
 	uint32_t handle = vol.openFork(cnid, storage::ForkType::Data, size, err);
@@ -1105,8 +1106,8 @@ TEST_CASE("HostVolume: per-volume typemap from .maxivmac/typemap.def")
 	// File should pick up the per-volume mapping
 	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "hello.txt");
 	REQUIRE(e != nullptr);
-	CHECK(e->type == appledouble::FourCC("TEXT"));
-	CHECK(e->creator == appledouble::FourCC("CWIE"));
+	CHECK(e->type == classic::FourCC("TEXT"));
+	CHECK(e->creator == classic::FourCC("CWIE"));
 }
 
 TEST_CASE("HostVolume: missing .maxivmac falls back to global typemap")
@@ -1119,8 +1120,8 @@ TEST_CASE("HostVolume: missing .maxivmac falls back to global typemap")
 
 	auto *e = vol.findByName(storage::HostVolume::kRootDirID, "hello.txt");
 	REQUIRE(e != nullptr);
-	CHECK(e->type == appledouble::FourCC("TEXT"));
-	CHECK(e->creator == appledouble::FourCC("ttxt")); // global default
+	CHECK(e->type == classic::FourCC("TEXT"));
+	CHECK(e->creator == classic::FourCC("ttxt")); // global default
 }
 
 /* ── CnidTable unit tests ─────────────────────────── */

@@ -1,4 +1,5 @@
 #include <doctest/doctest.h>
+#include "classic/mac_codes.h"
 #include "storage/appledouble.h"
 #include "storage/appledouble_internal.h"
 #include "util/macroman.h"
@@ -36,9 +37,9 @@ void cleanup(const std::filesystem::path &p)
 
 TEST_CASE("FourCC produces correct values")
 {
-	CHECK(FourCC("TEXT") == 0x54455854u);
-	CHECK(FourCC("ttxt") == 0x74747874u);
-	CHECK(FourCC("????") == 0x3F3F3F3Fu);
+	CHECK(classic::FourCC("TEXT") == 0x54455854u);
+	CHECK(classic::FourCC("ttxt") == 0x74747874u);
+	CHECK(classic::FourCC("????") == 0x3F3F3F3Fu);
 }
 
 TEST_CASE("LoadTypeMappings and FinderInfoFromExtension")
@@ -57,12 +58,12 @@ TEST_CASE("LoadTypeMappings and FinderInfoFromExtension")
 	CHECK(count == 3);
 
 	auto fi = FinderInfoFromExtension(".txt");
-	CHECK(fi.type == FourCC("TEXT"));
-	CHECK(fi.creator == FourCC("ttxt"));
+	CHECK(fi.type == classic::FourCC("TEXT"));
+	CHECK(fi.creator == classic::FourCC("ttxt"));
 
 	fi = FinderInfoFromExtension(".jpg");
-	CHECK(fi.type == FourCC("JPEG"));
-	CHECK(fi.creator == FourCC("ogle"));
+	CHECK(fi.type == classic::FourCC("JPEG"));
+	CHECK(fi.creator == classic::FourCC("ogle"));
 
 	std::filesystem::remove(p);
 }
@@ -80,8 +81,8 @@ TEST_CASE("FinderInfoFromExtension is case insensitive")
 TEST_CASE("FinderInfoFromExtension unknown returns ????")
 {
 	auto fi = FinderInfoFromExtension(".xyz");
-	CHECK(fi.type == FourCC("????"));
-	CHECK(fi.creator == FourCC("????"));
+	CHECK(fi.type == classic::FourCC("????"));
+	CHECK(fi.creator == classic::FourCC("????"));
 }
 
 TEST_CASE("LoadTypeMappings returns -1 for missing file")
@@ -94,7 +95,7 @@ TEST_CASE("LoadTypeMappings loads actual assets/typemap.def")
 	int count = LoadTypeMappings("data/debug/typemap.def");
 	CHECK(count >= 19);
 	auto fi = FinderInfoFromExtension(".txt");
-	CHECK(fi.type == FourCC("TEXT"));
+	CHECK(fi.type == classic::FourCC("TEXT"));
 }
 
 TEST_CASE("TypeMap standalone instance")
@@ -109,16 +110,16 @@ TEST_CASE("TypeMap standalone instance")
 	CHECK(tm.load(p) == 2);
 
 	auto fi = tm.lookup(".c");
-	CHECK(fi.type == FourCC("TEXT"));
-	CHECK(fi.creator == FourCC("CWIE"));
+	CHECK(fi.type == classic::FourCC("TEXT"));
+	CHECK(fi.creator == classic::FourCC("CWIE"));
 
 	// Unknown extension returns ????
 	fi = tm.lookup(".xyz");
-	CHECK(fi.type == FourCC("????"));
+	CHECK(fi.type == classic::FourCC("????"));
 
 	// Does not affect the global mapping
 	auto global = FinderInfoFromExtension(".c");
-	CHECK(global.creator == FourCC("KAHL")); // from assets/typemap.def
+	CHECK(global.creator == classic::FourCC("KAHL")); // from assets/typemap.def
 
 	std::filesystem::remove(p);
 }
@@ -476,7 +477,7 @@ TEST_CASE("parseSidecar rejects truncated header")
 TEST_CASE("writeSidecar Finder info only round-trips")
 {
 	auto p = std::filesystem::temp_directory_path() / "._fi_rt";
-	FinderInfo fi{FourCC("APPL"), FourCC("myap"), 0x0100};
+	FinderInfo fi{classic::FourCC("APPL"), classic::FourCC("myap"), 0x0100};
 	detail::WriteSidecar(p, fi, std::nullopt);
 
 	auto sc = detail::ParseSidecar(p);
@@ -505,7 +506,7 @@ TEST_CASE("writeSidecar resource fork only round-trips")
 TEST_CASE("writeSidecar both entries round-trips")
 {
 	auto p = std::filesystem::temp_directory_path() / "._both_rt";
-	FinderInfo fi{FourCC("TEXT"), FourCC("ttxt"), 0};
+	FinderInfo fi{classic::FourCC("TEXT"), classic::FourCC("ttxt"), 0};
 	std::vector<uint8_t> rsrc = {1, 2, 3, 4, 5};
 	detail::WriteSidecar(p, fi, rsrc);
 
@@ -568,15 +569,15 @@ TEST_CASE("GetFinderInfo with no sidecar returns extension default")
 	LoadTypeMappings("data/debug/typemap.def");
 	auto p = writeTempFile("hello", "fi_test.txt");
 	auto fi = GetFinderInfo(p);
-	CHECK(fi.type == FourCC("TEXT"));
-	CHECK(fi.creator == FourCC("ttxt"));
+	CHECK(fi.type == classic::FourCC("TEXT"));
+	CHECK(fi.creator == classic::FourCC("ttxt"));
 	cleanup(p);
 }
 
 TEST_CASE("SetFinderInfo creates sidecar for non-default")
 {
 	auto p = writeTempFile("hello", "fi_create.txt");
-	FinderInfo custom{FourCC("APPL"), FourCC("myap"), 0};
+	FinderInfo custom{classic::FourCC("APPL"), classic::FourCC("myap"), 0};
 	SetFinderInfo(p, custom);
 	CHECK(std::filesystem::exists(SidecarPathFor(p)));
 	CHECK(GetFinderInfo(p) == custom);
@@ -595,7 +596,7 @@ TEST_CASE("SetFinderInfo with default does not create sidecar")
 TEST_CASE("SetFinderInfo back to default removes sidecar")
 {
 	auto p = writeTempFile("hello", "fi_rm.txt");
-	FinderInfo custom{FourCC("APPL"), FourCC("myap"), 0};
+	FinderInfo custom{classic::FourCC("APPL"), classic::FourCC("myap"), 0};
 	SetFinderInfo(p, custom);
 	REQUIRE(std::filesystem::exists(SidecarPathFor(p)));
 	SetFinderInfo(p, FinderInfoFromExtension(".txt"));
@@ -606,7 +607,7 @@ TEST_CASE("SetFinderInfo back to default removes sidecar")
 TEST_CASE("SetFinderInfo back to default keeps sidecar if resource fork exists")
 {
 	auto p = writeTempFile("hello", "fi_keep.txt");
-	FinderInfo custom{FourCC("APPL"), FourCC("myap"), 0};
+	FinderInfo custom{classic::FourCC("APPL"), classic::FourCC("myap"), 0};
 	SetFinderInfo(p, custom);
 	std::vector<uint8_t> rsrc = {1, 2, 3};
 	WriteResourceFork(p, 0, rsrc);
@@ -724,7 +725,7 @@ TEST_CASE("SetResourceForkSize to zero keeps sidecar with Finder override")
 	auto p = writeTempFile("data", "rf_zero_fi.txt");
 	std::vector<uint8_t> data = {1, 2, 3};
 	WriteResourceFork(p, 0, data);
-	FinderInfo custom{FourCC("APPL"), FourCC("myap"), 0};
+	FinderInfo custom{classic::FourCC("APPL"), classic::FourCC("myap"), 0};
 	SetFinderInfo(p, custom);
 	SetResourceForkSize(p, 0);
 	CHECK(std::filesystem::exists(SidecarPathFor(p)));
@@ -736,7 +737,7 @@ TEST_CASE("SetResourceForkSize to zero keeps sidecar with Finder override")
 TEST_CASE("Finder info + resource fork interaction")
 {
 	auto p = writeTempFile("data", "rf_fi_both.txt");
-	FinderInfo custom{FourCC("APPL"), FourCC("myap"), 0};
+	FinderInfo custom{classic::FourCC("APPL"), classic::FourCC("myap"), 0};
 	SetFinderInfo(p, custom);
 	std::vector<uint8_t> rsrc = {0xCA, 0xFE};
 	WriteResourceFork(p, 0, rsrc);
@@ -774,7 +775,7 @@ TEST_CASE("MacDateFromFileTime round-trips through SetModDate")
 TEST_CASE("DeleteWithSidecar removes file and sidecar")
 {
 	auto p = writeTempFile("data", "del_test.txt");
-	FinderInfo custom{FourCC("APPL"), FourCC("myap"), 0};
+	FinderInfo custom{classic::FourCC("APPL"), classic::FourCC("myap"), 0};
 	SetFinderInfo(p, custom);
 	REQUIRE(std::filesystem::exists(p));
 	REQUIRE(std::filesystem::exists(SidecarPathFor(p)));
@@ -810,7 +811,7 @@ TEST_CASE("DeleteWithSidecar non-empty directory fails")
 TEST_CASE("RenameWithSidecar moves file and sidecar")
 {
 	auto old_p = writeTempFile("data", "ren_old.txt");
-	FinderInfo custom{FourCC("APPL"), FourCC("myap"), 0};
+	FinderInfo custom{classic::FourCC("APPL"), classic::FourCC("myap"), 0};
 	SetFinderInfo(old_p, custom);
 
 	auto new_p = std::filesystem::temp_directory_path() / "ren_new.txt";
@@ -837,7 +838,7 @@ TEST_CASE("GetFileInfo non-TEXT file")
 {
 	auto p = writeTempFile("hello", "info_bin.jpg");
 	auto info = GetFileInfo(p);
-	CHECK(info.finder.type == FourCC("JPEG"));
+	CHECK(info.finder.type == classic::FourCC("JPEG"));
 	CHECK(info.dataForkSize == 5);
 	CHECK(info.rsrcForkSize == 0);
 	CHECK(info.isText == false);
@@ -849,7 +850,7 @@ TEST_CASE("GetFileInfo TEXT file")
 {
 	auto p = writeTempFile("caf\xC3\xA9", "info_text.txt");
 	auto info = GetFileInfo(p);
-	CHECK(info.finder.type == FourCC("TEXT"));
+	CHECK(info.finder.type == classic::FourCC("TEXT"));
 	CHECK(info.dataForkSize == 4);
 	CHECK(info.isText == true);
 	cleanup(p);
@@ -858,7 +859,7 @@ TEST_CASE("GetFileInfo TEXT file")
 TEST_CASE("GetFileInfo with sidecar")
 {
 	auto p = writeTempFile("hello", "info_scar.txt");
-	FinderInfo custom{FourCC("APPL"), FourCC("myap"), 0};
+	FinderInfo custom{classic::FourCC("APPL"), classic::FourCC("myap"), 0};
 	SetFinderInfo(p, custom);
 	std::vector<uint8_t> rsrc = {1, 2, 3};
 	WriteResourceFork(p, 0, rsrc);
