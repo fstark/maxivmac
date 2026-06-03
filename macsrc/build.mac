@@ -1,0 +1,8 @@
+# A build machine for the guest-side components
+name = THINK C 5 Build System
+description = A disk for automatic think C builds
+# Using a Macintosh II, so host-enabled shutdown
+# cleanly exists the emulator
+model = II
+disk = macsrc/build.hfs
+shared = macsrc/init
