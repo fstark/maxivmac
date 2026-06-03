@@ -30,9 +30,11 @@ struct Token
 };
 
 // Tokenize a command line into tokens.
+// Returns vector of tokens for parsing by command handlers.
 std::vector<Token> Tokenize(std::string_view line);
 
 // Try to parse a token as a hex/decimal number.  Returns true on success.
+// Supports $hex, 0xhex, and decimal formats.
 bool ParseNumber(std::string_view text, uint64_t &outVal);
 
 // Convenience overload for 32-bit callers (truncates).
@@ -59,6 +61,7 @@ class DbgIO; // forward
 
 // Find the CmdEntry matching the first token (prefix match).
 // Returns nullptr if no match or ambiguous (error printed via io).
+// Performs prefix matching on command names and shortcuts.
 const CmdEntry *DispatchCommand(std::string_view input, const CmdEntry *table, int tableSize,
 								DbgIO *io = nullptr);
 
@@ -71,4 +74,6 @@ struct FmtSpec
 	char format = 'x'; /* x, d, s, i, t */
 };
 
+// Parse format specification for the x (examine) command.
+// Format: [count][size][format] where size is b/w/l and format is x/d/s/i/t.
 FmtSpec ParseFmtSpec(const std::string &spec);

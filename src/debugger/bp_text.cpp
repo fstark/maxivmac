@@ -1,4 +1,8 @@
-// Text breakpoint matching — fires when trap params contain target text.
+/*
+	bp_text.cpp — Text breakpoint matching implementation
+
+	Fires when trap parameters contain target text.
+*/
 #include "debugger/bp_text.h"
 #include "debugger/debugger.h"
 #include "debugger/dbg_io.h"

@@ -1,4 +1,8 @@
-// Text breakpoint matching — fires when trap params contain target text.
+/*
+	bp_text.h — Text breakpoint matching
+
+	Fires when trap parameters contain target text.
+*/
 #pragma once
 
 #include <string_view>

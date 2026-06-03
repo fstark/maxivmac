@@ -1,4 +1,8 @@
-// Script suspension — holds remaining lines when a script resumes the CPU.
+/*
+	script_suspend.h — Script suspension
+
+	Holds remaining lines when a script resumes the CPU.
+*/
 #pragma once
 
 #include <string>

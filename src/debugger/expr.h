@@ -24,11 +24,13 @@ struct ExprContext
 
 // Evaluate a value expression (for `print`).
 // Returns true on success, sets outVal.  On error, sets outErr.
+// Supports: registers (d0-d7, a0-a7, sp, pc, sr), hex (0x/$), decimals, symbols, dereference.
 bool ExprEval(std::string_view text, const ExprContext &ctx, uint32_t &outVal, std::string &outErr);
 
 // Evaluate a condition expression (for breakpoint conditions).
 // Returns true if the condition is satisfied.
 // On parse error, sets outErr and returns false.
+// Supports comparison operators: ==, !=, <, >, <=, >=
 bool ExprCheck(std::string_view text, const ExprContext &ctx, std::string &outErr);
 
 // Parse a single value (register, hex, decimal, global name).

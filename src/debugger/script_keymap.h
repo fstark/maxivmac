@@ -1,4 +1,8 @@
-// Script keymap — map characters and key specs to Mac virtual keycodes.
+/*
+	script_keymap.h — Script keymap
+
+	Maps characters and key specs to Mac virtual keycodes.
+*/
 #pragma once
 
 #include <cstdint>
