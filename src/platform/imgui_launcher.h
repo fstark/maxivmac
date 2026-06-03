@@ -9,6 +9,7 @@
 
 #include "config/mac_file.h"
 #include <cstdint>
+#include <string>
 #include <vector>
 
 class Launcher
@@ -29,6 +30,7 @@ public:
 
 private:
 	void drawTitle();
+	void drawPageSwitcher(float titleLineY, float contentWidth);
 	void drawVersion();
 	void drawEmptyState();
 	void drawCards();
@@ -38,8 +40,13 @@ private:
 	void drawCardHover(const MacFileEntry &e, bool valid);
 	bool drawInfoButton(int cardIndex, float cardW);
 	void drawInfoPopup();
+	void rebuildVisiblePages();
+	bool shouldShowEntryOnSelectedPage(const MacFileEntry &entry) const;
+	std::vector<int> visibleEntryIndices() const;
 	std::vector<MacFileEntry> entries_;
 	std::vector<uint32_t> textures_;			 // GL texture IDs per entry (0 = none)
+	std::vector<std::string> visiblePages_;
+	int selectedPageIndex_ = 0;
 	const MacFileEntry *selectedMac_ = nullptr;	 // set on boot click
 	const MacFileEntry *displayedMac_ = nullptr; // info panel target
 };

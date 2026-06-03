@@ -153,10 +153,34 @@ static int parseSpeedSpec(std::string_view val, std::string &errorOut)
 	return -1;
 }
 
+// Parse booleans: true/false, yes/no, on/off, or 1/0.
+static bool parseBoolSpec(std::string_view val, bool &outValue, std::string &errorOut)
+{
+	std::string lower;
+	for (char c : val)
+		lower += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+	if (lower == "true" || lower == "yes" || lower == "on" || lower == "1")
+	{
+		outValue = true;
+		return true;
+	}
+	if (lower == "false" || lower == "no" || lower == "off" || lower == "0")
+	{
+		outValue = false;
+		return true;
+	}
+
+	errorOut = "invalid boolean (expected true/false, yes/no, on/off, or 1/0)";
+	return false;
+}
+
 bool ParseMacFileFromString(std::string_view content, std::string_view path, MacFileEntry &out,
 							std::string &errorOut)
 {
 	out = MacFileEntry{};
+	errorOut.clear();
+	out.page = "main";
 	out.filePath = std::string(path);
 
 	std::string contentStr(content);
@@ -196,6 +220,24 @@ bool ParseMacFileFromString(std::string_view content, std::string_view path, Mac
 		else if (key == "description")
 		{
 			out.description = std::string(val);
+		}
+		else if (key == "active")
+		{
+			if (!parseBoolSpec(val, out.active, errorOut))
+			{
+				errorOut = std::string(path) + ":" + std::to_string(lineNum) + ": " + errorOut;
+				return false;
+			}
+		}
+		else if (key == "page")
+		{
+			out.page = std::string(val);
+			if (out.page.empty())
+			{
+				errorOut = std::string(path) + ":" + std::to_string(lineNum) +
+						   ": page must not be empty";
+				return false;
+			}
 		}
 		else if (key == "model")
 		{

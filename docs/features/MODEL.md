@@ -81,6 +81,8 @@ ram = 8M
 |---------------|----------|------------|-------------|
 | `name`        | yes      | no  | Informal user-facing label for the Launcher card. |
 | `description` | no       | no  | Longer descriptive text.  May or may not be displayed. |
+| `active`      | no       | no  | Launcher visibility flag (`true`/`false`, `yes`/`no`, `on`/`off`, `1`/`0`).  Default: `true`.  If `false`, the Macintosh is hidden from Launcher pages. |
+| `page`        | no       | no  | Launcher page name used to group cards into a sober tab-like switcher.  Default: `main`. |
 | `model`       | yes      | no  | Model identifier matching a `MacModel` enum name (`Plus`, `II`, `SE`, etc.). |
 | `disk`        | no       | yes | Disk image path.  Prefix with `@` to resolve relative to `data/` (e.g. `@disks/plus-608.hfs`).  Absolute paths (`/…`) are used as-is; bare names are relative to cwd.  First occurrence is the boot disk.  Zero disks is valid — the Mac boots to the "insert disk" screen. |
 | `shared`      | no       | yes | Shared drive directory.  Prefix with `@` to resolve relative to `data/` (e.g. `@shared/shared`).  Absolute paths (`/…`) are used as-is; bare names are relative to cwd. |

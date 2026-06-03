@@ -17,6 +17,8 @@ struct MacFileEntry
 	// Identity
 	std::string name;
 	std::string description;
+	bool active = true;
+	std::string page;
 	std::string filePath; // absolute path to the .mac file
 
 	// Model

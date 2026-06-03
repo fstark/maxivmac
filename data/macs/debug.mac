@@ -1,6 +1,7 @@
 # Debugging shared drive
 name = DEBUG
 description = DEBUG
+page = dev
 model = Plus
 disk = @disks/ii-753.hfs
 disk = macsrc/build.hfs

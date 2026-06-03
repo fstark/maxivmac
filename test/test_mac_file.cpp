@@ -25,6 +25,8 @@ TEST_CASE("ParseMacFile: valid file")
 	std::string err;
 	bool ok = parse("name = Mac Plus Test\n"
 					"model = Plus\n"
+					"active = false\n"
+					"page = dev\n"
 					"disk = boot.hfs\n"
 					"shared = shared/\n"
 					"serial-a = slip\n"
@@ -34,6 +36,8 @@ TEST_CASE("ParseMacFile: valid file")
 	CHECK(err.empty());
 	CHECK(e.name == "Mac Plus Test");
 	CHECK(e.description == "A test entry.");
+	CHECK(e.active == false);
+	CHECK(e.page == "dev");
 	CHECK(e.model == MacModel::Plus);
 	CHECK(e.disks.size() == 1);
 	CHECK(e.disks[0] == "boot.hfs");
@@ -70,6 +74,56 @@ TEST_CASE("ParseMacFile: unknown key")
 					e, err);
 	CHECK_FALSE(ok);
 	CHECK(err.find("bogus") != std::string::npos);
+}
+
+TEST_CASE("ParseMacFile: active default and explicit")
+{
+	MacFileEntry e;
+	std::string err;
+
+	REQUIRE(parse("name = Test\n"
+				  "model = Plus\n",
+				  e, err));
+	CHECK(e.active == true);
+
+	REQUIRE(parse("name = Test\n"
+				  "model = Plus\n"
+				  "active = no\n",
+				  e, err));
+	CHECK(e.active == false);
+}
+
+TEST_CASE("ParseMacFile: page default and explicit")
+{
+	MacFileEntry e;
+	std::string err;
+
+	REQUIRE(parse("name = Test\n"
+				  "model = Plus\n",
+				  e, err));
+	CHECK(e.page == "main");
+
+	REQUIRE(parse("name = Test\n"
+				  "model = Plus\n"
+				  "page = dev\n",
+				  e, err));
+	CHECK(e.page == "dev");
+
+	CHECK_FALSE(parse("name = Test\n"
+					   "model = Plus\n"
+					   "page =\n",
+					   e, err));
+}
+
+TEST_CASE("ParseMacFile: active invalid value")
+{
+	MacFileEntry e;
+	std::string err;
+	CHECK_FALSE(parse("name = Test\n"
+					   "model = Plus\n"
+					   "active = maybe\n",
+					   e, err));
+	CHECK(err.find("invalid boolean") != std::string::npos);
 }
 
 TEST_CASE("ParseMacFile: repeatable disk")

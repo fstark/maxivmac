@@ -7,6 +7,7 @@
 #include "platform/imgui_launcher.h"
 #include "platform/platform_config.h"
 #include "core/model_defs.h"
+#include <algorithm>
 #include <imgui.h>
 #include <cstdio>
 
@@ -24,11 +25,25 @@
 #include "stb_image.h"
 #pragma GCC diagnostic pop
 
+namespace
+{
+
+constexpr std::string_view kDefaultLauncherPage = "main";
+
+std::string normalizedPageName(const MacFileEntry &entry)
+{
+	if (entry.page.empty()) return std::string(kDefaultLauncherPage);
+	return entry.page;
+}
+
+}
+
 /* Draw text horizontally centered within the given width. */
 static void drawCenteredText(const char *text, float width)
 {
 	float textW = ImGui::CalcTextSize(text).x;
-	ImGui::SetCursorPosX((width - textW) * 0.5f);
+	float startX = ImGui::GetCursorPosX();
+	ImGui::SetCursorPosX(startX + (width - textW) * 0.5f);
 	ImGui::Text("%s", text);
 }
 
@@ -42,6 +57,7 @@ Launcher::~Launcher()
 void Launcher::init(std::vector<MacFileEntry> entries)
 {
 	entries_ = std::move(entries);
+	rebuildVisiblePages();
 }
 
 /* Load PNG icon textures for entries that have an icon path.
@@ -94,7 +110,7 @@ void Launcher::draw()
 	{
 		drawTitle();
 
-		if (entries_.empty())
+		if (visibleEntryIndices().empty())
 			drawEmptyState();
 		else
 			drawCards();
@@ -109,15 +125,66 @@ void Launcher::draw()
 /* Draw the centered "maxivmac" title and separator. */
 void Launcher::drawTitle()
 {
+	float titleLineY = ImGui::GetCursorPosY();
+	float contentWidth = ImGui::GetContentRegionAvail().x;
+
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
-	drawCenteredText("maxivmac", ImGui::GetContentRegionAvail().x);
+	drawCenteredText("maxivmac", contentWidth);
 	ImGui::PopStyleColor();
+
+	float titleBottomY = ImGui::GetCursorPosY();
+	drawPageSwitcher(titleLineY, contentWidth);
+	ImGui::SetCursorPosY(titleBottomY);
+
 	ImGui::Spacing();
 	ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.3f, 0.3f, 0.3f, 1));
 	ImGui::Separator();
 	ImGui::PopStyleColor();
 	ImGui::Spacing();
 	ImGui::Spacing();
+}
+
+void Launcher::drawPageSwitcher(float titleLineY, float contentWidth)
+{
+	if (visiblePages_.size() <= 1) return;
+
+	constexpr float kGap = 6.0f;
+	float sepWidth = ImGui::CalcTextSize("|").x;
+	float totalWidth = 0.0f;
+	for (int i = 0; i < (int)visiblePages_.size(); ++i)
+	{
+		totalWidth += ImGui::CalcTextSize(visiblePages_[i].c_str()).x;
+		if (i > 0) totalWidth += (kGap * 2.0f + sepWidth);
+	}
+
+	float startX = ImGui::GetCursorPosX() + contentWidth - totalWidth;
+	ImGui::SetCursorPos(ImVec2(startX, titleLineY));
+
+	for (int i = 0; i < (int)visiblePages_.size(); ++i)
+	{
+		if (i > 0)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.35f, 0.35f, 1.0f));
+			ImGui::TextUnformatted("|");
+			ImGui::PopStyleColor();
+			ImGui::SameLine(0, kGap);
+		}
+
+		ImGui::PushStyleColor(ImGuiCol_Text,
+							 i == selectedPageIndex_ ? ImVec4(0, 0, 0, 1.0f)
+													: ImVec4(0.35f, 0.35f, 0.35f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+
+		if (ImGui::SmallButton(visiblePages_[i].c_str())) selectedPageIndex_ = i;
+
+		ImGui::PopStyleVar();
+		ImGui::PopStyleColor(4);
+
+		if (i + 1 < (int)visiblePages_.size()) ImGui::SameLine(0, kGap);
+	}
 }
 
 /* Draw the version string in the bottom-right corner. */
@@ -137,13 +204,18 @@ void Launcher::drawVersion()
 void Launcher::drawEmptyState()
 {
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.3f, 0.3f, 0.3f, 1));
-	ImGui::Text("No .mac files found in data/macs/");
+	if (entries_.empty())
+		ImGui::Text("No .mac files found in data/macs/");
+	else
+		ImGui::Text("No active .mac files available");
 	ImGui::PopStyleColor();
 }
 
 /* Lay out the responsive card grid and draw each entry. */
 void Launcher::drawCards()
 {
+	auto visible = visibleEntryIndices();
+
 	float avail = ImGui::GetContentRegionAvail().x;
 	int cols = 4;
 	float gap = 16.0f;
@@ -160,12 +232,14 @@ void Launcher::drawCards()
 	if (offsetX > 0) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
 
 	int col = 0;
-	for (int i = 0; i < (int)entries_.size(); ++i)
+	for (int i = 0; i < (int)visible.size(); ++i)
 	{
+		int entryIndex = visible[i];
+
 		if (col > 0) ImGui::SameLine(0, gap);
 
-		ImGui::PushID(i);
-		drawCard(i, cardW, cardH);
+		ImGui::PushID(entryIndex);
+		drawCard(entryIndex, cardW, cardH);
 		ImGui::PopID();
 
 		col = (col + 1) % cols;
@@ -175,6 +249,46 @@ void Launcher::drawCards()
 			if (offsetX > 0) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
 		}
 	}
+}
+
+void Launcher::rebuildVisiblePages()
+{
+	visiblePages_.clear();
+	for (const auto &entry : entries_)
+	{
+		if (!entry.active) continue;
+
+		std::string page = normalizedPageName(entry);
+		if (std::find(visiblePages_.begin(), visiblePages_.end(), page) == visiblePages_.end())
+			visiblePages_.push_back(std::move(page));
+	}
+
+	std::sort(visiblePages_.begin(), visiblePages_.end(),
+			  [](const std::string &a, const std::string &b)
+			  {
+				  bool aIsDefault = a == kDefaultLauncherPage;
+				  bool bIsDefault = b == kDefaultLauncherPage;
+				  if (aIsDefault != bIsDefault) return aIsDefault;
+				  return a < b;
+			  });
+
+	if (visiblePages_.empty()) visiblePages_.push_back(std::string(kDefaultLauncherPage));
+	if (selectedPageIndex_ < 0 || selectedPageIndex_ >= (int)visiblePages_.size()) selectedPageIndex_ = 0;
+}
+
+bool Launcher::shouldShowEntryOnSelectedPage(const MacFileEntry &entry) const
+{
+	if (!entry.active) return false;
+	if (selectedPageIndex_ < 0 || selectedPageIndex_ >= (int)visiblePages_.size()) return false;
+	return normalizedPageName(entry) == visiblePages_[selectedPageIndex_];
+}
+
+std::vector<int> Launcher::visibleEntryIndices() const
+{
+	std::vector<int> out;
+	for (int i = 0; i < (int)entries_.size(); ++i)
+		if (shouldShowEntryOnSelectedPage(entries_[i])) out.push_back(i);
+	return out;
 }
 
 /* Draw a single card: icon, text, hover effects, info button.
