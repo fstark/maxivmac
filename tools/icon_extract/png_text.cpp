@@ -1,3 +1,11 @@
+/*
+	PNG text chunk support — embeds iTXt metadata in PNG files
+
+	Provides functions to write PNG images with optional international text
+	chunks (iTXt) as specified in the PNG standard. Used by the icon extraction
+	tool to embed metadata in generated PNG files.
+*/
+
 #include "png_text.h"
 #include <stb_image_write.h>
 #include <cstring>
@@ -26,6 +34,10 @@ constexpr std::array<uint32_t, 256> BuildCrcTable()
 
 inline constexpr auto kCrcTable = BuildCrcTable();
 
+/*
+	Compute CRC-32 checksum over a buffer.
+	Used for PNG chunk integrity verification.
+*/
 uint32_t Crc32(const uint8_t *buf, size_t len)
 {
     uint32_t crc = 0xFFFFFFFFu;
@@ -34,6 +46,10 @@ uint32_t Crc32(const uint8_t *buf, size_t len)
     return ~crc;
 }
 
+/*
+	Appends a 32-bit value in big-endian order to the output vector.
+	Used for PNG chunk length and CRC fields.
+*/
 void AppendBE32(std::vector<uint8_t> &out, uint32_t v)
 {
     out.push_back(static_cast<uint8_t>(v >> 24));
@@ -42,7 +58,10 @@ void AppendBE32(std::vector<uint8_t> &out, uint32_t v)
     out.push_back(static_cast<uint8_t>(v));
 }
 
-// Build a single iTXt chunk (uncompressed, UTF-8).
+/*
+	Build a single iTXt chunk (uncompressed, UTF-8).
+	See PNG specification for chunk format.
+*/
 std::vector<uint8_t> BuildITxtChunk(std::string_view keyword,
                                     std::string_view text)
 {
@@ -90,6 +109,9 @@ std::vector<uint8_t> BuildITxtChunk(std::string_view keyword,
     return chunk;
 }
 
+/*
+	stb_image_write callback: appends raw PNG data to a vector.
+*/
 void PngWriteCallback(void *context, void *data, int size)
 {
     auto *vec = static_cast<std::vector<uint8_t> *>(context);
@@ -99,6 +121,16 @@ void PngWriteCallback(void *context, void *data, int size)
 
 } // namespace
 
+/*
+	Writes a PNG image with optional iTXt text chunks.
+
+	Generates a PNG file at the specified path with the given RGBA pixel data.
+	If textChunks is non-empty, inserts iTXt chunks after the IHDR chunk to
+	embed metadata (e.g., title, description) in compliance with the PNG
+	standard.
+
+	Returns false on write failure or if the generated PNG is malformed.
+*/
 bool WritePngWithText(
     const std::filesystem::path &path,
     int width, int height,
