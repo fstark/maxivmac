@@ -123,7 +123,7 @@ void Launcher::drawTitle()
 /* Draw the version string in the bottom-right corner. */
 void Launcher::drawVersion()
 {
-	const char *ver = MAXIVMAC_VERSION;
+	const char *ver = MAXIVMAC_DISPLAY_VERSION;
 	ImVec2 textSize = ImGui::CalcTextSize(ver);
 	ImVec2 winSize = ImGui::GetWindowSize();
 	ImVec2 pad = ImGui::GetStyle().WindowPadding;

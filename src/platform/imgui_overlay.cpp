@@ -285,7 +285,7 @@ static std::string machineTypeName(int type)
 
 void ControlOverlay::drawAbout()
 {
-	ImGui::TextDisabled("maxivmac %s", MAXIVMAC_VERSION);
+	ImGui::TextDisabled("maxivmac %s", MAXIVMAC_DISPLAY_VERSION);
 
 	{
 		const auto &info = ExtnSystemInitInfo();

@@ -39,4 +39,16 @@ inline constexpr uint8_t MKC_UnMappedKey = MKC_Control;
 #define MAXIVMAC_VERSION "dev-unknown"
 #endif
 
+#ifndef HAVE_SLIRP
+#define HAVE_SLIRP 0
+#endif
+
+#if HAVE_SLIRP
+#define MAXIVMAC_SLIRP_SUFFIX " with slirp"
+#else
+#define MAXIVMAC_SLIRP_SUFFIX ""
+#endif
+
+#define MAXIVMAC_DISPLAY_VERSION MAXIVMAC_VERSION MAXIVMAC_SLIRP_SUFFIX
+
 #define kBldOpts "maxivmac " MAXIVMAC_VERSION
