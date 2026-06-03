@@ -1,0 +1,8 @@
+# Debugging shared drive
+name = DEBUG
+description = DEBUG
+model = Plus
+disk = @disks/ii-753.hfs
+disk = macsrc/build.hfs
+shared = macsrc/init
+icon = @icons/128-2.png

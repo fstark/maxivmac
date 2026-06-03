@@ -1,0 +1,6 @@
+timeout 0
+#wait text "Special"
+#trace traps on
+#trace io on
+#break $00BD6E
+continue

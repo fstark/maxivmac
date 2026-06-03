@@ -1,0 +1,7 @@
+# Mac II · System 6
+name = Mac II · System 6
+description = Build Machine
+model = II
+disk = macsrc/build.hfs
+shared = macsrc/init
+#icon = @icons/ii-2.png
