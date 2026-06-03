@@ -1,3 +1,11 @@
+/*
+	ICNS Decoder — extract the largest icon from a macOS .icns container.
+
+	Parses the icns container format, trying elements from largest to
+	smallest: PNG/JP2 images, compressed RGB (il32/is32/ih32/it32) with
+	alpha masks, and finally palette-indexed icl8.  Returns decoded RGBA
+	pixels or raw PNG data when the container uses embedded PNGs.
+*/
 #include "icns_decode.h"
 #include "classic/mac_codes.h"
 #include "icon_decode.h"
@@ -22,6 +30,12 @@ struct Element {
     std::span<const uint8_t> data;
 };
 
+/*
+	Walk the icns container, reading type+length pairs after the 8-byte
+	header.  Each element has a 4-byte FourCC type and a 4-byte length
+	(including the header itself), followed by the payload.  Stop on the
+	first malformed entry.
+*/
 std::vector<Element> ParseContainer(std::span<const uint8_t> blob)
 {
     std::vector<Element> elems;
@@ -158,6 +172,13 @@ int SizeForRGB(uint32_t type)
 
 } // namespace
 
+/*
+	Extract the largest available icon from an icns container, trying
+	strategies from largest to smallest.  First check for embedded PNG
+	images (returned as raw data with width==-1), then decompress RGB
+	channels (il32/is32/ih32/it32) combined with alpha masks, and
+	finally fall back to palette-indexed icl8 with ICN# mask.
+*/
 DecodedIcon ExtractLargest(std::span<const uint8_t> data)
 {
     auto elements = ParseContainer(data);
@@ -167,11 +188,6 @@ DecodedIcon ExtractLargest(std::span<const uint8_t> data)
     std::unordered_map<uint32_t, std::span<const uint8_t>> byType;
     for (auto &e : elements)
         byType[e.type] = e.data;
-
-    // Strategy: try elements from largest to smallest.
-    // 1. PNG/JP2 elements (already complete images)
-    // 2. Compressed RGB + mask
-    // 3. icl8 (palette-indexed)
 
     // --- Try PNG/JP2 elements (largest first) ---
     static constexpr uint32_t kPngTypes[] = {
@@ -186,9 +202,7 @@ DecodedIcon ExtractLargest(std::span<const uint8_t> data)
         auto &d = it->second;
         if (IsPNG(d)) {
             // Return the raw PNG data — caller will write it directly.
-            // We signal this with negative width (hack to avoid extra struct fields).
-            // Actually let's use a cleaner approach: width > 0 means decoded RGBA,
-            // and we'll just return the data as-is with a special marker.
+            // Signaled with width==-1 so the caller knows it's not decoded RGBA.
             DecodedIcon icon;
             icon.width = -1; // Signals raw PNG data
             icon.height = 0;
