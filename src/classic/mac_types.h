@@ -1,3 +1,9 @@
+/*
+	Mac Types — Macintosh type aliases
+
+	Defines type aliases for classic Macintosh types used throughout
+	the emulator: FourCharCode, OSType, ResType, and CreatorCode.
+*/
 #pragma once
 
 #include <cstdint>
