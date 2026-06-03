@@ -253,7 +253,7 @@ static std::string machineTypeName(int type)
 		case -2:
 			return "Mac XL";
 		case -1:
-			return "Mac 64K ROM";
+			return "Mac 128K";
 		case 1:
 			return "Mac 512Ke";
 		case 2:

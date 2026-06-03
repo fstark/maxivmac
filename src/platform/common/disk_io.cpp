@@ -276,6 +276,7 @@ static void MakeNewDisk0(uint32_t L, char *drivepath)
 	}
 }
 
+//  #### FReD : I hope this is unused, right?
 void MakeNewDisk(uint32_t L, char *drivename)
 {
 	/* Create new disk in working directory / "out" subdirectory */
