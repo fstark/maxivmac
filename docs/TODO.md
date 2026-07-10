@@ -1,5 +1,19 @@
+* Remove Cmd-W/Cmd-Q [DONE]
+* Macplus 6.0.8, shared [DONE]
+  * Eject OK
+* Macplus 7.0.1, shared [DONE]
+  * Eject drive fails [-56]
+* Macplus 7.5.3, shared [BOMB]
+* MacII 6.0.8, shared [DONE]
+  * Eject OK
+* MacII 7.0.1, shared [DONE]
+  * Eject drive fails [-56]
+* MacII 7.5.3, shared [DONE]
+  * Eject drive fails [-56]
+
 trace traps GetVolInfo Open Close OpenRF SetVol GetVol PBGetCatInfo PBGetFCBInfo
-(dbg) trace traps Open Close Read Write GetVolInfo Create Delete OpenRF Rename GetFileInfo SetFileInfo UnmountVol Allocate GetEOF SetEOF FlushVol GetVol SetVol Eject GetFPos SetFPos FlushFile HOpen HCreate HDelete HOpenRF HRename HGetFileInfo HSetFileInfo HSetVol PBOpenWD PBCloseWD PBCatMove PBDirCreate PBGetWDInfo PBGetFCBInfo PBGetCatInfo PBSetCatInfo PBSetVInfo PBGetVolParms
+(dbg)
+trace traps Open Close Read Write GetVolInfo Create Delete OpenRF Rename GetFileInfo SetFileInfo UnmountVol Allocate GetEOF SetEOF FlushVol GetVol SetVol Eject GetFPos SetFPos FlushFile HOpen HCreate HDelete HOpenRF HRename HGetFileInfo HSetFileInfo HSetVol PBOpenWD PBCloseWD PBCatMove PBDirCreate PBGetWDInfo PBGetFCBInfo PBGetCatInfo PBSetCatInfo PBSetVInfo PBGetVolParms
 
 
 
