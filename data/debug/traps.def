@@ -350,6 +350,86 @@ A260 HFSDispatch os dispatch=word.D0
     in  pb:^HFileInfo.A0
     out err:OSErr.D0
     show-out pb ioResult
+  subtrap 0x20 PBDTGetPath
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x21 PBDTCloseDown
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x22 PBDTAddIcon
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x23 PBDTGetIcon
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x24 PBDTGetIconInfo
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x25 PBDTAddAPPL
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x26 PBDTRemoveAPPL
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x27 PBDTGetAPPL
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x28 PBDTSetComment
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x29 PBDTRemoveComment
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x2A PBDTGetComment
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x2B PBDTFlush
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x2C PBDTReset
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x2D PBDTGetInfo
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x2E PBDTOpenInform
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
+  subtrap 0x2F PBDTDelete
+    in  pb:^HFileInfo.A0
+    out err:OSErr.D0
+    show-in  pb ioVRefNum
+    show-out pb ioResult
   subtrap 0x30 PBGetVolParms
     in  pb:^HFileInfo.A0
     out err:OSErr.D0
