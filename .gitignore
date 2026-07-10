@@ -9,7 +9,6 @@
 /maxivmac.app
 /build
 /*.exe
-/*.ROM
 remove*
 CMakeUserPresets.json
 .DS_Store
@@ -36,5 +35,6 @@ verbose.txt
 *-fail.txt
 macsrc/shareddrive/tracing.txt
 macsrc/init/version.h
+macsrc/init/build.dbg
 debug_mouse.dbg
 data/disks/
