@@ -14,6 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 INIT_DIR="$SCRIPT_DIR/macsrc/init"
 MAXIVMAC="${SCRIPT_DIR}/bld/macos/maxivmac"
 MAC_FILE="${SCRIPT_DIR}/macsrc/build.mac"
+DBG_TEMPLATE="${INIT_DIR}/build.dbg.in"
 DBG_SCRIPT="${INIT_DIR}/build.dbg"
 
 # Generate version.h from git
@@ -31,6 +32,10 @@ cat > "$INIT_DIR/version.h" << EOF
 EOF
 
 echo "Stamped INIT version: $VERSION"
+
+# Generate build.dbg from template
+sed -e "s|%%BUILD_ID%%|${VERSION}|g" "$DBG_TEMPLATE" > "$DBG_SCRIPT"
+
 echo "Launching emulator to compile INIT..."
 
 #"$MAXIVMAC" --headless --dbg-script="$DBG_SCRIPT" "$MAC_FILE"

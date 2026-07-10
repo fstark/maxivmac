@@ -1,0 +1,88 @@
+timeout 0
+
+# Starts to Finder
+wait text "Special"
+
+launch "Build THINK C 5.0:Super ResEdit 2.1.3"
+wait text "File"
+
+click 100 100
+wait text "Drive"
+key Tab
+wait text "init"
+showtext on
+type "m"
+wait text "maxivmac"
+key Down
+wait text "maxivmac"
+key Down
+wait text "maxivmac"
+key Enter
+
+wait text "vers"
+
+type "v"
+key Enter
+
+wait text "verss"
+key Enter
+
+wait for 500000000
+key Tab
+wait for 500000000
+key Tab
+wait for 500000000
+key Tab
+wait for 500000000
+key Tab
+wait for 500000000
+key Tab
+wait for 500000000
+
+type "%%BUILD_ID%%"
+key Cmd-W
+key Cmd-S
+
+
+key Cmd-q
+wait text "Special"
+
+
+# Launch THINK C
+launch "Build THINK C 5.0:Think C:THINK C 5.0"
+
+# Navigate Open Project Dialog
+wait text "Open"
+
+## Change drive
+#key Tab
+wait text "maxivmac INIT.π"
+type "maxivmac INIT.π"
+key Enter
+
+# Clean-up project
+key Cmd-K
+wait text "OK"
+key Enter
+
+# Build project
+key Cmd-B
+wait text "Yes"
+key Enter
+
+# Navigate save dialog
+wait text "Save code resource"
+key Enter
+
+# Including nasty non-keyboard navigable "replace dialog"
+wait text "Replace"
+click button "Yes"
+wait text "Copying"
+
+# Exit THINK C and wait for Finder
+key Cmd-q
+wait text "Special"
+
+# Shutdown the mac and wait fo shutdown to complete
+shutdown
+continue
