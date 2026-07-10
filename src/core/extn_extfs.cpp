@@ -37,6 +37,7 @@ extern void put_vm_byte(uint32_t addr, uint8_t b);
 
 static constexpr uint16_t kExtFSVersion = 0x200;
 static constexpr uint16_t kExtFSGetVol = 0x201;
+static constexpr uint16_t kExtFSResolveVRefNum = 0x202;
 static constexpr uint16_t kExtFSRead = 0x205;
 static constexpr uint16_t kExtFSClose = 0x206;
 static constexpr uint16_t kExtFSDbgLog = 0x20D;
@@ -1274,6 +1275,18 @@ void ExtnExtFSDispatch(uint16_t cmd, uint32_t regParam[], uint16_t &regResult)
 		case kExtFSGetVolName:
 			RegGetVolName(regParam, regResult);
 			break;
+		case kExtFSResolveVRefNum:
+		{
+			int16_t vRefNum = static_cast<int16_t>(regParam[0]);
+			int slot = s_drives.slotFromVRefNum(vRefNum);
+			if (slot < 0)
+			{
+				auto wdRef = storage::DecodeGuestWDRef(vRefNum);
+				slot = s_drives.wdToSlot(wdRef);
+			}
+			regResult = static_cast<uint16_t>(slot);
+			break;
+		}
 		case kExtFSUnmount:
 		{
 			int slot = static_cast<int>(regParam[0]);

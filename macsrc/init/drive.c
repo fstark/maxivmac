@@ -109,6 +109,14 @@ static Ptr FindVCB(short vRefNum, Globals *g)
 			if (vRefNum == vr || vRefNum == dn) return g->vcb[i];
 		}
 	}
+	/* Ask host to resolve WD refnums and other indirect references */
+	reg_set(g->regBase, 0, (unsigned long)(unsigned short)vRefNum);
+	reg_command(g->regBase, kCmdResolveVRefNum);
+	{
+		short slot = (short)reg_result(g->regBase);
+		if (slot >= 0 && slot < g->driveCount)
+			return g->vcb[slot];
+	}
 	return NULL;
 }
 
@@ -734,7 +742,18 @@ static OSErr TrapEject(char *pb, Globals *g, short isHFS)
 	short vRefNum = *(short *)(pb + pb_ioVRefNum);
 	Ptr vcb = FindVCB(vRefNum, g);
 	short slot;
-	if (vcb == NULL) return kPassThrough; /* not ours */
+	if (vcb == NULL)
+	{
+		/* VCB may already be torn down by a preceding UnmountVol (System 7).
+		   Check if this is one of our drive numbers — if so, just succeed. */
+		short drv = vRefNum - kBaseDriveNum;
+		if (drv >= 0 && drv < g->driveCount)
+		{
+			CheckAllEjected(g);
+			return kNoErr;
+		}
+		return kPassThrough; /* not ours */
+	}
 	slot = VCBToSlot(vcb, g);
 	if (slot < 0) return kPassThrough;
 	TearDownSlot(slot, g);
@@ -744,6 +763,8 @@ static OSErr TrapEject(char *pb, Globals *g, short isHFS)
 
 static OSErr TrapFlushVol(char *pb, Globals *g, short isHFS)
 {
+	/* Not refBased — must check ownership ourselves */
+	if (FindVCB(*(short *)(pb + pb_ioVRefNum), g) == NULL) return kPassThrough;
 	return kNoErr;
 }
 
@@ -773,6 +794,9 @@ static OSErr TrapGetVolParms(char *pb, Globals *g, short isHFS)
 	unsigned long bufAddr = *(unsigned long *)(pb + pb_ioBuffer);
 	long reqCount = *(long *)(pb + pb_ioReqCount);
 	long actual;
+
+	/* Not refBased — must check ownership ourselves */
+	if (FindVCB(*(short *)(pb + pb_ioVRefNum), g) == NULL) return kPassThrough;
 
 	if (bufAddr == 0) return kParamErr;
 
@@ -915,7 +939,7 @@ void InitTrapTables(void)
 	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x0C, TrapGetFileInfo, 0);
 	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x0D, TrapSetFileInfo, 0);
 	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x0E, TrapUnmountVol, 0);
-	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x10, TrapAllocate, 0);
+	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x10, TrapAllocate, 1);
 	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x11, TrapGetEOF, 1);
 	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x12, TrapSetEOF, 1);
 	AddEntry(sFlatTraps, &fi, kMaxFlatTraps, 0x13, TrapFlushVol, 0);
@@ -1003,7 +1027,10 @@ short DispatchFlat(char *pb, short trapWord)
 
 	SetUpA4();
 	g = get_globals();
-	if (g == NULL || g->ejected)
+	/* After all slots are torn down we stop intercepting traps — except
+	   Eject (0x17), which System 7 sends *after* UnmountVol has already
+	   cleared our VCBs.  We must still claim it to avoid nsDrvErr (-56). */
+	if (g == NULL || (g->ejected && trapNum != 0x17))
 	{
 		RestoreA4();
 		return 1;

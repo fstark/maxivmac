@@ -222,6 +222,7 @@
 #define kCmdWrite 0x0211
 #define kCmdSetEOF 0x0218
 #define kCmdGetVol 0x0201
+#define kCmdResolveVRefNum 0x0202
 
 #define kPB_GetCatInfo 0x0230
 #define kPB_GetFileInfo 0x0231
