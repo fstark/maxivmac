@@ -20,8 +20,8 @@ void PrintUsage()
     std::puts(
         "Usage: icon-extract [OPTIONS] FILE|DIR [FILE|DIR...]\n"
         "\n"
-        "Extract icons from Mac resource forks, AppleDouble sidecars,\n"
-        "and .icns files. Writes PNG files (largest available resolution).\n"
+        "Extract PNG icons from Macintosh resource data:\n"
+        "resource forks, AppleDouble sidecars (._*), and .icns files.\n"
         "\n"
         "Options:\n"
         "  -o, --output-dir DIR    Write PNGs to DIR (default: .)\n"
@@ -35,9 +35,13 @@ std::vector<uint8_t> ReadFile(const fs::path &path)
     std::ifstream f(path, std::ios::binary | std::ios::ate);
     if (!f) return {};
     auto size = f.tellg();
-    f.seekg(0);
+    if (size < 0) return {};
+    f.seekg(0, std::ios::beg);
     std::vector<uint8_t> buf(static_cast<size_t>(size));
-    f.read(reinterpret_cast<char *>(buf.data()), size);
+    if (size > 0) {
+        f.read(reinterpret_cast<char *>(buf.data()), size);
+        if (!f) return {};
+    }
     return buf;
 }
 
