@@ -341,6 +341,23 @@ target_include_directories(ad2bin PRIVATE "${CMAKE_SOURCE_DIR}/src")
 target_compile_options(ad2bin PRIVATE -Wall -Wextra -Werror)
 
 # ---------------------------------------------------------------------------
+# Disk image utility
+# ---------------------------------------------------------------------------
+add_custom_command(
+    OUTPUT "${CMAKE_BINARY_DIR}/driver43_data.h"
+    COMMAND xxd -i driver43.bin > "${CMAKE_BINARY_DIR}/driver43_data.h"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/tools/imgutil"
+    DEPENDS "${CMAKE_SOURCE_DIR}/tools/imgutil/driver43.bin"
+    COMMENT "Embedding driver43.bin"
+)
+add_executable(imgutil
+    tools/imgutil/imgutil.cpp
+    "${CMAKE_BINARY_DIR}/driver43_data.h"
+)
+target_include_directories(imgutil PRIVATE "${CMAKE_BINARY_DIR}")
+target_compile_options(imgutil PRIVATE -Wall -Wextra -Werror)
+
+# ---------------------------------------------------------------------------
 # Unit tests
 # ---------------------------------------------------------------------------
 enable_testing()
