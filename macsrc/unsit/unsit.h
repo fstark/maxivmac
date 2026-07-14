@@ -14,13 +14,23 @@
 #include <string.h>
 
 /* ---- Portable typedefs (no <stdint.h> on THINK C) ---- */
-
+/* On 68K (THINK C), int=16-bit, long=32-bit.
+   On modern hosts, we need explicit 32-bit types. */
+#ifdef __THINK__
 typedef unsigned char  u8;
 typedef unsigned short u16;
 typedef unsigned long  u32;
 typedef signed char    s8;
 typedef signed short   s16;
 typedef signed long    s32;
+#else
+typedef unsigned char  u8;
+typedef unsigned short u16;
+typedef unsigned int   u32;
+typedef signed char    s8;
+typedef signed short   s16;
+typedef signed int     s32;
+#endif
 
 /* ---- I/O abstraction ---- */
 
