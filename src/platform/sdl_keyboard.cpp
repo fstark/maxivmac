@@ -129,10 +129,18 @@ static constexpr auto BuildScanToMkcTable()
 	t[SDL_SCANCODE_LSHIFT] = MKC_formac_Shift;
 	t[SDL_SCANCODE_RCTRL] = MKC_formac_RControl;
 	t[SDL_SCANCODE_LCTRL] = MKC_formac_Control;
+	/* Linux desktops often reserve Super/GUI; prefer Alt for guest Command. */
+	#if defined(__linux__)
+	t[SDL_SCANCODE_RALT] = MKC_formac_RCommand;
+	t[SDL_SCANCODE_LALT] = MKC_formac_Command;
+	t[SDL_SCANCODE_RGUI] = MKC_formac_ROption;
+	t[SDL_SCANCODE_LGUI] = MKC_formac_Option;
+	#else
 	t[SDL_SCANCODE_RALT] = MKC_formac_ROption;
 	t[SDL_SCANCODE_LALT] = MKC_formac_Option;
 	t[SDL_SCANCODE_RGUI] = MKC_formac_RCommand;
 	t[SDL_SCANCODE_LGUI] = MKC_formac_Command;
+	#endif
 
 	/* Misc */
 	t[SDL_SCANCODE_HELP] = MKC_formac_Help;
