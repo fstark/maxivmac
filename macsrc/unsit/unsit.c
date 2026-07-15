@@ -246,8 +246,8 @@ static int extract_entry(const char *path, const SitEntry *entry,
             write_file(out_path, buf, entry->data_length);
         }
         free(buf);
-    } else {
-        /* Create empty data fork */
+    } else if (entry->rsrc_length == 0) {
+        /* Create empty data fork only if no rsrc fork either */
         write_file(out_path, NULL, 0);
     }
 
@@ -271,8 +271,8 @@ static int extract_entry(const char *path, const SitEntry *entry,
         uf_seek(archive, entry->rsrc_offset);
         if (decompress(archive, entry->rsrc_method, buf,
                        entry->rsrc_length, entry->rsrc_comp_length) != 0) {
-            fprintf(stderr, "unsit: failed to decompress rsrc fork of '%s'\n",
-                    entry->name);
+            fprintf(stderr, "unsit: failed to decompress rsrc fork of '%s' (method %d)\n",
+                    entry->name, entry->rsrc_method);
             free(buf);
             /* continue — still write finderinfo */
         } else {
