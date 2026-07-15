@@ -58,15 +58,30 @@ void uf_skip(UFile *uf, s32 count);
 
 /* ---- Bit reader ---- */
 
+#define BR_BUFSZ 512
+
 typedef struct BitReader {
     UFile *uf;
     u32 buf;
     int bits;       /* bits remaining in buf */
+    u8 *rp;        /* current read position in rbuf */
+    u8 *rend;      /* end of valid data in rbuf */
 } BitReader;
 
 void br_init(BitReader *br, UFile *uf);
 int  br_bit(BitReader *br);
+u8   br_nextbyte(BitReader *br);   /* refill helper */
 u32  br_bits(BitReader *br, int n);    /* MSB-first, up to 26 bits */
+
+/* Fast-path macro for br_bit: avoids function call when bits available */
+#define BR_BIT(br, result) do { \
+    if ((br)->bits == 0) { \
+        (br)->buf = ((br)->rp < (br)->rend) ? *(br)->rp++ : br_nextbyte(br); \
+        (br)->bits = 8; \
+    } \
+    (br)->bits--; \
+    (result) = ((br)->buf >> (br)->bits) & 1; \
+} while(0)
 
 /* ---- Finder info (first 16 bytes match Mac FInfo record) ---- */
 
@@ -138,6 +153,22 @@ int decompress_huffman(UFile *uf, u8 *outbuf, s32 length);
 
 /* Dispatch: call the right decompressor based on method byte */
 int decompress(UFile *uf, int method, u8 *outbuf, s32 length, s32 comp_length);
+
+/* ---- Progress reporting ---- */
+
+/*
+ * Called periodically by decompressors to indicate progress.
+ * Platform code sets this to a function that prints a dot, etc.
+ * NULL means no progress reporting.
+ */
+extern void (*progress_tick)(s32 bytes_so_far, s32 total);
+extern char progress_char;  /* character to print: '.' or '*' etc */
+
+#define PROGRESS_TICK(pos, total) \
+    do { if (progress_tick) progress_tick((pos), (total)); } while(0)
+
+/* Return a human-readable name for a compression method number */
+const char *method_name(int method);
 
 /* ---- Format detection (core.c) ---- */
 

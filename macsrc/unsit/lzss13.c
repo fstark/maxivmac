@@ -336,18 +336,20 @@ int decompress_lzss13(UFile *uf, u8 *outbuf, s32 length)
 
 	if (code == 0)
 	{
-		PCode meta;
-		memset(&meta, 0, sizeof(meta));
-		pc_build_explicit(&meta, MetaCodes, MetaCodeLens, 37);
-		parse_dynamic(fc, &br, &meta, 321);
+		PCode *meta = (PCode *)malloc(sizeof(PCode));
+		if (!meta) { rc = -1; goto done; }
+		memset(meta, 0, sizeof(*meta));
+		pc_build_explicit(meta, MetaCodes, MetaCodeLens, 37);
+		parse_dynamic(fc, &br, meta, 321);
 		if (val & 0x08)
 		{
 			free(sc);
 			sc = fc;
 		}
 		else
-			parse_dynamic(sc, &br, &meta, 321);
-		parse_dynamic(oc, &br, &meta, (val & 0x07) + 10);
+			parse_dynamic(sc, &br, meta, 321);
+		parse_dynamic(oc, &br, meta, (val & 0x07) + 10);
+		free(meta);
 	}
 	else if (code >= 1 && code <= 5)
 	{
@@ -417,6 +419,7 @@ int decompress_lzss13(UFile *uf, u8 *outbuf, s32 length)
 				outbuf[outpos++] = byte;
 			}
 		}
+		if ((outpos & 0x3FF) == 0) PROGRESS_TICK(outpos, length);
 	}
 
 done:

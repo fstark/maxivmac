@@ -8,6 +8,34 @@
 #include "unsit.h"
 
 /* ====================================================
+   Progress reporting
+   ==================================================== */
+
+void (*progress_tick)(s32 bytes_so_far, s32 total) = NULL;
+char progress_char = '.';
+
+const char *method_name(int method)
+{
+	switch (method)
+	{
+		case 0:
+			return "none";
+		case 2:
+			return "compress";
+		case 3:
+			return "huffman";
+		case 8:
+			return "MW";
+		case 13:
+			return "lz+huff";
+		case 15:
+			return "arsenic";
+		default:
+			return "???";
+	}
+}
+
+/* ====================================================
    Decompression dispatch
    ==================================================== */
 
@@ -18,6 +46,7 @@ int decompress_none(UFile *uf, u8 *outbuf, s32 length, s32 comp_length)
 	/* If decompressed > compressed (shouldn't happen for stored),
 	   zero-fill the rest */
 	if (to_read < length) memset(outbuf + to_read, 0, (size_t)(length - to_read));
+	PROGRESS_TICK(length, length);
 	return 0;
 }
 

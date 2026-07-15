@@ -82,6 +82,7 @@ static void arith_read(ArithDecoder *dec, int symlow, int symsize, int symtot)
 {
 	s32 renorm = dec->range / symtot;
 	s32 lowincr = renorm * (s32)symlow;
+	int bit;
 
 	dec->code -= lowincr;
 	if (symlow + symsize == symtot)
@@ -92,26 +93,40 @@ static void arith_read(ArithDecoder *dec, int symlow, int symsize, int symtot)
 	while (dec->range <= ARITH_HALF)
 	{
 		dec->range <<= 1;
-		dec->code = (dec->code << 1) | br_bit(&dec->br);
+		BR_BIT(&dec->br, bit);
+		dec->code = (dec->code << 1) | bit;
 	}
 }
 
 static int arith_symbol(ArithDecoder *dec, ArithModel *m)
 {
-	int freq, cumul, n;
+	ArithSym *p, *end;
+	int freq, cumul, f;
 
 	freq = dec->code / (dec->range / m->totalfreq);
+
+	/* Pointer-walk: accumulate frequencies until we exceed freq.
+	   Inner loop: one struct-member load, one add, one compare, one pointer bump.
+	   All loop-invariant values (end, freq) hoisted into locals. */
+	p = m->syms;
+	end = p + m->numsyms - 1;
 	cumul = 0;
-	for (n = 0; n < m->numsyms - 1; n++)
+
+	while (p < end)
 	{
-		if (cumul + m->syms[n].frequency > freq) break;
-		cumul += m->syms[n].frequency;
+		f = p->frequency;
+		cumul += f;
+		if (cumul > freq) { cumul -= f; goto found; }
+		p++;
 	}
+	/* Last symbol */
+	f = p->frequency;
 
-	arith_read(dec, cumul, m->syms[n].frequency, m->totalfreq);
-	arith_model_bump(m, n);
+found:
+	arith_read(dec, cumul, f, m->totalfreq);
+	arith_model_bump(m, (int)(p - m->syms));
 
-	return m->syms[n].symbol;
+	return p->symbol;
 }
 
 static u32 arith_bitstring(ArithDecoder *dec, ArithModel *m, int bits)
@@ -184,11 +199,27 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 	blockbits = (int)arith_bitstring(&dec, &initial, 4) + 9;
 	blocksize = 1L << blockbits;
 
+#ifdef __THINK__
+	/* On classic Mac, malloc can "succeed" returning memory that overlaps
+	   the stack. Check FreeMem before allocating. Need block + transform
+	   + 16K stack headroom. */
+	{
+		long need = blocksize + (blocksize * (s32)sizeof(u32)) + 16384L;
+		if ((long)FreeMem() < need)
+		{
+			fprintf(stderr, "unsit: arsenic: insufficient memory (need %ld, have %ld)\n",
+					need, (long)FreeMem());
+			return -1;
+		}
+	}
+#endif
+
 	block = (u8 *)malloc((size_t)blocksize);
 	transform = (u32 *)malloc((size_t)blocksize * sizeof(u32));
 	if (!block || !transform)
 	{
-		fprintf(stderr, "unsit: arsenic: out of memory (%ld bytes)\n", (long)blocksize * 5);
+		fprintf(stderr, "unsit: arsenic: out of memory (need %ld bytes for blocksize %ld)\n",
+				(long)blocksize * 5, (long)blocksize);
 		rc = -1;
 		goto done;
 	}
@@ -226,6 +257,7 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 					if (endofblocks) break;
 
 					/* -- Decode next block ----------- */
+					progress_char = '*';
 					mtf_reset(&mtf);
 					randomized = arith_symbol(&dec, &initial);
 					transformindex = arith_bitstring(&dec, &initial, blockbits);
@@ -254,6 +286,7 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 							}
 							memset(&block[numbytes], (u8)mtf_decode(&mtf, 0), (size_t)zerocount);
 							numbytes += zerocount;
+							if ((numbytes & 0x3FF) == 0) PROGRESS_TICK(outpos + numbytes, length);
 						}
 
 						if (sel == 10) break;
@@ -270,6 +303,7 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 								goto done;
 							}
 							block[numbytes++] = (u8)mtf_decode(&mtf, symbol);
+							if ((numbytes & 0x3FF) == 0) PROGRESS_TICK(outpos + numbytes, length);
 						}
 					}
 
@@ -290,6 +324,8 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 					}
 
 					bwt_inverse(transform, block, numbytes);
+
+					progress_char = '.';
 
 					bytecount = 0;
 					count = 0;
@@ -331,6 +367,7 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 			}
 
 			outbuf[outpos++] = (u8)outbyte;
+			if ((outpos & 0x3FF) == 0) PROGRESS_TICK(outpos, length);
 		}
 	}
 

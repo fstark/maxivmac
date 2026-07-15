@@ -148,6 +148,85 @@ static int write_file(const char *path, const u8 *data, s32 length)
     return 0;
 }
 
+/* ====================================================
+   Progress display callback
+   ==================================================== */
+
+static s32 prog_last_dot;
+static s32 prog_dot_interval;
+
+static void cli_progress_tick(s32 bytes_so_far, s32 total)
+{
+    s32 dots_now, dots_prev, i;
+    (void)total;
+    dots_now = bytes_so_far / prog_dot_interval;
+    dots_prev = prog_last_dot / prog_dot_interval;
+    for (i = dots_prev; i < dots_now; i++)
+        putchar(progress_char);
+    if (dots_now > dots_prev) fflush(stdout);
+    prog_last_dot = bytes_so_far;
+}
+
+/* ====================================================
+   Fork extraction helper
+   ==================================================== */
+
+static int extract_fork(UFile *archive, const char *out_path,
+                        int is_rsrc,
+                        s32 offset, s32 length, s32 comp_length, int method,
+                        u16 expected_crc)
+{
+    u8 *buf;
+    const char *label = is_rsrc ? "rsrc" : "data";
+
+    if (length <= 0) return 0;
+
+    printf("  %s: [%-8s] %ld bytes: ", label, method_name(method), (long)length);
+    fflush(stdout);
+
+    buf = (u8 *)malloc((size_t)length);
+    if (!buf) {
+        printf("FAIL (malloc)\n");
+        return -1;
+    }
+
+    prog_dot_interval = length / 50;
+    if (prog_dot_interval < 1024) prog_dot_interval = 1024;
+    prog_last_dot = 0;
+    progress_tick = cli_progress_tick;
+
+    uf_seek(archive, offset);
+    if (decompress(archive, method, buf, length, comp_length) != 0) {
+        progress_tick = NULL;
+        printf(" FAIL\n");
+        free(buf);
+        return -1;
+    }
+
+    progress_tick = NULL;
+
+    /* CRC-16 verification (arsenic has its own CRC-32 check) */
+    if (expected_crc != 0 && method != 15)
+    {
+        u16 actual_crc = crc16(buf, length);
+        if (actual_crc != expected_crc)
+        {
+            printf(" CRC MISMATCH (expected %04x, got %04x)\n",
+                   (unsigned)expected_crc, (unsigned)actual_crc);
+        }
+    }
+
+    write_file(out_path, buf, length);
+    free(buf);
+
+    printf(" done\n");
+    return 0;
+}
+
+/* ====================================================
+   Entry callback
+   ==================================================== */
+
 static int extract_entry(const char *path, const SitEntry *entry,
                          UFile *archive, void *ctx)
 {
@@ -167,61 +246,32 @@ static int extract_entry(const char *path, const SitEntry *entry,
         return 0;
     }
 
-    /* -- Data fork ---------------------------- */
-    snprintf(out_path, sizeof(out_path), "%s/%s", base_path, entry->name);
-    mkdirs_for_file(out_path);
-
-    if (entry->data_length > 0) {
-        u8 *buf;
-
-        buf = (u8 *)malloc((size_t)entry->data_length);
-        if (!buf) {
-            fprintf(stderr, "unsit: out of memory (%ld bytes)\n",
-                    (long)entry->data_length);
-            return -1;
-        }
-        uf_seek(archive, entry->data_offset);
-        if (decompress(archive, entry->data_method, buf,
-                       entry->data_length, entry->data_comp_length) != 0) {
-            fprintf(stderr, "unsit: failed to decompress data fork of '%s'\n",
-                    entry->name);
-        } else {
-            write_file(out_path, buf, entry->data_length);
-        }
-        free(buf);
-    } else if (entry->rsrc_length == 0) {
-        /* Create empty data fork only if no rsrc fork either */
-        write_file(out_path, NULL, 0);
-    }
-
     if (path[0] != '\0')
         printf("  %s/%s\n", path, entry->name);
     else
         printf("  %s\n", entry->name);
 
+    /* -- Data fork ---------------------------- */
+    snprintf(out_path, sizeof(out_path), "%s/%s", base_path, entry->name);
+    mkdirs_for_file(out_path);
+
+    if (entry->data_length > 0) {
+        extract_fork(archive, out_path, 0,
+                     entry->data_offset, entry->data_length,
+                     entry->data_comp_length, entry->data_method,
+                     entry->data_crc);
+    } else if (entry->rsrc_length == 0) {
+        write_file(out_path, NULL, 0);
+    }
+
     /* -- Resource fork ------------------------ */
     if (entry->rsrc_length > 0) {
-        u8 *buf;
         snprintf(out_path, sizeof(out_path), "%s/%s.rsrc",
                  base_path, entry->name);
-
-        buf = (u8 *)malloc((size_t)entry->rsrc_length);
-        if (!buf) {
-            fprintf(stderr, "unsit: out of memory (%ld bytes)\n",
-                    (long)entry->rsrc_length);
-            return -1;
-        }
-        uf_seek(archive, entry->rsrc_offset);
-        if (decompress(archive, entry->rsrc_method, buf,
-                       entry->rsrc_length, entry->rsrc_comp_length) != 0) {
-            fprintf(stderr, "unsit: failed to decompress rsrc fork of '%s' (method %d)\n",
-                    entry->name, entry->rsrc_method);
-            free(buf);
-            /* continue -- still write finderinfo */
-        } else {
-            write_file(out_path, buf, entry->rsrc_length);
-            free(buf);
-        }
+        extract_fork(archive, out_path, 1,
+                     entry->rsrc_offset, entry->rsrc_length,
+                     entry->rsrc_comp_length, entry->rsrc_method,
+                     entry->rsrc_crc);
     }
 
     /* -- Finder info (24 bytes, big-endian) -- */

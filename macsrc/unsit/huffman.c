@@ -93,6 +93,7 @@ int decompress_huffman(UFile *uf, u8 *outbuf, s32 length)
 		int val = huff_decode(&br);
 		if (val < 0) return -1;
 		outbuf[outpos++] = (u8)val;
+		if ((outpos & 0x3FF) == 0) PROGRESS_TICK(outpos, length);
 	}
 
 	return 0;

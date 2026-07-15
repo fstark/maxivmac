@@ -204,6 +204,7 @@ int decompress_compress(UFile *uf, u8 *outbuf, s32 length)
 		if (outpos + n > length) n = (int)(length - outpos);
 		memcpy(outbuf + outpos, strbuf, (size_t)n);
 		outpos += n;
+		if ((outpos & 0x3FF) == 0) PROGRESS_TICK(outpos, length);
 	}
 
 	free(st);
