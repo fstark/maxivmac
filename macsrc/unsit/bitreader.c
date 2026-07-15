@@ -1,5 +1,5 @@
 /*
- * bitreader.c — MSB-first bit reader
+ * bitreader.c -- MSB-first bit reader
  *
  * Ported from XADMaster (The Unarchiver) by MacPaw Inc.
  * Licensed under LGPL 2.1.

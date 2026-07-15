@@ -1,5 +1,5 @@
 /*
- * compress.c — LZW (Compress) decompressor
+ * compress.c -- LZW (Compress) decompressor
  *
  * Ported from XADMaster XADCompressHandle.m + LZW.c
  * (The Unarchiver) by MacPaw Inc.  Licensed under LGPL 2.1.
@@ -10,7 +10,7 @@
 
 #include "unsit.h"
 
-/* ── LZW table ───────────────────────────────────── */
+/* -- LZW table ------------------------------------- */
 
 #define LZW_MAX_SYMBOLS (1 << 14) /* 14-bit = 16384 */
 
@@ -120,7 +120,7 @@ static int lzw_next(LZWState *st, int sym)
 	return 0;
 }
 
-/* ── LE bit reader (reused from lzss13 pattern) ─── */
+/* -- LE bit reader (reused from lzss13 pattern) --- */
 
 typedef struct
 {
@@ -150,7 +150,7 @@ static u32 br2_bits(BrLE2 *br, int n)
 	return v;
 }
 
-/* ── Main decompressor ───────────────────────────── */
+/* -- Main decompressor ----------------------------- */
 
 int decompress_compress(UFile *uf, u8 *outbuf, s32 length)
 {

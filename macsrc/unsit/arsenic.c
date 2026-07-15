@@ -1,5 +1,5 @@
 /*
- * arsenic.c — Arsenic decompressor (BWT + arithmetic coding)
+ * arsenic.c -- Arsenic decompressor (BWT + arithmetic coding)
  *
  * Ported from XADMaster XADStuffItArsenicHandle.m (The Unarchiver)
  * by MacPaw Inc.  Licensed under LGPL 2.1.
@@ -7,7 +7,7 @@
 
 #include "unsit.h"
 
-/* ── Arithmetic decoder types (file-scope) ───────── */
+/* -- Arithmetic decoder types (file-scope) --------- */
 
 typedef struct
 {
@@ -26,7 +26,7 @@ typedef struct
 	s32 range, code;
 } ArithDecoder;
 
-/* ── Arithmetic model ────────────────────────────── */
+/* -- Arithmetic model ------------------------------ */
 
 static void arith_model_reset(ArithModel *m)
 {
@@ -65,7 +65,7 @@ static void arith_model_bump(ArithModel *m, int idx)
 	}
 }
 
-/* ── Arithmetic decoder ──────────────────────────── */
+/* -- Arithmetic decoder ---------------------------- */
 
 #define ARITH_BITS 26
 #define ARITH_ONE (1L << (ARITH_BITS - 1))
@@ -123,7 +123,7 @@ static u32 arith_bitstring(ArithDecoder *dec, ArithModel *m, int bits)
 	return res;
 }
 
-/* ── Randomization table ─────────────────────────── */
+/* -- Randomization table --------------------------- */
 
 static const u16 rand_table[256] = {
 	0xee,  0x56, 0xf8, 0xc3, 0x9d, 0x9f,  0xae, 0x2c, 0xad,	 0xcd, 0x24, 0x9d,	0xa6, 0x101, 0x18,
@@ -145,7 +145,7 @@ static const u16 rand_table[256] = {
 	0x49,  0x20, 0x56, 0x57, 0xe2, 0xf5,  0x26, 0x2b, 0x8a,	 0xbf, 0xde, 0xd0,	0x83, 0x34,	 0xf4,
 	0x17};
 
-/* ── Main decompressor ───────────────────────────── */
+/* -- Main decompressor ----------------------------- */
 
 int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 {
@@ -197,7 +197,7 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 	compcrc = 0;
 	endofblocks = arith_symbol(&dec, &initial);
 
-	/* ── Output state (persists across blocks) ─ */
+	/* -- Output state (persists across blocks) - */
 	{
 		s32 numbytes = 0, bytecount = 0, transformindex = 0;
 		int count = 0, last = 0, repeat = 0;
@@ -225,7 +225,7 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 
 					if (endofblocks) break;
 
-					/* ── Decode next block ─────────── */
+					/* -- Decode next block ----------- */
 					mtf_reset(&mtf);
 					randomized = arith_symbol(&dec, &initial);
 					transformindex = arith_bitstring(&dec, &initial, blockbits);
@@ -236,7 +236,7 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 						sel = arith_symbol(&dec, &selector);
 						if (sel == 0 || sel == 1)
 						{
-						s32 zerostate = 1;
+							s32 zerostate = 1;
 							s32 zerocount = 0;
 							while (sel < 2)
 							{
@@ -334,7 +334,7 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 		}
 	}
 
-	/* CRC verification — compute over entire output */
+	/* CRC verification -- compute over entire output */
 	crc = crc32(0, outbuf, outpos);
 	if (compcrc != 0 && compcrc != crc)
 	{

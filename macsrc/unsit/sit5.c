@@ -1,5 +1,5 @@
 /*
- * sit5.c — StuffIt 5 container parser
+ * sit5.c -- StuffIt 5 container parser
  *
  * Ported from XADMaster XADStuffIt5Parser.m (The Unarchiver) by MacPaw Inc.
  * Licensed under LGPL 2.1.
@@ -7,14 +7,14 @@
 
 #include "unsit.h"
 
-/* ── Directory path tracking ─────────────────────── */
+/* -- Directory path tracking ----------------------- */
 
 #define MAX_DIRS 256
 
 typedef struct
 {
-	s32 offset;		 /* absolute offset of directory entry */
-	char path[256];  /* accumulated path prefix */
+	s32 offset;		/* absolute offset of directory entry */
+	char path[256]; /* accumulated path prefix */
 } DirEntry;
 
 static DirEntry *dir_table;
@@ -46,7 +46,7 @@ static const char *dir_lookup(s32 offset)
 	return "";
 }
 
-/* ── Parser ──────────────────────────────────────── */
+/* -- Parser ---------------------------------------- */
 
 int sit5_parse(UFile *uf, EntryCallback cb, void *ctx)
 {
@@ -81,7 +81,7 @@ int sit5_parse(UFile *uf, EntryCallback cb, void *ctx)
 		entry_offset = pos;
 		memset(&entry, 0, sizeof(entry));
 
-		/* ── Entry header ─────────────────────── */
+		/* -- Entry header ----------------------- */
 		version = uf_read8(uf);		 /* +4 */
 		uf_skip(uf, 1);				 /* +5 unknown */
 		header_size = uf_read16(uf); /* +6 */
@@ -119,7 +119,7 @@ int sit5_parse(UFile *uf, EntryCallback cb, void *ctx)
 		(void)prev_off;
 		(void)next_off;
 
-		/* ── Build path from parent chain ─────── */
+		/* -- Build path from parent chain ------- */
 		if (parent_off == 0)
 		{
 			parent_path[0] = '\0';
@@ -146,9 +146,9 @@ int sit5_parse(UFile *uf, EntryCallback cb, void *ctx)
 			full_path[sizeof(full_path) - 1] = '\0';
 		}
 
-		/* ── Folder close marker ──────────────── */
+		/* -- Folder close marker ---------------- */
 		/* A directory entry with no name signals end-of-folder.
-		   It has no second block and no data — skip straight to
+		   It has no second block and no data -- skip straight to
 		   the next entry at pos + header_size. */
 		if (entry.is_dir && name_len == 0)
 		{
@@ -157,7 +157,7 @@ int sit5_parse(UFile *uf, EntryCallback cb, void *ctx)
 			continue;
 		}
 
-		/* ── Second block ─────────────────────── */
+		/* -- Second block ----------------------- */
 		/* Seek past the entry header to the second block */
 		uf_seek(uf, pos + header_size);
 
@@ -171,7 +171,7 @@ int sit5_parse(UFile *uf, EntryCallback cb, void *ctx)
 		padding_size = (version == 1) ? 22 : 18;
 		uf_skip(uf, padding_size);
 
-		/* ── Resource fork info (if present) ──── */
+		/* -- Resource fork info (if present) ---- */
 		if ((sb_flags & 1) && !entry.is_dir)
 		{
 			entry.rsrc_length = (s32)uf_read32(uf);
@@ -187,11 +187,11 @@ int sit5_parse(UFile *uf, EntryCallback cb, void *ctx)
 		}
 		else if (!entry.is_dir)
 		{
-			/* No resource fork — data starts here */
+			/* No resource fork -- data starts here */
 			entry.data_offset = uf_tell(uf);
 		}
 
-		/* ── Invoke callback ──────────────────── */
+		/* -- Invoke callback -------------------- */
 		if (cb(full_path, &entry, uf, ctx) != 0)
 		{
 			free(dir_table);
@@ -199,7 +199,7 @@ int sit5_parse(UFile *uf, EntryCallback cb, void *ctx)
 			return -1;
 		}
 
-		/* ── Advance to next entry ────────────── */
+		/* -- Advance to next entry -------------- */
 		if (entry.is_dir)
 		{
 			/* Children follow immediately after second block */

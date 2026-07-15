@@ -1,4 +1,4 @@
-/* lzss13_tables.h — Static code tables for Algorithm 13
+/* lzss13_tables.h -- Static code tables for Algorithm 13
  * Auto-extracted from XADMaster XADStuffIt13Handle.m
  * Licensed under LGPL 2.1.
  */

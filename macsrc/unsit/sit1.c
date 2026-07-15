@@ -1,5 +1,5 @@
 /*
- * sit1.c — Classic StuffIt (SIT!) container parser
+ * sit1.c -- Classic StuffIt (SIT!) container parser
  *
  * Ported from XADMaster XADStuffItParser.m (The Unarchiver) by MacPaw Inc.
  * Licensed under LGPL 2.1.
@@ -7,7 +7,7 @@
 
 #include "unsit.h"
 
-/* ── Header field offsets ────────────────────────── */
+/* -- Header field offsets -------------------------- */
 
 #define SITFH_COMPRMETHOD 0	  /* u8  rsrc compression method */
 #define SITFH_COMPDMETHOD 1	  /* u8  data compression method */
@@ -34,7 +34,7 @@
 #define StuffItMethodMask (~StuffItEncryptedFlag)
 #define StuffItFolderMask (~(StuffItEncryptedFlag | StuffItFolderContainsEnc))
 
-/* ── Helpers ─────────────────────────────────────── */
+/* -- Helpers --------------------------------------- */
 
 static u32 read_be32(const u8 *p)
 {
@@ -45,7 +45,7 @@ static u16 read_be16(const u8 *p)
 	return (u16)((u16)p[0] << 8 | p[1]);
 }
 
-/* ── Directory stack ─────────────────────────────── */
+/* -- Directory stack ------------------------------- */
 
 #define MAX_DEPTH 32
 
@@ -83,7 +83,7 @@ static void path_build(char *buf, int bufsz)
 	}
 }
 
-/* ── Parser ──────────────────────────────────────── */
+/* -- Parser ---------------------------------------- */
 
 int sit1_parse(UFile *uf, EntryCallback cb, void *ctx)
 {
@@ -163,7 +163,7 @@ int sit1_parse(UFile *uf, EntryCallback cb, void *ctx)
 		entry.rsrc_method = rsrc_method & 0x0F;
 		entry.data_method = data_method & 0x0F;
 
-		/* ── Folder handling ─────────────────── */
+		/* -- Folder handling ------------------- */
 		if ((data_method & StuffItFolderMask) == StuffItStartFolder ||
 			(rsrc_method & StuffItFolderMask) == StuffItStartFolder)
 		{
@@ -189,7 +189,7 @@ int sit1_parse(UFile *uf, EntryCallback cb, void *ctx)
 			continue;
 		}
 
-		/* ── Regular file ────────────────────── */
+		/* -- Regular file ---------------------- */
 		/* Data layout after header: rsrc compressed, then data compressed */
 		entry.rsrc_offset = start;
 		entry.data_offset = start + entry.rsrc_comp_length;

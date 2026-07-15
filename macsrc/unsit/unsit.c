@@ -1,5 +1,5 @@
 /*
- * unsit.c — StuffIt archive extractor, Linux CLI
+ * unsit.c -- StuffIt archive extractor, Linux CLI
  *
  * Platform-specific: stdio-based UFile, Unix file output, main().
  * Portable code lives in core.c and the decompressor files.
@@ -10,9 +10,9 @@
 
 #include "unsit.h"
 
-/* ════════════════════════════════════════════════════
-   UFile — I/O abstraction (Phase 1: stdio)
-   ════════════════════════════════════════════════════ */
+/* ====================================================
+   UFile -- I/O abstraction (Phase 1: stdio)
+   ==================================================== */
 
 int uf_open(UFile *uf, const char *path)
 {
@@ -77,9 +77,9 @@ void uf_skip(UFile *uf, s32 count)
     fseek(uf->fp, count, SEEK_CUR);
 }
 
-/* ════════════════════════════════════════════════════
+/* ====================================================
    Output writer
-   ════════════════════════════════════════════════════ */
+   ==================================================== */
 
 #ifndef __THINK__
 #include <sys/stat.h>
@@ -167,7 +167,7 @@ static int extract_entry(const char *path, const SitEntry *entry,
         return 0;
     }
 
-    /* ── Data fork ──────────────────────────── */
+    /* -- Data fork ---------------------------- */
     snprintf(out_path, sizeof(out_path), "%s/%s", base_path, entry->name);
     mkdirs_for_file(out_path);
 
@@ -199,7 +199,7 @@ static int extract_entry(const char *path, const SitEntry *entry,
     else
         printf("  %s\n", entry->name);
 
-    /* ── Resource fork ──────────────────────── */
+    /* -- Resource fork ------------------------ */
     if (entry->rsrc_length > 0) {
         u8 *buf;
         snprintf(out_path, sizeof(out_path), "%s/%s.rsrc",
@@ -217,14 +217,14 @@ static int extract_entry(const char *path, const SitEntry *entry,
             fprintf(stderr, "unsit: failed to decompress rsrc fork of '%s' (method %d)\n",
                     entry->name, entry->rsrc_method);
             free(buf);
-            /* continue — still write finderinfo */
+            /* continue -- still write finderinfo */
         } else {
             write_file(out_path, buf, entry->rsrc_length);
             free(buf);
         }
     }
 
-    /* ── Finder info (24 bytes, big-endian) ── */
+    /* -- Finder info (24 bytes, big-endian) -- */
     {
         u8 fi[24];
         memset(fi, 0, sizeof(fi));
@@ -245,9 +245,9 @@ static int extract_entry(const char *path, const SitEntry *entry,
     return 0;
 }
 
-/* ════════════════════════════════════════════════════
+/* ====================================================
    Main
-   ════════════════════════════════════════════════════ */
+   ==================================================== */
 
 static void strip_extension(char *dest, const char *src, size_t dest_size)
 {

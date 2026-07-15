@@ -1,5 +1,5 @@
 /*
- * unsit.h — StuffIt archive extractor
+ * unsit.h -- StuffIt archive extractor
  *
  * Portable C targeting THINK C 5 compatibility.
  * Ported from XADMaster (The Unarchiver) by MacPaw Inc.
@@ -41,7 +41,7 @@ typedef signed int     s32;
  * code never touches stdio or Mac Toolbox directly.
  */
 typedef struct UFile {
-    FILE *fp;       /* Phase 1 only — replaced with short refNum on Mac */
+    FILE *fp;       /* Phase 1 only -- replaced with short refNum on Mac */
     s32 base;       /* 0 normally, 128 if MacBinary-wrapped */
     s32 length;     /* total file length (from base) */
 } UFile;
