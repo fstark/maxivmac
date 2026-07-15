@@ -101,6 +101,9 @@ struct VolumeInfo {
     std::string name;
     uint32_t    crDate = 0; // Mac epoch
     uint32_t    mdDate = 0;
+    uint16_t    nmAlBlks = 0;  // total allocation blocks
+    uint32_t    alBlkSiz = 0; // allocation block size in bytes
+    uint16_t    alBlSt   = 0; // first alloc block (in 512-byte logical blocks)
     bool        valid  = false;
 };
 
@@ -229,6 +232,9 @@ static VolumeInfo read_mdb(std::ifstream &f, uint64_t partitionOffset)
 
     vi.crDate = get32(mdb + 2);
     vi.mdDate = get32(mdb + 6);
+    vi.nmAlBlks = get16(mdb + 18);
+    vi.alBlkSiz = get32(mdb + 20);
+    vi.alBlSt   = get16(mdb + 28);
 
     // Volume name: Pascal string at MDB offset +36
     uint8_t nameLen = mdb[36];
@@ -236,6 +242,19 @@ static VolumeInfo read_mdb(std::ifstream &f, uint64_t partitionOffset)
     vi.name.assign(reinterpret_cast<char *>(mdb + 37), nameLen);
     vi.valid = true;
     return vi;
+}
+
+/* ── Volume info display ───────────────────────────── */
+
+static void print_volume_info(const VolumeInfo &vi, const char *indent)
+{
+    if (!vi.valid) return;
+    uint64_t volSize = static_cast<uint64_t>(vi.alBlSt) * 512
+                    + static_cast<uint64_t>(vi.nmAlBlks) * vi.alBlkSiz;
+    println("{}Volume: \"{}\" ({} KB, created {}, modified {})",
+                 indent, vi.name, volSize / 1024,
+                 mac_date_str(vi.crDate),
+                 mac_date_str(vi.mdDate));
 }
 
 /* ── Subcommands ───────────────────────────────────── */
@@ -288,13 +307,7 @@ static int cmd_info(int argc, char *argv[])
             {
                 uint64_t partOffset = static_cast<uint64_t>(p.startBlock) * 512;
                 auto vi = read_mdb(f, partOffset);
-                if (vi.valid)
-                {
-                    println("       Volume: \"{}\" (created {}, modified {})",
-                                 vi.name,
-                                 mac_date_str(vi.crDate),
-                                 mac_date_str(vi.mdDate));
-                }
+                print_volume_info(vi, "       ");
             }
         }
     }
@@ -303,13 +316,7 @@ static int cmd_info(int argc, char *argv[])
         auto vi = read_mdb(f, 0);
         println("{}: HFS partition ({} KB)",
                      path.filename().string(), fileSize / 1024);
-        if (vi.valid)
-        {
-            println("  Volume: \"{}\" (created {}, modified {})",
-                         vi.name,
-                         mac_date_str(vi.crDate),
-                         mac_date_str(vi.mdDate));
-        }
+        print_volume_info(vi, "  ");
     }
     else
     {
