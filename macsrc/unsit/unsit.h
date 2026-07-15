@@ -158,4 +158,20 @@ typedef struct MTFState {
 void mtf_reset(MTFState *st);
 int  mtf_decode(MTFState *st, int symbol);
 
+/* ---- snprintf shim (THINK C lacks snprintf) ---- */
+
+#ifdef __THINK__
+#include <stdarg.h>
+static int snprintf(char *buf, size_t size, const char *fmt, ...)
+{
+    va_list ap;
+    int n;
+    (void)size;
+    va_start(ap, fmt);
+    n = vsprintf(buf, fmt, ap);
+    va_end(ap);
+    return n;
+}
+#endif
+
 #endif /* UNSIT_H */

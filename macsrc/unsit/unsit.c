@@ -142,10 +142,13 @@ static int detect_format(UFile *uf)
    Output writer
    ════════════════════════════════════════════════════ */
 
+#ifndef __THINK__
 #include <sys/stat.h>
+#endif
 
 static char output_dir[512];
 
+#ifndef __THINK__
 static int mkdirs(const char *path)
 {
     char tmp[1024];
@@ -177,6 +180,7 @@ static int mkdirs_for_file(const char *filepath)
     }
     return 0;
 }
+#endif
 
 static void write_be32(u8 *p, u32 v)
 {
@@ -208,8 +212,8 @@ static int write_file(const char *path, const u8 *data, s32 length)
 static int extract_entry(const char *path, const SitEntry *entry,
                          UFile *archive, void *ctx)
 {
-    char out_path[2048];
-    char base_path[1024];  /* output_dir/path or output_dir if path empty */
+    static char out_path[512];
+    static char base_path[512];
     (void)ctx;
 
     /* Build base output directory for this entry */
