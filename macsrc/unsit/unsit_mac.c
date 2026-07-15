@@ -13,9 +13,9 @@
 #include <Files.h>
 #include <console.h>
 
-/* ════════════════════════════════════════════════════
+/* ????????????????????????????????????????????????????
    UFile — stdio implementation (same as Linux)
-   ════════════════════════════════════════════════════ */
+   ???????????????????????????????????????????????????? */
 
 int uf_open(UFile *uf, const char *path)
 {
@@ -80,25 +80,30 @@ void uf_skip(UFile *uf, s32 count)
     fseek(uf->fp, count, SEEK_CUR);
 }
 
-/* ════════════════════════════════════════════════════
+/* ????????????????????????????????????????????????????
    Mac directory creation via Toolbox
-   ════════════════════════════════════════════════════ */
+   ???????????????????????????????????????????????????? */
 
 /*
  * Create a nested directory path.  Components are separated by ':'.
- * E.g. ":Output:Folder" creates Output, then Folder inside it.
- * Uses PBDirCreate (ignores dupFNErr = already exists).
+ * Uses PBDirCreate relative to the app's working directory.
+ * After return, mkd_vref/mkd_dirid hold the final directory.
  */
+static short mkd_vref;
+static long  mkd_dirid;
+
 static void mac_mkdirs(const char *path)
 {
     char component[36];
     Str63 pname;
     CInfoPBRec cpb;
     HParamBlockRec hpb;
-    long dirID = 0;
     const char *p = path;
     int i;
     OSErr err;
+
+    /* Start from the app's working directory */
+    HGetVol(NULL, &mkd_vref, &mkd_dirid);
 
     if (*p == ':') p++;
 
@@ -117,194 +122,170 @@ static void mac_mkdirs(const char *path)
         /* Try to create */
         memset(&hpb, 0, sizeof(hpb));
         hpb.fileParam.ioNamePtr = pname;
-        hpb.fileParam.ioVRefNum = 0;
-        hpb.fileParam.ioDirID = dirID;
+        hpb.fileParam.ioVRefNum = mkd_vref;
+        hpb.fileParam.ioDirID = mkd_dirid;
         err = PBDirCreate((HParmBlkPtr)&hpb, false);
 
         if (err == noErr) {
-            dirID = hpb.fileParam.ioDirID;
+            mkd_dirid = hpb.fileParam.ioDirID;
         } else {
             /* Already exists — look up its dirID */
             memset(&cpb, 0, sizeof(cpb));
             cpb.dirInfo.ioNamePtr = pname;
-            cpb.dirInfo.ioVRefNum = 0;
-            cpb.dirInfo.ioDrDirID = dirID;
+            cpb.dirInfo.ioVRefNum = mkd_vref;
+            cpb.dirInfo.ioDrDirID = mkd_dirid;
             cpb.dirInfo.ioFDirIndex = 0;
             if (PBGetCatInfo(&cpb, false) == noErr)
-                dirID = cpb.dirInfo.ioDrDirID;
+                mkd_dirid = cpb.dirInfo.ioDrDirID;
             else
                 break;
         }
     }
 }
 
-/* Create parent directories for a Mac file path */
-static void mkdirs_for_file(const char *filepath)
+/* Convert '/' to ':' in-place */
+static void to_mac_sep(char *s)
 {
-    char tmp[256];
-    char *colon;
-    strncpy(tmp, filepath, sizeof(tmp) - 1);
-    tmp[sizeof(tmp) - 1] = '\0';
-    colon = strrchr(tmp, ':');
-    if (colon) {
-        *colon = '\0';
-        mac_mkdirs(tmp);
+    while (*s) {
+        if (*s == '/') *s = ':';
+        s++;
     }
 }
 
+/* Make a Pascal string from a C string (max 31 chars for HFS) */
+static void c2pstr_hfs(Str63 pstr, const char *cstr)
+{
+    int len = strlen(cstr);
+    if (len > 31) len = 31;
+    pstr[0] = (unsigned char)len;
+    memcpy(pstr + 1, cstr, len);
+}
+
 /* ════════════════════════════════════════════════════
-   Output writer
+   Output — native Mac File Manager
    ════════════════════════════════════════════════════ */
 
 static char output_dir[256];
 
-static void write_be32(u8 *p, u32 v)
-{
-    p[0] = (u8)(v >> 24);
-    p[1] = (u8)(v >> 16);
-    p[2] = (u8)(v >> 8);
-    p[3] = (u8)v;
-}
-
-static void write_be16(u8 *p, u16 v)
-{
-    p[0] = (u8)(v >> 8);
-    p[1] = (u8)v;
-}
-
-static int write_file(const char *path, const u8 *data, s32 length)
-{
-    FILE *fp = fopen(path, "wb");
-    if (!fp) {
-        fprintf(stderr, "unsit: cannot create '%s'\n", path);
-        return -1;
-    }
-    if (length > 0)
-        fwrite(data, 1, (size_t)length, fp);
-    fclose(fp);
-    return 0;
-}
-
-/* Convert internal path (using /) to Mac path (using :) */
-static void to_mac_path(char *dest, const char *src, int dest_size)
-{
-    int i;
-    for (i = 0; i < dest_size - 1 && src[i]; i++)
-        dest[i] = (src[i] == '/') ? ':' : src[i];
-    dest[i] = '\0';
-}
-
 static int extract_entry(const char *path, const SitEntry *entry,
                          UFile *archive, void *ctx)
 {
-    static char out_path[256];
-    static char base_path[256];
-    static char mac_path[256];
+    static char dir_path[256];
+    Str63 pname;
+    short vRef;
+    long dirID;
+    OSErr err;
     (void)ctx;
 
-    /* Convert internal path (/) to Mac (:) */
-    to_mac_path(mac_path, path, sizeof(mac_path));
+    printf("[%s%s%s dm=%d rm=%d]\n",
+           path[0] ? path : "", path[0] ? ":" : "",
+           entry->name, entry->data_method, entry->rsrc_method);
+    fflush(stdout);
 
-    /* Build base output directory for this entry */
-    if (mac_path[0] != '\0')
-        snprintf(base_path, sizeof(base_path), ":%s:%s",
-                 output_dir, mac_path);
+    /* Build Mac-style directory path (convert / to :) */
+    if (path[0] != '\0')
+        snprintf(dir_path, sizeof(dir_path), "%s:%s", output_dir, path);
     else
-        snprintf(base_path, sizeof(base_path), ":%s", output_dir);
+        snprintf(dir_path, sizeof(dir_path), "%s", output_dir);
+    to_mac_sep(dir_path);
 
     if (entry->is_dir) {
-        mac_mkdirs(base_path);
-        printf("  %s:\n", mac_path);
+        static char full_dir[256];
+        snprintf(full_dir, sizeof(full_dir), "%s:%s", dir_path, entry->name);
+        mac_mkdirs(full_dir);
         return 0;
     }
 
-    /* ── Data fork ──────────────────────────── */
-    snprintf(out_path, sizeof(out_path), "%s:%s", base_path, entry->name);
-    mkdirs_for_file(out_path);
+    /* Ensure parent directory exists; get its vRef+dirID */
+    mac_mkdirs(dir_path);
+    vRef = mkd_vref;
+    dirID = mkd_dirid;
 
+    c2pstr_hfs(pname, entry->name);
+
+    /* Delete any existing file, then create with type/creator */
+    HDelete(vRef, dirID, pname);
+    err = HCreate(vRef, dirID, pname,
+                  (OSType)entry->info.creator, (OSType)entry->info.type);
+    if (err != noErr) {
+        printf("  HCreate err=%d\n", (int)err); fflush(stdout);
+        return 0;  /* skip file, don't abort archive */
+    }
+
+    /* ── Data fork ────────────────────────── */
     if (entry->data_length > 0) {
-        u8 *buf;
-
-        buf = (u8 *)malloc((size_t)entry->data_length);
+        u8 *buf = (u8 *)malloc((size_t)entry->data_length);
         if (!buf) {
-            fprintf(stderr, "unsit: out of memory (%ld bytes)\n",
-                    (long)entry->data_length);
-            return -1;
-        }
-        uf_seek(archive, entry->data_offset);
-        if (decompress(archive, entry->data_method, buf,
-                       entry->data_length, entry->data_comp_length) != 0) {
-            fprintf(stderr, "unsit: failed to decompress data fork of '%s'\n",
-                    entry->name);
+            printf("  data malloc fail %ld\n", (long)entry->data_length);
+            fflush(stdout);
         } else {
-            write_file(out_path, buf, entry->data_length);
+            uf_seek(archive, entry->data_offset);
+            if (decompress(archive, entry->data_method, buf,
+                           entry->data_length, entry->data_comp_length) == 0) {
+                short refNum;
+                long count = entry->data_length;
+                err = HOpen(vRef, dirID, pname, fsWrPerm, &refNum);
+                if (err == noErr) {
+                    FSWrite(refNum, &count, buf);
+                    FSClose(refNum);
+                }
+            } else {
+                printf("  data decomp fail\n"); fflush(stdout);
+            }
+            free(buf);
         }
-        free(buf);
-    } else if (entry->rsrc_length == 0) {
-        write_file(out_path, NULL, 0);
     }
 
-    if (mac_path[0] != '\0')
-        printf("  %s:%s\n", mac_path, entry->name);
-    else
-        printf("  %s\n", entry->name);
-
-    /* ── Resource fork ──────────────────────── */
+    /* ── Resource fork ────────────────────── */
     if (entry->rsrc_length > 0) {
-        u8 *buf;
-        snprintf(out_path, sizeof(out_path), "%s:%s.rsrc",
-                 base_path, entry->name);
-
-        buf = (u8 *)malloc((size_t)entry->rsrc_length);
+        u8 *buf = (u8 *)malloc((size_t)entry->rsrc_length);
         if (!buf) {
-            fprintf(stderr, "unsit: out of memory (%ld bytes)\n",
-                    (long)entry->rsrc_length);
-            return -1;
-        }
-        uf_seek(archive, entry->rsrc_offset);
-        if (decompress(archive, entry->rsrc_method, buf,
-                       entry->rsrc_length, entry->rsrc_comp_length) != 0) {
-            fprintf(stderr, "unsit: failed to decompress rsrc fork of '%s'\n",
-                    entry->name);
-            free(buf);
+            printf("  rsrc malloc fail %ld\n", (long)entry->rsrc_length);
+            fflush(stdout);
         } else {
-            write_file(out_path, buf, entry->rsrc_length);
+            uf_seek(archive, entry->rsrc_offset);
+            if (decompress(archive, entry->rsrc_method, buf,
+                           entry->rsrc_length, entry->rsrc_comp_length) == 0) {
+                short refNum;
+                long count = entry->rsrc_length;
+                err = HOpenRF(vRef, dirID, pname, fsWrPerm, &refNum);
+                if (err == noErr) {
+                    FSWrite(refNum, &count, buf);
+                    FSClose(refNum);
+                }
+            } else {
+                printf("  rsrc decomp fail\n"); fflush(stdout);
+            }
             free(buf);
         }
     }
 
-    /* ── Finder info (24 bytes, big-endian) ── */
+    /* ── Finder info ──────────────────────── */
     {
-        u8 fi[24];
-        memset(fi, 0, sizeof(fi));
-        write_be32(fi + 0, entry->info.type);
-        write_be32(fi + 4, entry->info.creator);
-        write_be16(fi + 8, entry->info.flags);
-        write_be16(fi + 10, entry->info.location_v);
-        write_be16(fi + 12, entry->info.location_h);
-        write_be16(fi + 14, entry->info.folder);
-        write_be32(fi + 16, entry->info.creation);
-        write_be32(fi + 20, entry->info.modification);
-
-        snprintf(out_path, sizeof(out_path), "%s:%s.finderinfo",
-                 base_path, entry->name);
-        write_file(out_path, fi, 24);
+        FInfo fi;
+        memset(&fi, 0, sizeof(fi));
+        fi.fdType = (OSType)entry->info.type;
+        fi.fdCreator = (OSType)entry->info.creator;
+        fi.fdFlags = entry->info.flags;
+        HSetFInfo(vRef, dirID, pname, &fi);
     }
 
+    printf("  ok\n"); fflush(stdout);
     return 0;
 }
 
-/* ════════════════════════════════════════════════════
+/* ????????????????????????????????????????????????????
    Main
-   ════════════════════════════════════════════════════ */
+   ???????????????????????????????????????????????????? */
 
 static void strip_extension(char *dest, const char *src, int dest_size)
 {
     const char *base;
     char *dot;
 
-    /* Find the last path component (after last :) */
-    base = strrchr(src, ':');
+    /* Find the last path component (after last / or :) */
+    base = strrchr(src, '/');
+    if (!base) base = strrchr(src, ':');
     base = base ? base + 1 : src;
 
     strncpy(dest, base, dest_size - 1);
@@ -321,8 +302,13 @@ int main(void)
     char **argv;
     UFile uf;
     int fmt, rc;
+    static char *fake_argv[] = {"unsit", "x.sit", NULL};
 
-    argc = ccommand(&argv);
+//    argc = ccommand(&argv);
+    argc = 2;
+    argv = fake_argv;
+
+fprintf( stderr, "Starting unsit\n" );
 
     if (argc < 2) {
         fprintf(stderr, "usage: unsit <archive.sit>\n");
