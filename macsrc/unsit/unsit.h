@@ -139,6 +139,15 @@ int decompress_huffman(UFile *uf, u8 *outbuf, s32 length);
 /* Dispatch: call the right decompressor based on method byte */
 int decompress(UFile *uf, int method, u8 *outbuf, s32 length, s32 comp_length);
 
+/* ---- Format detection (core.c) ---- */
+
+#define FMT_UNKNOWN  0
+#define FMT_SIT5     1
+#define FMT_CLASSIC  2
+
+int detect_format(UFile *uf);
+int detect_macbinary(UFile *uf);
+
 /* ---- CRC ---- */
 
 u16 crc16(const u8 *data, s32 length);
