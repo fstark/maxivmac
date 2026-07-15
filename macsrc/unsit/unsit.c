@@ -339,6 +339,18 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    /* Detect and skip MacBinary header */
+    {
+        u8 mb[130];
+        uf_seek(&uf, 0);
+        if (uf_read(&uf, mb, 130) == 0 &&
+            mb[0] == 0 && mb[74] == 0 && mb[82] == 0 &&
+            (memcmp(mb + 128, "St", 2) == 0 ||
+             (mb[128] == 'S' && mb[129] == 'I'))) {
+            uf.base = 128;
+        }
+    }
+
     fmt = detect_format(&uf);
 
     /* Create output directory from archive name */
