@@ -387,8 +387,8 @@ int main(void)
 	static char filename[256];
 
 #ifdef PROFILE
-	InitProfile( 400, 50 ); // 400 functions, 50 call depth
-	freopen( "profiler.txt", "w", stdout );
+	InitProfile(400, 50); // 400 functions, 50 call depth
+	freopen("profiler.txt", "w", stdout);
 #endif
 
 	/* Reserve 64K for stack — must be before any heap growth.
