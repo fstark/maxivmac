@@ -116,7 +116,11 @@ static int arith_symbol(ArithDecoder *dec, ArithModel *m)
 	{
 		f = p->frequency;
 		cumul += f;
-		if (cumul > freq) { cumul -= f; goto found; }
+		if (cumul > freq)
+		{
+			cumul -= f;
+			goto found;
+		}
 		p++;
 	}
 	/* Last symbol */
@@ -207,8 +211,8 @@ int decompress_arsenic(UFile *uf, u8 *outbuf, s32 length)
 		long need = blocksize + (blocksize * (s32)sizeof(u32)) + 16384L;
 		if ((long)FreeMem() < need)
 		{
-			fprintf(stderr, "unsit: arsenic: insufficient memory (need %ld, have %ld)\n",
-					need, (long)FreeMem());
+			fprintf(stderr, "unsit: arsenic: insufficient memory (need %ld, have %ld)\n", need,
+					(long)FreeMem());
 			return -1;
 		}
 	}

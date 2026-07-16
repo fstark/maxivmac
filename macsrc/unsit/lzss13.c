@@ -337,7 +337,11 @@ int decompress_lzss13(UFile *uf, u8 *outbuf, s32 length)
 	if (code == 0)
 	{
 		PCode *meta = (PCode *)malloc(sizeof(PCode));
-		if (!meta) { rc = -1; goto done; }
+		if (!meta)
+		{
+			rc = -1;
+			goto done;
+		}
 		memset(meta, 0, sizeof(*meta));
 		pc_build_explicit(meta, MetaCodes, MetaCodeLens, 37);
 		parse_dynamic(fc, &br, meta, 321);

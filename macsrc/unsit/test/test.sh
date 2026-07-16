@@ -17,7 +17,8 @@ for sit in *.sit; do
     mkdir -p "/tmp/unsit_$name" "/tmp/unar_$name"
 
     # Extract with unsit
-    (cd "/tmp/unsit_$name" && "$OLDPWD/$UNSIT" "$OLDPWD/$sit") > /tmp/unsit_${name}_out.txt 2>&1
+	echo "[${name}]"
+    (cd "/tmp/unsit_$name" && "$OLDPWD/$UNSIT" "$OLDPWD/$sit") > "/tmp/unsit_${name}_out.txt" 2>&1
 
     # Extract with unar (reference)
     unar -f -o "/tmp/unar_$name" "$sit" >/dev/null 2>&1 || true
@@ -60,6 +61,7 @@ for sit in *.sit; do
     if [ "$DIFFS" -eq 0 ]; then
         echo "PASS: $name"
         PASS=$((PASS + 1))
+		#rm "$sit"
     else
         echo "FAIL: $name ($DIFFS differences)"
         FAIL=$((FAIL + 1))
