@@ -48,6 +48,7 @@ enum class UIAction : uint8_t
 	SpeedReset,
 	TogglePaused,
 	InsertDisk,
+	MountToolDisk,
 	Reboot,
 	PowerOff,
 	Interrupt,
@@ -122,6 +123,10 @@ public:
 
 	/* Action dispatch (used by overlay and shortcuts) */
 	void executeAction(UIAction action);
+
+	/* Tool Disk state queries (used by overlay) */
+	bool isToolDiskMounted() const;
+	bool isToolDiskAvailable() const;
 
 	/* Dismiss the overlay (callable from async callbacks) */
 	void hideOverlay() { overlayMode_ = OverlayMode::Hidden; }
@@ -199,6 +204,7 @@ private:
 	void captureScreenshot();
 	void captureScreenshotToFile();
 	void openFileDialog();
+	void mountToolDisk();
 	void toggleZoom();
 
 };

@@ -6,6 +6,7 @@
 
 #include "platform/imgui_launcher.h"
 #include "platform/platform_config.h"
+#include "platform/gl_texture.h"
 #include "core/model_defs.h"
 #include <algorithm>
 #include <imgui.h>
@@ -69,20 +70,7 @@ void Launcher::loadTextures()
 	{
 		const auto &path = entries_[i].iconPath;
 		if (path.empty()) continue;
-
-		int w, h, channels;
-		unsigned char *pixels = stbi_load(path.c_str(), &w, &h, &channels, 4);
-		if (!pixels) continue;
-
-		GLuint tex = 0;
-		glGenTextures(1, &tex);
-		glBindTexture(GL_TEXTURE_2D, tex);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-		stbi_image_free(pixels);
-
-		textures_[i] = tex;
+		textures_[i] = loadPngTexture(path.c_str());
 	}
 }
 

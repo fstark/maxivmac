@@ -16,6 +16,11 @@
 #include "core/config_loader.h"
 #include "core/extn_extfs.h"
 #include "core/main.h"
+#include "platform/common/disk_io.h"
+#include "platform/gl_texture.h"
+#include "core/emulation_config.h"
+
+#include <filesystem>
 
 /* Forward declarations to avoid pulling in the full osglu_common.h
    include chain (which depends on emulator config macros). */
@@ -68,6 +73,7 @@ static constexpr std::array kShortcuts = {
 	ShortcutEntry{SDL_SCANCODE_RIGHT, UIAction::SpeedUp},
 	ShortcutEntry{SDL_SCANCODE_LEFT, UIAction::SpeedDown},
 	ShortcutEntry{SDL_SCANCODE_I, UIAction::InsertDisk},
+	ShortcutEntry{SDL_SCANCODE_T, UIAction::MountToolDisk},
 	ShortcutEntry{SDL_SCANCODE_R, UIAction::Reboot},
 	ShortcutEntry{SDL_SCANCODE_N, UIAction::Interrupt},
 	ShortcutEntry{SDL_SCANCODE_Q, UIAction::PowerOff},
@@ -557,6 +563,7 @@ bool ImGuiBackend::createLauncher(std::vector<MacFileEntry> entries)
 
 	launcher_.init(std::move(entries));
 	launcher_.loadTextures();
+
 	return true;
 }
 
@@ -835,6 +842,9 @@ void ImGuiBackend::executeAction(UIAction action)
 				overlayMode_ = OverlayMode::Hidden;
 			openFileDialog();
 			break;
+		case UIAction::MountToolDisk:
+			mountToolDisk();
+			break;
 		case UIAction::Reboot:
 			g_wantMacReset = true;
 			overlayMode_ = OverlayMode::Hidden;
@@ -848,6 +858,49 @@ void ImGuiBackend::executeAction(UIAction action)
 		default:
 			break;
 	}
+}
+
+void ImGuiBackend::mountToolDisk()
+{
+	std::string dataDir = ResolveDataDir("");
+	std::string toolDiskPath = dataDir + "/system/tools.hfs";
+
+	if (!std::filesystem::exists(toolDiskPath))
+	{
+		overlay_.flash("Tool Disk not found", 2000);
+		return;
+	}
+
+	/* Check if already mounted */
+	for (int i = 0; i < NumDrives; ++i)
+	{
+		if (g_driveNames[i] && toolDiskPath == g_driveNames[i])
+		{
+			overlay_.flash("Tool Disk already mounted", 2000);
+			return;
+		}
+	}
+
+	shell_->insertDiskOrRom(toolDiskPath.c_str(), false);
+	overlay_.flash("Tool Disk mounted", 1500);
+}
+
+bool ImGuiBackend::isToolDiskAvailable() const
+{
+	std::string dataDir = ResolveDataDir("");
+	return std::filesystem::exists(dataDir + "/system/tools.hfs");
+}
+
+bool ImGuiBackend::isToolDiskMounted() const
+{
+	std::string dataDir = ResolveDataDir("");
+	std::string toolDiskPath = dataDir + "/system/tools.hfs";
+	for (int i = 0; i < NumDrives; ++i)
+	{
+		if (g_driveNames[i] && toolDiskPath == g_driveNames[i])
+			return true;
+	}
+	return false;
 }
 
 void ImGuiBackend::adjustSpeed(int delta)
@@ -1195,6 +1248,12 @@ bool ImGuiBackend::createWindow(const char *title, int width, int height, bool f
 				 GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
 
 	if (effect_) effect_->init();
+
+	/* Load tool disk icon (must be in the emulator's GL context) */
+	{
+		std::string iconPath = ResolveDataDir("") + "/defaults/floppy-color.png";
+		overlay_.setToolDiskIcon(loadPngTexture(iconPath.c_str()));
+	}
 
 	return true;
 }

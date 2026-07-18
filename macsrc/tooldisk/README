@@ -1,0 +1,44 @@
+maxivmac Tools
+==============
+
+Version: %%VERSION%%
+
+Compatibility
+-------------
+- System 6.0.8: works properly (minor issues)
+- System 7.0.1: some stability issues
+- System 7.5.3: some stability issues
+
+maxivmac INIT
+-------------
+Drag "maxivmac INIT" into your System Folder and restart.
+
+Clipboard Sync:
+- Automatic copy/paste between Mac and host
+- Text and images (PICT) supported
+- MacOS Roman to UTF-8 conversion
+- Caveat: apps with private scraps need you to switch
+  to another app and back to discover clipboard changes
+
+Shared Drive:
+- Host folder appears as a Mac volume on the desktop
+- Drag and drop a folder from the host to automatically
+  mount it as a new shared drive
+- File name mapping (long names, illegal characters)
+- MacOS Roman conversion including line endings
+- Automatic Type/Creator assignment
+  (see maxivmac documentation for details)
+
+Host Commands:
+- Launch: start a Mac application from the host
+- ExitToShell: quit the current app to Finder
+- ShutDown: clean power-off from the host
+
+ImportFl / ExportFl
+-------------------
+- ImportFl: import a file from the host into the Mac
+- ExportFl: export a file from the Mac to the host
+
+These are the minivmac versions of these utilities.
+
+For more information: github.com/fstark/maxivmac

@@ -71,7 +71,7 @@ bool ControlOverlay::draw(UIState currentState, EmulatorShell *shell, ImGuiBacke
 			if (hoverHelp_)
 				ImGui::TextWrapped("%s", hoverHelp_);
 			else
-				drawAbout();
+				drawAbout(backend);
 		}
 
 		/* Bottom row: Interrupt | Reboot | Power Off — pinned to panel bottom */
@@ -283,7 +283,7 @@ static std::string machineTypeName(int type)
 	}
 }
 
-void ControlOverlay::drawAbout()
+void ControlOverlay::drawAbout(ImGuiBackend *backend)
 {
 	ImGui::TextDisabled("maxivmac %s", MAXIVMAC_DISPLAY_VERSION);
 
@@ -295,16 +295,84 @@ void ControlOverlay::drawAbout()
 		}
 		else if (info.isStale())
 		{
-			ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.0f, 1.0f), "%s · System %s · INIT %s",
+			ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.0f, 1.0f), "%s · System %s · INIT %s (outdated)",
 							   machineTypeName(info.machineType()).c_str(),
 							   formatSystemVersion(info.systemVersion()).c_str(),
 							   std::string(info.version()).c_str());
 		}
 		else
 		{
-			ImGui::Text("%s · System %s · INIT %s", machineTypeName(info.machineType()).c_str(),
+			ImGui::Text("%s · System %s · INIT %s (up to date)", machineTypeName(info.machineType()).c_str(),
 						formatSystemVersion(info.systemVersion()).c_str(),
 						std::string(info.version()).c_str());
+		}
+
+		/* Tool Disk: icon + label stacked, right-aligned, fully clickable */
+		{
+			const auto &initInfo = ExtnSystemInitInfo();
+			const char *label = initInfo.loaded() ? "Update Tools (T)" : "Install Tools (T)";
+			bool mounted = backend->isToolDiskMounted();
+			bool available = backend->isToolDiskAvailable();
+			bool disabled = mounted || !available;
+
+			if (mounted) label = "Tools Mounted";
+
+			float iconSize = toolDiskIconTex_ ? ImGui::GetFrameHeight() * 2.0f : 0.0f;
+			float labelW = ImGui::CalcTextSize(label).x;
+			float pad = ImGui::GetStyle().FramePadding.x;
+			float colW = std::max(iconSize, labelW + pad * 2.0f);
+			float colH = iconSize + ImGui::GetTextLineHeightWithSpacing() + pad * 2.0f;
+			float rightX = ImGui::GetContentRegionMax().x;
+
+			ImGui::SameLine(rightX - colW);
+			ImVec2 origin = ImGui::GetCursorScreenPos();
+
+			if (disabled) ImGui::BeginDisabled();
+
+			bool clicked = ImGui::InvisibleButton("##toolDisk", ImVec2(colW, colH));
+			bool hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+
+			/* Background highlight on hover */
+			if (hovered && !disabled)
+			{
+				ImGui::GetWindowDrawList()->AddRectFilled(
+					origin, ImVec2(origin.x + colW, origin.y + colH),
+					ImGui::GetColorU32(ImGuiCol_ButtonHovered),
+					ImGui::GetStyle().FrameRounding);
+			}
+
+			/* Draw icon centered */
+			if (toolDiskIconTex_)
+			{
+				ImVec2 iconPos(origin.x + (colW - iconSize) * 0.5f, origin.y + pad);
+				ImGui::GetWindowDrawList()->AddImage(
+					(ImTextureID)(uintptr_t)toolDiskIconTex_,
+					iconPos, ImVec2(iconPos.x + iconSize, iconPos.y + iconSize));
+			}
+
+			/* Draw label centered below icon */
+			{
+				float textY = origin.y + pad + iconSize + ImGui::GetStyle().ItemSpacing.y;
+				float textX = origin.x + (colW - labelW) * 0.5f;
+				ImGui::GetWindowDrawList()->AddText(
+					ImVec2(textX, textY),
+					ImGui::GetColorU32(ImGuiCol_Text), label);
+			}
+
+			if (clicked)
+				backend->executeAction(UIAction::MountToolDisk);
+
+			if (disabled) ImGui::EndDisabled();
+
+			if (!hoverHelp_ && hovered)
+			{
+				if (mounted)
+					hoverHelp_ = "The Tool Disk is already mounted in a drive slot.";
+				else if (!available)
+					hoverHelp_ = "Tool Disk not found at data/system/tools.hfs. Run build-tooldisk.sh to create it.";
+				else
+					hoverHelp_ = "Mount the Tool Disk containing the maxivmac INIT and utilities. The disk appears on the Finder desktop; drag the INIT into your System Folder and restart.";
+			}
 		}
 	}
 

@@ -1,0 +1,6 @@
+# Mac II · System 6 — Tool Disk builder
+# Boots build.hfs with tools.hfs as second disk so Finder creates Desktop file.
+name = Tool Disk Builder
+model = II
+disk = macsrc/build.hfs
+disk = data/system/tools.hfs

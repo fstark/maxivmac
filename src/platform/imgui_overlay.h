@@ -24,11 +24,14 @@ public:
 	/* Show a brief feedback message in the info area. */
 	void flash(const char *msg, uint32_t ms);
 
+	/* Set the GL texture ID for the tool disk icon (call once after GL init). */
+	void setToolDiskIcon(uint32_t texId) { toolDiskIconTex_ = texId; }
+
 private:
 	void drawPrimaryControls(UIState currentState, EmulatorShell *shell, ImGuiBackend *backend,
 							 UIState &requestedState);
 	void drawAdvancedControls(ImGuiBackend *backend);
-	void drawAbout();
+	void drawAbout(ImGuiBackend *backend);
 
 	/* Flash feedback */
 	const char *flashMsg_ = nullptr;
@@ -36,6 +39,7 @@ private:
 
 	/* Rendering state */
 	bool crtEnabled_ = false;
+	uint32_t toolDiskIconTex_ = 0;
 
 	/* Hover help (set each frame by drawPrimaryControls / drawAdvancedControls) */
 	const char *hoverHelp_ = nullptr;
