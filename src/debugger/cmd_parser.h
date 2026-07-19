@@ -55,6 +55,7 @@ struct CmdEntry
 	void (*handler)(Debugger &dbg, const std::vector<Token> &args);
 	std::string_view helpBrief;
 	std::string_view helpFull;
+	std::string_view category; // "Execution", "Breakpoints", etc.
 };
 
 class DbgIO; // forward

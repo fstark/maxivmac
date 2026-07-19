@@ -8,6 +8,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string_view>
 
 void CmdHelp(Debugger &dbg, const std::vector<Token> &args)
 {
@@ -26,59 +27,44 @@ void CmdHelp(Debugger &dbg, const std::vector<Token> &args)
 		return;
 	}
 
-	/* General help */
+	/* Auto-generated help grouped by category */
 	dbg.io().write("maxivmac debugger commands:\n\n");
 
-	dbg.io().write("Execution:\n");
-	dbg.io().write("  run (r)        Start/resume execution\n");
-	dbg.io().write("  continue (c)   Continue execution\n");
-	dbg.io().write("  step [N] (s)   Step N instructions (into calls)\n");
-	dbg.io().write("  stepi [N] (si) Step N machine instructions\n");
-	dbg.io().write("  next [N] (n)   Step N instructions (over calls)\n");
-	dbg.io().write("  finish (fin)   Run until current function returns\n");
-	dbg.io().write("  until <addr>   Run until PC reaches address\n");
-	dbg.io().write("\n");
+	static constexpr std::string_view categories[] = {
+		"Execution", "Breakpoints", "Memory", "Tracing",
+		"Information", "Scripting", "Guest", "Other"
+	};
 
-	dbg.io().write("Breakpoints:\n");
-	dbg.io().write("  break <loc> [if <cond>] (b)  Set breakpoint\n");
-	dbg.io().write("  break #<insn>                Break at instruction number\n");
-	dbg.io().write("  watch <addr> [len]           Write watchpoint\n");
-	dbg.io().write("  rwatch <addr> [len]          Read watchpoint\n");
-	dbg.io().write("  awatch <addr> [len]          Access watchpoint\n");
-	dbg.io().write("  delete [id] (d)              Delete breakpoint/watchpoint\n");
-	dbg.io().write("  disable <id>                 Disable bp/wp\n");
-	dbg.io().write("  enable <id>                  Enable bp/wp\n");
-	dbg.io().write("  commands <id>                Set auto-execute commands\n");
-	dbg.io().write("\n");
+	auto *table = dbg.commandTable();
+	int n = dbg.commandTableSize();
 
-	dbg.io().write("Memory:\n");
-	dbg.io().write("  x[/FMT] <addr>  Examine memory (FMT: [count][bwl][xdsi])\n");
-	dbg.io().write("  print <expr> (p) Evaluate expression\n");
-	dbg.io().write("  set <tgt> = <val> Set register or memory\n");
-	dbg.io().write("  find <s> <e> <pat> Search memory\n");
-	dbg.io().write("\n");
+	for (auto cat : categories)
+	{
+		bool headerShown = false;
+		for (int i = 0; i < n; ++i)
+		{
+			auto &cmd = table[i];
+			if (cmd.category != cat) continue;
+			if (!headerShown)
+			{
+				dbg.io().write("%.*s:\n", static_cast<int>(cat.size()), cat.data());
+				headerShown = true;
+			}
+			if (cmd.shortcut.empty())
+				dbg.io().write("  %-14.*s %.*s\n",
+							   static_cast<int>(cmd.name.size()), cmd.name.data(),
+							   static_cast<int>(cmd.helpBrief.size()), cmd.helpBrief.data());
+			else
+				dbg.io().write("  %-14.*s %.*s\n",
+							   // Format: "name (shortcut)"
+							   static_cast<int>(cmd.name.size() + 3 + cmd.shortcut.size()),
+							   (std::string(cmd.name) + " (" + std::string(cmd.shortcut) + ")").c_str(),
+							   static_cast<int>(cmd.helpBrief.size()), cmd.helpBrief.data());
+		}
+		if (headerShown) dbg.io().write("\n");
+	}
 
-	dbg.io().write("Tracing:\n");
-	dbg.io().write("  trace <traps|insn|io> <on|off|names...>\n");
-	dbg.io().write("\n");
-
-	dbg.io().write("Information:\n");
-	dbg.io().write("  info break      List breakpoints/watchpoints\n");
-	dbg.io().write("  info reg        Show registers\n");
-	dbg.io().write("  info traps [p]  Search trap dictionary\n");
-	dbg.io().write("  info globals [p] [--section S] Search low-memory globals\n");
-	dbg.io().write("  info symbol <a> Reverse symbol lookup\n");
-	dbg.io().write("  info insn       Instruction count\n");
-	dbg.io().write("  info via        VIA1/VIA2 register dump\n");
-	dbg.io().write("  info scrap      Guest clipboard contents\n");
-	dbg.io().write("  info console    Guest debug console output\n");
-	dbg.io().write("  backtrace (bt)  Heuristic stack trace\n");
-	dbg.io().write("\n");
-
-	dbg.io().write("Misc:\n");
-	dbg.io().write("  help [cmd] (h)  Show help\n");
-	dbg.io().write("  quit (q)        Exit emulator\n");
-	dbg.io().write("\nEmpty line repeats last command.\n");
+	dbg.io().write("Empty line repeats last command. 'help <cmd>' for details.\n");
 }
 
 void CmdQuit(Debugger &dbg, const std::vector<Token> &)

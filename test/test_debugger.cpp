@@ -417,9 +417,9 @@ static void DummyHandler3(class Debugger &, const std::vector<Token> &) {}
 TEST_CASE("dispatch exact match")
 {
 	CmdEntry table[] = {
-		{"break", "b", DummyHandler1, "Set breakpoint", ""},
-		{"continue", "c", DummyHandler2, "Continue", ""},
-		{"backtrace", "bt", DummyHandler3, "Backtrace", ""},
+		{"break", "b", DummyHandler1, "Set breakpoint", "", ""},
+		{"continue", "c", DummyHandler2, "Continue", "", ""},
+		{"backtrace", "bt", DummyHandler3, "Backtrace", "", ""},
 	};
 	auto *cmd = DispatchCommand("break", table, 3);
 	CHECK(cmd != nullptr);
@@ -429,8 +429,8 @@ TEST_CASE("dispatch exact match")
 TEST_CASE("dispatch shortcut match")
 {
 	CmdEntry table[] = {
-		{"break", "b", DummyHandler1, "Set breakpoint", ""},
-		{"continue", "c", DummyHandler2, "Continue", ""},
+		{"break", "b", DummyHandler1, "Set breakpoint", "", ""},
+		{"continue", "c", DummyHandler2, "Continue", "", ""},
 	};
 	auto *cmd = DispatchCommand("c", table, 2);
 	CHECK(cmd != nullptr);
@@ -440,8 +440,8 @@ TEST_CASE("dispatch shortcut match")
 TEST_CASE("dispatch prefix match")
 {
 	CmdEntry table[] = {
-		{"break", "b", DummyHandler1, "Set breakpoint", ""},
-		{"continue", "c", DummyHandler2, "Continue", ""},
+		{"break", "b", DummyHandler1, "Set breakpoint", "", ""},
+		{"continue", "c", DummyHandler2, "Continue", "", ""},
 	};
 	auto *cmd = DispatchCommand("cont", table, 2);
 	CHECK(cmd != nullptr);
@@ -451,7 +451,7 @@ TEST_CASE("dispatch prefix match")
 TEST_CASE("dispatch unknown")
 {
 	CmdEntry table[] = {
-		{"break", "b", DummyHandler1, "Set breakpoint", ""},
+		{"break", "b", DummyHandler1, "Set breakpoint", "", ""},
 	};
 	auto *cmd = DispatchCommand("xyz", table, 1);
 	CHECK(cmd == nullptr);
