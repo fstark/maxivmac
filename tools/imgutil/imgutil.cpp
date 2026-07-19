@@ -71,7 +71,6 @@ static void put32(uint8_t *p, uint32_t v)
 static constexpr uint16_t kDDRSignature = 0x4552; // "ER"
 static constexpr uint16_t kPMSignature  = 0x504D; // "PM"
 static constexpr uint16_t kMDBSignature = 0x4244; // HFS MDB
-static constexpr uint32_t kBlockSize    = 512;
 
 // One driver descriptor from the DDR driver table.
 struct DriverEntry {
