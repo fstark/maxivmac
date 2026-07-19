@@ -56,6 +56,7 @@ struct LaunchConfig
 
 	// Debugger
 	bool debugger = false;
+	bool explicitDebugger = false; // true if --debugger was given explicitly
 	std::string debugServerPath;		 // empty = not enabled, "auto" = default path
 	std::vector<std::string> dbgScripts; // --dbg-script=FILE (repeatable)
 	std::string diagSubsystems;			 // --diag=extfs,guest,...

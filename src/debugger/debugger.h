@@ -150,6 +150,10 @@ public:
 	// Returns true if the CPU was resumed (caller should return immediately).
 	bool tryResumeScript(const Breakpoint *firedBp);
 
+	// Script-mode flag: when true, auto-exit at script EOF.
+	void setScriptMode(bool on);
+	bool scriptMode() const;
+
 	// Command table access (used by cmd_help.cpp)
 	struct CmdEntry *commandTable();
 	int commandTableSize() const;

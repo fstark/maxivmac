@@ -229,6 +229,7 @@ LaunchConfig ParseCommandLine(int argc, char *argv[])
 		if (strcmp(arg, "--debugger") == 0)
 		{
 			lc.debugger = true;
+			lc.explicitDebugger = true;
 			continue;
 		}
 		if (strncmp(arg, "--dbg-script=", 13) == 0)

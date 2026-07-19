@@ -75,6 +75,7 @@ void CmdDialog(Debugger &dbg, const std::vector<Token> &args);
 static void CmdDebugger(Debugger &dbg, const std::vector<Token> &)
 {
 	dbg.io().write("[script break — type 'continue' to resume]\n");
+	dbg.setScriptMode(false); // override auto-exit
 	dbg.requestScriptBreak();
 }
 
@@ -252,6 +253,7 @@ struct Debugger::Impl
 	/* Pending script (scripting suspension/resumption) */
 	PendingScript pendingScript;
 	bool scriptBreak = false;
+	bool scriptMode = false;
 
 	/* I/O transport */
 	std::unique_ptr<DbgIO> io;
@@ -342,6 +344,16 @@ void Debugger::stop(std::string_view reason)
 void Debugger::requestScriptBreak()
 {
 	impl_->scriptBreak = true;
+}
+
+void Debugger::setScriptMode(bool on)
+{
+	impl_->scriptMode = on;
+}
+
+bool Debugger::scriptMode() const
+{
+	return impl_->scriptMode;
 }
 
 void Debugger::setRunning()
@@ -709,6 +721,13 @@ void Debugger::executeCommands(const std::vector<std::string> &cmds)
 	}
 	// All lines executed — clear any pending state
 	impl_->pendingScript.clear();
+
+	// Script-mode auto-exit: if no pending waits, exit cleanly
+	if (impl_->scriptMode && impl_->state == DbgState::Stopped)
+	{
+		impl_->io->write("[script completed]\n");
+		std::exit(0);
+	}
 }
 
 bool Debugger::tryResumeScript(const Breakpoint *firedBp)
@@ -776,6 +795,14 @@ void Debugger::commandLoop()
 {
 	char buf[1024];
 	auto &out = *impl_->io;
+
+	/* Script-mode auto-exit: if the script is exhausted and we've
+	   returned to the command loop, exit cleanly. */
+	if (impl_->scriptMode && impl_->pendingScript.exhausted())
+	{
+		impl_->io->write("[script completed]\n");
+		std::exit(0);
+	}
 
 	/* For socket mode: ensure a client is connected */
 	if (out.isSocket() && !impl_->clientConnected)

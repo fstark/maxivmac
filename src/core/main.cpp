@@ -726,6 +726,8 @@ bool ProgramMain()
 	/* Execute startup debug scripts (after registries so trap names resolve) */
 	if (auto *dbg = Debugger::instance())
 	{
+		if (!s_launchConfig.dbgScripts.empty() && !s_launchConfig.explicitDebugger)
+			dbg->setScriptMode(true);
 		for (auto &script : s_launchConfig.dbgScripts)
 			SourceFile(*dbg, script);
 	}
