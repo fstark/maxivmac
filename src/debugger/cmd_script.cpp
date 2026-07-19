@@ -6,6 +6,7 @@
 #include "debugger/bp_screen.h"
 #include "debugger/script_keymap.h"
 #include "debugger/settings.h"
+#include "debugger/duration.h"
 
 #include "core/machine.h"
 #include "core/ict_scheduler.h"
@@ -39,9 +40,17 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 	}
 
 	// Determine cycle budget (0 = no timeout)
+	// Supports human-readable durations: 5s, 500ms, 1M, 100k, off
 	auto parseBudget = [&](size_t argIdx) -> ScaledCycleCount
 	{
-		if (argIdx < args.size() && args[argIdx].isNumber()) return args[argIdx].numValue;
+		if (argIdx < args.size() && !args[argIdx].isEnd())
+		{
+			uint64_t cycles;
+			if (ParseDuration(args[argIdx].text, 8'000'000, cycles))
+				return cycles;
+			// Fall through to raw number
+			if (args[argIdx].isNumber()) return args[argIdx].numValue;
+		}
 		return ScriptDefaultTimeout();
 	};
 
@@ -92,14 +101,25 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 	}
 	else if (args[0].isWord("for"))
 	{
-		if (args.size() < 2 || !args[1].isNumber())
+		if (args.size() < 2 || args[1].isEnd())
 		{
-			dbg.io().write("Usage: wait for <cycles>\n");
+			dbg.io().write("Usage: wait for <duration>\n");
 			return;
 		}
-		ScaledCycleCount target = g_ict.getCurrent() + args[1].numValue;
+		uint64_t budget;
+		if (!ParseDuration(args[1].text, 8'000'000, budget))
+		{
+			if (args[1].isNumber())
+				budget = args[1].numValue;
+			else
+			{
+				dbg.io().write("Cannot parse duration '%s'\n", args[1].text.c_str());
+				return;
+			}
+		}
+		ScaledCycleCount target = g_ict.getCurrent() + budget;
 		uint32_t id = dbg.setCycleBreak(target, true);
-		dbg.io().write("Waiting %'" PRIu64 " cycles (bp %u)...\n", args[1].numValue, id);
+		dbg.io().write("Waiting %'" PRIu64 " cycles (bp %u)...\n", budget, id);
 		dbg.setRunning();
 		return;
 	}
