@@ -423,30 +423,52 @@ CInfoPBRec                union    108
 | Command | Description |
 |---------|-------------|
 | `info insn` | Print current instruction count |
+| `info script` | Show pending script state, default timeout, active waits |
 | `log [N]` | Show last N guest console log lines (default 20) |
 | `log grep <pattern>` | Show guest log lines matching pattern |
 | `backtrace` / `bt` | Show stack frames (heuristic: scan for LINK/RTS patterns) |
 | `source <path>` | Execute debugger commands from a `.dbg` file |
+| `set <name> <value>` | Set a debugger setting |
+| `show [<name>]` | Show one or all debugger settings |
+| `exit [code]` | Exit emulator with given exit code (default 0) |
 | `help [cmd]` | Show help (see below) |
 | `quit` | Exit emulator |
 
+### Settings
+
+Settings are managed with `set <name> <value>` and `show [<name>]`:
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `default-timeout` | duration | 40000000 | Default cycle budget for `wait` (0 = infinite) |
+| `confirm` | bool | off | Require y/n for destructive commands (e.g. `delete` all) |
+
+```
+(dbg) set default-timeout 10s
+default-timeout = 80000000
+(dbg) set confirm on
+confirm = on
+(dbg) show
+default-timeout      = 80000000    Default cycle budget for 'wait' commands (0 = infinite)
+confirm              = on          Require y/n confirmation for destructive commands
+```
+
+### Script Auto-Exit
+
+When `--dbg-script` is used without `--debugger`, scripts auto-exit
+with code 0 when all lines are consumed and the CPU is stopped.  This
+means test scripts no longer need a trailing `quit` command.
+
+The `debugger` command in a script overrides auto-exit and drops to
+the interactive prompt.  Using `--debugger --dbg-script=FILE` also
+keeps the interactive prompt after the script completes.
+
 #### help
 
-`help` with no arguments prints a summary of all command groups:
-
-```
-(dbg) help
-Execution:    run step next finish continue until
-Breakpoints:  break delete disable enable
-Watchpoints:  watch rwatch awatch
-Registers:    info reg, print, set
-Memory:       x, set *, find
-Tracing:      trace traps, trace insn, trace io
-Info:         info break, info traps, info globals, info types, info symbol, info insn
-Other:        commands, backtrace, help, quit
-
-Type 'help <command>' for details on a specific command.
-```
+`help` with no arguments prints all commands grouped by category
+(Execution, Breakpoints, Memory, Tracing, Information, Scripting,
+Guest, Other).  The help output is auto-generated from the command
+table, so adding a new command automatically includes it in `help`.
 
 `help <cmd>` prints usage and a short example for that command:
 
@@ -653,17 +675,27 @@ inter-key delays (~20ms at 8 MHz emulated speed).
 
 | Command | Description |
 |---------|-------------|
-| `wait text "pattern"` | Suspend script until captured text contains pattern |
-| `wait screen "pattern"` | Suspend script until OCR of the screen matches |
-| `wait for <cycles>` | Suspend script for N emulated CPU cycles |
-| `timeout <cycles>` | Set the cycle budget for subsequent waits (default ~5s at 8 MHz) |
+| `wait text "pattern" [timeout]` | Suspend script until captured text contains pattern |
+| `wait screen "ref.png" [timeout] [pct]` | Suspend script until screen matches reference |
+| `wait for <duration>` | Suspend script for N emulated CPU cycles |
+| `wait off [timeout]` | Suspend script until guest power-off |
+| `wait <addr\|symbol> [timeout]` | Suspend script until address is reached |
+| `wait trap <name> [timeout]` | Suspend script until trap fires |
 | `fail "message"` | Immediately fail the script with an error |
 
+Timeout and duration values accept human-readable formats:
+- `5s` — 5 seconds of emulated time
+- `500ms` — 500 milliseconds
+- `5M` — 5 million cycles
+- `100k` — 100 thousand cycles
+- `40000000` — raw cycle count
+- `off` / `none` — no timeout (infinite)
+
 ```
-(dbg) timeout 80000000
+(dbg) set default-timeout 10s
 (dbg) wait text "Save changes"
-(dbg) wait for 1000000
-(dbg) wait screen "OK"
+(dbg) wait for 1M
+(dbg) wait text "File" 5s
 ```
 
 `wait text` matches against text captured from DrawString, DrawText,
@@ -753,21 +785,21 @@ text the guest is rendering.
 # build.dbg — compile a THINK C project automatically
 run
 wait text "Shared Drive"
-timeout 160000000
+set default-timeout 20s
 launch "Shared:Apps:THINK C 5:THINK Project Manager"
 wait text "THINK Project"
 key cmd-o
 wait text "Open"
 type "MyProject.π"
 key Return
-wait for 2000000
+wait for 1M
 key cmd-k
 wait text "Done"
 # handle "Save?" dialog
 wait text "Save"
 dialog
 click button "Yes"
-wait for 5000000
+wait for 5M
 shutdown
 ```
 
