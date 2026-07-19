@@ -207,6 +207,16 @@ private:
 	void mountToolDisk();
 	void toggleZoom();
 
+	/* Snap window to nearest integer scale that fits the display.
+	   snapWindowIfNeeded: only acts in Windowed + PixelPerfect mode.
+	   snapWindowToScale:  unconditional workhorse. */
+	void snapWindowIfNeeded(int maxScale = 999);
+	void snapWindowToScale(int maxScale = 999);
+
+	/* Largest integer scale where guest×scale fits the usable display area.
+	   Returns 0 if display bounds cannot be queried. */
+	int getMaxFittingScale() const;
+
 };
 
 #endif /* IMGUI_BACKEND_H */

@@ -12,6 +12,7 @@
 #include "platform/sdl_keyboard.h"
 #include "platform/sdl_sound.h"
 #include "platform/platform.h"
+#include "platform/ui_math.h"
 #include "config/mac_file.h"
 #include "core/config_loader.h"
 #include "core/extn_extfs.h"
@@ -299,23 +300,7 @@ void ImGuiBackend::runLoop()
 			if (event.type == SDL_EVENT_WINDOW_RESIZED && !snapping_ &&
 				!(SDL_GetWindowFlags(window_) & SDL_WINDOW_MAXIMIZED))
 			{
-				if (uiState_ == UIState::Windowed && scalingMode_ == ScalingMode::PixelPerfect)
-				{
-					int newW = event.window.data1;
-					int newH = event.window.data2;
-					int scaleX = std::max(1, (newW + emuTexW_ / 2) / emuTexW_);
-					int scaleY = std::max(1, (newH + emuTexH_ / 2) / emuTexH_);
-					int scale = std::min(scaleX, scaleY);
-					int snapW = emuTexW_ * scale;
-					int snapH = emuTexH_ * scale;
-					if (snapW != newW || snapH != newH)
-					{
-						snapping_ = true;
-						SDL_SetWindowSize(window_, snapW, snapH);
-						snapping_ = false;
-					}
-					currentScale_ = scale;
-				}
+				snapWindowIfNeeded();
 				continue;
 			}
 
@@ -783,18 +768,44 @@ void ImGuiBackend::setScalingMode(ScalingMode m)
 {
 	if (scalingMode_ == m) return;
 	scalingMode_ = m;
-	if (m == ScalingMode::PixelPerfect && uiState_ == UIState::Windowed)
+	snapWindowIfNeeded();
+}
+
+void ImGuiBackend::snapWindowIfNeeded(int maxScale)
+{
+	if (!window_ || emuTexW_ == 0 || emuTexH_ == 0) return;
+	if (uiState_ != UIState::Windowed) return;
+	if (scalingMode_ != ScalingMode::PixelPerfect) return;
+	snapWindowToScale(maxScale);
+}
+
+void ImGuiBackend::snapWindowToScale(int maxScale)
+{
+	int displayMax = getMaxFittingScale();
+	if (displayMax > 0)
+		maxScale = std::min(maxScale, displayMax);
+
+	int w, h;
+	SDL_GetWindowSize(window_, &w, &h);
+
+	auto snap = ComputeIntegerSnap(w, h, emuTexW_, emuTexH_, maxScale);
+	if (snap.width != w || snap.height != h)
 	{
-		int w, h;
-		SDL_GetWindowSize(window_, &w, &h);
-		int scaleX = std::max(1, (w + emuTexW_ / 2) / emuTexW_);
-		int scaleY = std::max(1, (h + emuTexH_ / 2) / emuTexH_);
-		int scale = std::min(scaleX, scaleY);
 		snapping_ = true;
-		SDL_SetWindowSize(window_, emuTexW_ * scale, emuTexH_ * scale);
+		SDL_SetWindowSize(window_, snap.width, snap.height);
 		snapping_ = false;
-		currentScale_ = scale;
 	}
+	currentScale_ = snap.scale;
+}
+
+int ImGuiBackend::getMaxFittingScale() const
+{
+	if (!window_ || emuTexW_ == 0 || emuTexH_ == 0) return 0;
+	SDL_Rect usable;
+	SDL_DisplayID did = SDL_GetDisplayForWindow(window_);
+	if (!did || !SDL_GetDisplayUsableBounds(did, &usable)) return 0;
+	return std::min(std::max(1, usable.w / emuTexW_),
+				   std::max(1, usable.h / emuTexH_));
 }
 
 /* ── Action dispatch ─────────────────────────────────── */
@@ -1089,23 +1100,9 @@ void ImGuiBackend::drawViewportWindowed()
 		}
 		else
 		{
-			float emuAspect = static_cast<float>(emuTexW_) / emuTexH_;
-			float winAspect = displaySize.x / displaySize.y;
-			float viewW, viewH;
-			if (emuAspect > winAspect)
-			{
-				viewW = displaySize.x;
-				viewH = displaySize.x / emuAspect;
-			}
-			else
-			{
-				viewH = displaySize.y;
-				viewW = displaySize.y * emuAspect;
-			}
-			float offsetX = (displaySize.x - viewW) * 0.5f;
-			float offsetY = (displaySize.y - viewH) * 0.5f;
-			ImGui::SetCursorPos(ImVec2(offsetX, offsetY));
-			displayEmulatorImage(viewW, viewH);
+			auto vp = ComputeStretchedViewport(displaySize.x, displaySize.y, emuTexW_, emuTexH_);
+			ImGui::SetCursorPos(ImVec2(vp.x, vp.y));
+			displayEmulatorImage(vp.w, vp.h);
 		}
 	}
 	ImGui::End();
@@ -1130,19 +1127,9 @@ void ImGuiBackend::drawViewportFullscreen()
 	if (ImGui::Begin("##FullscreenViewport", nullptr, flags))
 	{
 		emuViewportHovered_ = ImGui::IsWindowHovered();
-		float emuAspect = (float)emuTexW_ / (float)emuTexH_;
-		float dispAspect = displaySize.x / displaySize.y;
-		float scaledW, scaledH;
-		if (emuAspect > dispAspect)
-		{
-			scaledW = displaySize.x;
-			scaledH = displaySize.x / emuAspect;
-		}
-		else
-		{
-			scaledH = displaySize.y;
-			scaledW = displaySize.y * emuAspect;
-		}
+		auto vp = ComputeStretchedViewport(displaySize.x, displaySize.y, emuTexW_, emuTexH_);
+		float scaledW = vp.w;
+		float scaledH = vp.h;
 
 		if (scalingMode_ == ScalingMode::PixelPerfect)
 		{
@@ -1426,15 +1413,7 @@ void ImGuiBackend::onResolutionChanged(uint16_t newW, uint16_t newH)
 	/* Resize SDL window only in Windowed mode.  Fullscreen handles
 	   the new resolution automatically via aspect-ratio scaling. */
 	if (uiState_ == UIState::Windowed)
-	{
-		int scale = 2;
-		PlatformDisplayBounds bounds;
-		if (getDisplayBounds(&bounds))
-		{
-			if (newW * 2 > bounds.w || newH * 2 > bounds.h) scale = 1;
-		}
-		SDL_SetWindowSize(window_, newW * scale, newH * scale);
-	}
+		snapWindowToScale(2);
 }
 
 /* ── Zoom (custom maximize: largest Pixel Perfect, centered) ── */
@@ -1444,13 +1423,8 @@ void ImGuiBackend::toggleZoom()
 	if (!window_ || emuTexW_ == 0 || emuTexH_ == 0) return;
 	if (uiState_ != UIState::Windowed) return;
 
-	/* Max Pixel Perfect scale for the current display */
-	SDL_Rect usable;
-	SDL_DisplayID did = SDL_GetDisplayForWindow(window_);
-	if (!did || !SDL_GetDisplayUsableBounds(did, &usable)) return;
-
-	int maxScale = std::min(std::max(1, usable.w / emuTexW_),
-						   std::max(1, usable.h / emuTexH_));
+	int maxScale = getMaxFittingScale();
+	if (maxScale <= 0) return;
 
 	/* Current effective integer scale (floor of window/texture ratio) */
 	int curW, curH;
@@ -1463,8 +1437,11 @@ void ImGuiBackend::toggleZoom()
 
 	int newW = emuTexW_ * nextScale;
 	int newH = emuTexH_ * nextScale;
-	int cx   = usable.x + (usable.w - newW) / 2;
-	int cy   = usable.y + (usable.h - newH) / 2;
+	SDL_Rect usable;
+	SDL_DisplayID did = SDL_GetDisplayForWindow(window_);
+	SDL_GetDisplayUsableBounds(did, &usable);
+	int cx = usable.x + (usable.w - newW) / 2;
+	int cy = usable.y + (usable.h - newH) / 2;
 	snapping_ = true;
 	SDL_SetWindowSize(window_, newW, newH);
 	SDL_SetWindowPosition(window_, cx, cy);
