@@ -6,6 +6,7 @@
 #include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
+#include "debugger/settings.h"
 #include "debugger/bp_text.h"
 #include "debugger/bp_screen.h"
 
@@ -333,7 +334,22 @@ void CmdDelete(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].isEnd())
 	{
-		/* Delete all */
+		/* Delete all — check if confirmation is required */
+		bool confirm = false;
+		SettingGetBool("confirm", confirm);
+		if (confirm)
+		{
+			dbg.io().write("Delete all breakpoints and watchpoints? (y/n) ");
+			dbg.io().flush();
+			char buf[64];
+			if (!dbg.io().readLine(buf, sizeof(buf))) return;
+			if (buf[0] != 'y' && buf[0] != 'Y')
+			{
+				dbg.io().write("Not confirmed.\n");
+				return;
+			}
+		}
+
 		int count = 0;
 		while (!dbg.breakpoints().empty())
 		{
