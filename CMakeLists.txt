@@ -102,6 +102,7 @@ set(MINIVMAC_SOURCES
     src/debugger/cmd_script.cpp
     src/debugger/script_keymap.cpp
     src/debugger/settings.cpp
+    src/debugger/duration.cpp
 
     # Guest memory introspection
     src/guest/guest_dialog.cpp
@@ -383,6 +384,7 @@ add_executable(tests
     src/debugger/cmd_parser.cpp
     src/debugger/dbg_io.cpp
     src/debugger/settings.cpp
+    src/debugger/duration.cpp
     src/storage/appledouble.cpp
     src/storage/filename_encoding.cpp
     src/storage/text_convert.cpp

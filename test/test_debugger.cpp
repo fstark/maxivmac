@@ -8,6 +8,7 @@
 #include "debugger/expr.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/settings.h"
+#include "debugger/duration.h"
 #include "cpu/trap_tracer.h"
 #include "lang/type_registry.h"
 #include "lang/global_registry.h"
@@ -702,4 +703,85 @@ TEST_CASE("settings type mismatch returns false")
 	CHECK_FALSE(SettingGetUInt64("confirm", u));
 	bool b;
 	CHECK_FALSE(SettingGetBool("default-timeout", b));
+}
+
+/* ════════════════════════════════════════════════════════
+   Duration parser tests
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("duration parse seconds")
+{
+	uint64_t c;
+	CHECK(ParseDuration("5s", 8'000'000, c));
+	CHECK(c == 40'000'000);
+}
+
+TEST_CASE("duration parse milliseconds")
+{
+	uint64_t c;
+	CHECK(ParseDuration("500ms", 8'000'000, c));
+	CHECK(c == 4'000'000);
+}
+
+TEST_CASE("duration parse M suffix")
+{
+	uint64_t c;
+	CHECK(ParseDuration("5M", 8'000'000, c));
+	CHECK(c == 5'000'000);
+}
+
+TEST_CASE("duration parse k suffix")
+{
+	uint64_t c;
+	CHECK(ParseDuration("100k", 8'000'000, c));
+	CHECK(c == 100'000);
+}
+
+TEST_CASE("duration parse raw number")
+{
+	uint64_t c;
+	CHECK(ParseDuration("40000000", 8'000'000, c));
+	CHECK(c == 40'000'000);
+}
+
+TEST_CASE("duration parse off")
+{
+	uint64_t c = 999;
+	CHECK(ParseDuration("off", 8'000'000, c));
+	CHECK(c == 0);
+}
+
+TEST_CASE("duration parse none")
+{
+	uint64_t c = 999;
+	CHECK(ParseDuration("none", 8'000'000, c));
+	CHECK(c == 0);
+}
+
+TEST_CASE("duration parse invalid")
+{
+	uint64_t c;
+	CHECK_FALSE(ParseDuration("", 8'000'000, c));
+	CHECK_FALSE(ParseDuration("abc", 8'000'000, c));
+	CHECK_FALSE(ParseDuration("5x", 8'000'000, c));
+}
+
+TEST_CASE("duration format seconds")
+{
+	CHECK(FormatDuration(40'000'000, 8'000'000) == "5s");
+}
+
+TEST_CASE("duration format milliseconds")
+{
+	CHECK(FormatDuration(4'000'000, 8'000'000) == "500ms");
+}
+
+TEST_CASE("duration format M suffix")
+{
+	CHECK(FormatDuration(5'000'000, 7'833'600) == "5M");
+}
+
+TEST_CASE("duration format off")
+{
+	CHECK(FormatDuration(0, 8'000'000) == "off");
 }
