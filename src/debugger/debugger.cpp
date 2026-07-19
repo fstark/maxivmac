@@ -8,6 +8,7 @@
 #include "debugger/symbols.h"
 #include "debugger/expr.h"
 #include "debugger/script_suspend.h"
+#include "debugger/settings.h"
 
 #include "core/machine.h"
 #include "core/ict_scheduler.h"
@@ -46,6 +47,7 @@ void CmdIgnore(Debugger &dbg, const std::vector<Token> &args);
 void CmdExamine(Debugger &dbg, const std::vector<Token> &args);
 void CmdPrint(Debugger &dbg, const std::vector<Token> &args);
 void CmdSet(Debugger &dbg, const std::vector<Token> &args);
+void CmdShow(Debugger &dbg, const std::vector<Token> &args);
 void CmdFind(Debugger &dbg, const std::vector<Token> &args);
 void CmdDisas(Debugger &dbg, const std::vector<Token> &args);
 void CmdTrace(Debugger &dbg, const std::vector<Token> &args);
@@ -121,8 +123,11 @@ static CmdEntry s_commands[] = {
 	 "  size: b(byte) w(word) l(long)  format: x(hex) d(dec) s(string) i(insn)\n"},
 	{"print", "p", CmdPrint, "Evaluate and print expression",
 	 "print <expr>\n  Evaluate expression and print result as hex.\n"},
-	{"set", "", CmdSet, "Set register or memory",
-	 "set <target> = <value>\n  target: register name, or *<addr>[.w/.l] for memory.\n"},
+	{"set", "", CmdSet, "Set register, memory, or setting",
+	 "set <target> = <value>\n  target: register name, or *<addr>[.w/.l] for memory.\n"
+	 "set <setting> <value>\n  Set a debugger setting (e.g. set confirm on).\n"},
+	{"show", "", CmdShow, "Show debugger settings",
+	 "show [<name>]\n  Show one or all debugger settings.\n"},
 	{"find", "", CmdFind, "Search memory",
 	 "find <start> <end> <pattern>\n  Search memory for hex bytes, wildcards, or \"string\".\n"},
 	{"disas", "", CmdDisas, "Disassemble address range",
@@ -299,6 +304,7 @@ void Debugger::create(DbgIO *io)
 		s_instance->impl_->io = CreateStdioIO();
 
 	SymbolsInit();
+	SettingsInit();
 
 	std::signal(SIGINT, SignalHandler);
 

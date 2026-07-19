@@ -7,6 +7,7 @@
 #include "debugger/symbols.h"
 #include "debugger/expr.h"
 #include "debugger/cmd_parser.h"
+#include "debugger/settings.h"
 #include "cpu/trap_tracer.h"
 #include "lang/type_registry.h"
 #include "lang/global_registry.h"
@@ -624,4 +625,81 @@ TEST_CASE("reassemble stops at address token")
 	CHECK(parsed.count == 2);
 	CHECK(parsed.size == 'w');
 	CHECK(parsed.format == 'x');
+}
+
+/* ════════════════════════════════════════════════════════
+   Settings tests
+   ════════════════════════════════════════════════════════ */
+
+TEST_CASE("settings init and get bool")
+{
+	SettingsInit();
+	bool v = true;
+	CHECK(SettingGetBool("confirm", v));
+	CHECK(v == false);
+}
+
+TEST_CASE("settings set and get bool")
+{
+	SettingsInit();
+	CHECK(SettingSetBool("confirm", true));
+	bool v = false;
+	CHECK(SettingGetBool("confirm", v));
+	CHECK(v == true);
+}
+
+TEST_CASE("settings init and get uint64")
+{
+	SettingsInit();
+	uint64_t v = 0;
+	CHECK(SettingGetUInt64("default-timeout", v));
+	CHECK(v == 40'000'000);
+}
+
+TEST_CASE("settings set and get uint64")
+{
+	SettingsInit();
+	CHECK(SettingSetUInt64("default-timeout", 12345));
+	uint64_t v = 0;
+	CHECK(SettingGetUInt64("default-timeout", v));
+	CHECK(v == 12345);
+}
+
+TEST_CASE("settings format bool")
+{
+	SettingsInit();
+	std::string out;
+	CHECK(SettingFormat("confirm", out));
+	CHECK(out == "off");
+	SettingSetBool("confirm", true);
+	CHECK(SettingFormat("confirm", out));
+	CHECK(out == "on");
+}
+
+TEST_CASE("settings format uint64")
+{
+	SettingsInit();
+	std::string out;
+	CHECK(SettingFormat("default-timeout", out));
+	CHECK(out == "40000000");
+}
+
+TEST_CASE("settings unknown name returns false")
+{
+	SettingsInit();
+	bool b;
+	CHECK_FALSE(SettingGetBool("nonexistent", b));
+	uint64_t u;
+	CHECK_FALSE(SettingGetUInt64("nonexistent", u));
+	std::string s;
+	CHECK_FALSE(SettingFormat("nonexistent", s));
+}
+
+TEST_CASE("settings type mismatch returns false")
+{
+	SettingsInit();
+	uint64_t u;
+	CHECK_FALSE(SettingGetUInt64("confirm", u));
+	bool b;
+	CHECK_FALSE(SettingGetBool("default-timeout", b));
 }

@@ -7,6 +7,7 @@
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 #include "debugger/expr.h"
+#include "debugger/settings.h"
 
 #include "core/machine.h"
 #include "cpu/m68k.h"
@@ -280,6 +281,89 @@ void CmdPrint(Debugger &dbg, const std::vector<Token> &args)
 void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 {
 
+	if (args.empty() || args[0].isEnd())
+	{
+		dbg.io().write("Usage: set <target> = <value>\n");
+		dbg.io().write("       set <setting> <value>\n");
+		return;
+	}
+
+	/* Check if this is a settings command: no '=' sign and first token
+	   matches a known setting name. */
+	bool hasEquals = false;
+	for (auto &tok : args)
+	{
+		if (tok.isOperator("=")) { hasEquals = true; break; }
+		if (tok.isEnd()) break;
+	}
+
+	if (!hasEquals && args[0].isWord() && !args[0].isOperator("*"))
+	{
+		auto &name = args[0].text;
+		auto &defs = SettingsList();
+		for (auto &d : defs)
+		{
+			if (d.name != name) continue;
+			/* Found a matching setting */
+			if (args.size() < 2 || args[1].isEnd())
+			{
+				std::string val;
+				SettingFormat(name, val);
+				dbg.io().write("%.*s = %s\n",
+							   static_cast<int>(d.name.size()), d.name.data(),
+							   val.c_str());
+				return;
+			}
+			switch (d.type)
+			{
+			case SettingType::Bool:
+			{
+				bool v;
+				if (args[1].isWord("on") || args[1].isWord("true") || args[1].isWord("yes") ||
+					(args[1].isNumber() && args[1].numValue != 0))
+					v = true;
+				else if (args[1].isWord("off") || args[1].isWord("false") || args[1].isWord("no") ||
+						 (args[1].isNumber() && args[1].numValue == 0))
+					v = false;
+				else
+				{
+					dbg.io().write("Expected on/off for '%.*s'\n",
+								   static_cast<int>(d.name.size()), d.name.data());
+					return;
+				}
+				SettingSetBool(name, v);
+				dbg.io().write("%.*s = %s\n",
+							   static_cast<int>(d.name.size()), d.name.data(),
+							   v ? "on" : "off");
+				return;
+			}
+			case SettingType::UInt64:
+			{
+				if (!args[1].isNumber())
+				{
+					dbg.io().write("Expected number for '%.*s'\n",
+								   static_cast<int>(d.name.size()), d.name.data());
+					return;
+				}
+				SettingSetUInt64(name, args[1].numValue);
+				std::string val;
+				SettingFormat(name, val);
+				dbg.io().write("%.*s = %s\n",
+							   static_cast<int>(d.name.size()), d.name.data(),
+							   val.c_str());
+				return;
+			}
+			case SettingType::String:
+			{
+				std::string val = (args.size() >= 2 && !args[1].isEnd()) ? args[1].text : "";
+				// SettingSetString not implemented yet
+				dbg.io().write("String settings not yet supported\n");
+				return;
+			}
+			}
+		}
+	}
+
 	if (args.size() < 3)
 	{
 		dbg.io().write("Usage: set <target> = <value>\n");
@@ -544,5 +628,36 @@ void CmdDisas(Debugger &dbg, const std::vector<Token> &args)
 		auto text = Disassemble(pc); /* pc advanced past insn */
 		dbg.io().write("$%08X: %s\n", thisPC, text.c_str());
 		if (pc == thisPC) break; /* safety: avoid infinite loop */
+	}
+}
+
+void CmdShow(Debugger &dbg, const std::vector<Token> &args)
+{
+	if (!args.empty() && args[0].isWord() && !args[0].isEnd())
+	{
+		/* Show a specific setting */
+		auto &name = args[0].text;
+		std::string val;
+		if (SettingFormat(name, val))
+		{
+			dbg.io().write("%s = %s\n", name.c_str(), val.c_str());
+		}
+		else
+		{
+			dbg.io().write("Unknown setting '%s'\n", name.c_str());
+		}
+		return;
+	}
+
+	/* Show all settings */
+	auto &defs = SettingsList();
+	for (auto &d : defs)
+	{
+		std::string val;
+		SettingFormat(d.name, val);
+		dbg.io().write("%-20.*s = %-10s  %.*s\n",
+					   static_cast<int>(d.name.size()), d.name.data(),
+					   val.c_str(),
+					   static_cast<int>(d.help.size()), d.help.data());
 	}
 }
