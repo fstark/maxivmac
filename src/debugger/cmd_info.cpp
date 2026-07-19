@@ -6,6 +6,8 @@
 #include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
+#include "debugger/settings.h"
+#include "debugger/cmd_script.h"
 
 #include "core/extn_clip.h"
 #include "core/machine.h"
@@ -448,11 +450,62 @@ static void InfoTrace(Debugger &dbg)
 	io.write("I/O tracing:  %s\n", dbg.traceIO() ? "on" : "off");
 }
 
+static void InfoScript(Debugger &dbg)
+{
+	auto &io = dbg.io();
+
+	// Pending script state
+	if (dbg.hasPendingScript())
+		io.write("Pending script: yes (%d lines remaining)\n", dbg.pendingScriptLinesRemaining());
+	else
+		io.write("Pending script: none\n");
+
+	// Script mode
+	io.write("Script mode: %s\n", dbg.scriptMode() ? "on (auto-exit at EOF)" : "off");
+
+	// Default timeout
+	ScaledCycleCount timeout = ScriptDefaultTimeout();
+	if (timeout == 0)
+		io.write("Default timeout: off (infinite)\n");
+	else
+		io.write("Default timeout: %" PRIu64 " cycles\n", timeout);
+
+	// Active scriptOwned breakpoints
+	int count = 0;
+	for (auto &bp : dbg.breakpoints())
+	{
+		if (!bp.scriptOwned) continue;
+		++count;
+		const char *enb = bp.enabled ? "y" : "n";
+		using Kind = Debugger::Breakpoint::Kind;
+		switch (bp.kind)
+		{
+		case Kind::Text:
+			io.write("  wait bp %u: text \"%s\" (%s)\n", bp.id, bp.textPattern.c_str(), enb);
+			break;
+		case Kind::Screen:
+			io.write("  wait bp %u: screen (%.1f%%) (%s)\n", bp.id, bp.screenMatcher.threshold, enb);
+			break;
+		case Kind::PowerOff:
+			io.write("  wait bp %u: power-off (%s)\n", bp.id, enb);
+			break;
+		case Kind::Address:
+			io.write("  wait bp %u: address $%08X (%s)\n", bp.id, bp.address, enb);
+			break;
+		case Kind::Trap:
+			io.write("  wait bp %u: trap $%04X (%s)\n", bp.id, bp.trapWord, enb);
+			break;
+		}
+	}
+	if (count == 0)
+		io.write("Active wait conditions: none\n");
+}
+
 void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 {
 	if (args.empty() || args[0].isEnd())
 	{
-		dbg.io().write("Usage: info <break|reg|trace|traps|globals|types|symbol|insn>\n");
+		dbg.io().write("Usage: info <break|reg|trace|traps|globals|types|symbol|insn|script>\n");
 		return;
 	}
 
@@ -479,10 +532,12 @@ void CmdInfo(Debugger &dbg, const std::vector<Token> &args)
 		InfoScrap(dbg);
 	else if (sub == "console")
 		InfoConsole(dbg, args);
+	else if (sub == "script")
+		InfoScript(dbg);
 	else
 		dbg.io().write("Unknown info sub-command '%s'.\n"
 					   "  Available: break, reg, trace, traps, globals, types, symbol, insn, via, "
-					   "scrap, console\n",
+					   "scrap, console, script\n",
 					   sub.c_str());
 }
 

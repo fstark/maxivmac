@@ -408,6 +408,17 @@ bool Debugger::scriptMode() const
 	return impl_->scriptMode;
 }
 
+bool Debugger::hasPendingScript() const
+{
+	return !impl_->pendingScript.exhausted();
+}
+
+int Debugger::pendingScriptLinesRemaining() const
+{
+	if (impl_->pendingScript.exhausted()) return 0;
+	return static_cast<int>(impl_->pendingScript.lines.size()) - impl_->pendingScript.nextLine;
+}
+
 void Debugger::setRunning()
 {
 	impl_->state = DbgState::Running;

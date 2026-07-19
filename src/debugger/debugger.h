@@ -154,6 +154,10 @@ public:
 	void setScriptMode(bool on);
 	bool scriptMode() const;
 
+	// Pending script state (for info script display)
+	bool hasPendingScript() const;
+	int pendingScriptLinesRemaining() const;
+
 	// Command table access (used by cmd_help.cpp)
 	struct CmdEntry *commandTable();
 	int commandTableSize() const;
