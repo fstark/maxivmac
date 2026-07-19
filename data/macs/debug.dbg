@@ -1,4 +1,4 @@
-timeout 0
+set default-timeout 0
 #wait text "Special"
 #trace traps on
 #trace io on

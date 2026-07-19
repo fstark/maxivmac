@@ -1,7 +1,7 @@
 # build-tooldisk.dbg — Wait for Finder to mount the Tool Disk, then quit.
 # The Finder creates a Desktop file on the disk during mount.
 
-timeout 0
+set default-timeout 0
 
 # Wait for the Tool Disk volume name to appear on screen (Finder desktop)
 wait text "maxivmac Tools"

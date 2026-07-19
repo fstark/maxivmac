@@ -8,6 +8,7 @@
 #include "debugger/symbols.h"
 #include "debugger/expr.h"
 #include "debugger/settings.h"
+#include "debugger/duration.h"
 
 #include "core/machine.h"
 #include "cpu/m68k.h"
@@ -339,13 +340,22 @@ void CmdSet(Debugger &dbg, const std::vector<Token> &args)
 			}
 			case SettingType::UInt64:
 			{
-				if (!args[1].isNumber())
+				// Try duration parser first (handles 5s, 500ms, 5M, 100k, off, etc.)
+				uint64_t cycles;
+				if (ParseDuration(args[1].text, 8'000'000, cycles))
 				{
-					dbg.io().write("Expected number for '%.*s'\n",
+					SettingSetUInt64(name, cycles);
+				}
+				else if (args[1].isNumber())
+				{
+					SettingSetUInt64(name, args[1].numValue);
+				}
+				else
+				{
+					dbg.io().write("Expected number or duration for '%.*s'\n",
 								   static_cast<int>(d.name.size()), d.name.data());
 					return;
 				}
-				SettingSetUInt64(name, args[1].numValue);
 				std::string val;
 				SettingFormat(name, val);
 				dbg.io().write("%.*s = %s\n",

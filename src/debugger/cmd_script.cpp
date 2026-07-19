@@ -1,10 +1,11 @@
-// Script commands — wait, timeout, fail for automated scripting.
+// Script commands — wait, fail for automated scripting.
 #include "debugger/debugger.h"
 #include "debugger/dbg_io.h"
 #include "debugger/cmd_parser.h"
 #include "debugger/symbols.h"
 #include "debugger/bp_screen.h"
 #include "debugger/script_keymap.h"
+#include "debugger/settings.h"
 
 #include "core/machine.h"
 #include "core/ict_scheduler.h"
@@ -17,24 +18,11 @@
 #include <cinttypes>
 #include <cstdlib>
 
-/* Default timeout budget (cycles). ~5 seconds at 8 MHz. */
-static ScaledCycleCount s_defaultTimeout = 40'000'000;
-
-void CmdTimeout(Debugger &dbg, const std::vector<Token> &args)
-{
-	if (args.empty() || !args[0].isNumber())
-	{
-		dbg.io().write("timeout = %" PRIu64 " cycles\n", s_defaultTimeout);
-		dbg.io().write("Usage: timeout <cycles>\n");
-		return;
-	}
-	s_defaultTimeout = args[0].numValue;
-	dbg.io().write("timeout = %" PRIu64 " cycles\n", s_defaultTimeout);
-}
-
 ScaledCycleCount ScriptDefaultTimeout()
 {
-	return s_defaultTimeout;
+	uint64_t v = 40'000'000;
+	SettingGetUInt64("default-timeout", v);
+	return v;
 }
 
 void CmdWait(Debugger &dbg, const std::vector<Token> &args)
@@ -54,7 +42,7 @@ void CmdWait(Debugger &dbg, const std::vector<Token> &args)
 	auto parseBudget = [&](size_t argIdx) -> ScaledCycleCount
 	{
 		if (argIdx < args.size() && args[argIdx].isNumber()) return args[argIdx].numValue;
-		return s_defaultTimeout;
+		return ScriptDefaultTimeout();
 	};
 
 	auto computeDeadline = [&](ScaledCycleCount budget) -> ScaledCycleCount

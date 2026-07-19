@@ -1,5 +1,5 @@
 # Boot to desktop, capture reference, verify screen match.
-timeout 80000000
+set default-timeout 80000000
 wait text "File"
 break screen "test/fixtures/desktop.png" 90
 continue

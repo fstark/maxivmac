@@ -61,7 +61,6 @@ void CmdSource(Debugger &dbg, const std::vector<Token> &args);
 void CmdDrive(Debugger &dbg, const std::vector<Token> &args);
 void CmdShowtext(Debugger &dbg, const std::vector<Token> &args);
 void CmdScreenshot(Debugger &dbg, const std::vector<Token> &args);
-void CmdTimeout(Debugger &dbg, const std::vector<Token> &args);
 void CmdWait(Debugger &dbg, const std::vector<Token> &args);
 void CmdFail(Debugger &dbg, const std::vector<Token> &args);
 void CmdType(Debugger &dbg, const std::vector<Token> &args);
@@ -162,8 +161,6 @@ static CmdEntry s_commands[] = {
 	 "showtext [on|off]\n  Show/hide text captured from guest DrawString/ParamText calls.\n"},
 	{"screenshot", "", CmdScreenshot, "Save framebuffer to PNG",
 	 "screenshot <filename>\n  Save the current framebuffer to a PNG file.\n"},
-	{"timeout", "", CmdTimeout, "Set default wait budget",
-	 "timeout <cycles>\n  Set the default cycle budget for 'wait' commands.\n"},
 	{"wait", "", CmdWait, "Wait for condition",
 	 "wait text \"pattern\" [cycles]\n  Resume until text appears (script suspends).\n"
 	 "wait screen \"ref.png\" [cycles] [pct]\n  Resume until screen matches reference.\n"
