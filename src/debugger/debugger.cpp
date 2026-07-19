@@ -57,6 +57,7 @@ void CmdDiag(Debugger &dbg, const std::vector<Token> &args);
 void CmdBacktrace(Debugger &dbg, const std::vector<Token> &args);
 void CmdHelp(Debugger &dbg, const std::vector<Token> &args);
 void CmdQuit(Debugger &dbg, const std::vector<Token> &args);
+void CmdExit(Debugger &dbg, const std::vector<Token> &args);
 void CmdSource(Debugger &dbg, const std::vector<Token> &args);
 void CmdDrive(Debugger &dbg, const std::vector<Token> &args);
 void CmdShowtext(Debugger &dbg, const std::vector<Token> &args);
@@ -154,6 +155,8 @@ static CmdEntry s_commands[] = {
 	{"source", "so", CmdSource, "Execute commands from a file",
 	 "source <path>\n  Read and execute debugger commands from a file.\n"},
 	{"quit", "q", CmdQuit, "Quit emulator", "quit\n  Exit the emulator immediately.\n"},
+	{"exit", "", CmdExit, "Exit with optional code",
+	 "exit [code]\n  Exit the emulator with the given exit code (default 0).\n"},
 	{"drive", "", CmdDrive, "Mount/unmount shared drives",
 	 "drive mount <path>\n  Mount a host directory as a new shared drive.\n"
 	 "drive unmount <slot>\n  Unmount and release shared drive by slot number.\n"

@@ -86,3 +86,12 @@ void CmdQuit(Debugger &dbg, const std::vector<Token> &)
 	dbg.io().write("Quitting.\n");
 	std::exit(0);
 }
+
+void CmdExit(Debugger &dbg, const std::vector<Token> &args)
+{
+	int code = 0;
+	if (!args.empty() && args[0].isNumber())
+		code = static_cast<int>(args[0].numValue);
+	dbg.io().write("Exiting with code %d\n", code);
+	std::exit(code);
+}
