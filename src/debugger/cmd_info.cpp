@@ -47,7 +47,7 @@ static void InfoBreak(Debugger &dbg)
 	auto &wps = dbg.watchpoints();
 	auto &io = dbg.io();
 
-	if (bps.empty() && wps.empty() && dbg.insnBreakCount() == 0)
+	if (bps.empty() && wps.empty() && dbg.insnBreakCount() == 0 && dbg.cycleBreakCount() == 0)
 	{
 		io.write("No breakpoints or watchpoints.\n");
 		return;
@@ -58,30 +58,59 @@ static void InfoBreak(Debugger &dbg)
 	/* Instruction-count breakpoint (if set) */
 	if (dbg.insnBreakCount() != 0)
 	{
-		dbg.io().write("%-4u insn-break  y    -           at instruction #%" PRIu64 "\n",
-					   dbg.insnBreakId(), dbg.insnBreakCount());
+		io.write("%-4u insn-break  y    -           at instruction #%" PRIu64 "\n",
+				 dbg.insnBreakId(), dbg.insnBreakCount());
 	}
 
+	/* Cycle-count breakpoint (if set) */
+	if (dbg.cycleBreakCount() != 0)
+	{
+		io.write("%-4u cycle-break y    -           at cycle %" PRIu64 "\n",
+				 dbg.cycleBreakId(), dbg.cycleBreakCount());
+	}
+
+	using Kind = Debugger::Breakpoint::Kind;
 	for (auto &bp : bps)
 	{
 		const char *enb = bp.enabled ? "y" : "n";
-		if (bp.trapWord)
+		switch (bp.kind)
 		{
-			dbg.io().write("%-4u breakpoint  %s    $%04X       trap %s\n", bp.id, enb, bp.trapWord,
-						   SymbolsTrapName(bp.trapWord));
-		}
-		else
+		case Kind::Address:
 		{
 			auto sym = SymbolsAtAddress(bp.address);
 			if (!sym.empty())
-				dbg.io().write("%-4u breakpoint  %s    $%08X  %.*s\n", bp.id, enb, bp.address,
-							   static_cast<int>(sym.size()), sym.data());
+				io.write("%-4u breakpoint  %s    $%08X  %.*s\n", bp.id, enb, bp.address,
+						 static_cast<int>(sym.size()), sym.data());
 			else
-				dbg.io().write("%-4u breakpoint  %s    $%08X\n", bp.id, enb, bp.address);
+				io.write("%-4u breakpoint  %s    $%08X\n", bp.id, enb, bp.address);
+			break;
 		}
-		if (!bp.condition.empty()) dbg.io().write("     condition: %s\n", bp.condition.c_str());
-		if (!bp.commands.empty()) dbg.io().write("     %zu auto-command(s)\n", bp.commands.size());
-		if (bp.ignoreCount > 0) dbg.io().write("     ignore next: %u\n", bp.ignoreCount);
+		case Kind::Trap:
+			if (bp.subtrapSelector != 0)
+				io.write("%-4u breakpoint  %s    $%04X       trap %s (sel $%02X)\n",
+						 bp.id, enb, bp.trapWord,
+						 SymbolsTrapName(bp.trapWord), bp.subtrapSelector);
+			else
+				io.write("%-4u breakpoint  %s    $%04X       trap %s\n", bp.id, enb, bp.trapWord,
+						 SymbolsTrapName(bp.trapWord));
+			break;
+		case Kind::Text:
+			io.write("%-4u breakpoint  %s    -           text \"%s\"\n",
+					 bp.id, enb, bp.textPattern.c_str());
+			break;
+		case Kind::Screen:
+			io.write("%-4u breakpoint  %s    -           screen (threshold %.1f%%)\n",
+					 bp.id, enb, bp.screenMatcher.threshold);
+			break;
+		case Kind::PowerOff:
+			io.write("%-4u breakpoint  %s    -           power-off\n", bp.id, enb);
+			break;
+		}
+		if (bp.temporary) io.write("     temporary\n");
+		if (bp.timeoutAt != 0) io.write("     timeout at cycle %" PRIu64 "\n", bp.timeoutAt);
+		if (!bp.condition.empty()) io.write("     condition: %s\n", bp.condition.c_str());
+		if (!bp.commands.empty()) io.write("     %zu auto-command(s)\n", bp.commands.size());
+		if (bp.ignoreCount > 0) io.write("     ignore next: %u\n", bp.ignoreCount);
 	}
 
 	for (auto &wp : wps)
@@ -218,7 +247,7 @@ static void InfoSymbol(Debugger &dbg, const std::vector<Token> &args)
 
 static void InfoInsn(Debugger &dbg)
 {
-	dbg.io().write("Instructions executed: %u\n", g_instructionCount);
+	dbg.io().write("Instructions executed: %" PRIu64 "\n", g_instructionCount);
 }
 
 static void InfoVIA(Debugger &dbg)
