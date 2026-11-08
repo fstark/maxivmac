@@ -6,7 +6,7 @@ usage: python3 -I macbinary.py INPUT OUTPUT.bin [--name NAME] [--type TTTT --cre
 Type/creator/flags come from com.apple.FinderInfo (via `xattr -px`) unless overridden.
 The Finder 'inited' flag (0x0100) and the file location are cleared so the Finder places the icon itself.
 """
-import os, struct, subprocess, sys, time
+import os, struct, subprocess, sys
 
 def crc16(data, crc=0):
     for b in data:

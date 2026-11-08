@@ -12,7 +12,7 @@ Output: /out/<rung>/ (summary.json with per-check PASS/FAIL, logs, screenshots,
 the hub pcap, the disk after the run) and exit status 0 only if every rung passed.
 See docs/features/NETWORKING_E2E.md.
 """
-import glob, gzip, json, os, re, resource, shutil, signal, socket, struct, subprocess, sys, threading, time, zlib
+import contextlib, glob, gzip, json, os, re, resource, shutil, signal, socket, struct, subprocess, sys, threading, time, zlib
 
 ROM = os.environ.get("E2E_ROM", "/in/rom/vMac.ROM")
 DISK_DIR = "/in/disk"
@@ -114,7 +114,7 @@ class Run:
         def limits():
             resource.setrlimit(resource.RLIMIT_FSIZE, (fsize, fsize))
             os.setsid()
-        p = subprocess.Popen(argv, stdout=out, stderr=subprocess.STDOUT, env=e, preexec_fn=limits, cwd=cwd)
+        p = subprocess.Popen(argv, stdout=out, stderr=subprocess.STDOUT, env=e, preexec_fn=limits, cwd=cwd)  # noqa: PLW1509 (RLIMIT_FSIZE must be set in the child; the parent has no threads running yet at spawn)
         self.procs.append(p)
         return p
 
@@ -238,7 +238,7 @@ class Run:
         end = time.time() + timeout
         while time.time() < end and not self.stop.is_set():
             with self.capture_lock:
-                for t, i, text in self.capture:
+                for t, _, text in self.capture:
                     if "@%s]" % ip in text and needle in text:
                         return t
             time.sleep(0.2)
@@ -288,7 +288,7 @@ class Run:
         cfg = self.cfg
         print("== %s: %s" % (self.name, cfg["what"]), flush=True)
         # tap0 as the entrypoint made it
-        ip = subprocess.run(["ip", "-4", "-o", "addr", "show", "dev", "tap0"], capture_output=True, text=True).stdout
+        ip = subprocess.run(["ip", "-4", "-o", "addr", "show", "dev", "tap0"], capture_output=True, text=True, check=False).stdout
         if not self.check("tap0_address", cfg["tap"] in ip, "want %s, have: %s" % (cfg["tap"], ip.strip() or "none")):
             return
         caps = dict(l.split(":\t") for l in open("/proc/self/status").read().splitlines() if l.startswith(("Cap", "Uid", "NoNewPrivs")))
@@ -360,7 +360,7 @@ class Run:
                 self.mark("guest_ping_done")
                 time.sleep(3)
                 host_ping = subprocess.run(["ping", "-c", "5", "-i", "1", "-W", "3", self.guest_ip],
-                                           capture_output=True, text=True)
+                                           capture_output=True, text=True, check=False)
                 open(self.path("host-ping.txt"), "w").write(host_ping.stdout + host_ping.stderr)
                 self.mark("host_ping_done")
                 time.sleep(1)
@@ -580,7 +580,6 @@ class Run:
         self.check("both_back_to_lobby", first(g, "GAME -> LOBBY") and first(p, "GAME -> LOBBY") and n(g, "Lobby entered") >= 2 and n(p, "Lobby entered") >= 2,
                    "guest: %s (Lobby entered x%d) | POSIX: %s (x%d)" % (first(g, "GAME -> LOBBY"), n(g, "Lobby entered"), first(p, "GAME -> LOBBY"), n(p, "Lobby entered")))
         # the round end must come after the game start and after the bomb, on each side
-        order = lambda L: [i for i, l in enumerate(L) if any(k in l for k in ("Game started:", "Game over", "Grace period complete", "GAME -> LOBBY"))]
         for who, L in (("guest", g), ("posix", p)):
             seq = [k for l in L for k in ("Game started:", "Game over", "Grace period complete", "GAME -> LOBBY") if k in l]
             self.check(who + "_round_end_order", seq.index("Game started:") < seq.index("Game over") < seq.index("Grace period complete") < max(i for i, k in enumerate(seq) if k == "GAME -> LOBBY"),
@@ -640,7 +639,7 @@ class Run:
                    "on the guest's screen the POSIX player's sprite is at x=%s at the start and x=%s at the end (one 16 px tile right)" % (pa0, pa1))
         self.check("guest_screen_shows_guest_player_moved", None not in (ga0, ga1) and -20 <= ga1 - ga0 <= -12,
                    "the guest's own sprite is at x=%s at the start and x=%s at the end (one tile left)" % (ga0, ga1))
-        digs = {n: hashlib.sha1(open(os.path.join(self.shots, n + ".png"), "rb").read()).hexdigest()[:8]
+        digs = {n: hashlib.sha1(open(os.path.join(self.shots, n + ".png"), "rb").read(), usedforsecurity=False).hexdigest()[:8]
                 for n in shots}
         self.facts["screenshot_sha1"] = digs
         self.check("game_screen_changes", len({digs.get("E2E_BT_LOBBY"), digs.get("E2E_GAME_1")}) == 2
@@ -652,16 +651,12 @@ class Run:
         ok = bool(self.checks) and all(c["ok"] for c in self.checks.values())
         usage = {}
         for k, f in (("memory_peak_bytes", "/sys/fs/cgroup/memory.peak"), ("pids_peak", "/sys/fs/cgroup/pids.peak")):
-            try:
+            with contextlib.suppress(Exception):  # cgroup files may be absent or unreadable; usage is best-effort
                 usage[k] = int(open(f).read())
-            except Exception:
-                pass
-        try:
+        with contextlib.suppress(Exception):  # best-effort, as above
             for l in open("/sys/fs/cgroup/cpu.stat"):
                 if l.startswith("usage_usec"):
                     usage["cpu_seconds"] = round(int(l.split()[1]) / 1e6, 1)
-        except Exception:
-            pass
         summary = {"rung": self.name, "what": self.cfg["what"], "status": "PASS" if ok else "FAIL",
                    "guest": self.cfg["guest"], "tap": self.cfg["tap"],
                    "peer": ("%s (%s)" % (self.cfg["peer"], getattr(self, "peer_variant", "?"))) if self.cfg["peer"] else None,

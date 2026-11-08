@@ -36,7 +36,7 @@ def run(hub_bin, it_bin, key):
         if not m:
             print("hub did not start: %r" % line)
             return 1
-        r = subprocess.run([it_bin, "127.0.0.1:%s" % m.group(1)] + ([key] if key else []), timeout=60)
+        r = subprocess.run([it_bin, "127.0.0.1:%s" % m.group(1)] + ([key] if key else []), timeout=60, check=False)
         return r.returncode
     finally:
         hub.send_signal(signal.SIGTERM)

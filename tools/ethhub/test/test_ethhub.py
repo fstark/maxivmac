@@ -422,7 +422,7 @@ class HubTest(HubBase):
         for args in (["--listen", "x:99999"], ["--max-clients", "0"], ["--bogus"],
                      ["--allow", "nonsense"], ["--allow", "10.0.0.0/33"], ["--allow", "10.0.0.0/"],
                      ["--max-macs", "4097"]):
-            r = subprocess.run([HUB, *args], capture_output=True, timeout=10)
+            r = subprocess.run([HUB, *args], capture_output=True, timeout=10, check=False)
             self.assertEqual(r.returncode, 2, args)
 
 
